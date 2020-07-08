@@ -1,4 +1,7 @@
+import 'package:drive/blocs/blocs.dart';
+import 'package:drive/models/drive.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import './theme/theme.dart';
 
 void main() {
@@ -26,112 +29,114 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Row(children: [
-        NavigationRail(
-          selectedIndex: 0,
-          extended: true,
-          leading: Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: FloatingActionButton.extended(
-                onPressed: () {},
-                label: Text('UPLOAD'),
-                icon: Icon(Icons.file_upload),
+      body: Row(
+        children: [
+          BlocProvider(
+            create: (context) => DriveBloc(),
+            child: BlocBuilder<DriveBloc, DriveState>(
+              builder: (context, state) => Drawer(
+                elevation: 1,
+                child: Column(
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: FloatingActionButton.extended(
+                          onPressed: () => context
+                              .bloc<DriveBloc>()
+                              .add(DriveAddedEvent(Drive(name: 'Stuff'))),
+                          label: Text('UPLOAD'),
+                          icon: Icon(Icons.file_upload),
+                        ),
+                      ),
+                    ),
+                    ...(state is DriveLoadSuccess
+                        ? state.drives.map(
+                            (d) => ListTile(
+                              leading: Icon(Icons.folder_shared),
+                              title: Text(d.name),
+                            ),
+                          )
+                        : [Container()]),
+                  ],
+                ),
               ),
             ),
           ),
-          destinations: [
-            NavigationRailDestination(
-              icon: Icon(Icons.folder),
-              label: Text('Files'),
-            ),
-            NavigationRailDestination(
-              icon: Icon(Icons.settings),
-              label: Text('Settings'),
-            ),
-          ],
-        ),
-        Expanded(
-          child: Column(
-            children: <Widget>[
-              Row(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: DataTable(
-                        columns: const <DataColumn>[
-                          DataColumn(
-                            label: Text(
-                              'Name',
+          Expanded(
+            child: Column(
+              children: <Widget>[
+                Row(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: DataTable(
+                          columns: const <DataColumn>[
+                            DataColumn(
+                              label: Text(
+                                'Name',
+                              ),
                             ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Date added',
+                            DataColumn(
+                              label: Text(
+                                'Date added',
+                              ),
                             ),
-                          ),
-                          DataColumn(
-                            label: Text(
-                              'Size',
+                            DataColumn(
+                              label: Text(
+                                'Size',
+                              ),
                             ),
-                          ),
-                        ],
-                        rows: [
-                          DataRow(
-                            cells: <DataCell>[
-                              DataCell(
-                                  NameCell(name: 'Secrets', isFolder: true)),
-                              DataCell(Text('15 January 2020')),
-                              DataCell(Text('27MB')),
-                            ],
-                          ),
-                          DataRow(
-                            cells: <DataCell>[
-                              DataCell(
-                                  NameCell(name: 'dog.png', isFolder: false)),
-                              DataCell(Text('15 January 2020')),
-                              DataCell(Text('27MB')),
-                            ],
-                          ),
-                          DataRow(
-                            cells: <DataCell>[
-                              DataCell(
-                                  NameCell(name: 'cat.jpg', isFolder: false)),
-                              DataCell(Text('16 January 2020')),
-                              DataCell(Text('47GB')),
-                            ],
-                          ),
-                          DataRow(
-                            cells: <DataCell>[
-                              DataCell(NameCell(
-                                  name: 'movies.zip', isFolder: false)),
-                              DataCell(Text('18 January 2020')),
-                              DataCell(Text('1MB')),
-                            ],
-                          ),
-                        ],
+                          ],
+                          rows: [
+                            DataRow(
+                              cells: <DataCell>[
+                                DataCell(
+                                    NameCell(name: 'Secrets', isFolder: true)),
+                                DataCell(Text('15 January 2020')),
+                                DataCell(Text('27MB')),
+                              ],
+                            ),
+                            DataRow(
+                              cells: <DataCell>[
+                                DataCell(
+                                    NameCell(name: 'dog.png', isFolder: false)),
+                                DataCell(Text('15 January 2020')),
+                                DataCell(Text('27MB')),
+                              ],
+                            ),
+                            DataRow(
+                              cells: <DataCell>[
+                                DataCell(
+                                    NameCell(name: 'cat.jpg', isFolder: false)),
+                                DataCell(Text('16 January 2020')),
+                                DataCell(Text('47GB')),
+                              ],
+                            ),
+                            DataRow(
+                              cells: <DataCell>[
+                                DataCell(NameCell(
+                                    name: 'movies.zip', isFolder: false)),
+                                DataCell(Text('18 January 2020')),
+                                DataCell(Text('1MB')),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              )
-            ],
+                  ],
+                )
+              ],
+            ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }

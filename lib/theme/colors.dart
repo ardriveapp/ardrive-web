@@ -16,6 +16,6 @@ const kOnSurfaceLowEmphasis = const Color(0xFF767676);
 const kOnSurfaceDisabled = const Color(0xFF253840);
 
 const kOnPrimaryHighEmphasis = kSecondary500;
-const kOnPrimaryMediumEmphasis = const Color(0xFF253840);
+const kOnPrimaryMediumEmphasis = const Color(0xFFDCE1E4);
 const kOnPrimaryLowEmphasis = const Color(0xFF17262A);
 const kOnPrimaryDisabled = const Color(0xFF767676);

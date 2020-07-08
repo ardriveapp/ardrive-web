@@ -86,4 +86,6 @@ NavigationRailThemeData _buildNavigationRailTheme() => NavigationRailThemeData(
       backgroundColor: kPrimary700,
       selectedIconTheme: IconThemeData(color: kOnPrimaryHighEmphasis),
       selectedLabelTextStyle: TextStyle(color: kOnPrimaryHighEmphasis),
+      unselectedIconTheme: IconThemeData(color: kOnPrimaryMediumEmphasis),
+      unselectedLabelTextStyle: TextStyle(color: kOnPrimaryMediumEmphasis),
     );
