@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:drive/repositories/repositories.dart';
-import 'folder_event.dart';
-import 'folder_state.dart';
+import 'package:flutter/material.dart';
+import 'package:meta/meta.dart';
+
+part 'folder_event.dart';
+part 'folder_state.dart';
 
 class FolderBloc extends Bloc<FolderEvent, FolderState> {
   FolderBloc()

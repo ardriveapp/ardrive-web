@@ -1,5 +1,6 @@
-import 'package:drive/repositories/repositories.dart';
+part of 'folder_bloc.dart';
 
+@immutable
 abstract class FolderState {}
 
 class FolderLoadInProgress extends FolderState {}

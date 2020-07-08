@@ -1,4 +1,4 @@
-import 'package:drive/repositories/repositories.dart';
+part of 'drives_bloc.dart';
 
 abstract class DrivesState {}
 

@@ -1,11 +1,11 @@
-enum DrivePrivacy { public, publicReadOnly, private }
+enum DrivePrivacy { publicReadOnly, private }
 
 class Drive {
   String id;
-  String rootId;
+  String rootFolderId;
 
   String name;
   DrivePrivacy privacy;
 
-  Drive({this.id, this.rootId, this.name, this.privacy});
+  Drive({this.id, this.rootFolderId, this.name, this.privacy});
 }

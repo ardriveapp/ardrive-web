@@ -1,8 +1,9 @@
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/repositories/repositories.dart';
+import 'package:drive/theme/theme.dart';
+import 'package:drive/views/views.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import './theme/theme.dart';
 
 void main() {
   runApp(MyApp());
@@ -62,95 +63,24 @@ class _MyHomePageState extends State<MyHomePage> {
                             ),
                           )
                         : [Container()]),
+                    Expanded(child: Container()),
+                    Divider(height: 0),
+                    ListTile(
+                      title: Text('John Applebee'),
+                      subtitle: Text('john@arweave.org'),
+                      trailing: Icon(Icons.arrow_drop_down),
+                      onTap: () {},
+                    ),
                   ],
                 ),
               ),
             ),
           ),
           Expanded(
-            child: Column(
-              children: <Widget>[
-                Row(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: BlocProvider(
-                          create: (context) => FolderBloc(),
-                          child: BlocBuilder<FolderBloc, FolderState>(
-                            builder: (context, state) => DataTable(
-                              columns: const <DataColumn>[
-                                DataColumn(
-                                  label: Text(
-                                    'Name',
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    'Date added',
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    'Size',
-                                  ),
-                                ),
-                              ],
-                              rows: state is FolderLoadSuccess
-                                  ? [
-                                      ...state.subfolders.map(
-                                        (f) => DataRow(
-                                          cells: [
-                                            DataCell(NameCell(
-                                                name: f.name, isFolder: true)),
-                                            DataCell(Text('15 January 2020')),
-                                            DataCell(Text('27MB')),
-                                          ],
-                                        ),
-                                      ),
-                                      ...state.files.map(
-                                        (f) => DataRow(
-                                          cells: [
-                                            DataCell(NameCell(name: f.name)),
-                                            DataCell(Text('15 January 2020')),
-                                            DataCell(Text('27MB')),
-                                          ],
-                                        ),
-                                      ),
-                                    ]
-                                  : [],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              ],
-            ),
+            child: DriveDetailPage(),
           ),
         ],
       ),
     );
   }
-}
-
-class NameCell extends StatelessWidget {
-  final String name;
-  final bool isFolder;
-
-  NameCell({this.name, this.isFolder = false});
-
-  @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          isFolder
-              ? Padding(
-                  padding: const EdgeInsetsDirectional.only(end: 8.0),
-                  child: Icon(Icons.folder),
-                )
-              : Padding(padding: const EdgeInsetsDirectional.only(end: 32)),
-          Text(name),
-        ],
-      );
 }

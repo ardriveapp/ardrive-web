@@ -1,7 +1,8 @@
 import 'package:bloc/bloc.dart';
 import 'package:drive/repositories/repositories.dart';
-import 'drives_event.dart';
-import 'drives_state.dart';
+
+part 'drives_event.dart';
+part 'drives_state.dart';
 
 class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
   DrivesBloc()

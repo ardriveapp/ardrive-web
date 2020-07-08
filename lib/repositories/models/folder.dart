@@ -1,10 +1,13 @@
 class Folder {
   String id;
-  String parentId;
-
   String name;
-  List<String> folderIds;
-  List<String> fileIds;
+  List<FolderEntry> entries;
 
   Folder({this.name});
+}
+
+class FolderEntry {
+  String id;
+  bool isSubfolder;
+  bool isHidden;
 }

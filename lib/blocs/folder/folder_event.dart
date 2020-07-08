@@ -1,15 +1,16 @@
-import 'package:drive/repositories/repositories.dart';
+part of 'folder_bloc.dart';
 
+@immutable
 abstract class FolderEvent {}
 
 class SubfolderAdded extends FolderEvent {
-  Folder subfolder;
+  final Folder subfolder;
 
   SubfolderAdded(this.subfolder);
 }
 
 class FileAdded extends FolderEvent {
-  File file;
+  final File file;
 
   FileAdded(this.file);
 }
