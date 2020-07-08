@@ -4,4 +4,6 @@ class File {
 
   String name;
   String dataTxId;
+
+  File({this.name});
 }

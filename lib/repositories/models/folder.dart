@@ -5,4 +5,6 @@ class Folder {
   String name;
   List<String> folderIds;
   List<String> fileIds;
+
+  Folder({this.name});
 }
