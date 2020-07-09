@@ -3,24 +3,30 @@ part of 'drive_detail_bloc.dart';
 @immutable
 abstract class DriveDetailState {}
 
-class DriveDetailFolderOpening extends DriveDetailState {
-  final String selectedFolderId;
+class DriveOpening extends DriveDetailState {}
 
-  DriveDetailFolderOpening({this.selectedFolderId});
+class DriveOpened extends DriveDetailState {
+  final Drive openedDrive;
+
+  DriveOpened({this.openedDrive});
 }
 
-class DriveDetailFolderOpenSuccess extends DriveDetailState {
+class FolderOpening extends DriveOpened {
   final String selectedFolderId;
-  final List<DrivePathSegment> selectedFolderPathSegments;
 
-  final List<Folder> subfolders;
-  final List<File> files;
+  FolderOpening({Drive drive, this.selectedFolderId})
+      : super(openedDrive: drive);
+}
 
-  DriveDetailFolderOpenSuccess(
-      {this.selectedFolderId,
-      this.selectedFolderPathSegments,
-      this.subfolders,
-      this.files});
+class FolderOpened extends DriveOpened {
+  final FolderEntry openedFolder;
+
+  final List<FolderEntry> subfolders;
+  final List<FileEntry> files;
+
+  FolderOpened(
+      {Drive openedDrive, this.openedFolder, this.subfolders, this.files})
+      : super(openedDrive: openedDrive);
 }
 
 class DrivePathSegment {

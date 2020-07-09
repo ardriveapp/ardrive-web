@@ -11,36 +11,36 @@ class DriveDetailPage extends StatelessWidget {
       padding: const EdgeInsets.all(16.0),
       child: BlocBuilder<DriveDetailBloc, DriveDetailState>(
           builder: (context, state) {
-        if (state is DriveDetailFolderOpenSuccess) {
-          return Column(
-            children: <Widget>[
-              Row(
-                children: state.selectedFolderPathSegments
-                    .map((s) => InkWell(
-                        onTap: () => context
-                            .bloc<DriveDetailBloc>()
-                            .add(OpenedFolder(s.folderId)),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Text(s.folderName + '/'),
-                        )))
-                    .toList(),
-              ),
-              Row(
-                children: [
-                  Expanded(
-                    child: FolderView(
-                      subfolders: state.subfolders,
-                      files: state.files,
+        return Column(
+          children: <Widget>[
+            if (state is DriveOpened) ...{
+              Row(children: [
+                Text('/' + state.openedDrive.name),
+                if (state is FolderOpened)
+                  ...state.openedFolder.path
+                      .split('/')
+                      .where((s) => s != '')
+                      .map((s) => InkWell(
+                          onTap: () {},
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text('/' + s),
+                          ))),
+              ]),
+              if (state is FolderOpened)
+                Row(
+                  children: [
+                    Expanded(
+                      child: FolderView(
+                        subfolders: state.subfolders,
+                        files: state.files,
+                      ),
                     ),
-                  ),
-                ],
-              )
-            ],
-          );
-        }
-
-        return Container();
+                  ],
+                ),
+            }
+          ],
+        );
       }),
     );
   }

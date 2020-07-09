@@ -1,11 +1,13 @@
+import 'package:moor/moor.dart';
+
 enum DrivePrivacy { publicReadOnly, private }
 
-class Drive {
-  String id;
-  String rootFolderId;
+class Drives extends Table {
+  TextColumn get id => text()();
+  TextColumn get rootFolderId =>
+      text().nullable().customConstraint('REFERENCES folderEntries(id)')();
+  TextColumn get name => text().withLength(min: 1)();
 
-  String name;
-  DrivePrivacy privacy;
-
-  Drive({this.id, this.rootFolderId, this.name, this.privacy});
+  @override
+  Set<Column> get primaryKey => {id};
 }

@@ -26,10 +26,19 @@ dependencies:
 
   flutter_bloc: ^5.0.1
   google_fonts: ^1.1.0
+  moor: ^3.2.0
+  moor_ffi: ^0.7.0
+  path_provider: ^1.6.11
+  json_annotation: ^3.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  moor_generator: ^3.2.0
+  json_serializable: ^3.3.0
+
+  build_runner: ^1.10.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

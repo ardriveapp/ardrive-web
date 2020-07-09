@@ -1,11 +1,15 @@
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/repositories/repositories.dart';
 import 'package:drive/theme/theme.dart';
-import 'package:drive/views/views.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-void main() {
+import 'views/views.dart';
+
+Database db;
+
+void main() async {
+  db = Database();
   runApp(App());
 }
 
@@ -14,8 +18,11 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider<DriveRepository>(
-          create: (context) => DriveRepository(),
+        RepositoryProvider<DrivesDao>(
+          create: (context) => DrivesDao(db),
+        ),
+        RepositoryProvider<DriveDao>(
+          create: (context) => DriveDao(db),
         ),
       ],
       child: MaterialApp(
@@ -39,57 +46,30 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        children: [
-          BlocProvider(
-            create: (context) => DrivesBloc(),
-            child: BlocBuilder<DrivesBloc, DrivesState>(
-              builder: (context, state) => Drawer(
-                elevation: 1,
-                child: Column(
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: FloatingActionButton.extended(
-                          onPressed: () => context
-                              .bloc<DrivesBloc>()
-                              .add(DriveAdded(Drive(name: 'Stuff'))),
-                          label: Text('UPLOAD'),
-                          icon: Icon(Icons.file_upload),
+    return BlocProvider(
+      create: (context) => DrivesBloc(
+        drivesDao: context.repository<DrivesDao>(),
+      ),
+      child: Scaffold(
+        body: Row(
+          children: [
+            AppDrawer(),
+            Expanded(
+              child: BlocBuilder<DrivesBloc, DrivesState>(
+                builder: (context, state) => state is DrivesReady
+                    ? BlocProvider(
+                        key: ValueKey(state.selectedDriveId),
+                        create: (context) => DriveDetailBloc(
+                          driveId: state.selectedDriveId,
+                          driveDao: context.repository<DriveDao>(),
                         ),
-                      ),
-                    ),
-                    ...(state is DrivesLoadSuccess
-                        ? state.drives.map(
-                            (d) => ListTile(
-                              leading: Icon(Icons.folder_shared),
-                              title: Text(d.name),
-                            ),
-                          )
-                        : [Container()]),
-                    Expanded(child: Container()),
-                    Divider(height: 0),
-                    ListTile(
-                      title: Text('John Applebee'),
-                      subtitle: Text('john@arweave.org'),
-                      trailing: Icon(Icons.arrow_drop_down),
-                      onTap: () {},
-                    ),
-                  ],
-                ),
+                        child: DriveDetailPage(),
+                      )
+                    : Container(),
               ),
             ),
-          ),
-          Expanded(
-            child: BlocProvider(
-              create: (context) => DriveDetailBloc(),
-              child: DriveDetailPage(),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

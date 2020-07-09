@@ -2,8 +2,8 @@ import 'package:drive/repositories/repositories.dart';
 import 'package:flutter/material.dart';
 
 class FolderView extends StatelessWidget {
-  final List<Folder> subfolders;
-  final List<File> files;
+  final List<FolderEntry> subfolders;
+  final List<FileEntry> files;
 
   const FolderView({
     Key key,

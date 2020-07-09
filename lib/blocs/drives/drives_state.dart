@@ -2,10 +2,11 @@ part of 'drives_bloc.dart';
 
 abstract class DrivesState {}
 
-class DrivesLoadInProgress extends DrivesState {}
+class DrivesLoading extends DrivesState {}
 
-class DrivesLoadSuccess extends DrivesState {
+class DrivesReady extends DrivesState {
+  final String selectedDriveId;
   final List<Drive> drives;
 
-  DrivesLoadSuccess(this.drives);
+  DrivesReady({this.selectedDriveId, this.drives});
 }
