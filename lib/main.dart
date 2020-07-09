@@ -6,30 +6,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(App());
 }
 
-class MyApp extends StatelessWidget {
+class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Drive',
-      theme: appTheme(),
-      home: MyHomePage(title: 'Drive'),
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<DriveRepository>(
+          create: (context) => DriveRepository(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Drive',
+        theme: appTheme(),
+        home: AppShell(title: 'Drive'),
+      ),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+class AppShell extends StatefulWidget {
+  AppShell({Key key, this.title}) : super(key: key);
 
   final String title;
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _AppShellState createState() => _AppShellState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -77,7 +84,10 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
           Expanded(
-            child: DriveDetailPage(),
+            child: BlocProvider(
+              create: (context) => DriveDetailBloc(),
+              child: DriveDetailPage(),
+            ),
           ),
         ],
       ),
