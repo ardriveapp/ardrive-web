@@ -30,6 +30,7 @@ dependencies:
   moor_ffi: ^0.7.0
   path_provider: ^1.6.11
   json_annotation: ^3.0.1
+  rxdart: ^0.24.1
 
 dev_dependencies:
   flutter_test:

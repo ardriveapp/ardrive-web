@@ -19,13 +19,9 @@ class FolderOpening extends DriveOpened {
 }
 
 class FolderOpened extends DriveOpened {
-  final FolderEntry openedFolder;
+  final FolderWithContents openedFolder;
 
-  final List<FolderEntry> subfolders;
-  final List<FileEntry> files;
-
-  FolderOpened(
-      {Drive openedDrive, this.openedFolder, this.subfolders, this.files})
+  FolderOpened({Drive openedDrive, this.openedFolder})
       : super(openedDrive: openedDrive);
 }
 

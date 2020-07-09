@@ -11,7 +11,8 @@ class FolderItem {
   bool isSubfolder;
   bool isHidden;
 
-  FolderItem({this.id, this.isSubfolder, this.isHidden});
+  FolderItem(
+      {@required this.id, this.isSubfolder = false, this.isHidden = false});
 
   factory FolderItem.fromJson(Map<String, dynamic> json) =>
       _$FolderItemFromJson(json);

@@ -1,1 +1,1 @@
-export 'drive_detail_page.dart';
+export 'drive_detail/drive_detail_page.dart';

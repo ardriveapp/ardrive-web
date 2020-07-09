@@ -13,7 +13,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   StreamSubscription _driveSubscription;
   StreamSubscription _folderSubscription;
 
-  DriveDetailBloc({String driveId, DriveDao driveDao})
+  DriveDetailBloc({@required String driveId, @required DriveDao driveDao})
       : this._driveDao = driveDao,
         super(DriveOpening()) {
     add(OpenDrive(driveId));
@@ -44,7 +44,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   Stream<DriveDetailState> _mapOpenedDriveToState(OpenedDrive event) async* {
     // If we're not already opening or have opened a folder, open the root drive folder.
     if (!(state is FolderOpened || state is FolderOpening))
-      add(OpenFolder(event.drive.rootFolderId));
+      add(OpenFolder(folderId: event.drive.rootFolderId));
 
     yield DriveOpened(openedDrive: event.drive);
   }
@@ -52,9 +52,13 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   Stream<DriveDetailState> _mapOpenFolderToState(OpenFolder event) async* {
     if (state is DriveOpened) {
       _folderSubscription?.cancel();
-      _folderSubscription = _driveDao
-          .watchFolder(event.folderId)
-          .listen((folder) => add(OpenedFolder(folder)));
+
+      final folderStream = event.folderId != null
+          ? _driveDao.watchFolderWithContents(event.folderId)
+          : _driveDao.watchFolderWithContentsAtPath(event.folderPath);
+
+      _folderSubscription =
+          folderStream.listen((folder) => add(OpenedFolder(folder)));
     }
   }
 

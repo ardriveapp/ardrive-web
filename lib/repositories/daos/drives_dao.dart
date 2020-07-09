@@ -21,14 +21,37 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
           ),
         );
 
-        batch.insert(
+        batch.insertAll(
           folderEntries,
-          FolderEntriesCompanion(
-            id: Value('345'),
-            name: Value('Documents'),
-            path: Value('/Documents'),
-            items: Value([]),
-          ),
+          [
+            FolderEntriesCompanion(
+              id: Value('345'),
+              driveId: Value(name),
+              name: Value('Personal'),
+              path: Value('/Personal'),
+            ),
+            FolderEntriesCompanion(
+              id: Value('567'),
+              driveId: Value(name),
+              parentFolderId: Value('345'),
+              name: Value('Documents'),
+              path: Value('/Personal/Documents'),
+            ),
+            FolderEntriesCompanion(
+              id: Value('981'),
+              driveId: Value(name),
+              parentFolderId: Value('345'),
+              name: Value('Pictures'),
+              path: Value('/Personal/Pictures'),
+            ),
+            FolderEntriesCompanion(
+              id: Value('789'),
+              driveId: Value(name),
+              parentFolderId: Value('567'),
+              name: Value('Resumes'),
+              path: Value('/Personal/Documents/Resumes'),
+            )
+          ],
         );
       });
 }

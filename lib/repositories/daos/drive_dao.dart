@@ -1,18 +1,77 @@
+import 'dart:async';
+
 import 'package:moor/moor.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../database.dart';
 import '../models/models.dart';
 
 part 'drive_dao.g.dart';
 
-@UseDao(tables: [Drives, FolderEntries])
+@UseDao(tables: [Drives, FolderEntries, FileEntries])
 class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   DriveDao(Database db) : super(db);
 
   Stream<Drive> watchDrive(String driveId) =>
       (select(drives)..where((d) => d.id.equals(driveId))).watchSingle();
 
-  Stream<FolderEntry> watchFolder(String folderId) =>
-      (select(folderEntries)..where((f) => f.id.equals(folderId)))
-          .watchSingle();
+  Stream<FolderWithContents> watchFolderWithContents(String folderId) {
+    final folderStream = (select(folderEntries)
+          ..where((f) => f.id.equals(folderId)))
+        .watchSingle();
+
+    final subfoldersStream = (select(folderEntries)
+          ..where((f) => f.parentFolderId.equals(folderId)))
+        .watch();
+
+    final filesStream = (select(fileEntries)
+          ..where((f) => f.parentFolderId.equals(folderId)))
+        .watch();
+
+    return Rx.combineLatest3(
+      folderStream,
+      subfoldersStream,
+      filesStream,
+      (folder, subfolders, files) => FolderWithContents(
+        folder: folder,
+        subfolders: subfolders,
+        files: files,
+      ),
+    );
+  }
+
+  Stream<FolderWithContents> watchFolderWithContentsAtPath(String folderPath) {
+    final folderStream = (select(folderEntries)
+          ..where((f) => f.path.equals(folderPath)))
+        .watchSingle();
+
+    final subfoldersStream = (select(folderEntries)
+          ..where((f) => f.path.like('$folderPath/%'))
+          ..where((f) => f.path.like('$folderPath/%/%').not()))
+        .watch();
+
+    final filesStream = (select(fileEntries)
+          ..where((f) => f.path.like('$folderPath/%'))
+          ..where((f) => f.path.like('$folderPath/%/%').not()))
+        .watch();
+
+    return Rx.combineLatest3(
+      folderStream,
+      subfoldersStream,
+      filesStream,
+      (folder, subfolders, files) => FolderWithContents(
+        folder: folder,
+        subfolders: subfolders,
+        files: files,
+      ),
+    );
+  }
+}
+
+class FolderWithContents {
+  final FolderEntry folder;
+  final List<FolderEntry> subfolders;
+  final List<FileEntry> files;
+
+  FolderWithContents({this.folder, this.subfolders, this.files});
 }

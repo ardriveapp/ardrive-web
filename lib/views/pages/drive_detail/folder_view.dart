@@ -1,5 +1,7 @@
+import 'package:drive/blocs/drive_detail/drive_detail_bloc.dart';
 import 'package:drive/repositories/repositories.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class FolderView extends StatelessWidget {
   final List<FolderEntry> subfolders;
@@ -7,9 +9,11 @@ class FolderView extends StatelessWidget {
 
   const FolderView({
     Key key,
-    this.subfolders,
-    this.files,
-  }) : super(key: key);
+    @required this.subfolders,
+    @required this.files,
+  })  : assert(subfolders != null),
+        assert(files != null),
+        super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -21,17 +25,8 @@ class FolderView extends StatelessWidget {
         DataColumn(label: Text('File size')),
       ],
       rows: [
-        ...?subfolders?.map(
-          (f) => DataRow(
-            cells: [
-              DataCell(NameCell(name: f.name, isFolder: true)),
-              DataCell(Text('me')),
-              DataCell(Text('-')),
-              DataCell(Text('-')),
-            ],
-          ),
-        ),
-        ...?files?.map(
+        ...subfolders.map((f) => _buildFolderRow(context, f)),
+        ...files.map(
           (f) => DataRow(
             cells: [
               DataCell(NameCell(name: f.name)),
@@ -44,6 +39,20 @@ class FolderView extends StatelessWidget {
       ],
     );
   }
+}
+
+DataRow _buildFolderRow(BuildContext context, FolderEntry folder) {
+  var openFolder = () =>
+      context.bloc<DriveDetailBloc>().add(OpenFolder(folderPath: folder.path));
+
+  return DataRow(
+    cells: [
+      DataCell(NameCell(name: folder.name, isFolder: true), onTap: openFolder),
+      DataCell(Text('me'), onTap: openFolder),
+      DataCell(Text('-'), onTap: openFolder),
+      DataCell(Text('-'), onTap: openFolder),
+    ],
+  );
 }
 
 class NameCell extends StatelessWidget {
