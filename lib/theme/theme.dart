@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'colors.dart';
 
 ThemeData appTheme() {
@@ -15,6 +16,9 @@ ThemeData appTheme() {
     textTheme: _buildTextTheme(),
     appBarTheme: _buildAppBarTheme(),
     navigationRailTheme: _buildNavigationRailTheme(),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+    ),
     visualDensity: VisualDensity.adaptivePlatformDensity,
   );
 }

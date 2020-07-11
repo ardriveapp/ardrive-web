@@ -8,15 +8,17 @@ part 'drive_detail_event.dart';
 part 'drive_detail_state.dart';
 
 class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
+  final String _driveId;
   final DriveDao _driveDao;
 
   StreamSubscription _driveSubscription;
   StreamSubscription _folderSubscription;
 
   DriveDetailBloc({@required String driveId, @required DriveDao driveDao})
-      : this._driveDao = driveDao,
+      : _driveId = driveId,
+        _driveDao = driveDao,
         super(DriveOpening()) {
-    add(OpenDrive(driveId));
+    add(OpenDrive());
   }
 
   @override
@@ -29,12 +31,14 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
       yield* _mapOpenedDriveToState(event);
     else if (event is OpenFolder)
       yield* _mapOpenFolderToState(event);
-    else if (event is OpenedFolder) yield* _mapOpenedFolderToState(event);
+    else if (event is OpenedFolder)
+      yield* _mapOpenedFolderToState(event);
+    else if (event is NewFolder) yield* _mapNewFolderToState(event);
   }
 
   Stream<DriveDetailState> _mapOpenDriveToState(OpenDrive event) async* {
     _driveSubscription?.cancel();
-    _driveSubscription = _driveDao.watchDrive(event.driveId).listen(
+    _driveSubscription = _driveDao.watchDrive(_driveId).listen(
       (drive) {
         if (drive != null) add(OpenedDrive(drive));
       },
@@ -67,6 +71,18 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
       yield FolderOpened(
         openedDrive: (state as DriveOpened).openedDrive,
         openedFolder: event.openedFolder,
+      );
+    }
+  }
+
+  Stream<DriveDetailState> _mapNewFolderToState(NewFolder event) async* {
+    if (state is FolderOpened) {
+      final currentFolder = (state as FolderOpened).openedFolder.folder;
+      _driveDao.createNewFolder(
+        _driveId,
+        currentFolder.id,
+        event.folderName,
+        '${currentFolder.path}/${event.folderName}',
       );
     }
   }

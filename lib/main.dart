@@ -1,10 +1,14 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/repositories/repositories.dart';
 import 'package:drive/theme/theme.dart';
+import 'package:file_chooser/file_chooser.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'views/views.dart';
+import 'app_shell.dart';
 
 Database db;
 
@@ -16,61 +20,63 @@ void main() async {
 class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MultiRepositoryProvider(
-      providers: [
-        RepositoryProvider<DrivesDao>(
-          create: (context) => DrivesDao(db),
-        ),
-        RepositoryProvider<DriveDao>(
-          create: (context) => DriveDao(db),
-        ),
-      ],
+    return BlocProvider(
+      create: (context) => UserBloc(),
       child: MaterialApp(
         title: 'Drive',
         theme: appTheme(),
-        home: AppShell(title: 'Drive'),
-      ),
-    );
-  }
-}
-
-class AppShell extends StatefulWidget {
-  AppShell({Key key, this.title}) : super(key: key);
-
-  final String title;
-
-  @override
-  _AppShellState createState() => _AppShellState();
-}
-
-class _AppShellState extends State<AppShell> {
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => DrivesBloc(
-        drivesDao: context.repository<DrivesDao>(),
-      ),
-      child: Scaffold(
-        body: Row(
-          children: [
-            AppDrawer(),
-            Expanded(
-              child: BlocBuilder<DrivesBloc, DrivesState>(
-                builder: (context, state) => state is DrivesReady
-                    ? BlocProvider(
-                        key: ValueKey(state.selectedDriveId),
-                        create: (context) => DriveDetailBloc(
-                          driveId: state.selectedDriveId,
-                          driveDao: context.repository<DriveDao>(),
+        home: BlocBuilder<UserBloc, UserState>(
+          builder: (context, state) {
+            if (state is UserUnauthenticated)
+              return Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            RaisedButton(
+                              onPressed: () => _promptToLogin(context),
+                              child: Text('Login'),
+                            ),
+                          ],
                         ),
-                        child: DriveDetailPage(),
-                      )
-                    : Container(),
-              ),
-            ),
-          ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            if (state is UserAuthenticated)
+              return MultiRepositoryProvider(
+                providers: [
+                  RepositoryProvider<DrivesDao>(
+                    create: (context) => db.drivesDao,
+                  ),
+                  RepositoryProvider<DriveDao>(
+                    create: (context) => db.driveDao,
+                  ),
+                ],
+                child: AppShell(),
+              );
+
+            return Container();
+          },
         ),
       ),
     );
+  }
+
+  void _promptToLogin(BuildContext context) async {
+    final chooseResult = await showOpenPanel();
+    if (!chooseResult.canceled) {
+      final jwk = json.decode(
+        await new File(chooseResult.paths[0]).readAsString(),
+      );
+
+      context.bloc<UserBloc>().add(AttemptLogin(jwk));
+    }
   }
 }

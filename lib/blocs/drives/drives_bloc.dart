@@ -22,9 +22,9 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
       yield* _mapRefreshDrivesToState(event);
     else if (event is SelectDrive)
       yield* _mapSelectDriveToState(event);
-    else if (event is AddDrive)
-      yield* _mapAddDriveToState(event);
-    else if (event is DrivesUpdated) yield* _mapUpdateDrivesToState(event);
+    else if (event is NewDrive)
+      yield* _mapNewDriveToState(event);
+    else if (event is DrivesUpdated) yield* _mapDrivesUpdatedToState(event);
   }
 
   Stream<DrivesState> _mapRefreshDrivesToState(RefreshDrives event) async* {
@@ -43,13 +43,13 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
     }
   }
 
-  Stream<DrivesState> _mapAddDriveToState(AddDrive event) async* {
+  Stream<DrivesState> _mapNewDriveToState(NewDrive event) async* {
     if (state is DrivesReady) {
-      this._drivesDao.createDrive(name: 'Work');
+      this._drivesDao.createDrive(name: event.driveName);
     }
   }
 
-  Stream<DrivesState> _mapUpdateDrivesToState(DrivesUpdated event) async* {
+  Stream<DrivesState> _mapDrivesUpdatedToState(DrivesUpdated event) async* {
     yield DrivesReady(drives: event.drives);
   }
 }

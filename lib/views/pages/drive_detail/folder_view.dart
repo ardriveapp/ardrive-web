@@ -18,6 +18,7 @@ class FolderView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DataTable(
+      showCheckboxColumn: false,
       columns: const <DataColumn>[
         DataColumn(label: Text('Name')),
         DataColumn(label: Text('Owner')),
@@ -25,11 +26,21 @@ class FolderView extends StatelessWidget {
         DataColumn(label: Text('File size')),
       ],
       rows: [
-        ...subfolders.map((f) => _buildFolderRow(context, f)),
+        ...subfolders.map((folder) => DataRow(
+              onSelectChanged: (_) => context
+                  .bloc<DriveDetailBloc>()
+                  .add(OpenFolder(folderPath: folder.path)),
+              cells: [
+                DataCell(NameCell(name: folder.name, isFolder: true)),
+                DataCell(Text('me')),
+                DataCell(Text('-')),
+                DataCell(Text('-')),
+              ],
+            )),
         ...files.map(
-          (f) => DataRow(
+          (file) => DataRow(
             cells: [
-              DataCell(NameCell(name: f.name)),
+              DataCell(NameCell(name: file.name)),
               DataCell(Text('me')),
               DataCell(Text('15 January 2020')),
               DataCell(Text('27MB')),
@@ -39,20 +50,6 @@ class FolderView extends StatelessWidget {
       ],
     );
   }
-}
-
-DataRow _buildFolderRow(BuildContext context, FolderEntry folder) {
-  var openFolder = () =>
-      context.bloc<DriveDetailBloc>().add(OpenFolder(folderPath: folder.path));
-
-  return DataRow(
-    cells: [
-      DataCell(NameCell(name: folder.name, isFolder: true), onTap: openFolder),
-      DataCell(Text('me'), onTap: openFolder),
-      DataCell(Text('-'), onTap: openFolder),
-      DataCell(Text('-'), onTap: openFolder),
-    ],
-  );
 }
 
 class NameCell extends StatelessWidget {

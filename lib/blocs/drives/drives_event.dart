@@ -10,10 +10,10 @@ class SelectDrive extends DrivesEvent {
   SelectDrive(this.driveId);
 }
 
-class AddDrive extends DrivesEvent {
-  final DrivesCompanion drive;
+class NewDrive extends DrivesEvent {
+  final String driveName;
 
-  AddDrive({this.drive});
+  NewDrive(this.driveName);
 }
 
 class DrivesUpdated extends DrivesEvent {

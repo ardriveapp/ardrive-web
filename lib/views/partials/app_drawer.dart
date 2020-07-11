@@ -14,17 +14,6 @@ class AppDrawer extends StatelessWidget {
         elevation: 1,
         child: Column(
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: FloatingActionButton.extended(
-                  onPressed: () {},
-                  label: Text('UPLOAD'),
-                  icon: Icon(Icons.file_upload),
-                ),
-              ),
-            ),
             if (state is DrivesReady)
               ...state.drives.map(
                 (d) => ListTile(

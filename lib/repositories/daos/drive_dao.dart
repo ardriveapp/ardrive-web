@@ -66,6 +66,22 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       ),
     );
   }
+
+  Future<void> createNewFolder(
+    String driveId,
+    String parentFolderId,
+    String folderName,
+    String path,
+  ) =>
+      into(folderEntries).insert(
+        FolderEntriesCompanion(
+          id: Value(folderName),
+          driveId: Value(driveId),
+          parentFolderId: Value(parentFolderId),
+          name: Value(folderName),
+          path: Value(path),
+        ),
+      );
 }
 
 class FolderWithContents {

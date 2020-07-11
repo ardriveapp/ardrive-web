@@ -12,46 +12,26 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
   Stream<List<Drive>> watchAllDrives() => select(drives).watch();
 
   Future<void> createDrive({@required String name}) => batch((batch) {
+        final driveId = name;
+        final rootFolderId = name;
+
         batch.insert(
           drives,
           DrivesCompanion(
-            id: Value(name),
+            id: Value(driveId),
             name: Value(name),
-            rootFolderId: Value('345'),
+            rootFolderId: Value(rootFolderId),
           ),
         );
 
-        batch.insertAll(
+        batch.insert(
           folderEntries,
-          [
-            FolderEntriesCompanion(
-              id: Value('345'),
-              driveId: Value(name),
-              name: Value('Personal'),
-              path: Value('/Personal'),
-            ),
-            FolderEntriesCompanion(
-              id: Value('567'),
-              driveId: Value(name),
-              parentFolderId: Value('345'),
-              name: Value('Documents'),
-              path: Value('/Personal/Documents'),
-            ),
-            FolderEntriesCompanion(
-              id: Value('981'),
-              driveId: Value(name),
-              parentFolderId: Value('345'),
-              name: Value('Pictures'),
-              path: Value('/Personal/Pictures'),
-            ),
-            FolderEntriesCompanion(
-              id: Value('789'),
-              driveId: Value(name),
-              parentFolderId: Value('567'),
-              name: Value('Resumes'),
-              path: Value('/Personal/Documents/Resumes'),
-            )
-          ],
+          FolderEntriesCompanion(
+            id: Value(rootFolderId),
+            driveId: Value(driveId),
+            name: Value(name),
+            path: Value('/$name'),
+          ),
         );
       });
 }

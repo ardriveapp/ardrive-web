@@ -29,6 +29,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.6.0"
+  arweave:
+    dependency: "direct main"
+    description:
+      path: "../arweave-dart"
+      relative: true
+    source: path
+    version: "0.1.0"
   async:
     dependency: transitive
     description:
@@ -211,6 +218,15 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "5.2.1"
+  file_chooser:
+    dependency: "direct main"
+    description:
+      path: "plugins/file_chooser"
+      ref: "282bb7b172a42a1f4b573540cc19e7610a867a93"
+      resolved-ref: "282bb7b172a42a1f4b573540cc19e7610a867a93"
+      url: "git://github.com/google/flutter-desktop-embedding.git"
+    source: git
+    version: "0.2.0"
   fixnum:
     dependency: transitive
     description:
@@ -382,6 +398,41 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.0.4"
+  ninja:
+    dependency: transitive
+    description:
+      name: ninja
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.0.0"
+  ninja_asn1:
+    dependency: transitive
+    description:
+      name: ninja_asn1
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.0"
+  ninja_hex:
+    dependency: transitive
+    description:
+      name: ninja_hex
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.0"
+  ninja_pem:
+    dependency: transitive
+    description:
+      name: ninja_pem
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.0"
+  ninja_prime:
+    dependency: transitive
+    description:
+      name: ninja_prime
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.0"
   node_interop:
     dependency: transitive
     description:
@@ -456,6 +507,13 @@ packages:
     dependency: transitive
     description:
       name: plugin_platform_interface
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.2"
+  pointycastle:
+    dependency: transitive
+    description:
+      name: pointycastle
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.2"
