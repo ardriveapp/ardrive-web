@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:drive/blocs/blocs.dart';
+import 'package:file_chooser/file_chooser.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:path/path.dart';
 
 import '../../partials/partials.dart';
 import 'folder_view.dart';
@@ -9,28 +13,33 @@ class DriveDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: BlocBuilder<DriveDetailBloc, DriveDetailState>(
-            builder: (context, state) {
-          return Column(
-            children: <Widget>[
-              if (state is FolderOpened) ...{
-                _buildBreadcrumbRow(context, state.openedFolder.folder.path),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FolderView(
-                        subfolders: state.openedFolder.subfolders,
-                        files: state.openedFolder.files,
-                      ),
+      body: Scrollbar(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: BlocBuilder<DriveDetailBloc, DriveDetailState>(
+                builder: (context, state) {
+              return Column(
+                children: <Widget>[
+                  if (state is FolderOpened) ...{
+                    _buildBreadcrumbRow(
+                        context, state.openedFolder.folder.path),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FolderView(
+                            subfolders: state.openedFolder.subfolders,
+                            files: state.openedFolder.files,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              }
-            ],
-          );
-        }),
+                  }
+                ],
+              );
+            }),
+          ),
+        ),
       ),
       floatingActionButton: PopupMenuButton<Function>(
         onSelected: (callback) => callback(context),
@@ -48,14 +57,14 @@ class DriveDetailPage extends StatelessWidget {
           ),
           PopupMenuDivider(),
           PopupMenuItem(
-            value: () {},
+            value: _promptToUploadFile,
             child: ListTile(
               leading: Icon(Icons.library_books),
               title: Text('File upload'),
             ),
           ),
           PopupMenuItem(
-            value: () {},
+            value: _promptToUploadFolder,
             child: ListTile(
               leading: Icon(Icons.folder),
               title: Text('Folder upload'),
@@ -109,6 +118,35 @@ class DriveDetailPage extends StatelessWidget {
 
     if (folderName.isNotEmpty)
       context.bloc<DriveDetailBloc>().add(NewFolder(folderName));
+  }
+
+  void _promptToUploadFile(BuildContext context) async {
+    final fileChooseResult = await showOpenPanel(
+      allowsMultipleSelection: true,
+    );
+
+    if (fileChooseResult.canceled) return;
+
+    for (final filePath in fileChooseResult.paths) {
+      final file = new File(filePath);
+
+      context.bloc<DriveDetailBloc>().add(
+            UploadFile(
+              basename(filePath),
+              await file.length(),
+              file.openRead(),
+            ),
+          );
+    }
+  }
+
+  void _promptToUploadFolder(BuildContext context) async {
+    final folderChooseResult = await showOpenPanel(
+      allowsMultipleSelection: true,
+      canSelectDirectories: true,
+    );
+
+    if (folderChooseResult.canceled) return;
   }
 
   void _promptToImportTransaction(BuildContext context) async {

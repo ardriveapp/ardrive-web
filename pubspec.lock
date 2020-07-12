@@ -227,6 +227,13 @@ packages:
       url: "git://github.com/google/flutter-desktop-embedding.git"
     source: git
     version: "0.2.0"
+  filesize:
+    dependency: "direct main"
+    description:
+      name: filesize
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.4"
   fixnum:
     dependency: transitive
     description:
@@ -676,6 +683,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.2.0"
+  uuid:
+    dependency: "direct main"
+    description:
+      name: uuid
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.2.0"
   vector_math:
     dependency: transitive
     description:

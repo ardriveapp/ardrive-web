@@ -1,5 +1,6 @@
 import 'package:drive/blocs/drive_detail/drive_detail_bloc.dart';
 import 'package:drive/repositories/repositories.dart';
+import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -43,7 +44,7 @@ class FolderView extends StatelessWidget {
               DataCell(NameCell(name: file.name)),
               DataCell(Text('me')),
               DataCell(Text('15 January 2020')),
-              DataCell(Text('27MB')),
+              DataCell(Text(filesize(file.size))),
             ],
           ),
         ),

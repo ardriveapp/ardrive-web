@@ -10,8 +10,10 @@ class FileEntries extends Table {
   TextColumn get name => text().withLength(min: 1)();
   TextColumn get path => text().withLength(min: 1)();
 
-  DateTimeColumn get dateCreated => dateTime()();
-  DateTimeColumn get dateUpdated => dateTime()();
+  IntColumn get size => integer()();
+
+  // DateTimeColumn get dateCreated => dateTime()();
+  // DateTimeColumn get dateUpdated => dateTime()();
 
   @override
   Set<Column> get primaryKey => {id};

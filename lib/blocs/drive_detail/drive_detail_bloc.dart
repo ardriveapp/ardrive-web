@@ -33,7 +33,9 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
       yield* _mapOpenFolderToState(event);
     else if (event is OpenedFolder)
       yield* _mapOpenedFolderToState(event);
-    else if (event is NewFolder) yield* _mapNewFolderToState(event);
+    else if (event is NewFolder)
+      yield* _mapNewFolderToState(event);
+    else if (event is UploadFile) yield* _mapUploadFileToState(event);
   }
 
   Stream<DriveDetailState> _mapOpenDriveToState(OpenDrive event) async* {
@@ -78,11 +80,24 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   Stream<DriveDetailState> _mapNewFolderToState(NewFolder event) async* {
     if (state is FolderOpened) {
       final currentFolder = (state as FolderOpened).openedFolder.folder;
-      _driveDao.createNewFolder(
+      await _driveDao.createNewFolderEntry(
         _driveId,
         currentFolder.id,
         event.folderName,
         '${currentFolder.path}/${event.folderName}',
+      );
+    }
+  }
+
+  Stream<DriveDetailState> _mapUploadFileToState(UploadFile event) async* {
+    if (state is FolderOpened) {
+      final currentFolder = (state as FolderOpened).openedFolder.folder;
+      await _driveDao.createNewFileEntry(
+        _driveId,
+        currentFolder.id,
+        event.fileName,
+        '${currentFolder.path}/${event.fileName}',
+        event.fileSize,
       );
     }
   }

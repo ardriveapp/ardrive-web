@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:uuid/uuid.dart';
 
 import '../database.dart';
 import '../models/models.dart';
@@ -10,6 +11,8 @@ part 'drive_dao.g.dart';
 
 @UseDao(tables: [Drives, FolderEntries, FileEntries])
 class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
+  final uuid = Uuid();
+
   DriveDao(Database db) : super(db);
 
   Stream<Drive> watchDrive(String driveId) =>
@@ -67,7 +70,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
-  Future<void> createNewFolder(
+  Future<void> createNewFolderEntry(
     String driveId,
     String parentFolderId,
     String folderName,
@@ -75,11 +78,29 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   ) =>
       into(folderEntries).insert(
         FolderEntriesCompanion(
-          id: Value(folderName),
+          id: Value(uuid.v4()),
           driveId: Value(driveId),
           parentFolderId: Value(parentFolderId),
           name: Value(folderName),
           path: Value(path),
+        ),
+      );
+
+  Future<void> createNewFileEntry(
+    String driveId,
+    String parentFolderId,
+    String fileName,
+    String filePath,
+    int fileSize,
+  ) =>
+      into(fileEntries).insert(
+        FileEntriesCompanion(
+          id: Value(uuid.v4()),
+          driveId: Value(driveId),
+          parentFolderId: Value(parentFolderId),
+          name: Value(fileName),
+          path: Value(filePath),
+          size: Value(fileSize),
         ),
       );
 }

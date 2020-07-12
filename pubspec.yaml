@@ -31,6 +31,8 @@ dependencies:
   path_provider: ^1.6.11
   json_annotation: ^3.0.1
   rxdart: ^0.24.1
+  uuid: ^2.2.0
+  filesize: ^1.0.4
   arweave:
     path: ../arweave-dart
   file_chooser:

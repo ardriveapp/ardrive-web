@@ -30,3 +30,11 @@ class NewFolder extends DriveDetailEvent {
 
   NewFolder(this.folderName);
 }
+
+class UploadFile extends DriveDetailEvent {
+  final String fileName;
+  final int fileSize;
+  final Stream<List<int>> fileStream;
+
+  UploadFile(this.fileName, this.fileSize, this.fileStream);
+}
