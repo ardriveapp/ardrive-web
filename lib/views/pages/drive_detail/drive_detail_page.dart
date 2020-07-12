@@ -59,7 +59,7 @@ class DriveDetailPage extends StatelessWidget {
           PopupMenuItem(
             value: _promptToUploadFile,
             child: ListTile(
-              leading: Icon(Icons.library_books),
+              leading: Icon(Icons.add),
               title: Text('File upload'),
             ),
           ),
@@ -116,7 +116,7 @@ class DriveDetailPage extends StatelessWidget {
       initialText: 'Untitled folder',
     );
 
-    if (folderName.isNotEmpty)
+    if (folderName != null)
       context.bloc<DriveDetailBloc>().add(NewFolder(folderName));
   }
 

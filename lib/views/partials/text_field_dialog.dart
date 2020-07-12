@@ -64,7 +64,7 @@ class TextFieldDialogState extends State<TextFieldDialog> {
         actions: <Widget>[
           FlatButton(
             child: Text('CANCEL'),
-            onPressed: () => Navigator.of(context).pop(''),
+            onPressed: () => Navigator.of(context).pop(null),
           ),
           FlatButton(
             child: Text(widget.confirmingActionLabel),

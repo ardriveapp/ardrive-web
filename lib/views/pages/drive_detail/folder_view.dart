@@ -3,6 +3,7 @@ import 'package:drive/repositories/repositories.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 class FolderView extends StatelessWidget {
   final List<FolderEntry> subfolders;
@@ -43,7 +44,11 @@ class FolderView extends StatelessWidget {
             cells: [
               DataCell(NameCell(name: file.name)),
               DataCell(Text('me')),
-              DataCell(Text('15 January 2020')),
+              DataCell(
+                Text(file.dateUpdated != null
+                    ? timeago.format(file.dateUpdated)
+                    : '-'),
+              ),
               DataCell(Text(filesize(file.size))),
             ],
           ),

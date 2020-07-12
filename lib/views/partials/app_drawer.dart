@@ -1,4 +1,5 @@
 import 'package:drive/blocs/blocs.dart';
+import 'package:drive/views/partials/create_new_drive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -24,6 +25,11 @@ class AppDrawer extends StatelessWidget {
                       context.bloc<DrivesBloc>().add(SelectDrive(d.id)),
                 ),
               ),
+            ListTile(
+              leading: Icon(Icons.add),
+              title: Text('Add drive'),
+              onTap: () => promptToCreateNewDrive(context),
+            ),
             Expanded(child: Container()),
             Divider(height: 0),
             ListTile(

@@ -101,6 +101,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           name: Value(fileName),
           path: Value(filePath),
           size: Value(fileSize),
+          uploaded: Value(false),
         ),
       );
 }

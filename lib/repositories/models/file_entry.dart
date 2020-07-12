@@ -12,8 +12,10 @@ class FileEntries extends Table {
 
   IntColumn get size => integer()();
 
-  // DateTimeColumn get dateCreated => dateTime()();
-  // DateTimeColumn get dateUpdated => dateTime()();
+  BoolColumn get uploaded => boolean()();
+
+  DateTimeColumn get dateCreated => dateTime().nullable()();
+  DateTimeColumn get dateUpdated => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

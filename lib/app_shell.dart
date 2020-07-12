@@ -28,7 +28,7 @@ class _AppShellState extends State<AppShell> {
               child: BlocConsumer<DrivesBloc, DrivesState>(
                 listener: (context, state) async {
                   if (state is DrivesReady && state.drives.isEmpty)
-                    _promptToCreateNewDrive(context);
+                    promptToCreateNewDrive(context);
                 },
                 builder: (context, state) =>
                     state is DrivesReady && state.selectedDriveId != null
@@ -47,15 +47,5 @@ class _AppShellState extends State<AppShell> {
         ),
       ),
     );
-  }
-
-  void _promptToCreateNewDrive(BuildContext context) async {
-    final driveName = await showTextFieldDialog(
-      context,
-      title: 'New drive',
-      fieldLabel: 'Drive name',
-      confirmingActionLabel: 'CREATE',
-    );
-    context.bloc<DrivesBloc>().add(NewDrive(driveName));
   }
 }
