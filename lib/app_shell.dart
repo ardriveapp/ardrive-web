@@ -19,32 +19,41 @@ class _AppShellState extends State<AppShell> {
       create: (context) => DrivesBloc(
         drivesDao: context.repository<DrivesDao>(),
       ),
-      child: Scaffold(
-        body: Row(
-          children: [
-            AppDrawer(),
-            VerticalDivider(width: 0),
-            Expanded(
-              child: BlocConsumer<DrivesBloc, DrivesState>(
-                listener: (context, state) async {
-                  if (state is DrivesReady && state.drives.isEmpty)
-                    promptToCreateNewDrive(context);
-                },
-                builder: (context, state) =>
-                    state is DrivesReady && state.selectedDriveId != null
-                        ? BlocProvider(
-                            key: ValueKey(state.selectedDriveId),
-                            create: (context) => DriveDetailBloc(
-                              driveId: state.selectedDriveId,
-                              driveDao: context.repository<DriveDao>(),
-                            ),
-                            child: DriveDetailPage(),
-                          )
-                        : Container(),
-              ),
+      child: BlocBuilder<DrivesBloc, DrivesState>(
+        builder: (context, state) {
+          final content = Scaffold(
+            body: Row(
+              children: [
+                AppDrawer(),
+                VerticalDivider(width: 0),
+                Expanded(
+                  child: BlocConsumer<DrivesBloc, DrivesState>(
+                    listener: (context, state) async {
+                      if (state is DrivesReady && state.drives.isEmpty)
+                        promptToCreateNewDrive(context);
+                    },
+                    builder: (context, state) =>
+                        state is DrivesReady && state.selectedDriveId != null
+                            ? DriveDetailPage()
+                            : Container(),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+
+          if (state is DrivesReady && state.selectedDriveId != null)
+            return BlocProvider(
+              key: ValueKey(state.selectedDriveId),
+              create: (context) => DriveDetailBloc(
+                driveId: state.selectedDriveId,
+                driveDao: context.repository<DriveDao>(),
+              ),
+              child: content,
+            );
+
+          return content;
+        },
       ),
     );
   }
