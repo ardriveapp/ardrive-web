@@ -5,11 +5,7 @@ import 'colors.dart';
 
 ThemeData appTheme() {
   return ThemeData(
-    colorScheme: ColorScheme.light().copyWith(
-      primary: kPrimary700,
-      secondary: kSecondary500,
-    ),
-    primaryColor: kPrimary700,
+    primarySwatch: kPrimarySwatch,
     accentColor: kSecondary500,
     hoverColor: kHoverColor,
     highlightColor: kSelectedColor,
@@ -83,11 +79,11 @@ TextTheme _buildTextTheme() => TextTheme(
     );
 
 AppBarTheme _buildAppBarTheme() => AppBarTheme(
-      color: kPrimary800,
+      color: kPrimarySwatch[800],
     );
 
 NavigationRailThemeData _buildNavigationRailTheme() => NavigationRailThemeData(
-      backgroundColor: kPrimary700,
+      backgroundColor: kPrimarySwatch[700],
       selectedIconTheme: IconThemeData(color: kOnPrimaryHighEmphasis),
       selectedLabelTextStyle: TextStyle(color: kOnPrimaryHighEmphasis),
       unselectedIconTheme: IconThemeData(color: kOnPrimaryMediumEmphasis),
