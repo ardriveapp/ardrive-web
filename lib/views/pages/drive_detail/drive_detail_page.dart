@@ -18,8 +18,7 @@ class DriveDetailPage extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: BlocBuilder<DriveDetailBloc, DriveDetailState>(
-                builder: (context, state) {
-              return Column(
+              builder: (context, state) => Column(
                 children: <Widget>[
                   if (state is FolderOpened) ...{
                     _buildBreadcrumbRow(
@@ -36,8 +35,8 @@ class DriveDetailPage extends StatelessWidget {
                     ),
                   }
                 ],
-              );
-            }),
+              ),
+            ),
           ),
         ),
       ),
@@ -90,20 +89,18 @@ class DriveDetailPage extends StatelessWidget {
       children: pathSegments
           .asMap()
           .entries
-          .map(
-            (s) => InkWell(
-              onTap: () => context.bloc<DriveDetailBloc>().add(
-                    OpenFolder(
-                      folderPath:
-                          '/${pathSegments.sublist(0, s.key + 1).join('/')}',
-                    ),
-                  ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Text('/' + s.value),
-              ),
-            ),
-          )
+          .expand((s) => [
+                FlatButton(
+                  onPressed: () => context.bloc<DriveDetailBloc>().add(
+                        OpenFolder(
+                          folderPath:
+                              '/${pathSegments.sublist(0, s.key + 1).join('/')}',
+                        ),
+                      ),
+                  child: Text(s.value),
+                ),
+                if (s.key < pathSegments.length - 1) Icon(Icons.chevron_right),
+              ])
           .toList(),
     );
   }
