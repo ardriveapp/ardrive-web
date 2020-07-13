@@ -1,14 +1,13 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/repositories/repositories.dart';
 import 'package:drive/theme/theme.dart';
-import 'package:file_chooser/file_chooser.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'app_shell.dart';
+import 'blocs/blocs.dart';
+import 'repositories/repositories.dart';
+import 'views/views.dart';
 
 Database db;
 
@@ -27,28 +26,7 @@ class App extends StatelessWidget {
         theme: appTheme(),
         home: BlocBuilder<UserBloc, UserState>(
           builder: (context, state) {
-            if (state is UserUnauthenticated)
-              return Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            RaisedButton(
-                              onPressed: () => _promptToLogin(context),
-                              child: Text('Login'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
+            if (state is UserUnauthenticated) return UnauthedPage();
             if (state is UserAuthenticated)
               return MultiRepositoryProvider(
                 providers: [
@@ -59,7 +37,32 @@ class App extends StatelessWidget {
                     create: (context) => db.driveDao,
                   ),
                 ],
-                child: AppShell(),
+                child: MultiBlocProvider(
+                  providers: [
+                    BlocProvider(
+                      create: (context) => DrivesBloc(
+                        drivesDao: context.repository<DrivesDao>(),
+                      ),
+                    ),
+                    BlocProvider(
+                      create: (context) => UploadBloc(
+                        driveDao: context.repository<DriveDao>(),
+                      ),
+                    ),
+                  ],
+                  child: AppShell(
+                    page: BlocConsumer<DrivesBloc, DrivesState>(
+                      listener: (context, state) async {
+                        if (state is DrivesReady && state.drives.isEmpty)
+                          promptToCreateNewDrive(context);
+                      },
+                      builder: (context, state) =>
+                          state is DrivesReady && state.selectedDriveId != null
+                              ? DriveDetailPage()
+                              : UploadsPage(),
+                    ),
+                  ),
+                ),
               );
 
             return Container();
@@ -67,16 +70,5 @@ class App extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _promptToLogin(BuildContext context) async {
-    final chooseResult = await showOpenPanel();
-    if (!chooseResult.canceled) {
-      final jwk = json.decode(
-        await new File(chooseResult.paths[0]).readAsString(),
-      );
-
-      context.bloc<UserBloc>().add(AttemptLogin(jwk));
-    }
   }
 }

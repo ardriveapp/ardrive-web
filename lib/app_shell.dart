@@ -6,7 +6,9 @@ import 'repositories/repositories.dart';
 import 'views/views.dart';
 
 class AppShell extends StatefulWidget {
-  AppShell({Key key}) : super(key: key);
+  final Widget page;
+
+  AppShell({Key key, this.page}) : super(key: key);
 
   @override
   _AppShellState createState() => _AppShellState();
@@ -15,56 +17,33 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(
-          create: (context) => DrivesBloc(
-            drivesDao: context.repository<DrivesDao>(),
+    return BlocBuilder<DrivesBloc, DrivesState>(
+      builder: (context, state) {
+        final content = Scaffold(
+          body: Row(
+            children: [
+              AppDrawer(),
+              VerticalDivider(width: 0),
+              Expanded(
+                child: widget.page,
+              ),
+            ],
           ),
-        ),
-        BlocProvider(
-          create: (context) => UploadBloc(
-            driveDao: context.repository<DriveDao>(),
-          ),
-        ),
-      ],
-      child: BlocBuilder<DrivesBloc, DrivesState>(
-        builder: (context, state) {
-          final content = Scaffold(
-            body: Row(
-              children: [
-                AppDrawer(),
-                VerticalDivider(width: 0),
-                Expanded(
-                  child: BlocConsumer<DrivesBloc, DrivesState>(
-                    listener: (context, state) async {
-                      if (state is DrivesReady && state.drives.isEmpty)
-                        promptToCreateNewDrive(context);
-                    },
-                    builder: (context, state) =>
-                        state is DrivesReady && state.selectedDriveId != null
-                            ? DriveDetailPage()
-                            : Container(),
-                  ),
-                ),
-              ],
+        );
+
+        if (state is DrivesReady && state.selectedDriveId != null)
+          return BlocProvider(
+            key: ValueKey(state.selectedDriveId),
+            create: (context) => DriveDetailBloc(
+              driveId: state.selectedDriveId,
+              uploadBloc: context.bloc<UploadBloc>(),
+              driveDao: context.repository<DriveDao>(),
             ),
+            child: content,
           );
 
-          if (state is DrivesReady && state.selectedDriveId != null)
-            return BlocProvider(
-              key: ValueKey(state.selectedDriveId),
-              create: (context) => DriveDetailBloc(
-                driveId: state.selectedDriveId,
-                uploadBloc: context.bloc<UploadBloc>(),
-                driveDao: context.repository<DriveDao>(),
-              ),
-              child: content,
-            );
-
-          return content;
-        },
-      ),
+        return content;
+      },
     );
   }
 }
