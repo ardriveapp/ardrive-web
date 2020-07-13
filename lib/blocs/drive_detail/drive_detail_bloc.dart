@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:drive/blocs/blocs.dart';
 import 'package:drive/repositories/repositories.dart';
 import 'package:meta/meta.dart';
 
@@ -9,13 +10,18 @@ part 'drive_detail_state.dart';
 
 class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   final String _driveId;
+  final UploadBloc _uploadBloc;
   final DriveDao _driveDao;
 
   StreamSubscription _driveSubscription;
   StreamSubscription _folderSubscription;
 
-  DriveDetailBloc({@required String driveId, @required DriveDao driveDao})
+  DriveDetailBloc(
+      {@required String driveId,
+      @required UploadBloc uploadBloc,
+      @required DriveDao driveDao})
       : _driveId = driveId,
+        _uploadBloc = uploadBloc,
         _driveDao = driveDao,
         super(DriveOpening()) {
     add(OpenDrive());
@@ -92,12 +98,15 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   Stream<DriveDetailState> _mapUploadFileToState(UploadFile event) async* {
     if (state is FolderOpened) {
       final currentFolder = (state as FolderOpened).openedFolder.folder;
-      await _driveDao.createNewFileEntry(
-        _driveId,
-        currentFolder.id,
-        event.fileName,
-        '${currentFolder.path}/${event.fileName}',
-        event.fileSize,
+      _uploadBloc.add(
+        UploadFileToNetwork(
+          _driveId,
+          currentFolder.id,
+          event.fileName,
+          '${currentFolder.path}/${event.fileName}',
+          event.fileSize,
+          event.fileStream,
+        ),
       );
     }
   }

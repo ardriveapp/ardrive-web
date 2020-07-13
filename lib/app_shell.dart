@@ -15,10 +15,19 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => DrivesBloc(
-        drivesDao: context.repository<DrivesDao>(),
-      ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => DrivesBloc(
+            drivesDao: context.repository<DrivesDao>(),
+          ),
+        ),
+        BlocProvider(
+          create: (context) => UploadBloc(
+            driveDao: context.repository<DriveDao>(),
+          ),
+        ),
+      ],
       child: BlocBuilder<DrivesBloc, DrivesState>(
         builder: (context, state) {
           final content = Scaffold(
@@ -47,6 +56,7 @@ class _AppShellState extends State<AppShell> {
               key: ValueKey(state.selectedDriveId),
               create: (context) => DriveDetailBloc(
                 driveId: state.selectedDriveId,
+                uploadBloc: context.bloc<UploadBloc>(),
                 driveDao: context.repository<DriveDao>(),
               ),
               child: content,

@@ -20,8 +20,33 @@ class AppDrawer extends StatelessWidget {
       builder: (context, state) => Drawer(
         elevation: 1,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Container(height: 8),
+            ListTile(
+              dense: true,
+              title:
+                  Text('ArDrive', style: Theme.of(context).textTheme.headline6),
+              trailing: IconButton(
+                icon: Icon(Icons.settings),
+                onPressed: () {},
+              ),
+            ),
             _buildDriveActionsButton(context),
+            ListTile(
+              leading: Icon(Icons.cloud_upload),
+              title: Text('Uploads'),
+              onTap: () {},
+            ),
+            Divider(),
+            ListTile(
+              dense: true,
+              title: Text(
+                'DRIVES',
+                textAlign: TextAlign.start,
+                style: Theme.of(context).textTheme.caption,
+              ),
+            ),
             if (state is DrivesReady)
               ...state.drives.map(
                 (d) => ListTile(
@@ -32,14 +57,6 @@ class AppDrawer extends StatelessWidget {
                       context.bloc<DrivesBloc>().add(SelectDrive(d.id)),
                 ),
               ),
-            Expanded(child: Container()),
-            Divider(height: 0),
-            ListTile(
-              title: Text('John Applebee'),
-              subtitle: Text('john@arweave.org'),
-              trailing: Icon(Icons.arrow_drop_down),
-              onTap: () {},
-            ),
           ],
         ),
       ),
@@ -52,7 +69,7 @@ class AppDrawer extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
         child: PopupMenuButton<Function>(
           onSelected: (callback) => callback(context),
           child: FloatingActionButton.extended(
