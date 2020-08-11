@@ -49,7 +49,7 @@ packages:
       name: bloc
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.1"
+    version: "6.0.1"
   boolean_selector:
     dependency: transitive
     description:
@@ -183,13 +183,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.16.1"
-  cubit:
-    dependency: transitive
-    description:
-      name: cubit
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.1.2"
   dart_style:
     dependency: transitive
     description:
@@ -252,14 +245,7 @@ packages:
       name: flutter_bloc
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.1"
-  flutter_cubit:
-    dependency: transitive
-    description:
-      name: flutter_cubit
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.1.1"
+    version: "6.0.1"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -405,41 +391,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.0.4"
-  ninja:
-    dependency: transitive
-    description:
-      name: ninja
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "3.0.0"
-  ninja_asn1:
-    dependency: transitive
-    description:
-      name: ninja_asn1
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.0"
-  ninja_hex:
-    dependency: transitive
-    description:
-      name: ninja_hex
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.0"
-  ninja_pem:
-    dependency: transitive
-    description:
-      name: ninja_pem
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.0"
-  ninja_prime:
-    dependency: transitive
-    description:
-      name: ninja_prime
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.0"
   node_interop:
     dependency: transitive
     description:
@@ -520,10 +471,12 @@ packages:
   pointycastle:
     dependency: transitive
     description:
-      name: pointycastle
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.0.2"
+      path: "."
+      ref: rsa-pss
+      resolved-ref: "6964ab6fa71725a51de5485dda1add497439eec1"
+      url: "https://github.com/CDDelta/pc-dart.git"
+    source: git
+    version: "1.1.1"
   pool:
     dependency: transitive
     description:

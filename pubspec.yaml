@@ -24,7 +24,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  flutter_bloc: ^5.0.1
+  flutter_bloc: ^6.0.0
   google_fonts: ^1.1.0
   moor: ^3.2.0
   moor_ffi: ^0.7.0

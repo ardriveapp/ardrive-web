@@ -1,3 +1,4 @@
+import 'package:arweave/arweave.dart';
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/repositories/repositories.dart';
 import 'package:drive/theme/theme.dart';
@@ -9,10 +10,18 @@ import 'blocs/blocs.dart';
 import 'repositories/repositories.dart';
 import 'views/views.dart';
 
+Arweave arweave;
 Database db;
 
 void main() async {
+  arweave = Arweave(
+    host: 'arweave.net',
+    protocol: "https",
+    port: 443,
+  );
+
   db = Database();
+
   runApp(App());
 }
 
@@ -30,12 +39,9 @@ class App extends StatelessWidget {
             if (state is UserAuthenticated)
               return MultiRepositoryProvider(
                 providers: [
-                  RepositoryProvider<DrivesDao>(
-                    create: (context) => db.drivesDao,
-                  ),
-                  RepositoryProvider<DriveDao>(
-                    create: (context) => db.driveDao,
-                  ),
+                  RepositoryProvider<Arweave>(create: (_) => arweave),
+                  RepositoryProvider<DrivesDao>(create: (_) => db.drivesDao),
+                  RepositoryProvider<DriveDao>(create: (_) => db.driveDao),
                 ],
                 child: MultiBlocProvider(
                   providers: [
