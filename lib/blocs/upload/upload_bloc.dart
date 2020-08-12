@@ -27,8 +27,6 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
       UploadFileToNetwork event) async* {
     yield UploadInProgress();
 
-    await Future.delayed(Duration(seconds: 15));
-
     await _driveDao.createNewFileEntry(
       event.driveId,
       event.parentFolderId,

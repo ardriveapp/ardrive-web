@@ -1,11 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:moor/moor.dart';
 
 import '../daos/daos.dart';
 import '../models/models.dart';
 import 'shared.dart';
 
-part '../database.g.dart';
+part 'database.g.dart';
 
 @UseMoor(
     tables: [Drives, FolderEntries, FileEntries], daos: [DrivesDao, DriveDao])
