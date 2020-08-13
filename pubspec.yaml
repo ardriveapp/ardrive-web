@@ -26,8 +26,7 @@ dependencies:
 
   flutter_bloc: ^6.0.0
   google_fonts: ^1.1.0
-  moor: ^3.2.0
-  moor_ffi: ^0.7.0
+  moor: ^3.3.1
   path_provider: ^1.6.11
   json_annotation: ^3.0.1
   rxdart: ^0.24.1
