@@ -7,9 +7,10 @@ class FileEntity {
   @JsonKey(ignore: true)
   String id;
 
+  String driveId;
   String parentFolderId;
 
   String name;
-  int size;
+  int dataSize;
   String dataTxId;
 }
