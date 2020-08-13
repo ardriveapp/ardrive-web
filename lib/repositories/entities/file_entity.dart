@@ -13,4 +13,10 @@ class FileEntity {
   String name;
   int dataSize;
   String dataTxId;
+
+  FileEntity();
+
+  factory FileEntity.fromJson(Map<String, dynamic> json) =>
+      _$FileEntityFromJson(json);
+  Map<String, dynamic> toJson() => _$FileEntityToJson(this);
 }

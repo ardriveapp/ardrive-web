@@ -8,4 +8,10 @@ class DriveEntity {
   String id;
 
   String rootFolderId;
+
+  DriveEntity();
+
+  factory DriveEntity.fromJson(Map<String, dynamic> json) =>
+      _$DriveEntityFromJson(json);
+  Map<String, dynamic> toJson() => _$DriveEntityToJson(this);
 }

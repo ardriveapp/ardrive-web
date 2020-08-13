@@ -11,4 +11,10 @@ class FolderEntity {
   String parentFolderId;
 
   String name;
+
+  FolderEntity();
+
+  factory FolderEntity.fromJson(Map<String, dynamic> json) =>
+      _$FolderEntityFromJson(json);
+  Map<String, dynamic> toJson() => _$FolderEntityToJson(this);
 }
