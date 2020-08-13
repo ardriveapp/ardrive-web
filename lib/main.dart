@@ -54,6 +54,8 @@ class App extends StatelessWidget {
                     ),
                     BlocProvider(
                       create: (context) => UploadBloc(
+                        userBloc: context.bloc<UserBloc>(),
+                        arweaveDao: context.repository<ArweaveDao>(),
                         driveDao: context.repository<DriveDao>(),
                       ),
                     ),

@@ -151,7 +151,7 @@ class AppDrawer extends StatelessWidget {
             UploadFile(
               basename(filePath),
               await file.length(),
-              file.openRead(),
+              await file.readAsBytes(),
             ),
           );
     }

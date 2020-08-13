@@ -18,6 +18,12 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Stream<Drive> watchDrive(String driveId) =>
       (select(drives)..where((d) => d.id.equals(driveId))).watchSingle();
 
+  Future<Drive> getDriveById(String driveId) =>
+      (select(drives)..where((d) => d.id.equals(driveId))).getSingle();
+
+  Future<FolderEntry> getFolderById(String folderId) =>
+      (select(folderEntries)..where((d) => d.id.equals(folderId))).getSingle();
+
   Stream<FolderWithContents> watchFolderWithContents(String folderId) {
     final folderStream = (select(folderEntries)
           ..where((f) => f.id.equals(folderId)))
@@ -70,6 +76,34 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
+  Future<bool> isDriveEmpty(String driveId) async {
+    final folders = await (select(folderEntries)
+          ..where((f) => f.driveId.equals(driveId)))
+        .get();
+    if (folders.length > 0) return false;
+
+    final files = await (select(fileEntries)
+          ..where((f) => f.driveId.equals(driveId)))
+        .get();
+    if (files.length > 0) return false;
+
+    return true;
+  }
+
+  Future<bool> isFolderEmpty(String folderId) async {
+    final folders = await (select(folderEntries)
+          ..where((f) => f.parentFolderId.equals(folderId)))
+        .get();
+    if (folders.length > 0) return false;
+
+    final files = await (select(fileEntries)
+          ..where((f) => f.parentFolderId.equals(folderId)))
+        .get();
+    if (files.length > 0) return false;
+
+    return true;
+  }
+
   Future<void> createNewFolderEntry(
     String driveId,
     String parentFolderId,
@@ -86,7 +120,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         ),
       );
 
-  Future<void> createNewFileEntry(
+  Future<void> createNewUploadedFileEntry(
+    String fileId,
     String driveId,
     String parentFolderId,
     String fileName,
@@ -95,13 +130,13 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   ) =>
       into(fileEntries).insert(
         FileEntriesCompanion(
-          id: Value(uuid.v4()),
+          id: Value(fileId),
           driveId: Value(driveId),
           parentFolderId: Value(parentFolderId),
           name: Value(fileName),
           path: Value(filePath),
           size: Value(fileSize),
-          uploaded: Value(false),
+          ready: Value(false),
         ),
       );
 }

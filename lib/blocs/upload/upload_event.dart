@@ -9,7 +9,7 @@ class UploadFileToNetwork extends UploadEvent {
   final String fileName;
   final String filePath;
   final int fileSize;
-  final Stream<List<int>> fileStream;
+  final Uint8List fileStream;
 
   UploadFileToNetwork(
     this.driveId,

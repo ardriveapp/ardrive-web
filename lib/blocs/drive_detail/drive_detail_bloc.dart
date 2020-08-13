@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/repositories/repositories.dart';
 import 'package:meta/meta.dart';
+import 'package:moor/moor.dart';
 
 part 'drive_detail_event.dart';
 part 'drive_detail_state.dart';

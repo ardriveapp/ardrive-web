@@ -34,7 +34,7 @@ class NewFolder extends DriveDetailEvent {
 class UploadFile extends DriveDetailEvent {
   final String fileName;
   final int fileSize;
-  final Stream<List<int>> fileStream;
+  final Uint8List fileStream;
 
   UploadFile(this.fileName, this.fileSize, this.fileStream);
 }

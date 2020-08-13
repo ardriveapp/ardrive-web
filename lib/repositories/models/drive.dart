@@ -9,6 +9,10 @@ class Drives extends Table {
 
   TextColumn get name => text().withLength(min: 1)();
 
+  /// The latest block we've pulled state from.
+  IntColumn get latestStateBlockNumber =>
+      integer().withDefault(const Constant(0))();
+
   @override
   Set<Column> get primaryKey => {id};
 }

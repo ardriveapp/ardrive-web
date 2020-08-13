@@ -6,15 +6,20 @@ part 'file_entity.g.dart';
 class FileEntity {
   @JsonKey(ignore: true)
   String id;
-
+  @JsonKey(ignore: true)
   String driveId;
+  @JsonKey(ignore: true)
   String parentFolderId;
 
   String name;
-  int dataSize;
+  int size;
   String dataTxId;
 
-  FileEntity();
+  FileEntity(
+    this.name,
+    this.size,
+    this.dataTxId,
+  );
 
   factory FileEntity.fromJson(Map<String, dynamic> json) =>
       _$FileEntityFromJson(json);

@@ -34,6 +34,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
             driveId: Value(driveId),
             name: Value(name),
             path: Value('/$name'),
+            hydratedWithInitialEntries: Value(true),
           ),
         );
       });

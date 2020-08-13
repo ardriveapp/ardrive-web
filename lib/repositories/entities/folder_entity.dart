@@ -6,13 +6,14 @@ part 'folder_entity.g.dart';
 class FolderEntity {
   @JsonKey(ignore: true)
   String id;
-
+  @JsonKey(ignore: true)
   String driveId;
+  @JsonKey(ignore: true)
   String parentFolderId;
 
   String name;
 
-  FolderEntity();
+  FolderEntity(this.name);
 
   factory FolderEntity.fromJson(Map<String, dynamic> json) =>
       _$FolderEntityFromJson(json);

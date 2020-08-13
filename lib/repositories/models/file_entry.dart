@@ -12,7 +12,8 @@ class FileEntries extends Table {
 
   IntColumn get size => integer()();
 
-  BoolColumn get uploaded => boolean()();
+  /// Whether or not this file has been uploaded and been mined onto the blockweave.
+  BoolColumn get ready => boolean()();
 
   DateTimeColumn get dateCreated => dateTime().nullable()();
   DateTimeColumn get dateUpdated => dateTime().nullable()();
