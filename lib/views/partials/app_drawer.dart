@@ -127,7 +127,7 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
             PopupMenuItem(
-              value: null,
+              value: _promptToAttachDrive,
               child: ListTile(
                 title: Text('Attach drive'),
               ),
@@ -186,5 +186,15 @@ class AppDrawer extends StatelessWidget {
       confirmingActionLabel: 'IMPORT',
       fieldLabel: 'Transaction ID',
     );
+  }
+
+  void _promptToAttachDrive(BuildContext context) async {
+    final driveId = await showTextFieldDialog(context,
+        title: 'Attach drive',
+        confirmingActionLabel: 'ATTACH',
+        fieldLabel: 'Drive ID');
+
+    if (driveId != null)
+      context.bloc<DrivesBloc>().add(AttachDrive(driveId, 'Personal'));
   }
 }

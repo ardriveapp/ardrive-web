@@ -48,11 +48,6 @@ class App extends StatelessWidget {
                 child: MultiBlocProvider(
                   providers: [
                     BlocProvider(
-                      create: (context) => DrivesBloc(
-                        drivesDao: context.repository<DrivesDao>(),
-                      ),
-                    ),
-                    BlocProvider(
                       create: (context) => UploadBloc(
                         userBloc: context.bloc<UserBloc>(),
                         arweaveDao: context.repository<ArweaveDao>(),
@@ -62,6 +57,13 @@ class App extends StatelessWidget {
                     BlocProvider(
                       create: (context) => SyncBloc(
                         userBloc: context.bloc<UserBloc>(),
+                        arweaveDao: context.repository<ArweaveDao>(),
+                        drivesDao: context.repository<DrivesDao>(),
+                      ),
+                    ),
+                    BlocProvider(
+                      create: (context) => DrivesBloc(
+                        syncBloc: context.bloc<SyncBloc>(),
                         arweaveDao: context.repository<ArweaveDao>(),
                         drivesDao: context.repository<DrivesDao>(),
                       ),

@@ -62,21 +62,20 @@ class ArweaveDao {
 
     for (var i = 0; i < entityMetadataMap.length; i++) {
       final entityMetadata = entityMetadataMap[i];
+      final entityType = _txGetTag(entityMetadata, 'Entity-Type');
 
       final driveId = _txGetTag(entityMetadata, 'Drive-Id');
       final folderId = _txGetTag(entityMetadata, 'Folder-Id');
       final parentFolderId = _txGetTag(entityMetadata, 'Parent-Folder-Id');
       final fileId = _txGetTag(entityMetadata, 'File-Id');
 
-      if (fileId != null) {
-        if (fileEntities.containsKey(fileId)) continue;
+      if (entityType == 'drive') {
+        if (driveEntities.containsKey(driveId)) continue;
 
-        final file = FileEntity.fromJson(json.decode(entityData[i]));
-        file.id = fileId;
-        file.driveId = driveId;
-        file.parentFolderId = parentFolderId;
-        fileEntities[fileId] = file;
-      } else if (folderId != null) {
+        final drive = DriveEntity.fromJson(json.decode(entityData[i]));
+        drive.id = driveId;
+        driveEntities[driveId] = drive;
+      } else if (entityType == 'folder') {
         if (folderEntitites.containsKey(folderId)) continue;
 
         final folder = FolderEntity.fromJson(json.decode(entityData[i]));
@@ -84,12 +83,14 @@ class ArweaveDao {
         folder.driveId = driveId;
         folder.parentFolderId = parentFolderId;
         folderEntitites[folderId] = folder;
-      } else if (driveId != null) {
-        if (driveEntities.containsKey(driveId)) continue;
+      } else if (entityType == 'file') {
+        if (fileEntities.containsKey(fileId)) continue;
 
-        final drive = DriveEntity.fromJson(json.decode(entityData[i]));
-        drive.id = driveId;
-        driveEntities[driveId] = drive;
+        final file = FileEntity.fromJson(json.decode(entityData[i]));
+        file.id = fileId;
+        file.driveId = driveId;
+        file.parentFolderId = parentFolderId;
+        fileEntities[fileId] = file;
       }
     }
 
@@ -103,6 +104,25 @@ class ArweaveDao {
     return tag != null ? tag['value'] : null;
   }
 
+  Future<DriveEntity> getDriveEntity(String driveId) async {
+    final driveTxId = (await _arweave.transactions.arql({
+      "op": "and",
+      "expr1": {"op": "equals", "expr1": "Entity-Type", "expr2": "drive"},
+      "expr2": {
+        "op": "equals",
+        "expr1": "Drive-Id",
+        "expr2": driveId,
+      },
+    }))[0];
+    final driveTx = await _arweave.transactions.get(driveTxId);
+
+    final entity = DriveEntity.fromJson(
+        json.decode(utils.decodeBase64ToString(driveTx.data)));
+    entity.id = driveTx.id;
+
+    return entity;
+  }
+
   Future<Transaction> prepareDriveEntity(
       String driveId, String rootFolderId, Wallet wallet) async {
     final driveEntity = DriveEntity(rootFolderId);
@@ -114,6 +134,7 @@ class ArweaveDao {
 
     driveEntityTx.addApplicationTags();
     driveEntityTx.addJsonContentTypeTag();
+    driveEntityTx.addTag('Entity-Type', 'drive');
     driveEntityTx.addTag('Drive-Id', driveId);
 
     await driveEntityTx.sign(wallet);
@@ -137,6 +158,7 @@ class ArweaveDao {
 
     folderEntityTx.addApplicationTags();
     folderEntityTx.addJsonContentTypeTag();
+    folderEntityTx.addTag('Entity-Type', 'folder');
     folderEntityTx.addTag('Drive-Id', driveId);
     folderEntityTx.addTag('Folder-Id', folderId);
 
@@ -146,6 +168,33 @@ class ArweaveDao {
     await folderEntityTx.sign(wallet);
 
     return folderEntityTx;
+  }
+
+  Future<Transaction> prepareFileEntity(
+      String fileId,
+      String driveId,
+      String parentFolderId,
+      String name,
+      String dataTxId,
+      int fileSize,
+      Wallet wallet) async {
+    final fileEntity = FileEntity(name, fileSize, dataTxId);
+
+    final fileEntityTx = await _arweave.createTransaction(
+      Transaction(data: json.encode(fileEntity.toJson())),
+      wallet,
+    );
+
+    fileEntityTx.addApplicationTags();
+    fileEntityTx.addJsonContentTypeTag();
+    fileEntityTx.addTag('Entity-Type', 'file');
+    fileEntityTx.addTag('Drive-Id', driveId);
+    fileEntityTx.addTag('Parent-Folder-Id', parentFolderId);
+    fileEntityTx.addTag('File-Id', fileId);
+
+    await fileEntityTx.sign(wallet);
+
+    return fileEntityTx;
   }
 
   Future<UploadTransactions> prepareFileUpload(
@@ -169,20 +218,8 @@ class ArweaveDao {
 
     await fileDataTx.sign(wallet);
 
-    final fileEntity = FileEntity(name, fileSize, fileDataTx.id);
-
-    final fileEntityTx = await _arweave.createTransaction(
-      Transaction(data: json.encode(fileEntity.toJson())),
-      wallet,
-    );
-
-    fileEntityTx.addApplicationTags();
-    fileEntityTx.addJsonContentTypeTag();
-    fileEntityTx.addTag('Drive-Id', driveId);
-    fileEntityTx.addTag('Parent-Folder-Id', parentFolderId);
-    fileEntityTx.addTag('File-Id', fileId);
-
-    await fileEntityTx.sign(wallet);
+    final fileEntityTx = await prepareFileEntity(
+        fileId, driveId, parentFolderId, name, fileDataTx.id, fileSize, wallet);
 
     return UploadTransactions(fileEntityTx, fileDataTx);
   }

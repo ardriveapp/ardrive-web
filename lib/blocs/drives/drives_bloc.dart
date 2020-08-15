@@ -1,17 +1,22 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:drive/blocs/sync/sync_bloc.dart';
 import 'package:drive/repositories/repositories.dart';
 
 part 'drives_event.dart';
 part 'drives_state.dart';
 
 class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
+  final SyncBloc _syncBloc;
+  final ArweaveDao _arweaveDao;
   final DrivesDao _drivesDao;
   StreamSubscription _drivesSubscription;
 
-  DrivesBloc({DrivesDao drivesDao})
-      : this._drivesDao = drivesDao,
+  DrivesBloc({SyncBloc syncBloc, ArweaveDao arweaveDao, DrivesDao drivesDao})
+      : _syncBloc = syncBloc,
+        _arweaveDao = arweaveDao,
+        _drivesDao = drivesDao,
         super(DrivesLoading()) {
     add(RefreshDrives());
   }
@@ -24,6 +29,8 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
       yield* _mapSelectDriveToState(event);
     else if (event is NewDrive)
       yield* _mapNewDriveToState(event);
+    else if (event is AttachDrive)
+      yield* _mapAttachDriveToState(event);
     else if (event is DrivesUpdated) yield* _mapDrivesUpdatedToState(event);
   }
 
@@ -49,7 +56,20 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
     }
   }
 
+  Stream<DrivesState> _mapAttachDriveToState(AttachDrive event) async* {
+    final driveEntity = await _arweaveDao.getDriveEntity(event.driveId);
+
+    await _drivesDao.attachDrive(event.driveName, driveEntity);
+
+    _syncBloc.add(SyncWithNetwork());
+    add(SelectDrive(event.driveId));
+  }
+
   Stream<DrivesState> _mapDrivesUpdatedToState(DrivesUpdated event) async* {
-    yield DrivesReady(selectedDriveId: state is DrivesReady ? (state as DrivesReady).selectedDriveId : null, drives: event.drives);
+    yield DrivesReady(
+        selectedDriveId: state is DrivesReady
+            ? (state as DrivesReady).selectedDriveId
+            : null,
+        drives: event.drives);
   }
 }

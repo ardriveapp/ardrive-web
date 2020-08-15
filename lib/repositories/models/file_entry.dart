@@ -10,6 +10,8 @@ class FileEntries extends Table {
   TextColumn get name => text().withLength(min: 1)();
   TextColumn get path => text().withLength(min: 1)();
 
+  TextColumn get dataTxId => text()();
+
   IntColumn get size => integer()();
 
   /// Whether or not this file has been uploaded and been mined onto the blockweave.

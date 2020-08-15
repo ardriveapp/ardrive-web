@@ -1,8 +1,10 @@
 import 'package:drive/blocs/drive_detail/drive_detail_bloc.dart';
 import 'package:drive/repositories/repositories.dart';
+import 'package:drive/views/partials/confirmation_dialog.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class FolderView extends StatelessWidget {
   final List<FolderEntry> subfolders;
@@ -40,6 +42,12 @@ class FolderView extends StatelessWidget {
             )),
         ...files.map(
           (file) => DataRow(
+            onSelectChanged: (_) async {
+              final open = await showConfirmationDialog(context,
+                  title: 'Open file?', confirmingActionLabel: 'OPEN');
+              if (open != null && open)
+                launch('https://arweave.net/${file.dataTxId}');
+            },
             cells: [
               DataCell(NameCell(name: file.name)),
               DataCell(Text('me')),

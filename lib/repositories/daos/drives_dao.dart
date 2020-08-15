@@ -40,6 +40,12 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
         );
       });
 
+  Future<void> attachDrive(String name, DriveEntity driveEntity) =>
+      into(drives).insert(DrivesCompanion(
+          id: Value(driveEntity.id),
+          name: Value(name),
+          rootFolderId: Value(driveEntity.rootFolderId)));
+
   Future<void> updateStaleModels(UpdatedEntities entities) =>
       transaction(() async {
         for (final driveEntity in entities.drives.values) {
@@ -148,6 +154,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
                 parentFolderId: Value(node.files[staleFileId].parentFolderId),
                 name: Value(fileName),
                 path: Value(filePath),
+                dataTxId: Value(node.files[staleFileId].dataTxId),
                 size: Value(node.files[staleFileId].size),
                 ready: Value(true),
               ));
