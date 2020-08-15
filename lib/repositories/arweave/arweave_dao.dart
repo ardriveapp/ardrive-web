@@ -24,6 +24,7 @@ class ArweaveDao {
       query: r'''
         query UpdatedEntities($latestBlockNumber: Int) {
           transactions(
+            first: 50
             tags: [{ name: "App-Name", values: ["drive"] }]
             block: { min: $latestBlockNumber }
           ) {
