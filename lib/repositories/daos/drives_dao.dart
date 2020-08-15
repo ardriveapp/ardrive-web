@@ -35,7 +35,6 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
             driveId: Value(driveId),
             name: Value(name),
             path: Value('/$name'),
-            hydratedWithInitialEntries: Value(true),
           ),
         );
       });
@@ -53,7 +52,6 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
               .write(
             DrivesCompanion(
               rootFolderId: Value(driveEntity.rootFolderId),
-              latestStateBlockNumber: Value(entities.latestBlockNumber),
             ),
           );
         }
@@ -66,7 +64,6 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
                 parentFolderId: Value(folderEntity.parentFolderId),
                 name: Value(folderEntity.name),
                 path: Value('/'),
-                hydratedWithInitialEntries: Value(true),
               ),
               onConflict: DoUpdate((_) => FolderEntriesCompanion(
                     parentFolderId: Value(folderEntity.parentFolderId),
@@ -140,7 +137,6 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
               driveId: Value(driveId),
               name: Value(folderName),
               path: Value(newPath),
-              hydratedWithInitialEntries: Value(true),
             ),
           );
 

@@ -126,7 +126,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           parentFolderId: Value(parentFolderId),
           name: Value(folderName),
           path: Value(path),
-          hydratedWithInitialEntries: Value(true),
         ),
       );
 

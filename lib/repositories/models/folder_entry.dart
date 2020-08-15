@@ -10,9 +10,6 @@ class FolderEntries extends Table {
   TextColumn get name => text().withLength(min: 1)();
   TextColumn get path => text().withLength(min: 1)();
 
-  /// Whether or not this folder has been hydrated entries that are earlier than the drive's latest state block number.
-  BoolColumn get hydratedWithInitialEntries => boolean()();
-
   @override
   Set<Column> get primaryKey => {id};
 }
