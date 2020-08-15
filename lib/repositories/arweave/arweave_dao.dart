@@ -8,7 +8,7 @@ import 'package:mime/mime.dart';
 import 'package:simple_gql/simple_gql.dart';
 
 import '../entities/entities.dart';
-import 'arweave_helpers.dart';
+import 'utils.dart';
 
 class ArweaveDao {
   Arweave _arweave;
