@@ -1,6 +1,5 @@
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/views/views.dart';
-import 'package:file_chooser/file_chooser.dart';
 import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,18 +25,8 @@ class AppDrawer extends StatelessWidget {
               dense: true,
               title:
                   Text('ArDrive', style: Theme.of(context).textTheme.headline6),
-              /*trailing: IconButton(
-                icon: Icon(Icons.settings),
-                onPressed: () {},
-              ),*/
             ),
             _buildDriveActionsButton(context),
-            /*ListTile(
-              leading: Icon(Icons.cloud_upload),
-              title: Text('Uploads'),
-              onTap: () {},
-            ),
-            Divider(),*/
             BlocBuilder<SyncBloc, SyncState>(
               builder: (context, state) => ListTile(
                 dense: true,
@@ -101,22 +90,6 @@ class AppDrawer extends StatelessWidget {
                   title: Text('Upload file'),
                 ),
               ),
-              PopupMenuItem(
-                enabled: false,
-                value: _promptToUploadFolder,
-                child: ListTile(
-                  enabled: false,
-                  title: Text('Upload folder'),
-                ),
-              ),
-              PopupMenuItem(
-                enabled: false,
-                value: _promptToImportTransaction,
-                child: ListTile(
-                  enabled: false,
-                  title: Text('Import transaction'),
-                ),
-              ),
               PopupMenuDivider(),
             },
             PopupMenuItem(
@@ -161,24 +134,6 @@ class AppDrawer extends StatelessWidget {
             fileChooseResult.toUint8List(),
           ),
         );
-  }
-
-  void _promptToUploadFolder(BuildContext context) async {
-    final folderChooseResult = await showOpenPanel(
-      allowsMultipleSelection: true,
-      canSelectDirectories: true,
-    );
-
-    if (folderChooseResult.canceled) return;
-  }
-
-  void _promptToImportTransaction(BuildContext context) async {
-    final transactionId = await showTextFieldDialog(
-      context,
-      title: 'Import transaction',
-      confirmingActionLabel: 'IMPORT',
-      fieldLabel: 'Transaction ID',
-    );
   }
 
   void _promptToAttachDrive(BuildContext context) async {
