@@ -22,9 +22,8 @@ class ArweaveDao {
       String address, int latestBlockNumber) async {
     final newEntitiesQuery = await _gql.query(
       query: r'''
-        query UpdatedEntities($address: String!, $latestBlockNumber: Int) {
+        query UpdatedEntities($latestBlockNumber: Int) {
           transactions(
-            owners: [$address]
             tags: [{ name: "App-Name", values: ["drive"] }]
             block: { min: $latestBlockNumber }
           ) {
@@ -41,7 +40,6 @@ class ArweaveDao {
         }
       ''',
       variables: {
-        "address": address,
         "latestBlockNumber": latestBlockNumber,
       },
     );
@@ -53,7 +51,8 @@ class ArweaveDao {
     final entityData = (await Future.wait(entityMetadataMap
             .map((e) => _arweave.transactions.getData(e.id))
             .toList()))
-        .map((e) => utils.decodeBase64ToString(e))
+        // Entities can sometimes show up in queries even though they aren't mined yet.
+        .map((e) => e != null ? utils.decodeBase64ToString(e) : null)
         .toList();
 
     final driveEntities = <String, DriveEntity>{};
@@ -61,6 +60,8 @@ class ArweaveDao {
     final fileEntities = <String, FileEntity>{};
 
     for (var i = 0; i < entityMetadataMap.length; i++) {
+      if (entityData[i] == null) continue;
+
       final entityMetadata = entityMetadataMap[i];
       final entityType = _txGetTag(entityMetadata, 'Entity-Type');
 

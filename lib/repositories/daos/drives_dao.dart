@@ -59,11 +59,18 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
         }
 
         for (final folderEntity in entities.folders.values)
-          await (update(folderEntries)
-                ..where((d) => d.id.equals(folderEntity.id)))
-              .write(FolderEntriesCompanion(
-            parentFolderId: Value(folderEntity.parentFolderId),
-          ));
+          await into(folderEntries).insert(
+              FolderEntriesCompanion(
+                id: Value(folderEntity.id),
+                driveId: Value(folderEntity.driveId),
+                parentFolderId: Value(folderEntity.parentFolderId),
+                name: Value(folderEntity.name),
+                path: Value('/'),
+                hydratedWithInitialEntries: Value(true),
+              ),
+              onConflict: DoUpdate((_) => FolderEntriesCompanion(
+                    parentFolderId: Value(folderEntity.parentFolderId),
+                  )));
 
         final staleFolders = <StaleFolderNode>[];
 

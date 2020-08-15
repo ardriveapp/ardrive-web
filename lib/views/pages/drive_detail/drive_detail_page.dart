@@ -14,7 +14,7 @@ class DriveDetailPage extends StatelessWidget {
           var confirm = await showConfirmationDialog(
             context,
             title: 'Upload file',
-            content: 'This will cost ${state.uploadCost} AR.',
+            content: 'This will cost ${state.uploadCost} winston.',
             confirmingActionLabel: 'UPLOAD',
           );
 
