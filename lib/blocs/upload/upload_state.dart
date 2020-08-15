@@ -5,6 +5,8 @@ abstract class UploadState {}
 
 class UploadInitial extends UploadState {}
 
+class PreparingUpload extends UploadState {}
+
 class FileUploadReady extends UploadState {
   final String fileId;
   final String fileName;

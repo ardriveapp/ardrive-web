@@ -69,14 +69,28 @@ class App extends StatelessWidget {
                       ),
                     ),
                   ],
-                  child: AppShell(
-                    page: BlocBuilder<DrivesBloc, DrivesState>(
-                      builder: (context, state) =>
-                          state is DrivesReady && state.selectedDriveId != null
-                              ? DriveDetailPage()
-                              : Container(),
-                    ),
-                  ),
+                  child: BlocBuilder<UploadBloc, UploadState>(
+                      builder: (context, state) {
+                    final shell = AppShell(
+                        page: BlocBuilder<DrivesBloc, DrivesState>(
+                            builder: (context, state) => state is DrivesReady &&
+                                    state.selectedDriveId != null
+                                ? DriveDetailPage()
+                                : Container()));
+
+                    if (state is! PreparingUpload)
+                      return shell;
+                    else
+                      return Stack(
+                        children: [
+                          shell,
+                          Container(color: Colors.black38),
+                          Align(
+                              alignment: Alignment.center,
+                              child: CircularProgressIndicator()),
+                        ],
+                      );
+                  }),
                 ),
               );
 

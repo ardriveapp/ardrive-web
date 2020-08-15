@@ -39,6 +39,8 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
 
   Stream<UploadState> _mapPrepareFileUploadToState(
       PrepareFileUpload event) async* {
+    yield PreparingUpload();
+
     var fileId = await _driveDao.fileExistsInFolder(
       event.parentFolderId,
       event.fileName,
