@@ -100,7 +100,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
     if (state is FolderOpened) {
       final currentFolder = (state as FolderOpened).openedFolder.folder;
       _uploadBloc.add(
-        UploadFileToNetwork(
+        PrepareFileUpload(
           _driveId,
           currentFolder.id,
           event.fileName,

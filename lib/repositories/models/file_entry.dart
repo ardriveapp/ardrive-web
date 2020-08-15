@@ -15,8 +15,8 @@ class FileEntries extends Table {
   /// Whether or not this file has been uploaded and been mined onto the blockweave.
   BoolColumn get ready => boolean()();
 
-  DateTimeColumn get dateCreated => dateTime().nullable()();
-  DateTimeColumn get dateUpdated => dateTime().nullable()();
+  // DateTimeColumn get dateCreated => dateTime().nullable()();
+  // DateTimeColumn get dateUpdated => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

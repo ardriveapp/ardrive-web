@@ -32,7 +32,9 @@ dependencies:
   rxdart: ^0.24.1
   uuid: ^2.2.0
   filesize: ^1.0.4
+  mime: ^0.9.7
   timeago: ^2.0.26
+  simple_gql: ^1.1.1
   arweave:
     path: ../arweave-dart
   file_chooser:

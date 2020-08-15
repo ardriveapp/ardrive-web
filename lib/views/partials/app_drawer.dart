@@ -39,12 +39,21 @@ class AppDrawer extends StatelessWidget {
               onTap: () {},
             ),
             Divider(),
-            ListTile(
-              dense: true,
-              title: Text(
-                'DRIVES',
-                textAlign: TextAlign.start,
-                style: Theme.of(context).textTheme.caption,
+            BlocBuilder<SyncBloc, SyncState>(
+              builder: (context, state) => ListTile(
+                dense: true,
+                title: Text(
+                  'DRIVES',
+                  textAlign: TextAlign.start,
+                  style: Theme.of(context).textTheme.caption,
+                ),
+                trailing: state is SyncInProgress
+                    ? IconButton(icon: CircularProgressIndicator())
+                    : IconButton(
+                        icon: Icon(Icons.refresh),
+                        onPressed: () =>
+                            context.bloc<SyncBloc>().add(SyncWithNetwork()),
+                      ),
               ),
             ),
             if (state is DrivesReady)
@@ -94,14 +103,18 @@ class AppDrawer extends StatelessWidget {
                 ),
               ),
               PopupMenuItem(
+                enabled: false,
                 value: _promptToUploadFolder,
                 child: ListTile(
+                  enabled: false,
                   title: Text('Upload folder'),
                 ),
               ),
               PopupMenuItem(
+                enabled: false,
                 value: _promptToImportTransaction,
                 child: ListTile(
+                  enabled: false,
                   title: Text('Import transaction'),
                 ),
               ),

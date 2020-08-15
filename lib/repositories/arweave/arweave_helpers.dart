@@ -5,4 +5,8 @@ extension TransactionHelpers on Transaction {
     addTag('App-Name', 'drive');
     addTag('App-Version', '1.0.0');
   }
+
+  void addJsonContentTypeTag() {
+    addTag('Content-Type', 'application/json');
+  }
 }

@@ -31,14 +31,14 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
   Stream<UploadState> mapEventToState(
     UploadEvent event,
   ) async* {
-    if (event is UploadFileToNetwork)
+    if (event is PrepareFileUpload)
+      yield* _mapPrepareFileUploadToState(event);
+    else if (event is UploadFileToNetwork)
       yield* _mapUploadFileToNetworkToState(event);
   }
 
-  Stream<UploadState> _mapUploadFileToNetworkToState(
-      UploadFileToNetwork event) async* {
-    yield UploadInProgress();
-
+  Stream<UploadState> _mapPrepareFileUploadToState(
+      PrepareFileUpload event) async* {
     final fileId = _uuid.v4();
     final wallet = (_userBloc.state as UserAuthenticated).userWallet;
     final transactions = <Transaction>[];
@@ -75,8 +75,30 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
     transactions.add(uploadTxs.entityTx);
     transactions.add(uploadTxs.dataTx);
 
-    await _driveDao.createNewUploadedFileEntry(
+    yield FileUploadReady(
       fileId,
+      event.fileName,
+      uploadTxs.dataTx.reward,
+      event.fileSize,
+      UploadFileToNetwork(
+        fileId,
+        event.driveId,
+        event.parentFolderId,
+        event.fileName,
+        event.filePath,
+        event.fileSize,
+        transactions,
+      ),
+    );
+  }
+
+  Stream<UploadState> _mapUploadFileToNetworkToState(
+      UploadFileToNetwork event) async* {
+    (await _arweaveDao.batchPostTxs(event.transactions))
+        .map((r) => print(r.body));
+
+    await _driveDao.createNewUploadedFileEntry(
+      event.fileId,
       event.driveId,
       event.parentFolderId,
       event.fileName,

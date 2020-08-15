@@ -357,7 +357,7 @@ packages:
     source: hosted
     version: "1.3.0-nullsafety.2"
   mime:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: mime
       url: "https://pub.dartlang.org"
@@ -465,11 +465,11 @@ packages:
     dependency: transitive
     description:
       path: "."
-      ref: rsa-pss
-      resolved-ref: "6964ab6fa71725a51de5485dda1add497439eec1"
-      url: "https://github.com/CDDelta/pc-dart.git"
+      ref: "52e6c64b5b511fb54c7baba271ce8b3efb5289bf"
+      resolved-ref: "52e6c64b5b511fb54c7baba271ce8b3efb5289bf"
+      url: "https://github.com/bcgit/pc-dart.git"
     source: git
-    version: "1.1.1"
+    version: "2.0.0-rc1"
   pool:
     dependency: transitive
     description:
@@ -540,6 +540,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.2.3"
+  simple_gql:
+    dependency: "direct main"
+    description:
+      name: simple_gql
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.1.1"
   sky_engine:
     dependency: transitive
     description: flutter
