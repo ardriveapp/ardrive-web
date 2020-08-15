@@ -26,18 +26,18 @@ class AppDrawer extends StatelessWidget {
               dense: true,
               title:
                   Text('ArDrive', style: Theme.of(context).textTheme.headline6),
-              trailing: IconButton(
+              /*trailing: IconButton(
                 icon: Icon(Icons.settings),
                 onPressed: () {},
-              ),
+              ),*/
             ),
             _buildDriveActionsButton(context),
-            ListTile(
+            /*ListTile(
               leading: Icon(Icons.cloud_upload),
               title: Text('Uploads'),
               onTap: () {},
             ),
-            Divider(),
+            Divider(),*/
             BlocBuilder<SyncBloc, SyncState>(
               builder: (context, state) => ListTile(
                 dense: true,
