@@ -66,10 +66,12 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
   }
 
   Stream<DrivesState> _mapDrivesUpdatedToState(DrivesUpdated event) async* {
-    yield DrivesReady(
-        selectedDriveId: state is DrivesReady
-            ? (state as DrivesReady).selectedDriveId
-            : null,
-        drives: event.drives);
+    String selectedDriveId;
+    if (state is DrivesReady && (state as DrivesReady).selectedDriveId != null)
+      selectedDriveId = (state as DrivesReady).selectedDriveId;
+    else
+      selectedDriveId = event.drives.length > 0 ? event.drives[0].id : null;
+
+    yield DrivesReady(selectedDriveId: selectedDriveId, drives: event.drives);
   }
 }

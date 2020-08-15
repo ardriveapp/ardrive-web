@@ -27,6 +27,7 @@ class UploadFileToNetwork extends UploadEvent {
   final String parentFolderId;
   final String fileName;
   final String filePath;
+  final String fileDataTxId;
   final int fileSize;
   final List<Transaction> transactions;
 
@@ -36,6 +37,7 @@ class UploadFileToNetwork extends UploadEvent {
     this.parentFolderId,
     this.fileName,
     this.filePath,
+    this.fileDataTxId,
     this.fileSize,
     this.transactions,
   );

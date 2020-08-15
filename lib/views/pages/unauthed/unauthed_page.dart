@@ -1,9 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:drive/views/views.dart';
-import 'package:file_chooser/file_chooser.dart';
-import 'package:flutter/foundation.dart';
+import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -36,20 +33,10 @@ class UnauthedPage extends StatelessWidget {
   }
 
   void _promptToLogin(BuildContext context) async {
-    if (!kIsWeb) {
-      final chooseResult = await showOpenPanel();
-      if (!chooseResult.canceled) {
-        final jwk = json.decode(
-          await new File(chooseResult.paths[0]).readAsString(),
-        );
-
-        context.bloc<UserBloc>().add(AttemptLogin(jwk));
-      }
-    } else {
-      final key = await showTextFieldDialog(context,
-          title: 'Paste key file', confirmingActionLabel: 'LOGIN');
-      if (key != null)
-        context.bloc<UserBloc>().add(AttemptLogin(json.decode(key)));
+    final chooseResult = await FilePickerCross.pick();
+    if (chooseResult.type != null) {
+      final jwk = json.decode(chooseResult.toString());
+      context.bloc<UserBloc>().add(AttemptLogin(jwk));
     }
   }
 }

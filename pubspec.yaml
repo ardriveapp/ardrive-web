@@ -38,11 +38,7 @@ dependencies:
   url_launcher: ^5.5.0
   arweave:
     path: ../arweave-dart
-  file_chooser:
-    git:
-      url: git://github.com/google/flutter-desktop-embedding.git
-      path: plugins/file_chooser
-      ref: 282bb7b172a42a1f4b573540cc19e7610a867a93
+  file_picker_cross: ^3.0.3
 
 dev_dependencies:
   flutter_test:

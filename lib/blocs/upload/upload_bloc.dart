@@ -39,7 +39,12 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
 
   Stream<UploadState> _mapPrepareFileUploadToState(
       PrepareFileUpload event) async* {
-    final fileId = _uuid.v4();
+    var fileId = await _driveDao.fileExistsInFolder(
+      event.parentFolderId,
+      event.fileName,
+    );
+    if (fileId == null) fileId = _uuid.v4();
+
     final wallet = (_userBloc.state as UserAuthenticated).userWallet;
     final transactions = <Transaction>[];
 
@@ -86,6 +91,7 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
         event.parentFolderId,
         event.fileName,
         event.filePath,
+        uploadTxs.dataTx.id,
         event.fileSize,
         transactions,
       ),
@@ -94,15 +100,15 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
 
   Stream<UploadState> _mapUploadFileToNetworkToState(
       UploadFileToNetwork event) async* {
-    (await _arweaveDao.batchPostTxs(event.transactions))
-        .map((r) => print(r.body));
+    await _arweaveDao.batchPostTxs(event.transactions);
 
-    await _driveDao.createNewUploadedFileEntry(
+    await _driveDao.writeFileEntry(
       event.fileId,
       event.driveId,
       event.parentFolderId,
       event.fileName,
       event.filePath,
+      event.fileDataTxId,
       event.fileSize,
     );
   }

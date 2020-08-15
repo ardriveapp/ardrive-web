@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/views/views.dart';
 import 'package:file_chooser/file_chooser.dart';
+import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart';
@@ -151,23 +150,17 @@ class AppDrawer extends StatelessWidget {
   }
 
   void _promptToUploadFile(BuildContext context) async {
-    final fileChooseResult = await showOpenPanel(
-      allowsMultipleSelection: true,
-    );
+    final fileChooseResult = await FilePickerCross.pick();
 
-    if (fileChooseResult.canceled) return;
+    if (fileChooseResult == null) return;
 
-    for (final filePath in fileChooseResult.paths) {
-      final file = new File(filePath);
-
-      context.bloc<DriveDetailBloc>().add(
-            UploadFile(
-              basename(filePath),
-              await file.length(),
-              await file.readAsBytes(),
-            ),
-          );
-    }
+    context.bloc<DriveDetailBloc>().add(
+          UploadFile(
+            basename(fileChooseResult.path),
+            fileChooseResult.length,
+            fileChooseResult.toUint8List(),
+          ),
+        );
   }
 
   void _promptToUploadFolder(BuildContext context) async {

@@ -70,15 +70,11 @@ class App extends StatelessWidget {
                     ),
                   ],
                   child: AppShell(
-                    page: BlocConsumer<DrivesBloc, DrivesState>(
-                      listener: (context, state) async {
-                        if (state is DrivesReady && state.drives.isEmpty)
-                          promptToCreateNewDrive(context);
-                      },
+                    page: BlocBuilder<DrivesBloc, DrivesState>(
                       builder: (context, state) =>
                           state is DrivesReady && state.selectedDriveId != null
                               ? DriveDetailPage()
-                              : UploadsPage(),
+                              : Container(),
                     ),
                   ),
                 ),

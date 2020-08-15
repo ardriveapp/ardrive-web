@@ -104,6 +104,15 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return true;
   }
 
+  Future<String> fileExistsInFolder(String folderId, String filename) async {
+    final file = await (select(fileEntries)
+          ..where((f) =>
+              f.parentFolderId.equals(folderId) & f.name.equals(filename)))
+        .getSingle();
+
+    return file != null ? file.id : null;
+  }
+
   Future<void> createNewFolderEntry(
     String driveId,
     String parentFolderId,
@@ -121,21 +130,23 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         ),
       );
 
-  Future<void> createNewUploadedFileEntry(
+  Future<void> writeFileEntry(
     String fileId,
     String driveId,
     String parentFolderId,
     String fileName,
     String filePath,
+    String fileDataTxId,
     int fileSize,
   ) =>
-      into(fileEntries).insert(
+      into(fileEntries).insertOnConflictUpdate(
         FileEntriesCompanion(
           id: Value(fileId),
           driveId: Value(driveId),
           parentFolderId: Value(parentFolderId),
           name: Value(fileName),
           path: Value(filePath),
+          dataTxId: Value(fileDataTxId),
           size: Value(fileSize),
           ready: Value(false),
         ),
