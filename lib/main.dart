@@ -78,18 +78,17 @@ class App extends StatelessWidget {
                                 ? DriveDetailPage()
                                 : Container()));
 
-                    if (state is! PreparingUpload)
-                      return shell;
-                    else
-                      return Stack(
-                        children: [
-                          shell,
+                    return Stack(
+                      children: [
+                        shell,
+                        if (state is PreparingUpload) ...[
                           Container(color: Colors.black38),
                           Align(
                               alignment: Alignment.center,
                               child: CircularProgressIndicator()),
-                        ],
-                      );
+                        ]
+                      ],
+                    );
                   }),
                 ),
               );
