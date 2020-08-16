@@ -15,7 +15,7 @@ class FolderEntity {
 
   String name;
 
-  FolderEntity(this.name);
+  FolderEntity({this.id, this.driveId, this.parentFolderId, this.name});
 
   factory FolderEntity.fromRawEntity(RawEntity entity) =>
       FolderEntity.fromJson(entity.jsonData)

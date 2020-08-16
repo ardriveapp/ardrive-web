@@ -11,7 +11,7 @@ class DriveEntity {
 
   String rootFolderId;
 
-  DriveEntity(this.rootFolderId);
+  DriveEntity({this.id, this.rootFolderId});
 
   factory DriveEntity.fromRawEntity(RawEntity entity) =>
       DriveEntity.fromJson(entity.jsonData)

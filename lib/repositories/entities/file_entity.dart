@@ -18,10 +18,12 @@ class FileEntity {
   String dataTxId;
 
   FileEntity(
-    this.name,
-    this.size,
-    this.dataTxId,
-  );
+      {this.id,
+      this.driveId,
+      this.parentFolderId,
+      this.name,
+      this.size,
+      this.dataTxId});
 
   factory FileEntity.fromRawEntity(RawEntity entity) =>
       FileEntity.fromJson(entity.jsonData)

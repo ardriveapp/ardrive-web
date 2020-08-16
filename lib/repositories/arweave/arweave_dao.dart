@@ -89,86 +89,67 @@ class ArweaveDao {
     return entity;
   }
 
-  Future<Transaction> prepareDriveEntity(
-      String driveId, String rootFolderId, Wallet wallet) async {
-    final driveEntity = DriveEntity(rootFolderId);
-
-    final driveEntityTx = await _arweave.createTransaction(
-      Transaction(data: json.encode(driveEntity.toJson())),
+  Future<Transaction> prepareDriveEntityTx(
+      DriveEntity entity, Wallet wallet) async {
+    final tx = await _arweave.createTransaction(
+      Transaction(data: json.encode(entity.toJson())),
       wallet,
     );
 
-    driveEntityTx.addApplicationTags();
-    driveEntityTx.addJsonContentTypeTag();
-    driveEntityTx.addTag(EntityTag.entityType, 'drive');
-    driveEntityTx.addTag(EntityTag.driveId, driveId);
+    tx.addApplicationTags();
+    tx.addJsonContentTypeTag();
+    tx.addTag(EntityTag.entityType, 'drive');
+    tx.addTag(EntityTag.driveId, entity.id);
 
-    await driveEntityTx.sign(wallet);
+    await tx.sign(wallet);
 
-    return driveEntityTx;
+    return tx;
   }
 
-  Future<Transaction> prepareFolderEntity(
-    String folderId,
-    String driveId,
-    String parentFolderId,
-    String name,
+  Future<Transaction> prepareFolderEntityTx(
+    FolderEntity entity,
     Wallet wallet,
   ) async {
-    final folderEntity = FolderEntity(name);
-
-    final folderEntityTx = await _arweave.createTransaction(
-      Transaction(data: json.encode(folderEntity.toJson())),
+    final tx = await _arweave.createTransaction(
+      Transaction(data: json.encode(entity.toJson())),
       wallet,
     );
 
-    folderEntityTx.addApplicationTags();
-    folderEntityTx.addJsonContentTypeTag();
-    folderEntityTx.addTag(EntityTag.entityType, 'folder');
-    folderEntityTx.addTag(EntityTag.driveId, driveId);
-    folderEntityTx.addTag(EntityTag.folderId, folderId);
+    tx.addApplicationTags();
+    tx.addJsonContentTypeTag();
+    tx.addTag(EntityTag.entityType, 'folder');
+    tx.addTag(EntityTag.driveId, entity.driveId);
+    tx.addTag(EntityTag.folderId, entity.id);
 
-    if (parentFolderId != null)
-      folderEntityTx.addTag(EntityTag.parentFolderId, parentFolderId);
+    if (entity.parentFolderId != null)
+      tx.addTag(EntityTag.parentFolderId, entity.parentFolderId);
 
-    await folderEntityTx.sign(wallet);
+    await tx.sign(wallet);
 
-    return folderEntityTx;
+    return tx;
   }
 
-  Future<Transaction> prepareFileEntity(
-      String fileId,
-      String driveId,
-      String parentFolderId,
-      String name,
-      String dataTxId,
-      int fileSize,
-      Wallet wallet) async {
-    final fileEntity = FileEntity(name, fileSize, dataTxId);
-
-    final fileEntityTx = await _arweave.createTransaction(
-      Transaction(data: json.encode(fileEntity.toJson())),
+  Future<Transaction> prepareFileEntityTx(
+      FileEntity entity, Wallet wallet) async {
+    final tx = await _arweave.createTransaction(
+      Transaction(data: json.encode(entity.toJson())),
       wallet,
     );
 
-    fileEntityTx.addApplicationTags();
-    fileEntityTx.addJsonContentTypeTag();
-    fileEntityTx.addTag(EntityTag.entityType, 'file');
-    fileEntityTx.addTag(EntityTag.driveId, driveId);
-    fileEntityTx.addTag(EntityTag.parentFolderId, parentFolderId);
-    fileEntityTx.addTag(EntityTag.fileId, fileId);
+    tx.addApplicationTags();
+    tx.addJsonContentTypeTag();
+    tx.addTag(EntityTag.entityType, 'file');
+    tx.addTag(EntityTag.driveId, entity.driveId);
+    tx.addTag(EntityTag.parentFolderId, entity.parentFolderId);
+    tx.addTag(EntityTag.fileId, entity.id);
 
-    await fileEntityTx.sign(wallet);
+    await tx.sign(wallet);
 
-    return fileEntityTx;
+    return tx;
   }
 
-  Future<UploadTransactions> prepareFileUpload(
-    String fileId,
-    String driveId,
-    String parentFolderId,
-    String name,
-    int fileSize,
+  Future<UploadTransactions> prepareFileUploadTxs(
+    FileEntity fileEntity,
     Uint8List fileStream,
     Wallet wallet,
   ) async {
@@ -179,13 +160,14 @@ class ArweaveDao {
 
     fileDataTx.addTag(
       'Content-Type',
-      lookupMimeType(name),
+      lookupMimeType(fileEntity.name),
     );
 
     await fileDataTx.sign(wallet);
 
-    final fileEntityTx = await prepareFileEntity(
-        fileId, driveId, parentFolderId, name, fileDataTx.id, fileSize, wallet);
+    fileEntity.dataTxId = fileDataTx.id;
+
+    final fileEntityTx = await prepareFileEntityTx(fileEntity, wallet);
 
     return UploadTransactions(fileEntityTx, fileDataTx);
   }

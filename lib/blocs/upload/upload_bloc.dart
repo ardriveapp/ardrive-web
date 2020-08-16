@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
+import 'package:drive/repositories/entities/entities.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
@@ -53,28 +54,32 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
     if (await _driveDao.isDriveEmpty(event.driveId)) {
       final drive = await _driveDao.getDriveById(event.driveId);
 
-      transactions.add(await _arweaveDao.prepareDriveEntity(
-          drive.id, drive.rootFolderId, wallet));
+      transactions.add(await _arweaveDao.prepareDriveEntityTx(
+          DriveEntity(id: drive.id, rootFolderId: drive.rootFolderId), wallet));
     }
 
     if (await _driveDao.isFolderEmpty(event.parentFolderId)) {
       final parentFolder = await _driveDao.getFolderById(event.parentFolderId);
 
-      transactions.add(await _arweaveDao.prepareFolderEntity(
-        parentFolder.id,
-        event.driveId,
-        parentFolder.parentFolderId,
-        parentFolder.name,
+      transactions.add(await _arweaveDao.prepareFolderEntityTx(
+        FolderEntity(
+          id: parentFolder.id,
+          driveId: event.driveId,
+          parentFolderId: parentFolder.parentFolderId,
+          name: parentFolder.name,
+        ),
         wallet,
       ));
     }
 
-    final uploadTxs = await _arweaveDao.prepareFileUpload(
-      fileId,
-      event.driveId,
-      event.parentFolderId,
-      event.fileName,
-      event.fileSize,
+    final uploadTxs = await _arweaveDao.prepareFileUploadTxs(
+      FileEntity(
+        id: fileId,
+        driveId: event.driveId,
+        parentFolderId: event.parentFolderId,
+        name: event.fileName,
+        size: event.fileSize,
+      ),
       event.fileStream,
       wallet,
     );
