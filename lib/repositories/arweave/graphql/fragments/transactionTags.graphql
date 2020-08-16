@@ -1,0 +1,6 @@
+fragment transactionTags on Transaction {
+  tags {
+    name
+    value
+  }
+}

@@ -34,11 +34,12 @@ dependencies:
   filesize: ^1.0.4
   mime: ^0.9.7
   timeago: ^2.0.26
-  simple_gql: ^1.1.1
   url_launcher: ^5.5.0
   arweave:
     path: ../arweave-dart
   file_picker_cross: ^3.0.3
+
+  artemis: 6.7.1-beta.1
 
 dev_dependencies:
   flutter_test:

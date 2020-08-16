@@ -1,5 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
 
+import 'entities.dart';
+
 part 'file_entity.g.dart';
 
 @JsonSerializable()
@@ -20,6 +22,12 @@ class FileEntity {
     this.size,
     this.dataTxId,
   );
+
+  factory FileEntity.fromRawEntity(RawEntity entity) =>
+      FileEntity.fromJson(entity.jsonData)
+        ..id = entity.getTag(EntityTag.fileId)
+        ..driveId = entity.getTag(EntityTag.driveId)
+        ..parentFolderId = entity.getTag(EntityTag.parentFolderId);
 
   factory FileEntity.fromJson(Map<String, dynamic> json) =>
       _$FileEntityFromJson(json);

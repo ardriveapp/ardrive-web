@@ -3,6 +3,7 @@ import 'package:moor/moor.dart';
 import 'package:uuid/uuid.dart';
 
 import '../database/database.dart';
+import '../entities/entities.dart';
 import '../models/models.dart';
 
 part 'drives_dao.g.dart';

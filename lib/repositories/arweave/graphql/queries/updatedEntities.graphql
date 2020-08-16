@@ -1,0 +1,14 @@
+query UpdatedEntities($minBlockNumber: Int) {
+  transactions(
+    first: 50
+    tags: [{ name: "App-Name", values: ["drive"] }]
+    block: { min: $minBlockNumber }
+  ) {
+    edges {
+      node {
+        id
+        ...transactionTags
+      }
+    }
+  }
+}

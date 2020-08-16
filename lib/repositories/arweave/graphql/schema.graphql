@@ -1,0 +1,159 @@
+directive @cacheControl(
+  maxAge: Int
+  scope: CacheControlScope
+) on FIELD_DEFINITION | OBJECT | INTERFACE
+# Representation of a value transfer between wallets, in both winson and ar.
+type Amount {
+  # Amount as a winston string e.g. \`"1000000000000"\`.
+  winston: String!
+  # Amount as an AR string e.g. \`"0.000000000001"\`.
+  ar: String!
+}
+
+# The block in which the transaction was included.
+type Block {
+  id: ID!
+  timestamp: Int!
+  height: Int!
+  previous: ID!
+}
+
+# Find transactions within the given block range
+input BlockFilter {
+  # Minimum block height to filter from
+  min: Int
+  # Maximum block height to filter to
+  max: Int
+}
+
+enum CacheControlScope {
+  PUBLIC
+  PRIVATE
+}
+
+# Basic metadata about the transaction data payload.
+type MetaData {
+  # Size of the associated data in bytes.
+  size: Int!
+  # Type is derrived from the \`content-type\` tag on a transaction.
+  type: String
+}
+
+# Representation of a transaction owner.
+type Owner {
+  # The owner's wallet address.
+  address: String!
+  # The owner's public key as a base64url encoded string.
+  key: String!
+}
+
+# Paginated page info using the GraphQL cursor spec.
+type PageInfo {
+  hasNextPage: Boolean!
+}
+
+# The parent transaction for bundled transactions,
+# see: https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-102.md.
+type Parent {
+  id: ID!
+}
+
+type Query {
+  # Get a transaction by its id
+  transaction(id: ID!): Transaction
+  # Get a paginated set of matching transactions using filters.
+  transactions(
+    # Find transactions from a list of ids.
+    ids: [ID!]
+    # Find transactions from a list of owner wallet addresses, or wallet owner public keys.
+    owners: [String!]
+    # Find transactions from a list of recipient wallet addresses.
+    recipients: [String!]
+    # Find transactions using tags.
+    tags: [TagFilter!]
+    # Only match the first n transactions.
+    first: Int = 10
+    # A pagination cursor value, for fetching subsequent pages from a result set.
+    after: String
+    # Find transactions within the given block range
+    block: BlockFilter
+    # Optionally specify the result sort order.
+    sort: SortOrder = HEIGHT_DESC
+  ): TransactionConnection!
+}
+
+# Optionally reverse the result sort order from `HEIGHT_DESC` (default) to `HEIGHT_ASC`.
+enum SortOrder {
+  # Results are sorted by the transaction block height in ascending order, with
+  # the oldest transactions appearing first, and the most recent and
+  # pending/unconfirmed appearing last.
+  HEIGHT_ASC
+  # Results are sorted by the transaction block height in descending order, with
+  # the most recent and unconfirmed/pending transactions appearing first.
+  HEIGHT_DESC
+}
+
+type Tag {
+  # UTF-8 tag name
+  name: String!
+  # UTF-8 tag value
+  value: String!
+}
+
+# Find transactions with the folowing tag name and value
+input TagFilter {
+  # The tag name
+  name: String!
+  # An array of values to match against. If multiple values are passed then
+  # transactions with _any_ matching tag value from the set will be returned.
+  #
+  # e.g.
+  #
+  # \`{name: "app-name", values: ["app-1"]}\`
+  #
+  # Returns all transactions where the \`app-name\` tag has a value of \`app-1\`.
+  #
+  # \`{name: "app-name", values: ["app-1", "app-2", "app-3"]}\`
+  #
+  # Returns all transactions where the \`app-name\` tag has a value of either \`app-1\` _or_ \`app-2\` _or_ \`app-3\`.
+  values: [String!]!
+}
+
+type Transaction {
+  id: ID!
+  anchor: String!
+  signature: String!
+  recipient: String!
+  owner: Owner!
+  fee: Amount!
+  quantity: Amount!
+  data: MetaData!
+  tags: [Tag!]!
+  # Transactions with a null block are recent and unconfirmed, if they aren't
+  # mined into a block within 60 minutes they will be removed from results.
+  block: Block
+  # Transactions with parent are Bundled Data Items as defined in the ANS-102 data spec.
+  # https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-102.md
+  parent: Parent
+}
+
+# Paginated result set using the GraphQL cursor spec,
+# see: https://relay.dev/graphql/connections.htm.
+type TransactionConnection {
+  pageInfo: PageInfo!
+  edges: [TransactionEdge!]!
+}
+
+# Paginated result set using the GraphQL cursor spec.
+type TransactionEdge {
+  # The cursor value for fetching the next page.
+  #
+  # Pass this to the \`after\` parameter in \`transactions(after: $cursor)\`, the
+  # next page will start from the next item after this.
+  cursor: String!
+  # A transaction object.
+  node: Transaction!
+}
+
+# The `Upload` scalar type represents a file upload.
+scalar Upload

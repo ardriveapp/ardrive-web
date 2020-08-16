@@ -1,98 +1,64 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/src/utils.dart' as utils;
 import 'package:http/http.dart';
 import 'package:mime/mime.dart';
-import 'package:simple_gql/simple_gql.dart';
 
 import '../entities/entities.dart';
+import 'graphql/graphql_api.dart';
 import 'utils.dart';
 
 class ArweaveDao {
+  ArtemisClient _gql = ArtemisClient('https://arweave.dev/graphql');
   Arweave _arweave;
-  GQLClient _gql = GQLClient(
-    url: 'https://arweave.dev/graphql',
-  );
 
   ArweaveDao(this._arweave);
 
   Future<UpdatedEntities> getUpdatedEntities(
       String address, int latestBlockNumber) async {
-    final newEntitiesQuery = await _gql.query(
-      query: r'''
-        query UpdatedEntities($latestBlockNumber: Int) {
-          transactions(
-            first: 50
-            tags: [{ name: "App-Name", values: ["drive"] }]
-            block: { min: $latestBlockNumber }
-          ) {
-            edges {
-              node {
-                id
-                tags {
-                  name
-                  value
-                }
-              }
-            }
-          }
-        }
-      ''',
-      variables: {
-        "latestBlockNumber": latestBlockNumber,
-      },
-    );
+    final updatedEntitiesQuery = await _gql.execute(UpdatedEntitiesQuery(
+        variables:
+            UpdatedEntitiesArguments(minBlockNumber: latestBlockNumber)));
+    final entityNodes = updatedEntitiesQuery.data.transactions.edges
+        .map((e) => e.node)
+        .toList();
+    final entityData = (await Future.wait(
+        entityNodes.map((e) => _arweave.transactions.getData(e.id)).toList()));
 
-    List<dynamic> entityMetadataMap = newEntitiesQuery.data['transactions']
-            ['edges']
-        .map((e) => EntityMetadata(e['node']['id'], e['node']['tags']))
-        .toList();
-    final entityData = (await Future.wait(entityMetadataMap
-            .map((e) => _arweave.transactions.getData(e.id))
-            .toList()))
-        // Entities can sometimes show up in queries even though they aren't mined yet.
-        .map((e) => e != null ? utils.decodeBase64ToString(e) : null)
-        .toList();
+    final rawEntities = <RawEntity>[];
+    for (var i = 0; i < entityNodes.length; i++) {
+      // Entities can sometimes show up in queries even though they aren't mined yet so we'll have to check here.
+      final entityJson = entityData[i] != null
+          ? json.decode(utils.decodeBase64ToString(entityData[i]))
+          : null;
+
+      // If the JSON is invalid, don't add it to the entities list.
+      if (entityJson != null)
+        rawEntities
+            .add(RawEntity(entityNodes[i].id, entityNodes[i].tags, entityJson));
+    }
 
     final driveEntities = <String, DriveEntity>{};
     final folderEntitites = <String, FolderEntity>{};
     final fileEntities = <String, FileEntity>{};
 
-    for (var i = 0; i < entityMetadataMap.length; i++) {
-      if (entityData[i] == null) continue;
+    for (final entity in rawEntities) {
+      final entityType = entity.getTag(EntityTag.entityType);
 
-      final entityMetadata = entityMetadataMap[i];
-      final entityType = _txGetTag(entityMetadata, 'Entity-Type');
-
-      final driveId = _txGetTag(entityMetadata, 'Drive-Id');
-      final folderId = _txGetTag(entityMetadata, 'Folder-Id');
-      final parentFolderId = _txGetTag(entityMetadata, 'Parent-Folder-Id');
-      final fileId = _txGetTag(entityMetadata, 'File-Id');
-
-      if (entityType == 'drive') {
-        if (driveEntities.containsKey(driveId)) continue;
-
-        final drive = DriveEntity.fromJson(json.decode(entityData[i]));
-        drive.id = driveId;
-        driveEntities[driveId] = drive;
-      } else if (entityType == 'folder') {
-        if (folderEntitites.containsKey(folderId)) continue;
-
-        final folder = FolderEntity.fromJson(json.decode(entityData[i]));
-        folder.id = folderId;
-        folder.driveId = driveId;
-        folder.parentFolderId = parentFolderId;
-        folderEntitites[folderId] = folder;
-      } else if (entityType == 'file') {
-        if (fileEntities.containsKey(fileId)) continue;
-
-        final file = FileEntity.fromJson(json.decode(entityData[i]));
-        file.id = fileId;
-        file.driveId = driveId;
-        file.parentFolderId = parentFolderId;
-        fileEntities[fileId] = file;
+      if (entityType == EntityType.drive) {
+        final drive = DriveEntity.fromRawEntity(entity);
+        if (!driveEntities.containsKey(drive.id))
+          driveEntities[drive.id] = drive;
+      } else if (entityType == EntityType.folder) {
+        final folder = FolderEntity.fromRawEntity(entity);
+        if (!folderEntitites.containsKey(folder.id))
+          folderEntitites[folder.id] = folder;
+      } else if (entityType == EntityType.file) {
+        final file = FileEntity.fromRawEntity(entity);
+        if (!fileEntities.containsKey(file.id)) fileEntities[file.id] = file;
       }
     }
 
@@ -100,19 +66,17 @@ class ArweaveDao {
         latestBlockNumber, driveEntities, folderEntitites, fileEntities);
   }
 
-  String _txGetTag(EntityMetadata entity, String tagName) {
-    final tag =
-        entity.tags.firstWhere((t) => t['name'] == tagName, orElse: () => null);
-    return tag != null ? tag['value'] : null;
-  }
-
   Future<DriveEntity> getDriveEntity(String driveId) async {
     final driveTxId = (await _arweave.transactions.arql({
       "op": "and",
-      "expr1": {"op": "equals", "expr1": "Entity-Type", "expr2": "drive"},
+      "expr1": {
+        "op": "equals",
+        "expr1": EntityTag.entityType,
+        "expr2": "drive"
+      },
       "expr2": {
         "op": "equals",
-        "expr1": "Drive-Id",
+        "expr1": EntityTag.driveId,
         "expr2": driveId,
       },
     }))[0];
@@ -136,8 +100,8 @@ class ArweaveDao {
 
     driveEntityTx.addApplicationTags();
     driveEntityTx.addJsonContentTypeTag();
-    driveEntityTx.addTag('Entity-Type', 'drive');
-    driveEntityTx.addTag('Drive-Id', driveId);
+    driveEntityTx.addTag(EntityTag.entityType, 'drive');
+    driveEntityTx.addTag(EntityTag.driveId, driveId);
 
     await driveEntityTx.sign(wallet);
 
@@ -160,12 +124,12 @@ class ArweaveDao {
 
     folderEntityTx.addApplicationTags();
     folderEntityTx.addJsonContentTypeTag();
-    folderEntityTx.addTag('Entity-Type', 'folder');
-    folderEntityTx.addTag('Drive-Id', driveId);
-    folderEntityTx.addTag('Folder-Id', folderId);
+    folderEntityTx.addTag(EntityTag.entityType, 'folder');
+    folderEntityTx.addTag(EntityTag.driveId, driveId);
+    folderEntityTx.addTag(EntityTag.folderId, folderId);
 
     if (parentFolderId != null)
-      folderEntityTx.addTag('Parent-Folder-Id', parentFolderId);
+      folderEntityTx.addTag(EntityTag.parentFolderId, parentFolderId);
 
     await folderEntityTx.sign(wallet);
 
@@ -189,10 +153,10 @@ class ArweaveDao {
 
     fileEntityTx.addApplicationTags();
     fileEntityTx.addJsonContentTypeTag();
-    fileEntityTx.addTag('Entity-Type', 'file');
-    fileEntityTx.addTag('Drive-Id', driveId);
-    fileEntityTx.addTag('Parent-Folder-Id', parentFolderId);
-    fileEntityTx.addTag('File-Id', fileId);
+    fileEntityTx.addTag(EntityTag.entityType, 'file');
+    fileEntityTx.addTag(EntityTag.driveId, driveId);
+    fileEntityTx.addTag(EntityTag.parentFolderId, parentFolderId);
+    fileEntityTx.addTag(EntityTag.fileId, fileId);
 
     await fileEntityTx.sign(wallet);
 
@@ -228,13 +192,6 @@ class ArweaveDao {
 
   Future<List<Response>> batchPostTxs(List<Transaction> transactions) =>
       Future.wait(transactions.map((tx) => _arweave.transactions.post(tx)));
-}
-
-class EntityMetadata {
-  final String id;
-  final List<dynamic> tags;
-
-  EntityMetadata(this.id, this.tags);
 }
 
 class UpdatedEntities {

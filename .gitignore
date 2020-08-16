@@ -1,5 +1,7 @@
 # Generated code
 *.g.dart
+graphql_api.dart
+graphql_api.graphql.dart
 
 # Miscellaneous
 *.class

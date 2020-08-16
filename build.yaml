@@ -1,0 +1,10 @@
+targets:
+  $default:
+    builders:
+      artemis:
+        options:
+          schema_mapping:
+            - output: lib/repositories/arweave/graphql/graphql_api.dart
+              schema: lib/repositories/arweave/graphql/schema.graphql
+              queries_glob: lib/repositories/arweave/graphql/queries/**.graphql
+          fragments_glob: lib/repositories/arweave/graphql/fragments/**.graphql
