@@ -12,7 +12,7 @@ part 'drive_dao.g.dart';
 
 @UseDao(tables: [Drives, FolderEntries, FileEntries])
 class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
-  final uuid = Uuid();
+  final _uuid = Uuid();
 
   DriveDao(Database db) : super(db);
 
@@ -25,17 +25,23 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<FolderEntry> getFolderById(String folderId) =>
       (select(folderEntries)..where((d) => d.id.equals(folderId))).getSingle();
 
-  Stream<FolderWithContents> watchFolderWithContents(String folderId) {
+  Stream<FolderWithContents> watchFolder(String driveId, String folderPath) {
     final folderStream = (select(folderEntries)
-          ..where((f) => f.id.equals(folderId)))
+          ..where((f) => f.driveId.equals(driveId) & f.path.equals(folderPath)))
         .watchSingle();
 
     final subfoldersStream = (select(folderEntries)
-          ..where((f) => f.parentFolderId.equals(folderId)))
+          ..where((f) =>
+              f.driveId.equals(driveId) &
+              f.path.like('$folderPath/%') &
+              f.path.like('$folderPath/%/%').not()))
         .watch();
 
     final filesStream = (select(fileEntries)
-          ..where((f) => f.parentFolderId.equals(folderId)))
+          ..where((f) =>
+              f.driveId.equals(driveId) &
+              f.path.like('$folderPath/%') &
+              f.path.like('$folderPath/%/%').not()))
         .watch();
 
     return Rx.combineLatest3(
@@ -48,61 +54,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         files: files,
       ),
     );
-  }
-
-  Stream<FolderWithContents> watchFolderWithContentsAtPath(String folderPath) {
-    final folderStream = (select(folderEntries)
-          ..where((f) => f.path.equals(folderPath)))
-        .watchSingle();
-
-    final subfoldersStream = (select(folderEntries)
-          ..where((f) => f.path.like('$folderPath/%'))
-          ..where((f) => f.path.like('$folderPath/%/%').not()))
-        .watch();
-
-    final filesStream = (select(fileEntries)
-          ..where((f) => f.path.like('$folderPath/%'))
-          ..where((f) => f.path.like('$folderPath/%/%').not()))
-        .watch();
-
-    return Rx.combineLatest3(
-      folderStream,
-      subfoldersStream,
-      filesStream,
-      (folder, subfolders, files) => FolderWithContents(
-        folder: folder,
-        subfolders: subfolders,
-        files: files,
-      ),
-    );
-  }
-
-  Future<bool> isDriveEmpty(String driveId) async {
-    final folders = await (select(folderEntries)
-          ..where((f) => f.driveId.equals(driveId)))
-        .get();
-    if (folders.length > 0) return false;
-
-    final files = await (select(fileEntries)
-          ..where((f) => f.driveId.equals(driveId)))
-        .get();
-    if (files.length > 0) return false;
-
-    return true;
-  }
-
-  Future<bool> isFolderEmpty(String folderId) async {
-    final folders = await (select(folderEntries)
-          ..where((f) => f.parentFolderId.equals(folderId)))
-        .get();
-    if (folders.length > 0) return false;
-
-    final files = await (select(fileEntries)
-          ..where((f) => f.parentFolderId.equals(folderId)))
-        .get();
-    if (files.length > 0) return false;
-
-    return true;
   }
 
   Future<String> fileExistsInFolder(String folderId, String filename) async {
@@ -114,23 +65,30 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return file != null ? file.id : null;
   }
 
-  Future<void> createNewFolderEntry(
+  /// Create a new folder entry.
+  /// Returns the id of the created folder.
+  Future<String> createNewFolder(
     String driveId,
     String parentFolderId,
     String folderName,
     String path,
-  ) =>
-      into(folderEntries).insert(
-        FolderEntriesCompanion(
-          id: Value(uuid.v4()),
-          driveId: Value(driveId),
-          parentFolderId: Value(parentFolderId),
-          name: Value(folderName),
-          path: Value(path),
-        ),
-      );
+  ) async {
+    final id = _uuid.v4();
 
-  Future<void> writeFileEntry(
+    await into(folderEntries).insert(
+      FolderEntriesCompanion(
+        id: Value(id),
+        driveId: Value(driveId),
+        parentFolderId: Value(parentFolderId),
+        name: Value(folderName),
+        path: Value(path),
+      ),
+    );
+
+    return id;
+  }
+
+  Future<void> writeFileEntity(
     FileEntity entity,
     String path,
   ) =>

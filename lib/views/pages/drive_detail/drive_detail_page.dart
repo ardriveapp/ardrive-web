@@ -30,8 +30,8 @@ class DriveDetailPage extends StatelessWidget {
                 builder: (context, state) => Column(
                   children: <Widget>[
                     if (state is FolderOpened) ...{
-                      _buildBreadcrumbRow(
-                          context, state.openedFolder.folder.path),
+                      _buildBreadcrumbRow(context, state.openedDrive.name,
+                          state.openedFolder.folder.path),
                       Row(
                         children: [
                           Expanded(
@@ -53,26 +53,30 @@ class DriveDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildBreadcrumbRow(BuildContext context, String path) {
+  Widget _buildBreadcrumbRow(
+      BuildContext context, String driveName, String path) {
     final pathSegments = path.split('/').where((s) => s != '').toList();
 
     return Row(
-      children: pathSegments
-          .asMap()
-          .entries
-          .expand((s) => [
-                FlatButton(
-                  onPressed: () => context.bloc<DriveDetailBloc>().add(
-                        OpenFolder(
-                          folderPath:
-                              '/${pathSegments.sublist(0, s.key + 1).join('/')}',
-                        ),
-                      ),
-                  child: Text(s.value),
-                ),
-                if (s.key < pathSegments.length - 1) Icon(Icons.chevron_right),
-              ])
-          .toList(),
+      children: [
+        FlatButton(
+          onPressed: () => context.bloc<DriveDetailBloc>().add(
+                OpenFolder(''),
+              ),
+          child: Text(driveName),
+        ),
+        if (pathSegments.length > 0) Icon(Icons.chevron_right),
+        ...pathSegments.asMap().entries.expand((s) => [
+              FlatButton(
+                onPressed: () => context.bloc<DriveDetailBloc>().add(
+                      OpenFolder(
+                          '/${pathSegments.sublist(0, s.key + 1).join('/')}'),
+                    ),
+                child: Text(s.value),
+              ),
+              if (s.key < pathSegments.length - 1) Icon(Icons.chevron_right),
+            ])
+      ],
     );
   }
 }

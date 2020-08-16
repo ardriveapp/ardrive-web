@@ -36,7 +36,9 @@ class _AppShellState extends State<AppShell> {
             key: ValueKey(state.selectedDriveId),
             create: (context) => DriveDetailBloc(
               driveId: state.selectedDriveId,
+              userBloc: context.bloc<UserBloc>(),
               uploadBloc: context.bloc<UploadBloc>(),
+              arweaveDao: context.repository<ArweaveDao>(),
               driveDao: context.repository<DriveDao>(),
             ),
             child: content,

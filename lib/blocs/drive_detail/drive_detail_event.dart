@@ -12,11 +12,9 @@ class OpenedDrive extends DriveDetailEvent {
 }
 
 class OpenFolder extends DriveDetailEvent {
-  final String folderId;
   final String folderPath;
 
-  OpenFolder({this.folderId, this.folderPath})
-      : assert(folderId != null || folderPath != null);
+  OpenFolder(this.folderPath);
 }
 
 class OpenedFolder extends DriveDetailEvent {

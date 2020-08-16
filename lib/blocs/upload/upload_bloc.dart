@@ -53,28 +53,6 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
     final wallet = (_userBloc.state as UserAuthenticated).userWallet;
     final transactions = <Transaction>[];
 
-    if (await _driveDao.isDriveEmpty(fileEntity.driveId)) {
-      final drive = await _driveDao.getDriveById(fileEntity.driveId);
-
-      transactions.add(await _arweaveDao.prepareDriveEntityTx(
-          DriveEntity(id: drive.id, rootFolderId: drive.rootFolderId), wallet));
-    }
-
-    if (await _driveDao.isFolderEmpty(fileEntity.parentFolderId)) {
-      final parentFolder =
-          await _driveDao.getFolderById(fileEntity.parentFolderId);
-
-      transactions.add(await _arweaveDao.prepareFolderEntityTx(
-        FolderEntity(
-          id: parentFolder.id,
-          driveId: fileEntity.driveId,
-          parentFolderId: parentFolder.parentFolderId,
-          name: parentFolder.name,
-        ),
-        wallet,
-      ));
-    }
-
     final uploadTxs = await _arweaveDao.prepareFileUploadTxs(
       fileEntity,
       event.fileStream,
@@ -103,7 +81,7 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
 
     await _arweaveDao.batchPostTxs(event.uploadTransactions);
 
-    await _driveDao.writeFileEntry(
+    await _driveDao.writeFileEntity(
       fileEntity,
       event.filePath,
     );

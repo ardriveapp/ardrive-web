@@ -12,7 +12,9 @@ part 'drive_detail_state.dart';
 
 class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   final String _driveId;
+  final UserBloc _userBloc;
   final UploadBloc _uploadBloc;
+  final ArweaveDao _arweaveDao;
   final DriveDao _driveDao;
 
   StreamSubscription _driveSubscription;
@@ -20,9 +22,13 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
 
   DriveDetailBloc(
       {@required String driveId,
+      @required ArweaveDao arweaveDao,
+      @required UserBloc userBloc,
       @required UploadBloc uploadBloc,
       @required DriveDao driveDao})
       : _driveId = driveId,
+        _arweaveDao = arweaveDao,
+        _userBloc = userBloc,
         _uploadBloc = uploadBloc,
         _driveDao = driveDao,
         super(DriveOpening()) {
@@ -57,8 +63,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
 
   Stream<DriveDetailState> _mapOpenedDriveToState(OpenedDrive event) async* {
     // If we're not already opening or have opened a folder, open the root drive folder.
-    if (!(state is FolderOpened || state is FolderOpening))
-      add(OpenFolder(folderId: event.drive.rootFolderId));
+    if (!(state is FolderOpened || state is FolderOpening)) add(OpenFolder(''));
 
     yield DriveOpened(openedDrive: event.drive);
   }
@@ -66,13 +71,9 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   Stream<DriveDetailState> _mapOpenFolderToState(OpenFolder event) async* {
     if (state is DriveOpened) {
       _folderSubscription?.cancel();
-
-      final folderStream = event.folderId != null
-          ? _driveDao.watchFolderWithContents(event.folderId)
-          : _driveDao.watchFolderWithContentsAtPath(event.folderPath);
-
-      _folderSubscription =
-          folderStream.listen((folder) => add(OpenedFolder(folder)));
+      _folderSubscription = _driveDao
+          .watchFolder(_driveId, event.folderPath)
+          .listen((folder) => add(OpenedFolder(folder)));
     }
   }
 
@@ -88,12 +89,22 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   Stream<DriveDetailState> _mapNewFolderToState(NewFolder event) async* {
     if (state is FolderOpened) {
       final currentFolder = (state as FolderOpened).openedFolder.folder;
-      await _driveDao.createNewFolderEntry(
+
+      final newFolderId = await _driveDao.createNewFolder(
         _driveId,
         currentFolder.id,
         event.folderName,
         '${currentFolder.path}/${event.folderName}',
       );
+
+      final folderTx = await _arweaveDao.prepareFolderEntityTx(
+          FolderEntity(
+            id: newFolderId,
+            parentFolderId: currentFolder.id,
+            name: event.folderName,
+          ),
+          (_userBloc.state as UserAuthenticated).userWallet);
+      await _arweaveDao.postTx(folderTx);
     }
   }
 

@@ -84,7 +84,10 @@ class ArweaveDao {
 
     final entity = DriveEntity.fromJson(
         json.decode(utils.decodeBase64ToString(driveTx.data)));
-    entity.id = driveTx.id;
+    entity.id = utils.decodeBase64ToString(driveTx.tags
+        .firstWhere(
+            (d) => d.name == utils.encodeStringToBase64(EntityTag.driveId))
+        .value);
 
     return entity;
   }
@@ -184,6 +187,9 @@ class ArweaveDao {
 
     return UploadTransactions(fileEntityTx, fileDataTx);
   }
+
+  Future<Response> postTx(Transaction transaction) =>
+      _arweave.transactions.post(transaction);
 
   Future<List<Response>> batchPostTxs(List<Transaction> transactions) =>
       Future.wait(transactions.map((tx) => _arweave.transactions.post(tx)));

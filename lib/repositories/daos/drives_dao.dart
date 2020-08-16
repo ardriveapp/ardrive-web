@@ -16,29 +16,35 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
 
   Stream<List<Drive>> watchAllDrives() => select(drives).watch();
 
-  Future<void> createDrive({@required String name}) => batch((batch) {
-        final driveId = uuid.v4();
-        final rootFolderId = uuid.v4();
+  /// Creates a drive with its accompanying root folder.
+  /// Return a list with two ids, the first being the drive id and the second being the root folder id.
+  Future<List<String>> createDrive({@required String name}) async {
+    final driveId = uuid.v4();
+    final rootFolderId = uuid.v4();
 
-        batch.insert(
-          drives,
-          DrivesCompanion(
-            id: Value(driveId),
-            name: Value(name),
-            rootFolderId: Value(rootFolderId),
-          ),
-        );
+    await batch((batch) {
+      batch.insert(
+        drives,
+        DrivesCompanion(
+          id: Value(driveId),
+          name: Value(name),
+          rootFolderId: Value(rootFolderId),
+        ),
+      );
 
-        batch.insert(
-          folderEntries,
-          FolderEntriesCompanion(
-            id: Value(rootFolderId),
-            driveId: Value(driveId),
-            name: Value(name),
-            path: Value('/$name'),
-          ),
-        );
-      });
+      batch.insert(
+        folderEntries,
+        FolderEntriesCompanion(
+          id: Value(rootFolderId),
+          driveId: Value(driveId),
+          name: Value(name),
+          path: Value(''),
+        ),
+      );
+    });
+
+    return [driveId, rootFolderId];
+  }
 
   Future<void> attachDrive(String name, DriveEntity driveEntity) =>
       into(drives).insert(DrivesCompanion(
@@ -64,7 +70,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
                 driveId: Value(folderEntity.driveId),
                 parentFolderId: Value(folderEntity.parentFolderId),
                 name: Value(folderEntity.name),
-                path: Value('/'),
+                path: Value(''),
               ),
               onConflict: DoUpdate((_) => FolderEntriesCompanion(
                     parentFolderId: Value(folderEntity.parentFolderId),
@@ -90,8 +96,14 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
                 ..removeWhere((k, f) => f.parentFolderId != folderId),
             );
 
+          final isRootFolder = (await (select(drives)
+                    ..where((d) => d.rootFolderId.equals(folderId)))
+                  .getSingle()) !=
+              null;
+
           return StaleFolderNode(
               folderId,
+              isRootFolder,
               entity,
               await Future.wait(
                   staleSubfolders.map((f) => getStaleFolderTree(f.id, null))),
@@ -130,14 +142,15 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
                   .map((f) => f.driveId)
                   .getSingle();
 
-          final newPath = parentPath + '/' + folderName;
+          final folderPath =
+              !node.isRootFolder ? parentPath + '/' + folderName : '';
 
           await into(folderEntries).insertOnConflictUpdate(
             FolderEntriesCompanion(
               id: Value(node.id),
               driveId: Value(driveId),
               name: Value(folderName),
-              path: Value(newPath),
+              path: Value(folderPath),
             ),
           );
 
@@ -148,7 +161,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
                     .map((f) => f.name)
                     .getSingle();
 
-            final filePath = newPath + '/' + fileName;
+            final filePath = folderPath + '/' + fileName;
 
             if (node.files[staleFileId] != null) {
               await into(fileEntries)
@@ -170,7 +183,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
           }
 
           for (final staleFolder in node.subfolders)
-            await updateFolderTree(staleFolder, newPath);
+            await updateFolderTree(staleFolder, folderPath);
         }
 
         for (final staleFolder in staleFolders) {
@@ -193,11 +206,13 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
 
 class StaleFolderNode {
   final String id;
+  final bool isRootFolder;
   final FolderEntity entity;
   final List<StaleFolderNode> subfolders;
   final Map<String, FileEntity> files;
 
-  StaleFolderNode(this.id, this.entity, this.subfolders, this.files);
+  StaleFolderNode(
+      this.id, this.isRootFolder, this.entity, this.subfolders, this.files);
 
   StaleFolderNode searchForFolder(String folderId) {
     if (id == folderId) return this;
