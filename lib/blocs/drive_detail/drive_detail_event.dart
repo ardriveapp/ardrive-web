@@ -32,9 +32,8 @@ class NewFolder extends DriveDetailEvent {
 }
 
 class UploadFile extends DriveDetailEvent {
-  final String fileName;
-  final int fileSize;
+  final FileEntity fileEntity;
   final Uint8List fileStream;
 
-  UploadFile(this.fileName, this.fileSize, this.fileStream);
+  UploadFile(this.fileEntity, this.fileStream);
 }

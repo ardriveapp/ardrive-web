@@ -4,41 +4,25 @@ part of 'upload_bloc.dart';
 abstract class UploadEvent {}
 
 class PrepareFileUpload extends UploadEvent {
-  final String driveId;
-  final String parentFolderId;
-  final String fileName;
+  final FileEntity fileEntity;
   final String filePath;
-  final int fileSize;
   final Uint8List fileStream;
 
   PrepareFileUpload(
-    this.driveId,
-    this.parentFolderId,
-    this.fileName,
+    this.fileEntity,
     this.filePath,
-    this.fileSize,
     this.fileStream,
   );
 }
 
 class UploadFileToNetwork extends UploadEvent {
-  final String fileId;
-  final String driveId;
-  final String parentFolderId;
-  final String fileName;
+  final FileEntity fileEntity;
   final String filePath;
-  final String fileDataTxId;
-  final int fileSize;
-  final List<Transaction> transactions;
+  final List<Transaction> uploadTransactions;
 
   UploadFileToNetwork(
-    this.fileId,
-    this.driveId,
-    this.parentFolderId,
-    this.fileName,
+    this.fileEntity,
     this.filePath,
-    this.fileDataTxId,
-    this.fileSize,
-    this.transactions,
+    this.uploadTransactions,
   );
 }

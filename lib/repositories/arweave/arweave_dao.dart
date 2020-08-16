@@ -91,6 +91,8 @@ class ArweaveDao {
 
   Future<Transaction> prepareDriveEntityTx(
       DriveEntity entity, Wallet wallet) async {
+    assert(entity.id != null && entity.rootFolderId != null);
+
     final tx = await _arweave.createTransaction(
       Transaction(data: json.encode(entity.toJson())),
       wallet,
@@ -110,6 +112,11 @@ class ArweaveDao {
     FolderEntity entity,
     Wallet wallet,
   ) async {
+    assert(entity.id != null &&
+        entity.driveId != null &&
+        entity.parentFolderId != null &&
+        entity.name != null);
+
     final tx = await _arweave.createTransaction(
       Transaction(data: json.encode(entity.toJson())),
       wallet,
@@ -131,6 +138,12 @@ class ArweaveDao {
 
   Future<Transaction> prepareFileEntityTx(
       FileEntity entity, Wallet wallet) async {
+    assert(entity.id != null &&
+        entity.driveId != null &&
+        entity.parentFolderId != null &&
+        entity.name != null &&
+        entity.size != null);
+
     final tx = await _arweave.createTransaction(
       Transaction(data: json.encode(entity.toJson())),
       wallet,

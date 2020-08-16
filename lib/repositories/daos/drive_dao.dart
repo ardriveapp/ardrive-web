@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:drive/repositories/entities/entities.dart';
 import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
@@ -130,23 +131,18 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       );
 
   Future<void> writeFileEntry(
-    String fileId,
-    String driveId,
-    String parentFolderId,
-    String fileName,
-    String filePath,
-    String fileDataTxId,
-    int fileSize,
+    FileEntity entity,
+    String path,
   ) =>
       into(fileEntries).insertOnConflictUpdate(
         FileEntriesCompanion(
-          id: Value(fileId),
-          driveId: Value(driveId),
-          parentFolderId: Value(parentFolderId),
-          name: Value(fileName),
-          path: Value(filePath),
-          dataTxId: Value(fileDataTxId),
-          size: Value(fileSize),
+          id: Value(entity.id),
+          driveId: Value(entity.driveId),
+          parentFolderId: Value(entity.parentFolderId),
+          name: Value(entity.name),
+          path: Value(path),
+          dataTxId: Value(entity.dataTxId),
+          size: Value(entity.size),
           ready: Value(false),
         ),
       );

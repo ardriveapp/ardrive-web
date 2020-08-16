@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:drive/blocs/blocs.dart';
+import 'package:drive/repositories/entities/entities.dart';
 import 'package:drive/repositories/repositories.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
@@ -99,13 +100,14 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   Stream<DriveDetailState> _mapUploadFileToState(UploadFile event) async* {
     if (state is FolderOpened) {
       final currentFolder = (state as FolderOpened).openedFolder.folder;
+      event.fileEntity
+        ..driveId = _driveId
+        ..parentFolderId = currentFolder.id;
+
       _uploadBloc.add(
         PrepareFileUpload(
-          _driveId,
-          currentFolder.id,
-          event.fileName,
-          '${currentFolder.path}/${event.fileName}',
-          event.fileSize,
+          event.fileEntity,
+          '${currentFolder.path}/${event.fileEntity.name}',
           event.fileStream,
         ),
       );

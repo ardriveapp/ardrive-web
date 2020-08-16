@@ -1,4 +1,5 @@
 import 'package:drive/blocs/blocs.dart';
+import 'package:drive/repositories/entities/entities.dart';
 import 'package:drive/views/views.dart';
 import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:flutter/material.dart';
@@ -129,8 +130,10 @@ class AppDrawer extends StatelessWidget {
 
     context.bloc<DriveDetailBloc>().add(
           UploadFile(
-            basename(fileChooseResult.path),
-            fileChooseResult.length,
+            FileEntity(
+              name: basename(fileChooseResult.path),
+              size: fileChooseResult.length,
+            ),
             fileChooseResult.toUint8List(),
           ),
         );
