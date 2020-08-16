@@ -6,6 +6,7 @@ import 'package:drive/repositories/entities/entities.dart';
 import 'package:drive/repositories/repositories.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
+import 'package:rxdart/rxdart.dart';
 
 part 'drive_detail_event.dart';
 part 'drive_detail_state.dart';
@@ -17,7 +18,6 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   final ArweaveDao _arweaveDao;
   final DriveDao _driveDao;
 
-  StreamSubscription _driveSubscription;
   StreamSubscription _folderSubscription;
 
   DriveDetailBloc(
@@ -31,19 +31,15 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
         _userBloc = userBloc,
         _uploadBloc = uploadBloc,
         _driveDao = driveDao,
-        super(DriveOpening()) {
-    add(OpenDrive());
+        super(FolderOpening()) {
+    add(OpenFolder(''));
   }
 
   @override
   Stream<DriveDetailState> mapEventToState(
     DriveDetailEvent event,
   ) async* {
-    if (event is OpenDrive)
-      yield* _mapOpenDriveToState(event);
-    else if (event is OpenedDrive)
-      yield* _mapOpenedDriveToState(event);
-    else if (event is OpenFolder)
+    if (event is OpenFolder)
       yield* _mapOpenFolderToState(event);
     else if (event is OpenedFolder)
       yield* _mapOpenedFolderToState(event);
@@ -52,38 +48,20 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
     else if (event is UploadFile) yield* _mapUploadFileToState(event);
   }
 
-  Stream<DriveDetailState> _mapOpenDriveToState(OpenDrive event) async* {
-    _driveSubscription?.cancel();
-    _driveSubscription = _driveDao.watchDrive(_driveId).listen(
-      (drive) {
-        if (drive != null) add(OpenedDrive(drive));
-      },
-    );
-  }
-
-  Stream<DriveDetailState> _mapOpenedDriveToState(OpenedDrive event) async* {
-    // If we're not already opening or have opened a folder, open the root drive folder.
-    if (!(state is FolderOpened || state is FolderOpening)) add(OpenFolder(''));
-
-    yield DriveOpened(openedDrive: event.drive);
-  }
-
   Stream<DriveDetailState> _mapOpenFolderToState(OpenFolder event) async* {
-    if (state is DriveOpened) {
-      _folderSubscription?.cancel();
-      _folderSubscription = _driveDao
-          .watchFolder(_driveId, event.folderPath)
-          .listen((folder) => add(OpenedFolder(folder)));
-    }
+    _folderSubscription?.cancel();
+    _folderSubscription = Rx.combineLatest2(
+      _driveDao.watchDrive(_driveId),
+      _driveDao.watchFolder(_driveId, event.folderPath),
+      (drive, folderContents) => OpenedFolder(drive, folderContents),
+    ).listen((event) => add(event));
   }
 
   Stream<DriveDetailState> _mapOpenedFolderToState(OpenedFolder event) async* {
-    if (state is DriveOpened) {
-      yield FolderOpened(
-        openedDrive: (state as DriveOpened).openedDrive,
-        openedFolder: event.openedFolder,
-      );
-    }
+    yield FolderOpened(
+      openedDrive: event.openedDrive,
+      openedFolder: event.openedFolder,
+    );
   }
 
   Stream<DriveDetailState> _mapNewFolderToState(NewFolder event) async* {

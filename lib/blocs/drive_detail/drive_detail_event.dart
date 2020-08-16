@@ -3,14 +3,6 @@ part of 'drive_detail_bloc.dart';
 @immutable
 abstract class DriveDetailEvent {}
 
-class OpenDrive extends DriveDetailEvent {}
-
-class OpenedDrive extends DriveDetailEvent {
-  final Drive drive;
-
-  OpenedDrive(this.drive);
-}
-
 class OpenFolder extends DriveDetailEvent {
   final String folderPath;
 
@@ -18,9 +10,10 @@ class OpenFolder extends DriveDetailEvent {
 }
 
 class OpenedFolder extends DriveDetailEvent {
+  final Drive openedDrive;
   final FolderWithContents openedFolder;
 
-  OpenedFolder(this.openedFolder);
+  OpenedFolder(this.openedDrive, this.openedFolder);
 }
 
 class NewFolder extends DriveDetailEvent {

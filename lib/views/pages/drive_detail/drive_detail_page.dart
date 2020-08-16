@@ -61,7 +61,7 @@ class DriveDetailPage extends StatelessWidget {
       children: [
         FlatButton(
           onPressed: () => context.bloc<DriveDetailBloc>().add(
-                OpenFolder(''),
+                OpenFolder('')
               ),
           child: Text(driveName),
         ),
