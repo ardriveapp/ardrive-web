@@ -21,7 +21,7 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
       : _userBloc = userBloc,
         _arweaveDao = arweaveDao,
         _drivesDao = drivesDao,
-        super(SyncNotRunning());
+        super(SyncIdle());
 
   @override
   Stream<SyncState> mapEventToState(
@@ -37,6 +37,6 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
         (_userBloc.state as UserAuthenticated).userWallet.address, 0);
     await _drivesDao.updateStaleModels(changedEntities);
 
-    yield SyncNotRunning();
+    yield SyncIdle();
   }
 }
