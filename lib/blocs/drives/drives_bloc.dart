@@ -59,8 +59,9 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
 
   Stream<DrivesState> _mapNewDriveToState(NewDrive event) async* {
     if (state is DrivesReady) {
-      final ids = await this._drivesDao.createDrive(name: event.driveName);
       final wallet = (_userBloc.state as UserAuthenticated).userWallet;
+
+      final ids = await this._drivesDao.createDrive(name: event.driveName, owner: wallet.address);
 
       final driveTx = await this._arweaveDao.prepareDriveEntityTx(
           DriveEntity(id: ids[0], rootFolderId: ids[1]), wallet);

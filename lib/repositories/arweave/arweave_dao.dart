@@ -19,9 +19,11 @@ class ArweaveDao {
 
   Future<UpdatedEntities> getUpdatedEntities(
       String address, int latestBlockNumber) async {
-    final updatedEntitiesQuery = await _gql.execute(UpdatedEntitiesQuery(
-        variables:
-            UpdatedEntitiesArguments(minBlockNumber: latestBlockNumber)));
+    final updatedEntitiesQuery = await _gql.execute(
+      DriveEntityHistoryQuery(
+          variables:
+              DriveEntityHistoryArguments(minBlockNumber: latestBlockNumber)),
+    );
     final entityNodes = updatedEntitiesQuery.data.transactions.edges
         .map((e) => e.node)
         .toList();
@@ -37,8 +39,12 @@ class ArweaveDao {
 
       // If the JSON is invalid, don't add it to the entities list.
       if (entityJson != null)
-        rawEntities
-            .add(RawEntity(entityNodes[i].id, entityNodes[i].tags, entityJson));
+        rawEntities.add(
+          RawEntity(
+              txId: entityNodes[i].id,
+              tags: entityNodes[i].tags,
+              jsonData: entityJson),
+        );
     }
 
     final driveEntities = <String, DriveEntity>{};
@@ -67,27 +73,25 @@ class ArweaveDao {
   }
 
   Future<DriveEntity> getDriveEntity(String driveId) async {
-    final driveTxId = (await _arweave.transactions.arql({
-      "op": "and",
-      "expr1": {
-        "op": "equals",
-        "expr1": EntityTag.entityType,
-        "expr2": "drive"
-      },
-      "expr2": {
-        "op": "equals",
-        "expr1": EntityTag.driveId,
-        "expr2": driveId,
-      },
-    }))[0];
-    final driveTx = await _arweave.transactions.get(driveTxId);
+    final initialDriveEntityQuery = await _gql.execute(
+      InitialDriveEntityQuery(
+          variables: InitialDriveEntityArguments(driveId: driveId)),
+    );
 
-    final entity = DriveEntity.fromJson(
-        json.decode(utils.decodeBase64ToString(driveTx.data)));
-    entity.id = utils.decodeBase64ToString(driveTx.tags
-        .firstWhere(
-            (d) => d.name == utils.encodeStringToBase64(EntityTag.driveId))
-        .value);
+    final queryEdges = initialDriveEntityQuery.data.transactions.edges;
+    if (queryEdges.isEmpty) return null;
+
+    final driveNode = queryEdges[0].node;
+    final driveEntityData = await _arweave.transactions.getData(driveNode.id);
+
+    final entity = DriveEntity.fromRawEntity(
+      RawEntity(
+        txId: driveNode.id,
+        owner: driveNode.owner.address,
+        tags: driveNode.tags,
+        jsonData: json.decode(utils.decodeBase64ToString(driveEntityData)),
+      ),
+    );
 
     return entity;
   }

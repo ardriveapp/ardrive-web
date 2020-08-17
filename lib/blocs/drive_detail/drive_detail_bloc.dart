@@ -32,7 +32,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
         _uploadBloc = uploadBloc,
         _driveDao = driveDao,
         super(FolderOpening()) {
-    add(OpenFolder(''));
+    if (driveId != null) add(OpenFolder(''));
   }
 
   @override
@@ -59,14 +59,16 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
 
   Stream<DriveDetailState> _mapOpenedFolderToState(OpenedFolder event) async* {
     yield FolderOpened(
-      openedDrive: event.openedDrive,
-      openedFolder: event.openedFolder,
+      currentDrive: event.openedDrive,
+      hasWritePermissions: event.openedDrive.owner ==
+          (_userBloc.state as UserAuthenticated).userWallet.address,
+      currentFolder: event.openedFolder,
     );
   }
 
   Stream<DriveDetailState> _mapNewFolderToState(NewFolder event) async* {
     if (state is FolderOpened) {
-      final currentFolder = (state as FolderOpened).openedFolder.folder;
+      final currentFolder = (state as FolderOpened).currentFolder.folder;
 
       final newFolderId = await _driveDao.createNewFolder(
         _driveId,
@@ -88,7 +90,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
 
   Stream<DriveDetailState> _mapUploadFileToState(UploadFile event) async* {
     if (state is FolderOpened) {
-      final currentFolder = (state as FolderOpened).openedFolder.folder;
+      final currentFolder = (state as FolderOpened).currentFolder.folder;
       event.fileEntity
         ..driveId = _driveId
         ..parentFolderId = currentFolder.id;

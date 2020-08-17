@@ -6,10 +6,13 @@ abstract class DriveDetailState {}
 class FolderOpening extends DriveDetailState {}
 
 class FolderOpened extends DriveDetailState {
-  final Drive openedDrive;
-  final FolderWithContents openedFolder;
+  final Drive currentDrive;
+  final bool hasWritePermissions;
 
-  FolderOpened({this.openedDrive, this.openedFolder});
+  final FolderWithContents currentFolder;
+
+  FolderOpened(
+      {this.currentDrive, this.hasWritePermissions, this.currentFolder});
 }
 
 class DrivePathSegment {

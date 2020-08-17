@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'blocs/blocs.dart';
-import 'repositories/repositories.dart';
 import 'views/views.dart';
 
 class AppShell extends StatefulWidget {
@@ -30,19 +29,6 @@ class _AppShellState extends State<AppShell> {
             ],
           ),
         );
-
-        if (state is DrivesReady && state.selectedDriveId != null)
-          return BlocProvider(
-            key: ValueKey(state.selectedDriveId),
-            create: (context) => DriveDetailBloc(
-              driveId: state.selectedDriveId,
-              userBloc: context.bloc<UserBloc>(),
-              uploadBloc: context.bloc<UploadBloc>(),
-              arweaveDao: context.repository<ArweaveDao>(),
-              driveDao: context.repository<DriveDao>(),
-            ),
-            child: content,
-          );
 
         return content;
       },

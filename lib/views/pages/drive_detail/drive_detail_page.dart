@@ -30,14 +30,17 @@ class DriveDetailPage extends StatelessWidget {
                 builder: (context, state) => Column(
                   children: <Widget>[
                     if (state is FolderOpened) ...{
-                      _buildBreadcrumbRow(context, state.openedDrive.name,
-                          state.openedFolder.folder.path),
+                      _buildBreadcrumbRow(
+                        context,
+                        state.currentDrive.name,
+                        state.currentFolder.folder.path,
+                      ),
                       Row(
                         children: [
                           Expanded(
                             child: FolderView(
-                              subfolders: state.openedFolder.subfolders,
-                              files: state.openedFolder.files,
+                              subfolders: state.currentFolder.subfolders,
+                              files: state.currentFolder.files,
                             ),
                           ),
                         ],
@@ -60,9 +63,7 @@ class DriveDetailPage extends StatelessWidget {
     return Row(
       children: [
         FlatButton(
-          onPressed: () => context.bloc<DriveDetailBloc>().add(
-                OpenFolder('')
-              ),
+          onPressed: () => context.bloc<DriveDetailBloc>().add(OpenFolder('')),
           child: Text(driveName),
         ),
         if (pathSegments.length > 0) Icon(Icons.chevron_right),

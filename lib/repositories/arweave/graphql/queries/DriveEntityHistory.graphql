@@ -1,6 +1,6 @@
-query UpdatedEntities($minBlockNumber: Int) {
+query DriveEntityHistory($minBlockNumber: Int) {
   transactions(
-    first: 50
+    first: 100
     tags: [{ name: "App-Name", values: ["drive"] }]
     block: { min: $minBlockNumber }
   ) {

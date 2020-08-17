@@ -62,50 +62,53 @@ class AppDrawer extends StatelessWidget {
   }
 
   Widget _buildDriveActionsButton(BuildContext context) {
-    final drivesState = context.bloc<DrivesBloc>().state;
-
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-        child: PopupMenuButton<Function>(
-          onSelected: (callback) => callback(context),
-          child: FloatingActionButton.extended(
-            onPressed: null,
-            icon: Icon(Icons.add),
-            label: Text('NEW'),
+        child: BlocBuilder<DriveDetailBloc, DriveDetailState>(
+          builder: (context, state) => PopupMenuButton<Function>(
+            onSelected: (callback) => callback(context),
+            child: FloatingActionButton.extended(
+              onPressed: null,
+              icon: Icon(Icons.add),
+              label: Text('NEW'),
+            ),
+            itemBuilder: (context) => [
+              if (state is FolderOpened) ...{
+                PopupMenuItem(
+                  enabled: state.hasWritePermissions,
+                  value: _promptToCreateNewFolder,
+                  child: ListTile(
+                    enabled: state.hasWritePermissions,
+                    title: Text('New folder'),
+                  ),
+                ),
+                PopupMenuDivider(),
+                PopupMenuItem(
+                  enabled: state.hasWritePermissions,
+                  value: _promptToUploadFile,
+                  child: ListTile(
+                    enabled: state.hasWritePermissions,
+                    title: Text('Upload file'),
+                  ),
+                ),
+                PopupMenuDivider(),
+              },
+              PopupMenuItem(
+                value: promptToCreateNewDrive,
+                child: ListTile(
+                  title: Text('New drive'),
+                ),
+              ),
+              PopupMenuItem(
+                value: _promptToAttachDrive,
+                child: ListTile(
+                  title: Text('Attach drive'),
+                ),
+              ),
+            ],
           ),
-          itemBuilder: (context) => [
-            if (drivesState is DrivesReady &&
-                drivesState.selectedDriveId != null) ...{
-              PopupMenuItem(
-                value: _promptToCreateNewFolder,
-                child: ListTile(
-                  title: Text('New folder'),
-                ),
-              ),
-              PopupMenuDivider(),
-              PopupMenuItem(
-                value: _promptToUploadFile,
-                child: ListTile(
-                  title: Text('Upload file'),
-                ),
-              ),
-              PopupMenuDivider(),
-            },
-            PopupMenuItem(
-              value: promptToCreateNewDrive,
-              child: ListTile(
-                title: Text('New drive'),
-              ),
-            ),
-            PopupMenuItem(
-              value: _promptToAttachDrive,
-              child: ListTile(
-                title: Text('Attach drive'),
-              ),
-            ),
-          ],
         ),
       ),
     );

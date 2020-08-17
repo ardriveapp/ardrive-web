@@ -35,68 +35,80 @@ class App extends StatelessWidget {
       child: MaterialApp(
         title: 'Drive',
         theme: appTheme(),
-        home: BlocBuilder<UserBloc, UserState>(
-          builder: (context, state) {
-            if (state is UserUnauthenticated) return UnauthedPage();
-            if (state is UserAuthenticated)
-              return MultiRepositoryProvider(
+        home: BlocBuilder<UserBloc, UserState>(builder: (context, state) {
+          if (state is UserUnauthenticated) return UnauthedPage();
+          if (state is UserAuthenticated)
+            return MultiRepositoryProvider(
+              providers: [
+                RepositoryProvider<ArweaveDao>(create: (_) => arweaveDao),
+                RepositoryProvider<DrivesDao>(create: (_) => db.drivesDao),
+                RepositoryProvider<DriveDao>(create: (_) => db.driveDao),
+              ],
+              child: MultiBlocProvider(
                 providers: [
-                  RepositoryProvider<ArweaveDao>(create: (_) => arweaveDao),
-                  RepositoryProvider<DrivesDao>(create: (_) => db.drivesDao),
-                  RepositoryProvider<DriveDao>(create: (_) => db.driveDao),
+                  BlocProvider(
+                    create: (context) => UploadBloc(
+                      userBloc: context.bloc<UserBloc>(),
+                      arweaveDao: context.repository<ArweaveDao>(),
+                      driveDao: context.repository<DriveDao>(),
+                    ),
+                  ),
+                  BlocProvider(
+                    create: (context) => SyncBloc(
+                      userBloc: context.bloc<UserBloc>(),
+                      arweaveDao: context.repository<ArweaveDao>(),
+                      drivesDao: context.repository<DrivesDao>(),
+                    ),
+                  ),
+                  BlocProvider(
+                    create: (context) => DrivesBloc(
+                      syncBloc: context.bloc<SyncBloc>(),
+                      userBloc: context.bloc<UserBloc>(),
+                      arweaveDao: context.repository<ArweaveDao>(),
+                      drivesDao: context.repository<DrivesDao>(),
+                    ),
+                  ),
                 ],
-                child: MultiBlocProvider(
-                  providers: [
-                    BlocProvider(
-                      create: (context) => UploadBloc(
+                child: BlocBuilder<DrivesBloc, DrivesState>(
+                  builder: (context, state) {
+                    final selectedDriveId =
+                        state is DrivesReady ? state.selectedDriveId : null;
+
+                    return BlocProvider(
+                      key: ValueKey(selectedDriveId),
+                      create: (context) => DriveDetailBloc(
+                        driveId: selectedDriveId,
                         userBloc: context.bloc<UserBloc>(),
+                        uploadBloc: context.bloc<UploadBloc>(),
                         arweaveDao: context.repository<ArweaveDao>(),
                         driveDao: context.repository<DriveDao>(),
                       ),
-                    ),
-                    BlocProvider(
-                      create: (context) => SyncBloc(
-                        userBloc: context.bloc<UserBloc>(),
-                        arweaveDao: context.repository<ArweaveDao>(),
-                        drivesDao: context.repository<DrivesDao>(),
-                      ),
-                    ),
-                    BlocProvider(
-                      create: (context) => DrivesBloc(
-                        syncBloc: context.bloc<SyncBloc>(),
-                        userBloc: context.bloc<UserBloc>(),
-                        arweaveDao: context.repository<ArweaveDao>(),
-                        drivesDao: context.repository<DrivesDao>(),
-                      ),
-                    ),
-                  ],
-                  child: BlocBuilder<UploadBloc, UploadState>(
-                      builder: (context, state) {
-                    final shell = AppShell(
-                        page: BlocBuilder<DrivesBloc, DrivesState>(
-                            builder: (context, state) => state is DrivesReady &&
-                                    state.selectedDriveId != null
-                                ? DriveDetailPage()
-                                : Container()));
-
-                    return Stack(
-                      children: [
-                        shell,
-                        if (state is PreparingUpload) ...[
-                          Container(color: Colors.black38),
-                          Align(
-                              alignment: Alignment.center,
-                              child: CircularProgressIndicator()),
-                        ]
-                      ],
+                      child: BlocBuilder<UploadBloc, UploadState>(
+                          builder: (context, state) => Stack(
+                                children: [
+                                  AppShell(
+                                    page: BlocBuilder<DrivesBloc, DrivesState>(
+                                      builder: (context, state) =>
+                                          state is DrivesReady &&
+                                                  state.selectedDriveId != null
+                                              ? DriveDetailPage()
+                                              : Container(),
+                                    ),
+                                  ),
+                                  if (state is PreparingUpload) ...[
+                                    Container(color: Colors.black38),
+                                    Align(
+                                        alignment: Alignment.center,
+                                        child: CircularProgressIndicator()),
+                                  ]
+                                ],
+                              )),
                     );
-                  }),
+                  },
                 ),
-              );
-
-            return Container();
-          },
-        ),
+              ),
+            );
+        }),
       ),
     );
   }
