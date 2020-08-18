@@ -80,6 +80,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
       final folderTx = await _arweaveDao.prepareFolderEntityTx(
           FolderEntity(
             id: newFolderId,
+            driveId: currentFolder.driveId,
             parentFolderId: currentFolder.id,
             name: event.folderName,
           ),
