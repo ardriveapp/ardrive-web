@@ -16,7 +16,7 @@ Database db;
 void main() async {
   arweaveDao = ArweaveDao(
     Arweave(
-      host: 'arweave.net',
+      host: 'arweave.dev',
       protocol: "https",
       port: 443,
     ),
