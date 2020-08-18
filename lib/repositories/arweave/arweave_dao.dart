@@ -47,7 +47,7 @@ class ArweaveDao {
         rawEntities.add(
           RawEntity(
               txId: entityNodes[i].id,
-              owner: entityNodes[i].owner.address,
+              ownerAddress: entityNodes[i].owner.address,
               blockHeight: entityNodes[i].block.height,
               tags: entityNodes[i].tags,
               jsonData: entityJson),
@@ -93,7 +93,7 @@ class ArweaveDao {
     final entity = DriveEntity.fromRawEntity(
       RawEntity(
         txId: driveNode.id,
-        owner: driveNode.owner.address,
+        ownerAddress: driveNode.owner.address,
         tags: driveNode.tags,
         jsonData: json.decode(utils.decodeBase64ToString(driveEntityData)),
       ),

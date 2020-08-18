@@ -60,7 +60,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   Stream<DriveDetailState> _mapOpenedFolderToState(OpenedFolder event) async* {
     yield FolderOpened(
       currentDrive: event.openedDrive,
-      hasWritePermissions: event.openedDrive.owner ==
+      hasWritePermissions: event.openedDrive.ownerAddress ==
           (_userBloc.state as UserAuthenticated).userWallet.address,
       currentFolder: event.openedFolder,
     );

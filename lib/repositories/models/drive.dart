@@ -7,7 +7,7 @@ class Drives extends Table {
   TextColumn get rootFolderId =>
       text().customConstraint('REFERENCES folderEntries(id)')();
 
-  TextColumn get owner => text()();
+  TextColumn get ownerAddress => text()();
 
   TextColumn get name => text().withLength(min: 1)();
 

@@ -9,8 +9,6 @@ part 'drive_entity.g.dart';
 class DriveEntity extends Entity {
   @JsonKey(ignore: true)
   String id;
-  @JsonKey(ignore: true)
-  String owner;
 
   String rootFolderId;
 
@@ -19,7 +17,7 @@ class DriveEntity extends Entity {
   factory DriveEntity.fromRawEntity(RawEntity entity) =>
       DriveEntity.fromJson(entity.jsonData)
         ..id = entity.getTag(EntityTag.driveId)
-        ..owner = entity.owner;
+        ..ownerAddress = entity.ownerAddress;
 
   factory DriveEntity.fromJson(Map<String, dynamic> json) =>
       _$DriveEntityFromJson(json);

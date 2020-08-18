@@ -31,7 +31,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
         DrivesCompanion(
           id: Value(driveId),
           name: Value(name),
-          owner: Value(owner),
+          ownerAddress: Value(owner),
           rootFolderId: Value(rootFolderId),
         ),
       );
@@ -54,7 +54,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
       into(drives).insert(DrivesCompanion(
           id: Value(driveEntity.id),
           name: Value(name),
-          owner: Value(driveEntity.owner),
+          ownerAddress: Value(driveEntity.ownerAddress),
           rootFolderId: Value(driveEntity.rootFolderId)));
 
   Future<void> applyEntityHistory(
@@ -69,8 +69,8 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
         // Iterate through the history in reverse order to get the latest entity data we can write in.
         for (final block in entityHistory.blockHistory.reversed) {
           for (final entity in block.entities.reversed) {
-            // TODO: Check entity write permissions
-            if (drive.owner != '') {}
+            // Ignore the entity if it did not come from the drive owner.
+            if (drive.ownerAddress != entity.ownerAddress) continue;
 
             if (entity is FolderEntity) {
               if (updatedFolders.containsKey(entity.id)) continue;

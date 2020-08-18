@@ -22,7 +22,8 @@ class FolderEntity extends Entity {
       FolderEntity.fromJson(entity.jsonData)
         ..id = entity.getTag(EntityTag.folderId)
         ..driveId = entity.getTag(EntityTag.driveId)
-        ..parentFolderId = entity.getTag(EntityTag.parentFolderId);
+        ..parentFolderId = entity.getTag(EntityTag.parentFolderId)
+        ..ownerAddress = entity.ownerAddress;
 
   factory FolderEntity.fromJson(Map<String, dynamic> json) =>
       _$FolderEntityFromJson(json);
