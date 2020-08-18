@@ -31,7 +31,9 @@ class FileEntity extends Entity {
         ..id = entity.getTag(EntityTag.fileId)
         ..driveId = entity.getTag(EntityTag.driveId)
         ..parentFolderId = entity.getTag(EntityTag.parentFolderId)
-        ..ownerAddress = entity.ownerAddress;
+        ..ownerAddress = entity.ownerAddress
+        ..commitTime = DateTime.fromMillisecondsSinceEpoch(
+            int.parse(entity.getTag(EntityTag.unixTime)));
 
   factory FileEntity.fromJson(Map<String, dynamic> json) =>
       _$FileEntityFromJson(json);

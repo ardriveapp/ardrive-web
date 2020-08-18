@@ -17,7 +17,9 @@ class DriveEntity extends Entity {
   factory DriveEntity.fromRawEntity(RawEntity entity) =>
       DriveEntity.fromJson(entity.jsonData)
         ..id = entity.getTag(EntityTag.driveId)
-        ..ownerAddress = entity.ownerAddress;
+        ..ownerAddress = entity.ownerAddress
+        ..commitTime = DateTime.fromMillisecondsSinceEpoch(
+            int.parse(entity.getTag(EntityTag.unixTime)));
 
   factory DriveEntity.fromJson(Map<String, dynamic> json) =>
       _$DriveEntityFromJson(json);

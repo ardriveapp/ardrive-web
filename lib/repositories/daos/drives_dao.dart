@@ -200,6 +200,10 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
 
           await updateFolderTree(treeRoot, parentPath);
         }
+
+        await (update(drives)..whereSamePrimaryKey(drive)).write(
+            DrivesCompanion(
+                latestSyncedBlock: Value(entityHistory.latestBlockHeight)));
       });
 }
 

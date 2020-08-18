@@ -1,12 +1,15 @@
 import 'package:arweave/arweave.dart';
+import 'package:drive/repositories/entities/constants.dart';
 
 extension TransactionUtils on Transaction {
   void addApplicationTags() {
-    addTag('App-Name', 'drive');
-    addTag('App-Version', '0.9.0');
+    addTag(EntityTag.appName, 'drive');
+    addTag(EntityTag.appVersion, '0.10.0');
+    addTag(
+        EntityTag.unixTime, DateTime.now().millisecondsSinceEpoch.toString());
   }
 
   void addJsonContentTypeTag() {
-    addTag('Content-Type', 'application/json');
+    addTag(EntityTag.contentType, 'application/json');
   }
 }

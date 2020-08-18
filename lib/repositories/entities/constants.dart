@@ -5,6 +5,11 @@ class EntityType {
 }
 
 class EntityTag {
+  static const appName = 'App-Name';
+  static const appVersion = 'App-Version';
+  static const contentType = 'Content-Type';
+  static const unixTime = 'Unix-Time';
+
   static const entityType = 'Entity-Type';
   static const driveId = 'Drive-Id';
   static const folderId = 'Folder-Id';

@@ -54,7 +54,6 @@ class ArweaveDao {
         );
     }
 
-    // TODO: Order entities in each block by their timestamp
     final blockHistory = <BlockEntities>[];
     for (final entity in rawEntities) {
       if (blockHistory.isEmpty ||
@@ -63,19 +62,30 @@ class ArweaveDao {
 
       final entityType = entity.getTag(EntityTag.entityType);
 
-      if (entityType == EntityType.drive) {
-        final drive = DriveEntity.fromRawEntity(entity);
-        blockHistory.last.entities.add(drive);
-      } else if (entityType == EntityType.folder) {
-        final folder = FolderEntity.fromRawEntity(entity);
-        blockHistory.last.entities.add(folder);
-      } else if (entityType == EntityType.file) {
-        final file = FileEntity.fromRawEntity(entity);
-        blockHistory.last.entities.add(file);
-      }
+      try {
+        if (entityType == EntityType.drive) {
+          final drive = DriveEntity.fromRawEntity(entity);
+          blockHistory.last.entities.add(drive);
+        } else if (entityType == EntityType.folder) {
+          final folder = FolderEntity.fromRawEntity(entity);
+          blockHistory.last.entities.add(folder);
+        } else if (entityType == EntityType.file) {
+          final file = FileEntity.fromRawEntity(entity);
+          blockHistory.last.entities.add(file);
+        }
+        // If there are errors in parsing the entity, ignore it.
+      } catch (err) {}
     }
 
-    return DriveEntityHistory(blockHistory.last.blockHeight, blockHistory);
+    // Sort the entities in each block by ascending commit time.
+    for (final block in blockHistory)
+      block.entities.sort((e1, e2) => e1.commitTime.compareTo(e2.commitTime));
+
+    return DriveEntityHistory(
+        blockHistory.isNotEmpty
+            ? blockHistory.last.blockHeight
+            : oldestBlockHeight,
+        blockHistory);
   }
 
   Future<DriveEntity> getDriveEntity(String driveId) async {
@@ -125,10 +135,7 @@ class ArweaveDao {
     FolderEntity entity,
     Wallet wallet,
   ) async {
-    assert(entity.id != null &&
-        entity.driveId != null &&
-        entity.parentFolderId != null &&
-        entity.name != null);
+    assert(entity.id != null && entity.driveId != null && entity.name != null);
 
     final tx = await _arweave.createTransaction(
       Transaction(data: json.encode(entity.toJson())),
