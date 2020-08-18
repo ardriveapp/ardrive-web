@@ -1,12 +1,21 @@
-query DriveEntityHistory($minBlockNumber: Int) {
+query DriveEntityHistory($driveId: String!, $oldestBlockHeight: Int) {
   transactions(
     first: 100
-    tags: [{ name: "App-Name", values: ["drive"] }]
-    block: { min: $minBlockNumber }
+    tags: [
+      { name: "App-Name", values: ["drive"] }
+      { name: "Drive-Id", values: [$driveId] }
+    ]
+    block: { min: $oldestBlockHeight }
   ) {
     edges {
       node {
         id
+        owner {
+          address
+        }
+        block {
+          height
+        }
         ...transactionTags
       }
     }

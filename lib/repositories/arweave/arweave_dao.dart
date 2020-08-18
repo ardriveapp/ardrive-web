@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/src/utils.dart' as utils;
+import 'package:drive/repositories/entities/entity.dart';
 import 'package:http/http.dart';
 import 'package:mime/mime.dart';
 
@@ -17,18 +18,22 @@ class ArweaveDao {
 
   ArweaveDao(this._arweave);
 
-  Future<UpdatedEntities> getUpdatedEntities(
-      String address, int latestBlockNumber) async {
-    final updatedEntitiesQuery = await _gql.execute(
+  /// Get the entity history for a particular drive starting from the oldest block height.
+  Future<DriveEntityHistory> getDriveEntityHistory(
+      String driveId, int oldestBlockHeight) async {
+    final driveEntityHistoryQuery = await _gql.execute(
       DriveEntityHistoryQuery(
-          variables:
-              DriveEntityHistoryArguments(minBlockNumber: latestBlockNumber)),
+        variables: DriveEntityHistoryArguments(
+          driveId: driveId,
+          oldestBlockHeight: oldestBlockHeight,
+        ),
+      ),
     );
-    final entityNodes = updatedEntitiesQuery.data.transactions.edges
+    final entityNodes = driveEntityHistoryQuery.data.transactions.edges
         .map((e) => e.node)
         .toList();
-    final entityData = (await Future.wait(
-        entityNodes.map((e) => _arweave.transactions.getData(e.id)).toList()));
+    final entityData = await Future.wait(
+        entityNodes.map((e) => _arweave.transactions.getData(e.id)));
 
     final rawEntities = <RawEntity>[];
     for (var i = 0; i < entityNodes.length; i++) {
@@ -42,34 +47,35 @@ class ArweaveDao {
         rawEntities.add(
           RawEntity(
               txId: entityNodes[i].id,
+              owner: entityNodes[i].owner.address,
+              blockHeight: entityNodes[i].block.height,
               tags: entityNodes[i].tags,
               jsonData: entityJson),
         );
     }
 
-    final driveEntities = <String, DriveEntity>{};
-    final folderEntitites = <String, FolderEntity>{};
-    final fileEntities = <String, FileEntity>{};
-
+    // TODO: Order entities in each block by their timestamp
+    final blockHistory = <BlockEntities>[];
     for (final entity in rawEntities) {
+      if (blockHistory.isEmpty ||
+          entity.blockHeight != blockHistory.last.blockHeight)
+        blockHistory.add(BlockEntities(entity.blockHeight));
+
       final entityType = entity.getTag(EntityTag.entityType);
 
       if (entityType == EntityType.drive) {
         final drive = DriveEntity.fromRawEntity(entity);
-        if (!driveEntities.containsKey(drive.id))
-          driveEntities[drive.id] = drive;
+        blockHistory.last.entities.add(drive);
       } else if (entityType == EntityType.folder) {
         final folder = FolderEntity.fromRawEntity(entity);
-        if (!folderEntitites.containsKey(folder.id))
-          folderEntitites[folder.id] = folder;
+        blockHistory.last.entities.add(folder);
       } else if (entityType == EntityType.file) {
         final file = FileEntity.fromRawEntity(entity);
-        if (!fileEntities.containsKey(file.id)) fileEntities[file.id] = file;
+        blockHistory.last.entities.add(file);
       }
     }
 
-    return UpdatedEntities(
-        latestBlockNumber, driveEntities, folderEntitites, fileEntities);
+    return DriveEntityHistory(blockHistory.last.blockHeight, blockHistory);
   }
 
   Future<DriveEntity> getDriveEntity(String driveId) async {
@@ -199,14 +205,24 @@ class ArweaveDao {
       Future.wait(transactions.map((tx) => _arweave.transactions.post(tx)));
 }
 
-class UpdatedEntities {
-  final int latestBlockNumber;
-  final Map<String, DriveEntity> drives;
-  final Map<String, FolderEntity> folders;
-  final Map<String, FileEntity> files;
+/// The entity history of a particular drive, chunked by block height.
+class DriveEntityHistory {
+  final int latestBlockHeight;
 
-  UpdatedEntities(
-      this.latestBlockNumber, this.drives, this.folders, this.files);
+  /// A list of block entities, ordered by ascending block height.
+  final List<BlockEntities> blockHistory;
+
+  DriveEntityHistory(this.latestBlockHeight, this.blockHistory);
+}
+
+/// The entities present in a particular block.
+class BlockEntities {
+  final int blockHeight;
+
+  /// A list of entities present in this block, ordered by ascending timestamp.
+  List<Entity> entities = <Entity>[];
+
+  BlockEntities(this.blockHeight);
 }
 
 class UploadTransactions {

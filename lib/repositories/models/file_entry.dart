@@ -8,7 +8,7 @@ class FileEntries extends Table {
       text().customConstraint('REFERENCES folderEntries(id)')();
 
   TextColumn get name => text().withLength(min: 1)();
-  TextColumn get path => text().withLength(min: 1)();
+  TextColumn get path => text()();
 
   TextColumn get dataTxId => text()();
 

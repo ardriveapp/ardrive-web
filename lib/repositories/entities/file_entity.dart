@@ -1,3 +1,4 @@
+import 'package:drive/repositories/entities/entity.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 import 'entities.dart';
@@ -5,7 +6,7 @@ import 'entities.dart';
 part 'file_entity.g.dart';
 
 @JsonSerializable()
-class FileEntity {
+class FileEntity extends Entity {
   @JsonKey(ignore: true)
   String id;
   @JsonKey(ignore: true)

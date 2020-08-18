@@ -33,9 +33,18 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
   Stream<SyncState> _mapSyncWithNetworkToState(SyncWithNetwork event) async* {
     yield SyncInProgress();
 
-    final changedEntities = await _arweaveDao.getUpdatedEntities(
-        (_userBloc.state as UserAuthenticated).userWallet.address, 0);
-    await _drivesDao.updateStaleModels(changedEntities);
+    final drives = await _drivesDao.getAllDrives();
+    final driveSyncProcesses = drives.map(
+      (drive) => Future.microtask(
+        () async {
+          final entityHistory =
+              await _arweaveDao.getDriveEntityHistory(drive.id, 0);
+          await _drivesDao.applyEntityHistory(drive.id, entityHistory);
+        },
+      ),
+    );
+
+    await Future.wait(driveSyncProcesses);
 
     yield SyncIdle();
   }

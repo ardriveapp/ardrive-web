@@ -2,6 +2,7 @@ import 'package:drive/repositories/repositories.dart';
 import 'package:moor/moor.dart';
 import 'package:uuid/uuid.dart';
 
+import '../arweave/arweave_dao.dart';
 import '../database/database.dart';
 import '../entities/entities.dart';
 import '../models/models.dart';
@@ -14,6 +15,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
 
   DrivesDao(Database db) : super(db);
 
+  Future<List<Drive>> getAllDrives() => select(drives).get();
   Stream<List<Drive>> watchAllDrives() => select(drives).watch();
 
   /// Creates a drive with its accompanying root folder.
@@ -55,170 +57,161 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
           owner: Value(driveEntity.owner),
           rootFolderId: Value(driveEntity.rootFolderId)));
 
-  Future<void> updateStaleModels(UpdatedEntities entities) =>
+  Future<void> applyEntityHistory(
+          String driveId, DriveEntityHistory entityHistory) =>
       transaction(() async {
-        for (final driveEntity in entities.drives.values) {
-          await (update(drives)..where((d) => d.id.equals(driveEntity.id)))
-              .write(
-            DrivesCompanion(
-              rootFolderId: Value(driveEntity.rootFolderId),
-            ),
-          );
+        final drive = await (select(drives)..where((d) => d.id.equals(driveId)))
+            .getSingle();
+
+        final updatedFolders = <String, FolderEntriesCompanion>{};
+        final updatedFiles = <String, FileEntriesCompanion>{};
+
+        // Iterate through the history in reverse order to get the latest entity data we can write in.
+        for (final block in entityHistory.blockHistory.reversed) {
+          for (final entity in block.entities.reversed) {
+            // TODO: Check entity write permissions
+            if (drive.owner != '') {}
+
+            if (entity is FolderEntity) {
+              if (updatedFolders.containsKey(entity.id)) continue;
+
+              updatedFolders[entity.id] = FolderEntriesCompanion.insert(
+                id: entity.id,
+                driveId: entity.driveId,
+                parentFolderId: Value(entity.parentFolderId),
+                name: entity.name,
+                path: '',
+              );
+            } else if (entity is FileEntity) {
+              if (updatedFiles.containsKey(entity.id)) continue;
+
+              updatedFiles[entity.id] = FileEntriesCompanion.insert(
+                id: entity.id,
+                driveId: entity.driveId,
+                parentFolderId: entity.parentFolderId,
+                name: entity.name,
+                dataTxId: entity.dataTxId,
+                size: entity.size,
+                ready: true,
+                path: '',
+              );
+            }
+          }
         }
 
-        for (final folderEntity in entities.folders.values)
-          await into(folderEntries).insert(
-              FolderEntriesCompanion(
-                id: Value(folderEntity.id),
-                driveId: Value(folderEntity.driveId),
-                parentFolderId: Value(folderEntity.parentFolderId),
-                name: Value(folderEntity.name),
-                path: Value(''),
-              ),
-              onConflict: DoUpdate((_) => FolderEntriesCompanion(
-                    parentFolderId: Value(folderEntity.parentFolderId),
-                  )));
+        await batch((b) {
+          b.insertAllOnConflictUpdate(
+              folderEntries, updatedFolders.values.toList());
+          b.insertAllOnConflictUpdate(
+              fileEntries, updatedFiles.values.toList());
+        });
 
-        final staleFolders = <StaleFolderNode>[];
+        // Construct a tree of the updated folders and files for path generation.
+        final staleFolderTree = <StaleFolderNode>[];
 
         Future<StaleFolderNode> getStaleFolderTree(
-            String folderId, FolderEntity entity) async {
+            FolderEntriesCompanion folder) async {
+          final folderId = folder.id.value;
+
+          // Get all the subfolders and files of this folder that are now stale.
           final staleSubfolders = await (select(folderEntries)
                 ..where((f) => f.parentFolderId.equals(folderId)))
               .get();
-
-          final staleFiles = Map<String, FileEntity>.fromIterable(
-              await (select(fileEntries)
-                    ..where((f) => f.parentFolderId.equals(folderId)))
-                  .map((f) => f.id)
-                  .get(),
-              key: (id) => id,
-              value: (_) => null)
-            ..addAll(
-              Map<String, FileEntity>.from(entities.files)
-                ..removeWhere((k, f) => f.parentFolderId != folderId),
-            );
-
-          final isRootFolder = (await (select(drives)
-                    ..where((d) => d.rootFolderId.equals(folderId)))
-                  .getSingle()) !=
-              null;
+          final staleFolderFilesMap = Map<String, String>.fromIterable(
+            await (select(fileEntries)
+                  ..where((f) => f.parentFolderId.equals(folderId)))
+                .get(),
+            key: (f) => f.id,
+            value: (f) => f.name,
+          );
 
           return StaleFolderNode(
-              folderId,
-              isRootFolder,
-              entity,
-              await Future.wait(
-                  staleSubfolders.map((f) => getStaleFolderTree(f.id, null))),
-              staleFiles);
+            folder,
+            await Future.wait(
+              staleSubfolders.map(
+                (f) => getStaleFolderTree(
+                  updatedFolders[f.id] ??
+                      FolderEntriesCompanion.insert(
+                        id: f.id,
+                        driveId: f.driveId,
+                        parentFolderId: Value(f.parentFolderId),
+                        name: f.name,
+                        path: '',
+                      ),
+                ),
+              ),
+            ),
+            staleFolderFilesMap,
+          );
         }
 
-        for (final folderEntity in entities.folders.values) {
-          final tree = await getStaleFolderTree(folderEntity.id, folderEntity);
+        for (final folder in updatedFolders.values) {
+          final tree = await getStaleFolderTree(folder);
 
           bool newTreeIsSubsetOfExisting = false;
           bool newTreeIsSupersetOfExisting = false;
-          for (final existingTree in staleFolders)
-            // Is the new tree a subset of an existing tree?
-            if (existingTree.searchForFolder(tree.id) != null)
+          for (final existingTree in staleFolderTree)
+            if (existingTree.searchForFolder(tree.folder.id.value) != null)
               newTreeIsSubsetOfExisting = true;
-            // Is the new tree a superset of an existing tree?
-            else if (tree.searchForFolder(existingTree.id) != null) {
-              staleFolders.remove(existingTree);
-              staleFolders.add(tree);
+            else if (tree.searchForFolder(existingTree.folder.id.value) !=
+                null) {
+              staleFolderTree.remove(existingTree);
+              staleFolderTree.add(tree);
               newTreeIsSupersetOfExisting = true;
             }
 
           if (!newTreeIsSubsetOfExisting && !newTreeIsSupersetOfExisting)
-            staleFolders.add(tree);
+            staleFolderTree.add(tree);
         }
 
         Future<void> updateFolderTree(
             StaleFolderNode node, String parentPath) async {
-          final folderName = node.entity?.name ??
-              await (select(folderEntries)..where((f) => f.id.equals(node.id)))
-                  .map((f) => f.name)
-                  .getSingle();
+          // If this is the root folder, we should not include its name as part of the path.
+          final folderPath = node.folder.parentFolderId.value != null
+              ? parentPath + '/' + node.folder.name.value
+              : '';
 
-          final driveId = node.entity?.driveId ??
-              await (select(folderEntries)..where((f) => f.id.equals(node.id)))
-                  .map((f) => f.driveId)
-                  .getSingle();
-
-          final folderPath =
-              !node.isRootFolder ? parentPath + '/' + folderName : '';
-
-          await into(folderEntries).insertOnConflictUpdate(
-            FolderEntriesCompanion(
-              id: Value(node.id),
-              driveId: Value(driveId),
-              name: Value(folderName),
-              path: Value(folderPath),
-            ),
-          );
+          await (update(folderEntries)
+                ..where((f) => f.id.equals(node.folder.id.value)))
+              .write(FolderEntriesCompanion(path: Value(folderPath)));
 
           for (final staleFileId in node.files.keys) {
-            final fileName = entities.files[staleFileId]?.name ??
-                await (select(fileEntries)
-                      ..where((f) => f.id.equals(staleFileId)))
-                    .map((f) => f.name)
-                    .getSingle();
-
-            final filePath = folderPath + '/' + fileName;
-
-            if (node.files[staleFileId] != null) {
-              await into(fileEntries)
-                  .insertOnConflictUpdate(FileEntriesCompanion(
-                id: Value(staleFileId),
-                driveId: Value(node.files[staleFileId].driveId),
-                parentFolderId: Value(node.files[staleFileId].parentFolderId),
-                name: Value(fileName),
-                path: Value(filePath),
-                dataTxId: Value(node.files[staleFileId].dataTxId),
-                size: Value(node.files[staleFileId].size),
-                ready: Value(true),
-              ));
-            } else {
-              await (update(fileEntries)
-                    ..where((f) => f.id.equals(staleFileId)))
-                  .write(FileEntriesCompanion(path: Value(filePath)));
-            }
+            final filePath = folderPath + '/' + node.files[staleFileId];
+            await (update(fileEntries)..where((f) => f.id.equals(staleFileId)))
+                .write(FileEntriesCompanion(path: Value(filePath)));
           }
 
           for (final staleFolder in node.subfolders)
             await updateFolderTree(staleFolder, folderPath);
         }
 
-        for (final staleFolder in staleFolders) {
-          final parentFolderId = await (select(folderEntries)
-                ..where((f) => f.id.equals(staleFolder.id)))
-              .map((f) => f.parentFolderId)
-              .getSingle();
+        for (final treeRoot in staleFolderTree) {
+          // Get the path of this folder's parent.
+          String parentPath;
+          if (treeRoot.folder.parentFolderId.value != null)
+            parentPath = '';
+          else {
+            parentPath = await (select(folderEntries)
+                  ..where(
+                      (f) => f.id.equals(treeRoot.folder.parentFolderId.value)))
+                .map((f) => f.path)
+                .getSingle();
+          }
 
-          final parentPath = parentFolderId != null
-              ? await (select(folderEntries)
-                    ..where((f) => f.id.equals(parentFolderId)))
-                  .map((f) => f.path)
-                  .getSingle()
-              : '';
-
-          await updateFolderTree(staleFolder, parentPath);
+          await updateFolderTree(treeRoot, parentPath);
         }
       });
 }
 
 class StaleFolderNode {
-  final String id;
-  final bool isRootFolder;
-  final FolderEntity entity;
+  final FolderEntriesCompanion folder;
   final List<StaleFolderNode> subfolders;
-  final Map<String, FileEntity> files;
+  final Map<String, String> files;
 
-  StaleFolderNode(
-      this.id, this.isRootFolder, this.entity, this.subfolders, this.files);
+  StaleFolderNode(this.folder, this.subfolders, this.files);
 
   StaleFolderNode searchForFolder(String folderId) {
-    if (id == folderId) return this;
+    if (folder.id.value == folderId) return this;
 
     for (final subfolder in subfolders)
       return subfolder.searchForFolder(folderId);
