@@ -1,3 +1,4 @@
+import 'package:arweave/utils.dart' as arweaveUtils;
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/views/partials/confirmation_dialog.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +15,8 @@ class DriveDetailPage extends StatelessWidget {
           var confirm = await showConfirmationDialog(
             context,
             title: 'Upload file',
-            content: 'This will cost ${state.uploadCost} winston.',
+            content:
+                'This will cost ${arweaveUtils.winstonToAr(state.uploadCost)} AR.',
             confirmingActionLabel: 'UPLOAD',
           );
 
