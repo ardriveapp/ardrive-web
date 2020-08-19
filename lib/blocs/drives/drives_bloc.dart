@@ -27,9 +27,11 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
         _arweaveDao = arweaveDao,
         _drivesDao = drivesDao,
         super(DrivesLoadInProgress()) {
-    _drivesSubscription = _drivesDao
-        .watchAllDrives()
-        .listen((drives) => add(DrivesUpdated(drives: drives)));
+    _drivesSubscription = Rx.combineLatest2(
+      _drivesDao.watchAllDrives(),
+      _userBloc.startWith(null),
+      (drives, _) => drives,
+    ).listen((drives) => add(DrivesUpdated(drives: drives)));
   }
 
   @override
@@ -87,12 +89,10 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
     else
       selectedDriveId = event.drives.isNotEmpty ? event.drives.first.id : null;
 
-    yield* Rx.merge([_userBloc, Stream.value(_userBloc.state)]).map(
-      (userState) => DrivesLoadSuccess(
-        selectedDriveId: selectedDriveId,
-        drives: event.drives,
-        canCreateNewDrive: userState is UserAuthenticated,
-      ),
+    yield DrivesLoadSuccess(
+      selectedDriveId: selectedDriveId,
+      drives: event.drives,
+      canCreateNewDrive: _userBloc.state is UserAuthenticated,
     );
   }
 

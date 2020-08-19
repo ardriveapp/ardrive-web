@@ -50,21 +50,22 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
 
   Stream<DriveDetailState> _mapOpenFolderToState(OpenFolder event) async* {
     _folderSubscription?.cancel();
-    _folderSubscription = Rx.combineLatest2(
+    _folderSubscription = Rx.combineLatest3(
       _driveDao.watchDrive(_driveId),
       _driveDao.watchFolder(_driveId, event.folderPath),
-      (drive, folderContents) => OpenedFolder(drive, folderContents),
+      _userBloc.startWith(null),
+      (drive, folderContents, _) => OpenedFolder(drive, folderContents),
     ).listen((event) => add(event));
   }
 
   Stream<DriveDetailState> _mapOpenedFolderToState(OpenedFolder event) async* {
-    yield* Rx.merge([_userBloc, Stream.value(_userBloc.state)]).map(
-      (userState) => FolderLoadSuccess(
-        currentDrive: event.openedDrive,
-        hasWritePermissions: userState is UserAuthenticated &&
-            event.openedDrive.ownerAddress == userState.userWallet.address,
-        currentFolder: event.openedFolder,
-      ),
+    final userState = _userBloc.state;
+
+    yield FolderLoadSuccess(
+      currentDrive: event.openedDrive,
+      hasWritePermissions: userState is UserAuthenticated &&
+          event.openedDrive.ownerAddress == userState.userWallet.address,
+      currentFolder: event.openedFolder,
     );
   }
 
