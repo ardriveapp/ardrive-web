@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/repositories/entities/entities.dart';
 import 'package:drive/views/views.dart';
@@ -26,24 +28,50 @@ class AppDrawer extends StatelessWidget {
               dense: true,
               title:
                   Text('ArDrive', style: Theme.of(context).textTheme.headline6),
+              trailing: BlocBuilder<UserBloc, UserState>(
+                  builder: (context, state) => state is! UserAuthenticated
+                      ? IconButton(
+                          icon: Icon(Icons.login),
+                          onPressed: () => _promptToLogin(context),
+                          tooltip: 'Login',
+                        )
+                      : IconButton(
+                          icon: Icon(Icons.logout),
+                          onPressed: () =>
+                              context.bloc<UserBloc>().add(Logout()),
+                          tooltip: 'Logout',
+                        )),
             ),
-            _buildDriveActionsButton(context),
+            _buildDriveActionsButton(state),
             BlocBuilder<SyncBloc, SyncState>(
-              builder: (context, state) => ListTile(
-                dense: true,
-                title: Text(
-                  'DRIVES',
-                  textAlign: TextAlign.start,
-                  style: Theme.of(context).textTheme.caption,
-                ),
-                trailing: state is SyncInProgress
-                    ? IconButton(icon: CircularProgressIndicator())
-                    : IconButton(
-                        icon: Icon(Icons.refresh),
-                        onPressed: () =>
-                            context.bloc<SyncBloc>().add(SyncWithNetwork()),
-                      ),
-              ),
+              builder: (context, syncState) {
+                final showSyncButton =
+                    state is DrivesReady && state.drives.isNotEmpty;
+
+                return ListTile(
+                  dense: true,
+                  title: Text(
+                    'DRIVES',
+                    textAlign: TextAlign.start,
+                    style: Theme.of(context).textTheme.caption,
+                  ),
+                  trailing: showSyncButton
+                      ? (syncState is SyncInProgress
+                          ? IconButton(
+                              icon: CircularProgressIndicator(),
+                              onPressed: null,
+                              tooltip: 'Syncing...',
+                            )
+                          : IconButton(
+                              icon: Icon(Icons.refresh),
+                              onPressed: () => context
+                                  .bloc<SyncBloc>()
+                                  .add(SyncWithNetwork()),
+                              tooltip: 'Sync',
+                            ))
+                      : SizedBox.shrink(child: Container()),
+                );
+              },
             ),
             if (state is DrivesReady)
               ...state.drives.map(
@@ -61,7 +89,7 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildDriveActionsButton(BuildContext context) {
+  Widget _buildDriveActionsButton(DrivesState drivesState) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Padding(
@@ -95,23 +123,39 @@ class AppDrawer extends StatelessWidget {
                 ),
                 PopupMenuDivider(),
               },
-              PopupMenuItem(
-                value: promptToCreateNewDrive,
-                child: ListTile(
-                  title: Text('New drive'),
+              if (drivesState is DrivesReady) ...{
+                PopupMenuItem(
+                  enabled: drivesState.canCreateNewDrive,
+                  value: promptToCreateNewDrive,
+                  child: ListTile(
+                    enabled: drivesState.canCreateNewDrive,
+                    title: Text('New drive'),
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: _promptToAttachDrive,
-                child: ListTile(
-                  title: Text('Attach drive'),
+                PopupMenuItem(
+                  value: _promptToAttachDrive,
+                  child: ListTile(
+                    title: Text('Attach drive'),
+                  ),
                 ),
-              ),
+              }
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _promptToLogin(BuildContext context) async {
+    var chooseResult;
+    try {
+      chooseResult = await FilePickerCross.pick();
+    } catch (err) {}
+
+    if (chooseResult != null && chooseResult.type != null) {
+      final jwk = json.decode(chooseResult.toString());
+      context.bloc<UserBloc>().add(AttemptLogin(jwk));
+    }
   }
 
   void _promptToCreateNewFolder(BuildContext context) async {
@@ -127,7 +171,10 @@ class AppDrawer extends StatelessWidget {
   }
 
   void _promptToUploadFile(BuildContext context) async {
-    final fileChooseResult = await FilePickerCross.pick();
+    var fileChooseResult;
+    try {
+      fileChooseResult = await FilePickerCross.pick();
+    } catch (err) {}
 
     if (fileChooseResult == null) return;
 

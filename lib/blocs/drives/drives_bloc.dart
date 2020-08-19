@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/repositories/entities/entities.dart';
 import 'package:drive/repositories/repositories.dart';
+import 'package:rxdart/rxdart.dart';
 
 part 'drives_event.dart';
 part 'drives_state.dart';
@@ -13,6 +14,7 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
   final SyncBloc _syncBloc;
   final ArweaveDao _arweaveDao;
   final DrivesDao _drivesDao;
+
   StreamSubscription _drivesSubscription;
 
   DrivesBloc(
@@ -25,14 +27,14 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
         _arweaveDao = arweaveDao,
         _drivesDao = drivesDao,
         super(DrivesLoading()) {
-    add(RefreshDrives());
+    _drivesSubscription = _drivesDao
+        .watchAllDrives()
+        .listen((drives) => add(DrivesUpdated(drives: drives)));
   }
 
   @override
   Stream<DrivesState> mapEventToState(DrivesEvent event) async* {
-    if (event is RefreshDrives)
-      yield* _mapRefreshDrivesToState(event);
-    else if (event is SelectDrive)
+    if (event is SelectDrive)
       yield* _mapSelectDriveToState(event);
     else if (event is NewDrive)
       yield* _mapNewDriveToState(event);
@@ -41,18 +43,12 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
     else if (event is DrivesUpdated) yield* _mapDrivesUpdatedToState(event);
   }
 
-  Stream<DrivesState> _mapRefreshDrivesToState(RefreshDrives event) async* {
-    _drivesSubscription?.cancel();
-    _drivesSubscription = _drivesDao.watchAllDrives().listen(
-          (drives) => add(DrivesUpdated(drives: drives)),
-        );
-  }
-
   Stream<DrivesState> _mapSelectDriveToState(SelectDrive event) async* {
     if (state is DrivesReady) {
       yield DrivesReady(
         selectedDriveId: event.driveId,
         drives: (state as DrivesReady).drives,
+        canCreateNewDrive: _userBloc.state is UserAuthenticated,
       );
     }
   }
@@ -61,7 +57,9 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
     if (state is DrivesReady) {
       final wallet = (_userBloc.state as UserAuthenticated).userWallet;
 
-      final ids = await this._drivesDao.createDrive(name: event.driveName, owner: wallet.address);
+      final ids = await this
+          ._drivesDao
+          .createDrive(name: event.driveName, owner: wallet.address);
 
       final driveTx = await this._arweaveDao.prepareDriveEntityTx(
           DriveEntity(id: ids[0], rootFolderId: ids[1]), wallet);
@@ -88,6 +86,18 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
     else
       selectedDriveId = event.drives.length > 0 ? event.drives[0].id : null;
 
-    yield DrivesReady(selectedDriveId: selectedDriveId, drives: event.drives);
+    yield* Rx.merge([_userBloc, Stream.value(_userBloc.state)]).map(
+      (userState) => DrivesReady(
+        selectedDriveId: selectedDriveId,
+        drives: event.drives,
+        canCreateNewDrive: userState is UserAuthenticated,
+      ),
+    );
+  }
+
+  @override
+  Future<void> close() {
+    _drivesSubscription.cancel();
+    return super.close();
   }
 }

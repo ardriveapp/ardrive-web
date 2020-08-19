@@ -58,51 +58,49 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   }
 
   Stream<DriveDetailState> _mapOpenedFolderToState(OpenedFolder event) async* {
-    yield FolderOpened(
-      currentDrive: event.openedDrive,
-      hasWritePermissions: event.openedDrive.ownerAddress ==
-          (_userBloc.state as UserAuthenticated).userWallet.address,
-      currentFolder: event.openedFolder,
+    yield* Rx.merge([_userBloc, Stream.value(_userBloc.state)]).map(
+      (userState) => FolderOpened(
+        currentDrive: event.openedDrive,
+        hasWritePermissions: userState is UserAuthenticated &&
+            event.openedDrive.ownerAddress == userState.userWallet.address,
+        currentFolder: event.openedFolder,
+      ),
     );
   }
 
   Stream<DriveDetailState> _mapNewFolderToState(NewFolder event) async* {
-    if (state is FolderOpened) {
-      final currentFolder = (state as FolderOpened).currentFolder.folder;
+    final currentFolder = (state as FolderOpened).currentFolder.folder;
 
-      final newFolderId = await _driveDao.createNewFolder(
-        _driveId,
-        currentFolder.id,
-        event.folderName,
-        '${currentFolder.path}/${event.folderName}',
-      );
+    final newFolderId = await _driveDao.createNewFolder(
+      _driveId,
+      currentFolder.id,
+      event.folderName,
+      '${currentFolder.path}/${event.folderName}',
+    );
 
-      final folderTx = await _arweaveDao.prepareFolderEntityTx(
-          FolderEntity(
-            id: newFolderId,
-            driveId: currentFolder.driveId,
-            parentFolderId: currentFolder.id,
-            name: event.folderName,
-          ),
-          (_userBloc.state as UserAuthenticated).userWallet);
-      await _arweaveDao.postTx(folderTx);
-    }
+    final folderTx = await _arweaveDao.prepareFolderEntityTx(
+        FolderEntity(
+          id: newFolderId,
+          driveId: currentFolder.driveId,
+          parentFolderId: currentFolder.id,
+          name: event.folderName,
+        ),
+        (_userBloc.state as UserAuthenticated).userWallet);
+    await _arweaveDao.postTx(folderTx);
   }
 
   Stream<DriveDetailState> _mapUploadFileToState(UploadFile event) async* {
-    if (state is FolderOpened) {
-      final currentFolder = (state as FolderOpened).currentFolder.folder;
-      event.fileEntity
-        ..driveId = _driveId
-        ..parentFolderId = currentFolder.id;
+    final currentFolder = (state as FolderOpened).currentFolder.folder;
+    event.fileEntity
+      ..driveId = _driveId
+      ..parentFolderId = currentFolder.id;
 
-      _uploadBloc.add(
-        PrepareFileUpload(
-          event.fileEntity,
-          '${currentFolder.path}/${event.fileEntity.name}',
-          event.fileStream,
-        ),
-      );
-    }
+    _uploadBloc.add(
+      PrepareFileUpload(
+        event.fileEntity,
+        '${currentFolder.path}/${event.fileEntity.name}',
+        event.fileStream,
+      ),
+    );
   }
 }

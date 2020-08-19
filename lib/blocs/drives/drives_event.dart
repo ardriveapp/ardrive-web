@@ -2,8 +2,6 @@ part of 'drives_bloc.dart';
 
 abstract class DrivesEvent {}
 
-class RefreshDrives extends DrivesEvent {}
-
 class SelectDrive extends DrivesEvent {
   final String driveId;
 

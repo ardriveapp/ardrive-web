@@ -8,5 +8,7 @@ class DrivesReady extends DrivesState {
   final String selectedDriveId;
   final List<Drive> drives;
 
-  DrivesReady({this.selectedDriveId, this.drives});
+  final bool canCreateNewDrive;
+
+  DrivesReady({this.selectedDriveId, this.drives, this.canCreateNewDrive});
 }
