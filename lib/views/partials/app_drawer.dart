@@ -46,7 +46,7 @@ class AppDrawer extends StatelessWidget {
             BlocBuilder<SyncBloc, SyncState>(
               builder: (context, syncState) {
                 final showSyncButton =
-                    state is DrivesReady && state.drives.isNotEmpty;
+                    state is DrivesLoadSuccess && state.drives.isNotEmpty;
 
                 return ListTile(
                   dense: true,
@@ -73,7 +73,7 @@ class AppDrawer extends StatelessWidget {
                 );
               },
             ),
-            if (state is DrivesReady)
+            if (state is DrivesLoadSuccess)
               ...state.drives.map(
                 (d) => ListTile(
                   leading: Icon(Icons.folder_shared),
@@ -103,7 +103,7 @@ class AppDrawer extends StatelessWidget {
               label: Text('NEW'),
             ),
             itemBuilder: (context) => [
-              if (state is FolderOpened) ...{
+              if (state is FolderLoadSuccess) ...{
                 PopupMenuItem(
                   enabled: state.hasWritePermissions,
                   value: _promptToCreateNewFolder,
@@ -123,7 +123,7 @@ class AppDrawer extends StatelessWidget {
                 ),
                 PopupMenuDivider(),
               },
-              if (drivesState is DrivesReady) ...{
+              if (drivesState is DrivesLoadSuccess) ...{
                 PopupMenuItem(
                   enabled: drivesState.canCreateNewDrive,
                   value: promptToCreateNewDrive,

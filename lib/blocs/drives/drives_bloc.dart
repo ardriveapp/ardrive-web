@@ -26,7 +26,7 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
         _syncBloc = syncBloc,
         _arweaveDao = arweaveDao,
         _drivesDao = drivesDao,
-        super(DrivesLoading()) {
+        super(DrivesLoadInProgress()) {
     _drivesSubscription = _drivesDao
         .watchAllDrives()
         .listen((drives) => add(DrivesUpdated(drives: drives)));
@@ -44,17 +44,17 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
   }
 
   Stream<DrivesState> _mapSelectDriveToState(SelectDrive event) async* {
-    if (state is DrivesReady) {
-      yield DrivesReady(
+    if (state is DrivesLoadSuccess) {
+      yield DrivesLoadSuccess(
         selectedDriveId: event.driveId,
-        drives: (state as DrivesReady).drives,
+        drives: (state as DrivesLoadSuccess).drives,
         canCreateNewDrive: _userBloc.state is UserAuthenticated,
       );
     }
   }
 
   Stream<DrivesState> _mapNewDriveToState(NewDrive event) async* {
-    if (state is DrivesReady) {
+    if (state is DrivesLoadSuccess) {
       final wallet = (_userBloc.state as UserAuthenticated).userWallet;
 
       final ids = await this
@@ -81,13 +81,14 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
 
   Stream<DrivesState> _mapDrivesUpdatedToState(DrivesUpdated event) async* {
     String selectedDriveId;
-    if (state is DrivesReady && (state as DrivesReady).selectedDriveId != null)
-      selectedDriveId = (state as DrivesReady).selectedDriveId;
+    if (state is DrivesLoadSuccess &&
+        (state as DrivesLoadSuccess).selectedDriveId != null)
+      selectedDriveId = (state as DrivesLoadSuccess).selectedDriveId;
     else
-      selectedDriveId = event.drives.length > 0 ? event.drives[0].id : null;
+      selectedDriveId = event.drives.isNotEmpty ? event.drives.first.id : null;
 
     yield* Rx.merge([_userBloc, Stream.value(_userBloc.state)]).map(
-      (userState) => DrivesReady(
+      (userState) => DrivesLoadSuccess(
         selectedDriveId: selectedDriveId,
         drives: event.drives,
         canCreateNewDrive: userState is UserAuthenticated,

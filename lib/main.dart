@@ -69,7 +69,7 @@ class App extends StatelessWidget {
             home: BlocBuilder<DrivesBloc, DrivesState>(
               builder: (context, state) {
                 final selectedDriveId =
-                    state is DrivesReady ? state.selectedDriveId : null;
+                    state is DrivesLoadSuccess ? state.selectedDriveId : null;
 
                 return BlocProvider(
                   key: ValueKey(selectedDriveId),
@@ -86,13 +86,13 @@ class App extends StatelessWidget {
                               AppShell(
                                 page: BlocBuilder<DrivesBloc, DrivesState>(
                                   builder: (context, state) =>
-                                      state is DrivesReady &&
+                                      state is DrivesLoadSuccess &&
                                               state.selectedDriveId != null
                                           ? DriveDetailPage()
                                           : Container(),
                                 ),
                               ),
-                              if (state is PreparingUpload) ...[
+                              if (state is UploadBeingPrepared) ...[
                                 Container(color: Colors.black38),
                                 Align(
                                     alignment: Alignment.center,

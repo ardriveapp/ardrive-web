@@ -31,7 +31,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
         _userBloc = userBloc,
         _uploadBloc = uploadBloc,
         _driveDao = driveDao,
-        super(FolderOpening()) {
+        super(FolderLoadInProgress()) {
     if (driveId != null) add(OpenFolder(''));
   }
 
@@ -59,7 +59,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
 
   Stream<DriveDetailState> _mapOpenedFolderToState(OpenedFolder event) async* {
     yield* Rx.merge([_userBloc, Stream.value(_userBloc.state)]).map(
-      (userState) => FolderOpened(
+      (userState) => FolderLoadSuccess(
         currentDrive: event.openedDrive,
         hasWritePermissions: userState is UserAuthenticated &&
             event.openedDrive.ownerAddress == userState.userWallet.address,
@@ -69,7 +69,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   }
 
   Stream<DriveDetailState> _mapNewFolderToState(NewFolder event) async* {
-    final currentFolder = (state as FolderOpened).currentFolder.folder;
+    final currentFolder = (state as FolderLoadSuccess).currentFolder.folder;
 
     final newFolderId = await _driveDao.createNewFolder(
       _driveId,
@@ -90,7 +90,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   }
 
   Stream<DriveDetailState> _mapUploadFileToState(UploadFile event) async* {
-    final currentFolder = (state as FolderOpened).currentFolder.folder;
+    final currentFolder = (state as FolderLoadSuccess).currentFolder.folder;
     event.fileEntity
       ..driveId = _driveId
       ..parentFolderId = currentFolder.id;

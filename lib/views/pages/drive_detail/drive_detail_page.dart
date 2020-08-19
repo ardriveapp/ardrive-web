@@ -10,7 +10,7 @@ class DriveDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<UploadBloc, UploadState>(
       listener: (context, state) async {
-        if (state is FileUploadReady) {
+        if (state is UploadFileReady) {
           var confirm = await showConfirmationDialog(
             context,
             title: 'Upload file',
@@ -28,8 +28,8 @@ class DriveDetailPage extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: BlocBuilder<DriveDetailBloc, DriveDetailState>(
                 builder: (context, state) => Column(
-                  children: <Widget>[
-                    if (state is FolderOpened) ...{
+                  children: [
+                    if (state is FolderLoadSuccess) ...{
                       _buildBreadcrumbRow(
                         context,
                         state.currentDrive.name,

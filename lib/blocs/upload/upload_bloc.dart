@@ -26,7 +26,7 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
       : _userBloc = userBloc,
         _driveDao = driveDao,
         _arweaveDao = arweaveDao,
-        super(UploadInitial());
+        super(UploadIdle());
 
   @override
   Stream<UploadState> mapEventToState(
@@ -40,7 +40,7 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
 
   Stream<UploadState> _mapPrepareFileUploadToState(
       PrepareFileUpload event) async* {
-    yield PreparingUpload();
+    yield UploadBeingPrepared();
 
     final fileEntity = event.fileEntity;
 
@@ -62,7 +62,7 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
     transactions.add(uploadTxs.entityTx);
     transactions.add(uploadTxs.dataTx);
 
-    yield FileUploadReady(
+    yield UploadFileReady(
       existingFileId,
       fileEntity.name,
       uploadTxs.dataTx.reward,
