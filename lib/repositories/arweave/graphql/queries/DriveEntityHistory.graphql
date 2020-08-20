@@ -1,6 +1,7 @@
 query DriveEntityHistory($driveId: String!, $oldestBlockHeight: Int) {
   transactions(
     first: 100
+    sort: HEIGHT_ASC
     tags: [
       { name: "App-Name", values: ["drive"] }
       { name: "Drive-Id", values: [$driveId] }

@@ -37,9 +37,9 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
     final driveSyncProcesses = drives.map(
       (drive) => Future.microtask(
         () async {
-          final entityHistory =
-              await _arweaveDao.getDriveEntityHistory(drive.id, 0);
-          await _drivesDao.applyEntityHistory(drive.id, entityHistory);
+          final history = await _arweaveDao.getDriveEntityHistory(
+              drive.id, drive.latestSyncedBlock);
+          await _drivesDao.applyEntityHistory(drive.id, history);
         },
       ),
     );
