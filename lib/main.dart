@@ -80,26 +80,14 @@ class App extends StatelessWidget {
                     arweaveDao: context.repository<ArweaveDao>(),
                     driveDao: context.repository<DriveDao>(),
                   ),
-                  child: BlocBuilder<UploadBloc, UploadState>(
-                      builder: (context, state) => Stack(
-                            children: [
-                              AppShell(
-                                page: BlocBuilder<DrivesBloc, DrivesState>(
-                                  builder: (context, state) =>
-                                      state is DrivesLoadSuccess &&
-                                              state.selectedDriveId != null
-                                          ? DriveDetailPage()
-                                          : Container(),
-                                ),
-                              ),
-                              if (state is UploadBeingPrepared) ...[
-                                Container(color: Colors.black38),
-                                Align(
-                                    alignment: Alignment.center,
-                                    child: CircularProgressIndicator()),
-                              ]
-                            ],
-                          )),
+                  child: AppShell(
+                    page: BlocBuilder<DrivesBloc, DrivesState>(
+                      builder: (context, state) => state is DrivesLoadSuccess &&
+                              state.selectedDriveId != null
+                          ? DriveDetailPage()
+                          : Container(),
+                    ),
+                  ),
                 );
               },
             ),

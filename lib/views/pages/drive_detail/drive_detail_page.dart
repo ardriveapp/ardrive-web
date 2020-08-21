@@ -1,6 +1,7 @@
 import 'package:arweave/utils.dart' as arweaveUtils;
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/views/partials/confirmation_dialog.dart';
+import 'package:drive/views/partials/progress_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -11,7 +12,11 @@ class DriveDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<UploadBloc, UploadState>(
       listener: (context, state) async {
-        if (state is UploadFileReady) {
+        if (state is UploadBeingPrepared) {
+          showProgressDialog(context, 'Preparing upload...');
+        } else if (state is UploadFileReady) {
+          Navigator.pop(context);
+
           var confirm = await showConfirmationDialog(
             context,
             title: 'Upload file',
@@ -21,6 +26,10 @@ class DriveDetailPage extends StatelessWidget {
           );
 
           if (confirm) context.bloc<UploadBloc>().add(state.fileUploadHandle);
+        } else if (state is UploadInProgress) {
+          showProgressDialog(context, 'Uploading file...');
+        } else if (state is UploadComplete) {
+          Navigator.pop(context);
         }
       },
       child: Scaffold(

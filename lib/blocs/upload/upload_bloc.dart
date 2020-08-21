@@ -77,6 +77,8 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
 
   Stream<UploadState> _mapUploadFileToNetworkToState(
       UploadFileToNetwork event) async* {
+    yield UploadInProgress();
+
     final fileEntity = event.fileEntity;
 
     await _arweaveDao.batchPostTxs(event.uploadTransactions);
@@ -85,5 +87,9 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
       fileEntity,
       event.filePath,
     );
+
+    yield UploadComplete();
+
+    yield UploadIdle();
   }
 }

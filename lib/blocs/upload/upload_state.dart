@@ -22,3 +22,7 @@ class UploadFileReady extends UploadState {
     this.fileUploadHandle,
   );
 }
+
+class UploadInProgress extends UploadState {}
+
+class UploadComplete extends UploadState {}
