@@ -24,8 +24,6 @@ class FolderView extends StatelessWidget {
       showCheckboxColumn: false,
       columns: const <DataColumn>[
         DataColumn(label: Text('Name')),
-        DataColumn(label: Text('Owner')),
-        // DataColumn(label: Text('Last modified')),
         DataColumn(label: Text('File size')),
       ],
       rows: [
@@ -34,8 +32,6 @@ class FolderView extends StatelessWidget {
                   context.bloc<DriveDetailBloc>().add(OpenFolder(folder.path)),
               cells: [
                 DataCell(NameCell(name: folder.name, isFolder: true)),
-                DataCell(Text('me')),
-                // DataCell(Text('-')),
                 DataCell(Text('-')),
               ],
             )),
@@ -49,12 +45,6 @@ class FolderView extends StatelessWidget {
             },
             cells: [
               DataCell(NameCell(name: file.name)),
-              DataCell(Text('me')),
-              /*DataCell(
-                Text(file.dateUpdated != null
-                    ? timeago.format(file.dateUpdated)
-                    : '-'),
-              ),*/
               DataCell(Text(filesize(file.size))),
             ],
           ),
