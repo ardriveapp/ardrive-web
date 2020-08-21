@@ -1,18 +1,15 @@
-# drive
+# Drive
 
-A new Flutter project.
+[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/CDDelta/arweave-dart/issues)
 
-## Getting Started
+Drive is a permanent, decentralized, uncensorable public file sharing app built on the Arweave network.
 
-This project is a starting point for a Flutter application.
+Our goal is to provide an easy, tamper-proof way for people to share documents, media, and applications with others without fear of data loss or censorship.
 
-A few resources to get you started if this is your first Flutter project:
+## Development
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+To start code generation, run:
 
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-
-`flutter packages pub run build_runner watch`
+```shell
+flutter packages pub run build_runner watch
+```
