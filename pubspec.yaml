@@ -36,7 +36,9 @@ dependencies:
   timeago: ^2.0.26
   url_launcher: ^5.5.0
   arweave:
-    path: ../arweave-dart
+    git:
+      url: https://github.com/CDDelta/arweave-dart.git
+      ref: 1c7e44a
   file_picker_cross: ^3.0.3
 
   artemis: 6.7.1-beta.1
