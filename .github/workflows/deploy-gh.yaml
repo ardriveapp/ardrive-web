@@ -1,0 +1,26 @@
+name: Build and Deploy App on GitHub
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: "beta"
+      - run: |
+          flutter pub get
+          flutter pub run build_runner build
+          flutter config --enable-web
+          flutter build web
+      - uses: JamesIves/github-pages-deploy-action@3.5.9
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: build/web
