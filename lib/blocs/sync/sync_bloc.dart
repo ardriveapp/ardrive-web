@@ -21,7 +21,9 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
       : _userBloc = userBloc,
         _arweaveDao = arweaveDao,
         _drivesDao = drivesDao,
-        super(SyncIdle());
+        super(SyncIdle()) {
+    add(SyncWithNetwork());
+  }
 
   @override
   Stream<SyncState> mapEventToState(
