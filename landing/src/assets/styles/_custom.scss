@@ -3,3 +3,9 @@ $secondary: #f9aa33;
 
 // Typography
 $font-family-base: 'Work Sans', sans-serif;
+
+// Components
+.jumbotron {
+  background: url(/assets/images/jumbotron-bg.jpg) no-repeat;
+  background-size: cover;
+}
