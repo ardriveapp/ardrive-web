@@ -1,11 +1,7 @@
-name: Build and Deploy App on GitHub
-on:
-  push:
-    branches:
-      - master
+name: Deploy on GitHub
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
