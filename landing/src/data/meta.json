@@ -1,7 +1,6 @@
 {
-    "title": "Eleventastic",
-    "description": "An Eleventy Starter Kit",
-    "url": "https://eleventastic.netlify.app",
-    "lang": "en",
-    "locale": "en_us"
+  "title": "Drive",
+  "description": "Pay once, keep forever",
+  "lang": "en",
+  "locale": "en_us"
 }

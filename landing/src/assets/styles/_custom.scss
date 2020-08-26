@@ -2,6 +2,11 @@ $primary: #344955;
 $secondary: #f9aa33;
 
 // Typography
+@font-face {
+  font-family: Work Sans;
+  src: url(/assets/fonts/WorkSans-Regular.ttf);
+}
+
 $font-family-base: 'Work Sans', sans-serif;
 
 // Components
