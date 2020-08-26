@@ -1,10 +1,41 @@
-<footer class="footer bg-light" role="contentinfo">
-    <div class="container">
-        <span
-            >&copy; copyright {{ build.timestamp | dateToFormat('yyyy') }}</span
+<footer class="bg-light pt-5 pb-3" role="contentinfo">
+  <div class="container">
+    <div class="row mb-3">
+      <div class="col-md-9">
+        <h3>Built on Arweave</h3>
+      </div>
+      <div class="col-md-3 d-flex flex-column">
+        <h5>Learn more</h5>
+        <a href="https://arweave.org" target="_blank" rel="noopener">Arweave</a>
+        <a
+          href="https://www.arweave.org/technology#permaweb"
+          target="_blank"
+          rel="noopener"
+          >Permaweb</a
         >
-        <a href="http://github.com/maxboeck/eleventastic">
-            {% icon "github" %}Eleventastic
-        </a>
+        <a
+          href="https://www.arweave.org/get-involved/community"
+          target="_blank"
+          rel="noopener"
+          >Community</a
+        >
+      </div>
     </div>
+    <div class="d-flex flex-md-row flex-column">
+      <a
+        class="my-1 mr-4"
+        href="https://github.com/CDDelta/drive"
+        target="_blank"
+        rel="noopener"
+        >{% icon "github" %}</a
+      >
+      <a class="my-md-1 mr-4" href="/legal/terms-of-service"
+        >Terms of Service</a
+      >
+      <a class="my-md-1" href="/legal/privacy-policy">Privacy Policy</a>
+    </div>
+    <p class="text-center my-2">
+      &copy; {{ build.timestamp | dateToFormat('yyyy') }} All rights reserved.
+    </p>
+  </div>
 </footer>
