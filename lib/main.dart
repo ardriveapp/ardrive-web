@@ -14,13 +14,8 @@ ArweaveDao arweaveDao;
 Database db;
 
 void main() async {
-  arweaveDao = ArweaveDao(
-    Arweave(
-      host: 'arweave.dev',
-      protocol: "https",
-      port: 443,
-    ),
-  );
+  arweaveDao =
+      ArweaveDao(Arweave(gatewayUrl: Uri.parse('https://arweave.dev')));
 
   db = Database();
 
