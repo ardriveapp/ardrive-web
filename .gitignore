@@ -1,3 +1,6 @@
+# Dist
+public
+
 # Generated code
 *.g.dart
 graphql_api.dart
