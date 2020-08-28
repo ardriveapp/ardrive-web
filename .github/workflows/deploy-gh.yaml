@@ -1,4 +1,8 @@
-name: Deploy on GitHub
+name: Deploy to GitHub
+on:
+  push:
+    branches:
+      - master
 
 jobs:
   deploy:
@@ -10,13 +14,21 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: "beta"
-      - run: |
+      - name: Build app
+        run: |
           flutter pub get
           flutter pub run build_runner build
           flutter config --enable-web
           flutter build web
-      - uses: JamesIves/github-pages-deploy-action@3.5.9
+          cp -r build/web public/i
+      - name: Build website
+        working-directory: ./landing
+        run: |
+          npm run build
+          cp -r dist ../public
+      - name: Deploy app
+        uses: JamesIves/github-pages-deploy-action@3.5.9
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages
-          FOLDER: build/web
+          FOLDER: public
