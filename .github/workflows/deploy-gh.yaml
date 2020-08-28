@@ -25,7 +25,7 @@ jobs:
         working-directory: ./landing
         run: |
           npm run build
-          cp -r dist ../public
+          cp -r dist/* ../public
       - name: Deploy app
         uses: JamesIves/github-pages-deploy-action@3.5.9
         with:
