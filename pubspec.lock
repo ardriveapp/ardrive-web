@@ -40,8 +40,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "097348b"
-      resolved-ref: "097348bbb5c08547333b86944f05f5b071c68987"
+      ref: d74774a415a98b0303b243c14fef58c05cd98fe3
+      resolved-ref: d74774a415a98b0303b243c14fef58c05cd98fe3
       url: "https://github.com/CDDelta/arweave-dart.git"
     source: git
     version: "0.1.0"
@@ -561,8 +561,8 @@ packages:
     dependency: transitive
     description:
       path: "."
-      ref: "52e6c64b5b511fb54c7baba271ce8b3efb5289bf"
-      resolved-ref: "52e6c64b5b511fb54c7baba271ce8b3efb5289bf"
+      ref: "0d595c65e76a678ba57fe9eb14cabbcc938ebdb0"
+      resolved-ref: "0d595c65e76a678ba57fe9eb14cabbcc938ebdb0"
       url: "https://github.com/bcgit/pc-dart.git"
     source: git
     version: "2.0.0-rc1"
