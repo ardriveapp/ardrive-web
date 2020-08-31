@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/repositories/entities/entities.dart';
+import 'package:drive/views/partials/attach_drive_form.dart';
 import 'package:drive/views/views.dart';
 import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:flutter/material.dart';
@@ -190,12 +191,9 @@ class AppDrawer extends StatelessWidget {
   }
 
   void _promptToAttachDrive(BuildContext context) async {
-    final driveId = await showTextFieldDialog(context,
-        title: 'Attach drive',
-        confirmingActionLabel: 'ATTACH',
-        fieldLabel: 'Drive ID');
-
-    if (driveId != null)
-      context.bloc<DrivesBloc>().add(AttachDrive(driveId, 'Personal'));
+    showDialog<String>(
+      context: context,
+      builder: (BuildContext context) => AttachDriveForm(),
+    );
   }
 }
