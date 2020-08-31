@@ -1,6 +1,6 @@
 # Drive
 
-![deploy](https://github.com/CDDelta/drive/workflows/Deploy/badge.svg)
+![deploy](https://github.com/CDDelta/drive/workflows/deploy/badge.svg)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/CDDelta/arweave-dart/issues)
 
 Drive is a permanent, decentralized, uncensorable public file sharing app built on the Arweave network.
