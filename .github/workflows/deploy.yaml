@@ -1,4 +1,4 @@
-name: Deploy to GitHub
+name: Deploy
 on:
   push:
     branches:
@@ -26,9 +26,9 @@ jobs:
         run: |
           npm run build
           cp -r dist/* ../public
-      - name: Deploy app
-        uses: JamesIves/github-pages-deploy-action@3.5.9
+      - name: Deploy to Firebase
+        uses: w9jds/firebase-action@v1.5.0
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: gh-pages
-          FOLDER: public
+          args: deploy --only hosting
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
