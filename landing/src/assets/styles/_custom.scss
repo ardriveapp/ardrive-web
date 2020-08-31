@@ -4,7 +4,7 @@ $secondary: #f9aa33;
 // Typography
 @font-face {
   font-family: Work Sans;
-  src: url(/assets/fonts/WorkSans-Regular.ttf);
+  src: url(../fonts/WorkSans-Regular.ttf);
   font-display: swap;
 }
 
@@ -12,6 +12,6 @@ $font-family-base: 'Work Sans', sans-serif;
 
 // Components
 .jumbotron {
-  background: url(/assets/images/jumbotron-bg.jpg) no-repeat;
+  background: url(../images/jumbotron-bg.jpg) no-repeat;
   background-size: cover;
 }
