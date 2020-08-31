@@ -1,6 +1,6 @@
 # Drive
 
-![deploy](https://github.com/CDDelta/drive/workflows/deploy/badge.svg)
+![deploy](https://github.com/CDDelta/drive/workflows/Deploy/badge.svg)
 
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/CDDelta/arweave-dart/issues)
 

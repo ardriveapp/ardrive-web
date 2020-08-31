@@ -24,6 +24,7 @@ jobs:
       - name: Build website
         working-directory: ./landing
         run: |
+          npm install
           npm run build
           cp -r dist/* ../public
       - name: Deploy to Firebase
