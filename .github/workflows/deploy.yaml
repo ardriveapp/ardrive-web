@@ -20,7 +20,7 @@ jobs:
           flutter pub run build_runner build
           flutter config --enable-web
           flutter build web
-          cp -r build/web public/i
+          mkdir -p public/i && cp -r build/web public/i
       - name: Build website
         working-directory: ./landing
         run: |
