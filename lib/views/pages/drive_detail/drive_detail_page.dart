@@ -41,10 +41,19 @@ class DriveDetailPage extends StatelessWidget {
                 builder: (context, state) => Column(
                   children: [
                     if (state is FolderLoadSuccess) ...{
-                      _buildBreadcrumbRow(
-                        context,
-                        state.currentDrive.name,
-                        state.currentFolder.folder.path,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildBreadcrumbRow(
+                            context,
+                            state.currentDrive.name,
+                            state.currentFolder.folder.path,
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.info),
+                            onPressed: () => _showDriveInfo(context),
+                          ),
+                        ],
                       ),
                       Row(
                         children: [
@@ -90,5 +99,27 @@ class DriveDetailPage extends StatelessWidget {
             ])
       ],
     );
+  }
+
+  void _showDriveInfo(BuildContext context) {
+    final state = context.bloc<DriveDetailBloc>().state;
+
+    if (state is FolderLoadSuccess) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Drive ID'),
+          content: FittedBox(
+              fit: BoxFit.contain,
+              child: SelectableText(state.currentDrive.id, maxLines: 1)),
+          actions: [
+            FlatButton(
+              child: Text('CLOSE'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      );
+    }
   }
 }
