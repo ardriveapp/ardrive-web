@@ -63,6 +63,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
         final drive = await (select(drives)..where((d) => d.id.equals(driveId)))
             .getSingle();
 
+        // Create maps of folders and files whose contents were updated on the network, keyed by their ids.
         final updatedFolders = <String, FolderEntriesCompanion>{};
         final updatedFiles = <String, FileEntriesCompanion>{};
 
@@ -99,6 +100,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
           }
         }
 
+        // Write in the new folder and file contents without their paths.
         await batch((b) {
           b.insertAllOnConflictUpdate(
               folderEntries, updatedFolders.values.toList());
@@ -199,6 +201,21 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
           }
 
           await updateFolderTree(treeRoot, parentPath);
+        }
+
+        // Update paths of files whose parent folders were not updated.
+        final staleOrphanFiles = updatedFiles.values
+            .where((f) => updatedFolders[f.parentFolderId] == null);
+        for (final staleOrphanFile in staleOrphanFiles) {
+          final parentPath = await (select(folderEntries)
+                ..where(
+                    (f) => f.id.equals(staleOrphanFile.parentFolderId.value)))
+              .map((f) => f.path)
+              .getSingle();
+
+          await (update(fileEntries)..whereSamePrimaryKey(staleOrphanFile))
+              .write(FileEntriesCompanion(
+                  path: Value(parentPath + '/' + staleOrphanFile.name.value)));
         }
 
         await (update(drives)..whereSamePrimaryKey(drive)).write(
