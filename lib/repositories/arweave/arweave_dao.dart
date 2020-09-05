@@ -117,7 +117,7 @@ class ArweaveDao {
     assert(entity.id != null && entity.rootFolderId != null);
 
     final tx = await _arweave.createTransaction(
-      Transaction(data: json.encode(entity.toJson())),
+      Transaction.withStringData(data: json.encode(entity.toJson())),
       wallet,
     );
 
@@ -138,7 +138,7 @@ class ArweaveDao {
     assert(entity.id != null && entity.driveId != null && entity.name != null);
 
     final tx = await _arweave.createTransaction(
-      Transaction(data: json.encode(entity.toJson())),
+      Transaction.withStringData(data: json.encode(entity.toJson())),
       wallet,
     );
 
@@ -165,7 +165,7 @@ class ArweaveDao {
         entity.size != null);
 
     final tx = await _arweave.createTransaction(
-      Transaction(data: json.encode(entity.toJson())),
+      Transaction.withStringData(data: json.encode(entity.toJson())),
       wallet,
     );
 
@@ -187,7 +187,7 @@ class ArweaveDao {
     Wallet wallet,
   ) async {
     final fileDataTx = await _arweave.createTransaction(
-      Transaction(dataBytes: fileStream),
+      Transaction.withBlobData(data: fileStream),
       wallet,
     );
 
