@@ -109,9 +109,9 @@ class DriveDetailPage extends StatelessWidget {
         context: context,
         builder: (context) => AlertDialog(
           title: Text('Drive ID'),
-          content: TextField(
-            readOnly: true,
-            controller: TextEditingController(text: state.currentDrive.id),
+          content: FittedBox(
+            fit: BoxFit.contain,
+            child: SelectableText(state.currentDrive.id, maxLines: 1),
           ),
           actions: [
             FlatButton(
