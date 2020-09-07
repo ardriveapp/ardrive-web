@@ -38,7 +38,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/CDDelta/arweave-dart.git
-      ref: 243ec332b53102d5412af2649396e3d20af3faef
+      ref: d96ae53570651170b39b21486cd99a562302d528
   file_picker_cross: ^3.0.3
 
   artemis: 6.7.1-beta.1
