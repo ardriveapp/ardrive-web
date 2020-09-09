@@ -3,9 +3,7 @@ import 'dart:typed_data';
 
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
-import 'package:arweave/utils.dart' as utils;
 import 'package:drive/repositories/entities/entity.dart';
-import 'package:http/http.dart';
 import 'package:mime/mime.dart';
 
 import '../entities/entities.dart';
@@ -33,14 +31,13 @@ class ArweaveDao {
         .map((e) => e.node)
         .toList();
     final entityData = await Future.wait(
-        entityNodes.map((e) => _arweave.transactions.getData(e.id)));
+        entityNodes.map((e) => _arweave.transactions.getData(e.id, 'json')));
 
     final rawEntities = <RawEntity>[];
     for (var i = 0; i < entityNodes.length; i++) {
       // Entities can sometimes show up in queries even though they aren't mined yet so we'll have to check here.
-      final entityJson = entityData[i] != null
-          ? json.decode(utils.decodeBase64ToString(entityData[i]))
-          : null;
+      final entityJson =
+          entityData[i] != null ? json.decode(entityData[i]) : null;
 
       // If the JSON is invalid, don't add it to the entities list.
       if (entityJson != null)
@@ -98,14 +95,15 @@ class ArweaveDao {
     if (queryEdges.isEmpty) return null;
 
     final driveNode = queryEdges[0].node;
-    final driveEntityData = await _arweave.transactions.getData(driveNode.id);
+    final driveEntityData =
+        await _arweave.transactions.getData(driveNode.id, 'json');
 
     final entity = DriveEntity.fromRawEntity(
       RawEntity(
         txId: driveNode.id,
         ownerAddress: driveNode.owner.address,
         tags: driveNode.tags,
-        jsonData: json.decode(utils.decodeBase64ToString(driveEntityData)),
+        jsonData: json.decode(driveEntityData),
       ),
     );
 
@@ -205,10 +203,10 @@ class ArweaveDao {
     return UploadTransactions(fileEntityTx, fileDataTx);
   }
 
-  Future<Response> postTx(Transaction transaction) =>
+  Future<void> postTx(Transaction transaction) =>
       _arweave.transactions.post(transaction);
 
-  Future<List<Response>> batchPostTxs(List<Transaction> transactions) =>
+  Future<void> batchPostTxs(List<Transaction> transactions) =>
       Future.wait(transactions.map((tx) => _arweave.transactions.post(tx)));
 }
 
