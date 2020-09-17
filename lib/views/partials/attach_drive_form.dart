@@ -32,9 +32,9 @@ class _AttachDriveFormState extends State<AttachDriveForm> {
         ),
         child: BlocConsumer<DriveAttachBloc, DriveAttachState>(
           listener: (context, state) {
-            if (state is DriveAttachInProgress)
+            if (state is DriveAttachInProgress) {
               showProgressDialog(context, 'Attaching drive...');
-            else if (state is DriveAttachSuccessful) {
+            } else if (state is DriveAttachSuccessful) {
               Navigator.pop(context);
               Navigator.pop(context);
             }
@@ -72,9 +72,10 @@ class _AttachDriveFormState extends State<AttachDriveForm> {
               FlatButton(
                 child: Text('ATTACH'),
                 onPressed: () {
-                  if (_formKey.currentState.validate())
+                  if (_formKey.currentState.validate()) {
                     context.bloc<DriveAttachBloc>().add(AttemptDriveAttach(
                         driveIdController.text, nameController.text));
+                  }
                 },
               ),
             ],

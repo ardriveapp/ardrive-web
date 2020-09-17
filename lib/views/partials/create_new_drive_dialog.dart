@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/blocs.dart';
 import 'text_field_dialog.dart';
 
-promptToCreateNewDrive(BuildContext context) async {
+Future<void> promptToCreateNewDrive(BuildContext context) async {
   final driveName = await showTextFieldDialog(
     context,
     title: 'New drive',

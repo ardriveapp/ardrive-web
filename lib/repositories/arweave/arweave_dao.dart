@@ -11,8 +11,8 @@ import 'graphql/graphql_api.dart';
 import 'utils.dart';
 
 class ArweaveDao {
-  ArtemisClient _gql = ArtemisClient('https://arweave.dev/graphql');
-  Arweave _arweave;
+  final ArtemisClient _gql = ArtemisClient('https://arweave.dev/graphql');
+  final Arweave _arweave;
 
   ArweaveDao(this._arweave);
 
@@ -40,7 +40,7 @@ class ArweaveDao {
           entityData[i] != null ? json.decode(entityData[i]) : null;
 
       // If the JSON is invalid, don't add it to the entities list.
-      if (entityJson != null)
+      if (entityJson != null) {
         rawEntities.add(
           RawEntity(
               txId: entityNodes[i].id,
@@ -49,13 +49,15 @@ class ArweaveDao {
               tags: entityNodes[i].tags,
               jsonData: entityJson),
         );
+      }
     }
 
     final blockHistory = <BlockEntities>[];
     for (final entity in rawEntities) {
       if (blockHistory.isEmpty ||
-          entity.blockHeight != blockHistory.last.blockHeight)
+          entity.blockHeight != blockHistory.last.blockHeight) {
         blockHistory.add(BlockEntities(entity.blockHeight));
+      }
 
       final entityType = entity.getTag(EntityTag.entityType);
 
@@ -71,12 +73,14 @@ class ArweaveDao {
           blockHistory.last.entities.add(file);
         }
         // If there are errors in parsing the entity, ignore it.
+        // ignore: empty_catches
       } catch (err) {}
     }
 
     // Sort the entities in each block by ascending commit time.
-    for (final block in blockHistory)
+    for (final block in blockHistory) {
       block.entities.sort((e1, e2) => e1.commitTime.compareTo(e2.commitTime));
+    }
 
     return DriveEntityHistory(
         blockHistory.isNotEmpty
@@ -146,8 +150,9 @@ class ArweaveDao {
     tx.addTag(EntityTag.driveId, entity.driveId);
     tx.addTag(EntityTag.folderId, entity.id);
 
-    if (entity.parentFolderId != null)
+    if (entity.parentFolderId != null) {
       tx.addTag(EntityTag.parentFolderId, entity.parentFolderId);
+    }
 
     await tx.sign(wallet);
 

@@ -29,8 +29,9 @@ class DriveAttachBloc extends Bloc<DriveAttachEvent, DriveAttachState> {
   Stream<DriveAttachState> mapEventToState(
     DriveAttachEvent event,
   ) async* {
-    if (event is AttemptDriveAttach)
+    if (event is AttemptDriveAttach) {
       yield* _mapAttemptDriveAttachToState(event);
+    }
   }
 
   Stream<DriveAttachState> _mapAttemptDriveAttachToState(

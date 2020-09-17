@@ -14,9 +14,9 @@ class UserBloc extends Bloc<UserEvent, UserState> {
   Stream<UserState> mapEventToState(
     UserEvent event,
   ) async* {
-    if (event is AttemptLogin)
+    if (event is AttemptLogin) {
       yield* _mapAttemptLoginToState(event);
-    else if (event is Logout) yield* _mapLogoutToState(event);
+    } else if (event is Logout) yield* _mapLogoutToState(event);
   }
 
   Stream<UserState> _mapAttemptLoginToState(AttemptLogin event) async* {

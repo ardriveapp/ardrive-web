@@ -36,13 +36,13 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
 
   @override
   Stream<DrivesState> mapEventToState(DrivesEvent event) async* {
-    if (event is SelectDrive)
+    if (event is SelectDrive) {
       yield* _mapSelectDriveToState(event);
-    else if (event is NewDrive)
+    } else if (event is NewDrive) {
       yield* _mapNewDriveToState(event);
-    else if (event is AttachDrive)
+    } else if (event is AttachDrive) {
       yield* _mapAttachDriveToState(event);
-    else if (event is DrivesUpdated) yield* _mapDrivesUpdatedToState(event);
+    } else if (event is DrivesUpdated) yield* _mapDrivesUpdatedToState(event);
   }
 
   Stream<DrivesState> _mapSelectDriveToState(SelectDrive event) async* {
@@ -59,13 +59,12 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
     if (state is DrivesLoadSuccess) {
       final wallet = (_userBloc.state as UserAuthenticated).userWallet;
 
-      final ids = await this
-          ._drivesDao
-          .createDrive(name: event.driveName, owner: wallet.address);
+      final ids = await _drivesDao.createDrive(
+          name: event.driveName, owner: wallet.address);
 
-      final driveTx = await this._arweaveDao.prepareDriveEntityTx(
+      final driveTx = await _arweaveDao.prepareDriveEntityTx(
           DriveEntity(id: ids[0], rootFolderId: ids[1]), wallet);
-      final rootFolderTx = await this._arweaveDao.prepareFolderEntityTx(
+      final rootFolderTx = await _arweaveDao.prepareFolderEntityTx(
           FolderEntity(id: ids[1], driveId: ids[0], name: event.driveName),
           wallet);
       await _arweaveDao.batchPostTxs([driveTx, rootFolderTx]);
@@ -84,10 +83,11 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
   Stream<DrivesState> _mapDrivesUpdatedToState(DrivesUpdated event) async* {
     String selectedDriveId;
     if (state is DrivesLoadSuccess &&
-        (state as DrivesLoadSuccess).selectedDriveId != null)
+        (state as DrivesLoadSuccess).selectedDriveId != null) {
       selectedDriveId = (state as DrivesLoadSuccess).selectedDriveId;
-    else
+    } else {
       selectedDriveId = event.drives.isNotEmpty ? event.drives.first.id : null;
+    }
 
     yield DrivesLoadSuccess(
       selectedDriveId: selectedDriveId,

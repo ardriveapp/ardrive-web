@@ -6,6 +6,7 @@ import 'package:drive/repositories/entities/entities.dart';
 import 'package:drive/repositories/repositories.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
+import 'package:pedantic/pedantic.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'drive_detail_event.dart';
@@ -39,17 +40,18 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   Stream<DriveDetailState> mapEventToState(
     DriveDetailEvent event,
   ) async* {
-    if (event is OpenFolder)
+    if (event is OpenFolder) {
       yield* _mapOpenFolderToState(event);
-    else if (event is OpenedFolder)
+    } else if (event is OpenedFolder) {
       yield* _mapOpenedFolderToState(event);
-    else if (event is NewFolder)
+    } else if (event is NewFolder) {
       yield* _mapNewFolderToState(event);
-    else if (event is UploadFile) yield* _mapUploadFileToState(event);
+    } else if (event is UploadFile) yield* _mapUploadFileToState(event);
   }
 
   Stream<DriveDetailState> _mapOpenFolderToState(OpenFolder event) async* {
-    _folderSubscription?.cancel();
+    unawaited(_folderSubscription?.cancel());
+
     _folderSubscription = Rx.combineLatest3(
       _driveDao.watchDrive(_driveId),
       _driveDao.watchFolder(_driveId, event.folderPath),

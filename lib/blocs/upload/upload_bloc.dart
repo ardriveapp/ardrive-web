@@ -32,10 +32,11 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
   Stream<UploadState> mapEventToState(
     UploadEvent event,
   ) async* {
-    if (event is PrepareFileUpload)
+    if (event is PrepareFileUpload) {
       yield* _mapPrepareFileUploadToState(event);
-    else if (event is UploadFileToNetwork)
+    } else if (event is UploadFileToNetwork) {
       yield* _mapUploadFileToNetworkToState(event);
+    }
   }
 
   Stream<UploadState> _mapPrepareFileUploadToState(

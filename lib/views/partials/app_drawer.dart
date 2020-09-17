@@ -151,6 +151,7 @@ class AppDrawer extends StatelessWidget {
     var chooseResult;
     try {
       chooseResult = await FilePickerCross.pick();
+      // ignore: empty_catches
     } catch (err) {}
 
     if (chooseResult != null && chooseResult.type != null) {
@@ -167,14 +168,16 @@ class AppDrawer extends StatelessWidget {
       initialText: 'Untitled folder',
     );
 
-    if (folderName != null)
+    if (folderName != null) {
       context.bloc<DriveDetailBloc>().add(NewFolder(folderName));
+    }
   }
 
   void _promptToUploadFile(BuildContext context) async {
     FilePickerCross fileChooseResult;
     try {
       fileChooseResult = await FilePickerCross.pick();
+      // ignore: empty_catches
     } catch (err) {}
 
     if (fileChooseResult == null) return;
@@ -193,7 +196,7 @@ class AppDrawer extends StatelessWidget {
   }
 
   void _promptToAttachDrive(BuildContext context) async {
-    showDialog<String>(
+    await showDialog<String>(
       context: context,
       builder: (BuildContext context) => AttachDriveForm(),
     );

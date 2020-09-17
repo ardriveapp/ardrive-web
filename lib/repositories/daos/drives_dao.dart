@@ -119,13 +119,12 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
           final staleSubfolders = await (select(folderEntries)
                 ..where((f) => f.parentFolderId.equals(folderId)))
               .get();
-          final staleFolderFilesMap = Map<String, String>.fromIterable(
-            await (select(fileEntries)
-                  ..where((f) => f.parentFolderId.equals(folderId)))
-                .get(),
-            key: (f) => f.id,
-            value: (f) => f.name,
-          );
+          final staleFolderFiles = await (select(fileEntries)
+                ..where((f) => f.parentFolderId.equals(folderId)))
+              .get();
+          final staleFolderFilesMap = {
+            for (var f in staleFolderFiles) f.id: f.name
+          };
 
           return StaleFolderNode(
             folder,
@@ -150,20 +149,22 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
         for (final folder in updatedFolders.values) {
           final tree = await getStaleFolderTree(folder);
 
-          bool newTreeIsSubsetOfExisting = false;
-          bool newTreeIsSupersetOfExisting = false;
-          for (final existingTree in staleFolderTree)
-            if (existingTree.searchForFolder(tree.folder.id.value) != null)
+          var newTreeIsSubsetOfExisting = false;
+          var newTreeIsSupersetOfExisting = false;
+          for (final existingTree in staleFolderTree) {
+            if (existingTree.searchForFolder(tree.folder.id.value) != null) {
               newTreeIsSubsetOfExisting = true;
-            else if (tree.searchForFolder(existingTree.folder.id.value) !=
+            } else if (tree.searchForFolder(existingTree.folder.id.value) !=
                 null) {
               staleFolderTree.remove(existingTree);
               staleFolderTree.add(tree);
               newTreeIsSupersetOfExisting = true;
             }
+          }
 
-          if (!newTreeIsSubsetOfExisting && !newTreeIsSupersetOfExisting)
+          if (!newTreeIsSubsetOfExisting && !newTreeIsSupersetOfExisting) {
             staleFolderTree.add(tree);
+          }
         }
 
         Future<void> updateFolderTree(
@@ -183,16 +184,17 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
                 .write(FileEntriesCompanion(path: Value(filePath)));
           }
 
-          for (final staleFolder in node.subfolders)
+          for (final staleFolder in node.subfolders) {
             await updateFolderTree(staleFolder, folderPath);
+          }
         }
 
         for (final treeRoot in staleFolderTree) {
           // Get the path of this folder's parent.
           String parentPath;
-          if (treeRoot.folder.parentFolderId.value != null)
+          if (treeRoot.folder.parentFolderId.value != null) {
             parentPath = '';
-          else {
+          } else {
             parentPath = await (select(folderEntries)
                   ..where(
                       (f) => f.id.equals(treeRoot.folder.parentFolderId.value)))
@@ -234,8 +236,9 @@ class StaleFolderNode {
   StaleFolderNode searchForFolder(String folderId) {
     if (folder.id.value == folderId) return this;
 
-    for (final subfolder in subfolders)
+    for (final subfolder in subfolders) {
       return subfolder.searchForFolder(folderId);
+    }
 
     return null;
   }

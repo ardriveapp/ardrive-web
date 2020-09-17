@@ -69,8 +69,9 @@ class TextFieldDialogState extends State<TextFieldDialog> {
           FlatButton(
             child: Text(widget.confirmingActionLabel),
             onPressed: () {
-              if (_formKey.currentState.validate())
+              if (_formKey.currentState.validate()) {
                 Navigator.of(context).pop(fieldController.text);
+              }
             },
           ),
         ],

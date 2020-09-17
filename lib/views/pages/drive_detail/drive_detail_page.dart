@@ -1,4 +1,4 @@
-import 'package:arweave/utils.dart' as arweaveUtils;
+import 'package:arweave/utils.dart' as utils;
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/views/partials/confirmation_dialog.dart';
 import 'package:drive/views/partials/progress_dialog.dart';
@@ -13,7 +13,7 @@ class DriveDetailPage extends StatelessWidget {
     return BlocListener<UploadBloc, UploadState>(
       listener: (context, state) async {
         if (state is UploadBeingPrepared) {
-          showProgressDialog(context, 'Preparing upload...');
+          await showProgressDialog(context, 'Preparing upload...');
         } else if (state is UploadFileReady) {
           Navigator.pop(context);
 
@@ -21,13 +21,13 @@ class DriveDetailPage extends StatelessWidget {
             context,
             title: 'Upload file',
             content:
-                'This will cost ${arweaveUtils.winstonToAr(state.uploadCost)} AR.',
+                'This will cost ${utils.winstonToAr(state.uploadCost)} AR.',
             confirmingActionLabel: 'UPLOAD',
           );
 
           if (confirm) context.bloc<UploadBloc>().add(state.fileUploadHandle);
         } else if (state is UploadInProgress) {
-          showProgressDialog(context, 'Uploading file...');
+          await showProgressDialog(context, 'Uploading file...');
         } else if (state is UploadComplete) {
           Navigator.pop(context);
         }
@@ -86,7 +86,7 @@ class DriveDetailPage extends StatelessWidget {
           onPressed: () => context.bloc<DriveDetailBloc>().add(OpenFolder('')),
           child: Text(driveName),
         ),
-        if (pathSegments.length > 0) Icon(Icons.chevron_right),
+        if (pathSegments.isNotEmpty) Icon(Icons.chevron_right),
         ...pathSegments.asMap().entries.expand((s) => [
               FlatButton(
                 onPressed: () => context.bloc<DriveDetailBloc>().add(

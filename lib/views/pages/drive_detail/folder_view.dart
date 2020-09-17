@@ -40,8 +40,9 @@ class FolderView extends StatelessWidget {
             onSelectChanged: (_) async {
               final open = await showConfirmationDialog(context,
                   title: 'Open file?', confirmingActionLabel: 'OPEN');
-              if (open != null && open)
-                launch('https://arweave.dev/${file.dataTxId}');
+              if (open != null && open) {
+                await launch('https://arweave.dev/${file.dataTxId}');
+              }
             },
             cells: [
               DataCell(NameCell(name: file.name)),
