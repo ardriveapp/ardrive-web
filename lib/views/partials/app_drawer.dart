@@ -172,7 +172,7 @@ class AppDrawer extends StatelessWidget {
   }
 
   void _promptToUploadFile(BuildContext context) async {
-    var fileChooseResult;
+    FilePickerCross fileChooseResult;
     try {
       fileChooseResult = await FilePickerCross.pick();
     } catch (err) {}
@@ -184,6 +184,8 @@ class AppDrawer extends StatelessWidget {
             FileEntity(
               name: basename(fileChooseResult.path),
               size: fileChooseResult.length,
+              // TODO: Replace with time reported by OS.
+              lastModifiedDate: DateTime.now(),
             ),
             fileChooseResult.toUint8List(),
           ),

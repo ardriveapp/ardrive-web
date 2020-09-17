@@ -5,6 +5,9 @@ import 'entities.dart';
 
 part 'file_entity.g.dart';
 
+DateTime _intToDateTime(int v) => DateTime.fromMillisecondsSinceEpoch(v);
+int _dateTimeToInt(DateTime v) => v.millisecondsSinceEpoch;
+
 @JsonSerializable()
 class FileEntity extends Entity {
   @JsonKey(ignore: true)
@@ -16,6 +19,8 @@ class FileEntity extends Entity {
 
   String name;
   int size;
+  @JsonKey(fromJson: _intToDateTime, toJson: _dateTimeToInt)
+  DateTime lastModifiedDate;
   String dataTxId;
 
   FileEntity(
@@ -24,16 +29,21 @@ class FileEntity extends Entity {
       this.parentFolderId,
       this.name,
       this.size,
+      this.lastModifiedDate,
       this.dataTxId});
 
-  factory FileEntity.fromRawEntity(RawEntity entity) =>
-      FileEntity.fromJson(entity.jsonData)
-        ..id = entity.getTag(EntityTag.fileId)
-        ..driveId = entity.getTag(EntityTag.driveId)
-        ..parentFolderId = entity.getTag(EntityTag.parentFolderId)
-        ..ownerAddress = entity.ownerAddress
-        ..commitTime = DateTime.fromMillisecondsSinceEpoch(
-            int.parse(entity.getTag(EntityTag.unixTime)));
+  factory FileEntity.fromRawEntity(RawEntity entity) {
+    final commitTime = DateTime.fromMillisecondsSinceEpoch(
+        int.parse(entity.getTag(EntityTag.unixTime)));
+
+    return FileEntity.fromJson(entity.jsonData)
+      ..id = entity.getTag(EntityTag.fileId)
+      ..driveId = entity.getTag(EntityTag.driveId)
+      ..parentFolderId = entity.getTag(EntityTag.parentFolderId)
+      ..lastModifiedDate ??= commitTime
+      ..ownerAddress = entity.ownerAddress
+      ..commitTime = commitTime;
+  }
 
   factory FileEntity.fromJson(Map<String, dynamic> json) =>
       _$FileEntityFromJson(json);
