@@ -95,11 +95,13 @@ ArweaveFS utilises a bottom-up data model (files refer to parent folder, folders
 
 ## Drive Privacy
 
-Drives that wish to store their data privately can optionally encrypt their entity metadata and data transaction content and mark them as so with the appropriate `Drive-Privacy` and `Cipher` tag.
+Drives can store either public or private data, indicated by the `Drive-Privacy` tag on the drive entity.
 
-Each drive should use a unique encryption key, `D`, which can be derived from various sources such as a user provided password or wallet. The drive and folder metadata transactions should then be encrypted using `D`.
+On every encrypted entity, a `Cipher` tag should be specified. The required public parameters for decrypting the data should also be specified with the parameter's tag name prefixed by `Cipher-*` eg. `Cipher-IV`.
 
-Importantly, file metadata and data transactions should be encrypted using keys derived using a [KDF] with `D` and their `File-Id` as input. This enables users to share specific files in their private drive without sharing the entire drive's content.
+Private drives have a global drive key, `D`, and multiple file keys, `F`, for encryption. `D` is used for encrypting the drive and folder metadata whereas `F` is used for encrypting file metadata and the actual stored data. Having these different keys, `D` and `F`, allows a user to share specific files without revealing the contents of their entire drive.
+
+These keys should be derived using HKDF-SHA256. A reference implementation is available [here](private_drive_kdf_reference.dart).
 
 ## Additional Client Concerns
 
