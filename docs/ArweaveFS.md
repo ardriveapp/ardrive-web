@@ -101,7 +101,7 @@ On every encrypted entity, a `Cipher` tag should be specified. The required publ
 
 Private drives have a global drive key, `D`, and multiple file keys, `F`, for encryption. `D` is used for encrypting the drive and folder metadata whereas `F` is used for encrypting file metadata and the actual stored data. Having these different keys, `D` and `F`, allows a user to share specific files without revealing the contents of their entire drive.
 
-`D` is derived with HKDF-SHA256 using an unsalted RSA-PSS signature of the drive's id and a user provided password. `F` is derived using the drive key and the file's id. A reference implementation is available [here](private_drive_kdf_reference.dart).
+`D` is derived using HKDF-SHA256 with an unsalted RSA-PSS signature of the drive's id and a user provided password. `F` is also derived using HKDF-SHA256 with the drive key and the file's id. A reference implementation is available [here](private_drive_kdf_reference.dart).
 
 ## Additional Client Concerns
 
