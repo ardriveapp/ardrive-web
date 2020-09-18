@@ -3,9 +3,12 @@ import 'dart:typed_data';
 
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart' as utils;
 import 'package:drive/repositories/entities/entity.dart';
 import 'package:mime/mime.dart';
+import 'package:pointycastle/export.dart';
 
+import '../../services/services.dart';
 import '../entities/entities.dart';
 import 'graphql/graphql_api.dart';
 import 'utils.dart';
@@ -27,54 +30,47 @@ class ArweaveDao {
         ),
       ),
     );
-    final entityNodes = driveEntityHistoryQuery.data.transactions.edges
+    final entityTxs = driveEntityHistoryQuery.data.transactions.edges
         .map((e) => e.node)
         .toList();
-    final entityData = await Future.wait(
-        entityNodes.map((e) => _arweave.transactions.getData(e.id, 'json')));
-
-    final rawEntities = <RawEntity>[];
-    for (var i = 0; i < entityNodes.length; i++) {
-      // Entities can sometimes show up in queries even though they aren't mined yet so we'll have to check here.
-      final entityJson =
-          entityData[i] != null ? json.decode(entityData[i]) : null;
-
-      // If the JSON is invalid, don't add it to the entities list.
-      if (entityJson != null) {
-        rawEntities.add(
-          RawEntity(
-              txId: entityNodes[i].id,
-              ownerAddress: entityNodes[i].owner.address,
-              blockHeight: entityNodes[i].block.height,
-              tags: entityNodes[i].tags,
-              jsonData: entityJson),
-        );
-      }
-    }
+    final rawEntityData = await Future.wait(
+        entityTxs.map((e) => _arweave.transactions.getData(e.id)));
 
     final blockHistory = <BlockEntities>[];
-    for (final entity in rawEntities) {
+    for (var i = 0; i < entityTxs.length; i++) {
+      final transaction = entityTxs[i];
+
       if (blockHistory.isEmpty ||
-          entity.blockHeight != blockHistory.last.blockHeight) {
-        blockHistory.add(BlockEntities(entity.blockHeight));
+          transaction.block.height != blockHistory.last.blockHeight) {
+        blockHistory.add(BlockEntities(transaction.block.height));
       }
 
-      final entityType = entity.getTag(EntityTag.entityType);
-
       try {
+        final entityType = transaction.getTag(EntityTag.entityType);
+        final entityData =
+            await _decodeEntityData(entityTxs[i], rawEntityData[i]);
+
+        Entity entity;
         if (entityType == EntityType.drive) {
-          final drive = DriveEntity.fromRawEntity(entity);
-          blockHistory.last.entities.add(drive);
+          entity = DriveEntity.fromTransaction(transaction, entityData);
         } else if (entityType == EntityType.folder) {
-          final folder = FolderEntity.fromRawEntity(entity);
-          blockHistory.last.entities.add(folder);
+          entity = FolderEntity.fromTransaction(transaction, entityData);
         } else if (entityType == EntityType.file) {
-          final file = FileEntity.fromRawEntity(entity);
-          blockHistory.last.entities.add(file);
+          entity = FileEntity.fromTransaction(transaction, entityData);
         }
+
+        if (blockHistory.isEmpty ||
+            transaction.block.height != blockHistory.last.blockHeight) {
+          blockHistory.add(BlockEntities(transaction.block.height));
+        }
+
+        blockHistory.last.entities.add(entity);
+
         // If there are errors in parsing the entity, ignore it.
         // ignore: empty_catches
-      } catch (err) {}
+      } catch (err) {
+        rethrow;
+      }
     }
 
     // Sort the entities in each block by ascending commit time.
@@ -98,86 +94,18 @@ class ArweaveDao {
     final queryEdges = initialDriveEntityQuery.data.transactions.edges;
     if (queryEdges.isEmpty) return null;
 
-    final driveNode = queryEdges[0].node;
-    final driveEntityData =
-        await _arweave.transactions.getData(driveNode.id, 'json');
+    final driveTx = queryEdges[0].node;
+    final driveEntityData = await _decodeEntityData(
+        driveTx, await _arweave.transactions.getData(driveTx.id));
 
-    final entity = DriveEntity.fromRawEntity(
-      RawEntity(
-        txId: driveNode.id,
-        ownerAddress: driveNode.owner.address,
-        tags: driveNode.tags,
-        jsonData: json.decode(driveEntityData),
-      ),
-    );
-
-    return entity;
+    return DriveEntity.fromTransaction(driveTx, driveEntityData);
   }
 
-  Future<Transaction> prepareDriveEntityTx(
-      DriveEntity entity, Wallet wallet) async {
-    assert(entity.id != null && entity.rootFolderId != null);
-
+  Future<Transaction> prepareEntityTx(Entity entity, Wallet wallet) async {
     final tx = await _arweave.transactions.prepare(
-      Transaction.withStringData(data: json.encode(entity.toJson())),
+      entity.asTransaction(),
       wallet,
     );
-
-    tx.addApplicationTags();
-    tx.addJsonContentTypeTag();
-    tx.addTag(EntityTag.entityType, 'drive');
-    tx.addTag(EntityTag.driveId, entity.id);
-
-    await tx.sign(wallet);
-
-    return tx;
-  }
-
-  Future<Transaction> prepareFolderEntityTx(
-    FolderEntity entity,
-    Wallet wallet,
-  ) async {
-    assert(entity.id != null && entity.driveId != null && entity.name != null);
-
-    final tx = await _arweave.transactions.prepare(
-      Transaction.withStringData(data: json.encode(entity.toJson())),
-      wallet,
-    );
-
-    tx.addApplicationTags();
-    tx.addJsonContentTypeTag();
-    tx.addTag(EntityTag.entityType, 'folder');
-    tx.addTag(EntityTag.driveId, entity.driveId);
-    tx.addTag(EntityTag.folderId, entity.id);
-
-    if (entity.parentFolderId != null) {
-      tx.addTag(EntityTag.parentFolderId, entity.parentFolderId);
-    }
-
-    await tx.sign(wallet);
-
-    return tx;
-  }
-
-  Future<Transaction> prepareFileEntityTx(
-      FileEntity entity, Wallet wallet) async {
-    assert(entity.id != null &&
-        entity.driveId != null &&
-        entity.parentFolderId != null &&
-        entity.name != null &&
-        entity.size != null);
-
-    final tx = await _arweave.transactions.prepare(
-      Transaction.withStringData(data: json.encode(entity.toJson())),
-      wallet,
-    );
-
-    tx.addApplicationTags();
-    tx.addJsonContentTypeTag();
-    tx.addTag(EntityTag.entityType, 'file');
-    tx.addTag(EntityTag.driveId, entity.driveId);
-    tx.addTag(EntityTag.parentFolderId, entity.parentFolderId);
-    tx.addTag(EntityTag.fileId, entity.id);
 
     await tx.sign(wallet);
 
@@ -195,7 +123,7 @@ class ArweaveDao {
     );
 
     fileDataTx.addTag(
-      'Content-Type',
+      EntityTag.contentType,
       lookupMimeType(fileEntity.name),
     );
 
@@ -203,7 +131,7 @@ class ArweaveDao {
 
     fileEntity.dataTxId = fileDataTx.id;
 
-    final fileEntityTx = await prepareFileEntityTx(fileEntity, wallet);
+    final fileEntityTx = await prepareEntityTx(fileEntity, wallet);
 
     return UploadTransactions(fileEntityTx, fileDataTx);
   }
@@ -213,6 +141,33 @@ class ArweaveDao {
 
   Future<void> batchPostTxs(List<Transaction> transactions) =>
       Future.wait(transactions.map((tx) => _arweave.transactions.post(tx)));
+
+  Future<Map<String, dynamic>> _decodeEntityData(
+      TransactionCommonMixin transaction, String data,
+      [KeyParameter driveKey]) async {
+    final entityType = transaction.tags
+        .firstWhere((t) => t.name == EntityTag.entityType)
+        .value;
+
+    Uint8List entityData;
+
+    if (driveKey != null) {
+      if (entityType == EntityType.drive) {
+        entityData = await decryptDriveEntityData(
+            transaction, utils.decodeBase64ToBytes(data), driveKey);
+      } else if (entityType == EntityType.folder) {
+        entityData = await decryptFolderEntityData(
+            transaction, utils.decodeBase64ToBytes(data), driveKey);
+      } else if (entityType == EntityType.file) {
+        entityData = await decryptFileEntityData(
+            transaction, utils.decodeBase64ToBytes(data), driveKey);
+      }
+    } else {
+      entityData = utils.decodeBase64ToBytes(data);
+    }
+
+    return json.decode(utf8.decode(entityData));
+  }
 }
 
 /// The entity history of a particular drive, chunked by block height.

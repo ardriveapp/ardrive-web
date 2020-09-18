@@ -62,9 +62,9 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
       final ids = await _drivesDao.createDrive(
           name: event.driveName, owner: wallet.address);
 
-      final driveTx = await _arweaveDao.prepareDriveEntityTx(
+      final driveTx = await _arweaveDao.prepareEntityTx(
           DriveEntity(id: ids[0], rootFolderId: ids[1]), wallet);
-      final rootFolderTx = await _arweaveDao.prepareFolderEntityTx(
+      final rootFolderTx = await _arweaveDao.prepareEntityTx(
           FolderEntity(id: ids[1], driveId: ids[0], name: event.driveName),
           wallet);
       await _arweaveDao.batchPostTxs([driveTx, rootFolderTx]);

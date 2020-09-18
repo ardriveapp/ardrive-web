@@ -1,0 +1,13 @@
+fragment transactionCommon on Transaction {
+  id
+  owner {
+    address
+  }
+  block {
+    height
+  }
+  tags {
+    name
+    value
+  }
+}

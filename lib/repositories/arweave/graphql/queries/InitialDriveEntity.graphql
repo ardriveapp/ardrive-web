@@ -10,11 +10,7 @@ query InitialDriveEntity($driveId: String!) {
   ) {
     edges {
       node {
-        id
-        owner {
-          address
-        }
-        ...transactionTags
+        ...transactionCommon
       }
     }
   }

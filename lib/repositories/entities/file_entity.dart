@@ -1,11 +1,17 @@
+import 'dart:convert';
+
+import 'package:arweave/arweave.dart';
+import 'package:drive/repositories/arweave/arweave.dart';
 import 'package:drive/repositories/entities/entity.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-import 'entities.dart';
+import '../arweave/utils.dart';
+import 'constants.dart';
 
 part 'file_entity.g.dart';
 
-DateTime _intToDateTime(int v) => DateTime.fromMillisecondsSinceEpoch(v);
+DateTime _intToDateTime(int v) =>
+    v != null ? DateTime.fromMillisecondsSinceEpoch(v) : null;
 int _dateTimeToInt(DateTime v) => v.millisecondsSinceEpoch;
 
 @JsonSerializable()
@@ -32,17 +38,37 @@ class FileEntity extends Entity {
       this.lastModifiedDate,
       this.dataTxId});
 
-  factory FileEntity.fromRawEntity(RawEntity entity) {
-    final commitTime = DateTime.fromMillisecondsSinceEpoch(
-        int.parse(entity.getTag(EntityTag.unixTime)));
+  factory FileEntity.fromTransaction(
+      TransactionCommonMixin transaction, Map<String, dynamic> entityJson) {
+    final commitTime = transaction.getCommitTime();
 
-    return FileEntity.fromJson(entity.jsonData)
-      ..id = entity.getTag(EntityTag.fileId)
-      ..driveId = entity.getTag(EntityTag.driveId)
-      ..parentFolderId = entity.getTag(EntityTag.parentFolderId)
+    return FileEntity.fromJson(entityJson)
+      ..id = transaction.getTag(EntityTag.fileId)
+      ..driveId = transaction.getTag(EntityTag.driveId)
+      ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
       ..lastModifiedDate ??= commitTime
-      ..ownerAddress = entity.ownerAddress
+      ..ownerAddress = transaction.owner.address
       ..commitTime = commitTime;
+  }
+
+  @override
+  Transaction asTransaction() {
+    assert(id != null &&
+        driveId != null &&
+        parentFolderId != null &&
+        name != null &&
+        size != null);
+
+    final tx = Transaction.withStringData(data: json.encode(toJson()));
+
+    tx.addApplicationTags();
+    tx.addJsonContentTypeTag();
+    tx.addTag(EntityTag.entityType, EntityType.file);
+    tx.addTag(EntityTag.driveId, driveId);
+    tx.addTag(EntityTag.parentFolderId, parentFolderId);
+    tx.addTag(EntityTag.fileId, id);
+
+    return tx;
   }
 
   factory FileEntity.fromJson(Map<String, dynamic> json) =>

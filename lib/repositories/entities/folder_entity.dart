@@ -1,7 +1,12 @@
+import 'dart:convert';
+
+import 'package:arweave/arweave.dart';
+import 'package:drive/repositories/arweave/arweave.dart';
 import 'package:drive/repositories/entities/entity.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-import 'entities.dart';
+import '../arweave/utils.dart';
+import 'constants.dart';
 
 part 'folder_entity.g.dart';
 
@@ -18,14 +23,35 @@ class FolderEntity extends Entity {
 
   FolderEntity({this.id, this.driveId, this.parentFolderId, this.name});
 
-  factory FolderEntity.fromRawEntity(RawEntity entity) =>
-      FolderEntity.fromJson(entity.jsonData)
-        ..id = entity.getTag(EntityTag.folderId)
-        ..driveId = entity.getTag(EntityTag.driveId)
-        ..parentFolderId = entity.getTag(EntityTag.parentFolderId)
-        ..ownerAddress = entity.ownerAddress
-        ..commitTime = DateTime.fromMillisecondsSinceEpoch(
-            int.parse(entity.getTag(EntityTag.unixTime)));
+  factory FolderEntity.fromTransaction(
+    TransactionCommonMixin transaction,
+    Map<String, dynamic> entityJson,
+  ) =>
+      FolderEntity.fromJson(entityJson)
+        ..id = transaction.getTag(EntityTag.folderId)
+        ..driveId = transaction.getTag(EntityTag.driveId)
+        ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
+        ..ownerAddress = transaction.owner.address
+        ..commitTime = transaction.getCommitTime();
+
+  @override
+  Transaction asTransaction() {
+    assert(id != null && driveId != null && name != null);
+
+    final tx = Transaction.withStringData(data: json.encode(toJson()));
+
+    tx.addApplicationTags();
+    tx.addJsonContentTypeTag();
+    tx.addTag(EntityTag.entityType, EntityType.folder);
+    tx.addTag(EntityTag.driveId, driveId);
+    tx.addTag(EntityTag.folderId, id);
+
+    if (parentFolderId != null) {
+      tx.addTag(EntityTag.parentFolderId, parentFolderId);
+    }
+
+    return tx;
+  }
 
   factory FolderEntity.fromJson(Map<String, dynamic> json) =>
       _$FolderEntityFromJson(json);

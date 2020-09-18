@@ -10,14 +10,7 @@ query DriveEntityHistory($driveId: String!, $oldestBlockHeight: Int) {
   ) {
     edges {
       node {
-        id
-        owner {
-          address
-        }
-        block {
-          height
-        }
-        ...transactionTags
+        ...transactionCommon
       }
     }
   }
