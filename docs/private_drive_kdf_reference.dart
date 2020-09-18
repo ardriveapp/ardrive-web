@@ -13,21 +13,21 @@ void main() async {
 
   final keyByteLength = 256 ~/ 8;
 
-  // Derive a drive key from the user's provided password,
-  // their drive uuid signed with their wallet and a salt.
+  // Derive a drive key from the user's provided password
+  // and their drive id signed with their wallet.
   //
   // We use a signature from the user's wallet in anticipation of a future
   // where we don't have access to the user's private key.
   // This signature must be generated using RSA-PSS/SHA-256 without a salt for consistency.
   //
-  // We salt this KDF to generate a unique drive key in cases where the user reuses a password.
-  final driveUuidBytes = Uint8List.fromList(List.filled(keyByteLength, 1));
-  final walletSignature = await wallet.sign(driveUuidBytes);
+  // There's no need to salt here since the drive id will ensure that no two drives have
+  // the same key even if the user reuses a password.
+  final driveIdBytes = Uint8List.fromList(List.filled(keyByteLength, 1));
+  final walletSignature = await wallet.sign(driveIdBytes);
   final password = '<password provided by user>';
-  final driveSalt = Uint8List(256 ~/ 8);
 
   final driveKdf = HKDFKeyDerivator(SHA256Digest())
-    ..init(HkdfParameters(walletSignature.bytes, keyByteLength, driveSalt));
+    ..init(HkdfParameters(walletSignature.bytes, keyByteLength));
 
   final driveKeyOuput = Uint8List(keyByteLength);
   driveKdf.deriveKey(utf8.encode(password), 0, driveKeyOuput, 0);
@@ -35,15 +35,15 @@ void main() async {
   final driveKey = KeyParameter(driveKeyOuput);
 
   // Derive a file key from the user's drive key and the file id.
-  // We don't salt here since the file uuid is already random enough but
+  // We don't salt here since the file id is already random enough but
   // we can salt in the future in cases where the user might want to revoke a file key they shared.
-  final fileUuidBytes = Uint8List.fromList(List.filled(keyByteLength, 0));
+  final fileIdBytes = Uint8List.fromList(List.filled(keyByteLength, 0));
 
   final fileKdf = HKDFKeyDerivator(SHA256Digest())
     ..init(HkdfParameters(driveKey.key, keyByteLength));
 
   final fileKeyOutput = Uint8List(keyByteLength);
-  fileKdf.deriveKey(fileUuidBytes, 0, fileKeyOutput, 0);
+  fileKdf.deriveKey(fileIdBytes, 0, fileKeyOutput, 0);
 
   final fileKey = KeyParameter(fileKeyOutput);
 
