@@ -10,10 +10,6 @@ extension TransactionUtils on Transaction {
     addTag(
         EntityTag.unixTime, DateTime.now().millisecondsSinceEpoch.toString());
   }
-
-  void addJsonContentTypeTag() {
-    addTag(EntityTag.contentType, 'application/json');
-  }
 }
 
 extension TransactionMixinExtensions on TransactionCommonMixin {

@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
 import 'package:drive/repositories/arweave/arweave.dart';
 import 'package:drive/repositories/entities/entity.dart';
+import 'package:drive/services/services.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:pointycastle/export.dart';
 
 import '../arweave/utils.dart';
 import 'constants.dart';
@@ -38,8 +41,15 @@ class FileEntity extends Entity {
       this.lastModifiedDate,
       this.dataTxId});
 
-  factory FileEntity.fromTransaction(
-      TransactionCommonMixin transaction, Map<String, dynamic> entityJson) {
+  static Future<FileEntity> fromTransaction(
+    TransactionCommonMixin transaction,
+    Uint8List data, [
+    KeyParameter driveKey,
+  ]) async {
+    final entityJson = driveKey == null
+        ? json.decode(utf8.decode(data))
+        : await decryptFileEntityJson(transaction, data, driveKey);
+
     final commitTime = transaction.getCommitTime();
 
     return FileEntity.fromJson(entityJson)
@@ -52,17 +62,18 @@ class FileEntity extends Entity {
   }
 
   @override
-  Transaction asTransaction() {
+  Future<Transaction> asTransaction([KeyParameter fileKey]) async {
     assert(id != null &&
         driveId != null &&
         parentFolderId != null &&
         name != null &&
         size != null);
 
-    final tx = Transaction.withStringData(data: json.encode(toJson()));
+    final tx = fileKey == null
+        ? Transaction.withJsonData(data: this)
+        : await createEncryptedEntityTransaction(this, fileKey);
 
     tx.addApplicationTags();
-    tx.addJsonContentTypeTag();
     tx.addTag(EntityTag.entityType, EntityType.file);
     tx.addTag(EntityTag.driveId, driveId);
     tx.addTag(EntityTag.parentFolderId, parentFolderId);

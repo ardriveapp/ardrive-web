@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:arweave/arweave.dart';
+import 'package:drive/repositories/entities/entity.dart';
 import 'package:pointycastle/export.dart';
 import 'package:uuid/uuid.dart';
 
@@ -9,18 +11,8 @@ import '../../repositories/repositories.dart';
 const keyByteLength = 256 ~/ 8;
 final _uuid = Uuid();
 
-Future<Uint8List> decryptDriveEntityData(TransactionCommonMixin transaction,
-        Uint8List data, KeyParameter driveKey) =>
-    _decryptTransactionData(transaction, data, driveKey);
-
-Future<Uint8List> decryptFolderEntityData(TransactionCommonMixin transaction,
-        Uint8List data, KeyParameter driveKey) =>
-    _decryptTransactionData(transaction, data, driveKey);
-
-Future<Uint8List> decryptFileEntityData(
-    TransactionCommonMixin transaction, Uint8List data, KeyParameter driveKey) {
-  final fileIdBytes = _uuid.parse(
-      transaction.tags.firstWhere((t) => t.name == EntityTag.fileId).value);
+Future<KeyParameter> deriveFileKey(KeyParameter driveKey, String fileId) async {
+  final fileIdBytes = _uuid.parse(fileId);
 
   final fileKdf = HKDFKeyDerivator(SHA256Digest())
     ..init(HkdfParameters(driveKey.key, keyByteLength));
@@ -28,22 +20,47 @@ Future<Uint8List> decryptFileEntityData(
   final fileKeyOutput = Uint8List(keyByteLength);
   fileKdf.deriveKey(fileIdBytes, 0, fileKeyOutput, 0);
 
-  final fileKey = KeyParameter(fileKeyOutput);
-
-  return _decryptTransactionData(transaction, data, fileKey);
+  return KeyParameter(fileKeyOutput);
 }
 
-Future<Uint8List> _decryptTransactionData(
+Future<Map<String, dynamic>> decryptDriveEntityJson(
+        TransactionCommonMixin transaction,
+        Uint8List data,
+        KeyParameter driveKey) =>
+    _decryptEntityJson(transaction, data, driveKey);
+
+Future<Map<String, dynamic>> decryptFolderEntityJson(
+        TransactionCommonMixin transaction,
+        Uint8List data,
+        KeyParameter driveKey) =>
+    _decryptEntityJson(transaction, data, driveKey);
+
+Future<Map<String, dynamic>> decryptFileEntityJson(
+        TransactionCommonMixin transaction,
+        Uint8List data,
+        KeyParameter driveKey) async =>
+    _decryptEntityJson(
+      transaction,
+      data,
+      await deriveFileKey(driveKey, transaction.getTag(EntityTag.fileId)),
+    );
+
+Future<Map<String, dynamic>> _decryptEntityJson(
+        TransactionCommonMixin transaction,
+        Uint8List data,
+        KeyParameter key) async =>
+    json.decode(
+        utf8.decode(await decryptTransactionData(transaction, data, key)));
+
+Future<Uint8List> decryptTransactionData(
   TransactionCommonMixin transaction,
   Uint8List data,
   KeyParameter key,
 ) async {
-  final cipher =
-      transaction.tags.firstWhere((t) => t.name == EntityTag.cipher).value;
+  final cipher = transaction.getTag(EntityTag.cipher);
 
   if (cipher == Cipher.aes256) {
-    final cipherIv =
-        transaction.tags.firstWhere((t) => t.name == EntityTag.cipherIv).value;
+    final cipherIv = transaction.getTag(EntityTag.cipherIv);
 
     final decrypter = GCMBlockCipher(AESFastEngine())
       ..init(false, AEADParameters(key, 16 * 8, utf8.encode(cipherIv), null));
@@ -52,4 +69,29 @@ Future<Uint8List> _decryptTransactionData(
   }
 
   throw ArgumentError();
+}
+
+/// Creates a transaction with the provided entity's JSON data encrypted along with the appropriate cipher tags.
+Future<Transaction> createEncryptedEntityTransaction(
+        Entity entity, KeyParameter key) =>
+    createEncryptedTransaction(utf8.encode(json.encode(entity)), key);
+
+/// Creates a transaction with the provided data encrypted along with the appropriate cipher tags.
+Future<Transaction> createEncryptedTransaction(
+  Uint8List data,
+  KeyParameter key,
+) async {
+  final cipherIv = Uint8List(0);
+
+  final encrypter = GCMBlockCipher(AESFastEngine())
+    ..init(true, AEADParameters(key, 16 * 8, cipherIv, null));
+
+  final tx = Transaction.withBlobData(data: encrypter.process(data));
+  tx.addTag(EntityTag.contentType, ContentType.octetStream);
+
+  tx.addTag(EntityTag.cipher, Cipher.aes256);
+  // IV should be encoded as base64 directly.
+  tx.addTag(EntityTag.cipherIv, 'iv');
+
+  return tx;
 }

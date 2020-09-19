@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
 import 'package:drive/repositories/arweave/arweave.dart';
 import 'package:drive/repositories/entities/entity.dart';
+import 'package:drive/services/crypto/crypto.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:pointycastle/export.dart';
 
 import '../arweave/utils.dart';
 import 'constants.dart';
@@ -23,25 +26,32 @@ class FolderEntity extends Entity {
 
   FolderEntity({this.id, this.driveId, this.parentFolderId, this.name});
 
-  factory FolderEntity.fromTransaction(
+  static Future<FolderEntity> fromTransaction(
     TransactionCommonMixin transaction,
-    Map<String, dynamic> entityJson,
-  ) =>
-      FolderEntity.fromJson(entityJson)
-        ..id = transaction.getTag(EntityTag.folderId)
-        ..driveId = transaction.getTag(EntityTag.driveId)
-        ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
-        ..ownerAddress = transaction.owner.address
-        ..commitTime = transaction.getCommitTime();
+    Uint8List data, [
+    KeyParameter driveKey,
+  ]) async {
+    final entityJson = driveKey == null
+        ? json.decode(utf8.decode(data))
+        : await decryptFolderEntityJson(transaction, data, driveKey);
+
+    return FolderEntity.fromJson(entityJson)
+      ..id = transaction.getTag(EntityTag.folderId)
+      ..driveId = transaction.getTag(EntityTag.driveId)
+      ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
+      ..ownerAddress = transaction.owner.address
+      ..commitTime = transaction.getCommitTime();
+  }
 
   @override
-  Transaction asTransaction() {
+  Future<Transaction> asTransaction([KeyParameter driveKey]) async {
     assert(id != null && driveId != null && name != null);
 
-    final tx = Transaction.withStringData(data: json.encode(toJson()));
+    final tx = driveKey == null
+        ? Transaction.withJsonData(data: this)
+        : await createEncryptedEntityTransaction(this, driveKey);
 
     tx.addApplicationTags();
-    tx.addJsonContentTypeTag();
     tx.addTag(EntityTag.entityType, EntityType.folder);
     tx.addTag(EntityTag.driveId, driveId);
     tx.addTag(EntityTag.folderId, id);

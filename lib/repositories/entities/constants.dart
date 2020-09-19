@@ -16,6 +16,11 @@ class EntityTag {
   static const cipherIv = 'Cipher-IV';
 }
 
+class ContentType {
+  static const json = 'application/json';
+  static const octetStream = 'application/octet-stream';
+}
+
 class EntityType {
   static const drive = 'drive';
   static const folder = 'folder';

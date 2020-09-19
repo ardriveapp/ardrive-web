@@ -1,14 +1,10 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
-import 'package:arweave/utils.dart' as utils;
 import 'package:drive/repositories/entities/entity.dart';
 import 'package:mime/mime.dart';
-import 'package:pointycastle/export.dart';
 
-import '../../services/services.dart';
 import '../entities/entities.dart';
 import 'graphql/graphql_api.dart';
 import 'utils.dart';
@@ -33,8 +29,10 @@ class ArweaveDao {
     final entityTxs = driveEntityHistoryQuery.data.transactions.edges
         .map((e) => e.node)
         .toList();
-    final rawEntityData = await Future.wait(
-        entityTxs.map((e) => _arweave.transactions.getData(e.id)));
+    final rawEntityData = (await Future.wait(
+            entityTxs.map((e) => _arweave.api.get('tx/${e.id}/data.json'))))
+        .map((r) => r.bodyBytes)
+        .toList();
 
     final blockHistory = <BlockEntities>[];
     for (var i = 0; i < entityTxs.length; i++) {
@@ -47,16 +45,17 @@ class ArweaveDao {
 
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
-        final entityData =
-            await _decodeEntityData(entityTxs[i], rawEntityData[i]);
 
         Entity entity;
         if (entityType == EntityType.drive) {
-          entity = DriveEntity.fromTransaction(transaction, entityData);
+          entity =
+              await DriveEntity.fromTransaction(transaction, rawEntityData[i]);
         } else if (entityType == EntityType.folder) {
-          entity = FolderEntity.fromTransaction(transaction, entityData);
+          entity =
+              await FolderEntity.fromTransaction(transaction, rawEntityData[i]);
         } else if (entityType == EntityType.file) {
-          entity = FileEntity.fromTransaction(transaction, entityData);
+          entity =
+              await FileEntity.fromTransaction(transaction, rawEntityData[i]);
         }
 
         if (blockHistory.isEmpty ||
@@ -95,15 +94,16 @@ class ArweaveDao {
     if (queryEdges.isEmpty) return null;
 
     final driveTx = queryEdges[0].node;
-    final driveEntityData = await _decodeEntityData(
-        driveTx, await _arweave.transactions.getData(driveTx.id));
 
-    return DriveEntity.fromTransaction(driveTx, driveEntityData);
+    return DriveEntity.fromTransaction(
+      driveTx,
+      (await _arweave.api.get('tx/${driveTx.id}/data.json')).bodyBytes,
+    );
   }
 
   Future<Transaction> prepareEntityTx(Entity entity, Wallet wallet) async {
     final tx = await _arweave.transactions.prepare(
-      entity.asTransaction(),
+      await entity.asTransaction(),
       wallet,
     );
 
@@ -141,33 +141,6 @@ class ArweaveDao {
 
   Future<void> batchPostTxs(List<Transaction> transactions) =>
       Future.wait(transactions.map((tx) => _arweave.transactions.post(tx)));
-
-  Future<Map<String, dynamic>> _decodeEntityData(
-      TransactionCommonMixin transaction, String data,
-      [KeyParameter driveKey]) async {
-    final entityType = transaction.tags
-        .firstWhere((t) => t.name == EntityTag.entityType)
-        .value;
-
-    Uint8List entityData;
-
-    if (driveKey != null) {
-      if (entityType == EntityType.drive) {
-        entityData = await decryptDriveEntityData(
-            transaction, utils.decodeBase64ToBytes(data), driveKey);
-      } else if (entityType == EntityType.folder) {
-        entityData = await decryptFolderEntityData(
-            transaction, utils.decodeBase64ToBytes(data), driveKey);
-      } else if (entityType == EntityType.file) {
-        entityData = await decryptFileEntityData(
-            transaction, utils.decodeBase64ToBytes(data), driveKey);
-      }
-    } else {
-      entityData = utils.decodeBase64ToBytes(data);
-    }
-
-    return json.decode(utf8.decode(entityData));
-  }
 }
 
 /// The entity history of a particular drive, chunked by block height.

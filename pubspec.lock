@@ -40,8 +40,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "210b91cc4530f706fabbe1b9ac12d680ffea3db7"
-      resolved-ref: "210b91cc4530f706fabbe1b9ac12d680ffea3db7"
+      ref: d7b9aba76f34ef005d7ea681ffa1bd3b58181901
+      resolved-ref: d7b9aba76f34ef005d7ea681ffa1bd3b58181901
       url: "https://github.com/CDDelta/arweave-dart.git"
     source: git
     version: "0.1.0"
@@ -560,11 +560,9 @@ packages:
   pointycastle:
     dependency: transitive
     description:
-      path: "."
-      ref: "0d595c65e76a678ba57fe9eb14cabbcc938ebdb0"
-      resolved-ref: "0d595c65e76a678ba57fe9eb14cabbcc938ebdb0"
-      url: "https://github.com/bcgit/pc-dart.git"
-    source: git
+      name: pointycastle
+      url: "https://pub.dartlang.org"
+    source: hosted
     version: "2.0.0-rc1"
   pool:
     dependency: transitive

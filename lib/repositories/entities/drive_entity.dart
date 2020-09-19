@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
 import 'package:drive/repositories/arweave/arweave.dart';
 import 'package:drive/repositories/entities/entity.dart';
+import 'package:drive/services/crypto/crypto.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:pointycastle/export.dart';
 
 import '../arweave/utils.dart';
 import 'constants.dart';
@@ -21,25 +24,32 @@ class DriveEntity extends Entity {
 
   DriveEntity({this.id, this.rootFolderId});
 
-  factory DriveEntity.fromTransaction(
+  static Future<DriveEntity> fromTransaction(
     TransactionCommonMixin transaction,
-    Map<String, dynamic> entityJson,
-  ) =>
-      DriveEntity.fromJson(entityJson)
-        ..id = transaction.getTag(EntityTag.driveId)
-        ..privacy =
-            transaction.getTag(EntityTag.drivePrivacy) ?? DrivePrivacy.public
-        ..ownerAddress = transaction.owner.address
-        ..commitTime = transaction.getCommitTime();
+    Uint8List data, [
+    KeyParameter driveKey,
+  ]) async {
+    final entityJson = driveKey == null
+        ? json.decode(utf8.decode(data))
+        : await decryptDriveEntityJson(transaction, data, driveKey);
+
+    return DriveEntity.fromJson(entityJson)
+      ..id = transaction.getTag(EntityTag.driveId)
+      ..privacy =
+          transaction.getTag(EntityTag.drivePrivacy) ?? DrivePrivacy.public
+      ..ownerAddress = transaction.owner.address
+      ..commitTime = transaction.getCommitTime();
+  }
 
   @override
-  Transaction asTransaction() {
+  Future<Transaction> asTransaction([KeyParameter driveKey]) async {
     assert(id != null && rootFolderId != null);
 
-    final tx = Transaction.withStringData(data: json.encode(toJson()));
+    final tx = driveKey == null
+        ? Transaction.withJsonData(data: this)
+        : await createEncryptedEntityTransaction(this, driveKey);
 
     tx.addApplicationTags();
-    tx.addJsonContentTypeTag();
     tx.addTag(EntityTag.entityType, EntityType.drive);
     tx.addTag(EntityTag.driveId, id);
 
