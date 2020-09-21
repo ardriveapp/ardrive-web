@@ -4,11 +4,10 @@ import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
-import 'package:drive/repositories/entities/entity.dart';
 import 'package:pointycastle/export.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../arweave/arweave.dart';
+import '../../graphql/graphql.dart';
 import '../entities.dart';
 
 const keyByteLength = 256 ~/ 8;

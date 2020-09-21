@@ -2,14 +2,11 @@ import 'dart:typed_data';
 
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
-import 'package:drive/repositories/entities/crypto/crypto.dart';
-import 'package:drive/repositories/entities/entity.dart';
 import 'package:mime/mime.dart';
 import 'package:pointycastle/export.dart';
 
 import '../entities/entities.dart';
-import 'graphql/graphql_api.dart';
-import 'utils.dart';
+import '../graphql/graphql.dart';
 
 class ArweaveDao {
   final ArtemisClient _gql = ArtemisClient('https://arweave.dev/graphql');

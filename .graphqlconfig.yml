@@ -1,4 +1,4 @@
 projects:
   arweave:
-    schemaPath: lib/repositories/arweave/graphql/schema.graphql
-    includes: ["lib/repositories/arweave/graphql/**/*.graphql"]
+    schemaPath: lib/repositories/graphql/schema.graphql
+    includes: ["lib/repositories/graphql/**/*.graphql"]
