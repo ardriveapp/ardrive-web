@@ -40,8 +40,6 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
       yield* _mapSelectDriveToState(event);
     } else if (event is NewDrive) {
       yield* _mapNewDriveToState(event);
-    } else if (event is AttachDrive) {
-      yield* _mapAttachDriveToState(event);
     } else if (event is DrivesUpdated) yield* _mapDrivesUpdatedToState(event);
   }
 
@@ -85,16 +83,6 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
 
       await _arweaveDao.batchPostTxs([driveTx, rootFolderTx]);
     }
-  }
-
-  Stream<DrivesState> _mapAttachDriveToState(AttachDrive event) async* {
-    final wallet = (_userBloc.state as UserAuthenticated).userWallet;
-    final driveEntity = await _arweaveDao.getDriveEntity(event.driveId, wallet);
-
-    await _drivesDao.attachDrive(event.driveName, driveEntity);
-
-    _syncBloc.add(SyncWithNetwork());
-    add(SelectDrive(event.driveId));
   }
 
   Stream<DrivesState> _mapDrivesUpdatedToState(DrivesUpdated event) async* {
