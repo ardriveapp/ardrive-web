@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart' as utils;
 import 'package:drive/repositories/entities/entity.dart';
 import 'package:pointycastle/export.dart';
 import 'package:uuid/uuid.dart';
@@ -61,10 +63,10 @@ Future<Uint8List> decryptTransactionData(
   final cipher = transaction.getTag(EntityTag.cipher);
 
   if (cipher == Cipher.aes256) {
-    final cipherIv = transaction.getTag(EntityTag.cipherIv);
+    final cipherIv = utf8.encode(transaction.getTag(EntityTag.cipherIv));
 
     final decrypter = GCMBlockCipher(AESFastEngine())
-      ..init(false, AEADParameters(key, 16 * 8, utf8.encode(cipherIv), null));
+      ..init(false, AEADParameters(key, 16 * 8, cipherIv, null));
 
     return decrypter.process(data);
   }
@@ -82,17 +84,19 @@ Future<Transaction> createEncryptedTransaction(
   Uint8List data,
   KeyParameter key,
 ) async {
-  final cipherIv = Uint8List(0);
+  final random = Random.secure();
+  final cipherIv =
+      Uint8List.fromList(List.generate(96 ~/ 8, (_) => random.nextInt(256)));
 
   final encrypter = GCMBlockCipher(AESFastEngine())
     ..init(true, AEADParameters(key, 16 * 8, cipherIv, null));
 
-  final tx = Transaction.withBlobData(data: encrypter.process(data));
-  tx.addTag(EntityTag.contentType, ContentType.octetStream);
-
-  tx.addTag(EntityTag.cipher, Cipher.aes256);
-  // IV should be encoded as base64 directly.
-  tx.addTag(EntityTag.cipherIv, 'iv');
-
-  return tx;
+  return Transaction.withBlobData(data: encrypter.process(data))
+    ..addTag(EntityTag.contentType, ContentType.octetStream)
+    ..addTag(EntityTag.cipher, Cipher.aes256)
+    ..addTag(
+      EntityTag.cipherIv,
+      utils.encodeBytesToBase64(cipherIv),
+      valueToBase64: false,
+    );
 }
