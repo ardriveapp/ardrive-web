@@ -12,6 +12,8 @@ class EntityTag {
   static const fileId = 'File-Id';
 
   static const drivePrivacy = 'Drive-Privacy';
+  static const driveAuthMode = 'Drive-Auth-Mode';
+
   static const cipher = 'Cipher';
   static const cipherIv = 'Cipher-IV';
 }
@@ -34,4 +36,8 @@ class Cipher {
 class DrivePrivacy {
   static const public = 'public';
   static const private = 'private';
+}
+
+class DriveAuthMode {
+  static const password = 'password';
 }

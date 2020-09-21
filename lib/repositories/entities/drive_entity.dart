@@ -19,10 +19,12 @@ class DriveEntity extends Entity {
   String id;
   @JsonKey(ignore: true)
   String privacy;
+  @JsonKey(ignore: true)
+  String authMode;
 
   String rootFolderId;
 
-  DriveEntity({this.id, this.rootFolderId});
+  DriveEntity({this.id, this.rootFolderId, this.privacy, this.authMode});
 
   static Future<DriveEntity> fromTransaction(
     TransactionCommonMixin transaction,
@@ -37,6 +39,7 @@ class DriveEntity extends Entity {
       ..id = transaction.getTag(EntityTag.driveId)
       ..privacy =
           transaction.getTag(EntityTag.drivePrivacy) ?? DrivePrivacy.public
+      ..authMode = transaction.getTag(EntityTag.driveAuthMode)
       ..ownerAddress = transaction.owner.address
       ..commitTime = transaction.getCommitTime();
   }
@@ -49,9 +52,16 @@ class DriveEntity extends Entity {
         ? Transaction.withJsonData(data: this)
         : await createEncryptedEntityTransaction(this, driveKey);
 
-    tx.addApplicationTags();
-    tx.addTag(EntityTag.entityType, EntityType.drive);
-    tx.addTag(EntityTag.driveId, id);
+    tx
+      ..addApplicationTags()
+      ..addTag(EntityTag.entityType, EntityType.drive)
+      ..addTag(EntityTag.driveId, id);
+
+    if (privacy == DrivePrivacy.private) {
+      tx
+        ..addTag(EntityTag.drivePrivacy, privacy)
+        ..addTag(EntityTag.driveAuthMode, authMode);
+    }
 
     return tx;
   }
