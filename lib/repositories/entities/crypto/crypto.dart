@@ -6,7 +6,8 @@ import 'package:drive/repositories/entities/entity.dart';
 import 'package:pointycastle/export.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../repositories/repositories.dart';
+import '../../arweave/arweave.dart';
+import '../entities.dart';
 
 const keyByteLength = 256 ~/ 8;
 final _uuid = Uuid();

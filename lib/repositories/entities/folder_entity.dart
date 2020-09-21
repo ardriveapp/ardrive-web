@@ -4,12 +4,12 @@ import 'dart:typed_data';
 import 'package:arweave/arweave.dart';
 import 'package:drive/repositories/arweave/arweave.dart';
 import 'package:drive/repositories/entities/entity.dart';
-import 'package:drive/services/crypto/crypto.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:pointycastle/export.dart';
 
 import '../arweave/utils.dart';
 import 'constants.dart';
+import 'crypto/crypto.dart';
 
 part 'folder_entity.g.dart';
 
