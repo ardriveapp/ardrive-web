@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class UploadsPage extends StatelessWidget {
+class UploadsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(

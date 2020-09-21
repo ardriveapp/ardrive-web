@@ -1,6 +1,4 @@
 import 'package:arweave/arweave.dart';
-import 'package:drive/blocs/blocs.dart';
-import 'package:drive/repositories/repositories.dart';
 import 'package:drive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -79,7 +77,7 @@ class App extends StatelessWidget {
                     page: BlocBuilder<DrivesBloc, DrivesState>(
                       builder: (context, state) => state is DrivesLoadSuccess &&
                               state.selectedDriveId != null
-                          ? DriveDetailPage()
+                          ? DriveDetailView()
                           : Container(),
                     ),
                   ),

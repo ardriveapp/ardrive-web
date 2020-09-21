@@ -1,8 +1,9 @@
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/repositories/repositories.dart';
-import 'package:drive/views/partials/progress_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'progress_dialog.dart';
 
 class AttachDriveForm extends StatefulWidget {
   @override

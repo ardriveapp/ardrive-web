@@ -1,6 +1,6 @@
-import 'package:drive/blocs/drive_detail/drive_detail_bloc.dart';
+import 'package:drive/blocs/blocs.dart';
+import 'package:drive/components/components.dart';
 import 'package:drive/repositories/repositories.dart';
-import 'package:drive/views/partials/confirmation_dialog.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
