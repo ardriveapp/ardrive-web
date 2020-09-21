@@ -1,11 +1,10 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:drive/blocs/blocs.dart';
-import 'package:drive/repositories/entities/crypto/crypto.dart';
-import 'package:drive/repositories/entities/entities.dart';
 import 'package:drive/repositories/repositories.dart';
 import 'package:rxdart/rxdart.dart';
+
+import '../blocs.dart';
 
 part 'drives_event.dart';
 part 'drives_state.dart';

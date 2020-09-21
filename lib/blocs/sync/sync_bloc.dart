@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:drive/blocs/user/user_bloc.dart';
+import 'package:drive/repositories/repositories.dart';
 import 'package:meta/meta.dart';
 
-import '../../repositories/repositories.dart';
+import '../blocs.dart';
 
 part 'sync_event.dart';
 part 'sync_state.dart';

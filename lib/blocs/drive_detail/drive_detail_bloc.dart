@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:drive/blocs/blocs.dart';
-import 'package:drive/repositories/entities/entities.dart';
 import 'package:drive/repositories/repositories.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:rxdart/rxdart.dart';
+
+import '../blocs.dart';
 
 part 'drive_detail_event.dart';
 part 'drive_detail_state.dart';

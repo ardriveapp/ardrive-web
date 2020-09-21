@@ -3,13 +3,11 @@ import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
-import 'package:drive/repositories/entities/crypto/crypto.dart';
-import 'package:drive/repositories/entities/entities.dart';
+import 'package:drive/repositories/repositories.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../repositories/repositories.dart';
-import '../user/user_bloc.dart';
+import '../blocs.dart';
 
 part 'upload_event.dart';
 part 'upload_state.dart';
