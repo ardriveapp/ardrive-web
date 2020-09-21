@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
+import 'package:drive/repositories/entities/crypto/crypto.dart';
 import 'package:drive/repositories/entities/entities.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
@@ -54,10 +55,14 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
     final wallet = (_userBloc.state as UserAuthenticated).userWallet;
     final transactions = <Transaction>[];
 
+    final driveKey =
+        await deriveDriveKey(wallet, fileEntity.driveId, 'A?WgmN8gF%H9>A/~');
+
     final uploadTxs = await _arweaveDao.prepareFileUploadTxs(
       fileEntity,
       event.fileStream,
       wallet,
+      await deriveFileKey(driveKey, event.fileEntity.id),
     );
 
     transactions.add(uploadTxs.entityTx);

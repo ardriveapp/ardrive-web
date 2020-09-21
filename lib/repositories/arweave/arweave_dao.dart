@@ -2,8 +2,10 @@ import 'dart:typed_data';
 
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
+import 'package:drive/repositories/entities/crypto/crypto.dart';
 import 'package:drive/repositories/entities/entity.dart';
 import 'package:mime/mime.dart';
+import 'package:pointycastle/export.dart';
 
 import '../entities/entities.dart';
 import 'graphql/graphql_api.dart';
@@ -84,7 +86,7 @@ class ArweaveDao {
         blockHistory);
   }
 
-  Future<DriveEntity> getDriveEntity(String driveId) async {
+  Future<DriveEntity> getDriveEntity(String driveId, Wallet wallet) async {
     final initialDriveEntityQuery = await _gql.execute(
       InitialDriveEntityQuery(
           variables: InitialDriveEntityArguments(driveId: driveId)),
@@ -96,14 +98,18 @@ class ArweaveDao {
     final driveTx = queryEdges[0].node;
 
     return DriveEntity.fromTransaction(
-      driveTx,
-      (await _arweave.api.get('tx/${driveTx.id}/data.json')).bodyBytes,
-    );
+        driveTx,
+        (await _arweave.api.get('tx/${driveTx.id}/data.json')).bodyBytes,
+        await deriveDriveKey(wallet, driveId, 'A?WgmN8gF%H9>A/~'));
   }
 
-  Future<Transaction> prepareEntityTx(Entity entity, Wallet wallet) async {
+  Future<Transaction> prepareEntityTx(
+    Entity entity,
+    Wallet wallet, [
+    KeyParameter key,
+  ]) async {
     final tx = await _arweave.transactions.prepare(
-      await entity.asTransaction(),
+      await entity.asTransaction(key),
       wallet,
     );
 
@@ -115,10 +121,13 @@ class ArweaveDao {
   Future<UploadTransactions> prepareFileUploadTxs(
     FileEntity fileEntity,
     Uint8List fileStream,
-    Wallet wallet,
-  ) async {
+    Wallet wallet, [
+    KeyParameter key,
+  ]) async {
     final fileDataTx = await _arweave.transactions.prepare(
-      Transaction.withBlobData(data: fileStream),
+      key == null
+          ? Transaction.withBlobData(data: fileStream)
+          : await createEncryptedTransaction(fileStream, key),
       wallet,
     );
 
@@ -131,7 +140,7 @@ class ArweaveDao {
 
     fileEntity.dataTxId = fileDataTx.id;
 
-    final fileEntityTx = await prepareEntityTx(fileEntity, wallet);
+    final fileEntityTx = await prepareEntityTx(fileEntity, wallet, key);
 
     return UploadTransactions(fileEntityTx, fileDataTx);
   }

@@ -13,16 +13,19 @@ class DriveAttachBloc extends Bloc<DriveAttachEvent, DriveAttachState> {
   final DrivesDao _drivesDao;
   final SyncBloc _syncBloc;
   final DrivesBloc _drivesBloc;
+  final UserBloc _userBloc;
 
   DriveAttachBloc({
     ArweaveDao arweaveDao,
     DrivesDao drivesDao,
     SyncBloc syncBloc,
     DrivesBloc drivesBloc,
+    UserBloc userBloc,
   })  : _arweaveDao = arweaveDao,
         _drivesDao = drivesDao,
         _syncBloc = syncBloc,
         _drivesBloc = drivesBloc,
+        _userBloc = userBloc,
         super(DriveAttachInitial());
 
   @override
@@ -38,7 +41,8 @@ class DriveAttachBloc extends Bloc<DriveAttachEvent, DriveAttachState> {
       AttemptDriveAttach event) async* {
     yield DriveAttachInProgress();
 
-    final driveEntity = await _arweaveDao.getDriveEntity(event.driveId);
+    final wallet = (_userBloc.state as UserAuthenticated).userWallet;
+    final driveEntity = await _arweaveDao.getDriveEntity(event.driveId, wallet);
 
     await _drivesDao.attachDrive(event.driveName, driveEntity);
 

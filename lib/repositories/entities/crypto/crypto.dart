@@ -14,16 +14,32 @@ import '../entities.dart';
 const keyByteLength = 256 ~/ 8;
 final _uuid = Uuid();
 
+Future<KeyParameter> deriveDriveKey(
+  Wallet wallet,
+  String driveId,
+  String password,
+) async {
+  final walletSignature = await wallet
+      .sign(Uint8List.fromList(utf8.encode('drive') + _uuid.parse(driveId)));
+  return _deriveKeyFromBytes(walletSignature.bytes, utf8.encode(password));
+}
+
 Future<KeyParameter> deriveFileKey(KeyParameter driveKey, String fileId) async {
   final fileIdBytes = _uuid.parse(fileId);
+  return _deriveKeyFromBytes(driveKey.key, fileIdBytes);
+}
 
-  final fileKdf = HKDFKeyDerivator(SHA256Digest())
-    ..init(HkdfParameters(driveKey.key, keyByteLength));
+Future<KeyParameter> _deriveKeyFromBytes(
+  Uint8List ikm,
+  Uint8List data,
+) async {
+  final kdf = HKDFKeyDerivator(SHA256Digest())
+    ..init(HkdfParameters(ikm, keyByteLength));
 
-  final fileKeyOutput = Uint8List(keyByteLength);
-  fileKdf.deriveKey(fileIdBytes, 0, fileKeyOutput, 0);
+  final keyOutput = Uint8List(keyByteLength);
+  kdf.deriveKey(data, 0, keyOutput, 0);
 
-  return KeyParameter(fileKeyOutput);
+  return KeyParameter(keyOutput);
 }
 
 Future<Map<String, dynamic>> decryptDriveEntityJson(

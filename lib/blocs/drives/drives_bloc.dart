@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:drive/blocs/blocs.dart';
+import 'package:drive/repositories/entities/crypto/crypto.dart';
 import 'package:drive/repositories/entities/entities.dart';
 import 'package:drive/repositories/repositories.dart';
 import 'package:rxdart/rxdart.dart';
@@ -62,17 +63,34 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
       final ids = await _drivesDao.createDrive(
           name: event.driveName, owner: wallet.address);
 
-      final driveTx = await _arweaveDao.prepareEntityTx(
-          DriveEntity(id: ids[0], rootFolderId: ids[1]), wallet);
+      final drive = DriveEntity(
+        id: ids[0],
+        rootFolderId: ids[1],
+        privacy: DrivePrivacy.private,
+        authMode: DriveAuthMode.password,
+      );
+
+      final driveKey = await deriveDriveKey(wallet, ids[0], 'A?WgmN8gF%H9>A/~');
+
+      final driveTx =
+          await _arweaveDao.prepareEntityTx(drive, wallet, driveKey);
       final rootFolderTx = await _arweaveDao.prepareEntityTx(
-          FolderEntity(id: ids[1], driveId: ids[0], name: event.driveName),
-          wallet);
+        FolderEntity(
+          id: drive.rootFolderId,
+          driveId: drive.id,
+          name: event.driveName,
+        ),
+        wallet,
+        driveKey,
+      );
+
       await _arweaveDao.batchPostTxs([driveTx, rootFolderTx]);
     }
   }
 
   Stream<DrivesState> _mapAttachDriveToState(AttachDrive event) async* {
-    final driveEntity = await _arweaveDao.getDriveEntity(event.driveId);
+    final wallet = (_userBloc.state as UserAuthenticated).userWallet;
+    final driveEntity = await _arweaveDao.getDriveEntity(event.driveId, wallet);
 
     await _drivesDao.attachDrive(event.driveName, driveEntity);
 

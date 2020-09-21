@@ -29,6 +29,7 @@ class _AttachDriveFormState extends State<AttachDriveForm> {
           drivesDao: context.repository<DrivesDao>(),
           syncBloc: context.bloc<SyncBloc>(),
           drivesBloc: context.bloc<DrivesBloc>(),
+          userBloc: context.bloc<UserBloc>(),
         ),
         child: BlocConsumer<DriveAttachBloc, DriveAttachState>(
           listener: (context, state) {
