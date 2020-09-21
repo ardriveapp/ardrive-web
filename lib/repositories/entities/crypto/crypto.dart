@@ -5,58 +5,29 @@ import 'dart:typed_data';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:pointycastle/export.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../graphql/graphql.dart';
 import '../entities.dart';
+import 'cipher_key.dart';
 
-const keyByteLength = 256 ~/ 8;
-final _uuid = Uuid();
-
-Future<KeyParameter> deriveDriveKey(
-  Wallet wallet,
-  String driveId,
-  String password,
-) async {
-  final walletSignature = await wallet
-      .sign(Uint8List.fromList(utf8.encode('drive') + _uuid.parse(driveId)));
-  return _deriveKeyFromBytes(walletSignature.bytes, utf8.encode(password));
-}
-
-Future<KeyParameter> deriveFileKey(KeyParameter driveKey, String fileId) async {
-  final fileIdBytes = _uuid.parse(fileId);
-  return _deriveKeyFromBytes(driveKey.key, fileIdBytes);
-}
-
-Future<KeyParameter> _deriveKeyFromBytes(
-  Uint8List ikm,
-  Uint8List data,
-) async {
-  final kdf = HKDFKeyDerivator(SHA256Digest())
-    ..init(HkdfParameters(ikm, keyByteLength));
-
-  final keyOutput = Uint8List(keyByteLength);
-  kdf.deriveKey(data, 0, keyOutput, 0);
-
-  return KeyParameter(keyOutput);
-}
+export 'cipher_key.dart';
 
 Future<Map<String, dynamic>> decryptDriveEntityJson(
         TransactionCommonMixin transaction,
         Uint8List data,
-        KeyParameter driveKey) =>
+        CipherKey driveKey) =>
     _decryptEntityJson(transaction, data, driveKey);
 
 Future<Map<String, dynamic>> decryptFolderEntityJson(
         TransactionCommonMixin transaction,
         Uint8List data,
-        KeyParameter driveKey) =>
+        CipherKey driveKey) =>
     _decryptEntityJson(transaction, data, driveKey);
 
 Future<Map<String, dynamic>> decryptFileEntityJson(
         TransactionCommonMixin transaction,
         Uint8List data,
-        KeyParameter driveKey) async =>
+        CipherKey driveKey) async =>
     _decryptEntityJson(
       transaction,
       data,
@@ -66,14 +37,14 @@ Future<Map<String, dynamic>> decryptFileEntityJson(
 Future<Map<String, dynamic>> _decryptEntityJson(
         TransactionCommonMixin transaction,
         Uint8List data,
-        KeyParameter key) async =>
+        CipherKey key) async =>
     json.decode(
         utf8.decode(await decryptTransactionData(transaction, data, key)));
 
 Future<Uint8List> decryptTransactionData(
   TransactionCommonMixin transaction,
   Uint8List data,
-  KeyParameter key,
+  CipherKey key,
 ) async {
   final cipher = transaction.getTag(EntityTag.cipher);
 
@@ -91,13 +62,13 @@ Future<Uint8List> decryptTransactionData(
 
 /// Creates a transaction with the provided entity's JSON data encrypted along with the appropriate cipher tags.
 Future<Transaction> createEncryptedEntityTransaction(
-        Entity entity, KeyParameter key) =>
+        Entity entity, CipherKey key) =>
     createEncryptedTransaction(utf8.encode(json.encode(entity)), key);
 
 /// Creates a transaction with the provided data encrypted along with the appropriate cipher tags.
 Future<Transaction> createEncryptedTransaction(
   Uint8List data,
-  KeyParameter key,
+  CipherKey key,
 ) async {
   final random = Random.secure();
   final cipherIv =
