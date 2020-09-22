@@ -6,7 +6,6 @@ import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:pointycastle/export.dart';
 
-import '../../graphql/graphql.dart';
 import '../entities.dart';
 import 'cipher_key.dart';
 

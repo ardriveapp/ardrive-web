@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:arweave/arweave.dart';
 import 'package:json_annotation/json_annotation.dart';
 
-import '../graphql/graphql.dart';
 import 'entities.dart';
 
 part 'folder_entity.g.dart';

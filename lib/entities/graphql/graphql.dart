@@ -1,4 +1,4 @@
-import '../entities/constants.dart';
+import '../entities.dart';
 import 'graphql_api.dart';
 
 export 'graphql_api.dart';

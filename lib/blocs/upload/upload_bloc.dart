@@ -3,7 +3,8 @@ import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
-import 'package:drive/repositories/repositories.dart';
+import 'package:drive/entities/entities.dart';
+import 'package:drive/models/models.dart';
 import 'package:drive/services/services.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';

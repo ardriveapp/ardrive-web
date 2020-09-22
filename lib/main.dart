@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'app_shell.dart';
 import 'blocs/blocs.dart';
-import 'repositories/repositories.dart';
+import 'models/models.dart';
 import 'services/services.dart';
 import 'views/views.dart';
 

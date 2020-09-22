@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
-import 'package:drive/repositories/repositories.dart';
+import 'package:drive/entities/entities.dart';
 import 'package:mime/mime.dart';
 
 class ArweaveService {
