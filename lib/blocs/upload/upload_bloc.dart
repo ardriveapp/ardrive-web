@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:drive/repositories/repositories.dart';
+import 'package:drive/services/services.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
@@ -16,15 +17,15 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
   final _uuid = Uuid();
   final UserBloc _userBloc;
   final DriveDao _driveDao;
-  final ArweaveDao _arweaveDao;
+  final ArweaveService _arweave;
 
   UploadBloc(
       {@required UserBloc userBloc,
       @required DriveDao driveDao,
-      @required ArweaveDao arweaveDao})
+      @required ArweaveService arweave})
       : _userBloc = userBloc,
         _driveDao = driveDao,
-        _arweaveDao = arweaveDao,
+        _arweave = arweave,
         super(UploadIdle());
 
   @override
@@ -53,7 +54,7 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
     final wallet = (_userBloc.state as UserAuthenticated).userWallet;
     final transactions = <Transaction>[];
 
-    final uploadTxs = await _arweaveDao.prepareFileUploadTxs(
+    final uploadTxs = await _arweave.prepareFileUploadTxs(
       fileEntity,
       event.fileStream,
       wallet,
@@ -82,7 +83,7 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
 
     final fileEntity = event.fileEntity;
 
-    await _arweaveDao.batchPostTxs(event.uploadTransactions);
+    await _arweave.batchPostTxs(event.uploadTransactions);
 
     await _driveDao.writeFileEntity(
       fileEntity,

@@ -3,16 +3,14 @@ import 'dart:typed_data';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
+import 'package:drive/repositories/repositories.dart';
 import 'package:mime/mime.dart';
 
-import '../entities/entities.dart';
-import '../graphql/graphql.dart';
-
-class ArweaveDao {
+class ArweaveService {
   final ArtemisClient _gql = ArtemisClient('https://arweave.dev/graphql');
   final Arweave _arweave;
 
-  ArweaveDao(this._arweave);
+  ArweaveService(this._arweave);
 
   /// Get the entity history for a particular drive starting from the oldest block height.
   Future<DriveEntityHistory> getDriveEntityHistory(

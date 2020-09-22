@@ -3,25 +3,26 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/repositories/repositories.dart';
+import 'package:drive/services/services.dart';
 import 'package:meta/meta.dart';
 
 part 'drive_attach_event.dart';
 part 'drive_attach_state.dart';
 
 class DriveAttachBloc extends Bloc<DriveAttachEvent, DriveAttachState> {
-  final ArweaveDao _arweaveDao;
+  final ArweaveService _arweave;
   final DrivesDao _drivesDao;
   final SyncBloc _syncBloc;
   final DrivesBloc _drivesBloc;
   final UserBloc _userBloc;
 
   DriveAttachBloc({
-    ArweaveDao arweaveDao,
+    ArweaveService arweave,
     DrivesDao drivesDao,
     SyncBloc syncBloc,
     DrivesBloc drivesBloc,
     UserBloc userBloc,
-  })  : _arweaveDao = arweaveDao,
+  })  : _arweave = arweave,
         _drivesDao = drivesDao,
         _syncBloc = syncBloc,
         _drivesBloc = drivesBloc,
@@ -42,7 +43,7 @@ class DriveAttachBloc extends Bloc<DriveAttachEvent, DriveAttachState> {
     yield DriveAttachInProgress();
 
     final wallet = (_userBloc.state as UserAuthenticated).userWallet;
-    final driveEntity = await _arweaveDao.getDriveEntity(event.driveId, wallet);
+    final driveEntity = await _arweave.getDriveEntity(event.driveId, wallet);
 
     await _drivesDao.attachDrive(event.driveName, driveEntity);
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:drive/repositories/repositories.dart';
+import 'package:drive/services/services.dart';
 import 'package:meta/meta.dart';
 
 import '../blocs.dart';
@@ -11,15 +12,15 @@ part 'sync_state.dart';
 
 class SyncBloc extends Bloc<SyncEvent, SyncState> {
   final UserBloc _userBloc;
-  final ArweaveDao _arweaveDao;
+  final ArweaveService _arweave;
   final DrivesDao _drivesDao;
 
   SyncBloc(
       {@required UserBloc userBloc,
-      @required ArweaveDao arweaveDao,
+      @required ArweaveService arweave,
       @required DrivesDao drivesDao})
       : _userBloc = userBloc,
-        _arweaveDao = arweaveDao,
+        _arweave = arweave,
         _drivesDao = drivesDao,
         super(SyncIdle()) {
     add(SyncWithNetwork());
@@ -42,7 +43,7 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
       final driveSyncProcesses = drives.map(
         (drive) => Future.microtask(
           () async {
-            final history = await _arweaveDao.getDriveEntityHistory(
+            final history = await _arweave.getDriveEntityHistory(
               drive.id,
               drive.latestSyncedBlock,
               await deriveDriveKey(wallet, drive.id, 'A?WgmN8gF%H9>A/~'),

@@ -1,5 +1,6 @@
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/repositories/repositories.dart';
+import 'package:drive/services/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -26,7 +27,7 @@ class _AttachDriveFormState extends State<AttachDriveForm> {
   @override
   Widget build(BuildContext context) => BlocProvider<DriveAttachBloc>(
         create: (context) => DriveAttachBloc(
-          arweaveDao: context.repository<ArweaveDao>(),
+          arweave: context.repository<ArweaveService>(),
           drivesDao: context.repository<DrivesDao>(),
           syncBloc: context.bloc<SyncBloc>(),
           drivesBloc: context.bloc<DrivesBloc>(),

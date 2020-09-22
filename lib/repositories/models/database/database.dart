@@ -1,7 +1,6 @@
 import 'package:moor/moor.dart';
 
-import '../daos/daos.dart';
-import '../models/models.dart';
+import '../models.dart';
 import 'shared.dart';
 
 part 'database.g.dart';

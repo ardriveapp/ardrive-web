@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:drive/repositories/repositories.dart';
+import 'package:drive/services/services.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
@@ -16,19 +17,19 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   final String _driveId;
   final UserBloc _userBloc;
   final UploadBloc _uploadBloc;
-  final ArweaveDao _arweaveDao;
+  final ArweaveService _arweave;
   final DriveDao _driveDao;
 
   StreamSubscription _folderSubscription;
 
   DriveDetailBloc(
       {@required String driveId,
-      @required ArweaveDao arweaveDao,
+      @required ArweaveService arweave,
       @required UserBloc userBloc,
       @required UploadBloc uploadBloc,
       @required DriveDao driveDao})
       : _driveId = driveId,
-        _arweaveDao = arweaveDao,
+        _arweave = arweave,
         _userBloc = userBloc,
         _uploadBloc = uploadBloc,
         _driveDao = driveDao,
@@ -83,7 +84,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
 
     final wallet = (_userBloc.state as UserAuthenticated).userWallet;
 
-    final folderTx = await _arweaveDao.prepareEntityTx(
+    final folderTx = await _arweave.prepareEntityTx(
         FolderEntity(
           id: newFolderId,
           driveId: currentFolder.driveId,
@@ -92,7 +93,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
         ),
         wallet,
         await deriveDriveKey(wallet, _driveId, 'A?WgmN8gF%H9>A/~'));
-    await _arweaveDao.postTx(folderTx);
+    await _arweave.postTx(folderTx);
   }
 
   Stream<DriveDetailState> _mapUploadFileToState(UploadFile event) async* {

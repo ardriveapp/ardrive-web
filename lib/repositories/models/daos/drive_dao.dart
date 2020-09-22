@@ -4,9 +4,9 @@ import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../entities/entities.dart';
 import '../database/database.dart';
-import '../entities/entities.dart';
-import '../models/models.dart';
+import '../models.dart';
 
 part 'drive_dao.g.dart';
 

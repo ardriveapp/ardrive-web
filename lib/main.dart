@@ -6,14 +6,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'app_shell.dart';
 import 'blocs/blocs.dart';
 import 'repositories/repositories.dart';
+import 'services/services.dart';
 import 'views/views.dart';
 
-ArweaveDao arweaveDao;
+ArweaveService arweave;
 Database db;
 
 void main() async {
-  arweaveDao =
-      ArweaveDao(Arweave(gatewayUrl: Uri.parse('https://arweave.dev')));
+  arweave =
+      ArweaveService(Arweave(gatewayUrl: Uri.parse('https://arweave.dev')));
 
   db = Database();
 
@@ -27,7 +28,7 @@ class App extends StatelessWidget {
       create: (context) => UserBloc(),
       child: MultiRepositoryProvider(
         providers: [
-          RepositoryProvider<ArweaveDao>(create: (_) => arweaveDao),
+          RepositoryProvider<ArweaveService>(create: (_) => arweave),
           RepositoryProvider<DrivesDao>(create: (_) => db.drivesDao),
           RepositoryProvider<DriveDao>(create: (_) => db.driveDao),
         ],
@@ -36,14 +37,14 @@ class App extends StatelessWidget {
             BlocProvider(
               create: (context) => UploadBloc(
                 userBloc: context.bloc<UserBloc>(),
-                arweaveDao: context.repository<ArweaveDao>(),
+                arweave: context.repository<ArweaveService>(),
                 driveDao: context.repository<DriveDao>(),
               ),
             ),
             BlocProvider(
               create: (context) => SyncBloc(
                 userBloc: context.bloc<UserBloc>(),
-                arweaveDao: context.repository<ArweaveDao>(),
+                arweave: context.repository<ArweaveService>(),
                 drivesDao: context.repository<DrivesDao>(),
               ),
             ),
@@ -51,7 +52,7 @@ class App extends StatelessWidget {
               create: (context) => DrivesBloc(
                 syncBloc: context.bloc<SyncBloc>(),
                 userBloc: context.bloc<UserBloc>(),
-                arweaveDao: context.repository<ArweaveDao>(),
+                arweave: context.repository<ArweaveService>(),
                 drivesDao: context.repository<DrivesDao>(),
               ),
             ),
@@ -70,7 +71,7 @@ class App extends StatelessWidget {
                     driveId: selectedDriveId,
                     userBloc: context.bloc<UserBloc>(),
                     uploadBloc: context.bloc<UploadBloc>(),
-                    arweaveDao: context.repository<ArweaveDao>(),
+                    arweave: context.repository<ArweaveService>(),
                     driveDao: context.repository<DriveDao>(),
                   ),
                   child: AppShell(
