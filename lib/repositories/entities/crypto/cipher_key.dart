@@ -23,7 +23,7 @@ Future<CipherKey> deriveDriveKey(
 }
 
 Future<CipherKey> deriveFileKey(CipherKey driveKey, String fileId) async {
-  final fileIdBytes = _uuid.parse(fileId);
+  final fileIdBytes = Uint8List.fromList(_uuid.parse(fileId));
   return _deriveKeyFromBytes(driveKey.key, fileIdBytes);
 }
 

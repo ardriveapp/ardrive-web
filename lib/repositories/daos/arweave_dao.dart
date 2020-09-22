@@ -2,8 +2,8 @@ import 'dart:typed_data';
 
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart' as utils;
 import 'package:mime/mime.dart';
-import 'package:pointycastle/export.dart';
 
 import '../entities/entities.dart';
 import '../graphql/graphql.dart';
@@ -16,7 +16,10 @@ class ArweaveDao {
 
   /// Get the entity history for a particular drive starting from the oldest block height.
   Future<DriveEntityHistory> getDriveEntityHistory(
-      String driveId, int oldestBlockHeight) async {
+    String driveId,
+    int oldestBlockHeight, [
+    CipherKey driveKey,
+  ]) async {
     final driveEntityHistoryQuery = await _gql.execute(
       DriveEntityHistoryQuery(
         variables: DriveEntityHistoryArguments(
@@ -29,8 +32,8 @@ class ArweaveDao {
         .map((e) => e.node)
         .toList();
     final rawEntityData = (await Future.wait(
-            entityTxs.map((e) => _arweave.api.get('tx/${e.id}/data.json'))))
-        .map((r) => r.bodyBytes)
+            entityTxs.map((e) => _arweave.api.get('tx/${e.id}/data'))))
+        .map((r) => utils.decodeBase64ToBytes(r.body))
         .toList();
 
     final blockHistory = <BlockEntities>[];
@@ -47,14 +50,14 @@ class ArweaveDao {
 
         Entity entity;
         if (entityType == EntityType.drive) {
-          entity =
-              await DriveEntity.fromTransaction(transaction, rawEntityData[i]);
+          entity = await DriveEntity.fromTransaction(
+              transaction, rawEntityData[i], driveKey);
         } else if (entityType == EntityType.folder) {
-          entity =
-              await FolderEntity.fromTransaction(transaction, rawEntityData[i]);
+          entity = await FolderEntity.fromTransaction(
+              transaction, rawEntityData[i], driveKey);
         } else if (entityType == EntityType.file) {
-          entity =
-              await FileEntity.fromTransaction(transaction, rawEntityData[i]);
+          entity = await FileEntity.fromTransaction(
+              transaction, rawEntityData[i], driveKey);
         }
 
         if (blockHistory.isEmpty ||
@@ -96,14 +99,15 @@ class ArweaveDao {
 
     return DriveEntity.fromTransaction(
         driveTx,
-        (await _arweave.api.get('tx/${driveTx.id}/data.json')).bodyBytes,
+        utils.decodeBase64ToBytes(
+            (await _arweave.api.get('tx/${driveTx.id}/data')).body),
         await deriveDriveKey(wallet, driveId, 'A?WgmN8gF%H9>A/~'));
   }
 
   Future<Transaction> prepareEntityTx(
     Entity entity,
     Wallet wallet, [
-    KeyParameter key,
+    CipherKey key,
   ]) async {
     final tx = await _arweave.transactions.prepare(
       await entity.asTransaction(key),
@@ -119,25 +123,30 @@ class ArweaveDao {
     FileEntity fileEntity,
     Uint8List fileStream,
     Wallet wallet, [
-    KeyParameter key,
+    CipherKey driveKey,
   ]) async {
+    final fileKey =
+        driveKey == null ? null : await deriveFileKey(driveKey, fileEntity.id);
+
     final fileDataTx = await _arweave.transactions.prepare(
-      key == null
+      fileKey == null
           ? Transaction.withBlobData(data: fileStream)
-          : await createEncryptedTransaction(fileStream, key),
+          : await createEncryptedTransaction(fileStream, fileKey),
       wallet,
     );
 
-    fileDataTx.addTag(
-      EntityTag.contentType,
-      lookupMimeType(fileEntity.name),
-    );
+    if (fileKey != null) {
+      fileDataTx.addTag(
+        EntityTag.contentType,
+        lookupMimeType(fileEntity.name),
+      );
+    }
 
     await fileDataTx.sign(wallet);
 
     fileEntity.dataTxId = fileDataTx.id;
 
-    final fileEntityTx = await prepareEntityTx(fileEntity, wallet, key);
+    final fileEntityTx = await prepareEntityTx(fileEntity, wallet, fileKey);
 
     return UploadTransactions(fileEntityTx, fileDataTx);
   }

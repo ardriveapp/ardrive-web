@@ -67,7 +67,9 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
         authMode: DriveAuthMode.password,
       );
 
-      final driveKey = await deriveDriveKey(wallet, ids[0], 'A?WgmN8gF%H9>A/~');
+      final driveKey = drive.privacy == DrivePrivacy.public
+          ? null
+          : await deriveDriveKey(wallet, drive.id, 'A?WgmN8gF%H9>A/~');
 
       final driveTx =
           await _arweaveDao.prepareEntityTx(drive, wallet, driveKey);

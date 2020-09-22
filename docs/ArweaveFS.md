@@ -26,7 +26,7 @@ Fields suffixed with `?` are optional.
 
 Field enum values are defined in the format "value 1 | value 2".
 
-All transactions that store these entities should define a `Content-Type` transaction tag with value `application/json`.
+All transactions that store these entities unencrypted should define a `Content-Type` tag with value `application/json`.
 
 ### Drive
 
@@ -37,6 +37,7 @@ When creating a drive, a corresponding folder should be created as well. This fo
 ```
 Drive-Id: <uuid>
 Drive-Privacy: <public | private>
+Drive-Auth-Mode?: password
 Cipher?: AES256-GCM
 Entity-Type: drive
 Unix-Time: <unix timestamp>
@@ -97,7 +98,9 @@ ArweaveFS utilises a bottom-up data model (files refer to parent folder, folders
 
 Drives can store either public or private data, indicated by the `Drive-Privacy` tag on the drive entity.
 
-On every encrypted entity, a `Cipher` tag should be specified. The required public parameters for decrypting the data should also be specified with the parameter's tag name prefixed by `Cipher-*` eg. `Cipher-IV`.
+On every encrypted entity, a `Cipher` tag should be specified. The required public parameters for decrypting the data should also be specified with the parameter's tag name prefixed by `Cipher-*` eg. `Cipher-IV`. If the parameter is byte data it should be encoded as Base64 in the tag.
+
+Additionally, all encrypted transactions should have the `Content-Type` tag `application/octet-stream` as opposed to `application/json`.
 
 Private drives have a global drive key, `D`, and multiple file keys, `F`, for encryption. `D` is used for encrypting the drive and folder metadata whereas `F` is used for encrypting file metadata and the actual stored data. Having these different keys, `D` and `F`, allows a user to share specific files without revealing the contents of their entire drive.
 

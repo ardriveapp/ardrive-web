@@ -7,12 +7,14 @@ class PrepareFileUpload extends UploadEvent {
   final FileEntity fileEntity;
   final String filePath;
   final Uint8List fileStream;
+  final CipherKey driveKey;
 
   PrepareFileUpload(
     this.fileEntity,
     this.filePath,
-    this.fileStream,
-  );
+    this.fileStream, [
+    this.driveKey,
+  ]);
 }
 
 class UploadFileToNetwork extends UploadEvent {

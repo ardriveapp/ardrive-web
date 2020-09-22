@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:pointycastle/export.dart';
 
 import '../graphql/graphql.dart';
 import 'entities.dart';
@@ -26,7 +25,7 @@ class DriveEntity extends Entity {
   static Future<DriveEntity> fromTransaction(
     TransactionCommonMixin transaction,
     Uint8List data, [
-    KeyParameter driveKey,
+    CipherKey driveKey,
   ]) async {
     final entityJson = driveKey == null
         ? json.decode(utf8.decode(data))
@@ -42,7 +41,7 @@ class DriveEntity extends Entity {
   }
 
   @override
-  Future<Transaction> asTransaction([KeyParameter driveKey]) async {
+  Future<Transaction> asTransaction([CipherKey driveKey]) async {
     assert(id != null && rootFolderId != null);
 
     final tx = driveKey == null

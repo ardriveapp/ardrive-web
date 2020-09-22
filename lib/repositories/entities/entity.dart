@@ -1,8 +1,7 @@
 import 'package:arweave/arweave.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:pointycastle/export.dart';
 
-import 'constants.dart';
+import 'entities.dart';
 
 abstract class Entity {
   @JsonKey(ignore: true)
@@ -13,13 +12,13 @@ abstract class Entity {
   /// Returns a transaction with the entity's data along with the appropriate tags.
   ///
   /// If a key is provided, the transaction data is encrypted.
-  Future<Transaction> asTransaction([KeyParameter key]);
+  Future<Transaction> asTransaction([CipherKey key]);
 }
 
 extension TransactionUtils on Transaction {
   void addApplicationTags() {
     addTag(EntityTag.appName, 'drive');
-    addTag(EntityTag.appVersion, '0.10.0');
+    addTag(EntityTag.appVersion, '0.11.0');
     addTag(
         EntityTag.unixTime, DateTime.now().millisecondsSinceEpoch.toString());
   }

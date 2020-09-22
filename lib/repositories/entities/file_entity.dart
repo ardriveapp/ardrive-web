@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:pointycastle/export.dart';
 
 import '../graphql/graphql.dart';
 import 'entities.dart';
@@ -41,7 +40,7 @@ class FileEntity extends Entity {
   static Future<FileEntity> fromTransaction(
     TransactionCommonMixin transaction,
     Uint8List data, [
-    KeyParameter driveKey,
+    CipherKey driveKey,
   ]) async {
     final entityJson = driveKey == null
         ? json.decode(utf8.decode(data))
@@ -59,7 +58,7 @@ class FileEntity extends Entity {
   }
 
   @override
-  Future<Transaction> asTransaction([KeyParameter fileKey]) async {
+  Future<Transaction> asTransaction([CipherKey fileKey]) async {
     assert(id != null &&
         driveId != null &&
         parentFolderId != null &&

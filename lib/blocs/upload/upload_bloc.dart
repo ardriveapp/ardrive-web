@@ -53,14 +53,11 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
     final wallet = (_userBloc.state as UserAuthenticated).userWallet;
     final transactions = <Transaction>[];
 
-    final driveKey =
-        await deriveDriveKey(wallet, fileEntity.driveId, 'A?WgmN8gF%H9>A/~');
-
     final uploadTxs = await _arweaveDao.prepareFileUploadTxs(
       fileEntity,
       event.fileStream,
       wallet,
-      await deriveFileKey(driveKey, event.fileEntity.id),
+      event.driveKey,
     );
 
     transactions.add(uploadTxs.entityTx);

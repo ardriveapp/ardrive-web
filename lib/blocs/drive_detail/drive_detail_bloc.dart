@@ -81,6 +81,8 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
       '${currentFolder.path}/${event.folderName}',
     );
 
+    final wallet = (_userBloc.state as UserAuthenticated).userWallet;
+
     final folderTx = await _arweaveDao.prepareEntityTx(
         FolderEntity(
           id: newFolderId,
@@ -88,7 +90,8 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
           parentFolderId: currentFolder.id,
           name: event.folderName,
         ),
-        (_userBloc.state as UserAuthenticated).userWallet);
+        wallet,
+        await deriveDriveKey(wallet, _driveId, 'A?WgmN8gF%H9>A/~'));
     await _arweaveDao.postTx(folderTx);
   }
 
@@ -98,11 +101,15 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
       ..driveId = _driveId
       ..parentFolderId = currentFolder.id;
 
+    final wallet = (_userBloc.state as UserAuthenticated).userWallet;
+
     _uploadBloc.add(
       PrepareFileUpload(
         event.fileEntity,
         '${currentFolder.path}/${event.fileEntity.name}',
         event.fileStream,
+        await deriveDriveKey(
+            wallet, event.fileEntity.driveId, 'A?WgmN8gF%H9>A/~'),
       ),
     );
   }

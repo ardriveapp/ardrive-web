@@ -49,7 +49,8 @@ Future<Uint8List> decryptTransactionData(
   final cipher = transaction.getTag(EntityTag.cipher);
 
   if (cipher == Cipher.aes256) {
-    final cipherIv = utf8.encode(transaction.getTag(EntityTag.cipherIv));
+    final cipherIv =
+        utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv));
 
     final decrypter = GCMBlockCipher(AESFastEngine())
       ..init(false, AEADParameters(key, 16 * 8, cipherIv, null));
@@ -83,6 +84,5 @@ Future<Transaction> createEncryptedTransaction(
     ..addTag(
       EntityTag.cipherIv,
       utils.encodeBytesToBase64(cipherIv),
-      valueToBase64: false,
     );
 }
