@@ -1,13 +1,12 @@
 import 'package:arweave/utils.dart' as utils;
 import 'package:drive/blocs/blocs.dart';
-import 'package:drive/views/partials/confirmation_dialog.dart';
-import 'package:drive/views/partials/progress_dialog.dart';
+import 'package:drive/components/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'folder_view.dart';
 
-class DriveDetailPage extends StatelessWidget {
+class DriveDetailView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocListener<UploadBloc, UploadState>(

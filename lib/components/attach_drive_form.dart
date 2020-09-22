@@ -1,8 +1,9 @@
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/repositories/repositories.dart';
-import 'package:drive/views/partials/progress_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'progress_dialog.dart';
 
 class AttachDriveForm extends StatefulWidget {
   @override
@@ -29,6 +30,7 @@ class _AttachDriveFormState extends State<AttachDriveForm> {
           drivesDao: context.repository<DrivesDao>(),
           syncBloc: context.bloc<SyncBloc>(),
           drivesBloc: context.bloc<DrivesBloc>(),
+          userBloc: context.bloc<UserBloc>(),
         ),
         child: BlocConsumer<DriveAttachBloc, DriveAttachState>(
           listener: (context, state) {

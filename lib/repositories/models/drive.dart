@@ -1,7 +1,5 @@
 import 'package:moor/moor.dart';
 
-enum DrivePrivacy { publicReadOnly, private }
-
 class Drives extends Table {
   TextColumn get id => text()();
   TextColumn get rootFolderId =>

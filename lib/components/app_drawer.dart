@@ -1,14 +1,14 @@
 import 'dart:convert';
 
 import 'package:drive/blocs/blocs.dart';
-import 'package:drive/repositories/entities/entities.dart';
-import 'package:drive/views/partials/attach_drive_form.dart';
-import 'package:drive/views/views.dart';
+import 'package:drive/repositories/repositories.dart';
 import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart';
 
+import 'attach_drive_form.dart';
+import 'create_new_drive_dialog.dart';
 import 'text_field_dialog.dart';
 
 class AppDrawer extends StatelessWidget {

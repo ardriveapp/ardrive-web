@@ -1,6 +1,10 @@
-import 'package:drive/repositories/entities/entity.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:arweave/arweave.dart';
 import 'package:json_annotation/json_annotation.dart';
 
+import '../graphql/graphql.dart';
 import 'entities.dart';
 
 part 'folder_entity.g.dart';
@@ -18,14 +22,42 @@ class FolderEntity extends Entity {
 
   FolderEntity({this.id, this.driveId, this.parentFolderId, this.name});
 
-  factory FolderEntity.fromRawEntity(RawEntity entity) =>
-      FolderEntity.fromJson(entity.jsonData)
-        ..id = entity.getTag(EntityTag.folderId)
-        ..driveId = entity.getTag(EntityTag.driveId)
-        ..parentFolderId = entity.getTag(EntityTag.parentFolderId)
-        ..ownerAddress = entity.ownerAddress
-        ..commitTime = DateTime.fromMillisecondsSinceEpoch(
-            int.parse(entity.getTag(EntityTag.unixTime)));
+  static Future<FolderEntity> fromTransaction(
+    TransactionCommonMixin transaction,
+    Uint8List data, [
+    CipherKey driveKey,
+  ]) async {
+    final entityJson = driveKey == null
+        ? json.decode(utf8.decode(data))
+        : await decryptFolderEntityJson(transaction, data, driveKey);
+
+    return FolderEntity.fromJson(entityJson)
+      ..id = transaction.getTag(EntityTag.folderId)
+      ..driveId = transaction.getTag(EntityTag.driveId)
+      ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
+      ..ownerAddress = transaction.owner.address
+      ..commitTime = transaction.getCommitTime();
+  }
+
+  @override
+  Future<Transaction> asTransaction([CipherKey driveKey]) async {
+    assert(id != null && driveId != null && name != null);
+
+    final tx = driveKey == null
+        ? Transaction.withJsonData(data: this)
+        : await createEncryptedEntityTransaction(this, driveKey);
+
+    tx.addApplicationTags();
+    tx.addTag(EntityTag.entityType, EntityType.folder);
+    tx.addTag(EntityTag.driveId, driveId);
+    tx.addTag(EntityTag.folderId, id);
+
+    if (parentFolderId != null) {
+      tx.addTag(EntityTag.parentFolderId, parentFolderId);
+    }
+
+    return tx;
+  }
 
   factory FolderEntity.fromJson(Map<String, dynamic> json) =>
       _$FolderEntityFromJson(json);

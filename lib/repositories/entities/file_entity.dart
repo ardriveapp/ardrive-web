@@ -1,11 +1,16 @@
-import 'package:drive/repositories/entities/entity.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:arweave/arweave.dart';
 import 'package:json_annotation/json_annotation.dart';
 
+import '../graphql/graphql.dart';
 import 'entities.dart';
 
 part 'file_entity.g.dart';
 
-DateTime _intToDateTime(int v) => DateTime.fromMillisecondsSinceEpoch(v);
+DateTime _intToDateTime(int v) =>
+    v != null ? DateTime.fromMillisecondsSinceEpoch(v) : null;
 int _dateTimeToInt(DateTime v) => v.millisecondsSinceEpoch;
 
 @JsonSerializable()
@@ -32,17 +37,45 @@ class FileEntity extends Entity {
       this.lastModifiedDate,
       this.dataTxId});
 
-  factory FileEntity.fromRawEntity(RawEntity entity) {
-    final commitTime = DateTime.fromMillisecondsSinceEpoch(
-        int.parse(entity.getTag(EntityTag.unixTime)));
+  static Future<FileEntity> fromTransaction(
+    TransactionCommonMixin transaction,
+    Uint8List data, [
+    CipherKey driveKey,
+  ]) async {
+    final entityJson = driveKey == null
+        ? json.decode(utf8.decode(data))
+        : await decryptFileEntityJson(transaction, data, driveKey);
 
-    return FileEntity.fromJson(entity.jsonData)
-      ..id = entity.getTag(EntityTag.fileId)
-      ..driveId = entity.getTag(EntityTag.driveId)
-      ..parentFolderId = entity.getTag(EntityTag.parentFolderId)
+    final commitTime = transaction.getCommitTime();
+
+    return FileEntity.fromJson(entityJson)
+      ..id = transaction.getTag(EntityTag.fileId)
+      ..driveId = transaction.getTag(EntityTag.driveId)
+      ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
       ..lastModifiedDate ??= commitTime
-      ..ownerAddress = entity.ownerAddress
+      ..ownerAddress = transaction.owner.address
       ..commitTime = commitTime;
+  }
+
+  @override
+  Future<Transaction> asTransaction([CipherKey fileKey]) async {
+    assert(id != null &&
+        driveId != null &&
+        parentFolderId != null &&
+        name != null &&
+        size != null);
+
+    final tx = fileKey == null
+        ? Transaction.withJsonData(data: this)
+        : await createEncryptedEntityTransaction(this, fileKey);
+
+    tx.addApplicationTags();
+    tx.addTag(EntityTag.entityType, EntityType.file);
+    tx.addTag(EntityTag.driveId, driveId);
+    tx.addTag(EntityTag.parentFolderId, parentFolderId);
+    tx.addTag(EntityTag.fileId, id);
+
+    return tx;
   }
 
   factory FileEntity.fromJson(Map<String, dynamic> json) =>

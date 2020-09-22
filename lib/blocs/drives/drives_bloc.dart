@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:drive/blocs/blocs.dart';
-import 'package:drive/repositories/entities/entities.dart';
 import 'package:drive/repositories/repositories.dart';
 import 'package:rxdart/rxdart.dart';
+
+import '../blocs.dart';
 
 part 'drives_event.dart';
 part 'drives_state.dart';
@@ -40,8 +40,6 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
       yield* _mapSelectDriveToState(event);
     } else if (event is NewDrive) {
       yield* _mapNewDriveToState(event);
-    } else if (event is AttachDrive) {
-      yield* _mapAttachDriveToState(event);
     } else if (event is DrivesUpdated) yield* _mapDrivesUpdatedToState(event);
   }
 
@@ -62,22 +60,31 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
       final ids = await _drivesDao.createDrive(
           name: event.driveName, owner: wallet.address);
 
-      final driveTx = await _arweaveDao.prepareDriveEntityTx(
-          DriveEntity(id: ids[0], rootFolderId: ids[1]), wallet);
-      final rootFolderTx = await _arweaveDao.prepareFolderEntityTx(
-          FolderEntity(id: ids[1], driveId: ids[0], name: event.driveName),
-          wallet);
+      final drive = DriveEntity(
+        id: ids[0],
+        rootFolderId: ids[1],
+        privacy: DrivePrivacy.private,
+        authMode: DriveAuthMode.password,
+      );
+
+      final driveKey = drive.privacy == DrivePrivacy.public
+          ? null
+          : await deriveDriveKey(wallet, drive.id, 'A?WgmN8gF%H9>A/~');
+
+      final driveTx =
+          await _arweaveDao.prepareEntityTx(drive, wallet, driveKey);
+      final rootFolderTx = await _arweaveDao.prepareEntityTx(
+        FolderEntity(
+          id: drive.rootFolderId,
+          driveId: drive.id,
+          name: event.driveName,
+        ),
+        wallet,
+        driveKey,
+      );
+
       await _arweaveDao.batchPostTxs([driveTx, rootFolderTx]);
     }
-  }
-
-  Stream<DrivesState> _mapAttachDriveToState(AttachDrive event) async* {
-    final driveEntity = await _arweaveDao.getDriveEntity(event.driveId);
-
-    await _drivesDao.attachDrive(event.driveName, driveEntity);
-
-    _syncBloc.add(SyncWithNetwork());
-    add(SelectDrive(event.driveId));
   }
 
   Stream<DrivesState> _mapDrivesUpdatedToState(DrivesUpdated event) async* {

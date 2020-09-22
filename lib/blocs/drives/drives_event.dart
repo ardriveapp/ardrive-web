@@ -14,13 +14,6 @@ class NewDrive extends DrivesEvent {
   NewDrive(this.driveName);
 }
 
-class AttachDrive extends DrivesEvent {
-  final String driveId;
-  final String driveName;
-
-  AttachDrive(this.driveId, this.driveName);
-}
-
 class DrivesUpdated extends DrivesEvent {
   final List<Drive> drives;
 
