@@ -16,7 +16,7 @@ part 'drive_detail_state.dart';
 
 class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   final String _driveId;
-  final UserBloc _userBloc;
+  final ProfileBloc _profileBloc;
   final UploadBloc _uploadBloc;
   final ArweaveService _arweave;
   final DriveDao _driveDao;
@@ -26,12 +26,12 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   DriveDetailBloc(
       {@required String driveId,
       @required ArweaveService arweave,
-      @required UserBloc userBloc,
+      @required ProfileBloc profileBloc,
       @required UploadBloc uploadBloc,
       @required DriveDao driveDao})
       : _driveId = driveId,
         _arweave = arweave,
-        _userBloc = userBloc,
+        _profileBloc = profileBloc,
         _uploadBloc = uploadBloc,
         _driveDao = driveDao,
         super(FolderLoadInProgress()) {
@@ -57,17 +57,17 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
     _folderSubscription = Rx.combineLatest3(
       _driveDao.watchDrive(_driveId),
       _driveDao.watchFolder(_driveId, event.folderPath),
-      _userBloc.startWith(null),
+      _profileBloc.startWith(null),
       (drive, folderContents, _) => OpenedFolder(drive, folderContents),
     ).listen((event) => add(event));
   }
 
   Stream<DriveDetailState> _mapOpenedFolderToState(OpenedFolder event) async* {
-    final userState = _userBloc.state;
+    final userState = _profileBloc.state;
 
     yield FolderLoadSuccess(
       currentDrive: event.openedDrive,
-      hasWritePermissions: userState is UserAuthenticated &&
+      hasWritePermissions: userState is ProfileActive &&
           event.openedDrive.ownerAddress == userState.userWallet.address,
       currentFolder: event.openedFolder,
     );
@@ -83,7 +83,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
       '${currentFolder.path}/${event.folderName}',
     );
 
-    final wallet = (_userBloc.state as UserAuthenticated).userWallet;
+    final wallet = (_profileBloc.state as ProfileActive).userWallet;
 
     final folderTx = await _arweave.prepareEntityTx(
         FolderEntity(
@@ -103,7 +103,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
       ..driveId = _driveId
       ..parentFolderId = currentFolder.id;
 
-    final wallet = (_userBloc.state as UserAuthenticated).userWallet;
+    final wallet = (_profileBloc.state as ProfileActive).userWallet;
 
     _uploadBloc.add(
       PrepareFileUpload(

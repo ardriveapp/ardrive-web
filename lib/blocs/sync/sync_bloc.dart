@@ -12,15 +12,15 @@ part 'sync_event.dart';
 part 'sync_state.dart';
 
 class SyncBloc extends Bloc<SyncEvent, SyncState> {
-  final UserBloc _userBloc;
+  final ProfileBloc _profileBloc;
   final ArweaveService _arweave;
   final DrivesDao _drivesDao;
 
   SyncBloc(
-      {@required UserBloc userBloc,
+      {@required ProfileBloc profileBloc,
       @required ArweaveService arweave,
       @required DrivesDao drivesDao})
-      : _userBloc = userBloc,
+      : _profileBloc = profileBloc,
         _arweave = arweave,
         _drivesDao = drivesDao,
         super(SyncIdle()) {
@@ -37,8 +37,8 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
   Stream<SyncState> _mapSyncWithNetworkToState(SyncWithNetwork event) async* {
     yield SyncInProgress();
 
-    if (_userBloc.state is UserAuthenticated) {
-      final wallet = (_userBloc.state as UserAuthenticated).userWallet;
+    if (_profileBloc.state is ProfileActive) {
+      final wallet = (_profileBloc.state as ProfileActive).userWallet;
 
       final drives = await _drivesDao.getAllDrives();
       final driveSyncProcesses = drives.map(

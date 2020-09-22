@@ -25,7 +25,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => UserBloc(),
+      create: (context) => ProfileBloc(),
       child: MultiRepositoryProvider(
         providers: [
           RepositoryProvider<ArweaveService>(create: (_) => arweave),
@@ -36,14 +36,14 @@ class App extends StatelessWidget {
           providers: [
             BlocProvider(
               create: (context) => UploadBloc(
-                userBloc: context.bloc<UserBloc>(),
+                profileBloc: context.bloc<ProfileBloc>(),
                 arweave: context.repository<ArweaveService>(),
                 driveDao: context.repository<DriveDao>(),
               ),
             ),
             BlocProvider(
               create: (context) => SyncBloc(
-                userBloc: context.bloc<UserBloc>(),
+                profileBloc: context.bloc<ProfileBloc>(),
                 arweave: context.repository<ArweaveService>(),
                 drivesDao: context.repository<DrivesDao>(),
               ),
@@ -51,7 +51,7 @@ class App extends StatelessWidget {
             BlocProvider(
               create: (context) => DrivesBloc(
                 syncBloc: context.bloc<SyncBloc>(),
-                userBloc: context.bloc<UserBloc>(),
+                profileBloc: context.bloc<ProfileBloc>(),
                 arweave: context.repository<ArweaveService>(),
                 drivesDao: context.repository<DrivesDao>(),
               ),
@@ -69,7 +69,7 @@ class App extends StatelessWidget {
                   key: ValueKey(selectedDriveId),
                   create: (context) => DriveDetailBloc(
                     driveId: selectedDriveId,
-                    userBloc: context.bloc<UserBloc>(),
+                    profileBloc: context.bloc<ProfileBloc>(),
                     uploadBloc: context.bloc<UploadBloc>(),
                     arweave: context.repository<ArweaveService>(),
                     driveDao: context.repository<DriveDao>(),

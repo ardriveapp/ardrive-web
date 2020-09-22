@@ -12,7 +12,7 @@ part 'drives_event.dart';
 part 'drives_state.dart';
 
 class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
-  final UserBloc _userBloc;
+  final ProfileBloc _profileBloc;
   final SyncBloc _syncBloc;
   final ArweaveService _arweave;
   final DrivesDao _drivesDao;
@@ -20,18 +20,18 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
   StreamSubscription _drivesSubscription;
 
   DrivesBloc(
-      {UserBloc userBloc,
+      {ProfileBloc profileBloc,
       SyncBloc syncBloc,
       ArweaveService arweave,
       DrivesDao drivesDao})
-      : _userBloc = userBloc,
+      : _profileBloc = profileBloc,
         _syncBloc = syncBloc,
         _arweave = arweave,
         _drivesDao = drivesDao,
         super(DrivesLoadInProgress()) {
     _drivesSubscription = Rx.combineLatest2(
       _drivesDao.watchAllDrives(),
-      _userBloc.startWith(null),
+      _profileBloc.startWith(null),
       (drives, _) => drives,
     ).listen((drives) => add(DrivesUpdated(drives: drives)));
   }
@@ -50,14 +50,14 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
       yield DrivesLoadSuccess(
         selectedDriveId: event.driveId,
         drives: (state as DrivesLoadSuccess).drives,
-        canCreateNewDrive: _userBloc.state is UserAuthenticated,
+        canCreateNewDrive: _profileBloc.state is ProfileActive,
       );
     }
   }
 
   Stream<DrivesState> _mapNewDriveToState(NewDrive event) async* {
     if (state is DrivesLoadSuccess) {
-      final wallet = (_userBloc.state as UserAuthenticated).userWallet;
+      final wallet = (_profileBloc.state as ProfileActive).userWallet;
 
       final ids = await _drivesDao.createDrive(
           name: event.driveName, owner: wallet.address);
@@ -100,7 +100,7 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
     yield DrivesLoadSuccess(
       selectedDriveId: selectedDriveId,
       drives: event.drives,
-      canCreateNewDrive: _userBloc.state is UserAuthenticated,
+      canCreateNewDrive: _profileBloc.state is ProfileActive,
     );
   }
 
