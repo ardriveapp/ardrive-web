@@ -4,7 +4,7 @@ targets:
       artemis:
         options:
           schema_mapping:
-            - output: lib/repositories/graphql/graphql_api.dart
-              schema: lib/repositories/graphql/schema.graphql
-              queries_glob: lib/repositories/graphql/queries/**.graphql
-          fragments_glob: lib/repositories/graphql/fragments/**.graphql
+            - output: lib/entities/graphql/graphql_api.dart
+              schema: lib/entities/graphql/schema.graphql
+              queries_glob: lib/entities/graphql/queries/**.graphql
+          fragments_glob: lib/entities/graphql/fragments/**.graphql
