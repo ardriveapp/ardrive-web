@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/entities/entities.dart';
 import 'package:file_picker_cross/file_picker_cross.dart';
@@ -31,11 +29,7 @@ class AppDrawer extends StatelessWidget {
                   Text('ArDrive', style: Theme.of(context).textTheme.headline6),
               trailing: BlocBuilder<ProfileBloc, ProfileState>(
                   builder: (context, state) => state is! ProfileActive
-                      ? IconButton(
-                          icon: Icon(Icons.login),
-                          onPressed: () => _promptToLogin(context),
-                          tooltip: 'Login',
-                        )
+                      ? IconButton(icon: CircleAvatar())
                       : IconButton(
                           icon: Icon(Icons.logout),
                           onPressed: () =>
@@ -145,19 +139,6 @@ class AppDrawer extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _promptToLogin(BuildContext context) async {
-    var chooseResult;
-    try {
-      chooseResult = await FilePickerCross.pick();
-      // ignore: empty_catches
-    } catch (err) {}
-
-    if (chooseResult != null && chooseResult.type != null) {
-      final jwk = json.decode(chooseResult.toString());
-      context.bloc<ProfileBloc>().add(AttemptLogin(jwk));
-    }
   }
 
   void _promptToCreateNewFolder(BuildContext context) async {

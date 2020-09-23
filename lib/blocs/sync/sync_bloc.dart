@@ -38,17 +38,24 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
     yield SyncInProgress();
 
     if (_profileBloc.state is ProfileActive) {
-      final wallet = (_profileBloc.state as ProfileActive).userWallet;
+      final profile = _profileBloc.state as ProfileActive;
 
       final drives = await _drivesDao.getAllDrives();
+      
       final driveSyncProcesses = drives.map(
         (drive) => Future.microtask(
           () async {
+            final driveKey = drive.privacy == DrivePrivacy.private
+                ? await deriveDriveKey(
+                    profile.wallet, drive.id, profile.password)
+                : null;
+
             final history = await _arweave.getDriveEntityHistory(
               drive.id,
               drive.latestSyncedBlock,
-              await deriveDriveKey(wallet, drive.id, 'A?WgmN8gF%H9>A/~'),
+              driveKey,
             );
+
             await _drivesDao.applyEntityHistory(drive.id, history);
           },
         ),

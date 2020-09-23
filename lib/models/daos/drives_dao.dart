@@ -20,28 +20,31 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
   /// Creates a drive with its accompanying root folder.
   /// Return a list with two ids, the first being the drive id and the second being the root folder id.
   Future<List<String>> createDrive(
-      {@required String name, @required String owner}) async {
+      {@required String name,
+      @required String ownerAddress,
+      @required String privacy}) async {
     final driveId = uuid.v4();
     final rootFolderId = uuid.v4();
 
     await batch((batch) {
       batch.insert(
         drives,
-        DrivesCompanion(
-          id: Value(driveId),
-          name: Value(name),
-          ownerAddress: Value(owner),
-          rootFolderId: Value(rootFolderId),
+        DrivesCompanion.insert(
+          id: driveId,
+          name: name,
+          ownerAddress: ownerAddress,
+          rootFolderId: rootFolderId,
+          privacy: privacy,
         ),
       );
 
       batch.insert(
         folderEntries,
-        FolderEntriesCompanion(
-          id: Value(rootFolderId),
-          driveId: Value(driveId),
-          name: Value(name),
-          path: Value(''),
+        FolderEntriesCompanion.insert(
+          id: rootFolderId,
+          driveId: driveId,
+          name: name,
+          path: '',
         ),
       );
     });

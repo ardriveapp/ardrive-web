@@ -12,6 +12,10 @@ class Drives extends Table {
   /// The latest block we've pulled state from.
   IntColumn get latestSyncedBlock => integer().withDefault(const Constant(0))();
 
+  TextColumn get privacy => text()();
+
+  BlobColumn get encryptedKey => blob().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
 }

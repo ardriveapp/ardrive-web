@@ -10,8 +10,9 @@ class SelectDrive extends DrivesEvent {
 
 class NewDrive extends DrivesEvent {
   final String driveName;
+  final String drivePrivacy;
 
-  NewDrive(this.driveName);
+  NewDrive(this.driveName, this.drivePrivacy);
 }
 
 class DrivesUpdated extends DrivesEvent {

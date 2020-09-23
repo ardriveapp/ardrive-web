@@ -2,29 +2,36 @@ import 'dart:async';
 
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
+import 'package:drive/models/models.dart';
 import 'package:meta/meta.dart';
 
 part 'profile_event.dart';
 part 'profile_state.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
-  ProfileBloc() : super(ProfileInactive());
+  final ProfileDao _profileDao;
+
+  ProfileBloc({ProfileDao profileDao})
+      : _profileDao = profileDao,
+        super(ProfileInactive());
 
   @override
   Stream<ProfileState> mapEventToState(
     ProfileEvent event,
   ) async* {
-    if (event is AttemptLogin) {
-      yield* _mapAttemptLoginToState(event);
+    if (event is ProfileAdd) {
+      yield* _mapProfileAddToState(event);
     } else if (event is Logout) yield* _mapLogoutToState(event);
   }
 
-  Stream<ProfileState> _mapAttemptLoginToState(AttemptLogin event) async* {
-    yield UserAuthenticating();
+  Stream<ProfileState> _mapProfileAddToState(ProfileAdd event) async* {
+    yield ProfileActivating();
 
     final wallet = Wallet.fromJwk(event.jwk);
 
-    yield ProfileActive(userWallet: wallet);
+    await _profileDao.addProfile(event.username, event.password, wallet);
+
+    yield ProfileActive(username: event.username, password: event.password, wallet: wallet);
   }
 
   Stream<ProfileState> _mapLogoutToState(Logout event) async* {

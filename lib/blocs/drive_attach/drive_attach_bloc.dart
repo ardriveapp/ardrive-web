@@ -42,7 +42,7 @@ class DriveAttachBloc extends Bloc<DriveAttachEvent, DriveAttachState> {
       AttemptDriveAttach event) async* {
     yield DriveAttachInProgress();
 
-    final wallet = (_profileBloc.state as ProfileActive).userWallet;
+    final wallet = (_profileBloc.state as ProfileActive).wallet;
     final driveEntity = await _arweave.getDriveEntity(event.driveId, wallet);
 
     await _drivesDao.attachDrive(event.driveName, driveEntity);

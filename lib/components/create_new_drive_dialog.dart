@@ -1,4 +1,5 @@
 import 'package:drive/blocs/blocs.dart';
+import 'package:drive/entities/entities.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -12,5 +13,7 @@ Future<void> promptToCreateNewDrive(BuildContext context) async {
     confirmingActionLabel: 'CREATE',
   );
 
-  if (driveName != null) context.bloc<DrivesBloc>().add(NewDrive(driveName));
+  if (driveName != null) {
+    context.bloc<DrivesBloc>().add(NewDrive(driveName, DrivePrivacy.public));
+  }
 }

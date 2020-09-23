@@ -68,13 +68,19 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
     yield FolderLoadSuccess(
       currentDrive: event.openedDrive,
       hasWritePermissions: userState is ProfileActive &&
-          event.openedDrive.ownerAddress == userState.userWallet.address,
+          event.openedDrive.ownerAddress == userState.wallet.address,
       currentFolder: event.openedFolder,
     );
   }
 
   Stream<DriveDetailState> _mapNewFolderToState(NewFolder event) async* {
-    final currentFolder = (state as FolderLoadSuccess).currentFolder.folder;
+    final profile = _profileBloc as ProfileActive;
+    final currentState = state as FolderLoadSuccess;
+    final currentFolder = currentState.currentFolder.folder;
+
+    final driveKey = currentState.currentDrive.privacy == DrivePrivacy.private
+        ? await deriveDriveKey(profile.wallet, _driveId, profile.password)
+        : null;
 
     final newFolderId = await _driveDao.createNewFolder(
       _driveId,
@@ -83,8 +89,6 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
       '${currentFolder.path}/${event.folderName}',
     );
 
-    final wallet = (_profileBloc.state as ProfileActive).userWallet;
-
     final folderTx = await _arweave.prepareEntityTx(
         FolderEntity(
           id: newFolderId,
@@ -92,26 +96,31 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
           parentFolderId: currentFolder.id,
           name: event.folderName,
         ),
-        wallet,
-        await deriveDriveKey(wallet, _driveId, 'A?WgmN8gF%H9>A/~'));
+        profile.wallet,
+        driveKey);
+
     await _arweave.postTx(folderTx);
   }
 
   Stream<DriveDetailState> _mapUploadFileToState(UploadFile event) async* {
-    final currentFolder = (state as FolderLoadSuccess).currentFolder.folder;
+    final profile = _profileBloc as ProfileActive;
+    final currentState = state as FolderLoadSuccess;
+    final currentFolder = currentState.currentFolder.folder;
+
     event.fileEntity
       ..driveId = _driveId
       ..parentFolderId = currentFolder.id;
 
-    final wallet = (_profileBloc.state as ProfileActive).userWallet;
+    final driveKey = currentState.currentDrive.privacy == DrivePrivacy.private
+        ? await deriveDriveKey(profile.wallet, _driveId, profile.password)
+        : null;
 
     _uploadBloc.add(
       PrepareFileUpload(
         event.fileEntity,
         '${currentFolder.path}/${event.fileEntity.name}',
         event.fileStream,
-        await deriveDriveKey(
-            wallet, event.fileEntity.driveId, 'A?WgmN8gF%H9>A/~'),
+        driveKey,
       ),
     );
   }

@@ -3,10 +3,12 @@ part of 'profile_bloc.dart';
 @immutable
 abstract class ProfileEvent {}
 
-class AttemptLogin extends ProfileEvent {
+class ProfileAdd extends ProfileEvent {
+  final String username;
+  final String password;
   final Map<String, dynamic> jwk;
 
-  AttemptLogin(this.jwk);
+  ProfileAdd(this.username, this.password, this.jwk);
 }
 
 class Logout extends ProfileEvent {}
