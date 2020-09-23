@@ -1,4 +1,5 @@
 import 'package:arweave/arweave.dart';
+import 'package:drive/services/services.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 import 'entities.dart';

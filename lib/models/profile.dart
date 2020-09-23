@@ -6,7 +6,7 @@ class Profiles extends Table {
   TextColumn get username => text()();
 
   BlobColumn get encryptedWallet => blob()();
-  BlobColumn get walletSalt => blob()();
+  BlobColumn get keySalt => blob()();
 
   @override
   Set<Column> get primaryKey => {id};

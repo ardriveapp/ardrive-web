@@ -6,6 +6,8 @@ import 'package:arweave/utils.dart' as utils;
 import 'package:drive/entities/entities.dart';
 import 'package:mime/mime.dart';
 
+import 'crypto/crypto.dart';
+
 class ArweaveService {
   final ArtemisClient _gql = ArtemisClient('https://arweave.dev/graphql');
   final Arweave _arweave;

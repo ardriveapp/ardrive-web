@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:arweave/arweave.dart';
 import 'package:drive/services/services.dart';
 import 'package:moor/moor.dart';
@@ -45,10 +43,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
     if (privacy == DrivePrivacy.private) {
       driveKey = await deriveDriveKey(wallet, driveId, password);
 
-      final random = Random.secure();
-      final cipherIv = Uint8List.fromList(
-          List.generate(96 ~/ 8, (_) => random.nextInt(256)));
-
+      final cipherIv = generateRandomBytes(96 ~/ 8);
       final encrypter = GCMBlockCipher(AESFastEngine())
         ..init(true, AEADParameters(profileKey, 16 * 8, cipherIv, null));
 
