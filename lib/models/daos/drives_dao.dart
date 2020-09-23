@@ -27,21 +27,21 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
     await batch((batch) {
       batch.insert(
         drives,
-        DrivesCompanion(
-          id: Value(driveId),
-          name: Value(name),
-          ownerAddress: Value(owner),
-          rootFolderId: Value(rootFolderId),
+        DrivesCompanion.insert(
+          id: driveId,
+          name: name,
+          ownerAddress: owner,
+          rootFolderId: rootFolderId,
         ),
       );
 
       batch.insert(
         folderEntries,
-        FolderEntriesCompanion(
-          id: Value(rootFolderId),
-          driveId: Value(driveId),
-          name: Value(name),
-          path: Value(''),
+        FolderEntriesCompanion.insert(
+          id: rootFolderId,
+          driveId: driveId,
+          name: name,
+          path: '',
         ),
       );
     });
@@ -49,12 +49,15 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
     return [driveId, rootFolderId];
   }
 
-  Future<void> attachDrive(String name, DriveEntity driveEntity) =>
-      into(drives).insert(DrivesCompanion(
-          id: Value(driveEntity.id),
-          name: Value(name),
-          ownerAddress: Value(driveEntity.ownerAddress),
-          rootFolderId: Value(driveEntity.rootFolderId)));
+  Future<void> attachDrive(String name, DriveEntity entity) =>
+      into(drives).insert(
+        DrivesCompanion.insert(
+          id: entity.id,
+          name: name,
+          ownerAddress: entity.ownerAddress,
+          rootFolderId: entity.rootFolderId,
+        ),
+      );
 
   Future<void> applyEntityHistory(
           String driveId, DriveEntityHistory entityHistory) =>
