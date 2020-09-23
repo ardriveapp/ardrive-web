@@ -40,7 +40,7 @@ void main() async {
   // Derive a file key from the user's drive key and the file id.
   // We don't salt here since the file id is already random enough but
   // we can salt in the future in cases where the user might want to revoke a file key they shared.
-  final fileIdBytes = Uint8List.fromList(List.filled(keyByteLength, 0));
+  final fileIdBytes = Uint8List.fromList(uuid.parse('<file uuid>'));
 
   final fileKdf = HKDFKeyDerivator(SHA256Digest())
     ..init(HkdfParameters(driveKey.key, keyByteLength));
