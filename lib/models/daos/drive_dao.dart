@@ -76,12 +76,12 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     final id = _uuid.v4();
 
     await into(folderEntries).insert(
-      FolderEntriesCompanion(
-        id: Value(id),
-        driveId: Value(driveId),
+      FolderEntriesCompanion.insert(
+        id: id,
+        driveId: driveId,
         parentFolderId: Value(parentFolderId),
-        name: Value(folderName),
-        path: Value(path),
+        name: folderName,
+        path: path,
       ),
     );
 
@@ -93,15 +93,15 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     String path,
   ) =>
       into(fileEntries).insertOnConflictUpdate(
-        FileEntriesCompanion(
-          id: Value(entity.id),
-          driveId: Value(entity.driveId),
-          parentFolderId: Value(entity.parentFolderId),
-          name: Value(entity.name),
-          path: Value(path),
-          dataTxId: Value(entity.dataTxId),
-          size: Value(entity.size),
-          ready: Value(false),
+        FileEntriesCompanion.insert(
+          id: entity.id,
+          driveId: entity.driveId,
+          parentFolderId: entity.parentFolderId,
+          name: entity.name,
+          path: path,
+          dataTxId: entity.dataTxId,
+          size: entity.size,
+          ready: false,
         ),
       );
 }

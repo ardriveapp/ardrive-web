@@ -52,12 +52,15 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
     return [driveId, rootFolderId];
   }
 
-  Future<void> attachDrive(String name, DriveEntity driveEntity) =>
-      into(drives).insert(DrivesCompanion(
-          id: Value(driveEntity.id),
-          name: Value(name),
-          ownerAddress: Value(driveEntity.ownerAddress),
-          rootFolderId: Value(driveEntity.rootFolderId)));
+  Future<void> attachDrive(String name, DriveEntity entity) =>
+      into(drives).insert(
+        DrivesCompanion.insert(
+          id: entity.id,
+          name: name,
+          ownerAddress: entity.ownerAddress,
+          rootFolderId: entity.rootFolderId,
+        ),
+      );
 
   Future<void> applyEntityHistory(
           String driveId, DriveEntityHistory entityHistory) =>
