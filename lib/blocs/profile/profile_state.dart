@@ -9,8 +9,9 @@ class ProfileActive extends ProfileState {
   final String username;
   final String password;
   final Wallet wallet;
+  final CipherKey cipherKey;
 
-  ProfileActive({this.username, this.password, this.wallet});
+  ProfileActive({this.username, this.password, this.wallet, this.cipherKey});
 }
 
 class ProfileInactive extends ProfileState {}

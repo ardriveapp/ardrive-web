@@ -96,10 +96,11 @@ class ArweaveService {
     final driveTx = queryEdges[0].node;
 
     return DriveEntity.fromTransaction(
-        driveTx,
-        utils.decodeBase64ToBytes(
-            (await _arweave.api.get('tx/${driveTx.id}/data')).body),
-        await deriveDriveKey(wallet, driveId, 'A?WgmN8gF%H9>A/~'));
+      driveTx,
+      utils.decodeBase64ToBytes(
+          (await _arweave.api.get('tx/${driveTx.id}/data')).body),
+      await deriveDriveKey(wallet, driveId, 'A?WgmN8gF%H9>A/~'),
+    );
   }
 
   Future<Transaction> prepareEntityTx(

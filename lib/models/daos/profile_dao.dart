@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
+import 'package:drive/entities/entities.dart';
 import 'package:moor/moor.dart';
 import 'package:pointycastle/export.dart';
 
@@ -18,7 +19,9 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
 
   Future<List<Profile>> getProfiles() => select(profiles).get();
 
-  Future<void> addProfile(
+  /// Adds the specified profile and returns a profile key that was used to encrypt the user's wallet
+  /// and can be used to encrypt the user's drive keys.
+  Future<CipherKey> addProfile(
       String username, String password, Wallet wallet) async {
     final random = Random.secure();
     final salt =
@@ -30,10 +33,10 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     final keyOutput = Uint8List(keyByteLength);
     kdf.deriveKey(utf8.encode(password), 0, keyOutput, 0);
 
-    final walletKey = KeyParameter(keyOutput);
+    final profileKey = CipherKey(keyOutput);
 
     final encrypter = GCMBlockCipher(AESFastEngine())
-      ..init(true, AEADParameters(walletKey, 16 * 8, salt, null));
+      ..init(true, AEADParameters(profileKey, 16 * 8, salt, null));
 
     final walletJson = json.encode(wallet.toJwk());
     final encryptedWallet = encrypter.process(utf8.encode(walletJson));
@@ -46,5 +49,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         walletSalt: salt,
       ),
     );
+
+    return profileKey;
   }
 }

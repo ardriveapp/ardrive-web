@@ -1,5 +1,9 @@
+import 'dart:math';
+
+import 'package:arweave/arweave.dart';
 import 'package:drive/services/services.dart';
 import 'package:moor/moor.dart';
+import 'package:pointycastle/export.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../entities/entities.dart';
@@ -18,25 +22,44 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
   Stream<List<Drive>> watchAllDrives() => select(drives).watch();
 
   /// Creates a drive with its accompanying root folder.
-  /// Return a list with two ids, the first being the drive id and the second being the root folder id.
-  Future<List<String>> createDrive(
-      {@required String name,
-      @required String ownerAddress,
-      @required String privacy}) async {
+  Future<CreateDriveResult> createDrive({
+    @required String name,
+    @required String ownerAddress,
+    @required String privacy,
+    Wallet wallet,
+    String password,
+    CipherKey profileKey,
+  }) async {
     final driveId = uuid.v4();
     final rootFolderId = uuid.v4();
 
-    await batch((batch) {
-      batch.insert(
-        drives,
-        DrivesCompanion.insert(
-          id: driveId,
-          name: name,
-          ownerAddress: ownerAddress,
-          rootFolderId: rootFolderId,
-          privacy: privacy,
-        ),
+    var insertDriveOp = DrivesCompanion.insert(
+      id: driveId,
+      name: name,
+      ownerAddress: ownerAddress,
+      rootFolderId: rootFolderId,
+      privacy: privacy,
+    );
+
+    CipherKey driveKey;
+    if (privacy == DrivePrivacy.private) {
+      driveKey = await deriveDriveKey(wallet, driveId, password);
+
+      final random = Random.secure();
+      final cipherIv = Uint8List.fromList(
+          List.generate(96 ~/ 8, (_) => random.nextInt(256)));
+
+      final encrypter = GCMBlockCipher(AESFastEngine())
+        ..init(true, AEADParameters(profileKey, 16 * 8, cipherIv, null));
+
+      insertDriveOp = insertDriveOp.copyWith(
+        encryptedKey: Value(encrypter.process(driveKey.key)),
+        keyIv: Value(cipherIv),
       );
+    }
+
+    await batch((batch) {
+      batch.insert(drives, insertDriveOp);
 
       batch.insert(
         folderEntries,
@@ -49,7 +72,11 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
       );
     });
 
-    return [driveId, rootFolderId];
+    return CreateDriveResult(
+      driveId,
+      rootFolderId,
+      driveKey,
+    );
   }
 
   Future<void> attachDrive(String name, DriveEntity entity) =>
@@ -59,6 +86,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
           name: name,
           ownerAddress: entity.ownerAddress,
           rootFolderId: entity.rootFolderId,
+          privacy: entity.privacy,
         ),
       );
 
@@ -229,6 +257,14 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
             DrivesCompanion(
                 latestSyncedBlock: Value(entityHistory.latestBlockHeight)));
       });
+}
+
+class CreateDriveResult {
+  final String driveId;
+  final String rootFolderId;
+  final CipherKey driveKey;
+
+  CreateDriveResult(this.driveId, this.rootFolderId, this.driveKey);
 }
 
 class StaleFolderNode {

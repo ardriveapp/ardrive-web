@@ -79,7 +79,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
     final currentFolder = currentState.currentFolder.folder;
 
     final driveKey = currentState.currentDrive.privacy == DrivePrivacy.private
-        ? await deriveDriveKey(profile.wallet, _driveId, profile.password)
+        ? await _driveDao.getDriveKey(_driveId, profile.cipherKey)
         : null;
 
     final newFolderId = await _driveDao.createNewFolder(
@@ -106,13 +106,14 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
     final profile = _profileBloc as ProfileActive;
     final currentState = state as FolderLoadSuccess;
     final currentFolder = currentState.currentFolder.folder;
+    final drive = currentState.currentDrive;
 
     event.fileEntity
       ..driveId = _driveId
       ..parentFolderId = currentFolder.id;
 
-    final driveKey = currentState.currentDrive.privacy == DrivePrivacy.private
-        ? await deriveDriveKey(profile.wallet, _driveId, profile.password)
+    final driveKey = drive.privacy == DrivePrivacy.private
+        ? await _driveDao.getDriveKey(_driveId, profile.cipherKey)
         : null;
 
     _uploadBloc.add(

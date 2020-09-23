@@ -15,14 +15,17 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
   final ProfileBloc _profileBloc;
   final ArweaveService _arweave;
   final DrivesDao _drivesDao;
+  final DriveDao _driveDao;
 
-  SyncBloc(
-      {@required ProfileBloc profileBloc,
-      @required ArweaveService arweave,
-      @required DrivesDao drivesDao})
-      : _profileBloc = profileBloc,
+  SyncBloc({
+    @required ProfileBloc profileBloc,
+    @required ArweaveService arweave,
+    @required DrivesDao drivesDao,
+    @required DriveDao driveDao,
+  })  : _profileBloc = profileBloc,
         _arweave = arweave,
         _drivesDao = drivesDao,
+        _driveDao = driveDao,
         super(SyncIdle()) {
     add(SyncWithNetwork());
   }
@@ -41,13 +44,12 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
       final profile = _profileBloc.state as ProfileActive;
 
       final drives = await _drivesDao.getAllDrives();
-      
+
       final driveSyncProcesses = drives.map(
         (drive) => Future.microtask(
           () async {
             final driveKey = drive.privacy == DrivePrivacy.private
-                ? await deriveDriveKey(
-                    profile.wallet, drive.id, profile.password)
+                ? await _driveDao.getDriveKey(drive.id, profile.cipherKey)
                 : null;
 
             final history = await _arweave.getDriveEntityHistory(

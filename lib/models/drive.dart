@@ -15,6 +15,7 @@ class Drives extends Table {
   TextColumn get privacy => text()();
 
   BlobColumn get encryptedKey => blob().nullable()();
+  BlobColumn get keyIv => blob().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

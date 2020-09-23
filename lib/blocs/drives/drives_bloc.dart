@@ -60,35 +60,33 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
       final profile = _profileBloc as ProfileActive;
       final wallet = profile.wallet;
 
-      final ids = await _drivesDao.createDrive(
+      final createRes = await _drivesDao.createDrive(
         name: event.driveName,
         ownerAddress: wallet.address,
         privacy: event.drivePrivacy,
+        wallet: wallet,
+        password: profile.password,
       );
 
-      final driveKey = event.drivePrivacy == DrivePrivacy.public
-          ? null
-          : await deriveDriveKey(wallet, ids[0], profile.password);
-
       final drive = DriveEntity(
-        id: ids[0],
-        rootFolderId: ids[1],
+        id: createRes.driveId,
+        rootFolderId: createRes.rootFolderId,
         privacy: event.drivePrivacy,
         authMode: event.drivePrivacy == DrivePrivacy.private
             ? DriveAuthMode.password
             : null,
       );
 
-      final driveTx = await _arweave.prepareEntityTx(drive, wallet, driveKey);
+      final driveTx =
+          await _arweave.prepareEntityTx(drive, wallet, createRes.driveKey);
       final rootFolderTx = await _arweave.prepareEntityTx(
-        FolderEntity(
-          id: drive.rootFolderId,
-          driveId: drive.id,
-          name: event.driveName,
-        ),
-        wallet,
-        driveKey,
-      );
+          FolderEntity(
+            id: drive.rootFolderId,
+            driveId: drive.id,
+            name: event.driveName,
+          ),
+          wallet,
+          createRes.driveKey);
 
       await _arweave.batchPostTxs([driveTx, rootFolderTx]);
     }

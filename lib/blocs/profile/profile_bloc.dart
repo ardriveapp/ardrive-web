@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
+import 'package:drive/entities/crypto/cipher_key.dart';
 import 'package:drive/models/models.dart';
 import 'package:meta/meta.dart';
 
@@ -29,9 +30,15 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
     final wallet = Wallet.fromJwk(event.jwk);
 
-    await _profileDao.addProfile(event.username, event.password, wallet);
+    final profileKey =
+        await _profileDao.addProfile(event.username, event.password, wallet);
 
-    yield ProfileActive(username: event.username, password: event.password, wallet: wallet);
+    yield ProfileActive(
+      username: event.username,
+      password: event.password,
+      wallet: wallet,
+      cipherKey: profileKey,
+    );
   }
 
   Stream<ProfileState> _mapLogoutToState(Logout event) async* {
