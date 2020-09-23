@@ -4,9 +4,11 @@ import 'dart:typed_data';
 import 'package:arweave/arweave.dart';
 import 'package:convert/convert.dart';
 import 'package:pointycastle/export.dart';
+import 'package:uuid/uuid.dart';
 
 void main() async {
   final arweave = Arweave();
+  final uuid = Uuid();
   final wallet = await arweave.wallets.generate();
 
   final data = utf8.encode('<cool user data>');
@@ -22,8 +24,9 @@ void main() async {
   //
   // There's no need to salt here since the drive id will ensure that no two drives have
   // the same key even if the user reuses a password.
-  final driveIdBytes = Uint8List.fromList(List.filled(keyByteLength, 1));
-  final walletSignature = await wallet.sign(driveIdBytes);
+  final driveIdBytes = uuid.parse('<drive uuid>');
+  final walletSignature = await wallet
+      .sign(Uint8List.fromList(utf8.encode('drive') + driveIdBytes));
   final password = '<password provided by user>';
 
   final driveKdf = HKDFKeyDerivator(SHA256Digest())
