@@ -27,14 +27,15 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       return null;
     }
 
-    final profileKdRes = await deriveProfileKey(password, profile.keySalt);
+    final profileSalt = Nonce(profile.keySalt);
+    final profileKdRes = await deriveProfileKey(password, profileSalt);
 
     final walletJwk = json.decode(
       utf8.decode(
         await aesGcm.decrypt(
           profile.encryptedWallet,
           secretKey: profileKdRes.key,
-          nonce: Nonce(profile.keySalt),
+          nonce: profileSalt,
         ),
       ),
     );
@@ -58,7 +59,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     final encryptedWallet = await aesGcm.encrypt(
       walletJson,
       secretKey: profileKdRes.key,
-      nonce: Nonce(profileKdRes.salt),
+      nonce: Nonce(profileKdRes.salt.bytes),
     );
 
     await into(profiles).insert(
@@ -66,7 +67,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         id: wallet.address,
         username: username,
         encryptedWallet: encryptedWallet,
-        keySalt: profileKdRes.salt,
+        keySalt: profileKdRes.salt.bytes,
       ),
     );
 
