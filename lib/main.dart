@@ -77,6 +77,7 @@ class App extends StatelessWidget {
                   fieldLabel: 'Password',
                   confirmingActionLabel: 'UNLOCK',
                   obscureText: true,
+                  barrierDismissible: false,
                 );
 
                 context.bloc<ProfileBloc>().add(ProfileLoad(password));

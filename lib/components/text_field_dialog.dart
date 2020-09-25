@@ -7,6 +7,7 @@ Future<String> showTextFieldDialog(
   String confirmingActionLabel,
   String initialText,
   bool obscureText = false,
+  bool barrierDismissible = true,
 }) =>
     showDialog<String>(
       context: context,
@@ -17,6 +18,7 @@ Future<String> showTextFieldDialog(
         initialText: initialText,
         obscureText: obscureText,
       ),
+      barrierDismissible: barrierDismissible,
     );
 
 class TextFieldDialog extends StatefulWidget {
