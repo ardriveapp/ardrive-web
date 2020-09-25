@@ -24,7 +24,11 @@ dependencies:
   flutter:
     sdk: flutter
 
-  cryptography: ^1.4.1
+  cryptography:
+    git:
+      url: https://github.com/CDDelta/cryptography.git
+      ref: web-key-fix
+      path: cryptography
   flutter_bloc: ^6.0.0
   google_fonts: ^1.1.0
   moor: ^3.3.1
