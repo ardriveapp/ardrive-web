@@ -9,7 +9,7 @@ class ProfileLoaded extends ProfileState {
   final String username;
   final String password;
   final Wallet wallet;
-  final CipherKey cipherKey;
+  final SecretKey cipherKey;
 
   ProfileLoaded({this.username, this.password, this.wallet, this.cipherKey});
 }

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
+import 'package:cryptography/cryptography.dart';
 import 'package:drive/entities/entities.dart';
 import 'package:mime/mime.dart';
 
@@ -18,7 +19,7 @@ class ArweaveService {
   Future<DriveEntityHistory> getDriveEntityHistory(
     String driveId,
     int oldestBlockHeight, [
-    CipherKey driveKey,
+    SecretKey driveKey,
   ]) async {
     final driveEntityHistoryQuery = await _gql.execute(
       DriveEntityHistoryQuery(
@@ -69,12 +70,12 @@ class ArweaveService {
                       t.name == utils.encodeStringToBase64(EntityTag.cipherIv))
                   .value));
 
-          final decrypter = GCMBlockCipher(AESFastEngine())
-            ..init(false, AEADParameters(fileKey, 16 * 8, cipherIv, null));
-
           final dataRes = await _arweave.api.get('tx/${file.dataTxId}/data');
-          final fileData =
-              decrypter.process(utils.decodeBase64ToBytes(dataRes.body));
+          final fileData = await aesGcm.decrypt(
+            utils.decodeBase64ToBytes(dataRes.body),
+            secretKey: SecretKey(fileKey.key),
+            nonce: Nonce(cipherIv),
+          );
           await File(file.name).writeAsBytes(fileData);*/
         }
 
@@ -105,7 +106,7 @@ class ArweaveService {
   }
 
   Future<DriveEntity> getDriveEntity(String driveId,
-      [CipherKey driveKey]) async {
+      [SecretKey driveKey]) async {
     final initialDriveEntityQuery = await _gql.execute(
       InitialDriveEntityQuery(
           variables: InitialDriveEntityArguments(driveId: driveId)),
@@ -127,7 +128,7 @@ class ArweaveService {
   Future<Transaction> prepareEntityTx(
     Entity entity,
     Wallet wallet, [
-    CipherKey key,
+    SecretKey key,
   ]) async {
     final tx = await _arweave.transactions.prepare(
       await entity.asTransaction(key),
@@ -143,7 +144,7 @@ class ArweaveService {
     FileEntity fileEntity,
     Uint8List fileStream,
     Wallet wallet, [
-    CipherKey driveKey,
+    SecretKey driveKey,
   ]) async {
     final fileKey =
         driveKey == null ? null : await deriveFileKey(driveKey, fileEntity.id);

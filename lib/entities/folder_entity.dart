@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:drive/services/services.dart';
 import 'package:json_annotation/json_annotation.dart';
 
@@ -25,7 +26,7 @@ class FolderEntity extends Entity {
   static Future<FolderEntity> fromTransaction(
     TransactionCommonMixin transaction,
     Uint8List data, [
-    CipherKey driveKey,
+    SecretKey driveKey,
   ]) async {
     final entityJson = driveKey == null
         ? json.decode(utf8.decode(data))
@@ -40,7 +41,7 @@ class FolderEntity extends Entity {
   }
 
   @override
-  Future<Transaction> asTransaction([CipherKey driveKey]) async {
+  Future<Transaction> asTransaction([SecretKey driveKey]) async {
     assert(id != null && driveId != null && name != null);
 
     final tx = driveKey == null

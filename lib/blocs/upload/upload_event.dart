@@ -7,7 +7,7 @@ class PrepareFileUpload extends UploadEvent {
   final FileEntity fileEntity;
   final String filePath;
   final Uint8List fileStream;
-  final CipherKey driveKey;
+  final SecretKey driveKey;
 
   PrepareFileUpload(
     this.fileEntity,

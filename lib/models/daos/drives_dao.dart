@@ -1,7 +1,7 @@
 import 'package:arweave/arweave.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:drive/services/services.dart';
 import 'package:moor/moor.dart';
-import 'package:pointycastle/export.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../entities/entities.dart';
@@ -26,7 +26,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
     @required String privacy,
     Wallet wallet,
     String password,
-    CipherKey profileKey,
+    SecretKey profileKey,
   }) async {
     final driveId = uuid.v4();
     final rootFolderId = uuid.v4();
@@ -39,18 +39,11 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
       privacy: privacy,
     );
 
-    CipherKey driveKey;
+    SecretKey driveKey;
     if (privacy == DrivePrivacy.private) {
       driveKey = await deriveDriveKey(wallet, driveId, password);
-
-      final cipherIv = generateRandomBytes(96 ~/ 8);
-      final encrypter = GCMBlockCipher(AESFastEngine())
-        ..init(true, AEADParameters(profileKey, 16 * 8, cipherIv, null));
-
-      insertDriveOp = insertDriveOp.copyWith(
-        encryptedKey: Value(encrypter.process(driveKey.key)),
-        keyIv: Value(cipherIv),
-      );
+      insertDriveOp =
+          await _encryptDriveKey(insertDriveOp, profileKey, driveKey);
     }
 
     await batch((batch) {
@@ -77,8 +70,8 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
   Future<void> attachDrive({
     String name,
     DriveEntity entity,
-    CipherKey profileKey,
-    CipherKey driveKey,
+    SecretKey profileKey,
+    SecretKey driveKey,
   }) async {
     var insertDriveOp = DrivesCompanion.insert(
       id: entity.id,
@@ -89,17 +82,26 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
     );
 
     if (entity.privacy == DrivePrivacy.private) {
-      final cipherIv = generateRandomBytes(96 ~/ 8);
-      final encrypter = GCMBlockCipher(AESFastEngine())
-        ..init(true, AEADParameters(profileKey, 16 * 8, cipherIv, null));
-
-      insertDriveOp = insertDriveOp.copyWith(
-        encryptedKey: Value(encrypter.process(driveKey.key)),
-        keyIv: Value(cipherIv),
-      );
+      insertDriveOp =
+          await _encryptDriveKey(insertDriveOp, profileKey, driveKey);
     }
 
     await into(drives).insert(insertDriveOp);
+  }
+
+  Future<DrivesCompanion> _encryptDriveKey(
+      DrivesCompanion drive, SecretKey profileKey, SecretKey driveKey) async {
+    final iv = Nonce.randomBytes(96 ~/ 8);
+    final encryptedWallet = await aesGcm.encrypt(
+      await driveKey.extract(),
+      secretKey: profileKey,
+      nonce: iv,
+    );
+
+    return drive.copyWith(
+      encryptedKey: Value(encryptedWallet),
+      keyIv: Value(iv.bytes),
+    );
   }
 
   Future<void> applyEntityHistory(
@@ -274,7 +276,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
 class CreateDriveResult {
   final String driveId;
   final String rootFolderId;
-  final CipherKey driveKey;
+  final SecretKey driveKey;
 
   CreateDriveResult(this.driveId, this.rootFolderId, this.driveKey);
 }
