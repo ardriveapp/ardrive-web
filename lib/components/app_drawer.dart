@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/entities/entities.dart';
 import 'package:file_picker_cross/file_picker_cross.dart';
@@ -29,17 +27,13 @@ class AppDrawer extends StatelessWidget {
               dense: true,
               title:
                   Text('ArDrive', style: Theme.of(context).textTheme.headline6),
-              trailing: BlocBuilder<UserBloc, UserState>(
-                  builder: (context, state) => state is! UserAuthenticated
-                      ? IconButton(
-                          icon: Icon(Icons.login),
-                          onPressed: () => _promptToLogin(context),
-                          tooltip: 'Login',
-                        )
+              trailing: BlocBuilder<ProfileBloc, ProfileState>(
+                  builder: (context, state) => state is! ProfileLoaded
+                      ? IconButton(icon: CircleAvatar())
                       : IconButton(
                           icon: Icon(Icons.logout),
                           onPressed: () =>
-                              context.bloc<UserBloc>().add(Logout()),
+                              context.bloc<ProfileBloc>().add(Logout()),
                           tooltip: 'Logout',
                         )),
             ),
@@ -145,19 +139,6 @@ class AppDrawer extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _promptToLogin(BuildContext context) async {
-    var chooseResult;
-    try {
-      chooseResult = await FilePickerCross.pick();
-      // ignore: empty_catches
-    } catch (err) {}
-
-    if (chooseResult != null && chooseResult.type != null) {
-      final jwk = json.decode(chooseResult.toString());
-      context.bloc<UserBloc>().add(AttemptLogin(jwk));
-    }
   }
 
   void _promptToCreateNewFolder(BuildContext context) async {

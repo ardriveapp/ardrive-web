@@ -6,6 +6,8 @@ import 'package:arweave/utils.dart' as utils;
 import 'package:drive/entities/entities.dart';
 import 'package:mime/mime.dart';
 
+import 'crypto/crypto.dart';
+
 class ArweaveService {
   final ArtemisClient _gql = ArtemisClient('https://arweave.dev/graphql');
   final Arweave _arweave;
@@ -56,6 +58,24 @@ class ArweaveService {
         } else if (entityType == EntityType.file) {
           entity = await FileEntity.fromTransaction(
               transaction, rawEntityData[i], driveKey);
+
+          // TODO: Remove
+          /*final file = entity as FileEntity;
+          final fileKey = await deriveFileKey(driveKey, file.id);
+          final dataTx = await _arweave.transactions.get(file.dataTxId);
+          final cipherIv = utils.decodeBase64ToBytes(utils.decodeBase64ToString(
+              dataTx.tags
+                  .firstWhere((t) =>
+                      t.name == utils.encodeStringToBase64(EntityTag.cipherIv))
+                  .value));
+
+          final decrypter = GCMBlockCipher(AESFastEngine())
+            ..init(false, AEADParameters(fileKey, 16 * 8, cipherIv, null));
+
+          final dataRes = await _arweave.api.get('tx/${file.dataTxId}/data');
+          final fileData =
+              decrypter.process(utils.decodeBase64ToBytes(dataRes.body));
+          await File(file.name).writeAsBytes(fileData);*/
         }
 
         if (blockHistory.isEmpty ||
@@ -84,7 +104,8 @@ class ArweaveService {
         blockHistory);
   }
 
-  Future<DriveEntity> getDriveEntity(String driveId, Wallet wallet) async {
+  Future<DriveEntity> getDriveEntity(String driveId,
+      [CipherKey driveKey]) async {
     final initialDriveEntityQuery = await _gql.execute(
       InitialDriveEntityQuery(
           variables: InitialDriveEntityArguments(driveId: driveId)),
@@ -96,10 +117,11 @@ class ArweaveService {
     final driveTx = queryEdges[0].node;
 
     return DriveEntity.fromTransaction(
-        driveTx,
-        utils.decodeBase64ToBytes(
-            (await _arweave.api.get('tx/${driveTx.id}/data')).body),
-        await deriveDriveKey(wallet, driveId, 'A?WgmN8gF%H9>A/~'));
+      driveTx,
+      utils.decodeBase64ToBytes(
+          (await _arweave.api.get('tx/${driveTx.id}/data')).body),
+      driveKey,
+    );
   }
 
   Future<Transaction> prepareEntityTx(
@@ -133,7 +155,7 @@ class ArweaveService {
       wallet,
     );
 
-    if (fileKey != null) {
+    if (fileKey == null) {
       fileDataTx.addTag(
         EntityTag.contentType,
         lookupMimeType(fileEntity.name),

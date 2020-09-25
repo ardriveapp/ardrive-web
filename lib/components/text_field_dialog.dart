@@ -6,6 +6,7 @@ Future<String> showTextFieldDialog(
   String fieldLabel,
   String confirmingActionLabel,
   String initialText,
+  bool obscureText = false,
 }) =>
     showDialog<String>(
       context: context,
@@ -14,6 +15,7 @@ Future<String> showTextFieldDialog(
         fieldLabel: fieldLabel,
         confirmingActionLabel: confirmingActionLabel,
         initialText: initialText,
+        obscureText: obscureText,
       ),
     );
 
@@ -22,12 +24,14 @@ class TextFieldDialog extends StatefulWidget {
   final String fieldLabel;
   final String confirmingActionLabel;
   final String initialText;
+  final bool obscureText;
 
   const TextFieldDialog(
       {this.title,
       this.fieldLabel,
       this.confirmingActionLabel,
-      this.initialText});
+      this.initialText,
+      this.obscureText});
 
   @override
   TextFieldDialogState createState() => TextFieldDialogState();
@@ -58,6 +62,7 @@ class TextFieldDialogState extends State<TextFieldDialog> {
             decoration: InputDecoration(
               labelText: widget.fieldLabel,
             ),
+            obscureText: widget.obscureText,
           ),
         ),
         actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0),

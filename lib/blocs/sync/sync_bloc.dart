@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:drive/entities/entities.dart';
 import 'package:drive/models/models.dart';
 import 'package:drive/services/services.dart';
 import 'package:meta/meta.dart';
@@ -12,17 +11,20 @@ part 'sync_event.dart';
 part 'sync_state.dart';
 
 class SyncBloc extends Bloc<SyncEvent, SyncState> {
-  final UserBloc _userBloc;
+  final ProfileBloc _profileBloc;
   final ArweaveService _arweave;
   final DrivesDao _drivesDao;
+  final DriveDao _driveDao;
 
-  SyncBloc(
-      {@required UserBloc userBloc,
-      @required ArweaveService arweave,
-      @required DrivesDao drivesDao})
-      : _userBloc = userBloc,
+  SyncBloc({
+    @required ProfileBloc profileBloc,
+    @required ArweaveService arweave,
+    @required DrivesDao drivesDao,
+    @required DriveDao driveDao,
+  })  : _profileBloc = profileBloc,
         _arweave = arweave,
         _drivesDao = drivesDao,
+        _driveDao = driveDao,
         super(SyncIdle()) {
     add(SyncWithNetwork());
   }
@@ -37,18 +39,24 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
   Stream<SyncState> _mapSyncWithNetworkToState(SyncWithNetwork event) async* {
     yield SyncInProgress();
 
-    if (_userBloc.state is UserAuthenticated) {
-      final wallet = (_userBloc.state as UserAuthenticated).userWallet;
+    if (_profileBloc.state is ProfileLoaded) {
+      final profile = _profileBloc.state as ProfileLoaded;
 
       final drives = await _drivesDao.getAllDrives();
+
       final driveSyncProcesses = drives.map(
         (drive) => Future.microtask(
           () async {
+            final driveKey = drive.isPrivate
+                ? await _driveDao.getDriveKey(drive.id, profile.cipherKey)
+                : null;
+
             final history = await _arweave.getDriveEntityHistory(
               drive.id,
               drive.latestSyncedBlock,
-              await deriveDriveKey(wallet, drive.id, 'A?WgmN8gF%H9>A/~'),
+              driveKey,
             );
+
             await _drivesDao.applyEntityHistory(drive.id, history);
           },
         ),

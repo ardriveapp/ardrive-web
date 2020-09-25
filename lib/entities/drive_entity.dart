@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
+import 'package:drive/services/services.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 import 'entities.dart';
@@ -26,14 +27,15 @@ class DriveEntity extends Entity {
     Uint8List data, [
     CipherKey driveKey,
   ]) async {
-    final entityJson = driveKey == null
+    final drivePrivacy = transaction.getTag(EntityTag.drivePrivacy);
+
+    final entityJson = drivePrivacy != DrivePrivacy.private
         ? json.decode(utf8.decode(data))
         : await decryptDriveEntityJson(transaction, data, driveKey);
 
     return DriveEntity.fromJson(entityJson)
       ..id = transaction.getTag(EntityTag.driveId)
-      ..privacy =
-          transaction.getTag(EntityTag.drivePrivacy) ?? DrivePrivacy.public
+      ..privacy = drivePrivacy ?? DrivePrivacy.public
       ..authMode = transaction.getTag(EntityTag.driveAuthMode)
       ..ownerAddress = transaction.owner.address
       ..commitTime = transaction.getCommitTime();

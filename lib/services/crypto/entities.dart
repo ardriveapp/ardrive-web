@@ -1,15 +1,12 @@
 import 'dart:convert';
-import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
+import 'package:drive/entities/entities.dart';
 import 'package:pointycastle/export.dart';
 
-import '../entities.dart';
-import 'cipher_key.dart';
-
-export 'cipher_key.dart';
+import 'crypto.dart';
 
 Future<Map<String, dynamic>> decryptDriveEntityJson(
         TransactionCommonMixin transaction,
@@ -70,10 +67,7 @@ Future<Transaction> createEncryptedTransaction(
   Uint8List data,
   CipherKey key,
 ) async {
-  final random = Random.secure();
-  final cipherIv =
-      Uint8List.fromList(List.generate(96 ~/ 8, (_) => random.nextInt(256)));
-
+  final cipherIv = generateRandomBytes(96 ~/ 8);
   final encrypter = GCMBlockCipher(AESFastEngine())
     ..init(true, AEADParameters(key, 16 * 8, cipherIv, null));
 

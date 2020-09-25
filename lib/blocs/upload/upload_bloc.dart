@@ -16,15 +16,15 @@ part 'upload_state.dart';
 
 class UploadBloc extends Bloc<UploadEvent, UploadState> {
   final _uuid = Uuid();
-  final UserBloc _userBloc;
+  final ProfileBloc _profileBloc;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
 
   UploadBloc(
-      {@required UserBloc userBloc,
+      {@required ProfileBloc profileBloc,
       @required DriveDao driveDao,
       @required ArweaveService arweave})
-      : _userBloc = userBloc,
+      : _profileBloc = profileBloc,
         _driveDao = driveDao,
         _arweave = arweave,
         super(UploadIdle());
@@ -52,7 +52,7 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
     );
     event.fileEntity.id = existingFileId ?? _uuid.v4();
 
-    final wallet = (_userBloc.state as UserAuthenticated).userWallet;
+    final wallet = (_profileBloc.state as ProfileLoaded).wallet;
     final transactions = <Transaction>[];
 
     final uploadTxs = await _arweave.prepareFileUploadTxs(

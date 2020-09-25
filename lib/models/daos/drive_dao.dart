@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:drive/services/services.dart';
 import 'package:moor/moor.dart';
+import 'package:pointycastle/export.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -63,6 +65,15 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         .getSingle();
 
     return file != null ? file.id : null;
+  }
+
+  Future<CipherKey> getDriveKey(String id, CipherKey profileKey) async {
+    final drive = await getDriveById(id);
+
+    final decrypter = GCMBlockCipher(AESFastEngine())
+      ..init(false, AEADParameters(profileKey, 16 * 8, drive.keyIv, null));
+
+    return CipherKey(decrypter.process(drive.encryptedKey));
   }
 
   /// Create a new folder entry.

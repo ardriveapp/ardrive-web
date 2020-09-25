@@ -12,7 +12,7 @@ part 'drives_event.dart';
 part 'drives_state.dart';
 
 class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
-  final UserBloc _userBloc;
+  final ProfileBloc _profileBloc;
   final SyncBloc _syncBloc;
   final ArweaveService _arweave;
   final DrivesDao _drivesDao;
@@ -20,18 +20,18 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
   StreamSubscription _drivesSubscription;
 
   DrivesBloc(
-      {UserBloc userBloc,
+      {ProfileBloc profileBloc,
       SyncBloc syncBloc,
       ArweaveService arweave,
       DrivesDao drivesDao})
-      : _userBloc = userBloc,
+      : _profileBloc = profileBloc,
         _syncBloc = syncBloc,
         _arweave = arweave,
         _drivesDao = drivesDao,
         super(DrivesLoadInProgress()) {
     _drivesSubscription = Rx.combineLatest2(
       _drivesDao.watchAllDrives(),
-      _userBloc.startWith(null),
+      _profileBloc.startWith(null),
       (drives, _) => drives,
     ).listen((drives) => add(DrivesUpdated(drives: drives)));
   }
@@ -50,30 +50,35 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
       yield DrivesLoadSuccess(
         selectedDriveId: event.driveId,
         drives: (state as DrivesLoadSuccess).drives,
-        canCreateNewDrive: _userBloc.state is UserAuthenticated,
+        canCreateNewDrive: _profileBloc.state is ProfileLoaded,
       );
     }
   }
 
   Stream<DrivesState> _mapNewDriveToState(NewDrive event) async* {
     if (state is DrivesLoadSuccess) {
-      final wallet = (_userBloc.state as UserAuthenticated).userWallet;
+      final profile = _profileBloc.state as ProfileLoaded;
+      final wallet = profile.wallet;
 
-      final ids = await _drivesDao.createDrive(
-          name: event.driveName, owner: wallet.address);
-
-      final drive = DriveEntity(
-        id: ids[0],
-        rootFolderId: ids[1],
-        privacy: DrivePrivacy.private,
-        authMode: DriveAuthMode.password,
+      final createRes = await _drivesDao.createDrive(
+        name: event.driveName,
+        ownerAddress: wallet.address,
+        privacy: event.drivePrivacy,
+        wallet: wallet,
+        password: profile.password,
       );
 
-      final driveKey = drive.privacy == DrivePrivacy.public
-          ? null
-          : await deriveDriveKey(wallet, drive.id, 'A?WgmN8gF%H9>A/~');
+      final drive = DriveEntity(
+        id: createRes.driveId,
+        rootFolderId: createRes.rootFolderId,
+        privacy: event.drivePrivacy,
+        authMode: event.drivePrivacy == DrivePrivacy.private
+            ? DriveAuthMode.password
+            : null,
+      );
 
-      final driveTx = await _arweave.prepareEntityTx(drive, wallet, driveKey);
+      final driveTx =
+          await _arweave.prepareEntityTx(drive, wallet, createRes.driveKey);
       final rootFolderTx = await _arweave.prepareEntityTx(
         FolderEntity(
           id: drive.rootFolderId,
@@ -81,7 +86,7 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
           name: event.driveName,
         ),
         wallet,
-        driveKey,
+        createRes.driveKey,
       );
 
       await _arweave.batchPostTxs([driveTx, rootFolderTx]);
@@ -100,7 +105,7 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
     yield DrivesLoadSuccess(
       selectedDriveId: selectedDriveId,
       drives: event.drives,
-      canCreateNewDrive: _userBloc.state is UserAuthenticated,
+      canCreateNewDrive: _profileBloc.state is ProfileLoaded,
     );
   }
 

@@ -1,3 +1,5 @@
+import 'package:drive/entities/entities.dart';
+import 'package:drive/models/models.dart';
 import 'package:moor/moor.dart';
 
 class Drives extends Table {
@@ -12,6 +14,15 @@ class Drives extends Table {
   /// The latest block we've pulled state from.
   IntColumn get latestSyncedBlock => integer().withDefault(const Constant(0))();
 
+  TextColumn get privacy => text()();
+
+  BlobColumn get encryptedKey => blob().nullable()();
+  BlobColumn get keyIv => blob().nullable()();
+
   @override
   Set<Column> get primaryKey => {id};
+}
+
+extension DriveExtensions on Drive {
+  bool get isPrivate => privacy == DrivePrivacy.private;
 }
