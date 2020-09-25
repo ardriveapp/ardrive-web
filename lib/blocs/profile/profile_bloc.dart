@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:drive/models/models.dart';
-import 'package:drive/services/services.dart';
 import 'package:meta/meta.dart';
 
 part 'profile_event.dart';

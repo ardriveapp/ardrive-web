@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
 import 'package:convert/convert.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:pointycastle/export.dart';
 import 'package:uuid/uuid.dart';
 
@@ -48,26 +49,23 @@ void main() async {
   final fileKeyOutput = Uint8List(keyByteLength);
   fileKdf.deriveKey(fileIdBytes, 0, fileKeyOutput, 0);
 
-  final fileKey = KeyParameter(fileKeyOutput);
+  final fileKey = SecretKey(fileKeyOutput);
 
   // Encrypt the data using AES256-GCM using a 96-bit IV as recommended.
   // No need to provide any additional data.
   // See https://crypto.stackexchange.com/questions/35727/does-aad-make-gcm-encryption-more-secure
-  final iv = Uint8List(96 ~/ 8);
-  final additionalData = Uint8List.fromList([]);
-
-  final params = AEADParameters(fileKey, 16 * 8, iv, additionalData);
-
-  final encrypter = GCMBlockCipher(AESFastEngine())..init(true, params);
-
-  final encryptedData = encrypter.process(data);
+  final iv = Nonce.randomBytes(96 ~/ 8);
+  final encryptedData = await aesGcm.encrypt(
+    data,
+    secretKey: fileKey,
+    nonce: iv,
+  );
 
   // Encrypted data can then be decrypted using the derived file key and publicly available IV.
-  final decrypter = GCMBlockCipher(AESFastEngine())..init(false, params);
-
-  final decryptedData = decrypter.process(encryptedData);
+  final decryptedData =
+      await aesGcm.decrypt(encryptedData, secretKey: fileKey, nonce: iv);
 
   print(utf8.decode(decryptedData));
   print(hex.encode(driveKey.key));
-  print(hex.encode(fileKey.key));
+  print(hex.encode(await fileKey.extract()));
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:pointycastle/export.dart';
 import 'package:uuid/uuid.dart';
 
@@ -9,10 +10,6 @@ import 'utils.dart';
 
 const keyByteLength = 256 ~/ 8;
 final _uuid = Uuid();
-
-class CipherKey extends KeyParameter {
-  CipherKey(Uint8List key) : super(key);
-}
 
 Future<ProfileKeyDerivationResult> deriveProfileKey(String password,
     [Uint8List salt]) async {
@@ -24,10 +21,10 @@ Future<ProfileKeyDerivationResult> deriveProfileKey(String password,
   final keyOutput = Uint8List(keyByteLength);
   kdf.deriveKey(utf8.encode(password), 0, keyOutput, 0);
 
-  return ProfileKeyDerivationResult(CipherKey(keyOutput), salt);
+  return ProfileKeyDerivationResult(SecretKey(keyOutput), salt);
 }
 
-Future<CipherKey> deriveDriveKey(
+Future<SecretKey> deriveDriveKey(
   Wallet wallet,
   String driveId,
   String password,
@@ -37,12 +34,12 @@ Future<CipherKey> deriveDriveKey(
   return _deriveKeyFromBytes(walletSignature.bytes, utf8.encode(password));
 }
 
-Future<CipherKey> deriveFileKey(CipherKey driveKey, String fileId) async {
+Future<SecretKey> deriveFileKey(SecretKey driveKey, String fileId) async {
   final fileIdBytes = Uint8List.fromList(_uuid.parse(fileId));
-  return _deriveKeyFromBytes(driveKey.key, fileIdBytes);
+  return _deriveKeyFromBytes(await driveKey.extract(), fileIdBytes);
 }
 
-Future<CipherKey> _deriveKeyFromBytes(
+Future<SecretKey> _deriveKeyFromBytes(
   Uint8List ikm,
   Uint8List data,
 ) async {
@@ -52,11 +49,11 @@ Future<CipherKey> _deriveKeyFromBytes(
   final keyOutput = Uint8List(keyByteLength);
   kdf.deriveKey(data, 0, keyOutput, 0);
 
-  return CipherKey(keyOutput);
+  return SecretKey(keyOutput);
 }
 
 class ProfileKeyDerivationResult {
-  final CipherKey key;
+  final SecretKey key;
   final Uint8List salt;
 
   ProfileKeyDerivationResult(this.key, this.salt);
