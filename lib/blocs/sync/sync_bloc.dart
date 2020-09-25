@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:drive/entities/entities.dart';
 import 'package:drive/models/models.dart';
 import 'package:drive/services/services.dart';
 import 'package:meta/meta.dart';
@@ -48,7 +47,7 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
       final driveSyncProcesses = drives.map(
         (drive) => Future.microtask(
           () async {
-            final driveKey = drive.privacy == DrivePrivacy.private
+            final driveKey = drive.isPrivate
                 ? await _driveDao.getDriveKey(drive.id, profile.cipherKey)
                 : null;
 

@@ -80,13 +80,14 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
       final driveTx =
           await _arweave.prepareEntityTx(drive, wallet, createRes.driveKey);
       final rootFolderTx = await _arweave.prepareEntityTx(
-          FolderEntity(
-            id: drive.rootFolderId,
-            driveId: drive.id,
-            name: event.driveName,
-          ),
-          wallet,
-          createRes.driveKey);
+        FolderEntity(
+          id: drive.rootFolderId,
+          driveId: drive.id,
+          name: event.driveName,
+        ),
+        wallet,
+        createRes.driveKey,
+      );
 
       await _arweave.batchPostTxs([driveTx, rootFolderTx]);
     }

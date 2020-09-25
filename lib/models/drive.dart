@@ -1,3 +1,5 @@
+import 'package:drive/entities/entities.dart';
+import 'package:drive/models/models.dart';
 import 'package:moor/moor.dart';
 
 class Drives extends Table {
@@ -19,4 +21,8 @@ class Drives extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+extension DriveExtensions on Drive {
+  bool get isPrivate => privacy == DrivePrivacy.private;
 }

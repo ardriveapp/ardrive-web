@@ -63,12 +63,12 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   }
 
   Stream<DriveDetailState> _mapOpenedFolderToState(OpenedFolder event) async* {
-    final userState = _profileBloc.state;
+    final profile = _profileBloc.state;
 
     yield FolderLoadSuccess(
       currentDrive: event.openedDrive,
-      hasWritePermissions: userState is ProfileLoaded &&
-          event.openedDrive.ownerAddress == userState.wallet.address,
+      hasWritePermissions: profile is ProfileLoaded &&
+          event.openedDrive.ownerAddress == profile.wallet.address,
       currentFolder: event.openedFolder,
     );
   }
@@ -78,7 +78,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
     final currentState = state as FolderLoadSuccess;
     final currentFolder = currentState.currentFolder.folder;
 
-    final driveKey = currentState.currentDrive.privacy == DrivePrivacy.private
+    final driveKey = currentState.currentDrive.isPrivate
         ? await _driveDao.getDriveKey(_driveId, profile.cipherKey)
         : null;
 
@@ -90,14 +90,15 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
     );
 
     final folderTx = await _arweave.prepareEntityTx(
-        FolderEntity(
-          id: newFolderId,
-          driveId: currentFolder.driveId,
-          parentFolderId: currentFolder.id,
-          name: event.folderName,
-        ),
-        profile.wallet,
-        driveKey);
+      FolderEntity(
+        id: newFolderId,
+        driveId: currentFolder.driveId,
+        parentFolderId: currentFolder.id,
+        name: event.folderName,
+      ),
+      profile.wallet,
+      driveKey,
+    );
 
     await _arweave.postTx(folderTx);
   }
@@ -112,7 +113,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
       ..driveId = _driveId
       ..parentFolderId = currentFolder.id;
 
-    final driveKey = drive.privacy == DrivePrivacy.private
+    final driveKey = drive.isPrivate
         ? await _driveDao.getDriveKey(_driveId, profile.cipherKey)
         : null;
 
