@@ -40,8 +40,8 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
   Stream<SyncState> _mapSyncWithNetworkToState(SyncWithNetwork event) async* {
     yield SyncInProgress();
 
-    if (_profileBloc.state is ProfileActive) {
-      final profile = _profileBloc.state as ProfileActive;
+    if (_profileBloc.state is ProfileLoaded) {
+      final profile = _profileBloc.state as ProfileLoaded;
 
       final drives = await _drivesDao.getAllDrives();
 

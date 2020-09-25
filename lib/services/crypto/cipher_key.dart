@@ -14,10 +14,12 @@ class CipherKey extends KeyParameter {
   CipherKey(Uint8List key) : super(key);
 }
 
-Future<ProfileKeyDerivationResult> deriveProfileKey(String password) async {
-  final salt = generateRandomBytes(128 ~/ 8);
+Future<ProfileKeyDerivationResult> deriveProfileKey(String password,
+    [Uint8List salt]) async {
+  salt ??= generateRandomBytes(128 ~/ 8);
+
   final kdf = PBKDF2KeyDerivator(HMac.withDigest(SHA256Digest()))
-    ..init(Pbkdf2Parameters(salt, 20000, 256));
+    ..init(Pbkdf2Parameters(salt, 20000, keyByteLength));
 
   final keyOutput = Uint8List(keyByteLength);
   kdf.deriveKey(utf8.encode(password), 0, keyOutput, 0);

@@ -14,26 +14,56 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
   ProfileBloc({ProfileDao profileDao})
       : _profileDao = profileDao,
-        super(ProfileInactive());
+        super(ProfileUnavailable()) {
+    add(ProfileCheckDefault());
+  }
 
   @override
   Stream<ProfileState> mapEventToState(
     ProfileEvent event,
   ) async* {
-    if (event is ProfileAdd) {
+    if (event is ProfileCheckDefault) {
+      yield* _mapProfileCheckDefaultToState(event);
+    } else if (event is ProfileLoad) {
+      yield* _mapProfileLoadToState(event);
+    } else if (event is ProfileAdd) {
       yield* _mapProfileAddToState(event);
     } else if (event is Logout) yield* _mapLogoutToState(event);
   }
 
+  Stream<ProfileState> _mapProfileCheckDefaultToState(
+      ProfileCheckDefault event) async* {
+    yield await _profileDao.hasProfile()
+        ? ProfilePromptPassword()
+        : ProfilePromptAdd();
+  }
+
+  Stream<ProfileState> _mapProfileLoadToState(ProfileLoad event) async* {
+    yield ProfileLoading();
+
+    final profile = await _profileDao.getDefaultProfile(event.password);
+
+    if (profile != null) {
+      yield ProfileLoaded(
+        username: profile.details.username,
+        password: event.password,
+        wallet: profile.wallet,
+        cipherKey: profile.key,
+      );
+    } else {
+      yield ProfileUnavailable();
+    }
+  }
+
   Stream<ProfileState> _mapProfileAddToState(ProfileAdd event) async* {
-    yield ProfileActivating();
+    yield ProfileLoading();
 
     final wallet = Wallet.fromJwk(event.jwk);
 
     final profileKey =
         await _profileDao.addProfile(event.username, event.password, wallet);
 
-    yield ProfileActive(
+    yield ProfileLoaded(
       username: event.username,
       password: event.password,
       wallet: wallet,
@@ -42,6 +72,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   }
 
   Stream<ProfileState> _mapLogoutToState(Logout event) async* {
-    yield ProfileInactive();
+    yield ProfileUnavailable();
   }
 }

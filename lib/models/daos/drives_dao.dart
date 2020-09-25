@@ -74,16 +74,33 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
     );
   }
 
-  Future<void> attachDrive(String name, DriveEntity entity) =>
-      into(drives).insert(
-        DrivesCompanion.insert(
-          id: entity.id,
-          name: name,
-          ownerAddress: entity.ownerAddress,
-          rootFolderId: entity.rootFolderId,
-          privacy: entity.privacy,
-        ),
+  Future<void> attachDrive({
+    String name,
+    DriveEntity entity,
+    CipherKey profileKey,
+    CipherKey driveKey,
+  }) async {
+    var insertDriveOp = DrivesCompanion.insert(
+      id: entity.id,
+      name: name,
+      ownerAddress: entity.ownerAddress,
+      rootFolderId: entity.rootFolderId,
+      privacy: entity.privacy,
+    );
+
+    if (entity.privacy == DrivePrivacy.private) {
+      final cipherIv = generateRandomBytes(96 ~/ 8);
+      final encrypter = GCMBlockCipher(AESFastEngine())
+        ..init(true, AEADParameters(profileKey, 16 * 8, cipherIv, null));
+
+      insertDriveOp = insertDriveOp.copyWith(
+        encryptedKey: Value(encrypter.process(driveKey.key)),
+        keyIv: Value(cipherIv),
       );
+    }
+
+    await into(drives).insert(insertDriveOp);
+  }
 
   Future<void> applyEntityHistory(
           String driveId, DriveEntityHistory entityHistory) =>

@@ -28,7 +28,7 @@ class AppDrawer extends StatelessWidget {
               title:
                   Text('ArDrive', style: Theme.of(context).textTheme.headline6),
               trailing: BlocBuilder<ProfileBloc, ProfileState>(
-                  builder: (context, state) => state is! ProfileActive
+                  builder: (context, state) => state is! ProfileLoaded
                       ? IconButton(icon: CircleAvatar())
                       : IconButton(
                           icon: Icon(Icons.logout),

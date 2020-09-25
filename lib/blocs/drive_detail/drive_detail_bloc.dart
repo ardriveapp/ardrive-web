@@ -67,14 +67,14 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
 
     yield FolderLoadSuccess(
       currentDrive: event.openedDrive,
-      hasWritePermissions: userState is ProfileActive &&
+      hasWritePermissions: userState is ProfileLoaded &&
           event.openedDrive.ownerAddress == userState.wallet.address,
       currentFolder: event.openedFolder,
     );
   }
 
   Stream<DriveDetailState> _mapNewFolderToState(NewFolder event) async* {
-    final profile = _profileBloc as ProfileActive;
+    final profile = _profileBloc as ProfileLoaded;
     final currentState = state as FolderLoadSuccess;
     final currentFolder = currentState.currentFolder.folder;
 
@@ -103,7 +103,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   }
 
   Stream<DriveDetailState> _mapUploadFileToState(UploadFile event) async* {
-    final profile = _profileBloc as ProfileActive;
+    final profile = _profileBloc.state as ProfileLoaded;
     final currentState = state as FolderLoadSuccess;
     final currentFolder = currentState.currentFolder.folder;
     final drive = currentState.currentDrive;

@@ -52,7 +52,7 @@ class UploadBloc extends Bloc<UploadEvent, UploadState> {
     );
     event.fileEntity.id = existingFileId ?? _uuid.v4();
 
-    final wallet = (_profileBloc.state as ProfileActive).wallet;
+    final wallet = (_profileBloc.state as ProfileLoaded).wallet;
     final transactions = <Transaction>[];
 
     final uploadTxs = await _arweave.prepareFileUploadTxs(

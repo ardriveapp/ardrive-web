@@ -15,6 +15,33 @@ const keyByteLength = 256 ~/ 8;
 class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   ProfileDao(Database db) : super(db);
 
+  Future<bool> hasProfile() async {
+    final profile = await select(profiles).getSingle();
+    return profile != null;
+  }
+
+  Future<ProfileLoadDetails> getDefaultProfile(String password) async {
+    final profile = await select(profiles).getSingle();
+
+    if (profile == null) {
+      return null;
+    }
+
+    final profileKdRes = await deriveProfileKey(password, profile.keySalt);
+
+    final decrypter = GCMBlockCipher(AESFastEngine())
+      ..init(false,
+          AEADParameters(profileKdRes.key, 16 * 8, profileKdRes.salt, null));
+
+    final walletJson = utf8.decode(decrypter.process(profile.encryptedWallet));
+
+    return ProfileLoadDetails(
+      details: profile,
+      wallet: Wallet.fromJwk(json.decode(walletJson)),
+      key: profileKdRes.key,
+    );
+  }
+
   Future<List<Profile>> getProfiles() => select(profiles).get();
 
   /// Adds the specified profile and returns a profile key that was used to encrypt the user's wallet
@@ -41,4 +68,12 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
 
     return profileKdRes.key;
   }
+}
+
+class ProfileLoadDetails {
+  final Profile details;
+  final Wallet wallet;
+  final CipherKey key;
+
+  ProfileLoadDetails({this.details, this.wallet, this.key});
 }
