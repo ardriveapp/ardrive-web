@@ -20,7 +20,8 @@ jobs:
           flutter pub run build_runner build
           flutter config --enable-web
           flutter build web
-      - uses: JamesIves/github-pages-deploy-action@3.6.1
+      - name: Deploy app
+        uses: JamesIves/github-pages-deploy-action@3.6.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages
