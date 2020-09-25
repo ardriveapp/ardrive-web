@@ -20,16 +20,9 @@ jobs:
           flutter pub run build_runner build
           flutter config --enable-web
           flutter build web
-          mkdir -p public/i && cp -r build/web/* public/i
-      - name: Build website
-        working-directory: ./landing
-        run: |
-          npm install
-          npm run build
-          cp -r dist/* ../public
-      - name: Deploy to Firebase
-        uses: w9jds/firebase-action@v1.5.0
+      - uses: JamesIves/github-pages-deploy-action@3.6.1
         with:
-          args: deploy --only hosting
-        env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: build/web
+          CLEAN: true
