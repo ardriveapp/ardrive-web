@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:artemis/artemis.dart';
@@ -6,7 +5,6 @@ import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:drive/entities/entities.dart';
 import 'package:mime/mime.dart';
-import 'package:pointycastle/export.dart';
 
 import 'crypto/crypto.dart';
 
@@ -62,7 +60,7 @@ class ArweaveService {
               transaction, rawEntityData[i], driveKey);
 
           // TODO: Remove
-          final file = entity as FileEntity;
+          /*final file = entity as FileEntity;
           final fileKey = await deriveFileKey(driveKey, file.id);
           final dataTx = await _arweave.transactions.get(file.dataTxId);
           final cipherIv = utils.decodeBase64ToBytes(utils.decodeBase64ToString(
@@ -77,7 +75,7 @@ class ArweaveService {
           final dataRes = await _arweave.api.get('tx/${file.dataTxId}/data');
           final fileData =
               decrypter.process(utils.decodeBase64ToBytes(dataRes.body));
-          await File(file.name).writeAsBytes(fileData);
+          await File(file.name).writeAsBytes(fileData);*/
         }
 
         if (blockHistory.isEmpty ||

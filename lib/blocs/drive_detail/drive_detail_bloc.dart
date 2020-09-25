@@ -74,7 +74,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
   }
 
   Stream<DriveDetailState> _mapNewFolderToState(NewFolder event) async* {
-    final profile = _profileBloc as ProfileLoaded;
+    final profile = _profileBloc.state as ProfileLoaded;
     final currentState = state as FolderLoadSuccess;
     final currentFolder = currentState.currentFolder.folder;
 

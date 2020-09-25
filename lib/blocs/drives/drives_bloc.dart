@@ -57,7 +57,7 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
 
   Stream<DrivesState> _mapNewDriveToState(NewDrive event) async* {
     if (state is DrivesLoadSuccess) {
-      final profile = _profileBloc as ProfileLoaded;
+      final profile = _profileBloc.state as ProfileLoaded;
       final wallet = profile.wallet;
 
       final createRes = await _drivesDao.createDrive(
