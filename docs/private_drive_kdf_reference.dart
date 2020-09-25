@@ -4,17 +4,18 @@ import 'dart:typed_data';
 import 'package:arweave/arweave.dart';
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:pointycastle/export.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
   final arweave = Arweave();
   final uuid = Uuid();
+
+  final keyByteLength = 256 ~/ 8;
+  final kdf = Hkdf(Hmac(sha256));
+
   final wallet = await arweave.wallets.generate();
 
   final data = utf8.encode('<cool user data>');
-
-  final keyByteLength = 256 ~/ 8;
 
   // Derive a drive key from the user's provided password
   // and their drive id signed with their wallet.
@@ -30,26 +31,22 @@ void main() async {
       .sign(Uint8List.fromList(utf8.encode('drive') + driveIdBytes));
   final password = '<password provided by user>';
 
-  final driveKdf = HKDFKeyDerivator(SHA256Digest())
-    ..init(HkdfParameters(walletSignature.bytes, keyByteLength));
-
-  final driveKeyOuput = Uint8List(keyByteLength);
-  driveKdf.deriveKey(utf8.encode(password), 0, driveKeyOuput, 0);
-
-  final driveKey = KeyParameter(driveKeyOuput);
+  final driveKey = await kdf.deriveKey(
+    SecretKey(walletSignature.bytes),
+    info: utf8.encode(password),
+    outputLength: keyByteLength,
+  );
 
   // Derive a file key from the user's drive key and the file id.
   // We don't salt here since the file id is already random enough but
   // we can salt in the future in cases where the user might want to revoke a file key they shared.
   final fileIdBytes = Uint8List.fromList(uuid.parse('<file uuid>'));
 
-  final fileKdf = HKDFKeyDerivator(SHA256Digest())
-    ..init(HkdfParameters(driveKey.key, keyByteLength));
-
-  final fileKeyOutput = Uint8List(keyByteLength);
-  fileKdf.deriveKey(fileIdBytes, 0, fileKeyOutput, 0);
-
-  final fileKey = SecretKey(fileKeyOutput);
+  final fileKey = await kdf.deriveKey(
+    driveKey,
+    info: fileIdBytes,
+    outputLength: keyByteLength,
+  );
 
   // Encrypt the data using AES256-GCM using a 96-bit IV as recommended.
   // No need to provide any additional data.
@@ -66,6 +63,6 @@ void main() async {
       await aesGcm.decrypt(encryptedData, secretKey: fileKey, nonce: iv);
 
   print(utf8.decode(decryptedData));
-  print(hex.encode(driveKey.key));
+  print(hex.encode(await driveKey.extract()));
   print(hex.encode(await fileKey.extract()));
 }

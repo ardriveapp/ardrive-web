@@ -10,6 +10,7 @@ import 'utils.dart';
 
 const keyByteLength = 256 ~/ 8;
 final _uuid = Uuid();
+final kdf = Hkdf(Hmac(sha256));
 
 Future<ProfileKeyDerivationResult> deriveProfileKey(String password,
     [Uint8List salt]) async {
@@ -31,25 +32,22 @@ Future<SecretKey> deriveDriveKey(
 ) async {
   final walletSignature = await wallet
       .sign(Uint8List.fromList(utf8.encode('drive') + _uuid.parse(driveId)));
-  return _deriveKeyFromBytes(walletSignature.bytes, utf8.encode(password));
+
+  return kdf.deriveKey(
+    SecretKey(walletSignature.bytes),
+    info: utf8.encode(password),
+    outputLength: keyByteLength,
+  );
 }
 
 Future<SecretKey> deriveFileKey(SecretKey driveKey, String fileId) async {
   final fileIdBytes = Uint8List.fromList(_uuid.parse(fileId));
-  return _deriveKeyFromBytes(await driveKey.extract(), fileIdBytes);
-}
 
-Future<SecretKey> _deriveKeyFromBytes(
-  Uint8List ikm,
-  Uint8List data,
-) async {
-  final kdf = HKDFKeyDerivator(SHA256Digest())
-    ..init(HkdfParameters(ikm, keyByteLength));
-
-  final keyOutput = Uint8List(keyByteLength);
-  kdf.deriveKey(data, 0, keyOutput, 0);
-
-  return SecretKey(keyOutput);
+  return kdf.deriveKey(
+    driveKey,
+    info: fileIdBytes,
+    outputLength: keyByteLength,
+  );
 }
 
 class ProfileKeyDerivationResult {
