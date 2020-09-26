@@ -18,9 +18,13 @@ abstract class Entity {
 
 extension TransactionUtils on Transaction {
   void addApplicationTags() {
-    addTag(EntityTag.appName, 'drive');
-    addTag(EntityTag.appVersion, '0.11.0');
+    addTag(EntityTag.appName, 'ArDrive-Web');
+    addTag(EntityTag.appVersion, '0.1.0');
     addTag(
         EntityTag.unixTime, DateTime.now().millisecondsSinceEpoch.toString());
+  }
+
+  void addArFsTag() {
+    addTag(EntityTag.arFs, '0.9');
   }
 }

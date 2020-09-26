@@ -4,6 +4,7 @@ class EntityTag {
   static const contentType = 'Content-Type';
   static const unixTime = 'Unix-Time';
 
+  static const arFs = 'ArFS';
   static const entityType = 'Entity-Type';
 
   static const driveId = 'Drive-Id';

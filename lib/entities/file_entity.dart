@@ -70,11 +70,13 @@ class FileEntity extends Entity {
         ? Transaction.withJsonData(data: this)
         : await createEncryptedEntityTransaction(this, fileKey);
 
-    tx.addApplicationTags();
-    tx.addTag(EntityTag.entityType, EntityType.file);
-    tx.addTag(EntityTag.driveId, driveId);
-    tx.addTag(EntityTag.parentFolderId, parentFolderId);
-    tx.addTag(EntityTag.fileId, id);
+    tx
+      ..addApplicationTags()
+      ..addArFsTag()
+      ..addTag(EntityTag.entityType, EntityType.file)
+      ..addTag(EntityTag.driveId, driveId)
+      ..addTag(EntityTag.parentFolderId, parentFolderId)
+      ..addTag(EntityTag.fileId, id);
 
     return tx;
   }

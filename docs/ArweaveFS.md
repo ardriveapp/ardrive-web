@@ -26,7 +26,7 @@ Fields suffixed with `?` are optional.
 
 Field enum values are defined in the format "value 1 | value 2".
 
-All transactions that store these entities unencrypted should define a `Content-Type` tag with value `application/json`.
+All transactions that store these entities unencrypted should define a `Content-Type` tag with value `application/json` and an `ArFS` tag with the version of ArFS specification it implements, currently `0.9`.
 
 ### Drive
 

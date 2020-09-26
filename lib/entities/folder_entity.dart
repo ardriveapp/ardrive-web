@@ -48,10 +48,12 @@ class FolderEntity extends Entity {
         ? Transaction.withJsonData(data: this)
         : await createEncryptedEntityTransaction(this, driveKey);
 
-    tx.addApplicationTags();
-    tx.addTag(EntityTag.entityType, EntityType.folder);
-    tx.addTag(EntityTag.driveId, driveId);
-    tx.addTag(EntityTag.folderId, id);
+    tx
+      ..addApplicationTags()
+      ..addArFsTag()
+      ..addTag(EntityTag.entityType, EntityType.folder)
+      ..addTag(EntityTag.driveId, driveId)
+      ..addTag(EntityTag.folderId, id);
 
     if (parentFolderId != null) {
       tx.addTag(EntityTag.parentFolderId, parentFolderId);

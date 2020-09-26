@@ -52,6 +52,7 @@ class DriveEntity extends Entity {
 
     tx
       ..addApplicationTags()
+      ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.drive)
       ..addTag(EntityTag.driveId, id);
 
