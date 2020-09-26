@@ -14,6 +14,6 @@ Future<void> promptToCreateNewDrive(BuildContext context) async {
   );
 
   if (driveName != null) {
-    context.bloc<DrivesBloc>().add(NewDrive(driveName, DrivePrivacy.public));
+    context.bloc<DrivesBloc>().add(NewDrive(driveName, DrivePrivacy.private));
   }
 }
