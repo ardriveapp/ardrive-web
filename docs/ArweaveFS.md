@@ -78,8 +78,8 @@ Unix-Time: <unix timestamp>
 
 {
     "name": "<user defined file name>",
-    "size": "<computed file size>",
-    "lastModifiedDate": "<unix timestamp for OS reported time of file's last modified date>"
+    "size": <computed file size - int>,
+    "lastModifiedDate": <unix timestamp for OS reported time of file's last modified date - int>
     "dataTxId": "<transaction id of stored data>"
 }
 ```
