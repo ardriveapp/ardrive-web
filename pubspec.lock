@@ -40,8 +40,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "6e394ca2e1393cb10d0d9d3ab6a1095d20800bfe"
-      resolved-ref: "6e394ca2e1393cb10d0d9d3ab6a1095d20800bfe"
+      ref: c51506c200266def14184ac04130e3d1718b6011
+      resolved-ref: c51506c200266def14184ac04130e3d1718b6011
       url: "https://github.com/CDDelta/arweave-dart.git"
     source: git
     version: "0.1.0"
@@ -190,7 +190,7 @@ packages:
     description:
       path: cryptography
       ref: web-key-fix
-      resolved-ref: "4ccbaf20f7624be17a2cbf9d067137a4eacfdf91"
+      resolved-ref: "2f150435035549308a3955cb8094ffca1b2aeecb"
       url: "https://github.com/CDDelta/cryptography.git"
     source: git
     version: "1.4.1"
