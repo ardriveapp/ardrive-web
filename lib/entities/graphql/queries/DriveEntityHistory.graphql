@@ -2,7 +2,10 @@ query DriveEntityHistory($driveId: String!, $oldestBlockHeight: Int) {
   transactions(
     first: 100
     sort: HEIGHT_ASC
-    tags: [{ name: "Drive-Id", values: [$driveId] }]
+    tags: [
+      { name: "ArFS", values: ["0.9"] }
+      { name: "Drive-Id", values: [$driveId] }
+    ]
     block: { min: $oldestBlockHeight }
   ) {
     edges {
