@@ -24,6 +24,10 @@ dependencies:
   flutter:
     sdk: flutter
 
+  arweave:
+    git:
+      url: https://github.com/CDDelta/arweave-dart.git
+      ref: c51506c200266def14184ac04130e3d1718b6011
   cryptography:
     git:
       url: https://github.com/CDDelta/cryptography.git
@@ -40,10 +44,6 @@ dependencies:
   mime: ^0.9.7
   timeago: ^2.0.26
   url_launcher: ^5.5.0
-  arweave:
-    git:
-      url: https://github.com/CDDelta/arweave-dart.git
-      ref: c51506c200266def14184ac04130e3d1718b6011
   file_picker_cross: ^3.0.3
   artemis: 6.7.1-beta.1
 

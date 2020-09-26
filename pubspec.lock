@@ -190,7 +190,7 @@ packages:
     description:
       path: cryptography
       ref: web-key-fix
-      resolved-ref: "2f150435035549308a3955cb8094ffca1b2aeecb"
+      resolved-ref: "46b6e5d3872c3e777767ab95189fb801d0e8ce91"
       url: "https://github.com/CDDelta/cryptography.git"
     source: git
     version: "1.4.1"
