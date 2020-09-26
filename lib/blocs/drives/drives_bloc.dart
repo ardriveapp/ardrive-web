@@ -66,6 +66,7 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
         privacy: event.drivePrivacy,
         wallet: wallet,
         password: profile.password,
+        profileKey: profile.cipherKey,
       );
 
       final drive = DriveEntity(
