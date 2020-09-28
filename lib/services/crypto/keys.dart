@@ -36,7 +36,7 @@ Future<SecretKey> deriveDriveKey(
       .sign(Uint8List.fromList(utf8.encode('drive') + _uuid.parse(driveId)));
 
   return hkdf.deriveKey(
-    SecretKey(walletSignature.bytes),
+    SecretKey(walletSignature),
     info: utf8.encode(password),
     outputLength: keyByteLength,
   );

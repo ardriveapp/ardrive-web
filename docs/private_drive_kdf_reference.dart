@@ -32,7 +32,7 @@ void main() async {
   final password = '<password provided by user>';
 
   final driveKey = await kdf.deriveKey(
-    SecretKey(walletSignature.bytes),
+    SecretKey(walletSignature),
     info: utf8.encode(password),
     outputLength: keyByteLength,
   );
