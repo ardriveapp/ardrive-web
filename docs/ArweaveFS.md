@@ -43,6 +43,7 @@ Entity-Type: drive
 Unix-Time: <unix timestamp>
 
 {
+    "name": "<user defined drive name>",
     "rootFolderId": "<uuid of the drive root folder>"
 }
 ```
@@ -83,6 +84,12 @@ Unix-Time: <unix timestamp>
     "dataTxId": "<transaction id of stored data>"
 }
 ```
+
+## Creating a Drive
+
+To properly create a new drive, two new entities need to be created, a new drive entity and a new folder entity representing the root folder of that drive.
+
+The `name` of the drive and folder entity should be the same. The drive entity's `rootFolderId` should refer to the `Folder-Id` of the root folder entity. The folder entity should not include a `Parent-Folder-Id` tag.
 
 ## Updating and Constructing the File System State
 
