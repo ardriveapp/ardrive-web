@@ -71,6 +71,7 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
 
       final drive = DriveEntity(
         id: createRes.driveId,
+        name: event.driveName,
         rootFolderId: createRes.rootFolderId,
         privacy: event.drivePrivacy,
         authMode: event.drivePrivacy == DrivePrivacy.private
@@ -80,6 +81,7 @@ class DrivesBloc extends Bloc<DrivesEvent, DrivesState> {
 
       final driveTx =
           await _arweave.prepareEntityTx(drive, wallet, createRes.driveKey);
+
       final rootFolderTx = await _arweave.prepareEntityTx(
         FolderEntity(
           id: drive.rootFolderId,

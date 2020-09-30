@@ -3,7 +3,7 @@ query InitialDriveEntity($driveId: String!) {
     first: 1
     sort: HEIGHT_ASC
     tags: [
-      { name: "ArFS", values: ["0.9"] }
+      { name: "ArFS", values: ["0.10"] }
       { name: "Entity-Type", values: ["drive"] }
       { name: "Drive-Id", values: [$driveId] }
     ]

@@ -19,9 +19,11 @@ class DriveEntity extends Entity {
   @JsonKey(ignore: true)
   String authMode;
 
+  String name;
   String rootFolderId;
 
-  DriveEntity({this.id, this.rootFolderId, this.privacy, this.authMode});
+  DriveEntity(
+      {this.id, this.name, this.rootFolderId, this.privacy, this.authMode});
 
   static Future<DriveEntity> fromTransaction(
     TransactionCommonMixin transaction,

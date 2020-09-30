@@ -25,6 +25,6 @@ extension TransactionUtils on Transaction {
   }
 
   void addArFsTag() {
-    addTag(EntityTag.arFs, '0.9');
+    addTag(EntityTag.arFs, '0.10');
   }
 }
