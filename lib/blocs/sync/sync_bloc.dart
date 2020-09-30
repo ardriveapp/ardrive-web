@@ -42,9 +42,18 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
     if (_profileBloc.state is ProfileLoaded) {
       final profile = _profileBloc.state as ProfileLoaded;
 
-      final drives = await _drivesDao.getAllDrives();
+      // Sync in drives owned by the user.
+      final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
+        profile.wallet,
+        profile.password,
+      );
 
-      final driveSyncProcesses = drives.map(
+      await _drivesDao.updateUserDrives(userDriveEntities, profile.cipherKey);
+
+      // Sync the contents of each drive owned by the user.
+      final userDrives = await _drivesDao.getAllDrives();
+
+      final driveSyncProcesses = userDrives.map(
         (drive) => Future.microtask(
           () async {
             final driveKey = drive.isPrivate

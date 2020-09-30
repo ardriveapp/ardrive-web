@@ -40,9 +40,6 @@ class AppDrawer extends StatelessWidget {
             _buildDriveActionsButton(state),
             BlocBuilder<SyncBloc, SyncState>(
               builder: (context, syncState) {
-                final showSyncButton =
-                    state is DrivesLoadSuccess && state.drives.isNotEmpty;
-
                 return ListTile(
                   dense: true,
                   title: Text(
@@ -50,8 +47,8 @@ class AppDrawer extends StatelessWidget {
                     textAlign: TextAlign.start,
                     style: Theme.of(context).textTheme.caption,
                   ),
-                  trailing: showSyncButton
-                      ? (syncState is SyncInProgress
+                  trailing: state is DrivesLoadSuccess
+                      ? syncState is SyncInProgress
                           ? IconButton(
                               icon: CircularProgressIndicator(),
                               onPressed: null,
@@ -63,7 +60,7 @@ class AppDrawer extends StatelessWidget {
                                   .bloc<SyncBloc>()
                                   .add(SyncWithNetwork()),
                               tooltip: 'Sync',
-                            ))
+                            )
                       : SizedBox.shrink(child: Container()),
                 );
               },

@@ -15,17 +15,17 @@ class ArweaveService {
 
   ArweaveService(this._arweave);
 
-  /// Get the entity history for a particular drive starting from the oldest block height.
+  /// Gets the entity history for a particular drive starting from the specified block height.
   Future<DriveEntityHistory> getDriveEntityHistory(
     String driveId,
-    int oldestBlockHeight, [
+    int startingBlockHeight, [
     SecretKey driveKey,
   ]) async {
     final driveEntityHistoryQuery = await _gql.execute(
       DriveEntityHistoryQuery(
         variables: DriveEntityHistoryArguments(
           driveId: driveId,
-          oldestBlockHeight: oldestBlockHeight,
+          startingBlockHeight: startingBlockHeight,
         ),
       ),
     );
@@ -101,8 +101,57 @@ class ArweaveService {
     return DriveEntityHistory(
         blockHistory.isNotEmpty
             ? blockHistory.last.blockHeight
-            : oldestBlockHeight,
+            : startingBlockHeight,
         blockHistory);
+  }
+
+  /// Gets the unique drive entities for a particular user.
+  Future<Map<DriveEntity, SecretKey>> getUniqueUserDriveEntities(
+    Wallet wallet,
+    String password,
+  ) async {
+    final userDriveEntitiesQuery = await _gql.execute(
+      UserDriveEntitiesQuery(
+          variables: UserDriveEntitiesArguments(owner: wallet.address)),
+    );
+
+    final driveTxs = userDriveEntitiesQuery.data.transactions.edges
+        .map((e) => e.node)
+        .toList();
+
+    final driveResponses = await Future.wait(
+        driveTxs.map((e) => _arweave.api.get('tx/${e.id}/data')));
+
+    final drivesById = <String, DriveEntity>{};
+    final drivesWithKey = <DriveEntity, SecretKey>{};
+    for (var i = 0; i < driveTxs.length; i++) {
+      final driveTx = driveTxs[i];
+
+      // Ignore drive entity transactions which we already have newer entities for.
+      if (drivesById.containsKey(driveTx.getTag(EntityTag.driveId))) {
+        continue;
+      }
+
+      final driveKey =
+          driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private
+              ? await deriveDriveKey(
+                  wallet,
+                  driveTx.getTag(EntityTag.driveId),
+                  password,
+                )
+              : null;
+
+      final drive = await DriveEntity.fromTransaction(
+        driveTx,
+        utils.decodeBase64ToBytes(driveResponses[i].body),
+        driveKey,
+      );
+
+      drivesById[drive.id] = drive;
+      drivesWithKey[drive] = driveKey;
+    }
+
+    return drivesWithKey;
   }
 
   Future<DriveEntity> getDriveEntity(String driveId,

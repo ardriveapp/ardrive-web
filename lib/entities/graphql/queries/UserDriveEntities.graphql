@@ -1,0 +1,16 @@
+query UserDriveEntities($owner: String!) {
+  transactions(
+    sort: HEIGHT_DESC
+    tags: [
+      { name: "ArFS", values: ["0.10"] }
+      { name: "Entity-Type", values: ["drive"] }
+    ]
+    owners: [$owner]
+  ) {
+    edges {
+      node {
+        ...transactionCommon
+      }
+    }
+  }
+}

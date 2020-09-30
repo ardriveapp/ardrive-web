@@ -42,8 +42,8 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
     SecretKey driveKey;
     if (privacy == DrivePrivacy.private) {
       driveKey = await deriveDriveKey(wallet, driveId, password);
-      insertDriveOp =
-          await _encryptDriveKey(insertDriveOp, profileKey, driveKey);
+      insertDriveOp = await _addDriveKeyToDriveCompanion(
+          insertDriveOp, profileKey, driveKey);
     }
 
     await batch((batch) {
@@ -67,6 +67,30 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
     );
   }
 
+  /// Adds or updates the user's drives with the newly provided drive entities.
+  Future<void> updateUserDrives(
+          Map<DriveEntity, SecretKey> driveEntities, SecretKey profileKey) =>
+      db.batch((b) async {
+        for (final entry in driveEntities.entries) {
+          final entity = entry.key;
+
+          var insertDriveOp = DrivesCompanion.insert(
+            id: entity.id,
+            name: entity.name,
+            ownerAddress: entity.ownerAddress,
+            rootFolderId: entity.rootFolderId,
+            privacy: entity.privacy,
+          );
+
+          if (entity.privacy == DrivePrivacy.private) {
+            insertDriveOp = await _addDriveKeyToDriveCompanion(
+                insertDriveOp, profileKey, entry.value);
+          }
+
+          b.insert(drives, insertDriveOp, mode: InsertMode.insertOrReplace);
+        }
+      });
+
   Future<void> attachDrive({
     String name,
     DriveEntity entity,
@@ -82,15 +106,18 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
     );
 
     if (entity.privacy == DrivePrivacy.private) {
-      insertDriveOp =
-          await _encryptDriveKey(insertDriveOp, profileKey, driveKey);
+      insertDriveOp = await _addDriveKeyToDriveCompanion(
+          insertDriveOp, profileKey, driveKey);
     }
 
     await into(drives).insert(insertDriveOp);
   }
 
-  Future<DrivesCompanion> _encryptDriveKey(
-      DrivesCompanion drive, SecretKey profileKey, SecretKey driveKey) async {
+  Future<DrivesCompanion> _addDriveKeyToDriveCompanion(
+    DrivesCompanion drive,
+    SecretKey profileKey,
+    SecretKey driveKey,
+  ) async {
     final iv = Nonce.randomBytes(96 ~/ 8);
     final encryptedWallet = await aesGcm.encrypt(
       await driveKey.extract(),
