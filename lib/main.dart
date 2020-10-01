@@ -1,5 +1,4 @@
 import 'package:arweave/arweave.dart';
-import 'package:drive/components/components.dart';
 import 'package:drive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -66,25 +65,10 @@ class App extends StatelessWidget {
         child: MaterialApp(
           title: 'Drive',
           theme: appTheme(),
-          home: BlocConsumer<ProfileBloc, ProfileState>(
-            listener: (context, state) async {
-              if (state is ProfilePromptAdd) {
-                _promptToAddProfile(context);
-              } else if (state is ProfilePromptPassword) {
-                final password = await showTextFieldDialog(
-                  context,
-                  title: 'Unlock profile',
-                  fieldLabel: 'Password',
-                  confirmingActionLabel: 'UNLOCK',
-                  obscureText: true,
-                  barrierDismissible: false,
-                );
-
-                context.bloc<ProfileBloc>().add(ProfileLoad(password));
-              }
-            },
-            builder: (context, state) => state is ProfileLoaded
-                ? BlocBuilder<DrivesBloc, DrivesState>(
+          home: BlocBuilder<ProfileBloc, ProfileState>(
+            builder: (context, state) => state is! ProfileLoaded
+                ? ProfileAuthView()
+                : BlocBuilder<DrivesBloc, DrivesState>(
                     builder: (context, state) {
                       final selectedDriveId = state is DrivesLoadSuccess
                           ? state.selectedDriveId
@@ -110,19 +94,10 @@ class App extends StatelessWidget {
                         ),
                       );
                     },
-                  )
-                : Container(),
+                  ),
           ),
         ),
       ),
-    );
-  }
-
-  void _promptToAddProfile(BuildContext context) async {
-    await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) => AddProfileForm(),
-      barrierDismissible: false,
     );
   }
 }

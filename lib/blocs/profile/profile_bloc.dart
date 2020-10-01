@@ -34,7 +34,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   Stream<ProfileState> _mapProfileCheckDefaultToState(
       ProfileCheckDefault event) async* {
     yield await _profileDao.hasProfile()
-        ? ProfilePromptPassword()
+        ? ProfilePromptUnlock()
         : ProfilePromptAdd();
   }
 

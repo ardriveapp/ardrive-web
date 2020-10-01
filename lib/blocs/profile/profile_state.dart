@@ -16,6 +16,6 @@ class ProfileLoaded extends ProfileState {
 
 class ProfilePromptAdd extends ProfileState {}
 
-class ProfilePromptPassword extends ProfileState {}
+class ProfilePromptUnlock extends ProfileState {}
 
 class ProfileUnavailable extends ProfileState {}
