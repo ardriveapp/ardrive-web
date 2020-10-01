@@ -1,6 +1,7 @@
 import 'package:arweave/utils.dart' as utils;
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/components/components.dart';
+import 'package:drive/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -48,9 +49,25 @@ class DriveDetailView extends StatelessWidget {
                             state.currentDrive.name,
                             state.currentFolder.folder.path,
                           ),
-                          IconButton(
-                            icon: Icon(Icons.info),
-                            onPressed: () => _showDriveInfo(context),
+                          Row(
+                            children: [
+                              state.currentDrive.isPrivate
+                                  ? IconButton(
+                                      icon: Icon(Icons.lock),
+                                      onPressed: () => _showDriveInfo(context),
+                                      tooltip: 'Private',
+                                    )
+                                  : IconButton(
+                                      icon: Icon(Icons.public),
+                                      onPressed: () => _showDriveInfo(context),
+                                      tooltip: 'Public',
+                                    ),
+                              IconButton(
+                                icon: Icon(Icons.info),
+                                onPressed: () => _showDriveInfo(context),
+                                tooltip: 'Details',
+                              ),
+                            ],
                           ),
                         ],
                       ),

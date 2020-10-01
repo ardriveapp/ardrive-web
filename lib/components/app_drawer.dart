@@ -5,9 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart';
 
-import 'attach_drive_form.dart';
-import 'create_new_drive_dialog.dart';
-import 'text_field_dialog.dart';
+import 'components.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({
@@ -118,7 +116,7 @@ class AppDrawer extends StatelessWidget {
               if (drivesState is DrivesLoadSuccess) ...{
                 PopupMenuItem(
                   enabled: drivesState.canCreateNewDrive,
-                  value: promptToCreateNewDrive,
+                  value: promptToCreateDrive,
                   child: ListTile(
                     enabled: drivesState.canCreateNewDrive,
                     title: Text('New drive'),
