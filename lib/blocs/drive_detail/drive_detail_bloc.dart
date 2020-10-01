@@ -35,34 +35,39 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
         _uploadBloc = uploadBloc,
         _driveDao = driveDao,
         super(FolderLoadInProgress()) {
-    if (driveId != null) add(OpenFolder(''));
+    if (driveId != null) add(FolderOpened(''));
   }
 
   @override
   Stream<DriveDetailState> mapEventToState(
     DriveDetailEvent event,
   ) async* {
-    if (event is OpenFolder) {
-      yield* _mapOpenFolderToState(event);
-    } else if (event is OpenedFolder) {
-      yield* _mapOpenedFolderToState(event);
+    if (event is FolderOpened) {
+      yield* _mapFolderOpenedToState(event);
+    } else if (event is FolderLoaded) {
+      yield* _mapFolderLoadedToState(event);
     } else if (event is NewFolder) {
       yield* _mapNewFolderToState(event);
     } else if (event is UploadFile) yield* _mapUploadFileToState(event);
   }
 
-  Stream<DriveDetailState> _mapOpenFolderToState(OpenFolder event) async* {
+  Stream<DriveDetailState> _mapFolderOpenedToState(FolderOpened event) async* {
+    yield FolderLoadInProgress();
+
     unawaited(_folderSubscription?.cancel());
 
     _folderSubscription = Rx.combineLatest3(
       _driveDao.watchDrive(_driveId),
       _driveDao.watchFolder(_driveId, event.folderPath),
       _profileBloc.startWith(null),
-      (drive, folderContents, _) => OpenedFolder(drive, folderContents),
+      (drive, FolderWithContents folderContents, _) =>
+          folderContents?.folder != null
+              ? FolderLoaded(drive, folderContents)
+              : null,
     ).listen((event) => add(event));
   }
 
-  Stream<DriveDetailState> _mapOpenedFolderToState(OpenedFolder event) async* {
+  Stream<DriveDetailState> _mapFolderLoadedToState(FolderLoaded event) async* {
     final profile = _profileBloc.state;
 
     yield FolderLoadSuccess(

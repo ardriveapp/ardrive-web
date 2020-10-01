@@ -29,8 +29,9 @@ class FolderView extends StatelessWidget {
       ],
       rows: [
         ...subfolders.map((folder) => DataRow(
-              onSelectChanged: (_) =>
-                  context.bloc<DriveDetailBloc>().add(OpenFolder(folder.path)),
+              onSelectChanged: (_) => context
+                  .bloc<DriveDetailBloc>()
+                  .add(FolderOpened(folder.path)),
               cells: [
                 DataCell(NameCell(name: folder.name, isFolder: true)),
                 DataCell(Text('-')),

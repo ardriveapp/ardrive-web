@@ -99,14 +99,15 @@ class DriveDetailView extends StatelessWidget {
     return Row(
       children: [
         FlatButton(
-          onPressed: () => context.bloc<DriveDetailBloc>().add(OpenFolder('')),
+          onPressed: () =>
+              context.bloc<DriveDetailBloc>().add(FolderOpened('')),
           child: Text(driveName),
         ),
         if (pathSegments.isNotEmpty) Icon(Icons.chevron_right),
         ...pathSegments.asMap().entries.expand((s) => [
               FlatButton(
                 onPressed: () => context.bloc<DriveDetailBloc>().add(
-                      OpenFolder(
+                      FolderOpened(
                           '/${pathSegments.sublist(0, s.key + 1).join('/')}'),
                     ),
                 child: Text(s.value),
