@@ -19,22 +19,18 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   }
 
   @override
-  Stream<ProfileState> mapEventToState(
-    ProfileEvent event,
-  ) async* {
+  Stream<ProfileState> mapEventToState(ProfileEvent event) async* {
     if (event is ProfileCheckDefault) {
       yield* _mapProfileCheckDefaultToState(event);
     } else if (event is ProfileLoad) {
       yield* _mapProfileLoadToState(event);
-    } else if (event is ProfileAdd) {
-      yield* _mapProfileAddToState(event);
     } else if (event is Logout) yield* _mapLogoutToState(event);
   }
 
   Stream<ProfileState> _mapProfileCheckDefaultToState(
       ProfileCheckDefault event) async* {
     yield await _profileDao.hasProfile()
-        ? ProfilePromptPassword()
+        ? ProfilePromptUnlock()
         : ProfilePromptAdd();
   }
 
@@ -55,23 +51,9 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     }
   }
 
-  Stream<ProfileState> _mapProfileAddToState(ProfileAdd event) async* {
-    yield ProfileLoading();
-
-    final wallet = Wallet.fromJwk(event.jwk);
-
-    final profileKey =
-        await _profileDao.addProfile(event.username, event.password, wallet);
-
-    yield ProfileLoaded(
-      username: event.username,
-      password: event.password,
-      wallet: wallet,
-      cipherKey: profileKey,
-    );
-  }
-
   Stream<ProfileState> _mapLogoutToState(Logout event) async* {
     yield ProfileUnavailable();
+
+    add(ProfileCheckDefault());
   }
 }

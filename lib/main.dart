@@ -1,5 +1,4 @@
 import 'package:arweave/arweave.dart';
-import 'package:drive/components/components.dart';
 import 'package:drive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -32,97 +31,77 @@ class App extends StatelessWidget {
         RepositoryProvider<DrivesDao>(create: (_) => db.drivesDao),
         RepositoryProvider<DriveDao>(create: (_) => db.driveDao),
       ],
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider(
-            create: (context) => ProfileBloc(
-              profileDao: context.repository<ProfileDao>(),
-            ),
-          ),
-          BlocProvider(
-            create: (context) => UploadBloc(
-              profileBloc: context.bloc<ProfileBloc>(),
-              arweave: context.repository<ArweaveService>(),
-              driveDao: context.repository<DriveDao>(),
-            ),
-          ),
-          BlocProvider(
-            create: (context) => SyncBloc(
-              profileBloc: context.bloc<ProfileBloc>(),
-              arweave: context.repository<ArweaveService>(),
-              drivesDao: context.repository<DrivesDao>(),
-              driveDao: context.repository<DriveDao>(),
-            ),
-          ),
-          BlocProvider(
-            create: (context) => DrivesBloc(
-              syncBloc: context.bloc<SyncBloc>(),
-              profileBloc: context.bloc<ProfileBloc>(),
-              arweave: context.repository<ArweaveService>(),
-              drivesDao: context.repository<DrivesDao>(),
-            ),
-          ),
-        ],
+      child: BlocProvider(
+        create: (context) => ProfileBloc(
+          profileDao: context.repository<ProfileDao>(),
+        ),
         child: MaterialApp(
           title: 'Drive',
           theme: appTheme(),
-          home: BlocConsumer<ProfileBloc, ProfileState>(
-            listener: (context, state) async {
-              if (state is ProfilePromptAdd) {
-                _promptToAddProfile(context);
-              } else if (state is ProfilePromptPassword) {
-                final password = await showTextFieldDialog(
-                  context,
-                  title: 'Unlock profile',
-                  fieldLabel: 'Password',
-                  confirmingActionLabel: 'UNLOCK',
-                  obscureText: true,
-                  barrierDismissible: false,
+          home: BlocBuilder<ProfileBloc, ProfileState>(
+            builder: (context, state) {
+              if (state is ProfileUnavailable) {
+                return ProfileAuthView();
+              } else if (state is ProfileLoading) {
+                return Container();
+              } else if (state is ProfileLoaded) {
+                return MultiBlocProvider(
+                  providers: [
+                    BlocProvider(
+                      create: (context) => UploadBloc(
+                        profileBloc: context.bloc<ProfileBloc>(),
+                        arweave: context.repository<ArweaveService>(),
+                        driveDao: context.repository<DriveDao>(),
+                      ),
+                    ),
+                    BlocProvider(
+                      create: (context) => SyncBloc(
+                        profileBloc: context.bloc<ProfileBloc>(),
+                        arweave: context.repository<ArweaveService>(),
+                        drivesDao: context.repository<DrivesDao>(),
+                        driveDao: context.repository<DriveDao>(),
+                      ),
+                    ),
+                    BlocProvider(
+                      create: (context) => DrivesBloc(
+                        syncBloc: context.bloc<SyncBloc>(),
+                        profileBloc: context.bloc<ProfileBloc>(),
+                        arweave: context.repository<ArweaveService>(),
+                        drivesDao: context.repository<DrivesDao>(),
+                      ),
+                    ),
+                  ],
+                  child: BlocBuilder<DrivesBloc, DrivesState>(
+                    builder: (context, state) {
+                      if (state is DrivesLoadSuccess) {
+                        return BlocProvider(
+                          key: ValueKey(state.selectedDriveId),
+                          create: (context) => DriveDetailBloc(
+                            driveId: state.selectedDriveId,
+                            profileBloc: context.bloc<ProfileBloc>(),
+                            uploadBloc: context.bloc<UploadBloc>(),
+                            arweave: context.repository<ArweaveService>(),
+                            driveDao: context.repository<DriveDao>(),
+                          ),
+                          child: AppShell(
+                            page: state.selectedDriveId != null
+                                ? DriveDetailView()
+                                : Container(),
+                          ),
+                        );
+                      } else {
+                        return Container();
+                      }
+                    },
+                  ),
                 );
-
-                context.bloc<ProfileBloc>().add(ProfileLoad(password));
+              } else {
+                return Container();
               }
             },
-            builder: (context, state) => state is ProfileLoaded
-                ? BlocBuilder<DrivesBloc, DrivesState>(
-                    builder: (context, state) {
-                      final selectedDriveId = state is DrivesLoadSuccess
-                          ? state.selectedDriveId
-                          : null;
-
-                      return BlocProvider(
-                        key: ValueKey(selectedDriveId),
-                        create: (context) => DriveDetailBloc(
-                          driveId: selectedDriveId,
-                          profileBloc: context.bloc<ProfileBloc>(),
-                          uploadBloc: context.bloc<UploadBloc>(),
-                          arweave: context.repository<ArweaveService>(),
-                          driveDao: context.repository<DriveDao>(),
-                        ),
-                        child: AppShell(
-                          page: BlocBuilder<DrivesBloc, DrivesState>(
-                            builder: (context, state) =>
-                                state is DrivesLoadSuccess &&
-                                        state.selectedDriveId != null
-                                    ? DriveDetailView()
-                                    : Container(),
-                          ),
-                        ),
-                      );
-                    },
-                  )
-                : Container(),
           ),
         ),
       ),
-    );
-  }
-
-  void _promptToAddProfile(BuildContext context) async {
-    await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) => AddProfileForm(),
-      barrierDismissible: false,
     );
   }
 }
