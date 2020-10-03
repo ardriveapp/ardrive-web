@@ -1,4 +1,4 @@
-part of 'drive_attach_bloc.dart';
+part of 'drive_attach_cubit.dart';
 
 @immutable
 abstract class DriveAttachState {}

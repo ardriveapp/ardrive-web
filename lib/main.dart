@@ -31,10 +31,37 @@ class App extends StatelessWidget {
         RepositoryProvider<DrivesDao>(create: (_) => db.drivesDao),
         RepositoryProvider<DriveDao>(create: (_) => db.driveDao),
       ],
-      child: BlocProvider(
-        create: (context) => ProfileBloc(
-          profileDao: context.repository<ProfileDao>(),
-        ),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => ProfileBloc(
+              profileDao: context.repository<ProfileDao>(),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => UploadBloc(
+              profileBloc: context.bloc<ProfileBloc>(),
+              arweave: context.repository<ArweaveService>(),
+              driveDao: context.repository<DriveDao>(),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => SyncBloc(
+              profileBloc: context.bloc<ProfileBloc>(),
+              arweave: context.repository<ArweaveService>(),
+              drivesDao: context.repository<DrivesDao>(),
+              driveDao: context.repository<DriveDao>(),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => DrivesBloc(
+              syncBloc: context.bloc<SyncBloc>(),
+              profileBloc: context.bloc<ProfileBloc>(),
+              arweave: context.repository<ArweaveService>(),
+              drivesDao: context.repository<DrivesDao>(),
+            ),
+          ),
+        ],
         child: MaterialApp(
           title: 'Drive',
           theme: appTheme(),
@@ -45,55 +72,28 @@ class App extends StatelessWidget {
               } else if (state is ProfileLoading) {
                 return Container();
               } else if (state is ProfileLoaded) {
-                return MultiBlocProvider(
-                  providers: [
-                    BlocProvider(
-                      create: (context) => UploadBloc(
-                        profileBloc: context.bloc<ProfileBloc>(),
-                        arweave: context.repository<ArweaveService>(),
-                        driveDao: context.repository<DriveDao>(),
-                      ),
-                    ),
-                    BlocProvider(
-                      create: (context) => SyncBloc(
-                        profileBloc: context.bloc<ProfileBloc>(),
-                        arweave: context.repository<ArweaveService>(),
-                        drivesDao: context.repository<DrivesDao>(),
-                        driveDao: context.repository<DriveDao>(),
-                      ),
-                    ),
-                    BlocProvider(
-                      create: (context) => DrivesBloc(
-                        syncBloc: context.bloc<SyncBloc>(),
-                        profileBloc: context.bloc<ProfileBloc>(),
-                        arweave: context.repository<ArweaveService>(),
-                        drivesDao: context.repository<DrivesDao>(),
-                      ),
-                    ),
-                  ],
-                  child: BlocBuilder<DrivesBloc, DrivesState>(
-                    builder: (context, state) {
-                      if (state is DrivesLoadSuccess) {
-                        return BlocProvider(
-                          key: ValueKey(state.selectedDriveId),
-                          create: (context) => DriveDetailBloc(
-                            driveId: state.selectedDriveId,
-                            profileBloc: context.bloc<ProfileBloc>(),
-                            uploadBloc: context.bloc<UploadBloc>(),
-                            arweave: context.repository<ArweaveService>(),
-                            driveDao: context.repository<DriveDao>(),
-                          ),
-                          child: AppShell(
-                            page: state.selectedDriveId != null
-                                ? DriveDetailView()
-                                : Container(),
-                          ),
-                        );
-                      } else {
-                        return Container();
-                      }
-                    },
-                  ),
+                return BlocBuilder<DrivesBloc, DrivesState>(
+                  builder: (context, state) {
+                    if (state is DrivesLoadSuccess) {
+                      return BlocProvider(
+                        key: ValueKey(state.selectedDriveId),
+                        create: (context) => DriveDetailBloc(
+                          driveId: state.selectedDriveId,
+                          profileBloc: context.bloc<ProfileBloc>(),
+                          uploadBloc: context.bloc<UploadBloc>(),
+                          arweave: context.repository<ArweaveService>(),
+                          driveDao: context.repository<DriveDao>(),
+                        ),
+                        child: AppShell(
+                          page: state.selectedDriveId != null
+                              ? DriveDetailView()
+                              : Container(),
+                        ),
+                      );
+                    } else {
+                      return Container();
+                    }
+                  },
                 );
               } else {
                 return Container();
