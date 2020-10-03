@@ -73,5 +73,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
   Stream<ProfileState> _mapLogoutToState(Logout event) async* {
     yield ProfileUnavailable();
+
+    add(ProfileCheckDefault());
   }
 }

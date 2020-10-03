@@ -1,7 +1,5 @@
 import 'package:drive/blocs/blocs.dart';
-import 'package:drive/components/components.dart';
 import 'package:drive/models/models.dart';
-import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -11,7 +9,6 @@ class UnlockProfileForm extends StatefulWidget {
 }
 
 class _UnlockProfileFormState extends State<UnlockProfileForm> {
-  TextEditingController usernameController;
   TextEditingController passwordController;
 
   final _formKey = GlobalKey<FormState>();
@@ -19,7 +16,6 @@ class _UnlockProfileFormState extends State<UnlockProfileForm> {
   @override
   void initState() {
     super.initState();
-    usernameController = TextEditingController();
     passwordController = TextEditingController();
   }
 
@@ -29,15 +25,7 @@ class _UnlockProfileFormState extends State<UnlockProfileForm> {
           profileBloc: context.bloc<ProfileBloc>(),
           profileDao: context.repository<ProfileDao>(),
         ),
-        child: BlocConsumer<UnlockProfileBloc, UnlockProfileState>(
-          listener: (context, state) {
-            if (state is AddProfileInProgress) {
-              showProgressDialog(context, 'Adding profile...');
-            } else if (state is AddProfileSuccessful) {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            }
-          },
+        child: BlocBuilder<UnlockProfileBloc, UnlockProfileState>(
           builder: (context, state) => Form(
             key: _formKey,
             child: Column(
@@ -57,9 +45,9 @@ class _UnlockProfileFormState extends State<UnlockProfileForm> {
                 ),
                 SizedBox(
                   width: double.infinity,
-                  child: RaisedButton(
+                  child: ElevatedButton(
                     child: Text('UNLOCK'),
-                    onPressed: () => _attemptToAddProfile(context),
+                    onPressed: () => _attemptToUnlockProfile(context),
                   ),
                 ),
               ],
@@ -68,23 +56,9 @@ class _UnlockProfileFormState extends State<UnlockProfileForm> {
         ),
       );
 
-  void _attemptToAddProfile(BuildContext context) async {
+  void _attemptToUnlockProfile(BuildContext context) async {
     if (_formKey.currentState.validate()) {
-      var chooseResult;
-      try {
-        chooseResult = await FilePickerCross.pick();
-        // ignore: empty_catches
-      } catch (err) {}
-
-      if (chooseResult != null && chooseResult.type != null) {
-        context.bloc<AddProfileBloc>().add(
-              AddProfileAttempted(
-                username: usernameController.text,
-                password: passwordController.text,
-                walletJson: chooseResult.toString(),
-              ),
-            );
-      }
+      context.bloc<ProfileBloc>().add(ProfileLoad(passwordController.text));
     }
   }
 }

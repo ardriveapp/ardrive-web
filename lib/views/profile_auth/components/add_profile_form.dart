@@ -65,7 +65,7 @@ class _AddProfileFormState extends State<AddProfileForm> {
                 ),
                 SizedBox(
                   width: double.infinity,
-                  child: RaisedButton(
+                  child: ElevatedButton(
                     child: Text('ADD'),
                     onPressed: () => _attemptToAddProfile(context),
                   ),
