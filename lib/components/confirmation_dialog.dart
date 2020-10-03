@@ -8,11 +8,11 @@ Future<bool> showConfirmationDialog(BuildContext context,
         title: Text(title),
         content: content != null ? Text(content) : null,
         actions: <Widget>[
-          FlatButton(
+          TextButton(
             child: Text('CANCEL'),
             onPressed: () => Navigator.of(context).pop(false),
           ),
-          FlatButton(
+          TextButton(
             child: Text(confirmingActionLabel),
             onPressed: () => Navigator.of(context).pop(true),
           ),

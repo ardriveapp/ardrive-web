@@ -69,11 +69,11 @@ class TextFieldDialogState extends State<TextFieldDialog> {
         ),
         actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0),
         actions: <Widget>[
-          FlatButton(
+          TextButton(
             child: Text('CANCEL'),
             onPressed: () => Navigator.of(context).pop(null),
           ),
-          FlatButton(
+          TextButton(
             child: Text(widget.confirmingActionLabel),
             onPressed: () {
               if (_formKey.currentState.validate()) {

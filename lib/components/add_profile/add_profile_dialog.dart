@@ -67,11 +67,11 @@ class _AddProfileFormState extends State<AddProfileForm> {
             ),
             actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0),
             actions: [
-              FlatButton(
+              TextButton(
                 child: Text('CANCEL'),
                 onPressed: () => Navigator.of(context).pop(null),
               ),
-              FlatButton(
+              TextButton(
                 child: Text('ADD'),
                 onPressed: () => _attemptToAddProfile(context),
               ),

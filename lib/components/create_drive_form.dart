@@ -67,11 +67,11 @@ class _CreateDriveFormState extends State<CreateDriveForm> {
         ),
         actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0),
         actions: [
-          FlatButton(
+          TextButton(
             child: Text('CANCEL'),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          FlatButton(
+          TextButton(
             child: Text('CREATE'),
             onPressed: () {
               if (_formKey.currentState.validate()) {
