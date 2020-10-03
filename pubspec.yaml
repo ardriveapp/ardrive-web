@@ -45,6 +45,7 @@ dependencies:
   url_launcher: ^5.5.0
   file_picker_cross: ^3.0.3
   artemis: 6.7.1-beta.1
+  reactive_forms: ^6.0.2
 
   pedantic: ^1.9.2
 

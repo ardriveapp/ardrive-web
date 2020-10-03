@@ -14,8 +14,8 @@ class ProfileLoaded extends ProfileState {
   ProfileLoaded({this.username, this.password, this.wallet, this.cipherKey});
 }
 
-class ProfilePromptAdd extends ProfileState {}
-
-class ProfilePromptUnlock extends ProfileState {}
-
 class ProfileUnavailable extends ProfileState {}
+
+class ProfilePromptAdd extends ProfileUnavailable {}
+
+class ProfilePromptUnlock extends ProfileUnavailable {}
