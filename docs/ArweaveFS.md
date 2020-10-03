@@ -40,7 +40,7 @@ Drive-Privacy: <public | private>
 Drive-Auth-Mode?: password
 Cipher?: AES256-GCM
 Entity-Type: drive
-Unix-Time: <unix timestamp>
+Unix-Time: <milliseconds since unix epoch>
 
 {
     "name": "<user defined drive name>",
@@ -58,7 +58,7 @@ Drive-Id: <drive uuid>
 Parent-Folder-Id?: <parent folder uuid>
 Cipher?: AES256-GCM
 Entity-Type: folder
-Unix-Time: <unix timestamp>
+Unix-Time: <milliseconds since unix epoch>
 
 {
     "name": "<user defined folder name>"
@@ -75,12 +75,12 @@ Drive-Id: <drive uuid>
 Parent-Folder-Id: <parent folder uuid>
 Cipher?: AES256-GCM
 Entity-Type: file
-Unix-Time: <unix timestamp>
+Unix-Time: <milliseconds since unix epoch>
 
 {
     "name": "<user defined file name>",
     "size": <computed file size - int>,
-    "lastModifiedDate": <unix timestamp for OS reported time of file's last modified date - int>
+    "lastModifiedDate": <timestamp for OS reported time of file's last modified date represented as milliseconds since unix epoch - int>
     "dataTxId": "<transaction id of stored data>"
 }
 ```
