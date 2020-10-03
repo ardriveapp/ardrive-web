@@ -4,27 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-class UnlockProfileForm extends StatefulWidget {
+class UnlockProfileForm extends StatelessWidget {
   @override
-  _UnlockProfileFormState createState() => _UnlockProfileFormState();
-}
-
-class _UnlockProfileFormState extends State<UnlockProfileForm> {
-  final form = FormGroup({
-    'password': FormControl(
-      validators: [Validators.required],
-    ),
-  });
-
-  @override
-  Widget build(BuildContext context) => BlocProvider<UnlockProfileBloc>(
-        create: (context) => UnlockProfileBloc(
+  Widget build(BuildContext context) => BlocProvider<UnlockProfileCubit>(
+        create: (context) => UnlockProfileCubit(
           profileBloc: context.bloc<ProfileBloc>(),
           profileDao: context.repository<ProfileDao>(),
         ),
-        child: BlocBuilder<UnlockProfileBloc, UnlockProfileState>(
+        child: BlocBuilder<UnlockProfileCubit, UnlockProfileState>(
           builder: (context, state) => ReactiveForm(
-            formGroup: form,
+            formGroup: context.bloc<UnlockProfileCubit>().form,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -37,12 +26,17 @@ class _UnlockProfileFormState extends State<UnlockProfileForm> {
                   formControlName: 'password',
                   obscureText: true,
                   decoration: InputDecoration(labelText: 'Password'),
+                  showErrors: (control) => control.dirty && control.invalid,
+                  validationMessages: {
+                    'password-incorrect': 'You entered an incorrect password',
+                  },
                 ),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     child: Text('UNLOCK'),
-                    onPressed: () => _attemptToUnlockProfile(context),
+                    onPressed: () =>
+                        context.bloc<UnlockProfileCubit>().submit(),
                   ),
                 ),
               ],
@@ -50,11 +44,4 @@ class _UnlockProfileFormState extends State<UnlockProfileForm> {
           ),
         ),
       );
-
-  void _attemptToUnlockProfile(BuildContext context) async {
-    if (form.valid) {
-      final password = form.control('password').value;
-      context.bloc<ProfileBloc>().add(ProfileLoad(password));
-    }
-  }
 }

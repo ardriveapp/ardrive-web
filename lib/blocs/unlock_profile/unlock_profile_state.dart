@@ -1,4 +1,4 @@
-part of 'unlock_profile_bloc.dart';
+part of 'unlock_profile_cubit.dart';
 
 @immutable
 abstract class UnlockProfileState {}

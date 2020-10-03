@@ -1,10 +1,6 @@
-part of 'add_profile_bloc.dart';
+part of 'add_profile_cubit.dart';
 
-@immutable
-abstract class AddProfileState {}
-
-class AddProfileInitial extends AddProfileState {}
-
-class AddProfileInProgress extends AddProfileState {}
-
-class AddProfileSuccessful extends AddProfileState {}
+enum AddProfileState {
+  promptWallet,
+  promptDetails,
+}
