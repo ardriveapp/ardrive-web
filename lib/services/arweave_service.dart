@@ -105,6 +105,30 @@ class ArweaveService {
         blockHistory);
   }
 
+  // Gets the unique drive entity transactions for a particular user.
+  Future<List<TransactionCommonMixin>> getUniqueUserDriveEntityTxs(
+      String userAddress) async {
+    final userDriveEntitiesQuery = await _gql.execute(
+      UserDriveEntitiesQuery(
+          variables: UserDriveEntitiesArguments(owner: userAddress)),
+    );
+
+    return userDriveEntitiesQuery.data.transactions.edges
+        .map((e) => e.node)
+        .fold<Map<String, TransactionCommonMixin>>(
+          {},
+          (map, tx) {
+            final driveId = tx.getTag('Drive-Id');
+            if (!map.containsKey(driveId)) {
+              map[driveId] = tx;
+            }
+            return map;
+          },
+        )
+        .values
+        .toList();
+  }
+
   /// Gets the unique drive entities for a particular user.
   Future<Map<DriveEntity, SecretKey>> getUniqueUserDriveEntities(
     Wallet wallet,

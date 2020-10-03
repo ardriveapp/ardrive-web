@@ -25,17 +25,17 @@ class UnlockProfileCubit extends Cubit<UnlockProfileState> {
 
   void submit() async {
     if (form.valid) {
+      final password = form.control('password').value;
+
       try {
-        final password = form.control('password').value;
-
+        // Try and load the user's profile to check if they are using the right password.
         await _profileDao.getDefaultProfile(password);
-
-        _profileBloc.add(ProfileLoad(password));
       } catch (_) {
-        form.control('password').setErrors({
-          'password-incorrect': '',
-        });
+        form.control('password').setErrors({'password-incorrect': true});
+        return;
       }
+
+      _profileBloc.add(ProfileLoad(password));
     }
   }
 }
