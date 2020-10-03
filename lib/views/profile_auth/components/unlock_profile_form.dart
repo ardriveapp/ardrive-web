@@ -24,6 +24,7 @@ class UnlockProfileForm extends StatelessWidget {
                 Container(height: 16),
                 ReactiveTextField(
                   formControlName: 'password',
+                  autofocus: true,
                   obscureText: true,
                   decoration: InputDecoration(labelText: 'Password'),
                   showErrors: (control) => control.dirty && control.invalid,
