@@ -35,7 +35,7 @@ class AddProfileForm extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        state.isNewUser
+                        !state.isNewUser
                             ? 'Welcome! Please provide the same password as you have used before'
                             : 'Welcome new user!',
                       ),
