@@ -3,37 +3,21 @@ import 'package:drive/models/models.dart';
 import 'package:drive/services/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:reactive_forms/reactive_forms.dart';
 
 import 'progress_dialog.dart';
 
-class AttachDriveForm extends StatefulWidget {
+class AttachDriveForm extends StatelessWidget {
   @override
-  _AttachDriveFormState createState() => _AttachDriveFormState();
-}
-
-class _AttachDriveFormState extends State<AttachDriveForm> {
-  TextEditingController driveIdController;
-  TextEditingController nameController;
-
-  final _formKey = GlobalKey<FormState>();
-
-  @override
-  void initState() {
-    super.initState();
-    driveIdController = TextEditingController();
-    nameController = TextEditingController();
-  }
-
-  @override
-  Widget build(BuildContext context) => BlocProvider<DriveAttachBloc>(
-        create: (context) => DriveAttachBloc(
+  Widget build(BuildContext context) => BlocProvider<DriveAttachCubit>(
+        create: (context) => DriveAttachCubit(
           arweave: context.repository<ArweaveService>(),
           drivesDao: context.repository<DrivesDao>(),
           syncBloc: context.bloc<SyncBloc>(),
           drivesBloc: context.bloc<DrivesBloc>(),
           profileBloc: context.bloc<ProfileBloc>(),
         ),
-        child: BlocConsumer<DriveAttachBloc, DriveAttachState>(
+        child: BlocConsumer<DriveAttachCubit, DriveAttachState>(
           listener: (context, state) {
             if (state is DriveAttachInProgress) {
               showProgressDialog(context, 'Attaching drive...');
@@ -44,23 +28,19 @@ class _AttachDriveFormState extends State<AttachDriveForm> {
           },
           builder: (context, state) => AlertDialog(
             title: Text('Attach drive'),
-            content: Form(
-              key: _formKey,
+            content: ReactiveForm(
+              formGroup: context.bloc<DriveAttachCubit>().form,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextFormField(
+                  ReactiveTextField(
+                    formControlName: 'driveId',
                     autofocus: true,
-                    controller: driveIdController,
-                    validator: (value) =>
-                        value.isEmpty ? 'This field is required' : null,
                     decoration: InputDecoration(labelText: 'Drive ID'),
                   ),
                   Container(height: 16),
-                  TextFormField(
-                    controller: nameController,
-                    validator: (value) =>
-                        value.isEmpty ? 'This field is required' : null,
+                  ReactiveTextField(
+                    formControlName: 'name',
                     decoration: InputDecoration(labelText: 'Name'),
                   ),
                 ],
@@ -74,12 +54,7 @@ class _AttachDriveFormState extends State<AttachDriveForm> {
               ),
               TextButton(
                 child: Text('ATTACH'),
-                onPressed: () {
-                  if (_formKey.currentState.validate()) {
-                    context.bloc<DriveAttachBloc>().add(AttemptDriveAttach(
-                        driveIdController.text, nameController.text));
-                  }
-                },
+                onPressed: () => context.bloc<DriveAttachCubit>().submit(),
               ),
             ],
           ),
