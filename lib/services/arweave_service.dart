@@ -178,8 +178,14 @@ class ArweaveService {
     return drivesWithKey;
   }
 
-  Future<DriveEntity> getDriveEntity(String driveId,
-      [SecretKey driveKey]) async {
+  /// Gets the first drive entity instance with the provided drive id.
+  /// Important for verifying the owner of a drive.
+  ///
+  /// Optionally provide a `driveKey` to decrypt private drive data.
+  Future<DriveEntity> getFirstDriveEntityWithId(
+    String driveId, [
+    SecretKey driveKey,
+  ]) async {
     final initialDriveEntityQuery = await _gql.execute(
       InitialDriveEntityQuery(
           variables: InitialDriveEntityArguments(driveId: driveId)),
@@ -189,11 +195,11 @@ class ArweaveService {
     if (queryEdges.isEmpty) return null;
 
     final driveTx = queryEdges[0].node;
+    final driveDataRes = await _arweave.api.get('tx/${driveTx.id}/data');
 
     return DriveEntity.fromTransaction(
       driveTx,
-      utils.decodeBase64ToBytes(
-          (await _arweave.api.get('tx/${driveTx.id}/data')).body),
+      utils.decodeBase64ToBytes(driveDataRes.body),
       driveKey,
     );
   }

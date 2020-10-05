@@ -2,7 +2,7 @@ import 'package:drive/blocs/blocs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'components/add_profile_form.dart';
+import 'components/profile_add_form.dart';
 import 'components/profile_unlock_form.dart';
 
 class ProfileAuthView extends StatelessWidget {
@@ -12,7 +12,7 @@ class ProfileAuthView extends StatelessWidget {
           builder: (context, state) {
             Widget form;
             if (state is ProfilePromptAdd) {
-              form = AddProfileForm();
+              form = ProfileAddForm();
             } else if (state is ProfilePromptUnlock) {
               form = UnlockProfileForm();
             } else {
