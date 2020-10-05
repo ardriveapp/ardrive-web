@@ -20,11 +20,11 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   final ProfileBloc _profileBloc;
 
   DriveAttachCubit({
-    ArweaveService arweave,
-    DrivesDao drivesDao,
-    SyncBloc syncBloc,
-    DrivesBloc drivesBloc,
-    ProfileBloc profileBloc,
+    @required ArweaveService arweave,
+    @required DrivesDao drivesDao,
+    @required SyncBloc syncBloc,
+    @required DrivesBloc drivesBloc,
+    @required ProfileBloc profileBloc,
   })  : _arweave = arweave,
         _drivesDao = drivesDao,
         _syncBloc = syncBloc,
@@ -46,7 +46,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     final driveKey =
         await deriveDriveKey(profile.wallet, driveId, profile.password);
 
-    final driveEntity = await _arweave.getDriveEntity(driveId, driveKey);
+    final driveEntity =
+        await _arweave.getFirstDriveEntityWithId(driveId, driveKey);
 
     await _drivesDao.attachDrive(
       name: driveName,
