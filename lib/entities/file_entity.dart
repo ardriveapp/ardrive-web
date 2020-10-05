@@ -43,9 +43,16 @@ class FileEntity extends Entity {
     Uint8List data, [
     SecretKey driveKey,
   ]) async {
-    final entityJson = driveKey == null
-        ? json.decode(utf8.decode(data))
-        : await decryptFileEntityJson(transaction, data, driveKey);
+    Map<String, dynamic> entityJson;
+    if (driveKey == null) {
+      entityJson = json.decode(utf8.decode(data));
+    } else {
+      entityJson = await decryptEntityJson(
+        transaction,
+        data,
+        await deriveFileKey(driveKey, transaction.getTag(EntityTag.fileId)),
+      ).catchError(Entity.handleTransactionDecryptionException);
+    }
 
     final commitTime = transaction.getCommitTime();
 

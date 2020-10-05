@@ -30,15 +30,20 @@ class DriveEntity extends Entity {
     Uint8List data, [
     SecretKey driveKey,
   ]) async {
-    final drivePrivacy = transaction.getTag(EntityTag.drivePrivacy);
+    final drivePrivacy =
+        transaction.getTag(EntityTag.drivePrivacy) ?? DrivePrivacy.public;
 
-    final entityJson = drivePrivacy != DrivePrivacy.private
-        ? json.decode(utf8.decode(data))
-        : await decryptDriveEntityJson(transaction, data, driveKey);
+    Map<String, dynamic> entityJson;
+    if (drivePrivacy == DrivePrivacy.public) {
+      entityJson = json.decode(utf8.decode(data));
+    } else if (drivePrivacy == DrivePrivacy.private) {
+      entityJson = await decryptEntityJson(transaction, data, driveKey)
+          .catchError(Entity.handleTransactionDecryptionException);
+    }
 
     return DriveEntity.fromJson(entityJson)
       ..id = transaction.getTag(EntityTag.driveId)
-      ..privacy = drivePrivacy ?? DrivePrivacy.public
+      ..privacy = drivePrivacy
       ..authMode = transaction.getTag(EntityTag.driveAuthMode)
       ..ownerAddress = transaction.owner.address
       ..commitTime = transaction.getCommitTime();

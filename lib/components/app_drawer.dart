@@ -174,7 +174,7 @@ class AppDrawer extends StatelessWidget {
   void _promptToAttachDrive(BuildContext context) async {
     await showDialog<String>(
       context: context,
-      builder: (BuildContext context) => AttachDriveForm(),
+      builder: (BuildContext context) => DriveAttachForm(),
     );
   }
 }

@@ -62,7 +62,10 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
           password,
         );
 
-        await _arweave.getFirstDriveEntityWithId(checkDriveId, checkDriveKey);
+        await _arweave.tryGetFirstDriveEntityWithId(
+          checkDriveId,
+          checkDriveKey,
+        );
       }
     } catch (err) {
       form.control('password').setErrors({'password-incorrect': true});

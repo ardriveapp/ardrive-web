@@ -1,7 +1,10 @@
 part of 'drive_attach_cubit.dart';
 
 @immutable
-abstract class DriveAttachState {}
+abstract class DriveAttachState extends Equatable {
+  @override
+  List<Object> get props => [];
+}
 
 class DriveAttachInitial extends DriveAttachState {}
 

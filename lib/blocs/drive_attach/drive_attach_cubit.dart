@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:drive/blocs/blocs.dart';
 import 'package:drive/models/models.dart';
 import 'package:drive/services/services.dart';
+import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
@@ -43,16 +44,17 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     final driveId = form.control('driveId').value;
     final driveName = form.control('name').value;
 
-    final driveKey =
-        await deriveDriveKey(profile.wallet, driveId, profile.password);
+    final driveEntity = await _arweave.tryGetFirstDriveEntityWithId(driveId);
 
-    final driveEntity =
-        await _arweave.getFirstDriveEntityWithId(driveId, driveKey);
+    if (driveEntity == null) {
+      form.control('driveId').setErrors({'drive-not-found': true});
+      emit(DriveAttachInitial());
+      return;
+    }
 
     await _drivesDao.attachDrive(
       name: driveName,
       entity: driveEntity,
-      driveKey: driveKey,
       profileKey: profile.cipherKey,
     );
 

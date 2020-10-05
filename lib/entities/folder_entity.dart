@@ -28,9 +28,13 @@ class FolderEntity extends Entity {
     Uint8List data, [
     SecretKey driveKey,
   ]) async {
-    final entityJson = driveKey == null
-        ? json.decode(utf8.decode(data))
-        : await decryptFolderEntityJson(transaction, data, driveKey);
+    Map<String, dynamic> entityJson;
+    if (driveKey == null) {
+      entityJson = json.decode(utf8.decode(data));
+    } else {
+      entityJson = await decryptEntityJson(transaction, data, driveKey)
+          .catchError(Entity.handleTransactionDecryptionException);
+    }
 
     return FolderEntity.fromJson(entityJson)
       ..id = transaction.getTag(EntityTag.folderId)
