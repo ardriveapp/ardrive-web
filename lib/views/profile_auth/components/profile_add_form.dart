@@ -6,15 +6,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-class AddProfileForm extends StatelessWidget {
+class ProfileAddForm extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => BlocProvider<AddProfileCubit>(
-        create: (context) => AddProfileCubit(
+  Widget build(BuildContext context) => BlocProvider<ProfileAddCubit>(
+        create: (context) => ProfileAddCubit(
           profileBloc: context.bloc<ProfileBloc>(),
           profileDao: context.repository<ProfileDao>(),
           arweave: context.repository<ArweaveService>(),
         ),
-        child: BlocBuilder<AddProfileCubit, AddProfileState>(
+        child: BlocBuilder<ProfileAddCubit, ProfileAddState>(
           builder: (context, state) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -30,7 +30,7 @@ class AddProfileForm extends StatelessWidget {
                 )
               else if (state is AddProfilePromptDetails)
                 ReactiveForm(
-                  formGroup: context.bloc<AddProfileCubit>().form,
+                  formGroup: context.bloc<ProfileAddCubit>().form,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -60,7 +60,7 @@ class AddProfileForm extends StatelessWidget {
                         child: ElevatedButton(
                           child: Text('ADD'),
                           onPressed: () =>
-                              context.bloc<AddProfileCubit>().submit(),
+                              context.bloc<ProfileAddCubit>().submit(),
                         ),
                       ),
                     ],
@@ -79,7 +79,7 @@ class AddProfileForm extends StatelessWidget {
     } catch (err) {}
 
     if (chooseResult != null && chooseResult.type != null) {
-      context.bloc<AddProfileCubit>().pickWallet(chooseResult.toString());
+      context.bloc<ProfileAddCubit>().pickWallet(chooseResult.toString());
     }
   }
 }

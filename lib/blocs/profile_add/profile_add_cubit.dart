@@ -9,9 +9,9 @@ import 'package:drive/services/services.dart';
 import 'package:meta/meta.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-part 'add_profile_state.dart';
+part 'profile_add_state.dart';
 
-class AddProfileCubit extends Cubit<AddProfileState> {
+class ProfileAddCubit extends Cubit<ProfileAddState> {
   final form = FormGroup({
     'username': FormControl(validators: [Validators.required]),
     'password': FormControl(
@@ -26,7 +26,7 @@ class AddProfileCubit extends Cubit<AddProfileState> {
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
 
-  AddProfileCubit({
+  ProfileAddCubit({
     @required ProfileBloc profileBloc,
     @required ProfileDao profileDao,
     @required ArweaveService arweave,
@@ -62,7 +62,7 @@ class AddProfileCubit extends Cubit<AddProfileState> {
           password,
         );
 
-        await _arweave.getDriveEntity(checkDriveId, checkDriveKey);
+        await _arweave.getFirstDriveEntityWithId(checkDriveId, checkDriveKey);
       }
     } catch (err) {
       form.control('password').setErrors({'password-incorrect': true});

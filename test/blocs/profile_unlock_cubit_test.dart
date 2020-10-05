@@ -35,8 +35,7 @@ void main() {
         bloc.form.value = {'password': rightPassword};
         bloc.submit();
       },
-      verify: (bloc) =>
-          verify(profileBloc.add(ProfileLoad(rightPassword))).called(1),
+      verify: (bloc) => verify(profileBloc.add(ProfileLoad(rightPassword))),
     );
 
     blocTest<ProfileUnlockCubit, ProfileUnlockState>(
