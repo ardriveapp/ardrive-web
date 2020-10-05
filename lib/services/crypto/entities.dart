@@ -6,36 +6,14 @@ import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart' hide Cipher;
 import 'package:drive/entities/entities.dart';
 
-import 'crypto.dart';
-
-Future<Map<String, dynamic>> decryptDriveEntityJson(
-        TransactionCommonMixin transaction,
-        Uint8List data,
-        SecretKey driveKey) =>
-    _decryptEntityJson(transaction, data, driveKey);
-
-Future<Map<String, dynamic>> decryptFolderEntityJson(
-        TransactionCommonMixin transaction,
-        Uint8List data,
-        SecretKey driveKey) =>
-    _decryptEntityJson(transaction, data, driveKey);
-
-Future<Map<String, dynamic>> decryptFileEntityJson(
-        TransactionCommonMixin transaction,
-        Uint8List data,
-        SecretKey driveKey) async =>
-    _decryptEntityJson(
-      transaction,
-      data,
-      await deriveFileKey(driveKey, transaction.getTag(EntityTag.fileId)),
-    );
-
-Future<Map<String, dynamic>> _decryptEntityJson(
-        TransactionCommonMixin transaction,
-        Uint8List data,
-        SecretKey key) async =>
-    json.decode(
-        utf8.decode(await decryptTransactionData(transaction, data, key)));
+Future<Map<String, dynamic>> decryptEntityJson(
+  TransactionCommonMixin transaction,
+  Uint8List data,
+  SecretKey key,
+) async {
+  final decryptedData = await decryptTransactionData(transaction, data, key);
+  return json.decode(utf8.decode(decryptedData));
+}
 
 Future<Uint8List> decryptTransactionData(
   TransactionCommonMixin transaction,
@@ -44,15 +22,23 @@ Future<Uint8List> decryptTransactionData(
 ) async {
   final cipher = transaction.getTag(EntityTag.cipher);
 
-  if (cipher == Cipher.aes256) {
-    final cipherIv =
-        utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv));
+  try {
+    if (cipher == Cipher.aes256) {
+      final cipherIv =
+          utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv));
 
-    return aesGcm.decrypt(
-      data,
-      secretKey: key,
-      nonce: Nonce(cipherIv),
-    );
+      return aesGcm.decrypt(
+        data,
+        secretKey: key,
+        nonce: Nonce(cipherIv),
+      );
+    }
+  } catch (err) {
+    if (err is MacValidationException) {
+      throw TransactionDecryptionException();
+    }
+
+    rethrow;
   }
 
   throw ArgumentError();
@@ -79,3 +65,5 @@ Future<Transaction> createEncryptedTransaction(
       utils.encodeBytesToBase64(iv.bytes),
     );
 }
+
+class TransactionDecryptionException implements Exception {}

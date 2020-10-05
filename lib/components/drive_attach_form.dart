@@ -7,7 +7,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import 'progress_dialog.dart';
 
-class AttachDriveForm extends StatelessWidget {
+class DriveAttachForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BlocProvider<DriveAttachCubit>(
         create: (context) => DriveAttachCubit(
@@ -21,6 +21,9 @@ class AttachDriveForm extends StatelessWidget {
           listener: (context, state) {
             if (state is DriveAttachInProgress) {
               showProgressDialog(context, 'Attaching drive...');
+            } else if (state is DriveAttachInitial) {
+              // Close the progress dialog if the drive attachment fails.
+              Navigator.pop(context);
             } else if (state is DriveAttachSuccessful) {
               Navigator.pop(context);
               Navigator.pop(context);
@@ -37,6 +40,9 @@ class AttachDriveForm extends StatelessWidget {
                     formControlName: 'driveId',
                     autofocus: true,
                     decoration: InputDecoration(labelText: 'Drive ID'),
+                    validationMessages: {
+                      'drive-not-found': 'Could not find specified drive.',
+                    },
                   ),
                   Container(height: 16),
                   ReactiveTextField(

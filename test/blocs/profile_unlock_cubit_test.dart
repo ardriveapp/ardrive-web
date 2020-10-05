@@ -46,7 +46,7 @@ void main() {
     );
 
     blocTest<ProfileUnlockCubit, ProfileUnlockState>(
-      'sets form password-incorrect error when incorrect password is used',
+      'sets form "password-incorrect" error when incorrect password is used',
       build: () => profileUnlockCubit,
       act: (bloc) {
         bloc.form.value = {'password': wrongPassword};

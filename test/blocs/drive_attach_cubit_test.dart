@@ -16,12 +16,20 @@ void main() {
     DrivesBloc drivesBloc;
     DriveAttachCubit driveAttachCubit;
 
+    const validDriveId = 'valid-drive-id';
+    const validDriveName = 'valid-drive-name';
+
+    const notFoundDriveId = 'not-found-drive-id';
+
     setUp(() {
       arweave = MockArweave();
       drivesDao = MockDrivesDao();
       syncBloc = MockSyncBloc();
       drivesBloc = MockDrivesBloc();
       profileBloc = MockProfileBloc();
+
+      when(arweave.tryGetFirstDriveEntityWithId(notFoundDriveId))
+          .thenAnswer((_) => Future.value(null));
 
       profileBloc.emit(ProfileLoaded());
 
@@ -33,6 +41,39 @@ void main() {
         profileBloc: profileBloc,
       );
     });
+
+    blocTest<DriveAttachCubit, DriveAttachState>(
+      'attach drive when given valid details',
+      build: () => driveAttachCubit,
+      act: (bloc) {
+        bloc.form.value = {
+          'driveId': validDriveId,
+          'name': validDriveName,
+        };
+        bloc.submit();
+      },
+      expect: [
+        DriveAttachInProgress(),
+        DriveAttachSuccessful(),
+      ],
+      verify: (_) {},
+    );
+
+    blocTest<DriveAttachCubit, DriveAttachState>(
+      'set form "drive-not-found error" when no valid drive could be found',
+      build: () => driveAttachCubit,
+      act: (bloc) {
+        bloc.form.value = {
+          'driveId': notFoundDriveId,
+          'name': 'fake',
+        };
+        bloc.submit();
+      },
+      expect: [
+        DriveAttachInProgress(),
+        DriveAttachInitial(),
+      ],
+    );
 
     blocTest<DriveAttachCubit, DriveAttachState>(
       'does nothing when submitted without valid form',
