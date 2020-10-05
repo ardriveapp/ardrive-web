@@ -4,9 +4,9 @@ import 'package:drive/models/models.dart';
 import 'package:meta/meta.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-part 'unlock_profile_state.dart';
+part 'profile_unlock_state.dart';
 
-class UnlockProfileCubit extends Cubit<UnlockProfileState> {
+class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
   final form = FormGroup({
     'password': FormControl(
       validators: [Validators.required],
@@ -16,23 +16,26 @@ class UnlockProfileCubit extends Cubit<UnlockProfileState> {
   final ProfileBloc _profileBloc;
   final ProfileDao _profileDao;
 
-  UnlockProfileCubit({
+  ProfileUnlockCubit({
     @required ProfileBloc profileBloc,
     @required ProfileDao profileDao,
   })  : _profileBloc = profileBloc,
         _profileDao = profileDao,
-        super(UnlockProfileInitial());
+        super(ProfileUnlockInitial());
 
   void submit() async {
     if (form.valid) {
       final password = form.control('password').value;
 
       try {
-        // Try and load the user's profile to check if they are using the right password.
-        await _profileDao.getDefaultProfile(password);
-      } catch (_) {
-        form.control('password').setErrors({'password-incorrect': true});
-        return;
+        await _profileDao.loadDefaultProfile(password);
+      } catch (err) {
+        if (err is ProfilePasswordIncorrectException) {
+          form.control('password').setErrors({'password-incorrect': true});
+          return;
+        }
+
+        rethrow;
       }
 
       _profileBloc.add(ProfileLoad(password));

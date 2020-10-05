@@ -11,6 +11,8 @@ part 'profile_dao.g.dart';
 
 const keyByteLength = 256 ~/ 8;
 
+class ProfilePasswordIncorrectException implements Exception {}
+
 @UseDao(tables: [Profiles])
 class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   ProfileDao(Database db) : super(db);
@@ -20,7 +22,10 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     return profile != null;
   }
 
-  Future<ProfileLoadDetails> getDefaultProfile(String password) async {
+  /// Loads the default profile with the provided password.
+  ///
+  /// Throws a [ProfilePasswordIncorrectException] if the provided password is incorrect.
+  Future<ProfileLoadDetails> loadDefaultProfile(String password) async {
     final profile = await select(profiles).getSingle();
 
     if (profile == null) {
@@ -30,21 +35,29 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     final profileSalt = Nonce(profile.keySalt);
     final profileKdRes = await deriveProfileKey(password, profileSalt);
 
-    final walletJwk = json.decode(
-      utf8.decode(
-        await aesGcm.decrypt(
-          profile.encryptedWallet,
-          secretKey: profileKdRes.key,
-          nonce: profileSalt,
+    try {
+      final walletJwk = json.decode(
+        utf8.decode(
+          await aesGcm.decrypt(
+            profile.encryptedWallet,
+            secretKey: profileKdRes.key,
+            nonce: profileSalt,
+          ),
         ),
-      ),
-    );
+      );
 
-    return ProfileLoadDetails(
-      details: profile,
-      wallet: Wallet.fromJwk(walletJwk),
-      key: profileKdRes.key,
-    );
+      return ProfileLoadDetails(
+        details: profile,
+        wallet: Wallet.fromJwk(walletJwk),
+        key: profileKdRes.key,
+      );
+    } catch (err) {
+      if (err is MacValidationException) {
+        throw ProfilePasswordIncorrectException();
+      }
+
+      rethrow;
+    }
   }
 
   Future<List<Profile>> getProfiles() => select(profiles).get();
