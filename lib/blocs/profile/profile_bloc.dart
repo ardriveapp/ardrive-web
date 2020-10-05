@@ -4,6 +4,7 @@ import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drive/models/models.dart';
+import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 
 part 'profile_event.dart';
@@ -37,7 +38,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   Stream<ProfileState> _mapProfileLoadToState(ProfileLoad event) async* {
     yield ProfileLoading();
 
-    final profile = await _profileDao.getDefaultProfile(event.password);
+    final profile = await _profileDao.loadDefaultProfile(event.password);
 
     if (profile != null) {
       yield ProfileLoaded(

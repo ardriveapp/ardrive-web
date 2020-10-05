@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'components/add_profile_form.dart';
-import 'components/unlock_profile_form.dart';
+import 'components/profile_unlock_form.dart';
 
 class ProfileAuthView extends StatelessWidget {
   @override

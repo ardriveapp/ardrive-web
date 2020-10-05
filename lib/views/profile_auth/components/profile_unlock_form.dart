@@ -6,14 +6,14 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 class UnlockProfileForm extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => BlocProvider<UnlockProfileCubit>(
-        create: (context) => UnlockProfileCubit(
+  Widget build(BuildContext context) => BlocProvider<ProfileUnlockCubit>(
+        create: (context) => ProfileUnlockCubit(
           profileBloc: context.bloc<ProfileBloc>(),
           profileDao: context.repository<ProfileDao>(),
         ),
-        child: BlocBuilder<UnlockProfileCubit, UnlockProfileState>(
+        child: BlocBuilder<ProfileUnlockCubit, ProfileUnlockState>(
           builder: (context, state) => ReactiveForm(
-            formGroup: context.bloc<UnlockProfileCubit>().form,
+            formGroup: context.bloc<ProfileUnlockCubit>().form,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -37,7 +37,7 @@ class UnlockProfileForm extends StatelessWidget {
                   child: ElevatedButton(
                     child: Text('UNLOCK'),
                     onPressed: () =>
-                        context.bloc<UnlockProfileCubit>().submit(),
+                        context.bloc<ProfileUnlockCubit>().submit(),
                   ),
                 ),
               ],
