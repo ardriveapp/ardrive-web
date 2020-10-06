@@ -37,7 +37,7 @@ class DriveDetailView extends StatelessWidget {
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: BlocBuilder<DriveDetailBloc, DriveDetailState>(
+              child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
                 builder: (context, state) => Column(
                   children: [
                     if (state is FolderLoadSuccess) ...{
@@ -100,16 +100,16 @@ class DriveDetailView extends StatelessWidget {
       children: [
         TextButton(
           onPressed: () =>
-              context.bloc<DriveDetailBloc>().add(FolderOpened('')),
+              context.bloc<DriveDetailCubit>().openFolderAtPath(''),
           child: Text(driveName),
         ),
         if (pathSegments.isNotEmpty) Icon(Icons.chevron_right),
         ...pathSegments.asMap().entries.expand((s) => [
               TextButton(
-                onPressed: () => context.bloc<DriveDetailBloc>().add(
-                      FolderOpened(
-                          '/${pathSegments.sublist(0, s.key + 1).join('/')}'),
-                    ),
+                onPressed: () => context
+                    .bloc<DriveDetailCubit>()
+                    .openFolderAtPath(
+                        '/${pathSegments.sublist(0, s.key + 1).join('/')}'),
                 child: Text(s.value),
               ),
               if (s.key < pathSegments.length - 1) Icon(Icons.chevron_right),
@@ -119,7 +119,7 @@ class DriveDetailView extends StatelessWidget {
   }
 
   void _showDriveInfo(BuildContext context) {
-    final state = context.bloc<DriveDetailBloc>().state;
+    final state = context.bloc<DriveDetailCubit>().state;
 
     if (state is FolderLoadSuccess) {
       showDialog(

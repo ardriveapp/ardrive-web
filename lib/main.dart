@@ -77,7 +77,7 @@ class App extends StatelessWidget {
                     if (state is DrivesLoadSuccess) {
                       return BlocProvider(
                         key: ValueKey(state.selectedDriveId),
-                        create: (context) => DriveDetailBloc(
+                        create: (context) => DriveDetailCubit(
                           driveId: state.selectedDriveId,
                           profileBloc: context.bloc<ProfileBloc>(),
                           uploadBloc: context.bloc<UploadBloc>(),

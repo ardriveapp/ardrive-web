@@ -84,7 +84,7 @@ class AppDrawer extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-        child: BlocBuilder<DriveDetailBloc, DriveDetailState>(
+        child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
           builder: (context, state) => PopupMenuButton<Function>(
             onSelected: (callback) => callback(context),
             child: FloatingActionButton.extended(
@@ -145,7 +145,7 @@ class AppDrawer extends StatelessWidget {
     );
 
     if (folderName != null) {
-      context.bloc<DriveDetailBloc>().add(NewFolder(folderName));
+      context.bloc<DriveDetailCubit>().createNewFolder(folderName);
     }
   }
 
@@ -158,16 +158,14 @@ class AppDrawer extends StatelessWidget {
 
     if (fileChooseResult == null) return;
 
-    context.bloc<DriveDetailBloc>().add(
-          UploadFile(
-            FileEntity(
-              name: basename(fileChooseResult.path),
-              size: fileChooseResult.length,
-              // TODO: Replace with time reported by OS.
-              lastModifiedDate: DateTime.now(),
-            ),
-            fileChooseResult.toUint8List(),
+    context.bloc<DriveDetailCubit>().prepareFileUpload(
+          FileEntity.withUserProvidedDetails(
+            name: basename(fileChooseResult.path),
+            size: fileChooseResult.length,
+            // TODO: Replace with time reported by OS.
+            lastModifiedDate: DateTime.now(),
           ),
+          fileChooseResult.toUint8List(),
         );
   }
 

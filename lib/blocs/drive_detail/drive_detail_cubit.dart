@@ -11,10 +11,9 @@ import 'package:rxdart/rxdart.dart';
 
 import '../blocs.dart';
 
-part 'drive_detail_event.dart';
 part 'drive_detail_state.dart';
 
-class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
+class DriveDetailCubit extends Cubit<DriveDetailState> {
   final String _driveId;
   final ProfileBloc _profileBloc;
   final UploadBloc _uploadBloc;
@@ -23,62 +22,48 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
 
   StreamSubscription _folderSubscription;
 
-  DriveDetailBloc(
-      {@required String driveId,
-      @required ArweaveService arweave,
-      @required ProfileBloc profileBloc,
-      @required UploadBloc uploadBloc,
-      @required DriveDao driveDao})
-      : _driveId = driveId,
+  DriveDetailCubit({
+    @required String driveId,
+    @required ArweaveService arweave,
+    @required ProfileBloc profileBloc,
+    @required UploadBloc uploadBloc,
+    @required DriveDao driveDao,
+  })  : _driveId = driveId,
         _arweave = arweave,
         _profileBloc = profileBloc,
         _uploadBloc = uploadBloc,
         _driveDao = driveDao,
         super(FolderLoadInProgress()) {
-    if (driveId != null) add(FolderOpened(''));
+    if (driveId != null) {
+      openFolderAtPath('');
+    }
   }
 
-  @override
-  Stream<DriveDetailState> mapEventToState(
-    DriveDetailEvent event,
-  ) async* {
-    if (event is FolderOpened) {
-      yield* _mapFolderOpenedToState(event);
-    } else if (event is FolderLoaded) {
-      yield* _mapFolderLoadedToState(event);
-    } else if (event is NewFolder) {
-      yield* _mapNewFolderToState(event);
-    } else if (event is UploadFile) yield* _mapUploadFileToState(event);
-  }
-
-  Stream<DriveDetailState> _mapFolderOpenedToState(FolderOpened event) async* {
-    yield FolderLoadInProgress();
+  void openFolderAtPath(String path) {
+    emit(FolderLoadInProgress());
 
     unawaited(_folderSubscription?.cancel());
 
-    _folderSubscription = Rx.combineLatest3(
+    _folderSubscription =
+        Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
       _driveDao.watchDrive(_driveId),
-      _driveDao.watchFolder(_driveId, event.folderPath),
+      _driveDao.watchFolder(_driveId, path),
       _profileBloc.startWith(null),
-      (drive, FolderWithContents folderContents, _) =>
-          folderContents?.folder != null
-              ? FolderLoaded(drive, folderContents)
-              : null,
-    ).listen((event) => add(event));
+      (drive, folderContents, _) {
+        final profile = _profileBloc.state;
+        emit(
+          FolderLoadSuccess(
+            currentDrive: drive,
+            hasWritePermissions: profile is ProfileLoaded &&
+                drive.ownerAddress == profile.wallet.address,
+            currentFolder: folderContents,
+          ),
+        );
+      },
+    ).listen((_) {});
   }
 
-  Stream<DriveDetailState> _mapFolderLoadedToState(FolderLoaded event) async* {
-    final profile = _profileBloc.state;
-
-    yield FolderLoadSuccess(
-      currentDrive: event.openedDrive,
-      hasWritePermissions: profile is ProfileLoaded &&
-          event.openedDrive.ownerAddress == profile.wallet.address,
-      currentFolder: event.openedFolder,
-    );
-  }
-
-  Stream<DriveDetailState> _mapNewFolderToState(NewFolder event) async* {
+  void createNewFolder(String folderName) async {
     final profile = _profileBloc.state as ProfileLoaded;
     final currentState = state as FolderLoadSuccess;
     final currentFolder = currentState.currentFolder.folder;
@@ -90,8 +75,8 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
     final newFolderId = await _driveDao.createNewFolder(
       _driveId,
       currentFolder.id,
-      event.folderName,
-      '${currentFolder.path}/${event.folderName}',
+      folderName,
+      '${currentFolder.path}/${folderName}',
     );
 
     final folderTx = await _arweave.prepareEntityTx(
@@ -99,7 +84,7 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
         id: newFolderId,
         driveId: currentFolder.driveId,
         parentFolderId: currentFolder.id,
-        name: event.folderName,
+        name: folderName,
       ),
       profile.wallet,
       driveKey,
@@ -108,13 +93,13 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
     await _arweave.postTx(folderTx);
   }
 
-  Stream<DriveDetailState> _mapUploadFileToState(UploadFile event) async* {
+  void prepareFileUpload(FileEntity fileDetails, Uint8List fileData) async {
     final profile = _profileBloc.state as ProfileLoaded;
     final currentState = state as FolderLoadSuccess;
     final currentFolder = currentState.currentFolder.folder;
     final drive = currentState.currentDrive;
 
-    event.fileEntity
+    fileDetails
       ..driveId = _driveId
       ..parentFolderId = currentFolder.id;
 
@@ -124,11 +109,17 @@ class DriveDetailBloc extends Bloc<DriveDetailEvent, DriveDetailState> {
 
     _uploadBloc.add(
       PrepareFileUpload(
-        event.fileEntity,
-        '${currentFolder.path}/${event.fileEntity.name}',
-        event.fileStream,
+        fileDetails,
+        '${currentFolder.path}/${fileDetails.name}',
+        fileData,
         driveKey,
       ),
     );
+  }
+
+  @override
+  Future<void> close() {
+    _folderSubscription?.cancel();
+    return super.close();
   }
 }

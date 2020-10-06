@@ -1,4 +1,4 @@
-part of 'drive_detail_bloc.dart';
+part of 'drive_detail_cubit.dart';
 
 @immutable
 abstract class DriveDetailState {}

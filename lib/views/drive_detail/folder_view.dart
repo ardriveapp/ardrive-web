@@ -30,8 +30,8 @@ class FolderView extends StatelessWidget {
       rows: [
         ...subfolders.map((folder) => DataRow(
               onSelectChanged: (_) => context
-                  .bloc<DriveDetailBloc>()
-                  .add(FolderOpened(folder.path)),
+                  .bloc<DriveDetailCubit>()
+                  .openFolderAtPath(folder.path),
               cells: [
                 DataCell(NameCell(name: folder.name, isFolder: true)),
                 DataCell(Text('-')),
