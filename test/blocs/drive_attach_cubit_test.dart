@@ -1,5 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:drive/blocs/blocs.dart';
+import 'package:drive/entities/entities.dart';
 import 'package:drive/models/models.dart';
 import 'package:drive/services/services.dart';
 import 'package:mockito/mockito.dart';
@@ -28,10 +30,14 @@ void main() {
       drivesBloc = MockDrivesBloc();
       profileBloc = MockProfileBloc();
 
+      when(arweave.tryGetFirstDriveEntityWithId(validDriveId))
+          .thenAnswer((_) => Future.value(DriveEntity()));
+
       when(arweave.tryGetFirstDriveEntityWithId(notFoundDriveId))
           .thenAnswer((_) => Future.value(null));
 
-      profileBloc.emit(ProfileLoaded());
+      when(profileBloc.state)
+          .thenReturn(ProfileLoaded(cipherKey: SecretKey.randomBytes(256)));
 
       driveAttachCubit = DriveAttachCubit(
         arweave: arweave,
@@ -43,7 +49,7 @@ void main() {
     });
 
     blocTest<DriveAttachCubit, DriveAttachState>(
-      'attach drive when given valid details',
+      'attach drive and trigger actions when given valid details',
       build: () => driveAttachCubit,
       act: (bloc) {
         bloc.form.value = {
@@ -56,7 +62,10 @@ void main() {
         DriveAttachInProgress(),
         DriveAttachSuccessful(),
       ],
-      verify: (_) {},
+      verify: (_) {
+        verify(syncBloc.add(SyncWithNetwork()));
+        verify(drivesBloc.add(SelectDrive(validDriveId)));
+      },
     );
 
     blocTest<DriveAttachCubit, DriveAttachState>(
