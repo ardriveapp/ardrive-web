@@ -41,8 +41,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     emit(DriveAttachInProgress());
 
     final profile = _profileBloc.state as ProfileLoaded;
-    final driveId = form.control('driveId').value;
-    final driveName = form.control('name').value;
+    final String driveId = form.control('driveId').value;
+    final String driveName = form.control('name').value;
 
     final driveEntity = await _arweave.tryGetFirstDriveEntityWithId(driveId);
 
