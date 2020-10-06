@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:drive/entities/entities.dart';
 import 'package:drive/models/models.dart';
 import 'package:drive/services/services.dart';
+import 'package:equatable/equatable.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../blocs.dart';
