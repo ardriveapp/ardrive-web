@@ -35,14 +35,16 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           ..where((f) =>
               f.driveId.equals(driveId) &
               f.path.like('$folderPath/%') &
-              f.path.like('$folderPath/%/%').not()))
+              f.path.like('$folderPath/%/%').not())
+          ..orderBy([(f) => OrderingTerm(expression: f.name)]))
         .watch();
 
     final filesStream = (select(fileEntries)
           ..where((f) =>
               f.driveId.equals(driveId) &
               f.path.like('$folderPath/%') &
-              f.path.like('$folderPath/%/%').not()))
+              f.path.like('$folderPath/%/%').not())
+          ..orderBy([(f) => OrderingTerm(expression: f.name)]))
         .watch();
 
     return Rx.combineLatest3(

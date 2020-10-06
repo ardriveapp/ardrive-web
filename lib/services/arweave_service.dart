@@ -85,11 +85,12 @@ class ArweaveService {
         }
 
         blockHistory.last.entities.add(entity);
-
-        // If there are errors in parsing the entity, ignore it.
-        // ignore: empty_catches
       } catch (err) {
-        rethrow;
+        // If there are errors in parsing the entity, ignore it.
+        // TODO: Test graceful handling of invalid entities.
+        if (err is! EntityTransactionParseException) {
+          rethrow;
+        }
       }
     }
 
@@ -165,14 +166,22 @@ class ArweaveService {
                 )
               : null;
 
-      final drive = await DriveEntity.fromTransaction(
-        driveTx,
-        utils.decodeBase64ToBytes(driveResponses[i].body),
-        driveKey,
-      );
+      try {
+        final drive = await DriveEntity.fromTransaction(
+          driveTx,
+          utils.decodeBase64ToBytes(driveResponses[i].body),
+          driveKey,
+        );
 
-      drivesById[drive.id] = drive;
-      drivesWithKey[drive] = driveKey;
+        drivesById[drive.id] = drive;
+        drivesWithKey[drive] = driveKey;
+      } catch (err) {
+        // If there's an error parsing the drive entity, just ignore it.
+        // TODO: Test graceful handling of invalid entities.
+        if (err is! EntityTransactionParseException) {
+          rethrow;
+        }
+      }
     }
 
     return drivesWithKey;

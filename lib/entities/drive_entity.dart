@@ -30,23 +30,26 @@ class DriveEntity extends Entity {
     Uint8List data, [
     SecretKey driveKey,
   ]) async {
-    final drivePrivacy =
-        transaction.getTag(EntityTag.drivePrivacy) ?? DrivePrivacy.public;
+    try {
+      final drivePrivacy =
+          transaction.getTag(EntityTag.drivePrivacy) ?? DrivePrivacy.public;
 
-    Map<String, dynamic> entityJson;
-    if (drivePrivacy == DrivePrivacy.public) {
-      entityJson = json.decode(utf8.decode(data));
-    } else if (drivePrivacy == DrivePrivacy.private) {
-      entityJson = await decryptEntityJson(transaction, data, driveKey)
-          .catchError(Entity.handleTransactionDecryptionException);
+      Map<String, dynamic> entityJson;
+      if (drivePrivacy == DrivePrivacy.public) {
+        entityJson = json.decode(utf8.decode(data));
+      } else if (drivePrivacy == DrivePrivacy.private) {
+        entityJson = await decryptEntityJson(transaction, data, driveKey);
+      }
+
+      return DriveEntity.fromJson(entityJson)
+        ..id = transaction.getTag(EntityTag.driveId)
+        ..privacy = drivePrivacy
+        ..authMode = transaction.getTag(EntityTag.driveAuthMode)
+        ..ownerAddress = transaction.owner.address
+        ..commitTime = transaction.getCommitTime();
+    } catch (_) {
+      throw EntityTransactionParseException();
     }
-
-    return DriveEntity.fromJson(entityJson)
-      ..id = transaction.getTag(EntityTag.driveId)
-      ..privacy = drivePrivacy
-      ..authMode = transaction.getTag(EntityTag.driveAuthMode)
-      ..ownerAddress = transaction.owner.address
-      ..commitTime = transaction.getCommitTime();
   }
 
   @override

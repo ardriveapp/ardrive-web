@@ -43,26 +43,30 @@ class FileEntity extends Entity {
     Uint8List data, [
     SecretKey driveKey,
   ]) async {
-    Map<String, dynamic> entityJson;
-    if (driveKey == null) {
-      entityJson = json.decode(utf8.decode(data));
-    } else {
-      entityJson = await decryptEntityJson(
-        transaction,
-        data,
-        await deriveFileKey(driveKey, transaction.getTag(EntityTag.fileId)),
-      ).catchError(Entity.handleTransactionDecryptionException);
+    try {
+      Map<String, dynamic> entityJson;
+      if (driveKey == null) {
+        entityJson = json.decode(utf8.decode(data));
+      } else {
+        entityJson = await decryptEntityJson(
+          transaction,
+          data,
+          await deriveFileKey(driveKey, transaction.getTag(EntityTag.fileId)),
+        );
+      }
+
+      final commitTime = transaction.getCommitTime();
+
+      return FileEntity.fromJson(entityJson)
+        ..id = transaction.getTag(EntityTag.fileId)
+        ..driveId = transaction.getTag(EntityTag.driveId)
+        ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
+        ..lastModifiedDate ??= commitTime
+        ..ownerAddress = transaction.owner.address
+        ..commitTime = commitTime;
+    } catch (_) {
+      throw EntityTransactionParseException();
     }
-
-    final commitTime = transaction.getCommitTime();
-
-    return FileEntity.fromJson(entityJson)
-      ..id = transaction.getTag(EntityTag.fileId)
-      ..driveId = transaction.getTag(EntityTag.driveId)
-      ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
-      ..lastModifiedDate ??= commitTime
-      ..ownerAddress = transaction.owner.address
-      ..commitTime = commitTime;
   }
 
   @override
