@@ -6,12 +6,12 @@ abstract class ProfileAddState extends Equatable {
   List<Object> get props => [];
 }
 
-class AddProfilePromptWallet extends ProfileAddState {}
+class ProfileAddPromptWallet extends ProfileAddState {}
 
-class AddProfilePromptDetails extends ProfileAddState {
+class ProfileAddPromptDetails extends ProfileAddState {
   final bool isNewUser;
 
-  AddProfilePromptDetails({this.isNewUser});
+  ProfileAddPromptDetails({this.isNewUser});
 
   @override
   List<Object> get props => [isNewUser];

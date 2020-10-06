@@ -34,14 +34,14 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   })  : _profileBloc = profileBloc,
         _profileDao = profileDao,
         _arweave = arweave,
-        super(AddProfilePromptWallet());
+        super(ProfileAddPromptWallet());
 
   void pickWallet(String walletJson) async {
     _wallet = Wallet.fromJwk(json.decode(walletJson));
 
     _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(_wallet.address);
 
-    emit(AddProfilePromptDetails(isNewUser: _driveTxs.isEmpty));
+    emit(ProfileAddPromptDetails(isNewUser: _driveTxs.isEmpty));
   }
 
   void submit() async {
