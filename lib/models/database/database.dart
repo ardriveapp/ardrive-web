@@ -10,7 +10,7 @@ part 'database.g.dart';
   daos: [DrivesDao, DriveDao, ProfileDao],
 )
 class Database extends _$Database {
-  Database() : super(openConnection());
+  Database([QueryExecutor e]) : super(e ?? openConnection());
 
   @override
   int get schemaVersion => 1;
