@@ -56,7 +56,6 @@ class App extends StatelessWidget {
           BlocProvider(
             create: (context) => DrivesCubit(
               profileBloc: context.bloc<ProfileBloc>(),
-              arweave: context.repository<ArweaveService>(),
               drivesDao: context.repository<DrivesDao>(),
             ),
           ),
