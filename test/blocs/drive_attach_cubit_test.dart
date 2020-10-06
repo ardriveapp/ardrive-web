@@ -13,7 +13,7 @@ void main() {
     DrivesDao drivesDao;
     ProfileBloc profileBloc;
     SyncBloc syncBloc;
-    DrivesBloc drivesBloc;
+    DrivesCubit drivesBloc;
     DriveAttachCubit driveAttachCubit;
 
     const validDriveId = 'valid-drive-id';
@@ -56,7 +56,6 @@ void main() {
         DriveAttachInProgress(),
         DriveAttachSuccessful(),
       ],
-      verify: (_) {},
     );
 
     blocTest<DriveAttachCubit, DriveAttachState>(

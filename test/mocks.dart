@@ -12,6 +12,6 @@ class MockDrivesDao extends Mock implements DrivesDao {}
 
 class MockSyncBloc extends MockBloc<SyncState> implements SyncBloc {}
 
-class MockDrivesBloc extends MockBloc<DrivesState> implements DrivesBloc {}
+class MockDrivesBloc extends MockBloc<DrivesState> implements DrivesCubit {}
 
 class MockProfileBloc extends MockBloc<ProfileState> implements ProfileBloc {}

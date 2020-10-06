@@ -76,8 +76,8 @@ class _CreateDriveFormState extends State<CreateDriveForm> {
             onPressed: () {
               if (_formKey.currentState.validate()) {
                 context
-                    .bloc<DrivesBloc>()
-                    .add(NewDrive(_nameController.text, _drivePrivacy));
+                    .bloc<DrivesCubit>()
+                    .createNewDrive(_nameController.text, _drivePrivacy);
 
                 Navigator.of(context).pop();
               }

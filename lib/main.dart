@@ -54,8 +54,7 @@ class App extends StatelessWidget {
             ),
           ),
           BlocProvider(
-            create: (context) => DrivesBloc(
-              syncBloc: context.bloc<SyncBloc>(),
+            create: (context) => DrivesCubit(
               profileBloc: context.bloc<ProfileBloc>(),
               arweave: context.repository<ArweaveService>(),
               drivesDao: context.repository<DrivesDao>(),
@@ -72,7 +71,7 @@ class App extends StatelessWidget {
               } else if (state is ProfileLoading) {
                 return Container();
               } else if (state is ProfileLoaded) {
-                return BlocBuilder<DrivesBloc, DrivesState>(
+                return BlocBuilder<DrivesCubit, DrivesState>(
                   builder: (context, state) {
                     if (state is DrivesLoadSuccess) {
                       return BlocProvider(

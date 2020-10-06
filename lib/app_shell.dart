@@ -16,7 +16,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DrivesBloc, DrivesState>(
+    return BlocBuilder<DrivesCubit, DrivesState>(
       builder: (context, state) {
         final content = Scaffold(
           body: Row(

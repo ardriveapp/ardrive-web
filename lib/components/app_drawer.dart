@@ -14,7 +14,7 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DrivesBloc, DrivesState>(
+    return BlocBuilder<DrivesCubit, DrivesState>(
       builder: (context, state) => Drawer(
         elevation: 1,
         child: Column(
@@ -69,8 +69,7 @@ class AppDrawer extends StatelessWidget {
                   leading: Icon(Icons.folder_shared),
                   title: Text(d.name),
                   selected: state.selectedDriveId == d.id,
-                  onTap: () =>
-                      context.bloc<DrivesBloc>().add(SelectDrive(d.id)),
+                  onTap: () => context.bloc<DrivesCubit>().selectDrive(d.id),
                 ),
               ),
           ],
