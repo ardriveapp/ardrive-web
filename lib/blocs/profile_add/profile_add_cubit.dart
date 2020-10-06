@@ -6,6 +6,7 @@ import 'package:drive/blocs/blocs.dart';
 import 'package:drive/entities/entities.dart';
 import 'package:drive/models/models.dart';
 import 'package:drive/services/services.dart';
+import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
@@ -33,19 +34,23 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   })  : _profileBloc = profileBloc,
         _profileDao = profileDao,
         _arweave = arweave,
-        super(AddProfilePromptWallet());
+        super(ProfileAddPromptWallet());
 
-  void pickWallet(String walletJson) async {
+  Future<void> pickWallet(String walletJson) async {
     _wallet = Wallet.fromJwk(json.decode(walletJson));
 
     _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(_wallet.address);
 
-    emit(AddProfilePromptDetails(isNewUser: _driveTxs.isEmpty));
+    emit(ProfileAddPromptDetails(isNewUser: _driveTxs.isEmpty));
   }
 
-  void submit() async {
-    final username = form.control('username').value;
-    final password = form.control('password').value;
+  Future<void> submit() async {
+    if (form.invalid) {
+      return;
+    }
+
+    final String username = form.control('username').value;
+    final String password = form.control('password').value;
 
     try {
       final privateDriveTxs = _driveTxs.where(

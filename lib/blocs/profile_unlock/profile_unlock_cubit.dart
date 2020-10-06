@@ -25,7 +25,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
 
   void submit() async {
     if (form.valid) {
-      final password = form.control('password').value;
+      final String password = form.control('password').value;
 
       try {
         await _profileDao.loadDefaultProfile(password);

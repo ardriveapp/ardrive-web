@@ -1,8 +1,9 @@
 import 'package:drive/entities/entities.dart';
 import 'package:drive/models/models.dart';
-import 'package:moor/ffi.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:test/test.dart';
+
+import '../../utils.dart';
 
 void main() {
   Database db;
@@ -17,7 +18,7 @@ void main() {
     const nestedFolderFileCount = 5;
 
     setUp(() async {
-      db = Database(VmDatabase.memory());
+      db = getTestDb();
       driveDao = db.driveDao;
 
       // Setup mock drive.

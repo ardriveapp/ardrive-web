@@ -23,12 +23,12 @@ class ProfileAddForm extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyText1,
               ),
               Container(height: 16),
-              if (state is AddProfilePromptWallet)
+              if (state is ProfileAddPromptWallet)
                 ElevatedButton(
                   child: Text('SELECT WALLET'),
                   onPressed: () => _pickWallet(context),
                 )
-              else if (state is AddProfilePromptDetails)
+              else if (state is ProfileAddPromptDetails)
                 ReactiveForm(
                   formGroup: context.bloc<ProfileAddCubit>().form,
                   child: Column(
@@ -79,7 +79,7 @@ class ProfileAddForm extends StatelessWidget {
     } catch (err) {}
 
     if (chooseResult != null && chooseResult.type != null) {
-      context.bloc<ProfileAddCubit>().pickWallet(chooseResult.toString());
+      await context.bloc<ProfileAddCubit>().pickWallet(chooseResult.toString());
     }
   }
 }

@@ -24,10 +24,10 @@ void main() {
     const notFoundDriveId = 'not-found-drive-id';
 
     setUp(() {
-      arweave = MockArweave();
+      arweave = MockArweaveService();
       drivesDao = MockDrivesDao();
       syncBloc = MockSyncBloc();
-      drivesBloc = MockDrivesBloc();
+      drivesBloc = MockDrivesCubit();
       profileBloc = MockProfileBloc();
 
       when(arweave.tryGetFirstDriveEntityWithId(validDriveId))
