@@ -79,7 +79,7 @@ class ProfileAddForm extends StatelessWidget {
     } catch (err) {}
 
     if (chooseResult != null && chooseResult.type != null) {
-      context.bloc<ProfileAddCubit>().pickWallet(chooseResult.toString());
+      await context.bloc<ProfileAddCubit>().pickWallet(chooseResult.toString());
     }
   }
 }

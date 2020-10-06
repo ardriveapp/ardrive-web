@@ -36,7 +36,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         _arweave = arweave,
         super(ProfileAddPromptWallet());
 
-  void pickWallet(String walletJson) async {
+  Future<void> pickWallet(String walletJson) async {
     _wallet = Wallet.fromJwk(json.decode(walletJson));
 
     _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(_wallet.address);
@@ -44,7 +44,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     emit(ProfileAddPromptDetails(isNewUser: _driveTxs.isEmpty));
   }
 
-  void submit() async {
+  Future<void> submit() async {
     if (form.invalid) {
       return;
     }
