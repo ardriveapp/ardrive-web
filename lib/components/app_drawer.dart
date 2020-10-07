@@ -21,20 +21,6 @@ class AppDrawer extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(height: 8),
-            ListTile(
-              dense: true,
-              title:
-                  Text('ArDrive', style: Theme.of(context).textTheme.headline6),
-              trailing: BlocBuilder<ProfileBloc, ProfileState>(
-                  builder: (context, state) => state is! ProfileLoaded
-                      ? IconButton(icon: CircleAvatar())
-                      : IconButton(
-                          icon: Icon(Icons.logout),
-                          onPressed: () =>
-                              context.bloc<ProfileBloc>().add(Logout()),
-                          tooltip: 'Logout',
-                        )),
-            ),
             _buildDriveActionsButton(state),
             BlocBuilder<SyncBloc, SyncState>(
               builder: (context, syncState) {

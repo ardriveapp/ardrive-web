@@ -19,6 +19,16 @@ class _AppShellState extends State<AppShell> {
     return BlocBuilder<DrivesCubit, DrivesState>(
       builder: (context, state) {
         final content = Scaffold(
+          appBar: AppBar(
+            title: const Text('ArDrive'),
+            centerTitle: false,
+            actions: [
+              IconButton(
+                icon: CircleAvatar(),
+                onPressed: null,
+              ),
+            ],
+          ),
           body: Row(
             children: [
               AppDrawer(),
