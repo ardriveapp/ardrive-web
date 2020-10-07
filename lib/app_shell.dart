@@ -20,7 +20,11 @@ class _AppShellState extends State<AppShell> {
       builder: (context, state) {
         final content = Scaffold(
           appBar: AppBar(
-            title: const Text('ArDrive'),
+            title: Image.asset(
+              'assets/images/logo-horiz-no-subtitle.png',
+              height: 64,
+              fit: BoxFit.contain,
+            ),
             centerTitle: false,
             actions: [
               IconButton(
