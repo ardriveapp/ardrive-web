@@ -1,7 +1,10 @@
 part of 'drive_detail_cubit.dart';
 
 @immutable
-abstract class DriveDetailState {}
+abstract class DriveDetailState extends Equatable {
+  @override
+  List<Object> get props => [];
+}
 
 class FolderLoadInProgress extends DriveDetailState {}
 

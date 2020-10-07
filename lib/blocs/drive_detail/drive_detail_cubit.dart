@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
+import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
@@ -46,15 +47,17 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       _driveDao.watchFolder(_driveId, path),
       _profileBloc.startWith(null),
       (drive, folderContents, _) {
-        final profile = _profileBloc.state;
-        emit(
-          FolderLoadSuccess(
-            currentDrive: drive,
-            hasWritePermissions: profile is ProfileLoaded &&
-                drive.ownerAddress == profile.wallet.address,
-            currentFolder: folderContents,
-          ),
-        );
+        if (folderContents?.folder != null) {
+          final profile = _profileBloc.state;
+          emit(
+            FolderLoadSuccess(
+              currentDrive: drive,
+              hasWritePermissions: profile is ProfileLoaded &&
+                  drive.ownerAddress == profile.wallet.address,
+              currentFolder: folderContents,
+            ),
+          );
+        }
       },
     ).listen((_) {});
   }
