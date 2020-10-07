@@ -79,7 +79,6 @@ class App extends StatelessWidget {
                           driveId: state.selectedDriveId,
                           profileBloc: context.bloc<ProfileBloc>(),
                           uploadBloc: context.bloc<UploadBloc>(),
-                          arweave: context.repository<ArweaveService>(),
                           driveDao: context.repository<DriveDao>(),
                         ),
                         child: AppShell(

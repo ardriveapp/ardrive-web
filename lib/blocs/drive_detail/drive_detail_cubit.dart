@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:drive/entities/entities.dart';
 import 'package:drive/models/models.dart';
-import 'package:drive/services/services.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
@@ -17,19 +16,16 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final String _driveId;
   final ProfileBloc _profileBloc;
   final UploadBloc _uploadBloc;
-  final ArweaveService _arweave;
   final DriveDao _driveDao;
 
   StreamSubscription _folderSubscription;
 
   DriveDetailCubit({
     @required String driveId,
-    @required ArweaveService arweave,
     @required ProfileBloc profileBloc,
     @required UploadBloc uploadBloc,
     @required DriveDao driveDao,
   })  : _driveId = driveId,
-        _arweave = arweave,
         _profileBloc = profileBloc,
         _uploadBloc = uploadBloc,
         _driveDao = driveDao,
