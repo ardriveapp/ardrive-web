@@ -1,5 +1,5 @@
+import 'package:ardrive/theme/theme.dart';
 import 'package:arweave/arweave.dart';
-import 'package:drive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -61,7 +61,7 @@ class App extends StatelessWidget {
           ),
         ],
         child: MaterialApp(
-          title: 'Drive',
+          title: 'ArDrive',
           theme: appTheme(),
           home: BlocBuilder<ProfileBloc, ProfileState>(
             builder: (context, state) {

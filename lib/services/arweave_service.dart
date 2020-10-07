@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 
+import 'package:ardrive/entities/entities.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart';
-import 'package:drive/entities/entities.dart';
 import 'package:mime/mime.dart';
 
 import 'crypto/crypto.dart';

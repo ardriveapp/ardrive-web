@@ -1,5 +1,5 @@
-import 'package:drive/entities/entities.dart';
-import 'package:drive/models/models.dart';
+import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:moor/moor.dart';
 
 class Drives extends Table {

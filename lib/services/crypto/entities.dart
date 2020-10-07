@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:ardrive/entities/entities.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart' hide Cipher;
-import 'package:drive/entities/entities.dart';
 
 Future<Map<String, dynamic>> decryptEntityJson(
   TransactionCommonMixin transaction,

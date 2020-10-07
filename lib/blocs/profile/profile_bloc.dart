@@ -1,9 +1,9 @@
 import 'dart:async';
 
+import 'package:ardrive/models/models.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:drive/models/models.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 
