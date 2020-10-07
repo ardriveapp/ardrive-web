@@ -61,6 +61,6 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     _syncBloc.add(SyncWithNetwork());
     _drivesBloc.selectDrive(driveId);
 
-    emit(DriveAttachSuccessful());
+    emit(DriveAttachSuccess());
   }
 }

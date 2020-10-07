@@ -24,7 +24,7 @@ class DriveCreateForm extends StatelessWidget {
           listener: (context, state) {
             if (state is DriveCreateInProgress) {
               showProgressDialog(context, 'Creating drive...');
-            } else if (state is DriveCreateSuccessful) {
+            } else if (state is DriveCreateSuccess) {
               Navigator.pop(context);
               Navigator.pop(context);
             }

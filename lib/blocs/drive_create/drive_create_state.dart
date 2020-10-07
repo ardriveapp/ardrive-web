@@ -10,4 +10,4 @@ class DriveCreateInitial extends DriveCreateState {}
 
 class DriveCreateInProgress extends DriveCreateState {}
 
-class DriveCreateSuccessful extends DriveCreateState {}
+class DriveCreateSuccess extends DriveCreateState {}

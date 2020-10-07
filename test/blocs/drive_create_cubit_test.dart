@@ -60,7 +60,7 @@ void main() {
       },
       expect: [
         DriveCreateInProgress(),
-        DriveCreateSuccessful(),
+        DriveCreateSuccess(),
       ],
       verify: (_) {},
     );
@@ -77,7 +77,7 @@ void main() {
       },
       expect: [
         DriveCreateInProgress(),
-        DriveCreateSuccessful(),
+        DriveCreateSuccess(),
       ],
       verify: (_) {},
     );

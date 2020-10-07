@@ -24,7 +24,7 @@ class DriveAttachForm extends StatelessWidget {
             } else if (state is DriveAttachInitial) {
               // Close the progress dialog if the drive attachment fails.
               Navigator.pop(context);
-            } else if (state is DriveAttachSuccessful) {
+            } else if (state is DriveAttachSuccess) {
               Navigator.pop(context);
               Navigator.pop(context);
             }
