@@ -19,6 +19,20 @@ class _AppShellState extends State<AppShell> {
     return BlocBuilder<DrivesCubit, DrivesState>(
       builder: (context, state) {
         final content = Scaffold(
+          appBar: AppBar(
+            title: Image.asset(
+              'assets/images/logo-horiz-no-subtitle.png',
+              height: 64,
+              fit: BoxFit.contain,
+            ),
+            centerTitle: false,
+            actions: [
+              IconButton(
+                icon: CircleAvatar(),
+                onPressed: null,
+              ),
+            ],
+          ),
           body: Row(
             children: [
               AppDrawer(),

@@ -4,13 +4,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'colors.dart';
 
 ThemeData appTheme() {
+  final textTheme = _buildTextTheme();
+
   return ThemeData(
     primarySwatch: kPrimarySwatch,
     accentColor: kSecondary500,
     hoverColor: kHoverColor,
     highlightColor: kSelectedColor,
-    textTheme: _buildTextTheme(),
-    appBarTheme: _buildAppBarTheme(),
+    textTheme: textTheme,
+    appBarTheme: _buildAppBarTheme(textTheme),
     navigationRailTheme: _buildNavigationRailTheme(),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
@@ -78,9 +80,10 @@ TextTheme _buildTextTheme() => TextTheme(
       ),
     );
 
-AppBarTheme _buildAppBarTheme() => AppBarTheme(
-      color: kPrimarySwatch[800],
-    );
+AppBarTheme _buildAppBarTheme(TextTheme primaryTextTheme) => AppBarTheme(
+    color: Colors.white,
+    textTheme: primaryTextTheme.copyWith(
+        headline6: primaryTextTheme.headline6.copyWith(color: Colors.black87)));
 
 NavigationRailThemeData _buildNavigationRailTheme() => NavigationRailThemeData(
       backgroundColor: kPrimarySwatch[700],
