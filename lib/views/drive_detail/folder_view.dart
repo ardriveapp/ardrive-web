@@ -1,6 +1,6 @@
-import 'package:drive/blocs/blocs.dart';
-import 'package:drive/components/components.dart';
-import 'package:drive/models/models.dart';
+import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/components.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

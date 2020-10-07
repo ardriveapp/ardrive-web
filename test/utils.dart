@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:ardrive/models/models.dart';
 import 'package:arweave/arweave.dart';
-import 'package:drive/models/models.dart';
 import 'package:moor/ffi.dart';
 
 Database getTestDb() => Database(VmDatabase.memory());

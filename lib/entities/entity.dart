@@ -1,6 +1,6 @@
+import 'package:ardrive/services/crypto/entities.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:drive/services/crypto/entities.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta.dart';
 
