@@ -1,5 +1,7 @@
 {
   "editor.codeActionsOnSave": {
     "source.organizeImports": true
-  }
+  },
+  "bloc.newBlocTemplate": "equatable",
+  "bloc.newCubitTemplate": "equatable"
 }
