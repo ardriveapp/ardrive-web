@@ -20,7 +20,6 @@ class AppDrawer extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(height: 8),
             _buildDriveActionsButton(state),
             if (state is DrivesLoadSuccess) ...{
               if (state.userDrives.isNotEmpty ||
