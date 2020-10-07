@@ -18,12 +18,13 @@ class DrivesCubit extends Cubit<DrivesState> {
       : _profileBloc = profileBloc,
         _drivesDao = drivesDao,
         super(DrivesLoadInProgress()) {
-    _drivesSubscription = Rx.combineLatest2(
+    _drivesSubscription = Rx.combineLatest2<List<Drive>, void, List<Drive>>(
       _drivesDao.watchAllDrives(),
       _profileBloc.startWith(null),
       (drives, _) => drives,
     ).listen((drives) {
       final state = this.state;
+      final profile = _profileBloc.state as ProfileLoaded;
 
       String selectedDriveId;
       if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
@@ -35,7 +36,12 @@ class DrivesCubit extends Cubit<DrivesState> {
       emit(
         DrivesLoadSuccess(
           selectedDriveId: selectedDriveId,
-          drives: drives,
+          userDrives: drives
+              .where((d) => d.ownerAddress == profile.wallet.address)
+              .toList(),
+          sharedDrives: drives
+              .where((d) => d.ownerAddress != profile.wallet.address)
+              .toList(),
           canCreateNewDrive: _profileBloc.state is ProfileLoaded,
         ),
       );
@@ -43,8 +49,9 @@ class DrivesCubit extends Cubit<DrivesState> {
   }
 
   void selectDrive(String driveId) {
+    final state = this.state;
     if (state is DrivesLoadSuccess) {
-      emit((state as DrivesLoadSuccess).copyWith(selectedDriveId: driveId));
+      emit(state.copyWith(selectedDriveId: driveId));
     }
   }
 
