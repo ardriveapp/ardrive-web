@@ -63,36 +63,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     ).listen((_) {});
   }
 
-  void createNewFolder(String folderName) async {
-    final profile = _profileBloc.state as ProfileLoaded;
-    final currentState = state as FolderLoadSuccess;
-    final currentFolder = currentState.currentFolder.folder;
-
-    final driveKey = currentState.currentDrive.isPrivate
-        ? await _driveDao.getDriveKey(_driveId, profile.cipherKey)
-        : null;
-
-    final newFolderId = await _driveDao.createNewFolder(
-      _driveId,
-      currentFolder.id,
-      folderName,
-      '${currentFolder.path}/${folderName}',
-    );
-
-    final folderTx = await _arweave.prepareEntityTx(
-      FolderEntity(
-        id: newFolderId,
-        driveId: currentFolder.driveId,
-        parentFolderId: currentFolder.id,
-        name: folderName,
-      ),
-      profile.wallet,
-      driveKey,
-    );
-
-    await _arweave.postTx(folderTx);
-  }
-
   void prepareFileUpload(FileEntity fileDetails, Uint8List fileData) async {
     final profile = _profileBloc.state as ProfileLoaded;
     final currentState = state as FolderLoadSuccess;
