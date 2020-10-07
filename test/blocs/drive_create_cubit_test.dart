@@ -31,10 +31,13 @@ void main() {
       drivesCubit = MockDrivesCubit();
       profileBloc = MockProfileBloc();
 
-      when(profileBloc.state).thenReturn(ProfileLoaded(
+      when(profileBloc.state).thenReturn(
+        ProfileLoaded(
           password: '123',
           wallet: getTestWallet(),
-          cipherKey: SecretKey.randomBytes(32)));
+          cipherKey: SecretKey.randomBytes(32),
+        ),
+      );
 
       driveCreateCubit = DriveCreateCubit(
         arweave: arweave,
