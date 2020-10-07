@@ -73,8 +73,12 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         );
       }
     } catch (err) {
-      form.control('password').setErrors({'password-incorrect': true});
-      return;
+      if (err is EntityTransactionParseException) {
+        form.control('password').setErrors({'password-incorrect': true});
+        return;
+      }
+
+      rethrow;
     }
 
     await _profileDao.addProfile(username, password, _wallet);
