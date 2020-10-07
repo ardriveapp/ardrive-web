@@ -101,7 +101,7 @@ class AppDrawer extends StatelessWidget {
               if (state is FolderLoadSuccess) ...{
                 PopupMenuItem(
                   enabled: state.hasWritePermissions,
-                  value: _promptToCreateNewFolder,
+                  value: promptToCreateFolder,
                   child: ListTile(
                     enabled: state.hasWritePermissions,
                     title: Text('New folder'),
@@ -155,19 +155,6 @@ class AppDrawer extends StatelessWidget {
                 tooltip: 'Sync',
               ),
       );
-
-  void _promptToCreateNewFolder(BuildContext context) async {
-    final folderName = await showTextFieldDialog(
-      context,
-      title: 'New folder',
-      confirmingActionLabel: 'CREATE',
-      initialText: 'Untitled folder',
-    );
-
-    if (folderName != null) {
-      context.bloc<DriveDetailCubit>().createNewFolder(folderName);
-    }
-  }
 
   void _promptToUploadFile(BuildContext context) async {
     FilePickerCross fileChooseResult;

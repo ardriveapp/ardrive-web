@@ -82,12 +82,12 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   /// Create a new folder entry.
   /// Returns the id of the created folder.
-  Future<String> createNewFolder(
+  Future<String> createFolder({
     String driveId,
     String parentFolderId,
     String folderName,
     String path,
-  ) async {
+  }) async {
     final id = _uuid.v4();
 
     await into(folderEntries).insert(
