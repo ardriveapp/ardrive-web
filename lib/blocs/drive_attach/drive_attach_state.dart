@@ -10,4 +10,4 @@ class DriveAttachInitial extends DriveAttachState {}
 
 class DriveAttachInProgress extends DriveAttachState {}
 
-class DriveAttachSuccessful extends DriveAttachState {}
+class DriveAttachSuccess extends DriveAttachState {}

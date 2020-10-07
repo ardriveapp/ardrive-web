@@ -6,21 +6,28 @@ class DrivesLoadInProgress extends DrivesState {}
 
 class DrivesLoadSuccess extends DrivesState {
   final String selectedDriveId;
-  final List<Drive> drives;
+  final List<Drive> userDrives;
+  final List<Drive> sharedDrives;
 
   final bool canCreateNewDrive;
 
-  DrivesLoadSuccess(
-      {this.selectedDriveId, this.drives, this.canCreateNewDrive});
+  DrivesLoadSuccess({
+    this.selectedDriveId,
+    this.userDrives,
+    this.sharedDrives,
+    this.canCreateNewDrive,
+  });
 
   DrivesLoadSuccess copyWith({
     String selectedDriveId,
-    List<Drive> drives,
+    List<Drive> userDrives,
+    List<Drive> sharedDrives,
     bool canCreateNewDrive,
   }) =>
       DrivesLoadSuccess(
         selectedDriveId: selectedDriveId ?? this.selectedDriveId,
-        drives: drives ?? this.drives,
+        userDrives: userDrives ?? this.userDrives,
+        sharedDrives: sharedDrives ?? this.sharedDrives,
         canCreateNewDrive: canCreateNewDrive ?? this.canCreateNewDrive,
       );
 }

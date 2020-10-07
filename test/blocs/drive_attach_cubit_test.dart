@@ -60,7 +60,7 @@ void main() {
       },
       expect: [
         DriveAttachInProgress(),
-        DriveAttachSuccessful(),
+        DriveAttachSuccess(),
       ],
       verify: (_) {
         verify(syncBloc.add(SyncWithNetwork()));

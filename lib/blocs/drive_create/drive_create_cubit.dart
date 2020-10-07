@@ -78,7 +78,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
     await _arweave.batchPostTxs([driveTx, rootFolderTx]);
 
-    emit(DriveCreateSuccessful());
+    emit(DriveCreateSuccess());
 
     _drivesCubit.selectDrive(drive.id);
   }

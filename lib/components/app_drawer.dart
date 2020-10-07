@@ -22,42 +22,48 @@ class AppDrawer extends StatelessWidget {
           children: [
             Container(height: 8),
             _buildDriveActionsButton(state),
-            BlocBuilder<SyncBloc, SyncState>(
-              builder: (context, syncState) {
-                return ListTile(
+            if (state is DrivesLoadSuccess) ...{
+              if (state.userDrives.isNotEmpty ||
+                  state.sharedDrives.isEmpty) ...{
+                ListTile(
                   dense: true,
                   title: Text(
-                    'DRIVES',
+                    'PERSONAL DRIVES',
                     textAlign: TextAlign.start,
                     style: Theme.of(context).textTheme.caption,
                   ),
-                  trailing: state is DrivesLoadSuccess
-                      ? syncState is SyncInProgress
-                          ? IconButton(
-                              icon: CircularProgressIndicator(),
-                              onPressed: null,
-                              tooltip: 'Syncing...',
-                            )
-                          : IconButton(
-                              icon: Icon(Icons.refresh),
-                              onPressed: () => context
-                                  .bloc<SyncBloc>()
-                                  .add(SyncWithNetwork()),
-                              tooltip: 'Sync',
-                            )
-                      : SizedBox.shrink(child: Container()),
-                );
-              },
-            ),
-            if (state is DrivesLoadSuccess)
-              ...state.drives.map(
-                (d) => ListTile(
-                  leading: Icon(Icons.folder_shared),
-                  title: Text(d.name),
-                  selected: state.selectedDriveId == d.id,
-                  onTap: () => context.bloc<DrivesCubit>().selectDrive(d.id),
+                  trailing: _buildSyncButton(),
                 ),
-              ),
+                ...state.userDrives.map(
+                  (d) => ListTile(
+                    leading: Icon(Icons.folder_shared),
+                    title: Text(d.name),
+                    selected: state.selectedDriveId == d.id,
+                    onTap: () => context.bloc<DrivesCubit>().selectDrive(d.id),
+                  ),
+                ),
+              },
+              if (state.sharedDrives.isNotEmpty) ...{
+                ListTile(
+                  dense: true,
+                  title: Text(
+                    'SHARED DRIVES',
+                    textAlign: TextAlign.start,
+                    style: Theme.of(context).textTheme.caption,
+                  ),
+                  trailing:
+                      state.userDrives.isEmpty ? _buildSyncButton() : null,
+                ),
+                ...state.sharedDrives.map(
+                  (d) => ListTile(
+                    leading: Icon(Icons.folder_shared),
+                    title: Text(d.name),
+                    selected: state.selectedDriveId == d.id,
+                    onTap: () => context.bloc<DrivesCubit>().selectDrive(d.id),
+                  ),
+                ),
+              }
+            }
           ],
         ),
       ),
@@ -81,7 +87,7 @@ class AppDrawer extends StatelessWidget {
               if (state is FolderLoadSuccess) ...{
                 PopupMenuItem(
                   enabled: state.hasWritePermissions,
-                  value: _promptToCreateNewFolder,
+                  value: promptToCreateFolder,
                   child: ListTile(
                     enabled: state.hasWritePermissions,
                     title: Text('New folder'),
@@ -121,18 +127,20 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  void _promptToCreateNewFolder(BuildContext context) async {
-    final folderName = await showTextFieldDialog(
-      context,
-      title: 'New folder',
-      confirmingActionLabel: 'CREATE',
-      initialText: 'Untitled folder',
-    );
-
-    if (folderName != null) {
-      context.bloc<DriveDetailCubit>().createNewFolder(folderName);
-    }
-  }
+  Widget _buildSyncButton() => BlocBuilder<SyncBloc, SyncState>(
+        builder: (context, syncState) => syncState is SyncInProgress
+            ? IconButton(
+                icon: CircularProgressIndicator(),
+                onPressed: null,
+                tooltip: 'Syncing...',
+              )
+            : IconButton(
+                icon: Icon(Icons.refresh),
+                onPressed: () =>
+                    context.bloc<SyncBloc>().add(SyncWithNetwork()),
+                tooltip: 'Sync',
+              ),
+      );
 
   void _promptToUploadFile(BuildContext context) async {
     FilePickerCross fileChooseResult;
