@@ -52,7 +52,8 @@ class DriveDetailView extends StatelessWidget {
                           ),
                           Row(
                             children: [
-                              if (state.selectedItemId != null) ...{
+                              if (state.selectedItemId != null &&
+                                  state.hasWritePermissions) ...{
                                 if (!state.selectedItemIsFolder)
                                   IconButton(
                                     icon: Icon(Icons.file_download),
@@ -61,16 +62,31 @@ class DriveDetailView extends StatelessWidget {
                                   ),
                                 IconButton(
                                   icon: Icon(Icons.drive_file_rename_outline),
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    if (state.selectedItemIsFolder) {
+                                    } else {
+                                      promptToRenameFile(
+                                        context,
+                                        driveId: state.currentDrive.id,
+                                        fileId: state.selectedItemId,
+                                      );
+                                    }
+                                  },
                                   tooltip: 'Rename',
                                 ),
                                 IconButton(
-                                  icon: Icon(Icons.info),
+                                  icon: Icon(Icons.drive_file_move),
                                   onPressed: () {},
                                   tooltip: 'Move',
                                 ),
                                 Container(height: 32, child: VerticalDivider()),
                               },
+                              if (!state.hasWritePermissions)
+                                IconButton(
+                                  icon: Icon(Icons.remove_red_eye),
+                                  onPressed: () => _showDriveInfo(context),
+                                  tooltip: 'View Only',
+                                ),
                               state.currentDrive.isPrivate
                                   ? IconButton(
                                       icon: Icon(Icons.lock),
@@ -85,7 +101,7 @@ class DriveDetailView extends StatelessWidget {
                               IconButton(
                                 icon: Icon(Icons.info),
                                 onPressed: () => _showDriveInfo(context),
-                                tooltip: 'Details',
+                                tooltip: 'View Info',
                               ),
                             ],
                           ),
