@@ -59,6 +59,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
+  Future<String> getFileNameById(String fileId) =>
+      (select(fileEntries)..where((f) => f.id.equals(fileId)))
+          .map((f) => f.name)
+          .getSingle();
+
   Future<String> fileExistsInFolder(String folderId, String filename) async {
     final file = await (select(fileEntries)
           ..where((f) =>
@@ -105,15 +110,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   /// Renames the specified file.
   Future<void> renameFile({
-    @required String driveId,
     @required String fileId,
     @required String name,
   }) =>
-      (update(fileEntries)
-            ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)))
-          .write(
-        FileEntriesCompanion(name: Value(name)),
-      );
+      (update(fileEntries)..where((f) => f.id.equals(fileId)))
+          .write(FileEntriesCompanion(name: Value(name)));
 
   Future<void> writeFileEntity(
     FileEntity entity,

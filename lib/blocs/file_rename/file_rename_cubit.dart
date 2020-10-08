@@ -11,19 +11,20 @@ class FileRenameCubit extends Cubit<FileRenameState> {
     'name': FormControl(validators: [Validators.required]),
   });
 
-  final String _driveId;
-  final String _fileId;
+  final String fileId;
 
   final DriveDao _driveDao;
 
   FileRenameCubit({
-    @required String driveId,
-    @required String fileId,
+    @required this.fileId,
     @required DriveDao driveDao,
-  })  : _driveId = driveId,
-        _fileId = fileId,
-        _driveDao = driveDao,
-        super(FileRenameInitial());
+  })  : _driveDao = driveDao,
+        super(FileRenameInitializing()) {
+    _driveDao.getFileNameById(fileId).then((name) {
+      form.control('name').value = name;
+      emit(FileRenameInitialized());
+    });
+  }
 
   Future<void> submit() async {
     if (form.invalid) {
@@ -35,8 +36,7 @@ class FileRenameCubit extends Cubit<FileRenameState> {
     final String fileName = form.control('name').value;
 
     await _driveDao.renameFile(
-      driveId: _driveId,
-      fileId: _fileId,
+      fileId: fileId,
       name: fileName,
     );
 

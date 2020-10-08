@@ -7,7 +7,9 @@ abstract class FileRenameState extends Equatable {
   List<Object> get props => [];
 }
 
-class FileRenameInitial extends FileRenameState {}
+class FileRenameInitializing extends FileRenameState {}
+
+class FileRenameInitialized extends FileRenameState {}
 
 class FileRenameInProgress extends FileRenameState {}
 

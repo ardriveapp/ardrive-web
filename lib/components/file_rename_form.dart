@@ -6,26 +6,26 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
 
-Future<void> promptToRenameFile(BuildContext context,
-        {@required String driveId, @required String fileId}) =>
+Future<void> promptToRenameFile(
+  BuildContext context, {
+  @required String fileId,
+}) =>
     showDialog(
       context: context,
-      builder: (_) => FileRenameForm(),
+      builder: (_) => FileRenameForm(
+        fileId: fileId,
+      ),
     );
 
 class FileRenameForm extends StatelessWidget {
-  final String _driveId;
-  final String _fileId;
+  final String fileId;
 
-  FileRenameForm({String driveId, String fileId})
-      : _driveId = driveId,
-        _fileId = fileId;
+  FileRenameForm({@required this.fileId});
 
   @override
   Widget build(BuildContext context) => BlocProvider(
         create: (context) => FileRenameCubit(
-          driveId: _driveId,
-          fileId: _fileId,
+          fileId: fileId,
           driveDao: context.repository<DriveDao>(),
         ),
         child: BlocConsumer<FileRenameCubit, FileRenameState>(
@@ -39,19 +39,21 @@ class FileRenameForm extends StatelessWidget {
           },
           builder: (context, state) => AlertDialog(
             title: Text('Rename file'),
-            content: ReactiveForm(
-              formGroup: context.bloc<FileRenameCubit>().form,
-              child: ReactiveTextField(
-                formControlName: 'name',
-                autofocus: true,
-                decoration: const InputDecoration(labelText: 'File name'),
-              ),
-            ),
+            content: state is! FileRenameInitializing
+                ? ReactiveForm(
+                    formGroup: context.bloc<FileRenameCubit>().form,
+                    child: ReactiveTextField(
+                      formControlName: 'name',
+                      autofocus: true,
+                      decoration: const InputDecoration(labelText: 'File name'),
+                    ),
+                  )
+                : null,
             actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0),
             actions: [
               TextButton(
                 child: Text('CANCEL'),
-                onPressed: () => Navigator.of(context).pop(null),
+                onPressed: () => Navigator.of(context).pop(),
               ),
               TextButton(
                 child: Text('RENAME'),

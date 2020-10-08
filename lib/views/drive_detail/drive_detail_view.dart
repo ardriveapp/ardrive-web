@@ -2,11 +2,10 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:arweave/utils.dart' as utils;
-import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'components/name_cell.dart';
+import 'components/table_rows.dart';
 
 class DriveDetailView extends StatelessWidget {
   @override
@@ -67,7 +66,6 @@ class DriveDetailView extends StatelessWidget {
                                     } else {
                                       promptToRenameFile(
                                         context,
-                                        driveId: state.currentDrive.id,
                                         fileId: state.selectedItemId,
                                       );
                                     }
@@ -118,8 +116,11 @@ class DriveDetailView extends StatelessWidget {
                               ],
                               rows: [
                                 ...state.currentFolder.subfolders.map(
-                                  (folder) => DataRow(
-                                    onSelectChanged: (_) {
+                                  (folder) => buildFolderRow(
+                                    context: context,
+                                    folder: folder,
+                                    selected: folder.id == state.selectedItemId,
+                                    onPressed: () {
                                       final bloc =
                                           context.bloc<DriveDetailCubit>();
                                       if (folder.id == state.selectedItemId) {
@@ -131,19 +132,14 @@ class DriveDetailView extends StatelessWidget {
                                         );
                                       }
                                     },
-                                    selected: folder.id == state.selectedItemId,
-                                    cells: [
-                                      DataCell(NameCell(
-                                        name: folder.name,
-                                        isFolder: true,
-                                      )),
-                                      DataCell(Text('-')),
-                                    ],
                                   ),
                                 ),
                                 ...state.currentFolder.files.map(
-                                  (file) => DataRow(
-                                    onSelectChanged: (_) {
+                                  (file) => buildFileRow(
+                                    context: context,
+                                    file: file,
+                                    selected: file.id == state.selectedItemId,
+                                    onPressed: () {
                                       final bloc =
                                           context.bloc<DriveDetailCubit>();
                                       if (file.id == state.selectedItemId) {
@@ -151,11 +147,6 @@ class DriveDetailView extends StatelessWidget {
                                         bloc.selectItem(file.id);
                                       }
                                     },
-                                    selected: file.id == state.selectedItemId,
-                                    cells: [
-                                      DataCell(NameCell(name: file.name)),
-                                      DataCell(Text(filesize(file.size))),
-                                    ],
                                   ),
                                 ),
                               ],
