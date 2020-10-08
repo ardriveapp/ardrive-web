@@ -23,8 +23,25 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<Drive> getDriveById(String driveId) =>
       (select(drives)..where((d) => d.id.equals(driveId))).getSingle();
 
+  Future<SecretKey> getDriveKey(String id, SecretKey profileKey) async {
+    final drive = await getDriveById(id);
+
+    final driveKeyData = await aesGcm.decrypt(
+      drive.encryptedKey,
+      secretKey: profileKey,
+      nonce: Nonce(drive.keyIv),
+    );
+
+    return SecretKey(driveKeyData);
+  }
+
   Future<FolderEntry> getFolderById(String folderId) =>
       (select(folderEntries)..where((d) => d.id.equals(folderId))).getSingle();
+
+  Future<String> getFolderNameById(String folderId) =>
+      (select(folderEntries)..where((f) => f.id.equals(folderId)))
+          .map((f) => f.name)
+          .getSingle();
 
   Stream<FolderWithContents> watchFolder(String driveId, String folderPath) {
     final folderStream = (select(folderEntries)
@@ -59,32 +76,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
-  Future<String> getFileNameById(String fileId) =>
-      (select(fileEntries)..where((f) => f.id.equals(fileId)))
-          .map((f) => f.name)
-          .getSingle();
-
-  Future<String> fileExistsInFolder(String folderId, String filename) async {
-    final file = await (select(fileEntries)
-          ..where((f) =>
-              f.parentFolderId.equals(folderId) & f.name.equals(filename)))
-        .getSingle();
-
-    return file != null ? file.id : null;
-  }
-
-  Future<SecretKey> getDriveKey(String id, SecretKey profileKey) async {
-    final drive = await getDriveById(id);
-
-    final driveKeyData = await aesGcm.decrypt(
-      drive.encryptedKey,
-      secretKey: profileKey,
-      nonce: Nonce(drive.keyIv),
-    );
-
-    return SecretKey(driveKeyData);
-  }
-
   /// Create a new folder entry.
   /// Returns the id of the created folder.
   Future<String> createFolder({
@@ -108,7 +99,27 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return id;
   }
 
-  /// Renames the specified file.
+  Future<void> renameFolder({
+    @required String folderId,
+    @required String name,
+  }) =>
+      (update(folderEntries)..where((f) => f.id.equals(folderId)))
+          .write(FolderEntriesCompanion(name: Value(name)));
+
+  Future<String> getFileNameById(String fileId) =>
+      (select(fileEntries)..where((f) => f.id.equals(fileId)))
+          .map((f) => f.name)
+          .getSingle();
+
+  Future<String> fileExistsInFolder(String folderId, String filename) async {
+    final file = await (select(fileEntries)
+          ..where((f) =>
+              f.parentFolderId.equals(folderId) & f.name.equals(filename)))
+        .getSingle();
+
+    return file != null ? file.id : null;
+  }
+
   Future<void> renameFile({
     @required String fileId,
     @required String name,

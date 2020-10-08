@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/components/folder_rename_form.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
@@ -63,11 +64,11 @@ class DriveDetailView extends StatelessWidget {
                                   icon: Icon(Icons.drive_file_rename_outline),
                                   onPressed: () {
                                     if (state.selectedItemIsFolder) {
+                                      promptToRenameFolder(context,
+                                          folderId: state.selectedItemId);
                                     } else {
-                                      promptToRenameFile(
-                                        context,
-                                        fileId: state.selectedItemId,
-                                      );
+                                      promptToRenameFile(context,
+                                          fileId: state.selectedItemId);
                                     }
                                   },
                                   tooltip: 'Rename',
