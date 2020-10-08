@@ -103,6 +103,18 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return id;
   }
 
+  /// Renames the specified file.
+  Future<void> renameFile({
+    @required String driveId,
+    @required String fileId,
+    @required String name,
+  }) =>
+      (update(fileEntries)
+            ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)))
+          .write(
+        FileEntriesCompanion(name: Value(name)),
+      );
+
   Future<void> writeFileEntity(
     FileEntity entity,
     String path,
