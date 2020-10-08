@@ -62,6 +62,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     ).listen((_) {});
   }
 
+  void selectItem(String itemId, {bool isFolder = false}) {
+    final state = this.state as FolderLoadSuccess;
+    emit(state.copyWith(
+      selectedItemId: itemId,
+      selectedItemIsFolder: isFolder,
+    ));
+  }
+
   void prepareFileUpload(FileEntity fileDetails, Uint8List fileData) async {
     final profile = _profileBloc.state as ProfileLoaded;
     final currentState = state as FolderLoadSuccess;

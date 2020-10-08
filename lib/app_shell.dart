@@ -36,7 +36,6 @@ class _AppShellState extends State<AppShell> {
           body: Row(
             children: [
               AppDrawer(),
-              VerticalDivider(width: 0),
               Expanded(
                 child: widget.page,
               ),

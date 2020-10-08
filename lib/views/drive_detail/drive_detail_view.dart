@@ -2,10 +2,11 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:arweave/utils.dart' as utils;
+import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'folder_view.dart';
+import 'components/name_cell.dart';
 
 class DriveDetailView extends StatelessWidget {
   @override
@@ -32,8 +33,8 @@ class DriveDetailView extends StatelessWidget {
           Navigator.pop(context);
         }
       },
-      child: Scaffold(
-        body: Scrollbar(
+      child: SizedBox.expand(
+        child: Scrollbar(
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -51,6 +52,25 @@ class DriveDetailView extends StatelessWidget {
                           ),
                           Row(
                             children: [
+                              if (state.selectedItemId != null) ...{
+                                if (!state.selectedItemIsFolder)
+                                  IconButton(
+                                    icon: Icon(Icons.file_download),
+                                    onPressed: () {},
+                                    tooltip: 'Download',
+                                  ),
+                                IconButton(
+                                  icon: Icon(Icons.drive_file_rename_outline),
+                                  onPressed: () {},
+                                  tooltip: 'Rename',
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.info),
+                                  onPressed: () {},
+                                  tooltip: 'Move',
+                                ),
+                                Container(height: 32, child: VerticalDivider()),
+                              },
                               state.currentDrive.isPrivate
                                   ? IconButton(
                                       icon: Icon(Icons.lock),
@@ -74,9 +94,55 @@ class DriveDetailView extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: FolderView(
-                              subfolders: state.currentFolder.subfolders,
-                              files: state.currentFolder.files,
+                            child: DataTable(
+                              showCheckboxColumn: false,
+                              columns: const <DataColumn>[
+                                DataColumn(label: Text('Name')),
+                                DataColumn(label: Text('File size')),
+                              ],
+                              rows: [
+                                ...state.currentFolder.subfolders.map(
+                                  (folder) => DataRow(
+                                    onSelectChanged: (_) {
+                                      final bloc =
+                                          context.bloc<DriveDetailCubit>();
+                                      if (folder.id == state.selectedItemId) {
+                                        bloc.openFolderAtPath(folder.path);
+                                      } else {
+                                        bloc.selectItem(
+                                          folder.id,
+                                          isFolder: true,
+                                        );
+                                      }
+                                    },
+                                    selected: folder.id == state.selectedItemId,
+                                    cells: [
+                                      DataCell(NameCell(
+                                        name: folder.name,
+                                        isFolder: true,
+                                      )),
+                                      DataCell(Text('-')),
+                                    ],
+                                  ),
+                                ),
+                                ...state.currentFolder.files.map(
+                                  (file) => DataRow(
+                                    onSelectChanged: (_) {
+                                      final bloc =
+                                          context.bloc<DriveDetailCubit>();
+                                      if (file.id == state.selectedItemId) {
+                                      } else {
+                                        bloc.selectItem(file.id);
+                                      }
+                                    },
+                                    selected: file.id == state.selectedItemId,
+                                    cells: [
+                                      DataCell(NameCell(name: file.name)),
+                                      DataCell(Text(filesize(file.size))),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
