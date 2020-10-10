@@ -1,4 +1,7 @@
+import 'package:ardrive/entities/entities.dart';
 import 'package:moor/moor.dart';
+
+import './database/database.dart';
 
 @DataClassName('FolderEntry')
 class FolderEntries extends Table {
@@ -12,4 +15,13 @@ class FolderEntries extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+extension FolderEntryExtensions on FolderEntry {
+  FolderEntity asEntity() => FolderEntity(
+        id: id,
+        driveId: driveId,
+        parentFolderId: parentFolderId,
+        name: name,
+      );
 }

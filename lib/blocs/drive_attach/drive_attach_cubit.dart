@@ -40,7 +40,6 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
     emit(DriveAttachInProgress());
 
-    final profile = _profileBloc.state as ProfileLoaded;
     final String driveId = form.control('driveId').value;
     final String driveName = form.control('name').value;
 
@@ -52,11 +51,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       return;
     }
 
-    await _drivesDao.attachDrive(
-      name: driveName,
-      entity: driveEntity,
-      profileKey: profile.cipherKey,
-    );
+    await _drivesDao.attachDrive(name: driveName, entity: driveEntity);
 
     _syncBloc.add(SyncWithNetwork());
     _drivesBloc.selectDrive(driveId);

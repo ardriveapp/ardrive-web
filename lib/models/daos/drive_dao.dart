@@ -26,6 +26,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<SecretKey> getDriveKey(String id, SecretKey profileKey) async {
     final drive = await getDriveById(id);
 
+    if (drive.encryptedKey == null) {
+      return null;
+    }
+
     final driveKeyData = await aesGcm.decrypt(
       drive.encryptedKey,
       secretKey: profileKey,
@@ -99,12 +103,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return id;
   }
 
-  Future<void> renameFolder({
-    @required String folderId,
-    @required String name,
-  }) =>
-      (update(folderEntries)..where((f) => f.id.equals(folderId)))
-          .write(FolderEntriesCompanion(name: Value(name)));
+  Future<void> updateFolder(Insertable<FolderEntry> folder) =>
+      (update(folderEntries)..whereSamePrimaryKey(folder)).write(folder);
+
+  Future<FileEntry> getFileById(String fileId) =>
+      (select(fileEntries)..where((d) => d.id.equals(fileId))).getSingle();
 
   Future<String> getFileNameById(String fileId) =>
       (select(fileEntries)..where((f) => f.id.equals(fileId)))
@@ -120,12 +123,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return file != null ? file.id : null;
   }
 
-  Future<void> renameFile({
-    @required String fileId,
-    @required String name,
-  }) =>
-      (update(fileEntries)..where((f) => f.id.equals(fileId)))
-          .write(FileEntriesCompanion(name: Value(name)));
+  Future<void> updateFile(Insertable<FileEntry> file) =>
+      (update(fileEntries)..whereSamePrimaryKey(file)).write(file);
 
   Future<void> writeFileEntity(
     FileEntity entity,
@@ -141,6 +140,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           dataTxId: entity.dataTxId,
           size: entity.size,
           ready: false,
+          lastModifiedDate: entity.lastModifiedDate,
         ),
       );
 }

@@ -1,4 +1,7 @@
+import 'package:ardrive/entities/entities.dart';
 import 'package:moor/moor.dart';
+
+import './database/database.dart';
 
 @DataClassName('FileEntry')
 class FileEntries extends Table {
@@ -20,6 +23,20 @@ class FileEntries extends Table {
   // DateTimeColumn get dateCreated => dateTime().nullable()();
   // DateTimeColumn get dateUpdated => dateTime().nullable()();
 
+  DateTimeColumn get lastModifiedDate => dateTime()();
+
   @override
   Set<Column> get primaryKey => {id};
+}
+
+extension FileEntryExtensions on FileEntry {
+  FileEntity asEntity() => FileEntity(
+        id: id,
+        driveId: driveId,
+        parentFolderId: parentFolderId,
+        name: name,
+        dataTxId: dataTxId,
+        size: size,
+        lastModifiedDate: lastModifiedDate,
+      );
 }

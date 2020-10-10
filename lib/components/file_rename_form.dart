@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -26,7 +27,9 @@ class FileRenameForm extends StatelessWidget {
   Widget build(BuildContext context) => BlocProvider(
         create: (context) => FileRenameCubit(
           fileId: fileId,
+          arweave: context.repository<ArweaveService>(),
           driveDao: context.repository<DriveDao>(),
+          profileBloc: context.bloc<ProfileBloc>(),
         ),
         child: BlocConsumer<FileRenameCubit, FileRenameState>(
           listener: (context, state) {

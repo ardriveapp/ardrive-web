@@ -63,14 +63,16 @@ void main() {
               (i) {
                 final fileId = '$rootFolderId$i';
                 return FileEntriesCompanion.insert(
-                    id: fileId,
-                    driveId: driveId,
-                    parentFolderId: rootFolderId,
-                    name: fileId,
-                    path: '/$fileId',
-                    dataTxId: '',
-                    size: 500,
-                    ready: true);
+                  id: fileId,
+                  driveId: driveId,
+                  parentFolderId: rootFolderId,
+                  name: fileId,
+                  path: '/$fileId',
+                  dataTxId: '',
+                  size: 500,
+                  ready: true,
+                  lastModifiedDate: DateTime.now(),
+                );
               },
             )..shuffle(),
             ...List.generate(
@@ -78,14 +80,16 @@ void main() {
               (i) {
                 final fileId = nestedFolderIdPrefix + '0$i';
                 return FileEntriesCompanion.insert(
-                    id: fileId,
-                    driveId: driveId,
-                    parentFolderId: nestedFolderIdPrefix,
-                    name: fileId,
-                    path: '/$nestedFolderIdPrefix' '0' '/$fileId',
-                    dataTxId: '',
-                    size: 500,
-                    ready: true);
+                  id: fileId,
+                  driveId: driveId,
+                  parentFolderId: nestedFolderIdPrefix,
+                  name: fileId,
+                  path: '/$nestedFolderIdPrefix' '0' '/$fileId',
+                  dataTxId: '',
+                  size: 500,
+                  ready: true,
+                  lastModifiedDate: DateTime.now(),
+                );
               },
             )..shuffle(),
           ],

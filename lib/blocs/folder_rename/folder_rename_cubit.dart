@@ -1,4 +1,6 @@
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
@@ -13,10 +15,18 @@ class FolderRenameCubit extends Cubit<FolderRenameState> {
 
   final String folderId;
 
+  final ArweaveService _arweave;
   final DriveDao _driveDao;
+  final ProfileBloc _profileBloc;
 
-  FolderRenameCubit({@required this.folderId, @required DriveDao driveDao})
-      : _driveDao = driveDao,
+  FolderRenameCubit({
+    @required this.folderId,
+    @required ArweaveService arweave,
+    @required DriveDao driveDao,
+    @required ProfileBloc profileBloc,
+  })  : _arweave = arweave,
+        _driveDao = driveDao,
+        _profileBloc = profileBloc,
         super(FolderRenameInitializing()) {
     _driveDao.getFolderNameById(folderId).then(
       (name) {
@@ -34,11 +44,23 @@ class FolderRenameCubit extends Cubit<FolderRenameState> {
     emit(FolderRenameInProgress());
 
     final String folderName = form.control('name').value;
+    final profile = _profileBloc.state as ProfileLoaded;
 
-    await _driveDao.renameFolder(
-      folderId: folderId,
-      name: folderName,
+    final folder = await _driveDao.getFolderById(folderId);
+    final driveKey =
+        await _driveDao.getDriveKey(folder.driveId, profile.cipherKey);
+
+    final renamedFolder = folder.copyWith(name: folderName);
+
+    final folderTx = await _arweave.prepareEntityTx(
+      renamedFolder.asEntity(),
+      profile.wallet,
+      driveKey,
     );
+
+    await _arweave.postTx(folderTx);
+
+    await _driveDao.updateFolder(renamedFolder);
 
     emit(FolderRenameSuccess());
   }
