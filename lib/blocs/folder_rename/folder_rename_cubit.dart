@@ -13,6 +13,7 @@ class FolderRenameCubit extends Cubit<FolderRenameState> {
     'name': FormControl(validators: [Validators.required]),
   });
 
+  final String driveId;
   final String folderId;
 
   final ArweaveService _arweave;
@@ -20,6 +21,7 @@ class FolderRenameCubit extends Cubit<FolderRenameState> {
   final ProfileBloc _profileBloc;
 
   FolderRenameCubit({
+    @required this.driveId,
     @required this.folderId,
     @required ArweaveService arweave,
     @required DriveDao driveDao,
@@ -28,7 +30,7 @@ class FolderRenameCubit extends Cubit<FolderRenameState> {
         _driveDao = driveDao,
         _profileBloc = profileBloc,
         super(FolderRenameInitializing()) {
-    _driveDao.getFolderNameById(folderId).then(
+    _driveDao.getFolderNameById(driveId, folderId).then(
       (name) {
         form.control('name').value = name;
         emit(FolderRenameInitialized());
@@ -46,7 +48,7 @@ class FolderRenameCubit extends Cubit<FolderRenameState> {
     final String folderName = form.control('name').value;
     final profile = _profileBloc.state as ProfileLoaded;
 
-    final folder = await _driveDao.getFolderById(folderId);
+    final folder = await _driveDao.getFolderById(driveId, folderId);
     final driveKey =
         await _driveDao.getDriveKey(folder.driveId, profile.cipherKey);
 

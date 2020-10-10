@@ -9,23 +9,27 @@ import 'components.dart';
 
 Future<void> promptToRenameFolder(
   BuildContext context, {
+  @required String driveId,
   @required String folderId,
 }) =>
     showDialog(
       context: context,
       builder: (_) => FolderRenameForm(
+        driveId: driveId,
         folderId: folderId,
       ),
     );
 
 class FolderRenameForm extends StatelessWidget {
+  final String driveId;
   final String folderId;
 
-  FolderRenameForm({@required this.folderId});
+  FolderRenameForm({@required this.driveId, @required this.folderId});
 
   @override
   Widget build(BuildContext context) => BlocProvider(
         create: (context) => FolderRenameCubit(
+          driveId: driveId,
           folderId: folderId,
           arweave: context.repository<ArweaveService>(),
           driveDao: context.repository<DriveDao>(),

@@ -9,23 +9,27 @@ import 'components.dart';
 
 Future<void> promptToRenameFile(
   BuildContext context, {
+  @required String driveId,
   @required String fileId,
 }) =>
     showDialog(
       context: context,
       builder: (_) => FileRenameForm(
+        driveId: driveId,
         fileId: fileId,
       ),
     );
 
 class FileRenameForm extends StatelessWidget {
+  final String driveId;
   final String fileId;
 
-  FileRenameForm({@required this.fileId});
+  FileRenameForm({@required this.driveId, @required this.fileId});
 
   @override
   Widget build(BuildContext context) => BlocProvider(
         create: (context) => FileRenameCubit(
+          driveId: driveId,
           fileId: fileId,
           arweave: context.repository<ArweaveService>(),
           driveDao: context.repository<DriveDao>(),

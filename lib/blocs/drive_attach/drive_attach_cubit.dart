@@ -18,19 +18,16 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   final DrivesDao _drivesDao;
   final SyncBloc _syncBloc;
   final DrivesCubit _drivesBloc;
-  final ProfileBloc _profileBloc;
 
   DriveAttachCubit({
     @required ArweaveService arweave,
     @required DrivesDao drivesDao,
     @required SyncBloc syncBloc,
     @required DrivesCubit drivesBloc,
-    @required ProfileBloc profileBloc,
   })  : _arweave = arweave,
         _drivesDao = drivesDao,
         _syncBloc = syncBloc,
         _drivesBloc = drivesBloc,
-        _profileBloc = profileBloc,
         super(DriveAttachInitial());
 
   void submit() async {
