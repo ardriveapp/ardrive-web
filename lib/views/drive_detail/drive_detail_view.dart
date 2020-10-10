@@ -1,10 +1,10 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
-import 'package:ardrive/components/folder_rename_form.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'components/table_rows.dart';
 
@@ -140,10 +140,21 @@ class DriveDetailView extends StatelessWidget {
                                     context: context,
                                     file: file,
                                     selected: file.id == state.selectedItemId,
-                                    onPressed: () {
+                                    onPressed: () async {
                                       final bloc =
                                           context.bloc<DriveDetailCubit>();
                                       if (file.id == state.selectedItemId) {
+                                        // TODO: Update to work with private drives.
+                                        final open =
+                                            await showConfirmationDialog(
+                                          context,
+                                          title: 'Open file?',
+                                          confirmingActionLabel: 'OPEN',
+                                        );
+                                        if (open != null && open) {
+                                          await launch(
+                                              'https://arweave.dev/${file.dataTxId}');
+                                        }
                                       } else {
                                         bloc.selectItem(file.id);
                                       }
