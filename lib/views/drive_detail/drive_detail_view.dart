@@ -161,33 +161,35 @@ class DriveDetailView extends StatelessWidget {
 
     return Row(
       children: [
-        if (state.selectedItemId != null && state.hasWritePermissions) ...{
+        if (state.selectedItemId != null) ...{
           if (!state.selectedItemIsFolder)
             IconButton(
               icon: Icon(Icons.file_download),
               onPressed: () {},
               tooltip: 'Download',
             ),
-          IconButton(
-            icon: Icon(Icons.drive_file_rename_outline),
-            onPressed: () {
-              if (state.selectedItemIsFolder) {
-                promptToRenameFolder(context,
-                    driveId: state.currentDrive.id,
-                    folderId: state.selectedItemId);
-              } else {
-                promptToRenameFile(context,
-                    driveId: state.currentDrive.id,
-                    fileId: state.selectedItemId);
-              }
-            },
-            tooltip: 'Rename',
-          ),
-          IconButton(
-            icon: Icon(Icons.drive_file_move),
-            onPressed: () {},
-            tooltip: 'Move',
-          ),
+          if (state.hasWritePermissions) ...{
+            IconButton(
+              icon: Icon(Icons.drive_file_rename_outline),
+              onPressed: () {
+                if (state.selectedItemIsFolder) {
+                  promptToRenameFolder(context,
+                      driveId: state.currentDrive.id,
+                      folderId: state.selectedItemId);
+                } else {
+                  promptToRenameFile(context,
+                      driveId: state.currentDrive.id,
+                      fileId: state.selectedItemId);
+                }
+              },
+              tooltip: 'Rename',
+            ),
+            IconButton(
+              icon: Icon(Icons.drive_file_move),
+              onPressed: () {},
+              tooltip: 'Move',
+            ),
+          },
           Container(height: 32, child: VerticalDivider()),
         },
         if (!state.hasWritePermissions)
