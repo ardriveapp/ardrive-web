@@ -5,7 +5,8 @@ import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'folder_view.dart';
+import 'components/drive_info_side_sheet.dart';
+import 'components/table_rows.dart';
 
 class DriveDetailView extends StatelessWidget {
   @override
@@ -32,60 +33,97 @@ class DriveDetailView extends StatelessWidget {
           Navigator.pop(context);
         }
       },
-      child: Scaffold(
-        body: Scrollbar(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
-                builder: (context, state) => Column(
-                  children: [
-                    if (state is FolderLoadSuccess) ...{
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildBreadcrumbRow(
-                            context,
-                            state.currentDrive.name,
-                            state.currentFolder.folder.path,
-                          ),
-                          Row(
-                            children: [
-                              state.currentDrive.isPrivate
-                                  ? IconButton(
-                                      icon: Icon(Icons.lock),
-                                      onPressed: () => _showDriveInfo(context),
-                                      tooltip: 'Private',
-                                    )
-                                  : IconButton(
-                                      icon: Icon(Icons.public),
-                                      onPressed: () => _showDriveInfo(context),
-                                      tooltip: 'Public',
-                                    ),
-                              IconButton(
-                                icon: Icon(Icons.info),
-                                onPressed: () => _showDriveInfo(context),
-                                tooltip: 'Details',
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: FolderView(
-                              subfolders: state.currentFolder.subfolders,
-                              files: state.currentFolder.files,
+      child: SizedBox.expand(
+        child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
+          builder: (context, state) => Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (state is FolderLoadSuccess) ...{
+                Expanded(
+                  child: Scrollbar(
+                    child: SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                _buildBreadcrumbRow(
+                                  context,
+                                  state.currentDrive.name,
+                                  state.currentFolder.folder.path,
+                                ),
+                                _buildActionsRow(context, state),
+                              ],
                             ),
-                          ),
-                        ],
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: DataTable(
+                                    showCheckboxColumn: false,
+                                    columns: const <DataColumn>[
+                                      DataColumn(label: Text('Name')),
+                                      DataColumn(label: Text('File size')),
+                                    ],
+                                    rows: [
+                                      ...state.currentFolder.subfolders.map(
+                                        (folder) => buildFolderRow(
+                                          context: context,
+                                          folder: folder,
+                                          selected:
+                                              folder.id == state.selectedItemId,
+                                          onPressed: () {
+                                            final bloc = context
+                                                .bloc<DriveDetailCubit>();
+                                            if (folder.id ==
+                                                state.selectedItemId) {
+                                              bloc.openFolderAtPath(
+                                                  folder.path);
+                                            } else {
+                                              bloc.selectItem(
+                                                folder.id,
+                                                isFolder: true,
+                                              );
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                      ...state.currentFolder.files.map(
+                                        (file) => buildFileRow(
+                                          context: context,
+                                          file: file,
+                                          selected:
+                                              file.id == state.selectedItemId,
+                                          onPressed: () async {
+                                            final bloc = context
+                                                .bloc<DriveDetailCubit>();
+                                            if (file.id ==
+                                                state.selectedItemId) {
+                                              bloc.toggleSelectedItemDetails();
+                                            } else {
+                                              bloc.selectItem(file.id);
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    }
-                  ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
+                if (state.showSelectedItemDetails) ...{
+                  VerticalDivider(width: 1),
+                  DriveInfoSideSheet(),
+                }
+              }
+            ],
           ),
         ),
       ),
@@ -118,26 +156,63 @@ class DriveDetailView extends StatelessWidget {
     );
   }
 
-  void _showDriveInfo(BuildContext context) {
-    final state = context.bloc<DriveDetailCubit>().state;
+  Widget _buildActionsRow(BuildContext context, FolderLoadSuccess state) {
+    final bloc = context.bloc<DriveDetailCubit>();
 
-    if (state is FolderLoadSuccess) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('Drive ID'),
-          content: FittedBox(
-            fit: BoxFit.contain,
-            child: SelectableText(state.currentDrive.id, maxLines: 1),
-          ),
-          actions: [
-            TextButton(
-              child: Text('CLOSE'),
-              onPressed: () => Navigator.of(context).pop(),
+    return Row(
+      children: [
+        if (state.selectedItemId != null && state.hasWritePermissions) ...{
+          if (!state.selectedItemIsFolder)
+            IconButton(
+              icon: Icon(Icons.file_download),
+              onPressed: () {},
+              tooltip: 'Download',
             ),
-          ],
+          IconButton(
+            icon: Icon(Icons.drive_file_rename_outline),
+            onPressed: () {
+              if (state.selectedItemIsFolder) {
+                promptToRenameFolder(context,
+                    driveId: state.currentDrive.id,
+                    folderId: state.selectedItemId);
+              } else {
+                promptToRenameFile(context,
+                    driveId: state.currentDrive.id,
+                    fileId: state.selectedItemId);
+              }
+            },
+            tooltip: 'Rename',
+          ),
+          IconButton(
+            icon: Icon(Icons.drive_file_move),
+            onPressed: () {},
+            tooltip: 'Move',
+          ),
+          Container(height: 32, child: VerticalDivider()),
+        },
+        if (!state.hasWritePermissions)
+          IconButton(
+            icon: Icon(Icons.remove_red_eye),
+            onPressed: () => bloc.toggleSelectedItemDetails(),
+            tooltip: 'View Only',
+          ),
+        state.currentDrive.isPrivate
+            ? IconButton(
+                icon: Icon(Icons.lock),
+                onPressed: () => bloc.toggleSelectedItemDetails(),
+                tooltip: 'Private',
+              )
+            : IconButton(
+                icon: Icon(Icons.public),
+                onPressed: () => bloc.toggleSelectedItemDetails(),
+                tooltip: 'Public',
+              ),
+        IconButton(
+          icon: Icon(Icons.info),
+          onPressed: () => bloc.toggleSelectedItemDetails(),
+          tooltip: 'View Info',
         ),
-      );
-    }
+      ],
+    );
   }
 }

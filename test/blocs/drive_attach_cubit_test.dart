@@ -3,7 +3,6 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc_test/bloc_test.dart';
-import 'package:cryptography/cryptography.dart';
 import 'package:mockito/mockito.dart';
 import 'package:test/test.dart';
 
@@ -13,7 +12,6 @@ void main() {
   group('DriveAttachCubit', () {
     ArweaveService arweave;
     DrivesDao drivesDao;
-    ProfileBloc profileBloc;
     SyncBloc syncBloc;
     DrivesCubit drivesBloc;
     DriveAttachCubit driveAttachCubit;
@@ -28,7 +26,6 @@ void main() {
       drivesDao = MockDrivesDao();
       syncBloc = MockSyncBloc();
       drivesBloc = MockDrivesCubit();
-      profileBloc = MockProfileBloc();
 
       when(arweave.tryGetFirstDriveEntityWithId(validDriveId))
           .thenAnswer((_) => Future.value(DriveEntity()));
@@ -36,15 +33,11 @@ void main() {
       when(arweave.tryGetFirstDriveEntityWithId(notFoundDriveId))
           .thenAnswer((_) => Future.value(null));
 
-      when(profileBloc.state)
-          .thenReturn(ProfileLoaded(cipherKey: SecretKey.randomBytes(256)));
-
       driveAttachCubit = DriveAttachCubit(
         arweave: arweave,
         drivesDao: drivesDao,
         syncBloc: syncBloc,
         drivesBloc: drivesBloc,
-        profileBloc: profileBloc,
       );
     });
 
@@ -94,7 +87,6 @@ void main() {
         verifyZeroInteractions(drivesDao);
         verifyZeroInteractions(syncBloc);
         verifyZeroInteractions(drivesBloc);
-        verifyZeroInteractions(profileBloc);
       },
     );
   });

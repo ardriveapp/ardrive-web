@@ -1,6 +1,7 @@
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/models/models.dart';
 import 'package:moor/moor.dart';
+
+import './database/database.dart';
 
 class Drives extends Table {
   TextColumn get id => text()();
@@ -25,4 +26,13 @@ class Drives extends Table {
 
 extension DriveExtensions on Drive {
   bool get isPrivate => privacy == DrivePrivacy.private;
+
+  DriveEntity asEntity() => DriveEntity(
+        id: id,
+        name: name,
+        rootFolderId: rootFolderId,
+        privacy: privacy,
+        authMode:
+            privacy == DrivePrivacy.private ? DriveAuthMode.password : null,
+      );
 }

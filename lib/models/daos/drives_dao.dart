@@ -96,8 +96,6 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
   Future<void> attachDrive({
     String name,
     DriveEntity entity,
-    SecretKey profileKey,
-    SecretKey driveKey,
   }) async {
     var insertDriveOp = DrivesCompanion.insert(
       id: entity.id,
@@ -106,11 +104,6 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
       rootFolderId: entity.rootFolderId,
       privacy: entity.privacy,
     );
-
-    if (entity.privacy == DrivePrivacy.private) {
-      insertDriveOp = await _addDriveKeyToDriveCompanion(
-          insertDriveOp, profileKey, driveKey);
-    }
 
     await into(drives).insert(insertDriveOp);
   }
@@ -171,6 +164,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
                 size: entity.size,
                 ready: true,
                 path: '',
+                lastModifiedDate: entity.lastModifiedDate,
               );
             }
           }

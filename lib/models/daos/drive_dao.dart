@@ -17,16 +17,46 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   DriveDao(Database db) : super(db);
 
-  Stream<Drive> watchDrive(String driveId) =>
-      (select(drives)..where((d) => d.id.equals(driveId))).watchSingle();
-
   Future<Drive> getDriveById(String driveId) =>
       (select(drives)..where((d) => d.id.equals(driveId))).getSingle();
 
-  Future<FolderEntry> getFolderById(String folderId) =>
-      (select(folderEntries)..where((d) => d.id.equals(folderId))).getSingle();
+  Stream<Drive> watchDriveById(String driveId) =>
+      (select(drives)..where((d) => d.id.equals(driveId))).watchSingle();
 
-  Stream<FolderWithContents> watchFolder(String driveId, String folderPath) {
+  Future<SecretKey> getDriveKey(String id, SecretKey profileKey) async {
+    final drive = await getDriveById(id);
+
+    if (drive.encryptedKey == null) {
+      return null;
+    }
+
+    final driveKeyData = await aesGcm.decrypt(
+      drive.encryptedKey,
+      secretKey: profileKey,
+      nonce: Nonce(drive.keyIv),
+    );
+
+    return SecretKey(driveKeyData);
+  }
+
+  Future<FolderEntry> getFolderById(String driveId, String folderId) =>
+      (select(folderEntries)
+            ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)))
+          .getSingle();
+
+  Stream<FolderEntry> watchFolderById(String driveId, String folderId) =>
+      (select(folderEntries)
+            ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)))
+          .watchSingle();
+
+  Future<String> getFolderNameById(String driveId, String folderId) =>
+      (select(folderEntries)
+            ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)))
+          .map((f) => f.name)
+          .getSingle();
+
+  Stream<FolderWithContents> watchFolderContentsAtPath(
+      String driveId, String folderPath) {
     final folderStream = (select(folderEntries)
           ..where((f) => f.driveId.equals(driveId) & f.path.equals(folderPath)))
         .watchSingle();
@@ -59,27 +89,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
-  Future<String> fileExistsInFolder(String folderId, String filename) async {
-    final file = await (select(fileEntries)
-          ..where((f) =>
-              f.parentFolderId.equals(folderId) & f.name.equals(filename)))
-        .getSingle();
-
-    return file != null ? file.id : null;
-  }
-
-  Future<SecretKey> getDriveKey(String id, SecretKey profileKey) async {
-    final drive = await getDriveById(id);
-
-    final driveKeyData = await aesGcm.decrypt(
-      drive.encryptedKey,
-      secretKey: profileKey,
-      nonce: Nonce(drive.keyIv),
-    );
-
-    return SecretKey(driveKeyData);
-  }
-
   /// Create a new folder entry.
   /// Returns the id of the created folder.
   Future<String> createFolder({
@@ -103,6 +112,37 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return id;
   }
 
+  Future<void> updateFolder(Insertable<FolderEntry> folder) =>
+      (update(folderEntries)..whereSamePrimaryKey(folder)).write(folder);
+
+  Future<FileEntry> getFileById(String driveId, String fileId) =>
+      (select(fileEntries)
+            ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)))
+          .getSingle();
+
+  Future<String> getFileNameById(String driveId, String fileId) =>
+      (select(fileEntries)
+            ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)))
+          .map((f) => f.name)
+          .getSingle();
+
+          Stream<FileEntry> watchFileById(String driveId, String fileId) =>
+      (select(fileEntries)
+            ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)))
+          .watchSingle();
+
+  Future<String> fileExistsInFolder(String folderId, String filename) async {
+    final file = await (select(fileEntries)
+          ..where((f) =>
+              f.parentFolderId.equals(folderId) & f.name.equals(filename)))
+        .getSingle();
+
+    return file != null ? file.id : null;
+  }
+
+  Future<void> updateFile(Insertable<FileEntry> file) =>
+      (update(fileEntries)..whereSamePrimaryKey(file)).write(file);
+
   Future<void> writeFileEntity(
     FileEntity entity,
     String path,
@@ -117,6 +157,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           dataTxId: entity.dataTxId,
           size: entity.size,
           ready: false,
+          lastModifiedDate: entity.lastModifiedDate,
         ),
       );
 }

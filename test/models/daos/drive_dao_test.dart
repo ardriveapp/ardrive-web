@@ -63,14 +63,16 @@ void main() {
               (i) {
                 final fileId = '$rootFolderId$i';
                 return FileEntriesCompanion.insert(
-                    id: fileId,
-                    driveId: driveId,
-                    parentFolderId: rootFolderId,
-                    name: fileId,
-                    path: '/$fileId',
-                    dataTxId: '',
-                    size: 500,
-                    ready: true);
+                  id: fileId,
+                  driveId: driveId,
+                  parentFolderId: rootFolderId,
+                  name: fileId,
+                  path: '/$fileId',
+                  dataTxId: '',
+                  size: 500,
+                  ready: true,
+                  lastModifiedDate: DateTime.now(),
+                );
               },
             )..shuffle(),
             ...List.generate(
@@ -78,14 +80,16 @@ void main() {
               (i) {
                 final fileId = nestedFolderIdPrefix + '0$i';
                 return FileEntriesCompanion.insert(
-                    id: fileId,
-                    driveId: driveId,
-                    parentFolderId: nestedFolderIdPrefix,
-                    name: fileId,
-                    path: '/$nestedFolderIdPrefix' '0' '/$fileId',
-                    dataTxId: '',
-                    size: 500,
-                    ready: true);
+                  id: fileId,
+                  driveId: driveId,
+                  parentFolderId: nestedFolderIdPrefix,
+                  name: fileId,
+                  path: '/$nestedFolderIdPrefix' '0' '/$fileId',
+                  dataTxId: '',
+                  size: 500,
+                  ready: true,
+                  lastModifiedDate: DateTime.now(),
+                );
               },
             )..shuffle(),
           ],
@@ -98,7 +102,8 @@ void main() {
     });
 
     test('watchFolder() returns correct folder contents', () async {
-      var folderStream = driveDao.watchFolder(driveId, '').share();
+      var folderStream =
+          driveDao.watchFolderContentsAtPath(driveId, '').share();
 
       await Future.wait([
         expectLater(folderStream.map((f) => f.folder.id), emits(rootFolderId)),
@@ -112,8 +117,9 @@ void main() {
         ),
       ]);
 
-      folderStream =
-          driveDao.watchFolder(driveId, '/$nestedFolderIdPrefix' '0').share();
+      folderStream = driveDao
+          .watchFolderContentsAtPath(driveId, '/$nestedFolderIdPrefix' '0')
+          .share();
 
       await Future.wait([
         expectLater(folderStream.map((f) => f.folder.id),

@@ -15,7 +15,6 @@ class DriveAttachForm extends StatelessWidget {
           drivesDao: context.repository<DrivesDao>(),
           syncBloc: context.bloc<SyncBloc>(),
           drivesBloc: context.bloc<DrivesCubit>(),
-          profileBloc: context.bloc<ProfileBloc>(),
         ),
         child: BlocConsumer<DriveAttachCubit, DriveAttachState>(
           listener: (context, state) {

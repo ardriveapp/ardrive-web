@@ -18,19 +18,16 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   final DrivesDao _drivesDao;
   final SyncBloc _syncBloc;
   final DrivesCubit _drivesBloc;
-  final ProfileBloc _profileBloc;
 
   DriveAttachCubit({
     @required ArweaveService arweave,
     @required DrivesDao drivesDao,
     @required SyncBloc syncBloc,
     @required DrivesCubit drivesBloc,
-    @required ProfileBloc profileBloc,
   })  : _arweave = arweave,
         _drivesDao = drivesDao,
         _syncBloc = syncBloc,
         _drivesBloc = drivesBloc,
-        _profileBloc = profileBloc,
         super(DriveAttachInitial());
 
   void submit() async {
@@ -40,7 +37,6 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
     emit(DriveAttachInProgress());
 
-    final profile = _profileBloc.state as ProfileLoaded;
     final String driveId = form.control('driveId').value;
     final String driveName = form.control('name').value;
 
@@ -52,11 +48,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       return;
     }
 
-    await _drivesDao.attachDrive(
-      name: driveName,
-      entity: driveEntity,
-      profileKey: profile.cipherKey,
-    );
+    await _drivesDao.attachDrive(name: driveName, entity: driveEntity);
 
     _syncBloc.add(SyncWithNetwork());
     _drivesBloc.selectDrive(driveId);
