@@ -43,8 +43,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     _folderSubscription =
         Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
-      _driveDao.watchDrive(_driveId),
-      _driveDao.watchFolder(_driveId, path),
+      _driveDao.watchDriveById(_driveId),
+      _driveDao.watchFolderContentsAtPath(_driveId, path),
       _profileBloc.startWith(null),
       (drive, folderContents, _) {
         if (folderContents?.folder != null) {
@@ -68,6 +68,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       selectedItemId: itemId,
       selectedItemIsFolder: isFolder,
     ));
+  }
+
+  void toggleSelectedItemDetails() {
+    final state = this.state as FolderLoadSuccess;
+    emit(state.copyWith(
+        showSelectedItemDetails: !state.showSelectedItemDetails));
   }
 
   void prepareFileUpload(FileEntity fileDetails, Uint8List fileData) async {

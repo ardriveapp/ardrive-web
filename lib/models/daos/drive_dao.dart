@@ -17,11 +17,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   DriveDao(Database db) : super(db);
 
-  Stream<Drive> watchDrive(String driveId) =>
-      (select(drives)..where((d) => d.id.equals(driveId))).watchSingle();
-
   Future<Drive> getDriveById(String driveId) =>
       (select(drives)..where((d) => d.id.equals(driveId))).getSingle();
+
+  Stream<Drive> watchDriveById(String driveId) =>
+      (select(drives)..where((d) => d.id.equals(driveId))).watchSingle();
 
   Future<SecretKey> getDriveKey(String id, SecretKey profileKey) async {
     final drive = await getDriveById(id);
@@ -44,13 +44,19 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)))
           .getSingle();
 
+  Stream<FolderEntry> watchFolderById(String driveId, String folderId) =>
+      (select(folderEntries)
+            ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)))
+          .watchSingle();
+
   Future<String> getFolderNameById(String driveId, String folderId) =>
       (select(folderEntries)
             ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)))
           .map((f) => f.name)
           .getSingle();
 
-  Stream<FolderWithContents> watchFolder(String driveId, String folderPath) {
+  Stream<FolderWithContents> watchFolderContentsAtPath(
+      String driveId, String folderPath) {
     final folderStream = (select(folderEntries)
           ..where((f) => f.driveId.equals(driveId) & f.path.equals(folderPath)))
         .watchSingle();
@@ -119,6 +125,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)))
           .map((f) => f.name)
           .getSingle();
+
+          Stream<FileEntry> watchFileById(String driveId, String fileId) =>
+      (select(fileEntries)
+            ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)))
+          .watchSingle();
 
   Future<String> fileExistsInFolder(String folderId, String filename) async {
     final file = await (select(fileEntries)

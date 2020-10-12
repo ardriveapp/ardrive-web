@@ -13,7 +13,7 @@ ThemeData appTheme() {
     highlightColor: kSelectedColor,
     textTheme: textTheme,
     appBarTheme: _buildAppBarTheme(textTheme),
-    navigationRailTheme: _buildNavigationRailTheme(),
+    tabBarTheme: _buildTabBarTheme(),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
     ),
@@ -85,10 +85,4 @@ AppBarTheme _buildAppBarTheme(TextTheme primaryTextTheme) => AppBarTheme(
     textTheme: primaryTextTheme.copyWith(
         headline6: primaryTextTheme.headline6.copyWith(color: Colors.black87)));
 
-NavigationRailThemeData _buildNavigationRailTheme() => NavigationRailThemeData(
-      backgroundColor: kPrimarySwatch[700],
-      selectedIconTheme: IconThemeData(color: kOnPrimaryHighEmphasis),
-      selectedLabelTextStyle: TextStyle(color: kOnPrimaryHighEmphasis),
-      unselectedIconTheme: IconThemeData(color: kOnPrimaryMediumEmphasis),
-      unselectedLabelTextStyle: TextStyle(color: kOnPrimaryMediumEmphasis),
-    );
+TabBarTheme _buildTabBarTheme() => TabBarTheme(labelColor: Colors.black87);

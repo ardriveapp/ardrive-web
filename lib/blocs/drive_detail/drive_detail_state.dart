@@ -16,13 +16,15 @@ class FolderLoadSuccess extends DriveDetailState {
 
   final String selectedItemId;
   final bool selectedItemIsFolder;
+  final bool showSelectedItemDetails;
 
   FolderLoadSuccess({
     this.currentDrive,
     this.hasWritePermissions,
     this.currentFolder,
     this.selectedItemId,
-    this.selectedItemIsFolder,
+    this.selectedItemIsFolder = false,
+    this.showSelectedItemDetails = false,
   });
 
   FolderLoadSuccess copyWith({
@@ -31,6 +33,7 @@ class FolderLoadSuccess extends DriveDetailState {
     FolderWithContents currentFolder,
     String selectedItemId,
     bool selectedItemIsFolder,
+    bool showSelectedItemDetails,
   }) =>
       FolderLoadSuccess(
         currentDrive: currentDrive ?? this.currentDrive,
@@ -38,6 +41,8 @@ class FolderLoadSuccess extends DriveDetailState {
         currentFolder: currentFolder ?? this.currentFolder,
         selectedItemId: selectedItemId ?? this.selectedItemId,
         selectedItemIsFolder: selectedItemIsFolder ?? this.selectedItemIsFolder,
+        showSelectedItemDetails:
+            showSelectedItemDetails ?? this.showSelectedItemDetails,
       );
 
   @override
@@ -46,6 +51,7 @@ class FolderLoadSuccess extends DriveDetailState {
         hasWritePermissions,
         currentFolder,
         selectedItemId,
-        selectedItemIsFolder
+        selectedItemIsFolder,
+        showSelectedItemDetails,
       ];
 }
