@@ -48,21 +48,23 @@ class FolderRenameCubit extends Cubit<FolderRenameState> {
     final String folderName = form.control('name').value;
     final profile = _profileBloc.state as ProfileLoaded;
 
-    final folder = await _driveDao.getFolderById(driveId, folderId);
-    final driveKey =
-        await _driveDao.getDriveKey(folder.driveId, profile.cipherKey);
+    await _driveDao.transaction(() async {
+      var folder = await _driveDao.getFolderById(driveId, folderId);
+      final driveKey =
+          await _driveDao.getDriveKey(folder.driveId, profile.cipherKey);
 
-    final renamedFolder = folder.copyWith(name: folderName);
+      folder = folder.copyWith(name: folderName);
 
-    final folderTx = await _arweave.prepareEntityTx(
-      renamedFolder.asEntity(),
-      profile.wallet,
-      driveKey,
-    );
+      final folderTx = await _arweave.prepareEntityTx(
+        folder.asEntity(),
+        profile.wallet,
+        driveKey,
+      );
 
-    await _arweave.postTx(folderTx);
+      await _arweave.postTx(folderTx);
 
-    await _driveDao.updateFolder(renamedFolder);
+      await _driveDao.updateFolder(folder);
+    });
 
     emit(FolderRenameSuccess());
   }

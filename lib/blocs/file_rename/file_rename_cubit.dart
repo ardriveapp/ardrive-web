@@ -46,21 +46,23 @@ class FileRenameCubit extends Cubit<FileRenameState> {
     final String fileName = form.control('name').value;
     final profile = _profileBloc.state as ProfileLoaded;
 
-    final file = await _driveDao.getFileById(driveId, fileId);
-    final driveKey =
-        await _driveDao.getDriveKey(file.driveId, profile.cipherKey);
+    await _driveDao.transaction(() async {
+      var file = await _driveDao.getFileById(driveId, fileId);
+      final driveKey =
+          await _driveDao.getDriveKey(file.driveId, profile.cipherKey);
 
-    final renamedFile = file.copyWith(name: fileName);
+      file = file.copyWith(name: fileName);
 
-    final folderTx = await _arweave.prepareEntityTx(
-      renamedFile.asEntity(),
-      profile.wallet,
-      driveKey,
-    );
+      final folderTx = await _arweave.prepareEntityTx(
+        file.asEntity(),
+        profile.wallet,
+        driveKey,
+      );
 
-    await _arweave.postTx(folderTx);
+      await _arweave.postTx(folderTx);
 
-    await _driveDao.updateFile(renamedFile);
+      await _driveDao.updateFile(file);
+    });
 
     emit(FileRenameSuccess());
   }
