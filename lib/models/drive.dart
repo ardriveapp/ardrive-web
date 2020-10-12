@@ -25,6 +25,7 @@ class Drives extends Table {
 }
 
 extension DriveExtensions on Drive {
+  bool get isPublic => privacy == DrivePrivacy.public;
   bool get isPrivate => privacy == DrivePrivacy.private;
 
   DriveEntity asEntity() => DriveEntity(

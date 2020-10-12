@@ -4,6 +4,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'components/drive_info_side_sheet.dart';
 import 'components/table_rows.dart';
@@ -162,12 +163,20 @@ class DriveDetailView extends StatelessWidget {
     return Row(
       children: [
         if (state.selectedItemId != null) ...{
-          if (!state.selectedItemIsFolder)
+          if (!state.selectedItemIsFolder) ...{
             IconButton(
               icon: Icon(Icons.file_download),
               onPressed: () {},
               tooltip: 'Download',
             ),
+            if (state.currentDrive.isPublic)
+              IconButton(
+                icon: Icon(Icons.open_in_new),
+                onPressed: () async =>
+                    launch(await bloc.getSelectedFilePreviewUrl()),
+                tooltip: 'Preview',
+              ),
+          },
           if (state.hasWritePermissions) ...{
             IconButton(
               icon: Icon(Icons.drive_file_rename_outline),

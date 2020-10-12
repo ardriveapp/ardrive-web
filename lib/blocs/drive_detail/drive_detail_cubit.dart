@@ -76,6 +76,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         showSelectedItemDetails: !state.showSelectedItemDetails));
   }
 
+  Future<String> getSelectedFilePreviewUrl() async {
+    final state = this.state as FolderLoadSuccess;
+    final file = await _driveDao.getFileById(_driveId, state.selectedItemId);
+    return 'https://arweave.dev/${file.dataTxId}';
+  }
+
   void prepareFileUpload(FileEntity fileDetails, Uint8List fileData) async {
     final profile = _profileBloc.state as ProfileLoaded;
     final currentState = state as FolderLoadSuccess;
