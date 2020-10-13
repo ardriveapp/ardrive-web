@@ -195,7 +195,17 @@ class DriveDetailView extends StatelessWidget {
             ),
             IconButton(
               icon: Icon(Icons.drive_file_move),
-              onPressed: () {},
+              onPressed: () {
+                if (state.selectedItemIsFolder) {
+                  promptToMoveFolder(context,
+                      driveId: state.currentDrive.id,
+                      folderId: state.selectedItemId);
+                } else {
+                  promptToMoveFile(context,
+                      driveId: state.currentDrive.id,
+                      fileId: state.selectedItemId);
+                }
+              },
               tooltip: 'Move',
             ),
           },
