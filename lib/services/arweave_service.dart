@@ -41,6 +41,11 @@ class ArweaveService {
     for (var i = 0; i < entityTxs.length; i++) {
       final transaction = entityTxs[i];
 
+      // If this transaction has not been mined yet, ignore it.
+      if (transaction.block == null) {
+        continue;
+      }
+
       if (blockHistory.isEmpty ||
           transaction.block.height != blockHistory.last.blockHeight) {
         blockHistory.add(BlockEntities(transaction.block.height));
