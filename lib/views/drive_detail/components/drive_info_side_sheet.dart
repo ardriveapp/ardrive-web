@@ -59,7 +59,8 @@ class DriveInfoSideSheet extends StatelessWidget {
                                             is DriveInfoDriveLoadSuccess) ...{
                                           DataRow(cells: [
                                             DataCell(Text('Drive ID')),
-                                            DataCell(Text(state.drive.id)),
+                                            DataCell(
+                                                SelectableText(state.drive.id)),
                                           ]),
                                           DataRow(cells: [
                                             DataCell(Text('Privacy')),
