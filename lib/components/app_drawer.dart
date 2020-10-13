@@ -86,7 +86,11 @@ class AppDrawer extends StatelessWidget {
               if (state is FolderLoadSuccess) ...{
                 PopupMenuItem(
                   enabled: state.hasWritePermissions,
-                  value: promptToCreateFolder,
+                  value: (context) => promptToCreateFolder(
+                    context,
+                    targetDriveId: state.currentDrive.id,
+                    targetFolderId: state.currentFolder.folder.id,
+                  ),
                   child: ListTile(
                     enabled: state.hasWritePermissions,
                     title: Text('New folder'),
@@ -95,7 +99,7 @@ class AppDrawer extends StatelessWidget {
                 PopupMenuDivider(),
                 PopupMenuItem(
                   enabled: state.hasWritePermissions,
-                  value: _promptToUploadFile,
+                  value: (context) => _promptToUploadFile(context),
                   child: ListTile(
                     enabled: state.hasWritePermissions,
                     title: Text('Upload file'),
@@ -106,14 +110,14 @@ class AppDrawer extends StatelessWidget {
               if (drivesState is DrivesLoadSuccess) ...{
                 PopupMenuItem(
                   enabled: drivesState.canCreateNewDrive,
-                  value: promptToCreateDrive,
+                  value: (context) => promptToCreateDrive(context),
                   child: ListTile(
                     enabled: drivesState.canCreateNewDrive,
                     title: Text('New drive'),
                   ),
                 ),
                 PopupMenuItem(
-                  value: _promptToAttachDrive,
+                  value: (context) => _promptToAttachDrive(context),
                   child: ListTile(
                     title: Text('Attach drive'),
                   ),

@@ -14,46 +14,68 @@ Future<void> promptToRenameFolder(
 }) =>
     showDialog(
       context: context,
-      builder: (_) => FolderRenameForm(
+      builder: (_) => FsEntryRenameForm(
         driveId: driveId,
         folderId: folderId,
       ),
     );
 
-class FolderRenameForm extends StatelessWidget {
+Future<void> promptToRenameFile(
+  BuildContext context, {
+  @required String driveId,
+  @required String fileId,
+}) =>
+    showDialog(
+      context: context,
+      builder: (_) => FsEntryRenameForm(
+        driveId: driveId,
+        fileId: fileId,
+      ),
+    );
+
+class FsEntryRenameForm extends StatelessWidget {
   final String driveId;
   final String folderId;
+  final String fileId;
 
-  FolderRenameForm({@required this.driveId, @required this.folderId});
+  FsEntryRenameForm({@required this.driveId, this.folderId, this.fileId})
+      : assert(folderId != null || fileId != null);
 
   @override
   Widget build(BuildContext context) => BlocProvider(
-        create: (context) => FolderRenameCubit(
+        create: (context) => FsEntryRenameCubit(
           driveId: driveId,
           folderId: folderId,
+          fileId: fileId,
           arweave: context.repository<ArweaveService>(),
           driveDao: context.repository<DriveDao>(),
           profileBloc: context.bloc<ProfileBloc>(),
         ),
-        child: BlocConsumer<FolderRenameCubit, FolderRenameState>(
+        child: BlocConsumer<FsEntryRenameCubit, FsEntryRenameState>(
           listener: (context, state) {
-            if (state is FolderRenameInProgress) {
+            if (state is FolderEntryRenameInProgress) {
               showProgressDialog(context, 'Renaming folder...');
-            } else if (state is FolderRenameSuccess) {
+            } else if (state is FileEntryRenameInProgress) {
+              showProgressDialog(context, 'Renaming file...');
+            } else if (state is FolderEntryRenameSuccess ||
+                state is FileEntryRenameSuccess) {
               Navigator.pop(context);
               Navigator.pop(context);
             }
           },
           builder: (context, state) => AlertDialog(
-            title: Text('Rename folder'),
-            content: state is! FolderRenameInitializing
+            title:
+                Text(state.isRenamingFolder ? 'Rename folder' : 'Rename file'),
+            content: state is! FsEntryRenameInitializing
                 ? ReactiveForm(
-                    formGroup: context.bloc<FolderRenameCubit>().form,
+                    formGroup: context.bloc<FsEntryRenameCubit>().form,
                     child: ReactiveTextField(
                       formControlName: 'name',
                       autofocus: true,
-                      decoration:
-                          const InputDecoration(labelText: 'Folder name'),
+                      decoration: InputDecoration(
+                          labelText: state.isRenamingFolder
+                              ? 'Folder name'
+                              : 'File name'),
                     ),
                   )
                 : null,
@@ -65,7 +87,7 @@ class FolderRenameForm extends StatelessWidget {
               ),
               TextButton(
                 child: Text('RENAME'),
-                onPressed: () => context.bloc<FolderRenameCubit>().submit(),
+                onPressed: () => context.bloc<FsEntryRenameCubit>().submit(),
               ),
             ],
           ),

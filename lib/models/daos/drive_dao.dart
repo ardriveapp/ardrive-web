@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:equatable/equatable.dart';
 import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
@@ -54,6 +55,36 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)))
           .map((f) => f.name)
           .getSingle();
+
+  Stream<FolderWithContents> watchFolderContentsById(
+      String driveId, String folderId) {
+    final folderStream = (select(folderEntries)
+          ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)))
+        .watchSingle();
+
+    final subfoldersStream = (select(folderEntries)
+          ..where((f) =>
+              f.driveId.equals(driveId) & f.parentFolderId.equals(folderId))
+          ..orderBy([(f) => OrderingTerm(expression: f.name)]))
+        .watch();
+
+    final filesStream = (select(fileEntries)
+          ..where((f) =>
+              f.driveId.equals(driveId) & f.parentFolderId.equals(folderId))
+          ..orderBy([(f) => OrderingTerm(expression: f.name)]))
+        .watch();
+
+    return Rx.combineLatest3(
+      folderStream,
+      subfoldersStream,
+      filesStream,
+      (folder, subfolders, files) => FolderWithContents(
+        folder: folder,
+        subfolders: subfolders,
+        files: files,
+      ),
+    );
+  }
 
   Stream<FolderWithContents> watchFolderContentsAtPath(
       String driveId, String folderPath) {
@@ -126,7 +157,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           .map((f) => f.name)
           .getSingle();
 
-          Stream<FileEntry> watchFileById(String driveId, String fileId) =>
+  Stream<FileEntry> watchFileById(String driveId, String fileId) =>
       (select(fileEntries)
             ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)))
           .watchSingle();
@@ -162,10 +193,13 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       );
 }
 
-class FolderWithContents {
+class FolderWithContents extends Equatable {
   final FolderEntry folder;
   final List<FolderEntry> subfolders;
   final List<FileEntry> files;
 
   FolderWithContents({this.folder, this.subfolders, this.files});
+
+  @override
+  List<Object> get props => [folder, subfolders, files];
 }

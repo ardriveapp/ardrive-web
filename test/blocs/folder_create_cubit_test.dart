@@ -14,7 +14,6 @@ void main() {
     DriveDao driveDao;
 
     ArweaveService arweave;
-    DriveDetailCubit driveDetailCubit;
     ProfileBloc profileBloc;
     FolderCreateCubit folderCreateCubit;
 
@@ -23,13 +22,11 @@ void main() {
       driveDao = db.driveDao;
 
       arweave = ArweaveService(Arweave());
-      driveDetailCubit = MockDriveDetailCubit();
       profileBloc = MockProfileBloc();
 
       folderCreateCubit = FolderCreateCubit(
         arweave: arweave,
         driveDao: driveDao,
-        driveDetailCubit: driveDetailCubit,
         profileBloc: profileBloc,
       );
     });

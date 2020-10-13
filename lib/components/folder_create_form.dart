@@ -7,23 +7,31 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
 
-Future<void> promptToCreateFolder(BuildContext context) => showDialog(
+Future<void> promptToCreateFolder(
+  BuildContext context, {
+  @required String targetDriveId,
+  @required String targetFolderId,
+}) =>
+    showDialog(
       context: context,
       builder: (_) => FolderCreateForm(
-        driveDetailCubit: context.bloc<DriveDetailCubit>(),
+        targetDriveId: targetDriveId,
+        targetFolderId: targetFolderId,
       ),
     );
 
 class FolderCreateForm extends StatelessWidget {
-  final DriveDetailCubit _driveDetailCubit;
+  final String targetDriveId;
+  final String targetFolderId;
 
-  FolderCreateForm({@required DriveDetailCubit driveDetailCubit})
-      : _driveDetailCubit = driveDetailCubit;
+  FolderCreateForm(
+      {@required this.targetDriveId, @required this.targetFolderId});
 
   @override
   Widget build(BuildContext context) => BlocProvider(
         create: (context) => FolderCreateCubit(
-          driveDetailCubit: _driveDetailCubit,
+          targetDriveId: targetDriveId,
+          targetFolderId: targetFolderId,
           profileBloc: context.bloc<ProfileBloc>(),
           arweave: context.repository<ArweaveService>(),
           driveDao: context.repository<DriveDao>(),
