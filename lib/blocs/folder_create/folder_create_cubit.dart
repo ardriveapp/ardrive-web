@@ -14,19 +14,21 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     'name': FormControl(validators: [Validators.required]),
   });
 
-  final DriveDetailCubit _driveDetailCubit;
+  final String targetDriveId;
+  final String targetFolderId;
+
   final ProfileBloc _profileBloc;
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
 
   FolderCreateCubit({
-    @required DriveDetailCubit driveDetailCubit,
+    @required this.targetDriveId,
+    @required this.targetFolderId,
     @required ProfileBloc profileBloc,
     @required ArweaveService arweave,
     @required DriveDao driveDao,
-  })  : _driveDetailCubit = driveDetailCubit,
-        _profileBloc = profileBloc,
+  })  : _profileBloc = profileBloc,
         _arweave = arweave,
         _driveDao = driveDao,
         super(FolderCreateInitial());
@@ -39,36 +41,37 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     emit(FolderCreateInProgress());
 
     final profile = _profileBloc.state as ProfileLoaded;
-    final driveState = _driveDetailCubit.state as FolderLoadSuccess;
-
-    final currentDrive = driveState.currentDrive;
-    final currentFolder = driveState.currentFolder.folder;
-
     final String folderName = form.control('name').value;
 
-    final driveKey = driveState.currentDrive.isPrivate
-        ? await _driveDao.getDriveKey(currentDrive.id, profile.cipherKey)
-        : null;
+    await _driveDao.transaction(() async {
+      final targetDrive = await _driveDao.getDriveById(targetDriveId);
+      final targetFolder =
+          await _driveDao.getFolderById(targetDriveId, targetFolderId);
 
-    final newFolderId = await _driveDao.createFolder(
-      driveId: currentDrive.id,
-      parentFolderId: currentFolder.id,
-      folderName: folderName,
-      path: '${currentFolder.path}/${folderName}',
-    );
+      final driveKey = targetDrive.isPrivate
+          ? await _driveDao.getDriveKey(targetFolder.driveId, profile.cipherKey)
+          : null;
 
-    final folderTx = await _arweave.prepareEntityTx(
-      FolderEntity(
-        id: newFolderId,
-        driveId: currentFolder.driveId,
-        parentFolderId: currentFolder.id,
-        name: folderName,
-      ),
-      profile.wallet,
-      driveKey,
-    );
+      final newFolderId = await _driveDao.createFolder(
+        driveId: targetFolder.driveId,
+        parentFolderId: targetFolder.id,
+        folderName: folderName,
+        path: '${targetFolder.path}/${folderName}',
+      );
 
-    await _arweave.postTx(folderTx);
+      final folderTx = await _arweave.prepareEntityTx(
+        FolderEntity(
+          id: newFolderId,
+          driveId: targetFolder.driveId,
+          parentFolderId: targetFolder.id,
+          name: folderName,
+        ),
+        profile.wallet,
+        driveKey,
+      );
+
+      await _arweave.postTx(folderTx);
+    });
 
     emit(FolderCreateSuccess());
   }
