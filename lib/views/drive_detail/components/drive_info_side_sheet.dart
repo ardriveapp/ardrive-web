@@ -10,7 +10,7 @@ class DriveInfoSideSheet extends StatelessWidget {
         elevation: 1,
         child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
           builder: (context, state) {
-            if (state is FolderLoadSuccess) {
+            if (state is DriveDetailLoadSuccess) {
               return BlocProvider<DriveInfoCubit>(
                 create: (context) => DriveInfoCubit(
                   driveId: state.currentDrive.id,

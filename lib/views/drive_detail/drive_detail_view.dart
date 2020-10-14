@@ -39,7 +39,7 @@ class DriveDetailView extends StatelessWidget {
           builder: (context, state) => Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (state is FolderLoadSuccess) ...{
+              if (state is DriveDetailLoadSuccess) ...{
                 Expanded(
                   child: Scrollbar(
                     child: SingleChildScrollView(
@@ -157,7 +157,7 @@ class DriveDetailView extends StatelessWidget {
     );
   }
 
-  Widget _buildActionsRow(BuildContext context, FolderLoadSuccess state) {
+  Widget _buildActionsRow(BuildContext context, DriveDetailLoadSuccess state) {
     final bloc = context.bloc<DriveDetailCubit>();
 
     return Row(

@@ -30,14 +30,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         _profileBloc = profileBloc,
         _uploadBloc = uploadBloc,
         _driveDao = driveDao,
-        super(FolderLoadInProgress()) {
+        super(DriveDetailLoadInProgress()) {
     if (driveId != null) {
       openFolderAtPath('');
     }
   }
 
   void openFolderAtPath(String path) {
-    emit(FolderLoadInProgress());
+    emit(DriveDetailLoadInProgress());
 
     unawaited(_folderSubscription?.cancel());
 
@@ -50,7 +50,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         if (folderContents?.folder != null) {
           final profile = _profileBloc.state;
           emit(
-            FolderLoadSuccess(
+            DriveDetailLoadSuccess(
               currentDrive: drive,
               hasWritePermissions: profile is ProfileLoaded &&
                   drive.ownerAddress == profile.wallet.address,
@@ -63,7 +63,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   void selectItem(String itemId, {bool isFolder = false}) {
-    final state = this.state as FolderLoadSuccess;
+    final state = this.state as DriveDetailLoadSuccess;
     emit(state.copyWith(
       selectedItemId: itemId,
       selectedItemIsFolder: isFolder,
@@ -71,20 +71,20 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   void toggleSelectedItemDetails() {
-    final state = this.state as FolderLoadSuccess;
+    final state = this.state as DriveDetailLoadSuccess;
     emit(state.copyWith(
         showSelectedItemDetails: !state.showSelectedItemDetails));
   }
 
   Future<String> getSelectedFilePreviewUrl() async {
-    final state = this.state as FolderLoadSuccess;
+    final state = this.state as DriveDetailLoadSuccess;
     final file = await _driveDao.getFileById(_driveId, state.selectedItemId);
     return 'https://arweave.dev/${file.dataTxId}';
   }
 
   void prepareFileUpload(FileEntity fileDetails, Uint8List fileData) async {
     final profile = _profileBloc.state as ProfileLoaded;
-    final currentState = state as FolderLoadSuccess;
+    final currentState = state as DriveDetailLoadSuccess;
     final currentFolder = currentState.currentFolder.folder;
     final drive = currentState.currentDrive;
 

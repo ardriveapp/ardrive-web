@@ -1,6 +1,9 @@
 part of 'drives_cubit.dart';
 
-abstract class DrivesState {}
+abstract class DrivesState extends Equatable {
+  @override
+  List<Object> get props => [];
+}
 
 class DrivesLoadInProgress extends DrivesState {}
 
@@ -30,4 +33,7 @@ class DrivesLoadSuccess extends DrivesState {
         sharedDrives: sharedDrives ?? this.sharedDrives,
         canCreateNewDrive: canCreateNewDrive ?? this.canCreateNewDrive,
       );
+
+  @override
+  List<Object> get props => [selectedDriveId, userDrives, sharedDrives];
 }

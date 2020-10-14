@@ -83,7 +83,7 @@ class AppDrawer extends StatelessWidget {
               label: Text('NEW'),
             ),
             itemBuilder: (context) => [
-              if (state is FolderLoadSuccess) ...{
+              if (state is DriveDetailLoadSuccess) ...{
                 PopupMenuItem(
                   enabled: state.hasWritePermissions,
                   value: (context) => promptToCreateFolder(

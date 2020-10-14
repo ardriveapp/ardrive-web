@@ -6,9 +6,9 @@ abstract class DriveDetailState extends Equatable {
   List<Object> get props => [];
 }
 
-class FolderLoadInProgress extends DriveDetailState {}
+class DriveDetailLoadInProgress extends DriveDetailState {}
 
-class FolderLoadSuccess extends DriveDetailState {
+class DriveDetailLoadSuccess extends DriveDetailState {
   final Drive currentDrive;
   final bool hasWritePermissions;
 
@@ -18,7 +18,7 @@ class FolderLoadSuccess extends DriveDetailState {
   final bool selectedItemIsFolder;
   final bool showSelectedItemDetails;
 
-  FolderLoadSuccess({
+  DriveDetailLoadSuccess({
     this.currentDrive,
     this.hasWritePermissions,
     this.currentFolder,
@@ -27,7 +27,7 @@ class FolderLoadSuccess extends DriveDetailState {
     this.showSelectedItemDetails = false,
   });
 
-  FolderLoadSuccess copyWith({
+  DriveDetailLoadSuccess copyWith({
     Drive currentDrive,
     bool hasWritePermissions,
     FolderWithContents currentFolder,
@@ -35,7 +35,7 @@ class FolderLoadSuccess extends DriveDetailState {
     bool selectedItemIsFolder,
     bool showSelectedItemDetails,
   }) =>
-      FolderLoadSuccess(
+      DriveDetailLoadSuccess(
         currentDrive: currentDrive ?? this.currentDrive,
         hasWritePermissions: hasWritePermissions ?? this.hasWritePermissions,
         currentFolder: currentFolder ?? this.currentFolder,

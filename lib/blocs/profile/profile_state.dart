@@ -1,7 +1,10 @@
 part of 'profile_bloc.dart';
 
 @immutable
-abstract class ProfileState {}
+abstract class ProfileState extends Equatable {
+  @override
+  List<Object> get props => [];
+}
 
 class ProfileLoading extends ProfileState {}
 
@@ -12,6 +15,9 @@ class ProfileLoaded extends ProfileState {
   final SecretKey cipherKey;
 
   ProfileLoaded({this.username, this.password, this.wallet, this.cipherKey});
+
+  @override
+  List<Object> get props => [username, password, wallet, cipherKey];
 }
 
 class ProfileUnavailable extends ProfileState {}
