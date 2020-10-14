@@ -26,11 +26,12 @@ void main() {
         batch.insert(
           db.drives,
           DrivesCompanion.insert(
-              id: driveId,
-              rootFolderId: rootFolderId,
-              ownerAddress: 'owner-address',
-              name: 'drive-name',
-              privacy: DrivePrivacy.public),
+            id: driveId,
+            rootFolderId: rootFolderId,
+            ownerAddress: 'owner-address',
+            name: 'drive-name',
+            privacy: DrivePrivacy.public,
+          ),
         );
 
         batch.insertAll(
@@ -46,10 +47,11 @@ void main() {
               (i) {
                 final folderId = '$nestedFolderIdPrefix$i';
                 return FolderEntriesCompanion.insert(
-                    id: folderId,
-                    driveId: driveId,
-                    name: folderId,
-                    path: '/$folderId');
+                  id: folderId,
+                  driveId: driveId,
+                  name: folderId,
+                  path: '/$folderId',
+                );
               },
             )..shuffle(),
           ],
@@ -70,7 +72,6 @@ void main() {
                   path: '/$fileId',
                   dataTxId: '',
                   size: 500,
-                  ready: true,
                   lastModifiedDate: DateTime.now(),
                 );
               },
@@ -87,7 +88,6 @@ void main() {
                   path: '/$nestedFolderIdPrefix' '0' '/$fileId',
                   dataTxId: '',
                   size: 500,
-                  ready: true,
                   lastModifiedDate: DateTime.now(),
                 );
               },

@@ -69,27 +69,34 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
     );
   }
 
-  /// Adds or updates the user's drives with the newly provided drive entities.
+  /// Adds or updates the user's drives with the provided drive entities.
   Future<void> updateUserDrives(
           Map<DriveEntity, SecretKey> driveEntities, SecretKey profileKey) =>
       db.batch((b) async {
         for (final entry in driveEntities.entries) {
           final entity = entry.key;
 
-          var insertDriveOp = DrivesCompanion.insert(
+          var driveCompanion = DrivesCompanion.insert(
             id: entity.id,
             name: entity.name,
             ownerAddress: entity.ownerAddress,
             rootFolderId: entity.rootFolderId,
             privacy: entity.privacy,
+            dateCreated: Value(entity.commitTime),
+            lastUpdated: Value(entity.commitTime),
           );
 
           if (entity.privacy == DrivePrivacy.private) {
-            insertDriveOp = await _addDriveKeyToDriveCompanion(
-                insertDriveOp, profileKey, entry.value);
+            driveCompanion = await _addDriveKeyToDriveCompanion(
+                driveCompanion, profileKey, entry.value);
           }
 
-          b.insert(drives, insertDriveOp, mode: InsertMode.insertOrReplace);
+          b.insert(
+            drives,
+            driveCompanion,
+            onConflict:
+                DoUpdate((_) => driveCompanion.copyWith(dateCreated: null)),
+          );
         }
       });
 
@@ -103,6 +110,10 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
       ownerAddress: entity.ownerAddress,
       rootFolderId: entity.rootFolderId,
       privacy: entity.privacy,
+      // TODO: Provide proper date created for attached drives.
+      // It should be the timestamp for the first entry of this drive.
+      dateCreated: Value(entity.commitTime),
+      lastUpdated: Value(entity.commitTime),
     );
 
     await into(drives).insert(insertDriveOp);
@@ -151,6 +162,8 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
                 parentFolderId: Value(entity.parentFolderId),
                 name: entity.name,
                 path: '',
+                dateCreated: Value(entity.commitTime),
+                lastUpdated: Value(entity.commitTime),
               );
             } else if (entity is FileEntity) {
               if (updatedFiles.containsKey(entity.id)) continue;
@@ -162,25 +175,40 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
                 name: entity.name,
                 dataTxId: entity.dataTxId,
                 size: entity.size,
-                ready: true,
                 path: '',
+                dateCreated: Value(entity.commitTime),
+                lastUpdated: Value(entity.commitTime),
                 lastModifiedDate: entity.lastModifiedDate,
               );
             }
           }
         }
 
-        // Write in the new folder and file contents without their paths.
+        // Write in the new folder and file contents without their paths
+        // and don't update the `dateCreated` if the entry already exists.
         await batch((b) {
-          b.insertAllOnConflictUpdate(
-              folderEntries, updatedFolders.values.toList());
-          b.insertAllOnConflictUpdate(
-              fileEntries, updatedFiles.values.toList());
+          for (final updatedFolder in updatedFolders.values) {
+            b.insert(
+              folderEntries,
+              updatedFolder,
+              onConflict:
+                  DoUpdate((_) => updatedFolder.copyWith(dateCreated: null)),
+            );
+          }
+          for (final updatedFile in updatedFiles.values) {
+            b.insert(
+              fileEntries,
+              updatedFile,
+              onConflict:
+                  DoUpdate((_) => updatedFile.copyWith(dateCreated: null)),
+            );
+          }
         });
 
         // Construct a tree of the updated folders and files for path generation.
         final staleFolderTree = <StaleFolderNode>[];
 
+        // Constructs a tree of folders and files that are children of the specified folder.
         Future<StaleFolderNode> getStaleFolderTree(
             FolderEntriesCompanion folder) async {
           final folderId = folder.id.value;
@@ -198,18 +226,11 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
 
           return StaleFolderNode(
             folder,
+            // Recursively get the stale contents of this folder's subfolders.
             await Future.wait(
               staleSubfolders.map(
                 (f) => getStaleFolderTree(
-                  updatedFolders[f.id] ??
-                      FolderEntriesCompanion.insert(
-                        id: f.id,
-                        driveId: f.driveId,
-                        parentFolderId: Value(f.parentFolderId),
-                        name: f.name,
-                        path: '',
-                      ),
-                ),
+                    updatedFolders[f.id] ?? f.toCompanion(true)),
               ),
             ),
             staleFolderFilesMap,
