@@ -121,7 +121,14 @@ class DriveDetailView extends StatelessWidget {
                 ),
                 if (state.showSelectedItemDetails) ...{
                   VerticalDivider(width: 1),
-                  DriveInfoSideSheet(),
+                  DriveInfoSideSheet(
+                      driveId: state.currentDrive.id,
+                      folderId: state.selectedItemIsFolder
+                          ? state.selectedItemId
+                          : null,
+                      fileId: !state.selectedItemIsFolder
+                          ? state.selectedItemId
+                          : null),
                 }
               }
             ],

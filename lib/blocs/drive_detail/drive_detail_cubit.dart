@@ -48,9 +48,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       _profileBloc.startWith(null),
       (drive, folderContents, _) {
         if (folderContents?.folder != null) {
+          final state = this.state is! DriveDetailLoadSuccess
+              ? DriveDetailLoadSuccess()
+              : this.state as DriveDetailLoadSuccess;
           final profile = _profileBloc.state;
+
           emit(
-            DriveDetailLoadSuccess(
+            state.copyWith(
               currentDrive: drive,
               hasWritePermissions: profile is ProfileLoaded &&
                   drive.ownerAddress == profile.wallet.address,
