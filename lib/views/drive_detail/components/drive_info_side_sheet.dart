@@ -9,15 +9,14 @@ class DriveInfoSideSheet extends StatelessWidget {
   final String folderId;
   final String fileId;
 
-  DriveInfoSideSheet({@required this.driveId, this.folderId, this.fileId})
-      : assert((folderId != null) != (fileId != null));
+  DriveInfoSideSheet({@required this.driveId, this.folderId, this.fileId});
 
   @override
   Widget build(BuildContext context) => Drawer(
         elevation: 1,
         child: BlocProvider<DriveInfoCubit>(
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
-          key: ValueKey(driveId + (folderId ?? fileId)),
+          key: ValueKey(driveId + (folderId ?? fileId ?? '')),
           create: (context) => DriveInfoCubit(
             driveId: driveId,
             folderId: folderId,
