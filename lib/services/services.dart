@@ -1,2 +1,2 @@
-export 'arweave_service.dart';
+export 'arweave/arweave.dart';
 export 'crypto/crypto.dart';

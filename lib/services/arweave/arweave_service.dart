@@ -7,7 +7,7 @@ import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart';
 import 'package:mime/mime.dart';
 
-import 'crypto/crypto.dart';
+import '../services.dart';
 
 class ArweaveService {
   final ArtemisClient _gql = ArtemisClient('https://arweave.dev/graphql');
@@ -41,9 +41,10 @@ class ArweaveService {
     for (var i = 0; i < entityTxs.length; i++) {
       final transaction = entityTxs[i];
 
-      // If this transaction has not been mined yet, ignore it.
+      // If we encounter a transaction that has yet to be mined, we stop moving through history.
+      // We can continue once the transaction is mined.
       if (transaction.block == null) {
-        continue;
+        break;
       }
 
       if (blockHistory.isEmpty ||

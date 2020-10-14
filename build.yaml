@@ -4,7 +4,7 @@ targets:
       artemis:
         options:
           schema_mapping:
-            - output: lib/entities/graphql/graphql_api.dart
-              schema: lib/entities/graphql/schema.graphql
-              queries_glob: lib/entities/graphql/queries/**.graphql
-          fragments_glob: lib/entities/graphql/fragments/**.graphql
+            - output: lib/services/arweave/graphql/graphql_api.dart
+              schema: lib/services/arweave/graphql/schema.graphql
+              queries_glob: lib/services/arweave/graphql/queries/**.graphql
+          fragments_glob: lib/services/arweave/graphql/fragments/**.graphql

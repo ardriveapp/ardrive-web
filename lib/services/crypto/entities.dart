@@ -6,6 +6,8 @@ import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart' hide Cipher;
 
+import '../services.dart';
+
 Future<Map<String, dynamic>> decryptEntityJson(
   TransactionCommonMixin transaction,
   Uint8List data,
