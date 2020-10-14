@@ -3,6 +3,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 class DriveInfoSideSheet extends StatelessWidget {
   final String driveId;
@@ -75,7 +76,22 @@ class DriveInfoSideSheet extends StatelessWidget {
                                       DataCell(Text('Size')),
                                       DataCell(Text(filesize(state.file.size)))
                                     ]),
-                                  }
+                                    DataRow(cells: [
+                                      DataCell(Text('Last modified')),
+                                      DataCell(Text(DateFormat.yMMMd()
+                                          .format(state.file.lastModifiedDate)))
+                                    ]),
+                                  },
+                                  DataRow(cells: [
+                                    DataCell(Text('Last updated')),
+                                    DataCell(Text(DateFormat.yMMMd()
+                                        .format(state.lastUpdated))),
+                                  ]),
+                                  DataRow(cells: [
+                                    DataCell(Text('Date created')),
+                                    DataCell(Text(DateFormat.yMMMd()
+                                        .format(state.dateCreated))),
+                                  ]),
                                 ],
                               ),
                               Center(

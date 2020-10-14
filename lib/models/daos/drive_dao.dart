@@ -177,20 +177,25 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeFileEntity(
     FileEntity entity,
     String path,
-  ) =>
-      into(fileEntries).insertOnConflictUpdate(
-        FileEntriesCompanion.insert(
-          id: entity.id,
-          driveId: entity.driveId,
-          parentFolderId: entity.parentFolderId,
-          name: entity.name,
-          path: path,
-          dataTxId: entity.dataTxId,
-          size: entity.size,
-          ready: false,
-          lastModifiedDate: entity.lastModifiedDate,
-        ),
-      );
+  ) {
+    final companion = FileEntriesCompanion.insert(
+      id: entity.id,
+      driveId: entity.driveId,
+      parentFolderId: entity.parentFolderId,
+      name: entity.name,
+      path: path,
+      dataTxId: entity.dataTxId,
+      size: entity.size,
+      dateCreated: Value(entity.commitTime),
+      lastUpdated: Value(entity.commitTime),
+      lastModifiedDate: entity.lastModifiedDate,
+    );
+
+    return into(fileEntries).insert(
+      companion,
+      onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
+    );
+  }
 }
 
 class FolderWithContents extends Equatable {

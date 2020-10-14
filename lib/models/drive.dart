@@ -20,6 +20,11 @@ class Drives extends Table {
   BlobColumn get encryptedKey => blob().nullable()();
   BlobColumn get keyIv => blob().nullable()();
 
+  DateTimeColumn get dateCreated =>
+      dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get lastUpdated =>
+      dateTime().clientDefault(() => DateTime.now())();
+
   @override
   Set<Column> get primaryKey => {id};
 }
