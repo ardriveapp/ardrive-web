@@ -39,35 +39,10 @@ class App extends StatelessWidget {
         RepositoryProvider<DrivesDao>(create: (_) => db.drivesDao),
         RepositoryProvider<DriveDao>(create: (_) => db.driveDao),
       ],
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider(
-            create: (context) => ProfileBloc(
-              profileDao: context.repository<ProfileDao>(),
-            ),
-          ),
-          BlocProvider(
-            create: (context) => UploadBloc(
-              profileBloc: context.bloc<ProfileBloc>(),
-              arweave: context.repository<ArweaveService>(),
-              driveDao: context.repository<DriveDao>(),
-            ),
-          ),
-          BlocProvider(
-            create: (context) => SyncBloc(
-              profileBloc: context.bloc<ProfileBloc>(),
-              arweave: context.repository<ArweaveService>(),
-              drivesDao: context.repository<DrivesDao>(),
-              driveDao: context.repository<DriveDao>(),
-            ),
-          ),
-          BlocProvider(
-            create: (context) => DrivesCubit(
-              profileBloc: context.bloc<ProfileBloc>(),
-              drivesDao: context.repository<DrivesDao>(),
-            ),
-          ),
-        ],
+      child: BlocProvider(
+        create: (context) => ProfileBloc(
+          profileDao: context.repository<ProfileDao>(),
+        ),
         child: MaterialApp(
           title: 'ArDrive',
           theme: appTheme(),
@@ -78,28 +53,53 @@ class App extends StatelessWidget {
               } else if (state is ProfileLoading) {
                 return Container();
               } else if (state is ProfileLoaded) {
-                return BlocBuilder<DrivesCubit, DrivesState>(
-                  builder: (context, state) {
-                    if (state is DrivesLoadSuccess) {
-                      return BlocProvider(
-                        key: ValueKey(state.selectedDriveId),
-                        create: (context) => DriveDetailCubit(
-                          driveId: state.selectedDriveId,
-                          profileBloc: context.bloc<ProfileBloc>(),
-                          uploadBloc: context.bloc<UploadBloc>(),
-                          driveDao: context.repository<DriveDao>(),
-                          config: context.repository<AppConfig>(),
-                        ),
-                        child: AppShell(
-                          page: state.selectedDriveId != null
-                              ? DriveDetailView()
-                              : Container(),
-                        ),
-                      );
-                    } else {
-                      return Container();
-                    }
-                  },
+                return MultiBlocProvider(
+                  providers: [
+                    BlocProvider(
+                      create: (context) => UploadBloc(
+                        profileBloc: context.bloc<ProfileBloc>(),
+                        arweave: context.repository<ArweaveService>(),
+                        driveDao: context.repository<DriveDao>(),
+                      ),
+                    ),
+                    BlocProvider(
+                      create: (context) => SyncCubit(
+                        profileBloc: context.bloc<ProfileBloc>(),
+                        arweave: context.repository<ArweaveService>(),
+                        drivesDao: context.repository<DrivesDao>(),
+                        driveDao: context.repository<DriveDao>(),
+                      ),
+                    ),
+                    BlocProvider(
+                      create: (context) => DrivesCubit(
+                        profileBloc: context.bloc<ProfileBloc>(),
+                        drivesDao: context.repository<DrivesDao>(),
+                      ),
+                    ),
+                  ],
+                  child: BlocBuilder<DrivesCubit, DrivesState>(
+                    builder: (context, state) {
+                      if (state is DrivesLoadSuccess) {
+                        return BlocProvider(
+                          key: ValueKey(state.selectedDriveId),
+                          create: (context) => DriveDetailCubit(
+                            driveId: state.selectedDriveId,
+                            profileBloc: context.bloc<ProfileBloc>(),
+                            uploadBloc: context.bloc<UploadBloc>(),
+                            driveDao: context.repository<DriveDao>(),
+                            config: context.repository<AppConfig>(),
+                          ),
+                          child: AppShell(
+                            page: state.selectedDriveId != null
+                                ? DriveDetailView()
+                                : Container(),
+                          ),
+                        );
+                      } else {
+                        return Container();
+                      }
+                    },
+                  ),
                 );
               } else {
                 return Container();
