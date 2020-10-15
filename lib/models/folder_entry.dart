@@ -19,7 +19,7 @@ class FolderEntries extends Table {
       dateTime().clientDefault(() => DateTime.now())();
 
   @override
-  Set<Column> get primaryKey => {id};
+  Set<Column> get primaryKey => {id, driveId};
 }
 
 extension FolderEntryExtensions on FolderEntry {

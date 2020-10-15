@@ -40,15 +40,26 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return SecretKey(driveKeyData);
   }
 
-  Future<FolderEntry> getFolderById(String driveId, String folderId) =>
+  Future<void> writeToDrive(Insertable<Drive> drive) =>
+      (update(drives)..whereSamePrimaryKey(drive)).write(drive);
+
+  SimpleSelectStatement<FolderEntries, FolderEntry> selectFolderById(
+          String driveId, String folderId) =>
       (select(folderEntries)
-            ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)))
-          .getSingle();
+        ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)));
+
+  Future<FolderEntry> getFolderById(String driveId, String folderId) =>
+      selectFolderById(driveId, folderId).getSingle();
 
   Stream<FolderEntry> watchFolderById(String driveId, String folderId) =>
-      (select(folderEntries)
-            ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)))
-          .watchSingle();
+      selectFolderById(driveId, folderId).watchSingle();
+
+  SimpleSelectStatement<FolderEntries, FolderEntry>
+      selectFoldersByParentFolderId(String driveId, String parentFolderId) =>
+          (select(folderEntries)
+            ..where((f) =>
+                f.driveId.equals(driveId) &
+                f.parentFolderId.equals(parentFolderId)));
 
   Future<String> getFolderNameById(String driveId, String folderId) =>
       (select(folderEntries)
@@ -143,7 +154,12 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return id;
   }
 
-  Future<void> updateFolder(Insertable<FolderEntry> folder) =>
+  UpdateStatement<FolderEntries, FolderEntry> updateFolderById(
+          String driveId, String folderId) =>
+      update(folderEntries)
+        ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId));
+
+  Future<void> writeToFolder(Insertable<FolderEntry> folder) =>
       (update(folderEntries)..whereSamePrimaryKey(folder)).write(folder);
 
   Future<FileEntry> getFileById(String driveId, String fileId) =>
@@ -171,7 +187,19 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return file != null ? file.id : null;
   }
 
-  Future<void> updateFile(Insertable<FileEntry> file) =>
+  SimpleSelectStatement<FileEntries, FileEntry> selectFilesByParentFolderId(
+          String driveId, String parentFolderId) =>
+      (select(fileEntries)
+        ..where((f) =>
+            f.driveId.equals(driveId) &
+            f.parentFolderId.equals(parentFolderId)));
+
+  UpdateStatement<FileEntries, FileEntry> updateFileById(
+          String driveId, String fileId) =>
+      update(fileEntries)
+        ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId));
+
+  Future<void> writeToFile(Insertable<FileEntry> file) =>
       (update(fileEntries)..whereSamePrimaryKey(file)).write(file);
 
   Future<void> writeFileEntity(

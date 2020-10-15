@@ -17,7 +17,7 @@ class ArweaveService {
       : _gql = ArtemisClient('${_arweave.api.gatewayUrl.origin}/graphql');
 
   /// Gets the entity history for a particular drive starting from the specified block height.
-  Future<DriveEntityHistory> getDriveEntityHistory(
+  Future<DriveEntityHistory> getNewEntitiesForDriveSinceBlock(
     String driveId,
     int startingBlockHeight, [
     SecretKey driveKey,
@@ -66,24 +66,6 @@ class ArweaveService {
         } else if (entityType == EntityType.file) {
           entity = await FileEntity.fromTransaction(
               transaction, rawEntityData[i], driveKey);
-
-          // TODO: Remove
-          /*final file = entity as FileEntity;
-          final fileKey = await deriveFileKey(driveKey, file.id);
-          final dataTx = await _arweave.transactions.get(file.dataTxId);
-          final cipherIv = utils.decodeBase64ToBytes(utils.decodeBase64ToString(
-              dataTx.tags
-                  .firstWhere((t) =>
-                      t.name == utils.encodeStringToBase64(EntityTag.cipherIv))
-                  .value));
-
-          final dataRes = await _arweave.api.get('tx/${file.dataTxId}/data');
-          final fileData = await aesGcm.decrypt(
-            utils.decodeBase64ToBytes(dataRes.body),
-            secretKey: SecretKey(fileKey.key),
-            nonce: Nonce(cipherIv),
-          );
-          await File(file.name).writeAsBytes(fileData);*/
         }
 
         if (blockHistory.isEmpty ||
@@ -107,10 +89,11 @@ class ArweaveService {
     }
 
     return DriveEntityHistory(
-        blockHistory.isNotEmpty
-            ? blockHistory.last.blockHeight
-            : startingBlockHeight,
-        blockHistory);
+      blockHistory.isNotEmpty
+          ? blockHistory.last.blockHeight
+          : startingBlockHeight,
+      blockHistory,
+    );
   }
 
   // Gets the unique drive entity transactions for a particular user.

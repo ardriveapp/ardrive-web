@@ -1,4 +1,4 @@
-part of 'sync_bloc.dart';
+part of 'sync_cubit.dart';
 
 @immutable
 abstract class SyncState extends Equatable {

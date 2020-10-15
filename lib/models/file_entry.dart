@@ -24,7 +24,7 @@ class FileEntries extends Table {
   DateTimeColumn get lastModifiedDate => dateTime()();
 
   @override
-  Set<Column> get primaryKey => {id};
+  Set<Column> get primaryKey => {id, driveId};
 }
 
 extension FileEntryExtensions on FileEntry {

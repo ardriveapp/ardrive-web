@@ -13,7 +13,7 @@ class DriveAttachForm extends StatelessWidget {
         create: (context) => DriveAttachCubit(
           arweave: context.repository<ArweaveService>(),
           drivesDao: context.repository<DrivesDao>(),
-          syncBloc: context.bloc<SyncBloc>(),
+          syncBloc: context.bloc<SyncCubit>(),
           drivesBloc: context.bloc<DrivesCubit>(),
         ),
         child: BlocConsumer<DriveAttachCubit, DriveAttachState>(

@@ -12,7 +12,7 @@ void main() {
   group('DriveAttachCubit', () {
     ArweaveService arweave;
     DrivesDao drivesDao;
-    SyncBloc syncBloc;
+    SyncCubit syncBloc;
     DrivesCubit drivesBloc;
     DriveAttachCubit driveAttachCubit;
 
@@ -56,7 +56,7 @@ void main() {
         DriveAttachSuccess(),
       ],
       verify: (_) {
-        verify(syncBloc.add(SyncWithNetwork()));
+        verify(syncBloc.startSync());
         verify(drivesBloc.selectDrive(validDriveId));
       },
     );

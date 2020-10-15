@@ -1,4 +1,3 @@
-import 'package:ardrive/theme/theme.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +6,7 @@ import 'app_shell.dart';
 import 'blocs/blocs.dart';
 import 'models/models.dart';
 import 'services/services.dart';
+import 'theme/theme.dart';
 import 'views/views.dart';
 
 ConfigService configService;
@@ -30,55 +30,27 @@ void main() async {
 
 class App extends StatelessWidget {
   @override
-  Widget build(BuildContext context) {
-    return MultiRepositoryProvider(
-      providers: [
-        RepositoryProvider<ArweaveService>(create: (_) => arweave),
-        RepositoryProvider<AppConfig>(create: (_) => config),
-        RepositoryProvider<ProfileDao>(create: (_) => db.profileDao),
-        RepositoryProvider<DrivesDao>(create: (_) => db.drivesDao),
-        RepositoryProvider<DriveDao>(create: (_) => db.driveDao),
-      ],
-      child: MultiBlocProvider(
+  Widget build(BuildContext context) => MultiRepositoryProvider(
         providers: [
-          BlocProvider(
-            create: (context) => ProfileBloc(
-              profileDao: context.repository<ProfileDao>(),
-            ),
-          ),
-          BlocProvider(
-            create: (context) => UploadBloc(
-              profileBloc: context.bloc<ProfileBloc>(),
-              arweave: context.repository<ArweaveService>(),
-              driveDao: context.repository<DriveDao>(),
-            ),
-          ),
-          BlocProvider(
-            create: (context) => SyncBloc(
-              profileBloc: context.bloc<ProfileBloc>(),
-              arweave: context.repository<ArweaveService>(),
-              drivesDao: context.repository<DrivesDao>(),
-              driveDao: context.repository<DriveDao>(),
-            ),
-          ),
-          BlocProvider(
-            create: (context) => DrivesCubit(
-              profileBloc: context.bloc<ProfileBloc>(),
-              drivesDao: context.repository<DrivesDao>(),
-            ),
-          ),
+          RepositoryProvider<ArweaveService>(create: (_) => arweave),
+          RepositoryProvider<AppConfig>(create: (_) => config),
+          RepositoryProvider<ProfileDao>(create: (_) => db.profileDao),
+          RepositoryProvider<DrivesDao>(create: (_) => db.drivesDao),
+          RepositoryProvider<DriveDao>(create: (_) => db.driveDao),
         ],
-        child: MaterialApp(
-          title: 'ArDrive',
-          theme: appTheme(),
-          home: BlocBuilder<ProfileBloc, ProfileState>(
+        child: BlocProvider(
+          create: (context) => ProfileBloc(
+            profileDao: context.repository<ProfileDao>(),
+          ),
+          child: BlocBuilder<ProfileBloc, ProfileState>(
             builder: (context, state) {
+              Widget view;
               if (state is ProfileUnavailable) {
-                return ProfileAuthView();
+                view = ProfileAuthView();
               } else if (state is ProfileLoading) {
-                return Container();
+                view = Container();
               } else if (state is ProfileLoaded) {
-                return BlocBuilder<DrivesCubit, DrivesState>(
+                view = BlocBuilder<DrivesCubit, DrivesState>(
                   builder: (context, state) {
                     if (state is DrivesLoadSuccess) {
                       return BlocProvider(
@@ -101,13 +73,47 @@ class App extends StatelessWidget {
                     }
                   },
                 );
+              }
+
+              final app = MaterialApp(
+                title: 'ArDrive',
+                theme: appTheme(),
+                home: view,
+              );
+
+              if (state is! ProfileLoaded) {
+                return app;
               } else {
-                return Container();
+                return MultiBlocProvider(
+                  providers: [
+                    BlocProvider(
+                      create: (context) => UploadBloc(
+                        profileBloc: context.bloc<ProfileBloc>(),
+                        arweave: context.repository<ArweaveService>(),
+                        driveDao: context.repository<DriveDao>(),
+                      ),
+                    ),
+                    BlocProvider(
+                      create: (context) => SyncCubit(
+                        profileBloc: context.bloc<ProfileBloc>(),
+                        arweave: context.repository<ArweaveService>(),
+                        drivesDao: context.repository<DrivesDao>(),
+                        driveDao: context.repository<DriveDao>(),
+                        db: db,
+                      ),
+                    ),
+                    BlocProvider(
+                      create: (context) => DrivesCubit(
+                        profileBloc: context.bloc<ProfileBloc>(),
+                        drivesDao: context.repository<DrivesDao>(),
+                      ),
+                    ),
+                  ],
+                  child: app,
+                );
               }
             },
           ),
         ),
-      ),
-    );
-  }
+      );
 }

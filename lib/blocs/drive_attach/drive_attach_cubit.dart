@@ -4,6 +4,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
+import 'package:pedantic/pedantic.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'drive_attach_state.dart';
@@ -16,13 +17,13 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
   final ArweaveService _arweave;
   final DrivesDao _drivesDao;
-  final SyncBloc _syncBloc;
+  final SyncCubit _syncBloc;
   final DrivesCubit _drivesBloc;
 
   DriveAttachCubit({
     @required ArweaveService arweave,
     @required DrivesDao drivesDao,
-    @required SyncBloc syncBloc,
+    @required SyncCubit syncBloc,
     @required DrivesCubit drivesBloc,
   })  : _arweave = arweave,
         _drivesDao = drivesDao,
@@ -50,8 +51,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
     await _drivesDao.attachDrive(name: driveName, entity: driveEntity);
 
-    _syncBloc.add(SyncWithNetwork());
     _drivesBloc.selectDrive(driveId);
+    unawaited(_syncBloc.startSync());
 
     emit(DriveAttachSuccess());
   }

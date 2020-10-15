@@ -130,7 +130,7 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildSyncButton() => BlocBuilder<SyncBloc, SyncState>(
+  Widget _buildSyncButton() => BlocBuilder<SyncCubit, SyncState>(
         builder: (context, syncState) => syncState is SyncInProgress
             ? IconButton(
                 icon: CircularProgressIndicator(),
@@ -139,8 +139,7 @@ class AppDrawer extends StatelessWidget {
               )
             : IconButton(
                 icon: Icon(Icons.refresh),
-                onPressed: () =>
-                    context.bloc<SyncBloc>().add(SyncWithNetwork()),
+                onPressed: () => context.bloc<SyncCubit>().startSync(),
                 tooltip: 'Sync',
               ),
       );

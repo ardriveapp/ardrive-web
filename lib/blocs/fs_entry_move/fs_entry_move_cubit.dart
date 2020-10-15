@@ -78,7 +78,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
             folder.asEntity(), profile.wallet, driveKey);
 
         await _arweave.postTx(folderTx);
-        await _driveDao.updateFolder(folder);
+        await _driveDao.writeToFolder(folder);
       });
 
       emit(FolderEntryMoveSuccess());
@@ -96,7 +96,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
             file.asEntity(), profile.wallet, driveKey);
 
         await _arweave.postTx(fileTx);
-        await _driveDao.updateFile(file);
+        await _driveDao.writeToFile(file);
       });
 
       emit(FileEntryMoveSuccess());
