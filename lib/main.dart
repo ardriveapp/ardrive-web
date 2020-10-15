@@ -9,12 +9,18 @@ import 'models/models.dart';
 import 'services/services.dart';
 import 'views/views.dart';
 
+ConfigService configService;
 ArweaveService arweave;
 Database db;
 
 void main() async {
-  arweave =
-      ArweaveService(Arweave(gatewayUrl: Uri.parse('https://arweave.dev')));
+  WidgetsFlutterBinding.ensureInitialized();
+
+  configService = ConfigService();
+  final config = await configService.getConfig();
+
+  arweave = ArweaveService(
+      Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl)));
 
   db = Database();
 
@@ -26,8 +32,9 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiRepositoryProvider(
       providers: [
-        RepositoryProvider<ProfileDao>(create: (_) => db.profileDao),
         RepositoryProvider<ArweaveService>(create: (_) => arweave),
+        RepositoryProvider<ConfigService>(create: (_) => configService),
+        RepositoryProvider<ProfileDao>(create: (_) => db.profileDao),
         RepositoryProvider<DrivesDao>(create: (_) => db.drivesDao),
         RepositoryProvider<DriveDao>(create: (_) => db.driveDao),
       ],

@@ -25,7 +25,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/CDDelta/arweave-dart.git
-      ref: a84d96bfbee6450fedec3edbb2a19d5d1645654b
+      ref: 2a40e8d045484783b4bb3aedba63111e842d50f9
   cryptography:
     git:
       url: https://github.com/CDDelta/cryptography.git
@@ -61,4 +61,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/config/
     - assets/images/
