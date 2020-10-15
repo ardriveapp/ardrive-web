@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
@@ -18,6 +19,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final ProfileBloc _profileBloc;
   final UploadBloc _uploadBloc;
   final DriveDao _driveDao;
+  final AppConfig _config;
 
   StreamSubscription _folderSubscription;
 
@@ -26,10 +28,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     @required ProfileBloc profileBloc,
     @required UploadBloc uploadBloc,
     @required DriveDao driveDao,
+    @required AppConfig config,
   })  : _driveId = driveId,
         _profileBloc = profileBloc,
         _uploadBloc = uploadBloc,
         _driveDao = driveDao,
+        _config = config,
         super(DriveDetailLoadInProgress()) {
     if (driveId != null) {
       openFolderAtPath('');
@@ -83,7 +87,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   Future<String> getSelectedFilePreviewUrl() async {
     final state = this.state as DriveDetailLoadSuccess;
     final file = await _driveDao.getFileById(_driveId, state.selectedItemId);
-    return 'https://arweave.dev/${file.dataTxId}';
+    return '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
   }
 
   void prepareFileUpload(FileEntity fileDetails, Uint8List fileData) async {
