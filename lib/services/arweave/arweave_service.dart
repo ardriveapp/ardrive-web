@@ -17,7 +17,7 @@ class ArweaveService {
       : _gql = ArtemisClient('${_arweave.api.gatewayUrl.origin}/graphql');
 
   /// Gets the entity history for a particular drive starting from the specified block height.
-  Future<DriveEntityHistory> getNewDriveEntitiesSinceBlock(
+  Future<DriveEntityHistory> getNewEntitiesForDriveSinceBlock(
     String driveId,
     int startingBlockHeight, [
     SecretKey driveKey,

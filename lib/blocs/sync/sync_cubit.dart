@@ -62,75 +62,81 @@ class SyncCubit extends Cubit<SyncState> {
         ? await _driveDao.getDriveKey(drive.id, profile.cipherKey)
         : null;
 
-    final entityHistory = await _arweave.getNewDriveEntitiesSinceBlock(
+    final entityHistory = await _arweave.getNewEntitiesForDriveSinceBlock(
       drive.id,
       // We should start syncing from the block after the latest one we already synced from.
       drive.latestSyncedBlock + 1,
       driveKey,
     );
 
-    // Create maps of folders and files whose contents were updated on the network, keyed by their ids.
-    final updatedFolders = <String, FolderEntriesCompanion>{};
-    final updatedFiles = <String, FileEntriesCompanion>{};
+    // The latest and oldest version of folder/file entities which were updated, keyed by their ids.
+    final latestFolderEntities = <String, FolderEntity>{};
+    final latestFileEntities = <String, FileEntity>{};
+    final oldestFolderEntities = <String, FolderEntity>{};
+    final oldestFileEntities = <String, FileEntity>{};
 
-    // Iterate through the history in reverse order to get the latest entity data we can write in.
-    for (final block in entityHistory.blockHistory.reversed) {
-      for (final entity in block.entities.reversed) {
+    // Construct maps of the latest and oldest unique entities.
+    // Iterates the entities from oldest -> latest.
+    for (final block in entityHistory.blockHistory) {
+      for (final entity in block.entities) {
         // Ignore the entity if it did not come from the drive owner.
         if (drive.ownerAddress != entity.ownerAddress) continue;
 
         if (entity is FolderEntity) {
-          if (updatedFolders.containsKey(entity.id)) continue;
-
-          updatedFolders[entity.id] = FolderEntriesCompanion.insert(
-            id: entity.id,
-            driveId: entity.driveId,
-            parentFolderId: Value(entity.parentFolderId),
-            name: entity.name,
-            path: '',
-            // TODO: Give proper date created.
-            dateCreated: Value(entity.commitTime),
-            lastUpdated: Value(entity.commitTime),
-          );
+          latestFolderEntities[entity.id] = entity;
+          if (!oldestFolderEntities.containsKey(entity.id)) {
+            oldestFolderEntities[entity.id] = entity;
+          }
         } else if (entity is FileEntity) {
-          if (updatedFiles.containsKey(entity.id)) continue;
-
-          updatedFiles[entity.id] = FileEntriesCompanion.insert(
-            id: entity.id,
-            driveId: entity.driveId,
-            parentFolderId: entity.parentFolderId,
-            name: entity.name,
-            dataTxId: entity.dataTxId,
-            size: entity.size,
-            path: '',
-            // TODO: Give proper date created.
-            dateCreated: Value(entity.commitTime),
-            lastUpdated: Value(entity.commitTime),
-            lastModifiedDate: entity.lastModifiedDate,
-          );
+          latestFileEntities[entity.id] = entity;
+          if (!oldestFileEntities.containsKey(entity.id)) {
+            oldestFileEntities[entity.id] = entity;
+          }
         }
       }
     }
+
+    final updatedFolders = latestFolderEntities
+        .map((id, entity) => MapEntry<String, FolderEntriesCompanion>(
+              id,
+              FolderEntriesCompanion.insert(
+                id: entity.id,
+                driveId: entity.driveId,
+                parentFolderId: Value(entity.parentFolderId),
+                name: entity.name,
+                path: '',
+                dateCreated: Value(oldestFolderEntities[entity.id].commitTime),
+                lastUpdated: Value(entity.commitTime),
+              ),
+            ));
+    final updatedFiles = latestFileEntities
+        .map((id, entity) => MapEntry<String, FileEntriesCompanion>(
+              id,
+              FileEntriesCompanion.insert(
+                id: entity.id,
+                driveId: entity.driveId,
+                parentFolderId: entity.parentFolderId,
+                name: entity.name,
+                dataTxId: entity.dataTxId,
+                size: entity.size,
+                path: '',
+                dateCreated: Value(oldestFileEntities[entity.id].commitTime),
+                lastUpdated: Value(entity.commitTime),
+                lastModifiedDate: entity.lastModifiedDate,
+              ),
+            ));
 
     await _db.transaction(() async {
       // Write in the new folder and file contents without their paths
       // and don't update the `dateCreated` if the entry already exists.
       await _db.batch((b) {
-        for (final updatedFolder in updatedFolders.values) {
-          b.insert(
-            _db.folderEntries,
-            updatedFolder,
-            onConflict:
-                DoUpdate((_) => updatedFolder.copyWith(dateCreated: null)),
-          );
+        for (final folder in updatedFolders.values) {
+          b.insert(_db.folderEntries, folder,
+              onConflict: DoUpdate((_) => folder.copyWith(dateCreated: null)));
         }
-        for (final updatedFile in updatedFiles.values) {
-          b.insert(
-            _db.fileEntries,
-            updatedFile,
-            onConflict:
-                DoUpdate((_) => updatedFile.copyWith(dateCreated: null)),
-          );
+        for (final file in updatedFiles.values) {
+          b.insert(_db.fileEntries, file,
+              onConflict: DoUpdate((_) => file.copyWith(dateCreated: null)));
         }
       });
 
@@ -158,10 +164,8 @@ class SyncCubit extends Cubit<SyncState> {
         return StaleFolderNode(
           folder,
           // Recursively get the stale contents of this folder's subfolders.
-          await Future.wait(
-            staleSubfolders.map((f) => getStaleFolderTree(
-                updatedFolders[f.id] ?? f.toCompanion(true))),
-          ),
+          await Future.wait(staleSubfolders.map((f) =>
+              getStaleFolderTree(updatedFolders[f.id] ?? f.toCompanion(true)))),
           staleFilesMap,
         );
       }
@@ -213,7 +217,7 @@ class SyncCubit extends Cubit<SyncState> {
       for (final treeRoot in staleFolderTree) {
         // Get the path of this folder's parent.
         String parentPath;
-        if (treeRoot.folder.parentFolderId.value != null) {
+        if (treeRoot.folder.parentFolderId.value == null) {
           parentPath = '';
         } else {
           parentPath = await _driveDao
