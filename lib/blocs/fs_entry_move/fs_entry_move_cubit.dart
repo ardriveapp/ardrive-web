@@ -71,7 +71,8 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         var folder = await _driveDao.getFolderById(driveId, folderId);
         folder = folder.copyWith(
             parentFolderId: parentFolder.id,
-            path: '${parentFolder.path}/${folder.name}');
+            path: '${parentFolder.path}/${folder.name}',
+            lastUpdated: DateTime.now());
 
         final folderTx = await _arweave.prepareEntityTx(
             folder.asEntity(), profile.wallet, driveKey);
@@ -88,7 +89,8 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         var file = await _driveDao.getFileById(driveId, fileId);
         file = file.copyWith(
             parentFolderId: parentFolder.id,
-            path: '${parentFolder.path}/${file.name}');
+            path: '${parentFolder.path}/${file.name}',
+           lastUpdated: DateTime.now());
 
         final fileTx = await _arweave.prepareEntityTx(
             file.asEntity(), profile.wallet, driveKey);
