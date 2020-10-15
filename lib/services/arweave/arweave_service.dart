@@ -10,10 +10,11 @@ import 'package:mime/mime.dart';
 import '../services.dart';
 
 class ArweaveService {
-  final ArtemisClient _gql = ArtemisClient('https://arweave.dev/graphql');
+  final ArtemisClient _gql;
   final Arweave _arweave;
 
-  ArweaveService(this._arweave);
+  ArweaveService(this._arweave)
+      : _gql = ArtemisClient('${_arweave.api.gatewayUrl.origin}/graphql');
 
   /// Gets the entity history for a particular drive starting from the specified block height.
   Future<DriveEntityHistory> getDriveEntityHistory(
