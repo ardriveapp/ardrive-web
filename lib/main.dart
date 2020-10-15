@@ -68,6 +68,7 @@ class App extends StatelessWidget {
                         arweave: context.repository<ArweaveService>(),
                         drivesDao: context.repository<DrivesDao>(),
                         driveDao: context.repository<DriveDao>(),
+                        db: db,
                       ),
                     ),
                     BlocProvider(

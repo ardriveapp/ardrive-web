@@ -9,5 +9,5 @@ export 'fs_entry_rename/fs_entry_rename_cubit.dart';
 export 'profile/profile_bloc.dart';
 export 'profile_add/profile_add_cubit.dart';
 export 'profile_unlock/profile_unlock_cubit.dart';
-export 'sync/sync_bloc.dart';
+export 'sync/sync_cubit.dart';
 export 'upload/upload_bloc.dart';
