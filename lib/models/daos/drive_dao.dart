@@ -214,8 +214,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       path: path,
       dataTxId: entity.dataTxId,
       size: entity.size,
-      dateCreated: Value(entity.commitTime),
-      lastUpdated: Value(entity.commitTime),
       lastModifiedDate: entity.lastModifiedDate,
     );
 
