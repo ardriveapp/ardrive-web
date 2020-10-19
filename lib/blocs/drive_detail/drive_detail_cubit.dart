@@ -1,12 +1,10 @@
 import 'dart:async';
 
-import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
-import 'package:mime/mime.dart';
 import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:rxdart/rxdart.dart';
@@ -16,23 +14,20 @@ import '../blocs.dart';
 part 'drive_detail_state.dart';
 
 class DriveDetailCubit extends Cubit<DriveDetailState> {
-  final String _driveId;
+  final String driveId;
+
   final ProfileBloc _profileBloc;
-  final UploadBloc _uploadBloc;
   final DriveDao _driveDao;
   final AppConfig _config;
 
   StreamSubscription _folderSubscription;
 
   DriveDetailCubit({
-    @required String driveId,
+    @required this.driveId,
     @required ProfileBloc profileBloc,
-    @required UploadBloc uploadBloc,
     @required DriveDao driveDao,
     @required AppConfig config,
-  })  : _driveId = driveId,
-        _profileBloc = profileBloc,
-        _uploadBloc = uploadBloc,
+  })  : _profileBloc = profileBloc,
         _driveDao = driveDao,
         _config = config,
         super(DriveDetailLoadInProgress()) {
@@ -48,8 +43,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     _folderSubscription =
         Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
-      _driveDao.watchDriveById(_driveId),
-      _driveDao.watchFolderContentsAtPath(_driveId, path),
+      _driveDao.watchDriveById(driveId),
+      _driveDao.watchFolderContentsAtPath(driveId, path),
       _profileBloc.startWith(null),
       (drive, folderContents, _) {
         if (folderContents?.folder != null) {
@@ -87,33 +82,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   Future<String> getSelectedFilePreviewUrl() async {
     final state = this.state as DriveDetailLoadSuccess;
-    final file = await _driveDao.getFileById(_driveId, state.selectedItemId);
+    final file = await _driveDao.getFileById(driveId, state.selectedItemId);
     return '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
-  }
-
-  void prepareFileUpload(FileEntity fileDetails, Uint8List fileData) async {
-    final profile = _profileBloc.state as ProfileLoaded;
-    final currentState = state as DriveDetailLoadSuccess;
-    final currentFolder = currentState.currentFolder.folder;
-    final drive = currentState.currentDrive;
-
-    fileDetails
-      ..driveId = _driveId
-      ..parentFolderId = currentFolder.id
-      ..dataContentType = lookupMimeType(fileDetails.name);
-
-    final driveKey = drive.isPrivate
-        ? await _driveDao.getDriveKey(_driveId, profile.cipherKey)
-        : null;
-
-    _uploadBloc.add(
-      PrepareFileUpload(
-        fileDetails,
-        '${currentFolder.path}/${fileDetails.name}',
-        fileData,
-        driveKey,
-      ),
-    );
   }
 
   @override

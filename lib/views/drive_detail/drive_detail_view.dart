@@ -1,7 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,127 +11,102 @@ import 'components/table_rows.dart';
 class DriveDetailView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return BlocListener<UploadBloc, UploadState>(
-      listener: (context, state) async {
-        if (state is UploadBeingPrepared) {
-          await showProgressDialog(context, 'Preparing upload...');
-        } else if (state is UploadFileReady) {
-          Navigator.pop(context);
-
-          var confirm = await showConfirmationDialog(
-            context,
-            title: 'Upload file',
-            content:
-                'This will cost ${utils.winstonToAr(state.uploadCost)} AR.',
-            confirmingActionLabel: 'UPLOAD',
-          );
-
-          if (confirm) context.bloc<UploadBloc>().add(state.fileUploadHandle);
-        } else if (state is UploadInProgress) {
-          await showProgressDialog(context, 'Uploading file...');
-        } else if (state is UploadComplete) {
-          Navigator.pop(context);
-        }
-      },
-      child: SizedBox.expand(
-        child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
-          builder: (context, state) => Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (state is DriveDetailLoadSuccess) ...{
-                Expanded(
-                  child: Scrollbar(
-                    child: SingleChildScrollView(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                _buildBreadcrumbRow(
-                                  context,
-                                  state.currentDrive.name,
-                                  state.currentFolder.folder.path,
-                                ),
-                                _buildActionsRow(context, state),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: DataTable(
-                                    showCheckboxColumn: false,
-                                    columns: const <DataColumn>[
-                                      DataColumn(label: Text('Name')),
-                                      DataColumn(label: Text('File size')),
-                                    ],
-                                    rows: [
-                                      ...state.currentFolder.subfolders.map(
-                                        (folder) => buildFolderRow(
-                                          context: context,
-                                          folder: folder,
-                                          selected:
-                                              folder.id == state.selectedItemId,
-                                          onPressed: () {
-                                            final bloc = context
-                                                .bloc<DriveDetailCubit>();
-                                            if (folder.id ==
-                                                state.selectedItemId) {
-                                              bloc.openFolderAtPath(
-                                                  folder.path);
-                                            } else {
-                                              bloc.selectItem(
-                                                folder.id,
-                                                isFolder: true,
-                                              );
-                                            }
-                                          },
-                                        ),
+    return SizedBox.expand(
+      child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
+        builder: (context, state) => Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (state is DriveDetailLoadSuccess) ...{
+              Expanded(
+                child: Scrollbar(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildBreadcrumbRow(
+                                context,
+                                state.currentDrive.name,
+                                state.currentFolder.folder.path,
+                              ),
+                              _buildActionsRow(context, state),
+                            ],
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DataTable(
+                                  showCheckboxColumn: false,
+                                  columns: const <DataColumn>[
+                                    DataColumn(label: Text('Name')),
+                                    DataColumn(label: Text('File size')),
+                                  ],
+                                  rows: [
+                                    ...state.currentFolder.subfolders.map(
+                                      (folder) => buildFolderRow(
+                                        context: context,
+                                        folder: folder,
+                                        selected:
+                                            folder.id == state.selectedItemId,
+                                        onPressed: () {
+                                          final bloc =
+                                              context.bloc<DriveDetailCubit>();
+                                          if (folder.id ==
+                                              state.selectedItemId) {
+                                            bloc.openFolderAtPath(folder.path);
+                                          } else {
+                                            bloc.selectItem(
+                                              folder.id,
+                                              isFolder: true,
+                                            );
+                                          }
+                                        },
                                       ),
-                                      ...state.currentFolder.files.map(
-                                        (file) => buildFileRow(
-                                          context: context,
-                                          file: file,
-                                          selected:
-                                              file.id == state.selectedItemId,
-                                          onPressed: () async {
-                                            final bloc = context
-                                                .bloc<DriveDetailCubit>();
-                                            if (file.id ==
-                                                state.selectedItemId) {
-                                              bloc.toggleSelectedItemDetails();
-                                            } else {
-                                              bloc.selectItem(file.id);
-                                            }
-                                          },
-                                        ),
+                                    ),
+                                    ...state.currentFolder.files.map(
+                                      (file) => buildFileRow(
+                                        context: context,
+                                        file: file,
+                                        selected:
+                                            file.id == state.selectedItemId,
+                                        onPressed: () async {
+                                          final bloc =
+                                              context.bloc<DriveDetailCubit>();
+                                          if (file.id == state.selectedItemId) {
+                                            bloc.toggleSelectedItemDetails();
+                                          } else {
+                                            bloc.selectItem(file.id);
+                                          }
+                                        },
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                if (state.showSelectedItemDetails) ...{
-                  VerticalDivider(width: 1),
-                  DriveInfoSideSheet(
-                      driveId: state.currentDrive.id,
-                      folderId: state.selectedItemIsFolder
-                          ? state.selectedItemId
-                          : null,
-                      fileId: !state.selectedItemIsFolder
-                          ? state.selectedItemId
-                          : null),
-                }
+              ),
+              if (state.showSelectedItemDetails) ...{
+                VerticalDivider(width: 1),
+                DriveInfoSideSheet(
+                    driveId: state.currentDrive.id,
+                    folderId: state.selectedItemIsFolder
+                        ? state.selectedItemId
+                        : null,
+                    fileId: !state.selectedItemIsFolder
+                        ? state.selectedItemId
+                        : null),
               }
-            ],
-          ),
+            }
+          ],
         ),
       ),
     );

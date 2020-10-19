@@ -13,7 +13,6 @@ void main() {
     DriveDao driveDao;
 
     ProfileBloc profileBloc;
-    UploadBloc uploadBloc;
     DriveDetailCubit driveDetailCubit;
 
     const mockDriveId = 'mock-drive-id';
@@ -23,7 +22,6 @@ void main() {
       driveDao = db.driveDao;
 
       profileBloc = MockProfileBloc();
-      uploadBloc = MockUploadBloc();
 
       when(profileBloc.state).thenReturn(
         ProfileLoaded(
@@ -36,7 +34,6 @@ void main() {
       driveDetailCubit = DriveDetailCubit(
         driveId: mockDriveId,
         profileBloc: profileBloc,
-        uploadBloc: uploadBloc,
         driveDao: driveDao,
       );
     });

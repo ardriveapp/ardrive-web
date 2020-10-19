@@ -1,9 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/entities/entities.dart';
 import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:path/path.dart';
 
 import 'components.dart';
 
@@ -99,7 +97,8 @@ class AppDrawer extends StatelessWidget {
                 PopupMenuDivider(),
                 PopupMenuItem(
                   enabled: state.hasWritePermissions,
-                  value: (context) => _promptToUploadFile(context),
+                  value: (context) => _promptToUploadFile(context,
+                      state.currentDrive.id, state.currentFolder.folder.id),
                   child: ListTile(
                     enabled: state.hasWritePermissions,
                     title: Text('Upload file'),
@@ -144,7 +143,8 @@ class AppDrawer extends StatelessWidget {
               ),
       );
 
-  void _promptToUploadFile(BuildContext context) async {
+  void _promptToUploadFile(
+      BuildContext context, String targetDriveId, String targetFolderId) async {
     FilePickerCross fileChooseResult;
     try {
       fileChooseResult = await FilePickerCross.pick();
@@ -153,15 +153,12 @@ class AppDrawer extends StatelessWidget {
 
     if (fileChooseResult == null) return;
 
-    context.bloc<DriveDetailCubit>().prepareFileUpload(
-          FileEntity.withUserProvidedDetails(
-            name: basename(fileChooseResult.path),
-            size: fileChooseResult.length,
-            // TODO: Replace with time reported by OS.
-            lastModifiedDate: DateTime.now(),
-          ),
-          fileChooseResult.toUint8List(),
-        );
+    await promptToUpload(
+      context,
+      driveId: targetDriveId,
+      folderId: targetFolderId,
+      file: fileChooseResult,
+    );
   }
 
   void _promptToAttachDrive(BuildContext context) async {
