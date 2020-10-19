@@ -11,9 +11,9 @@ import 'entities.dart';
 
 part 'file_entity.g.dart';
 
-DateTime _intToDateTime(int v) =>
+DateTime _msToDateTime(int v) =>
     v != null ? DateTime.fromMillisecondsSinceEpoch(v) : null;
-int _dateTimeToInt(DateTime v) => v.millisecondsSinceEpoch;
+int _dateTimeToMs(DateTime v) => v.millisecondsSinceEpoch;
 
 @JsonSerializable()
 class FileEntity extends Entity {
@@ -26,18 +26,22 @@ class FileEntity extends Entity {
 
   String name;
   int size;
-  @JsonKey(fromJson: _intToDateTime, toJson: _dateTimeToInt)
+  @JsonKey(fromJson: _msToDateTime, toJson: _dateTimeToMs)
   DateTime lastModifiedDate;
-  String dataTxId;
 
-  FileEntity(
-      {this.id,
-      this.driveId,
-      this.parentFolderId,
-      this.name,
-      this.size,
-      this.lastModifiedDate,
-      this.dataTxId});
+  String dataTxId;
+  String dataContentType;
+
+  FileEntity({
+    this.id,
+    this.driveId,
+    this.parentFolderId,
+    this.name,
+    this.size,
+    this.lastModifiedDate,
+    this.dataTxId,
+    this.dataContentType,
+  });
 
   FileEntity.withUserProvidedDetails(
       {@required this.name,

@@ -8,6 +8,11 @@ extension TransactionMixinExtensions on TransactionCommonMixin {
   String getTag(String tagName) =>
       tags.firstWhere((t) => t.name == tagName, orElse: () => null)?.value;
 
-  DateTime getCommitTime() => DateTime.fromMillisecondsSinceEpoch(
-      int.parse(getTag(EntityTag.unixTime)));
+  DateTime getCommitTime() {
+    final milliseconds = getTag(EntityTag.arFs) != '0.11'
+        ? int.parse(getTag(EntityTag.unixTime)) * 1000
+        : int.parse(getTag(EntityTag.unixTime));
+
+    return DateTime.fromMillisecondsSinceEpoch(milliseconds);
+  }
 }

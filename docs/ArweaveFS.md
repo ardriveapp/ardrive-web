@@ -26,7 +26,7 @@ Fields suffixed with `?` are optional.
 
 Field enum values are defined in the format "value 1 | value 2".
 
-All transactions that store these entities unencrypted should define a `Content-Type` tag with value `application/json` and an `ArFS` tag with the version of ArFS specification it implements, currently `0.10`.
+All transactions that store these entities unencrypted should define a `Content-Type` tag with value `application/json` and an `ArFS` tag with the version of ArFS specification it implements, currently `0.11`.
 
 ### Drive
 
@@ -40,7 +40,7 @@ Drive-Privacy: <public | private>
 Drive-Auth-Mode?: password
 Cipher?: AES256-GCM
 Entity-Type: drive
-Unix-Time: <milliseconds since unix epoch>
+Unix-Time: <seconds since unix epoch>
 
 {
     "name": "<user defined drive name>",
@@ -58,7 +58,7 @@ Drive-Id: <drive uuid>
 Parent-Folder-Id?: <parent folder uuid>
 Cipher?: AES256-GCM
 Entity-Type: folder
-Unix-Time: <milliseconds since unix epoch>
+Unix-Time: <seconds since unix epoch>
 
 {
     "name": "<user defined folder name>"
@@ -75,13 +75,14 @@ Drive-Id: <drive uuid>
 Parent-Folder-Id: <parent folder uuid>
 Cipher?: AES256-GCM
 Entity-Type: file
-Unix-Time: <milliseconds since unix epoch>
+Unix-Time: <seconds since unix epoch>
 
 {
     "name": "<user defined file name>",
     "size": <computed file size - int>,
     "lastModifiedDate": <timestamp for OS reported time of file's last modified date represented as milliseconds since unix epoch - int>
-    "dataTxId": "<transaction id of stored data>"
+    "dataTxId": "<transaction id of stored data>",
+    "dataContentType": "<the mime type of the data associated with this file entity>"
 }
 ```
 

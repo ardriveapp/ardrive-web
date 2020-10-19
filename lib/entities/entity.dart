@@ -32,11 +32,11 @@ extension TransactionUtils on Transaction {
   void addApplicationTags() {
     addTag(EntityTag.appName, 'ArDrive-Web');
     addTag(EntityTag.appVersion, '0.1.0');
-    addTag(
-        EntityTag.unixTime, DateTime.now().millisecondsSinceEpoch.toString());
+    addTag(EntityTag.unixTime,
+        (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString());
   }
 
   void addArFsTag() {
-    addTag(EntityTag.arFs, '0.10');
+    addTag(EntityTag.arFs, '0.11');
   }
 }

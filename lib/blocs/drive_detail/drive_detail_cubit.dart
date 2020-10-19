@@ -6,6 +6,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
+import 'package:mime/mime.dart';
 import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:rxdart/rxdart.dart';
@@ -98,7 +99,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     fileDetails
       ..driveId = _driveId
-      ..parentFolderId = currentFolder.id;
+      ..parentFolderId = currentFolder.id
+      ..dataContentType = lookupMimeType(fileDetails.name);
 
     final driveKey = drive.isPrivate
         ? await _driveDao.getDriveKey(_driveId, profile.cipherKey)

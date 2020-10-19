@@ -5,7 +5,6 @@ import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart';
-import 'package:mime/mime.dart';
 
 import '../services.dart';
 
@@ -243,9 +242,12 @@ class ArweaveService {
     if (fileKey == null) {
       fileDataTx.addTag(
         EntityTag.contentType,
-        lookupMimeType(fileEntity.name),
+        fileEntity.dataContentType,
       );
     }
+
+    fileDataTx.addTag(EntityTag.unixTime,
+        (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString());
 
     await fileDataTx.sign(wallet);
 
