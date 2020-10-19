@@ -39,6 +39,7 @@ Drive-Id: <uuid>
 Drive-Privacy: <public | private>
 Drive-Auth-Mode?: password
 Cipher?: AES256-GCM
+Cipher-IV?: <12 byte initialization vector as hex>
 Entity-Type: drive
 Unix-Time: <seconds since unix epoch>
 
@@ -57,6 +58,7 @@ Folder-Id: <uuid>
 Drive-Id: <drive uuid>
 Parent-Folder-Id?: <parent folder uuid>
 Cipher?: AES256-GCM
+Cipher-IV?: <12 byte initialization vector as hex>
 Entity-Type: folder
 Unix-Time: <seconds since unix epoch>
 
@@ -69,11 +71,13 @@ Unix-Time: <seconds since unix epoch>
 
 File entity transactions should not include the actual file data they represent, instead, the file data should be uploaded as a separate transaction. This allows for file metadata to be updated without requiring the file data to be reuploaded.
 
-```
+``` File MetaData Transaction
 File-Id: <uuid>
 Drive-Id: <drive uuid>
 Parent-Folder-Id: <parent folder uuid>
+Content-Type:
 Cipher?: AES256-GCM
+Cipher-IV?: <12 byte initialization vector as hex>
 Entity-Type: file
 Unix-Time: <seconds since unix epoch>
 
