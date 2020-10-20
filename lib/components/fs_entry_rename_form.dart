@@ -85,7 +85,7 @@ class FsEntryRenameForm extends StatelessWidget {
                 child: Text('CANCEL'),
                 onPressed: () => Navigator.of(context).pop(),
               ),
-              TextButton(
+              ElevatedButton(
                 child: Text('RENAME'),
                 onPressed: () => context.bloc<FsEntryRenameCubit>().submit(),
               ),

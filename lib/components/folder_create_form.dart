@@ -61,7 +61,7 @@ class FolderCreateForm extends StatelessWidget {
                 child: Text('CANCEL'),
                 onPressed: () => Navigator.of(context).pop(null),
               ),
-              TextButton(
+              ElevatedButton(
                 child: Text('CREATE'),
                 onPressed: () => context.bloc<FolderCreateCubit>().submit(),
               ),

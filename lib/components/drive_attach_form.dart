@@ -57,7 +57,7 @@ class DriveAttachForm extends StatelessWidget {
                 child: Text('CANCEL'),
                 onPressed: () => Navigator.of(context).pop(null),
               ),
-              TextButton(
+              ElevatedButton(
                 child: Text('ATTACH'),
                 onPressed: () => context.bloc<DriveAttachCubit>().submit(),
               ),

@@ -66,7 +66,7 @@ class DriveCreateForm extends StatelessWidget {
                 child: Text('CANCEL'),
                 onPressed: () => Navigator.of(context).pop(),
               ),
-              TextButton(
+              ElevatedButton(
                 child: Text('CREATE'),
                 onPressed: () => context.bloc<DriveCreateCubit>().submit(),
               ),
