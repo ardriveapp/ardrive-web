@@ -5,6 +5,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
+import 'package:equatable/equatable.dart';
 import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
@@ -20,8 +21,7 @@ class UploadCubit extends Cubit<UploadState> {
   final String folderId;
   final FilePickerCross file;
 
-  Map<String, FileEntity> uploadPathFiles;
-  List<Transaction> uploadTransactions;
+  List<_FileUploadHandle> fileUploadHandles;
 
   final _uuid = Uuid();
   final ProfileBloc _profileBloc;
@@ -38,11 +38,11 @@ class UploadCubit extends Cubit<UploadState> {
   })  : _profileBloc = profileBloc,
         _driveDao = driveDao,
         _arweave = arweave,
-        super(UploadIdle()) {
-    Future.microtask(() => prepareFileUpload());
+        super(UploadPreparationInProgress()) {
+    prepareUpload();
   }
 
-  Future<void> prepareFileUpload() async {
+  Future<void> prepareUpload() async {
     emit(UploadPreparationInProgress());
 
     final profile = _profileBloc.state as ProfileLoaded;
@@ -61,10 +61,16 @@ class UploadCubit extends Cubit<UploadState> {
       dataContentType: lookupMimeType(fileName),
     );
 
-    var existingFileId = await _driveDao.fileExistsInFolder(
-      fileEntity.parentFolderId,
-      fileEntity.name,
-    );
+    // Try and find a file in the target folder by the same name as the file being uploaded.
+    // If there's one, update that file as opposed to creating a new one.
+    final existingFileId = await _driveDao
+        .selectFileInFolderByName(
+          fileEntity.driveId,
+          fileEntity.parentFolderId,
+          fileEntity.name,
+        )
+        .map((f) => f.id)
+        .getSingle();
 
     fileEntity.id = existingFileId ?? _uuid.v4();
 
@@ -79,35 +85,68 @@ class UploadCubit extends Cubit<UploadState> {
       driveKey,
     );
 
-    uploadPathFiles = {filePath: fileEntity};
-    uploadTransactions = [
-      uploadTxs.entityTx,
-      uploadTxs.dataTx,
+    fileUploadHandles = [
+      _FileUploadHandle(
+        entity: fileEntity,
+        path: filePath,
+        entityTx: uploadTxs.entityTx,
+        dataTx: uploadTxs.dataTx,
+      ),
     ];
 
-    emit(
-      UploadFileReady(
-        fileName: fileEntity.name,
-        uploadCost: uploadTxs.dataTx.reward,
-        uploadSize: fileEntity.size,
-      ),
-    );
+    if (fileUploadHandles.length == 1) {
+      emit(
+        UploadFileReady(
+          fileName: fileEntity.name,
+          uploadCost: uploadTxs.dataTx.reward,
+          uploadSize: fileEntity.size,
+        ),
+      );
+    } else {}
   }
 
-  Future<void> startFileUpload() async {
-    emit(UploadInProgress());
+  Future<void> startUpload() async {
+    if (fileUploadHandles.length == 1) {
+      final uploadHandle = fileUploadHandles.single;
+      final uploadEntity = uploadHandle.entity;
 
-    await _arweave.batchPostTxs(uploadTransactions);
+      emit(UploadFileInProgress(
+          fileName: uploadHandle.entity.name, fileSize: uploadEntity.size));
 
-    for (final fileEntry in uploadPathFiles.entries) {
-      await _driveDao.writeFileEntity(
-        fileEntry.value,
-        fileEntry.key,
-      );
+      await _arweave.postTx(uploadHandle.entityTx);
+
+      await for (final upload
+          in _arweave.client.transactions.upload(uploadHandle.dataTx)) {
+        final uploadProgress = upload.percentageComplete / 100;
+
+        emit(UploadFileInProgress(
+          fileName: uploadHandle.entity.name,
+          fileSize: uploadEntity.size,
+          uploadProgress: uploadProgress,
+          uploadedFileSize: (uploadEntity.size * uploadProgress).toInt(),
+        ));
+      }
+    } else {
+      for (final uploadHandle in fileUploadHandles) {
+        await _arweave
+            .batchPostTxs([uploadHandle.entityTx, uploadHandle.dataTx]);
+      }
+    }
+
+    for (final uploadHandle in fileUploadHandles) {
+      await _driveDao.writeFileEntity(uploadHandle.entity, uploadHandle.path);
     }
 
     emit(UploadComplete());
-
-    emit(UploadIdle());
   }
+}
+
+class _FileUploadHandle {
+  final FileEntity entity;
+  final String path;
+
+  final Transaction entityTx;
+  final Transaction dataTx;
+
+  _FileUploadHandle({this.entity, this.path, this.entityTx, this.dataTx});
 }

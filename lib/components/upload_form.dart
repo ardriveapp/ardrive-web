@@ -3,10 +3,9 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:file_picker_cross/file_picker_cross.dart';
+import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'components.dart';
 
 Future<void> promptToUpload(
   BuildContext context, {
@@ -21,6 +20,7 @@ Future<void> promptToUpload(
         folderId: folderId,
         file: file,
       ),
+      barrierDismissible: false,
     );
 
 class UploadForm extends StatelessWidget {
@@ -43,30 +43,55 @@ class UploadForm extends StatelessWidget {
         ),
         child: BlocConsumer<UploadCubit, UploadState>(
           listener: (context, state) async {
-            if (state is UploadPreparationInProgress) {
-              await showProgressDialog(context, 'Preparing upload...');
-            } else if (state is UploadFileReady) {
-              Navigator.pop(context);
-
-              var confirm = await showConfirmationDialog(
-                context,
-                title: 'Upload file',
-                content:
-                    'This will cost ${utils.winstonToAr(state.uploadCost)} AR.',
-                confirmingActionLabel: 'UPLOAD',
-              );
-
-              if (confirm != null && confirm) {
-                await context.bloc<UploadCubit>().startFileUpload();
-              }
-            } else if (state is UploadInProgress) {
-              await showProgressDialog(context, 'Uploading file...');
-            } else if (state is UploadComplete) {
-              Navigator.pop(context);
+            if (state is UploadComplete) {
               Navigator.pop(context);
             }
           },
           builder: (context, state) {
+            if (state is UploadPreparationInProgress) {
+              return AlertDialog(
+                title: Text('Preparing upload...'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Center(child: CircularProgressIndicator()),
+                  ],
+                ),
+              );
+            } else if (state is UploadFileReady) {
+              return AlertDialog(
+                title: Text('Upload file'),
+                content: Text(
+                    'This will cost ${utils.winstonToAr(state.uploadCost)} AR.'),
+                actions: <Widget>[
+                  TextButton(
+                    child: Text('CANCEL'),
+                    onPressed: () => Navigator.of(context).pop(false),
+                  ),
+                  TextButton(
+                    child: Text('UPLOAD'),
+                    onPressed: () => context.bloc<UploadCubit>().startUpload(),
+                  ),
+                ],
+              );
+            } else if (state is UploadFileInProgress) {
+              return AlertDialog(
+                title: Text('Uploading file...'),
+                content: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(state.fileName),
+                  subtitle: Text(
+                      '${filesize(state.uploadedFileSize)}/${filesize(state.fileSize)}'),
+                  trailing: CircularProgressIndicator(
+                      // Show an indeterminate progress indicator if the upload hasn't started yet as
+                      // small uploads might never report a progress.
+                      value: state.uploadProgress != 0
+                          ? state.uploadProgress
+                          : null),
+                ),
+              );
+            }
+
             return Container();
           },
         ),
