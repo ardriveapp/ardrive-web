@@ -63,9 +63,8 @@ class FsEntryRenameForm extends StatelessWidget {
               Navigator.pop(context);
             }
           },
-          builder: (context, state) => AlertDialog(
-            title:
-                Text(state.isRenamingFolder ? 'Rename folder' : 'Rename file'),
+          builder: (context, state) => AppDialog(
+            title: state.isRenamingFolder ? 'RENAME FOLDER' : 'RENAME FILE',
             content: state is! FsEntryRenameInitializing
                 ? ReactiveForm(
                     formGroup: context.bloc<FsEntryRenameCubit>().form,
@@ -79,7 +78,6 @@ class FsEntryRenameForm extends StatelessWidget {
                     ),
                   )
                 : null,
-            actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0),
             actions: [
               TextButton(
                 child: Text('CANCEL'),

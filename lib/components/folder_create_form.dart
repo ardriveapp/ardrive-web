@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -45,17 +46,19 @@ class FolderCreateForm extends StatelessWidget {
               Navigator.pop(context);
             }
           },
-          builder: (context, state) => AlertDialog(
-            title: Text('Create folder'),
-            content: ReactiveForm(
-              formGroup: context.bloc<FolderCreateCubit>().form,
-              child: ReactiveTextField(
-                formControlName: 'name',
-                autofocus: true,
-                decoration: const InputDecoration(labelText: 'Folder name'),
+          builder: (context, state) => AppDialog(
+            title: 'CREATE FOLDER',
+            content: SizedBox(
+              width: kSmallDialogWidth,
+              child: ReactiveForm(
+                formGroup: context.bloc<FolderCreateCubit>().form,
+                child: ReactiveTextField(
+                  formControlName: 'name',
+                  autofocus: true,
+                  decoration: const InputDecoration(labelText: 'Folder name'),
+                ),
               ),
             ),
-            actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0),
             actions: [
               TextButton(
                 child: Text('CANCEL'),

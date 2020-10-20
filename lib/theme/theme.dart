@@ -3,86 +3,78 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'colors.dart';
 
-ThemeData appTheme() {
-  final textTheme = _buildTextTheme();
+export 'colors.dart';
+export 'constants.dart';
 
-  return ThemeData(
-    primarySwatch: kPrimarySwatch,
-    accentColor: kSecondary500,
-    hoverColor: kHoverColor,
-    highlightColor: kSelectedColor,
-    textTheme: textTheme,
-    appBarTheme: _buildAppBarTheme(textTheme),
-    tabBarTheme: _buildTabBarTheme(),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
+final base = ThemeData.light();
+
+ThemeData appTheme() {
+  final textTheme = GoogleFonts.openSansTextTheme().copyWith(
+    button: GoogleFonts.montserrat(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      fontStyle: FontStyle.normal,
+      letterSpacing: 1,
     ),
+  );
+
+  return base.copyWith(
+    primaryColor: kPrimarySwatch,
+    primaryColorLight: kPrimarySwatch,
+    accentColor: kSecondarySwatch.shade900,
+    textTheme: textTheme,
+    textSelectionTheme: _buildTextSelectionTheme(base.textSelectionTheme),
+    iconTheme: _buildIconTheme(base.iconTheme),
     visualDensity: VisualDensity.adaptivePlatformDensity,
+    appBarTheme: _buildAppBarTheme(base.appBarTheme),
+    textButtonTheme: _buildTextButtonTheme(base.textButtonTheme),
+    elevatedButtonTheme: _buildElevatedButtonTheme(base.elevatedButtonTheme),
+    floatingActionButtonTheme:
+        _buildFloatingActionButtonTheme(base.floatingActionButtonTheme),
+    inputDecorationTheme: _buildInputDecorationTheme(base.inputDecorationTheme),
+    tabBarTheme: _buildTabBarTheme(base.tabBarTheme),
   );
 }
 
-TextTheme _buildTextTheme() => TextTheme(
-      headline1: GoogleFonts.workSans(
-        fontWeight: FontWeight.w300,
-        fontSize: 96.0,
-      ),
-      headline2: GoogleFonts.workSans(
-        fontWeight: FontWeight.w600,
-        fontSize: 60.0,
-      ),
-      headline3: GoogleFonts.workSans(
-        fontWeight: FontWeight.w400,
-        fontSize: 48.0,
-      ),
-      headline4: GoogleFonts.workSans(
-        fontWeight: FontWeight.bold,
-        fontSize: 34,
-        letterSpacing: 0.4,
-        height: 0.9,
-        color: kOnSurfaceMediumEmphasis,
-      ),
-      headline5: GoogleFonts.workSans(
-        fontWeight: FontWeight.w700,
-        fontSize: 24.0,
-      ),
-      headline6: GoogleFonts.workSans(
-        fontWeight: FontWeight.w500,
-        fontSize: 20.0,
-      ),
-      subtitle1: GoogleFonts.workSans(
-        fontWeight: FontWeight.w400,
-        fontSize: 16.0,
-      ),
-      subtitle2: GoogleFonts.workSans(
-        fontWeight: FontWeight.w500,
-        fontSize: 14.0,
-      ),
-      bodyText1: GoogleFonts.workSans(
-        fontWeight: FontWeight.w400,
-        fontSize: 18.0,
-      ),
-      bodyText2: GoogleFonts.workSans(
-        fontWeight: FontWeight.w400,
-        fontSize: 14.0,
-      ),
-      button: GoogleFonts.workSans(
-        fontWeight: FontWeight.w500,
-        fontSize: 14.0,
-      ),
-      caption: GoogleFonts.workSans(
-        fontWeight: FontWeight.w400,
-        fontSize: 12.0,
-        color: kOnSurfaceLowEmphasis,
-      ),
-      overline: GoogleFonts.workSans(
-        fontWeight: FontWeight.w600,
-        fontSize: 12.0,
+IconThemeData _buildIconTheme(IconThemeData base) =>
+    base.copyWith(color: Colors.black87);
+
+TextSelectionThemeData _buildTextSelectionTheme(TextSelectionThemeData base) =>
+    base.copyWith(
+      selectionColor: kSecondarySwatch.shade400,
+      selectionHandleColor: kSecondarySwatch.shade600,
+    );
+
+AppBarTheme _buildAppBarTheme(AppBarTheme base) =>
+    base.copyWith(color: Colors.white);
+
+TextButtonThemeData _buildTextButtonTheme(TextButtonThemeData base) =>
+    TextButtonThemeData(
+      style: TextButton.styleFrom(
+        primary: Colors.black87,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
       ),
     );
 
-AppBarTheme _buildAppBarTheme(TextTheme primaryTextTheme) => AppBarTheme(
-    color: Colors.white,
-    textTheme: primaryTextTheme.copyWith(
-        headline6: primaryTextTheme.headline6.copyWith(color: Colors.black87)));
+ElevatedButtonThemeData _buildElevatedButtonTheme(
+        ElevatedButtonThemeData base) =>
+    ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        primary: kPrimarySwatch,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
+      ),
+    );
 
-TabBarTheme _buildTabBarTheme() => TabBarTheme(labelColor: Colors.black87);
+FloatingActionButtonThemeData _buildFloatingActionButtonTheme(
+        FloatingActionButtonThemeData base) =>
+    base.copyWith(backgroundColor: kPrimarySwatch);
+
+InputDecorationTheme _buildInputDecorationTheme(InputDecorationTheme base) =>
+    base.copyWith(filled: true);
+
+TabBarTheme _buildTabBarTheme(TabBarTheme base) => base.copyWith(
+      labelColor: Colors.black87,
+      indicator: UnderlineTabIndicator(
+        borderSide: BorderSide(width: 2, color: kPrimarySwatch),
+      ),
+    );
