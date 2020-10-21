@@ -33,7 +33,7 @@ class FolderCreateForm extends StatelessWidget {
         create: (context) => FolderCreateCubit(
           targetDriveId: targetDriveId,
           targetFolderId: targetFolderId,
-          profileBloc: context.bloc<ProfileBloc>(),
+          profileCubit: context.bloc<ProfileCubit>(),
           arweave: context.repository<ArweaveService>(),
           driveDao: context.repository<DriveDao>(),
         ),

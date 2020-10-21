@@ -23,15 +23,15 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   Wallet _wallet;
   List<TransactionCommonMixin> _driveTxs;
 
-  final ProfileBloc _profileBloc;
+  final ProfileCubit _profileCubit;
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
 
   ProfileAddCubit({
-    @required ProfileBloc profileBloc,
+    @required ProfileCubit profileCubit,
     @required ProfileDao profileDao,
     @required ArweaveService arweave,
-  })  : _profileBloc = profileBloc,
+  })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
         _arweave = arweave,
         super(ProfileAddPromptWallet());
@@ -83,6 +83,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
     await _profileDao.addProfile(username, password, _wallet);
 
-    _profileBloc.add(ProfileLoad(password));
+    await _profileCubit.unlockDefaultProfile(password);
   }
 }

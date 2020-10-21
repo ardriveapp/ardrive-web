@@ -19,7 +19,7 @@ class DriveCreateForm extends StatelessWidget {
         create: (_) => DriveCreateCubit(
           arweave: context.repository<ArweaveService>(),
           drivesDao: context.repository<DrivesDao>(),
-          profileBloc: context.bloc<ProfileBloc>(),
+          profileCubit: context.bloc<ProfileCubit>(),
           drivesCubit: context.bloc<DrivesCubit>(),
         ),
         child: BlocConsumer<DriveCreateCubit, DriveCreateState>(

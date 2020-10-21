@@ -48,7 +48,7 @@ class FsEntryMoveForm extends StatelessWidget {
           fileId: fileId,
           arweave: context.repository<ArweaveService>(),
           driveDao: context.repository<DriveDao>(),
-          profileBloc: context.bloc<ProfileBloc>(),
+          profileCubit: context.bloc<ProfileCubit>(),
         ),
         child: BlocConsumer<FsEntryMoveCubit, FsEntryMoveState>(
           listener: (context, state) {

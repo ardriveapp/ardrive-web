@@ -12,7 +12,7 @@ void main() {
     Database db;
     DriveDao driveDao;
 
-    ProfileBloc profileBloc;
+    ProfileCubit profileCubit;
     UploadBloc uploadBloc;
     DriveDetailCubit driveDetailCubit;
 
@@ -22,10 +22,10 @@ void main() {
       db = getTestDb();
       driveDao = db.driveDao;
 
-      profileBloc = MockProfileBloc();
+      profileCubit = MockProfileBloc();
       uploadBloc = MockUploadBloc();
 
-      when(profileBloc.state).thenReturn(
+      when(profileCubit.state).thenReturn(
         ProfileLoaded(
           password: '123',
           wallet: getTestWallet(),
@@ -35,7 +35,7 @@ void main() {
 
       driveDetailCubit = DriveDetailCubit(
         driveId: mockDriveId,
-        profileBloc: profileBloc,
+        profileCubit: profileCubit,
         uploadBloc: uploadBloc,
         driveDao: driveDao,
       );

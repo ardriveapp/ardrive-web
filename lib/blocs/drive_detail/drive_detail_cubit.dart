@@ -17,7 +17,7 @@ part 'drive_detail_state.dart';
 
 class DriveDetailCubit extends Cubit<DriveDetailState> {
   final String _driveId;
-  final ProfileBloc _profileBloc;
+  final ProfileCubit _profileCubit;
   final UploadBloc _uploadBloc;
   final DriveDao _driveDao;
   final AppConfig _config;
@@ -26,12 +26,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   DriveDetailCubit({
     @required String driveId,
-    @required ProfileBloc profileBloc,
+    @required ProfileCubit profileCubit,
     @required UploadBloc uploadBloc,
     @required DriveDao driveDao,
     @required AppConfig config,
   })  : _driveId = driveId,
-        _profileBloc = profileBloc,
+        _profileCubit = profileCubit,
         _uploadBloc = uploadBloc,
         _driveDao = driveDao,
         _config = config,
@@ -50,13 +50,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
       _driveDao.watchDriveById(_driveId),
       _driveDao.watchFolderContentsAtPath(_driveId, path),
-      _profileBloc.startWith(null),
+      _profileCubit.startWith(null),
       (drive, folderContents, _) {
         if (folderContents?.folder != null) {
           final state = this.state is! DriveDetailLoadSuccess
               ? DriveDetailLoadSuccess()
               : this.state as DriveDetailLoadSuccess;
-          final profile = _profileBloc.state;
+          final profile = _profileCubit.state;
 
           emit(
             state.copyWith(
@@ -92,7 +92,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   void prepareFileUpload(FileEntity fileDetails, Uint8List fileData) async {
-    final profile = _profileBloc.state as ProfileLoaded;
+    final profile = _profileCubit.state as ProfileLoaded;
     final currentState = state as DriveDetailLoadSuccess;
     final currentFolder = currentState.currentFolder.folder;
     final drive = currentState.currentDrive;
