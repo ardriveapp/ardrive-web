@@ -108,13 +108,11 @@ class FsEntryMoveForm extends StatelessWidget {
                                               dense: true,
                                               leading: Icon(Icons.folder),
                                               title: Text(f.name),
-                                              trailing: IconButton(
-                                                icon: Icon(
-                                                    Icons.keyboard_arrow_right),
-                                                onPressed: () => context
-                                                    .bloc<FsEntryMoveCubit>()
-                                                    .loadFolder(f.id),
-                                              ),
+                                              onTap: () => context
+                                                  .bloc<FsEntryMoveCubit>()
+                                                  .loadFolder(f.id),
+                                              trailing: Icon(
+                                                  Icons.keyboard_arrow_right),
                                             ),
                                           ),
                                           ...state.viewingFolder.files
