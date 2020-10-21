@@ -8,7 +8,7 @@ class UnlockProfileForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BlocProvider<ProfileUnlockCubit>(
         create: (context) => ProfileUnlockCubit(
-          profileBloc: context.bloc<ProfileBloc>(),
+          profileCubit: context.bloc<ProfileCubit>(),
           profileDao: context.repository<ProfileDao>(),
         ),
         child: BlocBuilder<ProfileUnlockCubit, ProfileUnlockState>(

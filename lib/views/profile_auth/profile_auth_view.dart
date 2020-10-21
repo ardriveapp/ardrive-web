@@ -8,7 +8,7 @@ import 'components/profile_unlock_form.dart';
 class ProfileAuthView extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
-        child: BlocBuilder<ProfileBloc, ProfileState>(
+        child: BlocBuilder<ProfileCubit, ProfileState>(
           builder: (context, state) {
             Widget form;
             if (state is ProfilePromptAdd) {

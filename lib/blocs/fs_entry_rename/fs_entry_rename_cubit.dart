@@ -19,7 +19,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
-  final ProfileBloc _profileBloc;
+  final ProfileCubit _profileCubit;
 
   bool get _isRenamingFolder => folderId != null;
 
@@ -29,10 +29,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     this.fileId,
     @required ArweaveService arweave,
     @required DriveDao driveDao,
-    @required ProfileBloc profileBloc,
+    @required ProfileCubit profileCubit,
   })  : _arweave = arweave,
         _driveDao = driveDao,
-        _profileBloc = profileBloc,
+        _profileCubit = profileCubit,
         assert(folderId != null || fileId != null),
         super(FsEntryRenameInitializing(isRenamingFolder: folderId != null)) {
     () async {
@@ -51,7 +51,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     }
 
     final String newName = form.control('name').value;
-    final profile = _profileBloc.state as ProfileLoaded;
+    final profile = _profileCubit.state as ProfileLoaded;
     final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
 
     if (_isRenamingFolder) {

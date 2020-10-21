@@ -10,22 +10,22 @@ import '../blocs.dart';
 part 'drives_state.dart';
 
 class DrivesCubit extends Cubit<DrivesState> {
-  final ProfileBloc _profileBloc;
+  final ProfileCubit _profileCubit;
   final DrivesDao _drivesDao;
 
   StreamSubscription _drivesSubscription;
 
-  DrivesCubit({ProfileBloc profileBloc, DrivesDao drivesDao})
-      : _profileBloc = profileBloc,
+  DrivesCubit({ProfileCubit profileCubit, DrivesDao drivesDao})
+      : _profileCubit = profileCubit,
         _drivesDao = drivesDao,
         super(DrivesLoadInProgress()) {
     _drivesSubscription = Rx.combineLatest2<List<Drive>, void, List<Drive>>(
       _drivesDao.watchAllDrives(),
-      _profileBloc.startWith(null),
+      _profileCubit.startWith(null),
       (drives, _) => drives,
     ).listen((drives) {
       final state = this.state;
-      final profile = _profileBloc.state as ProfileLoaded;
+      final profile = _profileCubit.state as ProfileLoaded;
 
       String selectedDriveId;
       if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
@@ -43,7 +43,7 @@ class DrivesCubit extends Cubit<DrivesState> {
           sharedDrives: drives
               .where((d) => d.ownerAddress != profile.wallet.address)
               .toList(),
-          canCreateNewDrive: _profileBloc.state is ProfileLoaded,
+          canCreateNewDrive: _profileCubit.state is ProfileLoaded,
         ),
       );
     });

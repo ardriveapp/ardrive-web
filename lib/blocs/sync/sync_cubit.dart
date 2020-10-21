@@ -13,19 +13,19 @@ import '../blocs.dart';
 part 'sync_state.dart';
 
 class SyncCubit extends Cubit<SyncState> {
-  final ProfileBloc _profileBloc;
+  final ProfileCubit _profileCubit;
   final ArweaveService _arweave;
   final DrivesDao _drivesDao;
   final DriveDao _driveDao;
   final Database _db;
 
   SyncCubit({
-    @required ProfileBloc profileBloc,
+    @required ProfileCubit profileCubit,
     @required ArweaveService arweave,
     @required DrivesDao drivesDao,
     @required DriveDao driveDao,
     @required Database db,
-  })  : _profileBloc = profileBloc,
+  })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _drivesDao = drivesDao,
         _driveDao = driveDao,
@@ -37,7 +37,7 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> startSync() async {
     emit(SyncInProgress());
 
-    final profile = _profileBloc.state as ProfileLoaded;
+    final profile = _profileCubit.state as ProfileLoaded;
 
     // Sync in drives owned by the user.
     final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
@@ -57,7 +57,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> _syncDrive(Drive drive) async {
-    final profile = _profileBloc.state as ProfileLoaded;
+    final profile = _profileCubit.state as ProfileLoaded;
     final driveKey = drive.isPrivate
         ? await _driveDao.getDriveKey(drive.id, profile.cipherKey)
         : null;

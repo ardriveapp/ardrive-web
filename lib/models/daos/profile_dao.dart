@@ -17,16 +17,14 @@ class ProfilePasswordIncorrectException implements Exception {}
 class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   ProfileDao(Database db) : super(db);
 
-  Future<bool> hasProfile() async {
-    final profile = await select(profiles).getSingle();
-    return profile != null;
-  }
+  SimpleSelectStatement<Profiles, Profile> selectDefaultProfile() =>
+      select(profiles);
 
   /// Loads the default profile with the provided password.
   ///
   /// Throws a [ProfilePasswordIncorrectException] if the provided password is incorrect.
   Future<ProfileLoadDetails> loadDefaultProfile(String password) async {
-    final profile = await select(profiles).getSingle();
+    final profile = await selectDefaultProfile().getSingle();
 
     if (profile == null) {
       return null;

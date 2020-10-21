@@ -1,4 +1,4 @@
-part of 'profile_bloc.dart';
+part of 'profile_cubit.dart';
 
 @immutable
 abstract class ProfileState extends Equatable {

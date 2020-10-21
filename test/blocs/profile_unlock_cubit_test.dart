@@ -9,7 +9,7 @@ import '../mocks.dart';
 void main() {
   group('ProfileUnlockCubit', () {
     ProfileDao profileDao;
-    ProfileBloc profileBloc;
+    ProfileCubit profileCubit;
     ProfileUnlockCubit profileUnlockCubit;
 
     const rightPassword = 'right-password';
@@ -17,15 +17,15 @@ void main() {
 
     setUp(() {
       profileDao = MockProfileDao();
-      profileBloc = MockProfileBloc();
+      profileCubit = MockProfileBloc();
 
       when(profileDao.loadDefaultProfile(rightPassword))
           .thenAnswer((_) => Future.value());
       when(profileDao.loadDefaultProfile(wrongPassword))
           .thenThrow(ProfilePasswordIncorrectException());
 
-      profileUnlockCubit =
-          ProfileUnlockCubit(profileBloc: profileBloc, profileDao: profileDao);
+      profileUnlockCubit = ProfileUnlockCubit(
+          profileCubit: profileCubit, profileDao: profileDao);
     });
 
     blocTest<ProfileUnlockCubit, ProfileUnlockState>(
@@ -35,7 +35,8 @@ void main() {
         bloc.form.value = {'password': rightPassword};
         bloc.submit();
       },
-      verify: (bloc) => verify(profileBloc.add(ProfileLoad(rightPassword))),
+      verify: (bloc) =>
+          verify(profileCubit.unlockDefaultProfile(rightPassword)),
     );
 
     blocTest<ProfileUnlockCubit, ProfileUnlockState>(
