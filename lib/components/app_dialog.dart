@@ -35,8 +35,8 @@ class AppDialog extends StatelessWidget {
                       title,
                       style: Theme.of(context)
                           .textTheme
-                          .bodyText1
-                          .copyWith(color: Colors.white, letterSpacing: 2),
+                          .headline6
+                          .copyWith(color: Colors.white),
                     ),
                     if (dismissable)
                       IconButton(
