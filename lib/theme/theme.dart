@@ -51,7 +51,7 @@ TextTheme _buildTextTheme(TextTheme base) => base
       bodyText2: GoogleFonts.openSans(
           fontSize: 14, fontWeight: FontWeight.w400, letterSpacing: 0.25),
       button: GoogleFonts.montserrat(
-          fontSize: 14, fontWeight: FontWeight.w500, letterSpacing: 1.25),
+          fontSize: 14, fontWeight: FontWeight.w400, letterSpacing: 1.25),
       caption: GoogleFonts.openSans(
           fontSize: 12, fontWeight: FontWeight.w400, letterSpacing: 0.4),
       overline: GoogleFonts.openSans(
