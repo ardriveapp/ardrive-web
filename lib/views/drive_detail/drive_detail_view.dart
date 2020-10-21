@@ -62,64 +62,64 @@ class DriveDetailView extends StatelessWidget {
                             ),
                             DriveDetailBreadcrumbRow(
                                 path: state.currentFolder.folder.path),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: DataTable(
-                                    showCheckboxColumn: false,
-                                    columns: const <DataColumn>[
-                                      DataColumn(label: Text('Name')),
-                                      DataColumn(label: Text('File size')),
-                                    ],
-                                    rows: [
-                                      ...state.currentFolder.subfolders.map(
-                                        (folder) => buildFolderRow(
-                                          context: context,
-                                          folder: folder,
-                                          selected:
-                                              folder.id == state.selectedItemId,
-                                          onPressed: () {
-                                            final bloc = context
-                                                .bloc<DriveDetailCubit>();
-                                            if (folder.id ==
-                                                state.selectedItemId) {
-                                              bloc.openFolderAtPath(
-                                                  folder.path);
-                                            } else {
-                                              bloc.selectItem(
-                                                folder.id,
-                                                isFolder: true,
-                                              );
-                                            }
-                                          },
+                            if (state.currentFolder.subfolders.isNotEmpty ||
+                                state.currentFolder.files.isNotEmpty)
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: DataTable(
+                                      showCheckboxColumn: false,
+                                      columns: const <DataColumn>[
+                                        DataColumn(label: Text('Name')),
+                                        DataColumn(label: Text('File size')),
+                                      ],
+                                      rows: [
+                                        ...state.currentFolder.subfolders.map(
+                                          (folder) => buildFolderRow(
+                                            context: context,
+                                            folder: folder,
+                                            selected: folder.id ==
+                                                state.selectedItemId,
+                                            onPressed: () {
+                                              final bloc = context
+                                                  .bloc<DriveDetailCubit>();
+                                              if (folder.id ==
+                                                  state.selectedItemId) {
+                                                bloc.openFolderAtPath(
+                                                    folder.path);
+                                              } else {
+                                                bloc.selectItem(
+                                                  folder.id,
+                                                  isFolder: true,
+                                                );
+                                              }
+                                            },
+                                          ),
                                         ),
-                                      ),
-                                      ...state.currentFolder.files.map(
-                                        (file) => buildFileRow(
-                                          context: context,
-                                          file: file,
-                                          selected:
-                                              file.id == state.selectedItemId,
-                                          onPressed: () async {
-                                            final bloc = context
-                                                .bloc<DriveDetailCubit>();
-                                            if (file.id ==
-                                                state.selectedItemId) {
-                                              bloc.toggleSelectedItemDetails();
-                                            } else {
-                                              bloc.selectItem(file.id);
-                                            }
-                                          },
+                                        ...state.currentFolder.files.map(
+                                          (file) => buildFileRow(
+                                            context: context,
+                                            file: file,
+                                            selected:
+                                                file.id == state.selectedItemId,
+                                            onPressed: () async {
+                                              final bloc = context
+                                                  .bloc<DriveDetailCubit>();
+                                              if (file.id ==
+                                                  state.selectedItemId) {
+                                                bloc.toggleSelectedItemDetails();
+                                              } else {
+                                                bloc.selectItem(file.id);
+                                              }
+                                            },
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            if (state.currentFolder.subfolders.isEmpty &&
-                                state.currentFolder.files.isEmpty &&
-                                state.hasWritePermissions)
+                                ],
+                              )
+                            else
                               DriveDetailFolderEmptyCard(
                                   promptToAddFiles: state.hasWritePermissions),
                           ],
