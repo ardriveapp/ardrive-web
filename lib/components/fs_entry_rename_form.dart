@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -66,15 +67,18 @@ class FsEntryRenameForm extends StatelessWidget {
           builder: (context, state) => AppDialog(
             title: state.isRenamingFolder ? 'RENAME FOLDER' : 'RENAME FILE',
             content: state is! FsEntryRenameInitializing
-                ? ReactiveForm(
-                    formGroup: context.bloc<FsEntryRenameCubit>().form,
-                    child: ReactiveTextField(
-                      formControlName: 'name',
-                      autofocus: true,
-                      decoration: InputDecoration(
-                          labelText: state.isRenamingFolder
-                              ? 'Folder name'
-                              : 'File name'),
+                ? SizedBox(
+                    width: kSmallDialogWidth,
+                    child: ReactiveForm(
+                      formGroup: context.bloc<FsEntryRenameCubit>().form,
+                      child: ReactiveTextField(
+                        formControlName: 'name',
+                        autofocus: true,
+                        decoration: InputDecoration(
+                            labelText: state.isRenamingFolder
+                                ? 'Folder name'
+                                : 'File name'),
+                      ),
                     ),
                   )
                 : null,

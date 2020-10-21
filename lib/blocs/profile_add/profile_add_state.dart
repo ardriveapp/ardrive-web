@@ -8,11 +8,15 @@ abstract class ProfileAddState extends Equatable {
 
 class ProfileAddPromptWallet extends ProfileAddState {}
 
-class ProfileAddPromptDetails extends ProfileAddState {
-  final bool isNewUser;
+class ProfileAddUserStateLoadInProgress extends ProfileAddState {}
 
-  ProfileAddPromptDetails({this.isNewUser});
+class ProfileAddOnboardingNewUser extends ProfileAddState {}
+
+class ProfileAddPromptDetails extends ProfileAddState {
+  final bool isExistingUser;
+
+  ProfileAddPromptDetails({this.isExistingUser});
 
   @override
-  List<Object> get props => [isNewUser];
+  List<Object> get props => [isExistingUser];
 }

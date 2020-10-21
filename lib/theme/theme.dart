@@ -8,25 +8,25 @@ export 'constants.dart';
 
 final base = ThemeData.light();
 
-ThemeData appTheme() {
-  return base.copyWith(
-    primaryColor: kPrimarySwatch,
-    primaryColorLight: kPrimarySwatch,
-    accentColor: kSecondarySwatch.shade900,
-    textTheme: _buildTextTheme(base.textTheme),
-    textSelectionTheme: _buildTextSelectionTheme(base.textSelectionTheme),
-    iconTheme: _buildIconTheme(base.iconTheme),
-    visualDensity: VisualDensity.adaptivePlatformDensity,
-    appBarTheme: _buildAppBarTheme(base.appBarTheme),
-    textButtonTheme: _buildTextButtonTheme(base.textButtonTheme),
-    elevatedButtonTheme: _buildElevatedButtonTheme(base.elevatedButtonTheme),
-    floatingActionButtonTheme:
-        _buildFloatingActionButtonTheme(base.floatingActionButtonTheme),
-    cardTheme: _buildCardTheme(base.cardTheme),
-    inputDecorationTheme: _buildInputDecorationTheme(base.inputDecorationTheme),
-    tabBarTheme: _buildTabBarTheme(base.tabBarTheme),
-  );
-}
+ThemeData appTheme() => base.copyWith(
+      primaryColor: kPrimarySwatch,
+      primaryColorLight: kPrimarySwatch,
+      accentColor: kSecondarySwatch.shade900,
+      textTheme: _buildTextTheme(base.textTheme),
+      textSelectionTheme: _buildTextSelectionTheme(base.textSelectionTheme),
+      iconTheme: _buildIconTheme(base.iconTheme),
+      visualDensity: VisualDensity.adaptivePlatformDensity,
+      appBarTheme: _buildAppBarTheme(base.appBarTheme),
+      textButtonTheme: _buildTextButtonTheme(base.textButtonTheme),
+      elevatedButtonTheme: _buildElevatedButtonTheme(base.elevatedButtonTheme),
+      floatingActionButtonTheme:
+          _buildFloatingActionButtonTheme(base.floatingActionButtonTheme),
+      cardTheme: _buildCardTheme(base.cardTheme),
+      inputDecorationTheme:
+          _buildInputDecorationTheme(base.inputDecorationTheme),
+      tabBarTheme: _buildTabBarTheme(base.tabBarTheme),
+      dataTableTheme: _buildDataTableTheme(base.dataTableTheme),
+    );
 
 TextTheme _buildTextTheme(TextTheme base) => base
     .copyWith(
@@ -106,3 +106,5 @@ TabBarTheme _buildTabBarTheme(TabBarTheme base) => base.copyWith(
         borderSide: BorderSide(width: 2, color: kPrimarySwatch),
       ),
     );
+
+DataTableThemeData _buildDataTableTheme(DataTableThemeData base) {}

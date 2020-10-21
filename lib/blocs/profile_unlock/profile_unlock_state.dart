@@ -6,4 +6,13 @@ abstract class ProfileUnlockState extends Equatable {
   List<Object> get props => [];
 }
 
-class ProfileUnlockInitial extends ProfileUnlockState {}
+class ProfileUnlockInitializing extends ProfileUnlockState {}
+
+class ProfileUnlockInitial extends ProfileUnlockState {
+  final String username;
+
+  ProfileUnlockInitial({this.username});
+
+  @override
+  List<Object> get props => [username];
+}
