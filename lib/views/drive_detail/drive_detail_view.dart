@@ -1,11 +1,11 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
-import 'package:ardrive/models/models.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
 
+import 'components/drive_detail_actions_row.dart';
+import 'components/drive_detail_breadcrumb_row.dart';
 import 'components/drive_info_side_sheet.dart';
 import 'components/table_rows.dart';
 
@@ -44,20 +44,23 @@ class DriveDetailView extends StatelessWidget {
                   child: Scrollbar(
                     child: SingleChildScrollView(
                       child: Padding(
-                        padding: const EdgeInsets.all(16.0),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 32, horizontal: 24),
                         child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                _buildBreadcrumbRow(
-                                  context,
+                                Text(
                                   state.currentDrive.name,
-                                  state.currentFolder.folder.path,
+                                  style: Theme.of(context).textTheme.headline5,
                                 ),
-                                _buildActionsRow(context, state),
+                                DriveDetailActionRow(),
                               ],
                             ),
+                            DriveDetailBreadcrumbRow(
+                                path: state.currentFolder.folder.path),
                             Row(
                               children: [
                                 Expanded(
@@ -135,112 +138,6 @@ class DriveDetailView extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildBreadcrumbRow(
-      BuildContext context, String driveName, String path) {
-    final pathSegments = path.split('/').where((s) => s != '').toList();
-
-    return Row(
-      children: [
-        TextButton(
-          onPressed: () =>
-              context.bloc<DriveDetailCubit>().openFolderAtPath(''),
-          child: Text(driveName),
-        ),
-        if (pathSegments.isNotEmpty) Icon(Icons.chevron_right),
-        ...pathSegments.asMap().entries.expand((s) => [
-              TextButton(
-                onPressed: () => context
-                    .bloc<DriveDetailCubit>()
-                    .openFolderAtPath(
-                        '/${pathSegments.sublist(0, s.key + 1).join('/')}'),
-                child: Text(s.value),
-              ),
-              if (s.key < pathSegments.length - 1) Icon(Icons.chevron_right),
-            ])
-      ],
-    );
-  }
-
-  Widget _buildActionsRow(BuildContext context, DriveDetailLoadSuccess state) {
-    final bloc = context.bloc<DriveDetailCubit>();
-
-    return Row(
-      children: [
-        if (state.selectedItemId != null) ...{
-          if (!state.selectedItemIsFolder) ...{
-            IconButton(
-              icon: Icon(Icons.file_download),
-              onPressed: () {},
-              tooltip: 'Download',
-            ),
-            if (state.currentDrive.isPublic)
-              IconButton(
-                icon: Icon(Icons.open_in_new),
-                onPressed: () async =>
-                    launch(await bloc.getSelectedFilePreviewUrl()),
-                tooltip: 'Preview',
-              ),
-          },
-          if (state.hasWritePermissions) ...{
-            IconButton(
-              icon: Icon(Icons.drive_file_rename_outline),
-              onPressed: () {
-                if (state.selectedItemIsFolder) {
-                  promptToRenameFolder(context,
-                      driveId: state.currentDrive.id,
-                      folderId: state.selectedItemId);
-                } else {
-                  promptToRenameFile(context,
-                      driveId: state.currentDrive.id,
-                      fileId: state.selectedItemId);
-                }
-              },
-              tooltip: 'Rename',
-            ),
-            IconButton(
-              icon: Icon(Icons.drive_file_move),
-              onPressed: () {
-                if (state.selectedItemIsFolder) {
-                  promptToMoveFolder(context,
-                      driveId: state.currentDrive.id,
-                      folderId: state.selectedItemId);
-                } else {
-                  promptToMoveFile(context,
-                      driveId: state.currentDrive.id,
-                      fileId: state.selectedItemId);
-                }
-              },
-              tooltip: 'Move',
-            ),
-          },
-          Container(height: 32, child: VerticalDivider()),
-        },
-        if (!state.hasWritePermissions)
-          IconButton(
-            icon: Icon(Icons.remove_red_eye),
-            onPressed: () => bloc.toggleSelectedItemDetails(),
-            tooltip: 'View Only',
-          ),
-        state.currentDrive.isPrivate
-            ? IconButton(
-                icon: Icon(Icons.lock),
-                onPressed: () => bloc.toggleSelectedItemDetails(),
-                tooltip: 'Private',
-              )
-            : IconButton(
-                icon: Icon(Icons.public),
-                onPressed: () => bloc.toggleSelectedItemDetails(),
-                tooltip: 'Public',
-              ),
-        IconButton(
-          icon: Icon(Icons.info),
-          onPressed: () => bloc.toggleSelectedItemDetails(),
-          tooltip: 'View Info',
-        ),
-      ],
     );
   }
 }

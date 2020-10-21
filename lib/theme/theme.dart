@@ -9,20 +9,11 @@ export 'constants.dart';
 final base = ThemeData.light();
 
 ThemeData appTheme() {
-  final textTheme = GoogleFonts.openSansTextTheme().copyWith(
-    button: GoogleFonts.montserrat(
-      fontSize: 12,
-      fontWeight: FontWeight.w600,
-      fontStyle: FontStyle.normal,
-      letterSpacing: 1,
-    ),
-  );
-
   return base.copyWith(
     primaryColor: kPrimarySwatch,
     primaryColorLight: kPrimarySwatch,
     accentColor: kSecondarySwatch.shade900,
-    textTheme: textTheme,
+    textTheme: _buildTextTheme(base.textTheme),
     textSelectionTheme: _buildTextSelectionTheme(base.textSelectionTheme),
     iconTheme: _buildIconTheme(base.iconTheme),
     visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -35,6 +26,40 @@ ThemeData appTheme() {
     tabBarTheme: _buildTabBarTheme(base.tabBarTheme),
   );
 }
+
+TextTheme _buildTextTheme(TextTheme base) => base
+    .copyWith(
+      headline1: GoogleFonts.montserrat(
+          fontSize: 97, fontWeight: FontWeight.w300, letterSpacing: -1.5),
+      headline2: GoogleFonts.montserrat(
+          fontSize: 61, fontWeight: FontWeight.w300, letterSpacing: -0.5),
+      headline3:
+          GoogleFonts.montserrat(fontSize: 48, fontWeight: FontWeight.w400),
+      headline4: GoogleFonts.montserrat(
+          fontSize: 34, fontWeight: FontWeight.w400, letterSpacing: 0.25),
+      headline5: GoogleFonts.montserrat(
+          fontSize: 24, fontWeight: FontWeight.w400, letterSpacing: 2),
+      headline6: GoogleFonts.openSans(
+          fontSize: 16, fontWeight: FontWeight.w500, letterSpacing: 2),
+      subtitle1: GoogleFonts.openSans(
+          fontSize: 16, fontWeight: FontWeight.w400, letterSpacing: 0.15),
+      subtitle2: GoogleFonts.montserrat(
+          fontSize: 14, fontWeight: FontWeight.w500, letterSpacing: 0.1),
+      bodyText1: GoogleFonts.openSans(
+          fontSize: 16, fontWeight: FontWeight.w400, letterSpacing: 0.5),
+      bodyText2: GoogleFonts.openSans(
+          fontSize: 14, fontWeight: FontWeight.w400, letterSpacing: 0.25),
+      button: GoogleFonts.montserrat(
+          fontSize: 14, fontWeight: FontWeight.w500, letterSpacing: 1.25),
+      caption: GoogleFonts.openSans(
+          fontSize: 12, fontWeight: FontWeight.w400, letterSpacing: 0.4),
+      overline: GoogleFonts.openSans(
+          fontSize: 10, fontWeight: FontWeight.w400, letterSpacing: 1.5),
+    )
+    .apply(
+      bodyColor: Colors.black87,
+      displayColor: Colors.black87,
+    );
 
 IconThemeData _buildIconTheme(IconThemeData base) =>
     base.copyWith(color: Colors.black87);
