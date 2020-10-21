@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'components/drive_detail_actions_row.dart';
 import 'components/drive_detail_breadcrumb_row.dart';
+import 'components/drive_detail_folder_empty_card.dart';
 import 'components/drive_info_side_sheet.dart';
 import 'components/table_rows.dart';
 
@@ -116,6 +117,11 @@ class DriveDetailView extends StatelessWidget {
                                 ),
                               ],
                             ),
+                            if (state.currentFolder.subfolders.isEmpty &&
+                                state.currentFolder.files.isEmpty &&
+                                state.hasWritePermissions)
+                              DriveDetailFolderEmptyCard(
+                                  promptToAddFiles: state.hasWritePermissions),
                           ],
                         ),
                       ),

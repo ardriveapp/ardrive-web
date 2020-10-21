@@ -22,6 +22,7 @@ ThemeData appTheme() {
     elevatedButtonTheme: _buildElevatedButtonTheme(base.elevatedButtonTheme),
     floatingActionButtonTheme:
         _buildFloatingActionButtonTheme(base.floatingActionButtonTheme),
+    cardTheme: _buildCardTheme(base.cardTheme),
     inputDecorationTheme: _buildInputDecorationTheme(base.inputDecorationTheme),
     tabBarTheme: _buildTabBarTheme(base.tabBarTheme),
   );
@@ -96,6 +97,8 @@ FloatingActionButtonThemeData _buildFloatingActionButtonTheme(
 
 InputDecorationTheme _buildInputDecorationTheme(InputDecorationTheme base) =>
     base.copyWith(filled: true);
+
+CardTheme _buildCardTheme(CardTheme base) => base.copyWith(elevation: 0);
 
 TabBarTheme _buildTabBarTheme(TabBarTheme base) => base.copyWith(
       labelColor: Colors.black87,
