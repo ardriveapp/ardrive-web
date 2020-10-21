@@ -53,9 +53,9 @@ class FsEntryMoveForm extends StatelessWidget {
         child: BlocConsumer<FsEntryMoveCubit, FsEntryMoveState>(
           listener: (context, state) {
             if (state is FolderEntryMoveInProgress) {
-              showProgressDialog(context, 'Moving folder...');
+              showProgressDialog(context, 'MOVING FOLDER...');
             } else if (state is FileEntryMoveInProgress) {
-              showProgressDialog(context, 'Moving file...');
+              showProgressDialog(context, 'MOVING FILE...');
             } else if (state is FolderEntryMoveSuccess ||
                 state is FileEntryMoveSuccess) {
               Navigator.pop(context);

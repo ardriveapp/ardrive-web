@@ -20,7 +20,7 @@ class DriveAttachForm extends StatelessWidget {
         child: BlocConsumer<DriveAttachCubit, DriveAttachState>(
           listener: (context, state) {
             if (state is DriveAttachInProgress) {
-              showProgressDialog(context, 'Attaching drive...');
+              showProgressDialog(context, 'ATTACHING DRIVE...');
             } else if (state is DriveAttachInitial) {
               // Close the progress dialog if the drive attachment fails.
               Navigator.pop(context);

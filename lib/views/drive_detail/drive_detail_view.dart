@@ -15,7 +15,7 @@ class DriveDetailView extends StatelessWidget {
     return BlocListener<UploadBloc, UploadState>(
       listener: (context, state) async {
         if (state is UploadBeingPrepared) {
-          await showProgressDialog(context, 'Preparing upload...');
+          await showProgressDialog(context, 'PREPARING UPLOAD...');
         } else if (state is UploadFileReady) {
           Navigator.pop(context);
 
@@ -29,7 +29,7 @@ class DriveDetailView extends StatelessWidget {
 
           if (confirm) context.bloc<UploadBloc>().add(state.fileUploadHandle);
         } else if (state is UploadInProgress) {
-          await showProgressDialog(context, 'Uploading file...');
+          await showProgressDialog(context, 'UPLOADING FILE...');
         } else if (state is UploadComplete) {
           Navigator.pop(context);
         }

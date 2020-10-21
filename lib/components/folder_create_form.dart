@@ -40,7 +40,7 @@ class FolderCreateForm extends StatelessWidget {
         child: BlocConsumer<FolderCreateCubit, FolderCreateState>(
           listener: (context, state) {
             if (state is FolderCreateInProgress) {
-              showProgressDialog(context, 'Creating folder...');
+              showProgressDialog(context, 'CREATING FOLDER...');
             } else if (state is FolderCreateSuccess) {
               Navigator.pop(context);
               Navigator.pop(context);

@@ -54,9 +54,9 @@ class FsEntryRenameForm extends StatelessWidget {
         child: BlocConsumer<FsEntryRenameCubit, FsEntryRenameState>(
           listener: (context, state) {
             if (state is FolderEntryRenameInProgress) {
-              showProgressDialog(context, 'Renaming folder...');
+              showProgressDialog(context, 'RENAMING FOLDER...');
             } else if (state is FileEntryRenameInProgress) {
-              showProgressDialog(context, 'Renaming file...');
+              showProgressDialog(context, 'RENAMING FILE...');
             } else if (state is FolderEntryRenameSuccess ||
                 state is FileEntryRenameSuccess) {
               Navigator.pop(context);

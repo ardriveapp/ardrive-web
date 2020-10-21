@@ -25,7 +25,7 @@ class DriveCreateForm extends StatelessWidget {
         child: BlocConsumer<DriveCreateCubit, DriveCreateState>(
           listener: (context, state) {
             if (state is DriveCreateInProgress) {
-              showProgressDialog(context, 'Creating drive...');
+              showProgressDialog(context, 'CREATING DRIVE...');
             } else if (state is DriveCreateSuccess) {
               Navigator.pop(context);
               Navigator.pop(context);
