@@ -70,58 +70,77 @@ class FsEntryMoveForm extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                        child: Container(
+                      Container(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (!state.viewingRootFolder)
+                              if (!state.viewingRootFolder) ...{
                                 TextButton.icon(
+                                    style: TextButton.styleFrom(
+                                        textStyle: Theme.of(context)
+                                            .textTheme
+                                            .subtitle1,
+                                        padding: const EdgeInsets.all(16)),
                                     icon: Icon(Icons.arrow_back),
                                     label: Text(
                                         'Back to "${state.viewingFolder.folder.name}" folder'),
                                     onPressed: () => context
                                         .bloc<FsEntryMoveCubit>()
                                         .loadParentFolder()),
-                              Container(
-                                height: 150,
-                                width: 450,
-                                child: ListView(
-                                  shrinkWrap: true,
-                                  children: [
-                                    ...state.viewingFolder.subfolders.map(
-                                      (f) => ListTile(
-                                        key: ValueKey(f.id),
-                                        dense: true,
-                                        title: Text(f.name),
-                                        trailing: IconButton(
-                                          icon:
-                                              Icon(Icons.keyboard_arrow_right),
-                                          onPressed: () => context
-                                              .bloc<FsEntryMoveCubit>()
-                                              .loadFolder(f.id),
-                                        ),
+                                Container(height: 16),
+                              },
+                              Scrollbar(
+                                child: SingleChildScrollView(
+                                  child: Container(
+                                    height: 150,
+                                    width: 512,
+                                    child: ListTileTheme(
+                                      textColor: Colors.black87,
+                                      iconColor: Colors.black87,
+                                      child: ListView(
+                                        shrinkWrap: true,
+                                        children: [
+                                          ...state.viewingFolder.subfolders.map(
+                                            (f) => ListTile(
+                                              key: ValueKey(f.id),
+                                              dense: true,
+                                              leading: Icon(Icons.folder),
+                                              title: Text(f.name),
+                                              trailing: IconButton(
+                                                icon: Icon(
+                                                    Icons.keyboard_arrow_right),
+                                                onPressed: () => context
+                                                    .bloc<FsEntryMoveCubit>()
+                                                    .loadFolder(f.id),
+                                              ),
+                                            ),
+                                          ),
+                                          ...state.viewingFolder.files
+                                              .map((f) => ListTile(
+                                                    key: ValueKey(f.id),
+                                                    leading: Icon(Icons
+                                                        .insert_drive_file),
+                                                    title: Text(f.name),
+                                                    enabled: false,
+                                                    dense: true,
+                                                  )),
+                                        ],
                                       ),
                                     ),
-                                    ...state.viewingFolder.files
-                                        .map((f) => ListTile(
-                                              key: ValueKey(f.id),
-                                              title: Text(f.name),
-                                              enabled: false,
-                                              dense: true,
-                                            )),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
+                      Divider(),
                       Padding(
                         padding: const EdgeInsets.only(right: 16),
-                        child: ButtonBar(
-                          alignment: MainAxisAlignment.spaceBetween,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             if (state is FsEntryMoveFolderLoadSuccess)
                               TextButton.icon(
@@ -134,10 +153,17 @@ class FsEntryMoveForm extends StatelessWidget {
                                   targetFolderId: state.viewingFolder.folder.id,
                                 ),
                               ),
-                            ElevatedButton(
-                              child: Text('MOVE HERE'),
-                              onPressed: () =>
-                                  context.bloc<FsEntryMoveCubit>().submit(),
+                            ButtonBar(
+                              children: [
+                                TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: Text('CANCEL')),
+                                ElevatedButton(
+                                  child: Text('MOVE HERE'),
+                                  onPressed: () =>
+                                      context.bloc<FsEntryMoveCubit>().submit(),
+                                ),
+                              ],
                             ),
                           ],
                         ),
