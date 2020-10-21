@@ -90,10 +90,13 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         file = file.copyWith(
             parentFolderId: parentFolder.id,
             path: '${parentFolder.path}/${file.name}',
-           lastUpdated: DateTime.now());
+            lastUpdated: DateTime.now());
+
+        final fileKey =
+            driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
 
         final fileTx = await _arweave.prepareEntityTx(
-            file.asEntity(), profile.wallet, driveKey);
+            file.asEntity(), profile.wallet, fileKey);
 
         await _arweave.postTx(fileTx);
         await _driveDao.writeToFile(file);

@@ -9,7 +9,7 @@ extension TransactionMixinExtensions on TransactionCommonMixin {
       tags.firstWhere((t) => t.name == tagName, orElse: () => null)?.value;
 
   DateTime getCommitTime() {
-    final milliseconds = getTag(EntityTag.arFs) != '0.11'
+    final milliseconds = getTag(EntityTag.arFs) != '0.10'
         ? int.parse(getTag(EntityTag.unixTime)) * 1000
         : int.parse(getTag(EntityTag.unixTime));
 

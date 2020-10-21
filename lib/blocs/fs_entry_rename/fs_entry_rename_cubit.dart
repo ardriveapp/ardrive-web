@@ -76,8 +76,11 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
         var file = await _driveDao.getFileById(driveId, fileId);
         file = file.copyWith(name: newName, lastUpdated: DateTime.now());
 
+        final fileKey =
+            driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
+
         final fileTx = await _arweave.prepareEntityTx(
-            file.asEntity(), profile.wallet, driveKey);
+            file.asEntity(), profile.wallet, fileKey);
 
         await _arweave.postTx(fileTx);
         await _driveDao.writeToFile(file);
