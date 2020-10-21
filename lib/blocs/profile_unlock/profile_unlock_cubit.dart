@@ -22,9 +22,17 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     @required ProfileDao profileDao,
   })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
-        super(ProfileUnlockInitial());
+        super(ProfileUnlockInitializing()) {
+    () async {
+      final existingUsername = await _profileDao
+          .selectDefaultProfile()
+          .map((p) => p.username)
+          .getSingle();
+      emit(ProfileUnlockInitial(username: existingUsername));
+    }();
+  }
 
-  void submit() async {
+  Future<void> submit() async {
     if (form.valid) {
       final String password = form.control('password').value;
 

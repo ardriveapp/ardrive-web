@@ -53,7 +53,7 @@ void main() {
         await bloc.submit();
       },
       expect: [
-        ProfileAddPromptDetails(isNewUser: true),
+        ProfileAddPromptDetails(isExistingUser: false),
       ],
       verify: (_) => verify(profileCubit.unlockDefaultProfile(fakePassword)),
     );
