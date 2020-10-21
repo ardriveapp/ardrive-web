@@ -10,7 +10,7 @@ class ProfileAddForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BlocProvider<ProfileAddCubit>(
         create: (context) => ProfileAddCubit(
-          profileBloc: context.bloc<ProfileBloc>(),
+          profileCubit: context.bloc<ProfileCubit>(),
           profileDao: context.repository<ProfileDao>(),
           arweave: context.repository<ArweaveService>(),
         ),

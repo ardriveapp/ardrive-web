@@ -50,7 +50,7 @@ class FsEntryRenameForm extends StatelessWidget {
           fileId: fileId,
           arweave: context.repository<ArweaveService>(),
           driveDao: context.repository<DriveDao>(),
-          profileBloc: context.bloc<ProfileBloc>(),
+          profileCubit: context.bloc<ProfileCubit>(),
         ),
         child: BlocConsumer<FsEntryRenameCubit, FsEntryRenameState>(
           listener: (context, state) {

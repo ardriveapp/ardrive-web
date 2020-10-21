@@ -17,7 +17,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
-  final ProfileBloc _profileBloc;
+  final ProfileCubit _profileCubit;
 
   StreamSubscription _folderSubscription;
 
@@ -29,10 +29,10 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
     this.fileId,
     @required ArweaveService arweave,
     @required DriveDao driveDao,
-    @required ProfileBloc profileBloc,
+    @required ProfileCubit profileCubit,
   })  : _arweave = arweave,
         _driveDao = driveDao,
-        _profileBloc = profileBloc,
+        _profileCubit = profileCubit,
         assert(folderId != null || fileId != null),
         super(
             FsEntryMoveFolderLoadInProgress(isMovingFolder: folderId != null)) {
@@ -59,7 +59,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
   Future<void> submit() async {
     final state = this.state as FsEntryMoveFolderLoadSuccess;
-    final profile = _profileBloc.state as ProfileLoaded;
+    final profile = _profileCubit.state as ProfileLoaded;
 
     final parentFolder = state.viewingFolder.folder;
     final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);

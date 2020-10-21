@@ -39,10 +39,10 @@ class App extends StatelessWidget {
           RepositoryProvider<DriveDao>(create: (_) => db.driveDao),
         ],
         child: BlocProvider(
-          create: (context) => ProfileBloc(
+          create: (context) => ProfileCubit(
             profileDao: context.repository<ProfileDao>(),
           ),
-          child: BlocBuilder<ProfileBloc, ProfileState>(
+          child: BlocBuilder<ProfileCubit, ProfileState>(
             builder: (context, state) {
               Widget view;
               if (state is ProfileUnavailable) {
@@ -57,7 +57,7 @@ class App extends StatelessWidget {
                         key: ValueKey(state.selectedDriveId),
                         create: (context) => DriveDetailCubit(
                           driveId: state.selectedDriveId,
-                          profileBloc: context.bloc<ProfileBloc>(),
+                          profileCubit: context.bloc<ProfileCubit>(),
                           uploadBloc: context.bloc<UploadBloc>(),
                           driveDao: context.repository<DriveDao>(),
                           config: context.repository<AppConfig>(),
@@ -88,14 +88,14 @@ class App extends StatelessWidget {
                   providers: [
                     BlocProvider(
                       create: (context) => UploadBloc(
-                        profileBloc: context.bloc<ProfileBloc>(),
+                        profileCubit: context.bloc<ProfileCubit>(),
                         arweave: context.repository<ArweaveService>(),
                         driveDao: context.repository<DriveDao>(),
                       ),
                     ),
                     BlocProvider(
                       create: (context) => SyncCubit(
-                        profileBloc: context.bloc<ProfileBloc>(),
+                        profileCubit: context.bloc<ProfileCubit>(),
                         arweave: context.repository<ArweaveService>(),
                         drivesDao: context.repository<DrivesDao>(),
                         driveDao: context.repository<DriveDao>(),
@@ -104,7 +104,7 @@ class App extends StatelessWidget {
                     ),
                     BlocProvider(
                       create: (context) => DrivesCubit(
-                        profileBloc: context.bloc<ProfileBloc>(),
+                        profileCubit: context.bloc<ProfileCubit>(),
                         drivesDao: context.repository<DrivesDao>(),
                       ),
                     ),

@@ -18,7 +18,7 @@ void main() {
 
     ArweaveService arweave;
     DrivesCubit drivesCubit;
-    ProfileBloc profileBloc;
+    ProfileCubit profileCubit;
     DriveCreateCubit driveCreateCubit;
 
     const validDriveName = 'valid-drive-name';
@@ -29,9 +29,9 @@ void main() {
 
       arweave = ArweaveService(Arweave());
       drivesCubit = MockDrivesCubit();
-      profileBloc = MockProfileBloc();
+      profileCubit = MockProfileBloc();
 
-      when(profileBloc.state).thenReturn(
+      when(profileCubit.state).thenReturn(
         ProfileLoaded(
           password: '123',
           wallet: getTestWallet(),
@@ -43,7 +43,7 @@ void main() {
         arweave: arweave,
         drivesDao: drivesDao,
         drivesCubit: drivesCubit,
-        profileBloc: profileBloc,
+        profileCubit: profileCubit,
       );
     });
 
