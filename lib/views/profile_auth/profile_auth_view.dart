@@ -23,11 +23,20 @@ class ProfileAuthView extends StatelessWidget {
               children: [
                 Expanded(child: Container(color: Colors.grey)),
                 Expanded(
-                  child: Center(
-                    child: FractionallySizedBox(
-                      widthFactor: 0.5,
-                      child: form,
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        'assets/images/logo-vert-no-subtitle.png',
+                        height: 126,
+                        fit: BoxFit.contain,
+                      ),
+                      FractionallySizedBox(
+                        widthFactor: 0.5,
+                        child: form,
+                      ),
+                    ],
                   ),
                 ),
               ],

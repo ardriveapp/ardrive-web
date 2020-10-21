@@ -18,10 +18,10 @@ class UnlockProfileForm extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Unlock Profile',
-                  style: Theme.of(context).textTheme.bodyText1,
+                  'WELCOME BACK',
+                  style: Theme.of(context).textTheme.headline5,
                 ),
-                Container(height: 16),
+                Container(height: 32),
                 ReactiveTextField(
                   formControlName: 'password',
                   autofocus: true,
@@ -32,6 +32,7 @@ class UnlockProfileForm extends StatelessWidget {
                     'password-incorrect': 'You entered an incorrect password',
                   },
                 ),
+                Container(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(

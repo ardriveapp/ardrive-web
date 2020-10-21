@@ -18,26 +18,38 @@ class ProfileAddForm extends StatelessWidget {
           builder: (context, state) => Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Add Profile',
-                style: Theme.of(context).textTheme.bodyText1,
-              ),
-              Container(height: 16),
-              if (state is ProfileAddPromptWallet)
+              if (state is ProfileAddPromptWallet) ...{
+                Text(
+                  'WELCOME TO',
+                  style: Theme.of(context).textTheme.headline5,
+                ),
+                Container(height: 32),
+                Text(
+                  'Your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headline6,
+                ),
+                Container(height: 32),
                 ElevatedButton(
                   child: Text('SELECT WALLET'),
                   onPressed: () => _pickWallet(context),
-                )
-              else if (state is ProfileAddPromptDetails)
+                ),
+              } else if (state is ProfileAddPromptDetails)
                 ReactiveForm(
                   formGroup: context.bloc<ProfileAddCubit>().form,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
+                        'WELCOME BACK',
+                        style: Theme.of(context).textTheme.headline5,
+                      ),
+                      Container(height: 32),
+                      Text(
                         !state.isNewUser
-                            ? 'Welcome! Please provide the same password as you have used before'
+                            ? 'Please provide the same password as you have used before.'
                             : 'Welcome new user!',
+                        textAlign: TextAlign.center,
                       ),
                       Container(height: 16),
                       ReactiveTextField(
@@ -55,13 +67,19 @@ class ProfileAddForm extends StatelessWidget {
                               'You entered an incorrect password',
                         },
                       ),
+                      Container(height: 32),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          child: Text('ADD'),
+                          child: Text('UNLOCK'),
                           onPressed: () =>
                               context.bloc<ProfileAddCubit>().submit(),
                         ),
+                      ),
+                      Container(height: 16),
+                      TextButton(
+                        child: Text('Change wallet'),
+                        onPressed: () {},
                       ),
                     ],
                   ),
