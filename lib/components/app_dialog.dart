@@ -38,13 +38,6 @@ class AppDialog extends StatelessWidget {
                           .headline6
                           .copyWith(color: Colors.white),
                     ),
-                    if (dismissable)
-                      IconButton(
-                          icon: Icon(
-                            Icons.close,
-                            color: kOnDarkMediumEmphasis,
-                          ),
-                          onPressed: () => Navigator.of(context).pop()),
                   ],
                 ),
               ),
