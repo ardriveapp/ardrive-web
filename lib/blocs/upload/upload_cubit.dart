@@ -24,7 +24,7 @@ class UploadCubit extends Cubit<UploadState> {
   List<_FileUploadHandle> fileUploadHandles;
 
   final _uuid = Uuid();
-  final ProfileBloc _profileBloc;
+  final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
 
@@ -32,10 +32,10 @@ class UploadCubit extends Cubit<UploadState> {
     @required this.driveId,
     @required this.folderId,
     @required this.file,
-    @required ProfileBloc profileBloc,
+    @required ProfileCubit profileCubit,
     @required DriveDao driveDao,
     @required ArweaveService arweave,
-  })  : _profileBloc = profileBloc,
+  })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
         super(UploadPreparationInProgress()) {
@@ -45,7 +45,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> prepareUpload() async {
     emit(UploadPreparationInProgress());
 
-    final profile = _profileBloc.state as ProfileLoaded;
+    final profile = _profileCubit.state as ProfileLoaded;
     final targetDrive = await _driveDao.getDriveById(driveId);
     final targetFolder = await _driveDao.getFolderById(driveId, folderId);
 

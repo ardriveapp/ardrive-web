@@ -1,11 +1,14 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'components.dart';
 
 Future<void> promptToUpload(
   BuildContext context, {
@@ -38,7 +41,7 @@ class UploadForm extends StatelessWidget {
           folderId: folderId,
           file: file,
           arweave: context.repository<ArweaveService>(),
-          profileBloc: context.bloc<ProfileBloc>(),
+          profileCubit: context.bloc<ProfileCubit>(),
           driveDao: context.repository<DriveDao>(),
         ),
         child: BlocConsumer<UploadCubit, UploadState>(
@@ -49,45 +52,55 @@ class UploadForm extends StatelessWidget {
           },
           builder: (context, state) {
             if (state is UploadPreparationInProgress) {
-              return AlertDialog(
-                title: Text('Preparing upload...'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Center(child: CircularProgressIndicator()),
-                  ],
+              return AppDialog(
+                title: 'Preparing upload...',
+                content: SizedBox(
+                  width: kSmallDialogWidth,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Center(child: CircularProgressIndicator()),
+                    ],
+                  ),
                 ),
               );
             } else if (state is UploadFileReady) {
-              return AlertDialog(
-                title: Text('Upload file'),
-                content: Text(
-                    'This will cost ${utils.winstonToAr(state.uploadCost)} AR.'),
+              return AppDialog(
+                title: 'Upload file',
+                content: SizedBox(
+                  width: kSmallDialogWidth,
+                  child: Text(
+                      'This will cost ${utils.winstonToAr(state.uploadCost)} AR.'),
+                ),
                 actions: <Widget>[
                   TextButton(
                     child: Text('CANCEL'),
                     onPressed: () => Navigator.of(context).pop(false),
                   ),
-                  TextButton(
+                  ElevatedButton(
                     child: Text('UPLOAD'),
                     onPressed: () => context.bloc<UploadCubit>().startUpload(),
                   ),
                 ],
               );
             } else if (state is UploadFileInProgress) {
-              return AlertDialog(
-                title: Text('Uploading file...'),
-                content: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(state.fileName),
-                  subtitle: Text(
-                      '${filesize(state.uploadedFileSize)}/${filesize(state.fileSize)}'),
-                  trailing: CircularProgressIndicator(
-                      // Show an indeterminate progress indicator if the upload hasn't started yet as
-                      // small uploads might never report a progress.
-                      value: state.uploadProgress != 0
-                          ? state.uploadProgress
-                          : null),
+              return AppDialog(
+                dismissable: false,
+                title: 'Uploading file...',
+                content: SizedBox(
+                  width: kSmallDialogWidth,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(state.fileName),
+                    subtitle: Text(
+                        '${filesize(state.uploadedFileSize)}/${filesize(state.fileSize)}'),
+                    trailing: CircularProgressIndicator(
+                        // Show an indeterminate progress indicator if the upload hasn't started yet as
+                        // small uploads might never report a progress.
+                        value: state.uploadProgress != 0
+                            ? state.uploadProgress
+                            : null),
+                  ),
                 ),
               );
             }
