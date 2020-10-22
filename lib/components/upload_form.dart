@@ -68,9 +68,19 @@ class UploadForm extends StatelessWidget {
               return AppDialog(
                 title: 'Upload file',
                 content: SizedBox(
-                  width: kSmallDialogWidth,
-                  child: Text(
-                      'This will cost ${utils.winstonToAr(state.uploadCost)} AR.'),
+                  width: kMediumDialogWidth,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(state.fileName),
+                        subtitle: Text(filesize(state.uploadSize)),
+                      ),
+                      Text('Cost: ${utils.winstonToAr(state.uploadCost)} AR')
+                    ],
+                  ),
                 ),
                 actions: <Widget>[
                   TextButton(
@@ -88,7 +98,7 @@ class UploadForm extends StatelessWidget {
                 dismissable: false,
                 title: 'Uploading file...',
                 content: SizedBox(
-                  width: kSmallDialogWidth,
+                  width: kMediumDialogWidth,
                   child: ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(state.fileName),
