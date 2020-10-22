@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -32,36 +33,38 @@ class FolderCreateForm extends StatelessWidget {
         create: (context) => FolderCreateCubit(
           targetDriveId: targetDriveId,
           targetFolderId: targetFolderId,
-          profileBloc: context.bloc<ProfileBloc>(),
+          profileCubit: context.bloc<ProfileCubit>(),
           arweave: context.repository<ArweaveService>(),
           driveDao: context.repository<DriveDao>(),
         ),
         child: BlocConsumer<FolderCreateCubit, FolderCreateState>(
           listener: (context, state) {
             if (state is FolderCreateInProgress) {
-              showProgressDialog(context, 'Creating folder...');
+              showProgressDialog(context, 'CREATING FOLDER...');
             } else if (state is FolderCreateSuccess) {
               Navigator.pop(context);
               Navigator.pop(context);
             }
           },
-          builder: (context, state) => AlertDialog(
-            title: Text('Create folder'),
-            content: ReactiveForm(
-              formGroup: context.bloc<FolderCreateCubit>().form,
-              child: ReactiveTextField(
-                formControlName: 'name',
-                autofocus: true,
-                decoration: const InputDecoration(labelText: 'Folder name'),
+          builder: (context, state) => AppDialog(
+            title: 'CREATE FOLDER',
+            content: SizedBox(
+              width: kSmallDialogWidth,
+              child: ReactiveForm(
+                formGroup: context.bloc<FolderCreateCubit>().form,
+                child: ReactiveTextField(
+                  formControlName: 'name',
+                  autofocus: true,
+                  decoration: const InputDecoration(labelText: 'Folder name'),
+                ),
               ),
             ),
-            actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0),
             actions: [
               TextButton(
                 child: Text('CANCEL'),
                 onPressed: () => Navigator.of(context).pop(null),
               ),
-              TextButton(
+              ElevatedButton(
                 child: Text('CREATE'),
                 onPressed: () => context.bloc<FolderCreateCubit>().submit(),
               ),

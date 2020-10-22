@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -49,43 +50,44 @@ class FsEntryRenameForm extends StatelessWidget {
           fileId: fileId,
           arweave: context.repository<ArweaveService>(),
           driveDao: context.repository<DriveDao>(),
-          profileBloc: context.bloc<ProfileBloc>(),
+          profileCubit: context.bloc<ProfileCubit>(),
         ),
         child: BlocConsumer<FsEntryRenameCubit, FsEntryRenameState>(
           listener: (context, state) {
             if (state is FolderEntryRenameInProgress) {
-              showProgressDialog(context, 'Renaming folder...');
+              showProgressDialog(context, 'RENAMING FOLDER...');
             } else if (state is FileEntryRenameInProgress) {
-              showProgressDialog(context, 'Renaming file...');
+              showProgressDialog(context, 'RENAMING FILE...');
             } else if (state is FolderEntryRenameSuccess ||
                 state is FileEntryRenameSuccess) {
               Navigator.pop(context);
               Navigator.pop(context);
             }
           },
-          builder: (context, state) => AlertDialog(
-            title:
-                Text(state.isRenamingFolder ? 'Rename folder' : 'Rename file'),
+          builder: (context, state) => AppDialog(
+            title: state.isRenamingFolder ? 'RENAME FOLDER' : 'RENAME FILE',
             content: state is! FsEntryRenameInitializing
-                ? ReactiveForm(
-                    formGroup: context.bloc<FsEntryRenameCubit>().form,
-                    child: ReactiveTextField(
-                      formControlName: 'name',
-                      autofocus: true,
-                      decoration: InputDecoration(
-                          labelText: state.isRenamingFolder
-                              ? 'Folder name'
-                              : 'File name'),
+                ? SizedBox(
+                    width: kSmallDialogWidth,
+                    child: ReactiveForm(
+                      formGroup: context.bloc<FsEntryRenameCubit>().form,
+                      child: ReactiveTextField(
+                        formControlName: 'name',
+                        autofocus: true,
+                        decoration: InputDecoration(
+                            labelText: state.isRenamingFolder
+                                ? 'Folder name'
+                                : 'File name'),
+                      ),
                     ),
                   )
                 : null,
-            actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0),
             actions: [
               TextButton(
                 child: Text('CANCEL'),
                 onPressed: () => Navigator.of(context).pop(),
               ),
-              TextButton(
+              ElevatedButton(
                 child: Text('RENAME'),
                 onPressed: () => context.bloc<FsEntryRenameCubit>().submit(),
               ),

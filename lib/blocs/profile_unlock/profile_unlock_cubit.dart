@@ -14,17 +14,25 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     ),
   });
 
-  final ProfileBloc _profileBloc;
+  final ProfileCubit _profileCubit;
   final ProfileDao _profileDao;
 
   ProfileUnlockCubit({
-    @required ProfileBloc profileBloc,
+    @required ProfileCubit profileCubit,
     @required ProfileDao profileDao,
-  })  : _profileBloc = profileBloc,
+  })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
-        super(ProfileUnlockInitial());
+        super(ProfileUnlockInitializing()) {
+    () async {
+      final existingUsername = await _profileDao
+          .selectDefaultProfile()
+          .map((p) => p.username)
+          .getSingle();
+      emit(ProfileUnlockInitial(username: existingUsername));
+    }();
+  }
 
-  void submit() async {
+  Future<void> submit() async {
     if (form.valid) {
       final String password = form.control('password').value;
 
@@ -39,7 +47,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
         rethrow;
       }
 
-      _profileBloc.add(ProfileLoad(password));
+      await _profileCubit.unlockDefaultProfile(password);
     }
   }
 }

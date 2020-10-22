@@ -180,8 +180,6 @@ class ArweaveService {
   /// Tries to get the first drive entity instance with the provided drive id.
   /// Important for verifying the owner of a drive.
   ///
-  /// If no valid drive entity with the specified id is found, `null` is returned.
-  ///
   /// Optionally provide a `driveKey` to load private drive entities.
   Future<DriveEntity> tryGetFirstDriveEntityWithId(
     String driveId, [
@@ -202,11 +200,7 @@ class ArweaveService {
       driveTx,
       utils.decodeBase64ToBytes(driveDataRes.body),
       driveKey,
-    ).catchError((err) {
-      if (err is EntityTransactionParseException) {
-        return Future.value(null);
-      }
-    });
+    );
   }
 
   Future<Transaction> prepareEntityTx(

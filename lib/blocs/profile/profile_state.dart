@@ -1,4 +1,4 @@
-part of 'profile_bloc.dart';
+part of 'profile_cubit.dart';
 
 @immutable
 abstract class ProfileState extends Equatable {
@@ -14,7 +14,12 @@ class ProfileLoaded extends ProfileState {
   final Wallet wallet;
   final SecretKey cipherKey;
 
-  ProfileLoaded({this.username, this.password, this.wallet, this.cipherKey});
+  ProfileLoaded({
+    @required this.username,
+    @required this.password,
+    @required this.wallet,
+    @required this.cipherKey,
+  });
 
   @override
   List<Object> get props => [username, password, wallet, cipherKey];

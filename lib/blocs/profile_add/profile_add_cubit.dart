@@ -23,25 +23,39 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   Wallet _wallet;
   List<TransactionCommonMixin> _driveTxs;
 
-  final ProfileBloc _profileBloc;
+  final ProfileCubit _profileCubit;
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
 
   ProfileAddCubit({
-    @required ProfileBloc profileBloc,
+    @required ProfileCubit profileCubit,
     @required ProfileDao profileDao,
     @required ArweaveService arweave,
-  })  : _profileBloc = profileBloc,
+  })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
         _arweave = arweave,
         super(ProfileAddPromptWallet());
 
+  Future<void> promptForWallet() async {
+    emit(ProfileAddPromptWallet());
+  }
+
   Future<void> pickWallet(String walletJson) async {
+    emit(ProfileAddUserStateLoadInProgress());
+
     _wallet = Wallet.fromJwk(json.decode(walletJson));
 
     _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(_wallet.address);
 
-    emit(ProfileAddPromptDetails(isNewUser: _driveTxs.isEmpty));
+    if (_driveTxs.isEmpty) {
+      emit(ProfileAddOnboardingNewUser());
+    } else {
+      emit(ProfileAddPromptDetails(isExistingUser: true));
+    }
+  }
+
+  Future<void> completeOnboarding() async {
+    emit(ProfileAddPromptDetails(isExistingUser: false));
   }
 
   Future<void> submit() async {
@@ -83,6 +97,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
     await _profileDao.addProfile(username, password, _wallet);
 
-    _profileBloc.add(ProfileLoad(password));
+    await _profileCubit.unlockDefaultProfile(password);
   }
 }

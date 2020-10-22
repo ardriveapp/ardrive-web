@@ -19,7 +19,7 @@ void main() {
 
     Wallet newUserWallet;
 
-    ProfileBloc profileBloc;
+    ProfileCubit profileCubit;
     ProfileAddCubit profileAddCubit;
 
     const fakePassword = '123';
@@ -29,12 +29,12 @@ void main() {
       profileDao = db.profileDao;
 
       arweave = MockArweaveService();
-      profileBloc = MockProfileBloc();
+      profileCubit = MockProfileBloc();
 
       newUserWallet = getTestWallet();
 
       profileAddCubit = ProfileAddCubit(
-          profileBloc: profileBloc, profileDao: profileDao, arweave: arweave);
+          profileCubit: profileCubit, profileDao: profileDao, arweave: arweave);
 
       when(arweave.getUniqueUserDriveEntityTxs(newUserWallet.address))
           .thenAnswer((_) => Future.value([]));
@@ -53,9 +53,9 @@ void main() {
         await bloc.submit();
       },
       expect: [
-        ProfileAddPromptDetails(isNewUser: true),
+        ProfileAddPromptDetails(isExistingUser: false),
       ],
-      verify: (_) => verify(profileBloc.add(ProfileLoad(fakePassword))),
+      verify: (_) => verify(profileCubit.unlockDefaultProfile(fakePassword)),
     );
 
     blocTest<ProfileAddCubit, ProfileAddState>(

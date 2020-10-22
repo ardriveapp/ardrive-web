@@ -15,8 +15,7 @@ part 'drive_detail_state.dart';
 
 class DriveDetailCubit extends Cubit<DriveDetailState> {
   final String driveId;
-
-  final ProfileBloc _profileBloc;
+  final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final AppConfig _config;
 
@@ -24,10 +23,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   DriveDetailCubit({
     @required this.driveId,
-    @required ProfileBloc profileBloc,
+    @required ProfileCubit profileCubit,
     @required DriveDao driveDao,
     @required AppConfig config,
-  })  : _profileBloc = profileBloc,
+  })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _config = config,
         super(DriveDetailLoadInProgress()) {
@@ -45,13 +44,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
       _driveDao.watchDriveById(driveId),
       _driveDao.watchFolderContentsAtPath(driveId, path),
-      _profileBloc.startWith(null),
+      _profileCubit.startWith(null),
       (drive, folderContents, _) {
         if (folderContents?.folder != null) {
           final state = this.state is! DriveDetailLoadSuccess
               ? DriveDetailLoadSuccess()
               : this.state as DriveDetailLoadSuccess;
-          final profile = _profileBloc.state;
+          final profile = _profileCubit.state;
 
           emit(
             state.copyWith(

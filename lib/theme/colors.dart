@@ -1,7 +1,24 @@
 import 'package:flutter/material.dart';
 
-const kPrimaryValue = 0xFF344955;
+const kPrimaryValue = 0xFF700327;
 const kPrimarySwatch = MaterialColor(
+  kPrimaryValue,
+  <int, Color>{
+    50: Color(0xFFfae2e3),
+    100: Color(0xFFf3b5ba),
+    200: Color(0xFFe8878e),
+    300: Color(0xFFdb5a64),
+    400: Color(0xFFd03c47),
+    500: Color(0xFFc5252d),
+    600: Color(0xFFb61f2d),
+    700: Color(0xFFa3192c),
+    800: Color(0xFF91102b),
+    900: Color(kPrimaryValue),
+  },
+);
+
+const kSecondaryValue = 0xFF344955;
+const kSecondarySwatch = MaterialColor(
   kPrimaryValue,
   <int, Color>{
     50: Color(0xFFE8F0F6),
@@ -17,35 +34,17 @@ const kPrimarySwatch = MaterialColor(
   },
 );
 
-const kSecondaryValue = 0xFFF9AA33;
-const kSecondarySwatch = MaterialColor(
-  kSecondaryValue,
-  <int, Color>{
-    50: Color(0xFFFFFDE8),
-    100: Color(0xFFFFF9C6),
-    200: Color(0xFFFFF5A0),
-    300: Color(0xFFFFF07B),
-    400: Color(0xFFFDEB5D),
-    500: Color(0xFFFBE642),
-    600: Color(0xFFFFD942),
-    700: Color(0xFFFCC13B),
-    800: Color(kSecondaryValue),
-    900: Color(0xFFF48226),
-  },
-);
-
-const kSecondary500 = Color(0xFFF9AA33);
-
 const kHoverColor = Color.fromRGBO(249, 170, 51, 0.04);
 const kFocusColor = Color.fromRGBO(249, 170, 51, 0.12);
 const kSelectedColor = Color.fromRGBO(249, 170, 51, 0.08);
 
-const kOnSurfaceHighEmphasis = kSecondary500;
-const kOnSurfaceMediumEmphasis = Color(0xFF17262A);
-const kOnSurfaceLowEmphasis = Color(0xFF767676);
-const kOnSurfaceDisabled = Color(0xFF253840);
-
-const kOnPrimaryHighEmphasis = kSecondary500;
+final kOnPrimaryHighEmphasis = Colors.white;
 const kOnPrimaryMediumEmphasis = Color(0xFFDCE1E4);
 const kOnPrimaryLowEmphasis = Color(0xFF17262A);
 const kOnPrimaryDisabled = Color(0xFF767676);
+
+const kDarkColor = Color(0xFF333333);
+const kOnDarkHighEmphasis = Colors.white;
+final kOnDarkMediumEmphasis = kOnDarkHighEmphasis.withOpacity(0.6);
+
+const kOnBackground = Colors.black87;

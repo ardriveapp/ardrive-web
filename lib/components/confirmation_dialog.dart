@@ -12,7 +12,7 @@ Future<bool> showConfirmationDialog(BuildContext context,
             child: Text('CANCEL'),
             onPressed: () => Navigator.of(context).pop(false),
           ),
-          TextButton(
+          ElevatedButton(
             child: Text(confirmingActionLabel),
             onPressed: () => Navigator.of(context).pop(true),
           ),
