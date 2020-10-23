@@ -142,9 +142,11 @@ ArweaveFS utilises a bottom-up data model (files refer to parent folder, folders
 
 ## Extending the Arweave File System Schema
 
-Applications and clients can extend the ArFS Schema as needed by adding additional tags into the File and Folder MetaData Transaction JSON.  This allows Develeopers to additional tags (which are encrypted for Private files) to support specific application needs, without impacting the overall data model.  For example a Music Sharing App could use the following expanded File Metadata for specific music files.
+Web app and clients can extend the ArFS Schema as needed by adding additional tags into the File and Folder MetaData Transaction JSON.  This gives Developers additional flexibility to support specific application needs, without breaking the overall data model or impacting privacy.  
 
-``` Expanded File MetaData Transaction JSON
+For example a Music Sharing App could use the following expanded File Metadata for specific music files.
+
+``` Expanded File MetaData Transaction JSON Example
 {
     "name": "<user defined file name>",
     "size": <computed file size - int>,
