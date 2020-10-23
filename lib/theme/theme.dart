@@ -107,4 +107,12 @@ TabBarTheme _buildTabBarTheme(TabBarTheme base) => base.copyWith(
       ),
     );
 
-DataTableThemeData _buildDataTableTheme(DataTableThemeData base) {}
+DataTableThemeData _buildDataTableTheme(DataTableThemeData base) =>
+    base.copyWith(dataRowColor: MaterialStateColor.resolveWith(
+      (states) {
+        if (states.contains(MaterialState.selected)) {
+          return kPrimarySwatch.withOpacity(0.12);
+        }
+        return Colors.transparent;
+      },
+    ));
