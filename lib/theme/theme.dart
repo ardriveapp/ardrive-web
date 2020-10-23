@@ -67,6 +67,7 @@ IconThemeData _buildIconTheme(IconThemeData base) =>
 
 TextSelectionThemeData _buildTextSelectionTheme(TextSelectionThemeData base) =>
     base.copyWith(
+      cursorColor: kPrimarySwatch,
       selectionColor: kSecondarySwatch.shade400,
       selectionHandleColor: kSecondarySwatch.shade600,
     );
