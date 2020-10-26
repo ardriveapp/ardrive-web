@@ -1,11 +1,11 @@
-# Drive
+# ArDrive Web
 
-![deploy](https://github.com/CDDelta/drive/workflows/deploy/badge.svg)
-[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/CDDelta/arweave-dart/issues)
+![deploy](https://github.com/ardriveapp/ardrive-web/workflows/deploy/badge.svg)
+[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/ardriveapp/ardrive-web/issues)
 
-Drive is a permanent, decentralized, uncensorable public file sharing app built on the Arweave network.
+The ArDrive Web App allows a user to log in to securely view, upload and manage their ArDrive files.
 
-Our goal is to provide an easy, tamper-proof way for people to share documents, media, and applications with others without fear of data loss or censorship.
+Have any questions? Join the ArDrive Discord channel for support, news and updates. https://discord.gg/ya4hf2H
 
 ## Development
 
