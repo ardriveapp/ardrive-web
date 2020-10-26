@@ -5,6 +5,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:bloc/bloc.dart';
+import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart';
@@ -28,30 +29,41 @@ class FileDownloadCubit extends Cubit<FileDownloadState> {
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
-        super(FileDownloadInProgress()) {
+        super(FileDownloadStarting()) {
     download();
   }
 
   Future<void> download() async {
-    emit(FileDownloadInProgress());
-
     final drive = await _driveDao.getDriveById(driveId);
     final file = await _driveDao.getFileById(driveId, fileId);
 
-    final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
+    emit(
+        FileDownloadInProgress(fileName: file.name, totalByteCount: file.size));
 
-    final dataRaw = await _arweave.client.transactions.getData(file.dataTxId);
+    final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
+    final dataRes = await Dio().get(
+      _arweave.client.api.gatewayUrl.origin + '/tx/${file.dataTxId}/data',
+      onReceiveProgress: (receive, total) => emit(
+        FileDownloadInProgress(
+          fileName: file.name,
+          downloadProgress: receive / total,
+          downloadedByteCount: receive,
+          totalByteCount: total,
+        ),
+      ),
+    );
+
     Uint8List dataBytes;
 
     if (drive.isPublic) {
-      dataBytes = utils.decodeBase64ToBytes(dataRaw);
+      dataBytes = utils.decodeBase64ToBytes(dataRes.data);
     } else if (drive.isPrivate) {
       final profile = _profileCubit.state as ProfileLoaded;
       final driveKey = await _driveDao.getDriveKey(drive.id, profile.cipherKey);
       final fileKey = await deriveFileKey(driveKey, file.id);
 
       dataBytes = await decryptTransactionData(
-          dataTx, utils.decodeBase64ToBytes(dataRaw), fileKey);
+          dataTx, utils.decodeBase64ToBytes(dataRes.data), fileKey);
     }
 
     emit(

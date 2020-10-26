@@ -46,6 +46,7 @@ dependencies:
   intl: ^0.16.1
   reactive_forms: ^6.0.2
   pedantic: ^1.9.2
+  dio: ^3.0.10
 
 dev_dependencies:
   flutter_test:
