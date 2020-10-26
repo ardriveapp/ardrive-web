@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -62,7 +63,7 @@ void main() {
     );
 
     blocTest<DriveAttachCubit, DriveAttachState>(
-      'set form "drive-not-found error" when no valid drive could be found',
+      'set form "${AppValidationMessage.driveNotFound}" error when no valid drive could be found',
       build: () => driveAttachCubit,
       act: (bloc) {
         bloc.form.value = {

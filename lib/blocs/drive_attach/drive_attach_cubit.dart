@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
@@ -44,7 +45,9 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     final driveEntity = await _arweave.tryGetFirstDriveEntityWithId(driveId);
 
     if (driveEntity == null) {
-      form.control('driveId').setErrors({'drive-not-found': true});
+      form
+          .control('driveId')
+          .setErrors({AppValidationMessage.driveNotFound: true});
       emit(DriveAttachInitial());
       return;
     }

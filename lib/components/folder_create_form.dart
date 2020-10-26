@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -56,6 +57,7 @@ class FolderCreateForm extends StatelessWidget {
                   formControlName: 'name',
                   autofocus: true,
                   decoration: const InputDecoration(labelText: 'Folder name'),
+                  validationMessages: kValidationMessages,
                 ),
               ),
             ),

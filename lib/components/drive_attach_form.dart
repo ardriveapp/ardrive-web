@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -42,14 +43,13 @@ class DriveAttachForm extends StatelessWidget {
                       formControlName: 'driveId',
                       autofocus: true,
                       decoration: InputDecoration(labelText: 'Drive ID'),
-                      validationMessages: {
-                        'drive-not-found': 'Could not find specified drive.',
-                      },
+                      validationMessages: kValidationMessages,
                     ),
                     Container(height: 16),
                     ReactiveTextField(
                       formControlName: 'name',
                       decoration: InputDecoration(labelText: 'Name'),
+                      validationMessages: kValidationMessages,
                     ),
                   ],
                 ),
