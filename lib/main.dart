@@ -75,10 +75,14 @@ class App extends StatelessWidget {
                 );
               }
 
-              final app = MaterialApp(
-                title: 'ArDrive',
-                theme: appTheme(),
-                home: view,
+              final app = ListTileTheme(
+                textColor: Colors.black87,
+                iconColor: Colors.black87,
+                child: MaterialApp(
+                  title: 'ArDrive',
+                  theme: appTheme(),
+                  home: view,
+                ),
               );
 
               if (state is! ProfileLoaded) {
