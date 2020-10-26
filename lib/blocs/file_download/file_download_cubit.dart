@@ -41,7 +41,7 @@ class FileDownloadCubit extends Cubit<FileDownloadState> {
         FileDownloadInProgress(fileName: file.name, totalByteCount: file.size));
 
     final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
-    final dataRes = await Dio().get(
+    final dataRes = await Dio().get<String>(
       _arweave.client.api.gatewayUrl.origin + '/tx/${file.dataTxId}/data',
       onReceiveProgress: (receive, total) => emit(
         FileDownloadInProgress(
