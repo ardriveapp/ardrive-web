@@ -40,16 +40,15 @@ class App extends StatelessWidget {
         ],
         child: BlocProvider(
           create: (context) => ProfileCubit(
+            arweave: context.repository<ArweaveService>(),
             profileDao: context.repository<ProfileDao>(),
           ),
           child: BlocBuilder<ProfileCubit, ProfileState>(
             builder: (context, state) {
               Widget view;
-              if (state is ProfileUnavailable) {
+              if (state is! ProfileLoaded) {
                 view = ProfileAuthView();
-              } else if (state is ProfileLoading) {
-                view = Container();
-              } else if (state is ProfileLoaded) {
+              } else {
                 view = BlocBuilder<DrivesCubit, DrivesState>(
                   builder: (context, state) {
                     if (state is DrivesLoadSuccess) {

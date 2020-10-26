@@ -9,11 +9,12 @@ import 'package:cryptography/cryptography.dart';
 import '../services.dart';
 
 class ArweaveService {
-  final ArtemisClient _gql;
-  final Arweave _arweave;
+  final Arweave client;
 
-  ArweaveService(this._arweave)
-      : _gql = ArtemisClient('${_arweave.api.gatewayUrl.origin}/graphql');
+  final ArtemisClient _gql;
+
+  ArweaveService(this.client)
+      : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
 
   /// Gets the entity history for a particular drive starting from the specified block height.
   Future<DriveEntityHistory> getNewEntitiesForDriveSinceBlock(
@@ -33,7 +34,7 @@ class ArweaveService {
         .map((e) => e.node)
         .toList();
     final rawEntityData = (await Future.wait(
-            entityTxs.map((e) => _arweave.api.get('tx/${e.id}/data'))))
+            entityTxs.map((e) => client.api.get('tx/${e.id}/data'))))
         .map((r) => utils.decodeBase64ToBytes(r.body))
         .toList();
 
@@ -134,7 +135,7 @@ class ArweaveService {
         .toList();
 
     final driveResponses = await Future.wait(
-        driveTxs.map((e) => _arweave.api.get('tx/${e.id}/data')));
+        driveTxs.map((e) => client.api.get('tx/${e.id}/data')));
 
     final drivesById = <String, DriveEntity>{};
     final drivesWithKey = <DriveEntity, SecretKey>{};
@@ -193,7 +194,7 @@ class ArweaveService {
     if (queryEdges.isEmpty) return null;
 
     final driveTx = queryEdges[0].node;
-    final driveDataRes = await _arweave.api.get('tx/${driveTx.id}/data');
+    final driveDataRes = await client.api.get('tx/${driveTx.id}/data');
 
     return DriveEntity.fromTransaction(
       driveTx,
@@ -207,7 +208,7 @@ class ArweaveService {
     Wallet wallet, [
     SecretKey key,
   ]) async {
-    final tx = await _arweave.transactions.prepare(
+    final tx = await client.transactions.prepare(
       await entity.asTransaction(key),
       wallet,
     );
@@ -226,7 +227,7 @@ class ArweaveService {
     final fileKey =
         driveKey == null ? null : await deriveFileKey(driveKey, fileEntity.id);
 
-    final fileDataTx = await _arweave.transactions.prepare(
+    final fileDataTx = await client.transactions.prepare(
       fileKey == null
           ? Transaction.withBlobData(data: fileStream)
           : await createEncryptedTransaction(fileStream, fileKey),
@@ -253,10 +254,10 @@ class ArweaveService {
   }
 
   Future<void> postTx(Transaction transaction) =>
-      _arweave.transactions.post(transaction);
+      client.transactions.post(transaction);
 
   Future<void> batchPostTxs(List<Transaction> transactions) =>
-      Future.wait(transactions.map((tx) => _arweave.transactions.post(tx)));
+      Future.wait(transactions.map((tx) => client.transactions.post(tx)));
 }
 
 /// The entity history of a particular drive, chunked by block height.
