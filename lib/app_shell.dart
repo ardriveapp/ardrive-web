@@ -50,6 +50,7 @@ class _AppShellState extends State<AppShell> {
               content,
               if (showProfileOverlay) ...{
                 GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: () => toggleProfileOverlay(),
                 ),
                 Positioned(
