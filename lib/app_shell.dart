@@ -1,5 +1,3 @@
-import 'package:ardrive/theme/colors.dart';
-import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -53,59 +51,10 @@ class _AppShellState extends State<AppShell> {
                   behavior: HitTestBehavior.opaque,
                   onTap: () => toggleProfileOverlay(),
                 ),
-                Positioned(
+                Positioned.fill(
                   top: 42,
                   right: 16,
-                  height: 112,
-                  width: 456,
-                  child: BlocBuilder<ProfileCubit, ProfileState>(
-                    builder: (context, state) => state is ProfileLoaded
-                        ? Card(
-                            elevation: 3,
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ListTile(
-                                    contentPadding: EdgeInsets.zero,
-                                    title: Text(state.username),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          state.wallet.address,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodyText2,
-                                        ),
-                                        Container(height: 4),
-                                        Text(
-                                          '${utils.winstonToAr(BigInt.parse(state.walletBalance))} AR',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headline6
-                                              .copyWith(
-                                                color: kPrimarySwatch,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                        ),
-                                      ],
-                                    ),
-                                    trailing: IconButton(
-                                        icon: Icon(Icons.logout),
-                                        onPressed: () => context
-                                            .bloc<ProfileCubit>()
-                                            .signOut()),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                        : Container(),
-                  ),
+                  child: ProfileOverlay(),
                 ),
               }
             ],
