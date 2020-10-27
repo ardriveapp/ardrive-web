@@ -3,8 +3,6 @@
 graphql_api.dart
 graphql_api.graphql.dart
 
-web/pst.min.js
-
 # Miscellaneous
 *.class
 *.log
