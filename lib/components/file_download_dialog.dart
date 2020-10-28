@@ -26,7 +26,7 @@ class FileDownloadDialog extends StatelessWidget {
   final String driveId;
   final String fileId;
 
-  FileDownloadDialog({this.driveId, this.fileId});
+  FileDownloadDialog({@required this.driveId, @required this.fileId});
 
   @override
   Widget build(BuildContext context) => BlocProvider(
