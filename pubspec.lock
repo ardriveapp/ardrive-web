@@ -270,7 +270,7 @@ packages:
       name: file_chooser
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.5"
+    version: "0.1.6"
   file_picker:
     dependency: transitive
     description:
@@ -281,10 +281,12 @@ packages:
   file_picker_cross:
     dependency: "direct main"
     description:
-      name: file_picker_cross
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "4.2.5"
+      path: "."
+      ref: web-base64-fix
+      resolved-ref: f9f9a0fe620179f6a848df91a0e0a0a9d624cb0e
+      url: "https://gitlab.com/CDDelta/file_picker_cross.git"
+    source: git
+    version: "4.2.6"
   filesize:
     dependency: "direct main"
     description:
@@ -951,4 +953,4 @@ packages:
     version: "2.2.1"
 sdks:
   dart: ">=2.10.0-110 <=2.11.0-218.0.dev"
-  flutter: ">=1.17.0 <2.0.0"
+  flutter: ">=1.20.0 <2.0.0"
