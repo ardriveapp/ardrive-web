@@ -55,7 +55,9 @@ class FileDownloadCubit extends Cubit<FileDownloadState> {
 
     Uint8List dataBytes;
 
-    if (drive.isPrivate) {
+    if (drive.isPublic) {
+      dataBytes = dataRes.data;
+    } else if (drive.isPrivate) {
       final profile = _profileCubit.state as ProfileLoaded;
       final driveKey = await _driveDao.getDriveKey(drive.id, profile.cipherKey);
       final fileKey = await deriveFileKey(driveKey, file.id);
