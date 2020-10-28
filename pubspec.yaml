@@ -39,7 +39,7 @@ dependencies:
   uuid: ^2.2.0
   filesize: ^1.0.4
   mime: ^0.9.7
-  timeago: ^2.0.26
+  timeago: ^2.0.28
   url_launcher: ^5.5.0
   file_picker_cross:
     git:

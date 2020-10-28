@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -45,11 +46,13 @@ class DriveCreateForm extends StatelessWidget {
                       autofocus: true,
                       textCapitalization: TextCapitalization.words,
                       decoration: const InputDecoration(labelText: 'Name'),
+                      validationMessages: kValidationMessages,
                     ),
                     Container(height: 16),
                     ReactiveDropdownField(
                       formControlName: 'privacy',
                       decoration: const InputDecoration(labelText: 'Privacy'),
+                      validationMessages: kValidationMessages,
                       items: const [
                         DropdownMenuItem(
                           value: 'public',

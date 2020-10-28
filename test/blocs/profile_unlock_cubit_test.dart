@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:mockito/mockito.dart';
@@ -47,14 +48,17 @@ void main() {
     );
 
     blocTest<ProfileUnlockCubit, ProfileUnlockState>(
-      'sets form "password-incorrect" error when incorrect password is used',
+      'sets form "${AppValidationMessage.passwordIncorrect}" error when incorrect password is used',
       build: () => profileUnlockCubit,
       act: (bloc) {
         bloc.form.value = {'password': wrongPassword};
         bloc.submit();
       },
       verify: (bloc) => expect(
-          bloc.form.control('password').errors['password-incorrect'], isTrue),
+          bloc.form
+              .control('password')
+              .errors[AppValidationMessage.passwordIncorrect],
+          isTrue),
     );
   });
 }

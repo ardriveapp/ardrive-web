@@ -72,8 +72,12 @@ TextSelectionThemeData _buildTextSelectionTheme(TextSelectionThemeData base) =>
       selectionHandleColor: kSecondarySwatch.shade600,
     );
 
-AppBarTheme _buildAppBarTheme(AppBarTheme base) =>
-    base.copyWith(color: Colors.white);
+AppBarTheme _buildAppBarTheme(AppBarTheme appBarBase) => appBarBase.copyWith(
+      brightness: Brightness.light,
+      color: Colors.white,
+      centerTitle: false,
+      iconTheme: _buildIconTheme(base.iconTheme),
+    );
 
 TextButtonThemeData _buildTextButtonTheme(TextButtonThemeData base) =>
     TextButtonThemeData(

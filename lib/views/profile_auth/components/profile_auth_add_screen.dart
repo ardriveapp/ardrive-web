@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/l11n/l11n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -40,16 +41,14 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           formControlName: 'username',
                           autofocus: true,
                           decoration: InputDecoration(labelText: 'Username'),
+                          validationMessages: kValidationMessages,
                         ),
                         Container(height: 16),
                         ReactiveTextField(
                           formControlName: 'password',
                           obscureText: true,
                           decoration: InputDecoration(labelText: 'Password'),
-                          validationMessages: {
-                            'password-incorrect':
-                                'You entered an incorrect password',
-                          },
+                          validationMessages: kValidationMessages,
                         ),
                         Container(height: 32),
                         SizedBox(

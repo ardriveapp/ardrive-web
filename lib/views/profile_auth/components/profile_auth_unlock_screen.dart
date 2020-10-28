@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -40,10 +41,7 @@ class ProfileAuthUnlockScreen extends StatelessWidget {
                             decoration: InputDecoration(labelText: 'Password'),
                             showErrors: (control) =>
                                 control.dirty && control.invalid,
-                            validationMessages: {
-                              'password-incorrect':
-                                  'You entered an incorrect password',
-                            },
+                            validationMessages: kValidationMessages,
                           ),
                           Container(height: 16),
                           SizedBox(
