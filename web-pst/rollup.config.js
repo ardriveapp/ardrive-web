@@ -8,6 +8,7 @@ const commonOutputOpts = {
   format: 'iife',
   name: 'pst',
   globals: {
+    // Mock unused dependency, 'util', in 'arweave' and prevent null error.
     'util': 'window'
   },
 }
