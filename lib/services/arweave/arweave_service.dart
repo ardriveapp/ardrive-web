@@ -234,15 +234,15 @@ class ArweaveService {
       wallet,
     );
 
+    fileDataTx.addApplicationTags();
+
+    // Don't include the file's Content-Type tag if it is meant to be private.
     if (fileKey == null) {
       fileDataTx.addTag(
         EntityTag.contentType,
         fileEntity.dataContentType,
       );
     }
-
-    fileDataTx.addTag(EntityTag.unixTime,
-        (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString());
 
     await fileDataTx.sign(wallet);
 

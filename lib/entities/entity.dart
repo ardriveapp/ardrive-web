@@ -29,6 +29,7 @@ abstract class Entity {
 class EntityTransactionParseException implements Exception {}
 
 extension TransactionUtils on Transaction {
+  /// Tags this transaction with the app name, version, and current time.
   void addApplicationTags() {
     addTag(EntityTag.appName, 'ArDrive-Web');
     addTag(EntityTag.appVersion, '0.1.0');
@@ -36,6 +37,7 @@ extension TransactionUtils on Transaction {
         (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString());
   }
 
+  /// Tags this transaction with the ArFS version currently in use.
   void addArFsTag() {
     addTag(EntityTag.arFs, '0.11');
   }
