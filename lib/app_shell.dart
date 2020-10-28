@@ -22,7 +22,7 @@ class _AppShellState extends State<AppShell> {
           final content = Scaffold(
             appBar: AppBar(
               title: Image.asset(
-                'assets/images/logo-horiz-no-subtitle.png',
+                'assets/images/logo-horiz-beta-no-subtitle.png',
                 height: 64,
                 fit: BoxFit.contain,
               ),
