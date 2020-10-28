@@ -53,11 +53,15 @@ class FileDownloadDialog extends StatelessWidget {
               ? AppDialog(
                   dismissable: false,
                   title: 'Downloading file...',
-                  content: ConstrainedBox(
-                    constraints: BoxConstraints(minWidth: kSmallDialogWidth),
+                  content: SizedBox(
+                    width: kSmallDialogWidth,
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: Text(state.fileName),
+                      title: Text(
+                        state.fileName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       subtitle: Text(
                           '${filesize(state.downloadedByteCount)}/${filesize(state.totalByteCount)}'),
                       trailing: CircularProgressIndicator(
