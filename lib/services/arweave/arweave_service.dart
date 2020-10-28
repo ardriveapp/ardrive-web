@@ -16,6 +16,12 @@ class ArweaveService {
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
 
+  Future<TransactionCommonMixin> getTransactionDetails(String txId) async {
+    final query = await _gql.execute(TransactionDetailsQuery(
+        variables: TransactionDetailsArguments(txId: txId)));
+    return query.data.transaction;
+  }
+
   /// Gets the entity history for a particular drive starting from the specified block height.
   Future<DriveEntityHistory> getNewEntitiesForDriveSinceBlock(
     String driveId,
