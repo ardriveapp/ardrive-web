@@ -23,7 +23,7 @@ class AppDialog extends StatelessWidget {
         child: AlertDialog(
           titlePadding: EdgeInsets.zero,
           title: Container(
-            color: kDarkColor,
+            color: kDarkSurfaceColor,
             height: 64,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
@@ -36,7 +36,7 @@ class AppDialog extends StatelessWidget {
                       style: Theme.of(context)
                           .textTheme
                           .headline6
-                          .copyWith(color: Colors.white),
+                          .copyWith(color: kOnDarkSurfaceHighEmphasis),
                     ),
                   ],
                 ),

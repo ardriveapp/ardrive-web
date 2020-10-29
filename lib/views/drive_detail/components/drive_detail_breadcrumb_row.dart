@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -13,6 +14,11 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     final theme = Theme.of(context);
     final segmentButtonPadding = const EdgeInsets.symmetric(vertical: 16);
 
+    final selectedSegmentTheme = TextButton.styleFrom(
+      primary: kOnSurfaceBodyTextColor,
+      padding: segmentButtonPadding,
+    );
+
     return Theme(
       data: theme.copyWith(
         textButtonTheme: TextButtonThemeData(
@@ -25,10 +31,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       child: Row(
         children: [
           TextButton(
-            style: _pathSegments.isEmpty
-                ? TextButton.styleFrom(
-                    primary: Colors.black87, padding: segmentButtonPadding)
-                : null,
+            style: _pathSegments.isEmpty ? selectedSegmentTheme : null,
             onPressed: () =>
                 context.bloc<DriveDetailCubit>().openFolderAtPath(''),
             child: Text(
@@ -45,10 +48,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
 
             return [
               TextButton(
-                style: isLastSegment
-                    ? TextButton.styleFrom(
-                        primary: Colors.black87, padding: segmentButtonPadding)
-                    : null,
+                style: isLastSegment ? selectedSegmentTheme : null,
                 onPressed: () => context
                     .bloc<DriveDetailCubit>()
                     .openFolderAtPath(

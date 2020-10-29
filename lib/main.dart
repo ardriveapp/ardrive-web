@@ -75,8 +75,8 @@ class App extends StatelessWidget {
               }
 
               final app = ListTileTheme(
-                textColor: Colors.black87,
-                iconColor: Colors.black87,
+                textColor: kOnSurfaceBodyTextColor,
+                iconColor: kOnSurfaceBodyTextColor,
                 child: MaterialApp(
                   title: 'ArDrive',
                   theme: appTheme(),

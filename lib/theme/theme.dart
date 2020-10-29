@@ -58,12 +58,12 @@ TextTheme _buildTextTheme(TextTheme base) => base
           fontSize: 10, fontWeight: FontWeight.w400, letterSpacing: 1.5),
     )
     .apply(
-      bodyColor: Colors.black87,
-      displayColor: Colors.black87,
+      bodyColor: kOnSurfaceBodyTextColor,
+      displayColor: kOnSurfaceBodyTextColor,
     );
 
 IconThemeData _buildIconTheme(IconThemeData base) =>
-    base.copyWith(color: Colors.black87);
+    base.copyWith(color: kOnSurfaceBodyTextColor);
 
 TextSelectionThemeData _buildTextSelectionTheme(TextSelectionThemeData base) =>
     base.copyWith(
@@ -82,7 +82,7 @@ AppBarTheme _buildAppBarTheme(AppBarTheme appBarBase) => appBarBase.copyWith(
 TextButtonThemeData _buildTextButtonTheme(TextButtonThemeData base) =>
     TextButtonThemeData(
       style: TextButton.styleFrom(
-        primary: Colors.black87,
+        primary: kOnSurfaceBodyTextColor,
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
       ),
     );
@@ -106,7 +106,7 @@ InputDecorationTheme _buildInputDecorationTheme(InputDecorationTheme base) =>
 CardTheme _buildCardTheme(CardTheme base) => base.copyWith(elevation: 0);
 
 TabBarTheme _buildTabBarTheme(TabBarTheme base) => base.copyWith(
-      labelColor: Colors.black87,
+      labelColor: kOnSurfaceBodyTextColor,
       indicator: UnderlineTabIndicator(
         borderSide: BorderSide(width: 2, color: kPrimarySwatch),
       ),
@@ -115,8 +115,10 @@ TabBarTheme _buildTabBarTheme(TabBarTheme base) => base.copyWith(
 DataTableThemeData _buildDataTableTheme(DataTableThemeData base) =>
     base.copyWith(dataRowColor: MaterialStateColor.resolveWith(
       (states) {
-        if (states.contains(MaterialState.selected)) {
-          return kPrimarySwatch.withOpacity(0.12);
+        if (states.contains(MaterialState.hovered)) {
+          return onSurfaceHoveredColor;
+        } else if (states.contains(MaterialState.selected)) {
+          return onSurfaceSelectedColor;
         }
         return Colors.transparent;
       },
