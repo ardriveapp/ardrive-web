@@ -33,6 +33,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) => MultiRepositoryProvider(
         providers: [
           RepositoryProvider<ArweaveService>(create: (_) => arweave),
+          RepositoryProvider<PstService>(create: (_) => PstService()),
           RepositoryProvider<AppConfig>(create: (_) => config),
           RepositoryProvider<ProfileDao>(create: (_) => db.profileDao),
           RepositoryProvider<DrivesDao>(create: (_) => db.drivesDao),
