@@ -34,17 +34,12 @@ const kSecondarySwatch = MaterialColor(
   },
 );
 
-const kHoverColor = Color.fromRGBO(249, 170, 51, 0.04);
-const kFocusColor = Color.fromRGBO(249, 170, 51, 0.12);
-const kSelectedColor = Color.fromRGBO(249, 170, 51, 0.08);
+const kOnSurfaceBodyTextColor = Colors.black87;
+final onSurfaceHoveredColor = kPrimarySwatch.withOpacity(0.04);
+final onSurfaceFocusColor = kPrimarySwatch.withOpacity(0.12);
+final onSurfaceSelectedColor = kPrimarySwatch.withOpacity(0.12);
 
-final kOnPrimaryHighEmphasis = Colors.white;
-const kOnPrimaryMediumEmphasis = Color(0xFFDCE1E4);
-const kOnPrimaryLowEmphasis = Color(0xFF17262A);
-const kOnPrimaryDisabled = Color(0xFF767676);
-
-const kDarkColor = Color(0xFF333333);
-const kOnDarkHighEmphasis = Colors.white;
-final kOnDarkMediumEmphasis = kOnDarkHighEmphasis.withOpacity(0.6);
-
-const kOnBackground = Colors.black87;
+const kDarkSurfaceColor = Color(0xFF333333);
+const kOnDarkSurfaceHighEmphasis = Colors.white;
+const kOnDarkSurfaceMediumEmphasis = Colors.white60;
+final onDarkSurfaceSelectedColor = kPrimarySwatch.shade300.withOpacity(0.12);
