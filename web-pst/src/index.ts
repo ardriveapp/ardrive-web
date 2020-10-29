@@ -4,7 +4,11 @@ import { readContract } from 'smartweave/lib/contract-read';
 import { selectWeightedPstHolder } from 'smartweave/lib/weighted-pst-holder';
 
 // Initialise an Arweave client using the default options.
-const arweave = Arweave.init({});
+const arweave = Arweave.init({
+  host: 'arweave.net',
+  port: 443,
+  protocol: 'https',
+});
 
 const pstContractId = '-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ';
 
