@@ -16,6 +16,12 @@ class ArweaveService {
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
 
+  Future<TransactionCommonMixin> getTransactionDetails(String txId) async {
+    final query = await _gql.execute(TransactionDetailsQuery(
+        variables: TransactionDetailsArguments(txId: txId)));
+    return query.data.transaction;
+  }
+
   /// Gets the entity history for a particular drive starting from the specified block height.
   Future<DriveEntityHistory> getNewEntitiesForDriveSinceBlock(
     String driveId,
@@ -234,15 +240,15 @@ class ArweaveService {
       wallet,
     );
 
+    fileDataTx.addApplicationTags();
+
+    // Don't include the file's Content-Type tag if it is meant to be private.
     if (fileKey == null) {
       fileDataTx.addTag(
         EntityTag.contentType,
         fileEntity.dataContentType,
       );
     }
-
-    fileDataTx.addTag(EntityTag.unixTime,
-        (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString());
 
     await fileDataTx.sign(wallet);
 

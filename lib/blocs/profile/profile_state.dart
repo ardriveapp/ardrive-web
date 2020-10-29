@@ -11,13 +11,17 @@ class ProfileLoading extends ProfileState {}
 class ProfileLoaded extends ProfileState {
   final String username;
   final String password;
+
   final Wallet wallet;
+  final String walletBalance;
+
   final SecretKey cipherKey;
 
   ProfileLoaded({
     @required this.username,
     @required this.password,
     @required this.wallet,
+    @required this.walletBalance,
     @required this.cipherKey,
   });
 

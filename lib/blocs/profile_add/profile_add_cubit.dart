@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
@@ -88,7 +89,9 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       }
     } catch (err) {
       if (err is EntityTransactionParseException) {
-        form.control('password').setErrors({'password-incorrect': true});
+        form
+            .control('password')
+            .setErrors({AppValidationMessage.passwordIncorrect: true});
         return;
       }
 

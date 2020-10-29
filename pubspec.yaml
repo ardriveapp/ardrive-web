@@ -1,7 +1,7 @@
 name: ardrive
 description: Secure, permanent storage
 
-publish_to: "none"
+publish_to: 'none'
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -16,7 +16,7 @@ publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.7.0 <3.0.0"
+  sdk: '>=2.7.0 <3.0.0'
 
 dependencies:
   flutter:
@@ -39,13 +39,17 @@ dependencies:
   uuid: ^2.2.0
   filesize: ^1.0.4
   mime: ^0.9.7
-  timeago: ^2.0.26
+  timeago: ^2.0.28
   url_launcher: ^5.5.0
-  file_picker_cross: ^3.0.3
+  file_picker_cross:
+    git:
+      url: https://gitlab.com/CDDelta/file_picker_cross.git
+      ref: web-base64-fix
   artemis: 6.7.1-beta.1
   intl: ^0.16.1
   reactive_forms: ^6.0.2
   pedantic: ^1.9.2
+  dio: ^3.0.10
 
 dev_dependencies:
   flutter_test:

@@ -33,6 +33,7 @@ class App extends StatelessWidget {
   Widget build(BuildContext context) => MultiRepositoryProvider(
         providers: [
           RepositoryProvider<ArweaveService>(create: (_) => arweave),
+          RepositoryProvider<PstService>(create: (_) => PstService()),
           RepositoryProvider<AppConfig>(create: (_) => config),
           RepositoryProvider<ProfileDao>(create: (_) => db.profileDao),
           RepositoryProvider<DrivesDao>(create: (_) => db.drivesDao),
@@ -40,16 +41,15 @@ class App extends StatelessWidget {
         ],
         child: BlocProvider(
           create: (context) => ProfileCubit(
+            arweave: context.repository<ArweaveService>(),
             profileDao: context.repository<ProfileDao>(),
           ),
           child: BlocBuilder<ProfileCubit, ProfileState>(
             builder: (context, state) {
               Widget view;
-              if (state is ProfileUnavailable) {
+              if (state is! ProfileLoaded) {
                 view = ProfileAuthView();
-              } else if (state is ProfileLoading) {
-                view = Container();
-              } else if (state is ProfileLoaded) {
+              } else {
                 view = BlocBuilder<DrivesCubit, DrivesState>(
                   builder: (context, state) {
                     if (state is DrivesLoadSuccess) {
@@ -74,10 +74,14 @@ class App extends StatelessWidget {
                 );
               }
 
-              final app = MaterialApp(
-                title: 'ArDrive',
-                theme: appTheme(),
-                home: view,
+              final app = ListTileTheme(
+                textColor: kOnSurfaceBodyTextColor,
+                iconColor: kOnSurfaceBodyTextColor,
+                child: MaterialApp(
+                  title: 'ArDrive',
+                  theme: appTheme(),
+                  home: view,
+                ),
               );
 
               if (state is! ProfileLoaded) {

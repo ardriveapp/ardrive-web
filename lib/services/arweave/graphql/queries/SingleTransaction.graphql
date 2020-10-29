@@ -1,0 +1,5 @@
+query TransactionDetails($txId: ID!) {
+  transaction(id: $txId) {
+    ...transactionCommon
+  }
+}

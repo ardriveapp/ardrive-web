@@ -1,4 +1,4 @@
-# ArweaveFS (version 0.11) - Emulating File Systems on Arweave
+# Arweave File System "ArFS" (version 0.11)
 
 ArweaveFS is a data model designed to emulate file systems on Arweave.
 
@@ -13,13 +13,13 @@ Folder entities require a single metadata transaction, with standard Folder tags
 File entities require a metadata transaction, with standard File tags an en encoded JSON with secondary metadata.  
 File entities also require a second data transaction, which includes a limited set of File tags and the actual file data itself.
 
-Data stored in any transaction tags will be defined in the following manner:
+MetaData stored in any transaction tags will be defined in the following manner:
 
 ```
 Example-Tag: "example-data"
 ```
 
-while data stored any JSON in the transaction will be defined in the following manner:
+While MetaData stored any JSON in the transaction will be defined in the following manner:
 
 ```
 {
@@ -31,11 +31,13 @@ Fields suffixed with `?` are optional.
 
 Field enum values are defined in the format "value 1 | value 2".
 
-All metadata transactions that store these entities unencrypted should define a `Content-Type` tag with value `application/json` and an `ArFS` tag with the version of ArFS specification it implements, currently `0.11`.  Encrypted entities must define a 
+All metadata transactions that store these entities unencrypted should define a `Content-Type` tag with value `application/json` and an `ArFS` tag with the version of ArFS specification it implements, currently `0.11`.  
 
 ## Drive Privacy
 
 Drives can store either public or private data, indicated by the `Drive-Privacy` tag on the drive entity.
+
+If a Drive entity is private, an additional tag `Drive-Auth-Mode` is used to indicate how the Drive Key is derived.  ArDrive clients currently leverage a secure `password` along with the Arweave Wallet private key signature to derive the global Drive key.
 
 On every encrypted entity, a `Cipher` tag must be specified. The required public parameters for decrypting the data must also be specified with the parameter's tag name prefixed by `Cipher-*` eg. `Cipher-IV`. If the parameter is byte data it should be encoded as Base64 in the tag.  ArDrive clients currently leverage AES256-GCM for all symmetric encryption, which requires a Cipher Initialization Vector consisting of 12 random bytes.
 
@@ -104,7 +106,7 @@ Parent-Folder-Id: <parent folder uuid>
 Unix-Time: <seconds since unix epoch>
 
 {
-    "name": "<user defined file name>",
+    "name": "<user defined file name with extension eg. happyBirthday.jpg>",
     "size": <computed file size - int>,
     "lastModifiedDate": <timestamp for OS reported time of file's last modified date represented as milliseconds since unix epoch - int>
     "dataTxId": "<transaction id of stored data>",
@@ -137,6 +139,26 @@ Clients can then create a timeline of entity write transactions which the client
 The `Unix-Time` defined on each transaction should be reserved for tie-breaking same entity updates in the same block and should not be trusted as the source of truth for entity write ordering. This is unimportant for single owner drives but is crucial for multi-owner drives with updateable permissions (currently undefined in this spec) as a malicious user could fake the `Unix-Time` to modify the drive timeline for other users.
 
 ArweaveFS utilises a bottom-up data model (files refer to parent folder, folders refer their parent folder etc) to avoid race conditions in file system updates. A top-down data model would require the parent model (ie. a folder) to store references to its children. When multiple users update the parent entity with new children, there's no way to do so in a consistent manner as a user's update to the parent model will not be seen by another user until the transaction has been mined.
+
+## Extending the Arweave File System Schema
+
+Web app and clients can extend the ArFS Schema as needed by adding additional tags into the File and Folder MetaData Transaction JSON.  This gives Developers additional flexibility to support specific application needs, without breaking the overall data model or impacting privacy.  
+
+For example a Music Sharing App could use the following expanded File Metadata for specific music files.
+
+``` Expanded File MetaData Transaction JSON Example
+{
+    "name": "<user defined file name>",
+    "size": <computed file size - int>,
+    "lastModifiedDate": <timestamp for OS reported time of file's last modified date represented as milliseconds since unix epoch - int>
+    "dataTxId": "<transaction id of stored data>",
+    "dataContentType": "<the mime type of the data associated with this file entity>"
+    "bandName": "<the name of the band/artist>"
+    "bandAlbum": "<the album of the band/artist>"
+    "albumSong": "<the title of the song>"
+}
+```
+Additionally, the above extended MetaData fields could be added directly as a transaction tag as well, in order to support GraphQL queries.  However, it is important to not overload transaction tags for optimal performance.
 
 ## Additional Client Concerns
 

@@ -1,6 +1,14 @@
 import 'package:ardrive/models/models.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:timeago/timeago.dart';
+
+List<DataColumn> buildTableColumns() => [
+      DataColumn(label: Text('Name')),
+      DataColumn(label: Text('File size')),
+      DataColumn(label: Text('Last updated')),
+    ];
 
 DataRow buildFolderRow({
   @required BuildContext context,
@@ -24,6 +32,7 @@ DataRow buildFolderRow({
           ),
         ),
         DataCell(Text('-')),
+        DataCell(Text('-')),
       ],
     );
 
@@ -44,5 +53,13 @@ DataRow buildFileRow({
           ),
         ),
         DataCell(Text(filesize(file.size))),
+        DataCell(
+          Text(
+            // Show a relative timestamp if the file was updated at most 3 days ago.
+            file.lastUpdated.difference(DateTime.now()).inDays > 3
+                ? format(file.lastUpdated)
+                : DateFormat.yMMMd().format(file.lastUpdated),
+          ),
+        ),
       ],
     );

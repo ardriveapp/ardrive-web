@@ -18,14 +18,17 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   DriveDao(Database db) : super(db);
 
+  SimpleSelectStatement<Drives, Drive> selectDriveById(String driveId) =>
+      select(drives)..where((d) => d.id.equals(driveId));
+
   Future<Drive> getDriveById(String driveId) =>
-      (select(drives)..where((d) => d.id.equals(driveId))).getSingle();
+      selectDriveById(driveId).getSingle();
 
   Stream<Drive> watchDriveById(String driveId) =>
-      (select(drives)..where((d) => d.id.equals(driveId))).watchSingle();
+      selectDriveById(driveId).watchSingle();
 
-  Future<SecretKey> getDriveKey(String id, SecretKey profileKey) async {
-    final drive = await getDriveById(id);
+  Future<SecretKey> getDriveKey(String driveId, SecretKey profileKey) async {
+    final drive = await getDriveById(driveId);
 
     if (drive.encryptedKey == null) {
       return null;

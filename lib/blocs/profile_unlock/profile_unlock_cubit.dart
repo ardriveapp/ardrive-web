@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -40,7 +41,9 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
         await _profileDao.loadDefaultProfile(password);
       } catch (err) {
         if (err is ProfilePasswordIncorrectException) {
-          form.control('password').setErrors({'password-incorrect': true});
+          form
+              .control('password')
+              .setErrors({AppValidationMessage.passwordIncorrect: true});
           return;
         }
 

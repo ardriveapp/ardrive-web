@@ -1,4 +1,4 @@
-import 'package:ardrive/theme/colors.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 
 class ProfileAuthShell extends StatelessWidget {
@@ -13,7 +13,7 @@ class ProfileAuthShell extends StatelessWidget {
           children: [
             Expanded(
               child: Container(
-                color: kDarkColor,
+                color: kDarkSurfaceColor,
                 child: Center(
                   child: illustration,
                 ),

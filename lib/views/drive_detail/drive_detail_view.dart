@@ -45,10 +45,7 @@ class DriveDetailView extends StatelessWidget {
                                 Expanded(
                                   child: DataTable(
                                     showCheckboxColumn: false,
-                                    columns: const <DataColumn>[
-                                      DataColumn(label: Text('Name')),
-                                      DataColumn(label: Text('File size')),
-                                    ],
+                                    columns: buildTableColumns(),
                                     rows: [
                                       ...state.currentFolder.subfolders.map(
                                         (folder) => buildFolderRow(

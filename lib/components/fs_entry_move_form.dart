@@ -96,36 +96,32 @@ class FsEntryMoveForm extends StatelessWidget {
                                   child: Container(
                                     height: 150,
                                     width: 512,
-                                    child: ListTileTheme(
-                                      textColor: Colors.black87,
-                                      iconColor: Colors.black87,
-                                      child: ListView(
-                                        shrinkWrap: true,
-                                        children: [
-                                          ...state.viewingFolder.subfolders.map(
-                                            (f) => ListTile(
-                                              key: ValueKey(f.id),
-                                              dense: true,
-                                              leading: Icon(Icons.folder),
-                                              title: Text(f.name),
-                                              onTap: () => context
-                                                  .bloc<FsEntryMoveCubit>()
-                                                  .loadFolder(f.id),
-                                              trailing: Icon(
-                                                  Icons.keyboard_arrow_right),
-                                            ),
+                                    child: ListView(
+                                      shrinkWrap: true,
+                                      children: [
+                                        ...state.viewingFolder.subfolders.map(
+                                          (f) => ListTile(
+                                            key: ValueKey(f.id),
+                                            dense: true,
+                                            leading: Icon(Icons.folder),
+                                            title: Text(f.name),
+                                            onTap: () => context
+                                                .bloc<FsEntryMoveCubit>()
+                                                .loadFolder(f.id),
+                                            trailing: Icon(
+                                                Icons.keyboard_arrow_right),
                                           ),
-                                          ...state.viewingFolder.files
-                                              .map((f) => ListTile(
-                                                    key: ValueKey(f.id),
-                                                    leading: Icon(Icons
-                                                        .insert_drive_file),
-                                                    title: Text(f.name),
-                                                    enabled: false,
-                                                    dense: true,
-                                                  )),
-                                        ],
-                                      ),
+                                        ),
+                                        ...state.viewingFolder.files
+                                            .map((f) => ListTile(
+                                                  key: ValueKey(f.id),
+                                                  leading: Icon(
+                                                      Icons.insert_drive_file),
+                                                  title: Text(f.name),
+                                                  enabled: false,
+                                                  dense: true,
+                                                )),
+                                      ],
                                     ),
                                   ),
                                 ),
