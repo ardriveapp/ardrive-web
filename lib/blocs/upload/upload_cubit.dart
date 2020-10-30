@@ -90,7 +90,7 @@ class UploadCubit extends Cubit<UploadState> {
       // TODO: Replace with time reported by OS.
       lastModifiedDate: DateTime.now(),
       parentFolderId: _targetFolder.id,
-      dataContentType: lookupMimeType(fileName),
+      dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
     );
 
     fileEntity.id = previousState is UploadFileAlreadyExists
