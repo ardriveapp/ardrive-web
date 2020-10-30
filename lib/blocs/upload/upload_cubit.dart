@@ -10,6 +10,7 @@ import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart';
+import 'package:pedantic/pedantic.dart';
 import 'package:uuid/uuid.dart';
 
 import '../blocs.dart';
@@ -21,12 +22,14 @@ class UploadCubit extends Cubit<UploadState> {
   final String folderId;
   final FilePickerCross file;
 
-  List<_FileUploadHandle> fileUploadHandles;
-
   final _uuid = Uuid();
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
+
+  Drive _targetDrive;
+  FolderEntry _targetFolder;
+  List<_FileUploadHandle> _fileUploadHandles;
 
   UploadCubit({
     @required this.driveId,
@@ -39,43 +42,63 @@ class UploadCubit extends Cubit<UploadState> {
         _driveDao = driveDao,
         _arweave = arweave,
         super(UploadPreparationInProgress()) {
-    prepareUpload();
+    () async {
+      _targetDrive = await _driveDao.getDriveById(driveId);
+      _targetFolder = await _driveDao.getFolderById(driveId, folderId);
+      unawaited(checkTargetFileVersioning());
+    }();
   }
 
-  Future<void> prepareUpload() async {
+  /// Tries to find a file in the target folder by the same name as the file being uploaded.
+  ///
+  /// If there's one, prompt the user to upload the file as a version of the existing one.
+  /// If there isn't one, prepare to upload the file.
+  Future<void> checkTargetFileVersioning() async {
     emit(UploadPreparationInProgress());
 
-    final profile = _profileCubit.state as ProfileLoaded;
-    final targetDrive = await _driveDao.getDriveById(driveId);
-    final targetFolder = await _driveDao.getFolderById(driveId, folderId);
-
     final fileName = basename(file.path);
-    final filePath = '${targetFolder.path}/${fileName}';
-    final fileEntity = FileEntity(
-      driveId: targetDrive.id,
-      name: fileName,
-      size: file.length,
-      // TODO: Replace with time reported by OS.
-      lastModifiedDate: DateTime.now(),
-      parentFolderId: targetFolder.id,
-      dataContentType: lookupMimeType(fileName),
-    );
-
-    // Try and find a file in the target folder by the same name as the file being uploaded.
-    // If there's one, update that file as opposed to creating a new one.
     final existingFileId = await _driveDao
         .selectFileInFolderByName(
-          fileEntity.driveId,
-          fileEntity.parentFolderId,
-          fileEntity.name,
+          _targetDrive.id,
+          _targetFolder.id,
+          fileName,
         )
         .map((f) => f.id)
         .getSingle();
 
-    fileEntity.id = existingFileId ?? _uuid.v4();
+    if (existingFileId != null) {
+      emit(UploadFileAlreadyExists(
+          existingFileId: existingFileId, existingFileName: fileName));
+    } else {
+      unawaited(prepareUpload());
+    }
+  }
 
-    final driveKey = targetDrive.isPrivate
-        ? await _driveDao.getDriveKey(targetDrive.id, profile.cipherKey)
+  Future<void> prepareUpload() async {
+    final previousState = state;
+
+    emit(UploadPreparationInProgress());
+
+    final profile = _profileCubit.state as ProfileLoaded;
+
+    final fileName = basename(file.path);
+    final filePath = '${_targetFolder.path}/${fileName}';
+    final fileEntity = FileEntity(
+      driveId: _targetDrive.id,
+      name: fileName,
+      size: file.length,
+      // TODO: Replace with time reported by OS.
+      lastModifiedDate: DateTime.now(),
+      parentFolderId: _targetFolder.id,
+      dataContentType: lookupMimeType(fileName),
+    );
+
+    fileEntity.id = previousState is UploadFileAlreadyExists
+        ? previousState.existingFileId
+        : _uuid.v4();
+
+    final driveKey = _targetDrive.isPrivate
+        ? await _driveDao.getDriveKey(_targetDrive.id, profile.cipherKey)
         : null;
 
     final uploadTxs = await _arweave.prepareFileUploadTxs(
@@ -85,7 +108,7 @@ class UploadCubit extends Cubit<UploadState> {
       driveKey,
     );
 
-    fileUploadHandles = [
+    _fileUploadHandles = [
       _FileUploadHandle(
         entity: fileEntity,
         path: filePath,
@@ -94,7 +117,7 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     ];
 
-    if (fileUploadHandles.length == 1) {
+    if (_fileUploadHandles.length == 1) {
       emit(
         UploadFileReady(
           fileName: fileEntity.name,
@@ -106,8 +129,8 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> startUpload() async {
-    if (fileUploadHandles.length == 1) {
-      final uploadHandle = fileUploadHandles.single;
+    if (_fileUploadHandles.length == 1) {
+      final uploadHandle = _fileUploadHandles.single;
       final uploadEntity = uploadHandle.entity;
 
       emit(UploadFileInProgress(
@@ -127,13 +150,13 @@ class UploadCubit extends Cubit<UploadState> {
         ));
       }
     } else {
-      for (final uploadHandle in fileUploadHandles) {
+      for (final uploadHandle in _fileUploadHandles) {
         await _arweave
             .batchPostTxs([uploadHandle.entityTx, uploadHandle.dataTx]);
       }
     }
 
-    for (final uploadHandle in fileUploadHandles) {
+    for (final uploadHandle in _fileUploadHandles) {
       await _driveDao.writeFileEntity(uploadHandle.entity, uploadHandle.path);
     }
 

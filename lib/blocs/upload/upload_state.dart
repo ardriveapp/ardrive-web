@@ -8,13 +8,19 @@ abstract class UploadState extends Equatable {
 
 class UploadPreparationInProgress extends UploadState {}
 
-class UploadFileAlreadyExists extends UploadState {
-  final String fileName;
+class UploadPreparationFailure extends UploadState {}
 
-  UploadFileAlreadyExists({@required this.fileName});
+class UploadFileAlreadyExists extends UploadState {
+  final String existingFileId;
+  final String existingFileName;
+
+  UploadFileAlreadyExists({
+    @required this.existingFileId,
+    @required this.existingFileName,
+  });
 
   @override
-  List<Object> get props => [fileName];
+  List<Object> get props => [existingFileId, existingFileName];
 }
 
 class UploadFileReady extends UploadState {
@@ -49,6 +55,8 @@ class UploadFileInProgress extends UploadState {
   @override
   List<Object> get props => [fileName, uploadProgress];
 }
+
+class UploadFileFailure extends UploadState {}
 
 class UploadFolderInProgress extends UploadState {
   final List<UploadFileInProgress> fileUploads;

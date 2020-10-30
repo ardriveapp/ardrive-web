@@ -55,14 +55,37 @@ class UploadForm extends StatelessWidget {
               return AppDialog(
                 title: 'Preparing upload...',
                 content: SizedBox(
-                  width: kSmallDialogWidth,
+                  width: kMediumDialogWidth,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      Center(child: CircularProgressIndicator()),
+                      CircularProgressIndicator(),
+                      Container(height: 16),
+                      Text('This may take a while...'),
                     ],
                   ),
                 ),
+              );
+            } else if (state is UploadFileAlreadyExists) {
+              return AppDialog(
+                title: 'File with name already exists',
+                content: SizedBox(
+                  width: kMediumDialogWidth,
+                  child: Text(
+                    '"${state.existingFileName}" already exists at this location. Do you want to continue and version this file?',
+                  ),
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    child: Text('CANCEL'),
+                    onPressed: () => Navigator.of(context).pop(false),
+                  ),
+                  ElevatedButton(
+                    child: Text('UPLOAD AS NEW VERSION'),
+                    onPressed: () =>
+                        context.bloc<UploadCubit>().prepareUpload(),
+                  ),
+                ],
               );
             } else if (state is UploadFileReady) {
               return AppDialog(
@@ -78,6 +101,7 @@ class UploadForm extends StatelessWidget {
                         title: Text(state.fileName),
                         subtitle: Text(filesize(state.uploadSize)),
                       ),
+                      Container(height: 16),
                       Text('Cost: ${utils.winstonToAr(state.uploadCost)} AR')
                     ],
                   ),
