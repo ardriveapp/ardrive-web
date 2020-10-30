@@ -174,20 +174,20 @@ class AppDrawer extends StatelessWidget {
 
   void _promptToUploadFile(
       BuildContext context, String targetDriveId, String targetFolderId) async {
-    FilePickerCross fileChooseResult;
     try {
-      fileChooseResult = await FilePickerCross.pick();
-      // ignore: empty_catches
-    } catch (err) {}
+      final fileChooseResult = await FilePickerCross.importFromStorage();
 
-    if (fileChooseResult == null) return;
-
-    await promptToUpload(
-      context,
-      driveId: targetDriveId,
-      folderId: targetFolderId,
-      file: fileChooseResult,
-    );
+      await promptToUpload(
+        context,
+        driveId: targetDriveId,
+        folderId: targetFolderId,
+        file: fileChooseResult,
+      );
+    } catch (err) {
+      if (err is! FileSelectionCanceledError) {
+        rethrow;
+      }
+    }
   }
 
   void _promptToAttachDrive(BuildContext context) async {
