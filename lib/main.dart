@@ -65,7 +65,14 @@ class App extends StatelessWidget {
                         child: AppShell(
                           page: state.selectedDriveId != null
                               ? DriveDetailView()
-                              : Container(),
+                              : Center(
+                                  child: Text(
+                                    'You have no personal or attached drives.\nClick the "new" button to add some!',
+                                    textAlign: TextAlign.center,
+                                    style:
+                                        Theme.of(context).textTheme.headline6,
+                                  ),
+                                ),
                         ),
                       );
                     } else {

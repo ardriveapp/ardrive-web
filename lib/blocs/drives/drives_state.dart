@@ -8,7 +8,11 @@ abstract class DrivesState extends Equatable {
 class DrivesLoadInProgress extends DrivesState {}
 
 class DrivesLoadSuccess extends DrivesState {
+  /// The id of the user's selected drive.
+  ///
+  /// Only null when the user has no drives.
   final String selectedDriveId;
+
   final List<Drive> userDrives;
   final List<Drive> sharedDrives;
 
@@ -35,5 +39,6 @@ class DrivesLoadSuccess extends DrivesState {
       );
 
   @override
-  List<Object> get props => [selectedDriveId, userDrives, sharedDrives];
+  List<Object> get props =>
+      [selectedDriveId, userDrives, sharedDrives, canCreateNewDrive];
 }
