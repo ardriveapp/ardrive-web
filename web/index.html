@@ -27,6 +27,27 @@
     </script>
     <script src="pst.min.js"></script>
     <script defer src="sql-wasm.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.3/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.3/firebase-analytics.js"></script>
+    <script>
+      firebase.initializeApp({
+        apiKey: "AIzaSyDXp0ZnEQfkUl4wEcfRVVR_EOwehrTFYrU",
+        authDomain: "ardrive-web.firebaseapp.com",
+        databaseURL: "https://ardrive-web.firebaseio.com",
+        projectId: "ardrive-web",
+        storageBucket: "ardrive-web.appspot.com",
+        messagingSenderId: "305132849030",
+        appId: "1:305132849030:web:b2d30975b28774f8ffce07",
+        measurementId: "G-P05MMD1NHD"
+      });
+      firebase.analytics();
+
+      // Only enable analytics in production.
+      // TODO: Disable analytics in Dart instead.
+      if (window.origin === 'https://app.ardrive.io') {
+        firebase.analytics().setAnalyticsCollectionEnabled(false);
+      }
+    </script>
     <script src="main.dart.js" type="application/javascript"></script>
   </body>
 </html>
