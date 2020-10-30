@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:url_launcher/link.dart';
 
 import 'profile_auth_shell.dart';
 
@@ -31,6 +32,18 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
               ElevatedButton(
                 child: Text('SELECT WALLET'),
                 onPressed: () => _pickWallet(context),
+              ),
+              Container(height: 16),
+              Link(
+                uri: Uri.parse('https://tokens.arweave.org'),
+                target: LinkTarget.blank,
+                builder: (context, followLink) => TextButton(
+                  onPressed: followLink,
+                  child: Text(
+                    'Don\'t have a wallet? Get one here!',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ),
             ],
           ),
