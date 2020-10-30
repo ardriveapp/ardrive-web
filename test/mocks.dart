@@ -22,4 +22,4 @@ class MockDriveDetailCubit extends MockBloc<DrivesState>
 
 class MockProfileBloc extends MockBloc<ProfileState> implements ProfileCubit {}
 
-class MockUploadBloc extends MockBloc<UploadState> implements UploadBloc {}
+class MockUploadBloc extends MockBloc<UploadState> implements UploadCubit {}

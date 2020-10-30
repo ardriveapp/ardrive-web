@@ -64,12 +64,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
                 f.driveId.equals(driveId) &
                 f.parentFolderId.equals(parentFolderId)));
 
-  Future<String> getFolderNameById(String driveId, String folderId) =>
-      (select(folderEntries)
-            ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)))
-          .map((f) => f.name)
-          .getSingle();
-
   Stream<FolderWithContents> watchFolderContentsById(
       String driveId, String folderId) {
     final folderStream = (select(folderEntries)
@@ -165,30 +159,26 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeToFolder(Insertable<FolderEntry> folder) =>
       (update(folderEntries)..whereSamePrimaryKey(folder)).write(folder);
 
-  Future<FileEntry> getFileById(String driveId, String fileId) =>
+  SimpleSelectStatement<FileEntries, FileEntry> selectFileById(
+          String driveId, String fileId) =>
       (select(fileEntries)
-            ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)))
-          .getSingle();
+        ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)));
 
-  Future<String> getFileNameById(String driveId, String fileId) =>
-      (select(fileEntries)
-            ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)))
-          .map((f) => f.name)
-          .getSingle();
+  Future<FileEntry> getFileById(String driveId, String fileId) =>
+      selectFileById(driveId, fileId).getSingle();
 
   Stream<FileEntry> watchFileById(String driveId, String fileId) =>
       (select(fileEntries)
             ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)))
           .watchSingle();
 
-  Future<String> fileExistsInFolder(String folderId, String filename) async {
-    final file = await (select(fileEntries)
-          ..where((f) =>
-              f.parentFolderId.equals(folderId) & f.name.equals(filename)))
-        .getSingle();
-
-    return file != null ? file.id : null;
-  }
+  SimpleSelectStatement<FileEntries, FileEntry> selectFileInFolderByName(
+          String driveId, String folderId, String fileName) =>
+      (select(fileEntries)
+        ..where((f) =>
+            f.driveId.equals(driveId) &
+            f.parentFolderId.equals(folderId) &
+            f.name.equals(fileName)));
 
   SimpleSelectStatement<FileEntries, FileEntry> selectFilesByParentFolderId(
           String driveId, String parentFolderId) =>

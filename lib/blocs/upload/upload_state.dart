@@ -1,28 +1,70 @@
-part of 'upload_bloc.dart';
+part of 'upload_cubit.dart';
 
 @immutable
-abstract class UploadState {}
+abstract class UploadState extends Equatable {
+  @override
+  List<Object> get props => [];
+}
 
-class UploadIdle extends UploadState {}
+class UploadPreparationInProgress extends UploadState {}
 
-class UploadBeingPrepared extends UploadState {}
+class UploadPreparationFailure extends UploadState {}
+
+class UploadFileAlreadyExists extends UploadState {
+  final String existingFileId;
+  final String existingFileName;
+
+  UploadFileAlreadyExists({
+    @required this.existingFileId,
+    @required this.existingFileName,
+  });
+
+  @override
+  List<Object> get props => [existingFileId, existingFileName];
+}
 
 class UploadFileReady extends UploadState {
-  final String fileId;
   final String fileName;
   final BigInt uploadCost;
   final int uploadSize;
-  final UploadFileToNetwork fileUploadHandle;
 
-  UploadFileReady(
-    this.fileId,
-    this.fileName,
-    this.uploadCost,
-    this.uploadSize,
-    this.fileUploadHandle,
-  );
+  UploadFileReady({
+    @required this.fileName,
+    @required this.uploadCost,
+    @required this.uploadSize,
+  });
+
+  @override
+  List<Object> get props => [fileName, uploadCost, uploadSize];
 }
 
-class UploadInProgress extends UploadState {}
+class UploadFileInProgress extends UploadState {
+  final String fileName;
+  final int fileSize;
+
+  final double uploadProgress;
+  final int uploadedFileSize;
+
+  UploadFileInProgress({
+    @required this.fileName,
+    @required this.fileSize,
+    this.uploadProgress = 0,
+    this.uploadedFileSize = 0,
+  });
+
+  @override
+  List<Object> get props => [fileName, uploadProgress];
+}
+
+class UploadFileFailure extends UploadState {}
+
+class UploadFolderInProgress extends UploadState {
+  final List<UploadFileInProgress> fileUploads;
+
+  UploadFolderInProgress({@required this.fileUploads});
+
+  @override
+  List<Object> get props => [fileUploads];
+}
 
 class UploadComplete extends UploadState {}

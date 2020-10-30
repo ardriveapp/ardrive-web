@@ -37,8 +37,14 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
         super(FsEntryRenameInitializing(isRenamingFolder: folderId != null)) {
     () async {
       final name = _isRenamingFolder
-          ? await _driveDao.getFolderNameById(driveId, folderId)
-          : await _driveDao.getFileNameById(driveId, fileId);
+          ? await _driveDao
+              .selectFolderById(driveId, folderId)
+              .map((f) => f.name)
+              .getSingle()
+          : await _driveDao
+              .selectFileById(driveId, fileId)
+              .map((f) => f.name)
+              .getSingle();
 
       form.control('name').value = name;
       emit(FsEntryRenameInitialized(isRenamingFolder: _isRenamingFolder));

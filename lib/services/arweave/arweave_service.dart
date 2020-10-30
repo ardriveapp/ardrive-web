@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:ardrive/entities/entities.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
@@ -209,6 +207,9 @@ class ArweaveService {
     );
   }
 
+  /// Creates and signs a transaction representing the provided entity.
+  ///
+  /// Optionally provide a [SecretKey] to encrypt the transaction data.
   Future<Transaction> prepareEntityTx(
     Entity entity,
     Wallet wallet, [
@@ -222,41 +223,6 @@ class ArweaveService {
     await tx.sign(wallet);
 
     return tx;
-  }
-
-  Future<UploadTransactions> prepareFileUploadTxs(
-    FileEntity fileEntity,
-    Uint8List fileStream,
-    Wallet wallet, [
-    SecretKey driveKey,
-  ]) async {
-    final fileKey =
-        driveKey == null ? null : await deriveFileKey(driveKey, fileEntity.id);
-
-    final fileDataTx = await client.transactions.prepare(
-      fileKey == null
-          ? Transaction.withBlobData(data: fileStream)
-          : await createEncryptedTransaction(fileStream, fileKey),
-      wallet,
-    );
-
-    fileDataTx.addApplicationTags();
-
-    // Don't include the file's Content-Type tag if it is meant to be private.
-    if (fileKey == null) {
-      fileDataTx.addTag(
-        EntityTag.contentType,
-        fileEntity.dataContentType,
-      );
-    }
-
-    await fileDataTx.sign(wallet);
-
-    fileEntity.dataTxId = fileDataTx.id;
-
-    final fileEntityTx = await prepareEntityTx(fileEntity, wallet, fileKey);
-
-    return UploadTransactions(fileEntityTx, fileDataTx);
   }
 
   Future<void> postTx(Transaction transaction) =>

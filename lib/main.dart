@@ -58,7 +58,6 @@ class App extends StatelessWidget {
                         create: (context) => DriveDetailCubit(
                           driveId: state.selectedDriveId,
                           profileCubit: context.bloc<ProfileCubit>(),
-                          uploadBloc: context.bloc<UploadBloc>(),
                           driveDao: context.repository<DriveDao>(),
                           config: context.repository<AppConfig>(),
                         ),
@@ -97,13 +96,6 @@ class App extends StatelessWidget {
               } else {
                 return MultiBlocProvider(
                   providers: [
-                    BlocProvider(
-                      create: (context) => UploadBloc(
-                        profileCubit: context.bloc<ProfileCubit>(),
-                        arweave: context.repository<ArweaveService>(),
-                        driveDao: context.repository<DriveDao>(),
-                      ),
-                    ),
                     BlocProvider(
                       create: (context) => SyncCubit(
                         profileCubit: context.bloc<ProfileCubit>(),
