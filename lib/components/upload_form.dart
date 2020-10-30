@@ -51,22 +51,7 @@ class UploadForm extends StatelessWidget {
             }
           },
           builder: (context, state) {
-            if (state is UploadPreparationInProgress) {
-              return AppDialog(
-                title: 'Preparing upload...',
-                content: SizedBox(
-                  width: kMediumDialogWidth,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      CircularProgressIndicator(),
-                      Container(height: 16),
-                      Text('This may take a while...'),
-                    ],
-                  ),
-                ),
-              );
-            } else if (state is UploadFileAlreadyExists) {
+            if (state is UploadFileAlreadyExists) {
               return AppDialog(
                 title: 'File with name already exists',
                 content: SizedBox(
@@ -84,6 +69,37 @@ class UploadForm extends StatelessWidget {
                     child: Text('UPLOAD AS NEW VERSION'),
                     onPressed: () =>
                         context.bloc<UploadCubit>().prepareUpload(),
+                  ),
+                ],
+              );
+            } else if (state is UploadPreparationInProgress) {
+              return AppDialog(
+                title: 'Preparing upload...',
+                content: SizedBox(
+                  width: kMediumDialogWidth,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      CircularProgressIndicator(),
+                      Container(height: 16),
+                      Text('This may take a while...'),
+                    ],
+                  ),
+                ),
+              );
+            } else if (state is UploadPreparationFailure) {
+              return AppDialog(
+                title: 'Failed to prepare file upload',
+                content: SizedBox(
+                  width: kMediumDialogWidth,
+                  child: Text(
+                    'An error occured while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.',
+                  ),
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    child: Text('CLOSE'),
+                    onPressed: () => Navigator.of(context).pop(false),
                   ),
                 ],
               );

@@ -97,23 +97,51 @@ class UploadCubit extends Cubit<UploadState> {
         ? previousState.existingFileId
         : _uuid.v4();
 
-    final driveKey = _targetDrive.isPrivate
+    final private = _targetDrive.isPrivate;
+    final driveKey = private
         ? await _driveDao.getDriveKey(_targetDrive.id, profile.cipherKey)
         : null;
+    final fileKey =
+        private ? await deriveFileKey(driveKey, fileEntity.id) : null;
 
-    final uploadTxs = await _arweave.prepareFileUploadTxs(
-      fileEntity,
-      file.toUint8List(),
+    final fileData = file.toUint8List();
+    final fileDataTx = await _arweave.client.transactions.prepare(
+      private
+          ? await createEncryptedTransaction(fileData, fileKey)
+          : Transaction.withBlobData(data: fileData),
       profile.wallet,
-      driveKey,
     );
+
+    fileDataTx.addApplicationTags();
+
+    // Don't include the file's Content-Type tag if it is meant to be private.
+    if (!private) {
+      fileDataTx.addTag(
+        EntityTag.contentType,
+        fileEntity.dataContentType,
+      );
+    }
+
+    await fileDataTx.sign(profile.wallet);
+
+    fileEntity.dataTxId = fileDataTx.id;
+
+    final fileEntityTx =
+        await _arweave.prepareEntityTx(fileEntity, profile.wallet, fileKey);
+
+    // Sometimes, files that are too large will result in the transaction having a data size of zero.
+    // TODO: Investigate problems with large file uploads on web.
+    if (fileDataTx.dataSize == '0' || fileDataTx.reward == BigInt.zero) {
+      emit(UploadPreparationFailure());
+      return;
+    }
 
     _fileUploadHandles = [
       _FileUploadHandle(
         entity: fileEntity,
         path: filePath,
-        entityTx: uploadTxs.entityTx,
-        dataTx: uploadTxs.dataTx,
+        entityTx: fileEntityTx,
+        dataTx: fileDataTx,
       ),
     ];
 
@@ -121,7 +149,7 @@ class UploadCubit extends Cubit<UploadState> {
       emit(
         UploadFileReady(
           fileName: fileEntity.name,
-          uploadCost: uploadTxs.dataTx.reward,
+          uploadCost: fileDataTx.reward,
           uploadSize: fileEntity.size,
         ),
       );
