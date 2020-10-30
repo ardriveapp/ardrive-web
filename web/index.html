@@ -44,7 +44,7 @@
 
       // Only enable analytics in production.
       // TODO: Disable analytics in Dart instead.
-      if (window.origin === 'https://app.ardrive.io') {
+      if (window.origin !== 'https://app.ardrive.io') {
         firebase.analytics().setAnalyticsCollectionEnabled(false);
       }
     </script>
