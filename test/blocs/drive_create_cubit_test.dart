@@ -29,7 +29,7 @@ void main() {
 
       arweave = ArweaveService(Arweave());
       drivesCubit = MockDrivesCubit();
-      profileCubit = MockProfileBloc();
+      profileCubit = MockProfileCubit();
 
       when(profileCubit.state).thenReturn(
         ProfileLoaded(

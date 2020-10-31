@@ -8,6 +8,9 @@ import 'package:cryptography/cryptography.dart' hide Cipher;
 
 import '../services.dart';
 
+/// Decrypts the provided transaction details and data into JSON using the provided key.
+///
+/// Throws a [TransactionDecryptionException] if decryption fails.
 Future<Map<String, dynamic>> decryptEntityJson(
   TransactionCommonMixin transaction,
   Uint8List data,
@@ -17,6 +20,9 @@ Future<Map<String, dynamic>> decryptEntityJson(
   return json.decode(utf8.decode(decryptedData));
 }
 
+/// Decrypts the provided transaction details and data into a [Uint8List] using the provided key.
+///
+/// Throws a [TransactionDecryptionException] if decryption fails.
 Future<Uint8List> decryptTransactionData(
   TransactionCommonMixin transaction,
   Uint8List data,

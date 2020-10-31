@@ -21,7 +21,7 @@ void main() {
       db = getTestDb();
       driveDao = db.driveDao;
 
-      profileCubit = MockProfileBloc();
+      profileCubit = MockProfileCubit();
 
       when(profileCubit.state).thenReturn(
         ProfileLoaded(

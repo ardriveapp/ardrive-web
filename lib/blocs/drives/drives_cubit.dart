@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../blocs.dart';
@@ -15,8 +16,10 @@ class DrivesCubit extends Cubit<DrivesState> {
 
   StreamSubscription _drivesSubscription;
 
-  DrivesCubit({ProfileCubit profileCubit, DrivesDao drivesDao})
-      : _profileCubit = profileCubit,
+  DrivesCubit({
+    @required ProfileCubit profileCubit,
+    @required DrivesDao drivesDao,
+  })  : _profileCubit = profileCubit,
         _drivesDao = drivesDao,
         super(DrivesLoadInProgress()) {
     _drivesSubscription = Rx.combineLatest2<List<Drive>, void, List<Drive>>(
@@ -50,10 +53,8 @@ class DrivesCubit extends Cubit<DrivesState> {
   }
 
   void selectDrive(String driveId) {
-    final state = this.state;
-    if (state is DrivesLoadSuccess) {
-      emit(state.copyWith(selectedDriveId: driveId));
-    }
+    final state = this.state as DrivesLoadSuccess;
+    emit(state.copyWith(selectedDriveId: driveId));
   }
 
   @override

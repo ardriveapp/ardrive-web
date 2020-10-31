@@ -25,25 +25,36 @@ class DriveInfoCubit extends Cubit<DriveInfoState> {
         super(DriveInfoLoadInProgress()) {
     if (folderId != null) {
       _entrySubscription = _driveDao.watchFolderById(driveId, folderId).listen(
-          (f) => emit(DriveInfoFolderLoadSuccess(
-              name: f.name,
-              lastUpdated: f.lastUpdated,
-              dateCreated: f.dateCreated,
-              folder: f)));
+            (f) => emit(
+              DriveInfoFolderLoadSuccess(
+                name: f.name,
+                lastUpdated: f.lastUpdated,
+                dateCreated: f.dateCreated,
+                folder: f,
+              ),
+            ),
+          );
     } else if (fileId != null) {
       _entrySubscription = _driveDao.watchFileById(driveId, fileId).listen(
-          (f) => emit(DriveInfoFileLoadSuccess(
-              name: f.name,
-              lastUpdated: f.lastUpdated,
-              dateCreated: f.dateCreated,
-              file: f)));
+            (f) => emit(
+              DriveInfoFileLoadSuccess(
+                  name: f.name,
+                  lastUpdated: f.lastUpdated,
+                  dateCreated: f.dateCreated,
+                  file: f),
+            ),
+          );
     } else {
-      _entrySubscription = _driveDao.watchDriveById(driveId).listen((d) => emit(
-          DriveInfoDriveLoadSuccess(
-              name: d.name,
-              lastUpdated: d.lastUpdated,
-              dateCreated: d.dateCreated,
-              drive: d)));
+      _entrySubscription = _driveDao.watchDriveById(driveId).listen(
+            (d) => emit(
+              DriveInfoDriveLoadSuccess(
+                name: d.name,
+                lastUpdated: d.lastUpdated,
+                dateCreated: d.dateCreated,
+                drive: d,
+              ),
+            ),
+          );
     }
   }
 

@@ -18,7 +18,7 @@ void main() {
 
     setUp(() {
       profileDao = MockProfileDao();
-      profileCubit = MockProfileBloc();
+      profileCubit = MockProfileCubit();
 
       when(profileDao.loadDefaultProfile(rightPassword))
           .thenAnswer((_) => Future.value());

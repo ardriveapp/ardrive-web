@@ -29,7 +29,7 @@ void main() {
       profileDao = db.profileDao;
 
       arweave = MockArweaveService();
-      profileCubit = MockProfileBloc();
+      profileCubit = MockProfileCubit();
 
       newUserWallet = getTestWallet();
 

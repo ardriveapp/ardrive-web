@@ -22,7 +22,7 @@ void main() {
       driveDao = db.driveDao;
 
       arweave = ArweaveService(Arweave());
-      profileCubit = MockProfileBloc();
+      profileCubit = MockProfileCubit();
 
       folderCreateCubit = FolderCreateCubit(
         arweave: arweave,
