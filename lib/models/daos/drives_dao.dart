@@ -100,23 +100,28 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
         }
       });
 
-  Future<void> attachDrive({
+  /// Inserts the provided [DriveEntity] with the provided name.
+  ///
+  /// Only works for public drives.
+  Future<void> insertDriveEntity({
     String name,
     DriveEntity entity,
-  }) async {
-    var insertDriveOp = DrivesCompanion.insert(
-      id: entity.id,
-      name: name,
-      ownerAddress: entity.ownerAddress,
-      rootFolderId: entity.rootFolderId,
-      privacy: entity.privacy,
-      // TODO: Provide proper date created for attached drives.
-      // It should be the timestamp for the first entry of this drive.
-      dateCreated: Value(entity.commitTime),
-      lastUpdated: Value(entity.commitTime),
-    );
+  }) {
+    assert(entity.privacy == DrivePrivacy.public);
 
-    await into(drives).insert(insertDriveOp);
+    return into(drives).insert(
+      DrivesCompanion.insert(
+        id: entity.id,
+        name: name,
+        ownerAddress: entity.ownerAddress,
+        rootFolderId: entity.rootFolderId,
+        privacy: entity.privacy,
+        // TODO: Provide proper date created for attached drives.
+        // It should be the timestamp for the first entry of this drive.
+        dateCreated: Value(entity.commitTime),
+        lastUpdated: Value(entity.commitTime),
+      ),
+    );
   }
 
   Future<DrivesCompanion> _addDriveKeyToDriveCompanion(

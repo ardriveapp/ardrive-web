@@ -52,7 +52,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       return;
     }
 
-    await _drivesDao.attachDrive(name: driveName, entity: driveEntity);
+    await _drivesDao.insertDriveEntity(name: driveName, entity: driveEntity);
 
     _drivesBloc.selectDrive(driveId);
     unawaited(_syncBloc.startSync());

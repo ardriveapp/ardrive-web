@@ -184,6 +184,8 @@ class ArweaveService {
   /// Important for verifying the owner of a drive.
   ///
   /// Optionally provide a `driveKey` to load private drive entities.
+  ///
+  /// Returns `null` if no drive could be found.
   Future<DriveEntity> tryGetFirstDriveEntityWithId(
     String driveId, [
     SecretKey driveKey,
