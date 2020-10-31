@@ -1,7 +1,6 @@
 import 'package:ardrive/entities/entities.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
-import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart';
 
 import '../services.dart';
@@ -37,10 +36,10 @@ class ArweaveService {
     final entityTxs = driveEntityHistoryQuery.data.transactions.edges
         .map((e) => e.node)
         .toList();
-    final rawEntityData = (await Future.wait(
-            entityTxs.map((e) => client.api.get('tx/${e.id}/data'))))
-        .map((r) => utils.decodeBase64ToBytes(r.body))
-        .toList();
+    final rawEntityData =
+        (await Future.wait(entityTxs.map((e) => client.api.get(e.id))))
+            .map((r) => r.bodyBytes)
+            .toList();
 
     final blockHistory = <BlockEntities>[];
     for (var i = 0; i < entityTxs.length; i++) {
@@ -138,8 +137,8 @@ class ArweaveService {
         .map((e) => e.node)
         .toList();
 
-    final driveResponses = await Future.wait(
-        driveTxs.map((e) => client.api.get('tx/${e.id}/data')));
+    final driveResponses =
+        await Future.wait(driveTxs.map((e) => client.api.get(e.id)));
 
     final drivesById = <String, DriveEntity>{};
     final drivesWithKey = <DriveEntity, SecretKey>{};
@@ -163,7 +162,7 @@ class ArweaveService {
       try {
         final drive = await DriveEntity.fromTransaction(
           driveTx,
-          utils.decodeBase64ToBytes(driveResponses[i].body),
+          driveResponses[i].bodyBytes,
           driveKey,
         );
 
@@ -198,11 +197,11 @@ class ArweaveService {
     if (queryEdges.isEmpty) return null;
 
     final driveTx = queryEdges[0].node;
-    final driveDataRes = await client.api.get('tx/${driveTx.id}/data');
+    final driveDataRes = await client.api.get(driveTx.id);
 
     return DriveEntity.fromTransaction(
       driveTx,
-      utils.decodeBase64ToBytes(driveDataRes.body),
+      driveDataRes.bodyBytes,
       driveKey,
     );
   }
