@@ -11,3 +11,5 @@ class FolderCreateInitial extends FolderCreateState {}
 class FolderCreateInProgress extends FolderCreateState {}
 
 class FolderCreateSuccess extends FolderCreateState {}
+
+class FolderCreateFailure extends FolderCreateState {}

@@ -58,51 +58,55 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
   }
 
   Future<void> submit() async {
-    final state = this.state as FsEntryMoveFolderLoadSuccess;
-    final profile = _profileCubit.state as ProfileLoaded;
+    try {
+      final state = this.state as FsEntryMoveFolderLoadSuccess;
+      final profile = _profileCubit.state as ProfileLoaded;
 
-    final parentFolder = state.viewingFolder.folder;
-    final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
+      final parentFolder = state.viewingFolder.folder;
+      final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
 
-    if (_isMovingFolder) {
-      emit(FolderEntryMoveInProgress());
+      if (_isMovingFolder) {
+        emit(FolderEntryMoveInProgress());
 
-      await _driveDao.transaction(() async {
-        var folder = await _driveDao.getFolderById(driveId, folderId);
-        folder = folder.copyWith(
-            parentFolderId: parentFolder.id,
-            path: '${parentFolder.path}/${folder.name}',
-            lastUpdated: DateTime.now());
+        await _driveDao.transaction(() async {
+          var folder = await _driveDao.getFolderById(driveId, folderId);
+          folder = folder.copyWith(
+              parentFolderId: parentFolder.id,
+              path: '${parentFolder.path}/${folder.name}',
+              lastUpdated: DateTime.now());
 
-        final folderTx = await _arweave.prepareEntityTx(
-            folder.asEntity(), profile.wallet, driveKey);
+          final folderTx = await _arweave.prepareEntityTx(
+              folder.asEntity(), profile.wallet, driveKey);
 
-        await _arweave.postTx(folderTx);
-        await _driveDao.writeToFolder(folder);
-      });
+          await _arweave.postTx(folderTx);
+          await _driveDao.writeToFolder(folder);
+        });
 
-      emit(FolderEntryMoveSuccess());
-    } else {
-      emit(FileEntryMoveInProgress());
+        emit(FolderEntryMoveSuccess());
+      } else {
+        emit(FileEntryMoveInProgress());
 
-      await _driveDao.transaction(() async {
-        var file = await _driveDao.getFileById(driveId, fileId);
-        file = file.copyWith(
-            parentFolderId: parentFolder.id,
-            path: '${parentFolder.path}/${file.name}',
-            lastUpdated: DateTime.now());
+        await _driveDao.transaction(() async {
+          var file = await _driveDao.getFileById(driveId, fileId);
+          file = file.copyWith(
+              parentFolderId: parentFolder.id,
+              path: '${parentFolder.path}/${file.name}',
+              lastUpdated: DateTime.now());
 
-        final fileKey =
-            driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
+          final fileKey =
+              driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
 
-        final fileTx = await _arweave.prepareEntityTx(
-            file.asEntity(), profile.wallet, fileKey);
+          final fileTx = await _arweave.prepareEntityTx(
+              file.asEntity(), profile.wallet, fileKey);
 
-        await _arweave.postTx(fileTx);
-        await _driveDao.writeToFile(file);
-      });
+          await _arweave.postTx(fileTx);
+          await _driveDao.writeToFile(file);
+        });
 
-      emit(FileEntryMoveSuccess());
+        emit(FileEntryMoveSuccess());
+      }
+    } catch (err) {
+      addError(err);
     }
   }
 
@@ -110,5 +114,16 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
   Future<void> close() {
     _folderSubscription?.cancel();
     return super.close();
+  }
+
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    if (_isMovingFolder) {
+      emit(FolderEntryMoveFailure());
+    } else {
+      emit(FileEntryMoveFailure());
+    }
+
+    super.onError(error, stackTrace);
   }
 }

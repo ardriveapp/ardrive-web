@@ -41,24 +41,34 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
     emit(DriveAttachInProgress());
 
-    final String driveId = form.control('driveId').value;
-    final String driveName = form.control('name').value;
+    try {
+      final String driveId = form.control('driveId').value;
+      final String driveName = form.control('name').value;
 
-    final driveEntity = await _arweave.tryGetFirstDriveEntityWithId(driveId);
+      final driveEntity = await _arweave.tryGetFirstDriveEntityWithId(driveId);
 
-    if (driveEntity == null) {
-      form
-          .control('driveId')
-          .setErrors({AppValidationMessage.driveNotFound: true});
-      emit(DriveAttachInitial());
-      return;
+      if (driveEntity == null) {
+        form
+            .control('driveId')
+            .setErrors({AppValidationMessage.driveNotFound: true});
+        emit(DriveAttachInitial());
+        return;
+      }
+
+      await _drivesDao.insertDriveEntity(name: driveName, entity: driveEntity);
+
+      _drivesBloc.selectDrive(driveId);
+      unawaited(_syncBloc.startSync());
+    } catch (err) {
+      addError(err);
     }
 
-    await _drivesDao.insertDriveEntity(name: driveName, entity: driveEntity);
-
-    _drivesBloc.selectDrive(driveId);
-    unawaited(_syncBloc.startSync());
-
     emit(DriveAttachSuccess());
+  }
+
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    emit(DriveAttachFailure());
+    super.onError(error, stackTrace);
   }
 }

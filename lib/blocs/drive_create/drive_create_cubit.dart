@@ -41,47 +41,58 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
     emit(DriveCreateInProgress());
 
-    final String driveName = form.control('name').value;
-    final String drivePrivacy = form.control('privacy').value;
+    try {
+      final String driveName = form.control('name').value;
+      final String drivePrivacy = form.control('privacy').value;
 
-    final profile = _profileCubit.state as ProfileLoaded;
-    final wallet = profile.wallet;
+      final profile = _profileCubit.state as ProfileLoaded;
+      final wallet = profile.wallet;
 
-    final createRes = await _drivesDao.createDrive(
-      name: driveName,
-      ownerAddress: wallet.address,
-      privacy: drivePrivacy,
-      wallet: wallet,
-      password: profile.password,
-      profileKey: profile.cipherKey,
-    );
-
-    final drive = DriveEntity(
-      id: createRes.driveId,
-      name: driveName,
-      rootFolderId: createRes.rootFolderId,
-      privacy: drivePrivacy,
-      authMode:
-          drivePrivacy == DrivePrivacy.private ? DriveAuthMode.password : null,
-    );
-
-    final driveTx =
-        await _arweave.prepareEntityTx(drive, wallet, createRes.driveKey);
-
-    final rootFolderTx = await _arweave.prepareEntityTx(
-      FolderEntity(
-        id: drive.rootFolderId,
-        driveId: drive.id,
+      final createRes = await _drivesDao.createDrive(
         name: driveName,
-      ),
-      wallet,
-      createRes.driveKey,
-    );
+        ownerAddress: wallet.address,
+        privacy: drivePrivacy,
+        wallet: wallet,
+        password: profile.password,
+        profileKey: profile.cipherKey,
+      );
 
-    await _arweave.batchPostTxs([driveTx, rootFolderTx]);
+      final drive = DriveEntity(
+        id: createRes.driveId,
+        name: driveName,
+        rootFolderId: createRes.rootFolderId,
+        privacy: drivePrivacy,
+        authMode: drivePrivacy == DrivePrivacy.private
+            ? DriveAuthMode.password
+            : null,
+      );
+
+      final driveTx =
+          await _arweave.prepareEntityTx(drive, wallet, createRes.driveKey);
+
+      final rootFolderTx = await _arweave.prepareEntityTx(
+        FolderEntity(
+          id: drive.rootFolderId,
+          driveId: drive.id,
+          name: driveName,
+        ),
+        wallet,
+        createRes.driveKey,
+      );
+
+      await _arweave.batchPostTxs([driveTx, rootFolderTx]);
+
+      _drivesCubit.selectDrive(drive.id);
+    } catch (err) {
+      addError(err);
+    }
 
     emit(DriveCreateSuccess());
+  }
 
-    _drivesCubit.selectDrive(drive.id);
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    emit(DriveCreateFailure());
+    super.onError(error, stackTrace);
   }
 }

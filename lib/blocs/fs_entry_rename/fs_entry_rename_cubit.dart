@@ -58,43 +58,58 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
       return;
     }
 
-    final String newName = form.control('name').value;
-    final profile = _profileCubit.state as ProfileLoaded;
-    final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
+    try {
+      final String newName = form.control('name').value;
+      final profile = _profileCubit.state as ProfileLoaded;
+      final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
 
-    if (_isRenamingFolder) {
-      emit(FolderEntryRenameInProgress());
+      if (_isRenamingFolder) {
+        emit(FolderEntryRenameInProgress());
 
-      await _driveDao.transaction(() async {
-        var folder = await _driveDao.getFolderById(driveId, folderId);
-        folder = folder.copyWith(name: newName, lastUpdated: DateTime.now());
+        await _driveDao.transaction(() async {
+          var folder = await _driveDao.getFolderById(driveId, folderId);
+          folder = folder.copyWith(name: newName, lastUpdated: DateTime.now());
 
-        final folderTx = await _arweave.prepareEntityTx(
-            folder.asEntity(), profile.wallet, driveKey);
+          final folderTx = await _arweave.prepareEntityTx(
+              folder.asEntity(), profile.wallet, driveKey);
 
-        await _arweave.postTx(folderTx);
-        await _driveDao.writeToFolder(folder);
-      });
+          await _arweave.postTx(folderTx);
+          await _driveDao.writeToFolder(folder);
+        });
 
-      emit(FolderEntryRenameSuccess());
-    } else {
-      emit(FileEntryRenameInProgress());
+        emit(FolderEntryRenameSuccess());
+      } else {
+        emit(FileEntryRenameInProgress());
 
-      await _driveDao.transaction(() async {
-        var file = await _driveDao.getFileById(driveId, fileId);
-        file = file.copyWith(name: newName, lastUpdated: DateTime.now());
+        await _driveDao.transaction(() async {
+          var file = await _driveDao.getFileById(driveId, fileId);
+          file = file.copyWith(name: newName, lastUpdated: DateTime.now());
 
-        final fileKey =
-            driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
+          final fileKey =
+              driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
 
-        final fileTx = await _arweave.prepareEntityTx(
-            file.asEntity(), profile.wallet, fileKey);
+          final fileTx = await _arweave.prepareEntityTx(
+              file.asEntity(), profile.wallet, fileKey);
 
-        await _arweave.postTx(fileTx);
-        await _driveDao.writeToFile(file);
-      });
+          await _arweave.postTx(fileTx);
+          await _driveDao.writeToFile(file);
+        });
 
-      emit(FileEntryRenameSuccess());
+        emit(FileEntryRenameSuccess());
+      }
+    } catch (err) {
+      addError(err);
     }
+  }
+
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    if (_isRenamingFolder) {
+      emit(FolderEntryRenameFailure());
+    } else {
+      emit(FileEntryRenameFailure());
+    }
+
+    super.onError(error, stackTrace);
   }
 }

@@ -27,10 +27,18 @@ class FolderEntryRenameSuccess extends FsEntryRenameState {
   FolderEntryRenameSuccess() : super(isRenamingFolder: true);
 }
 
+class FolderEntryRenameFailure extends FsEntryRenameState {
+  FolderEntryRenameFailure() : super(isRenamingFolder: true);
+}
+
 class FileEntryRenameInProgress extends FsEntryRenameState {
   FileEntryRenameInProgress() : super(isRenamingFolder: false);
 }
 
 class FileEntryRenameSuccess extends FsEntryRenameState {
   FileEntryRenameSuccess() : super(isRenamingFolder: false);
+}
+
+class FileEntryRenameFailure extends FsEntryRenameState {
+  FileEntryRenameFailure() : super(isRenamingFolder: false);
 }

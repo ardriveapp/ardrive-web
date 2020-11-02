@@ -42,39 +42,50 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
 
     emit(FolderCreateInProgress());
 
-    final profile = _profileCubit.state as ProfileLoaded;
-    final String folderName = form.control('name').value;
+    try {
+      final profile = _profileCubit.state as ProfileLoaded;
+      final String folderName = form.control('name').value;
 
-    await _driveDao.transaction(() async {
-      final targetDrive = await _driveDao.getDriveById(targetDriveId);
-      final targetFolder =
-          await _driveDao.getFolderById(targetDriveId, targetFolderId);
+      await _driveDao.transaction(() async {
+        final targetDrive = await _driveDao.getDriveById(targetDriveId);
+        final targetFolder =
+            await _driveDao.getFolderById(targetDriveId, targetFolderId);
 
-      final driveKey = targetDrive.isPrivate
-          ? await _driveDao.getDriveKey(targetFolder.driveId, profile.cipherKey)
-          : null;
+        final driveKey = targetDrive.isPrivate
+            ? await _driveDao.getDriveKey(
+                targetFolder.driveId, profile.cipherKey)
+            : null;
 
-      final newFolderId = await _driveDao.createFolder(
-        driveId: targetFolder.driveId,
-        parentFolderId: targetFolder.id,
-        folderName: folderName,
-        path: '${targetFolder.path}/${folderName}',
-      );
-
-      final folderTx = await _arweave.prepareEntityTx(
-        FolderEntity(
-          id: newFolderId,
+        final newFolderId = await _driveDao.createFolder(
           driveId: targetFolder.driveId,
           parentFolderId: targetFolder.id,
-          name: folderName,
-        ),
-        profile.wallet,
-        driveKey,
-      );
+          folderName: folderName,
+          path: '${targetFolder.path}/${folderName}',
+        );
 
-      await _arweave.postTx(folderTx);
-    });
+        final folderTx = await _arweave.prepareEntityTx(
+          FolderEntity(
+            id: newFolderId,
+            driveId: targetFolder.driveId,
+            parentFolderId: targetFolder.id,
+            name: folderName,
+          ),
+          profile.wallet,
+          driveKey,
+        );
+
+        await _arweave.postTx(folderTx);
+      });
+    } catch (err) {
+      addError(err);
+    }
 
     emit(FolderCreateSuccess());
+  }
+
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    emit(FolderCreateFailure());
+    super.onError(error, stackTrace);
   }
 }

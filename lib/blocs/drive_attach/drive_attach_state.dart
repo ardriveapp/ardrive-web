@@ -11,3 +11,5 @@ class DriveAttachInitial extends DriveAttachState {}
 class DriveAttachInProgress extends DriveAttachState {}
 
 class DriveAttachSuccess extends DriveAttachState {}
+
+class DriveAttachFailure extends DriveAttachState {}

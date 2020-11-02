@@ -36,10 +36,18 @@ class FolderEntryMoveSuccess extends FsEntryMoveState {
   FolderEntryMoveSuccess() : super(isMovingFolder: true);
 }
 
+class FolderEntryMoveFailure extends FsEntryMoveState {
+  FolderEntryMoveFailure() : super(isMovingFolder: true);
+}
+
 class FileEntryMoveInProgress extends FsEntryMoveState {
   FileEntryMoveInProgress() : super(isMovingFolder: false);
 }
 
 class FileEntryMoveSuccess extends FsEntryMoveState {
   FileEntryMoveSuccess() : super(isMovingFolder: false);
+}
+
+class FileEntryMoveFailure extends FsEntryMoveState {
+  FileEntryMoveFailure() : super(isMovingFolder: false);
 }
