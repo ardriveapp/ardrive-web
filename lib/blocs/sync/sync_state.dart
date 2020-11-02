@@ -9,3 +9,5 @@ abstract class SyncState extends Equatable {
 class SyncIdle extends SyncState {}
 
 class SyncInProgress extends SyncState {}
+
+class SyncFailure extends SyncState {}

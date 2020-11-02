@@ -37,21 +37,25 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> startSync() async {
     emit(SyncInProgress());
 
-    final profile = _profileCubit.state as ProfileLoaded;
+    try {
+      final profile = _profileCubit.state as ProfileLoaded;
 
-    // Sync in drives owned by the user.
-    final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
-      profile.wallet,
-      profile.password,
-    );
+      // Sync in drives owned by the user.
+      final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
+        profile.wallet,
+        profile.password,
+      );
 
-    await _drivesDao.updateUserDrives(userDriveEntities, profile.cipherKey);
+      await _drivesDao.updateUserDrives(userDriveEntities, profile.cipherKey);
 
-    // Sync the contents of each drive owned by the user.
-    final userDrives = await _drivesDao.getAllDrives();
+      // Sync the contents of each drive owned by the user.
+      final userDrives = await _drivesDao.getAllDrives();
 
-    final driveSyncProcesses = userDrives.map((drive) => _syncDrive(drive));
-    await Future.wait(driveSyncProcesses);
+      final driveSyncProcesses = userDrives.map((drive) => _syncDrive(drive));
+      await Future.wait(driveSyncProcesses);
+    } catch (err) {
+      addError(err);
+    }
 
     emit(SyncIdle());
   }
@@ -248,6 +252,13 @@ class SyncCubit extends Cubit<SyncState> {
           id: Value(drive.id),
           latestSyncedBlock: Value(entityHistory.latestBlockHeight)));
     });
+  }
+
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    emit(SyncFailure());
+    super.onError(error, stackTrace);
+    emit(SyncIdle());
   }
 }
 

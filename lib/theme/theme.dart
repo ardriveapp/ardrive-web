@@ -26,6 +26,7 @@ ThemeData appTheme() => base.copyWith(
           _buildInputDecorationTheme(base.inputDecorationTheme),
       tabBarTheme: _buildTabBarTheme(base.tabBarTheme),
       dataTableTheme: _buildDataTableTheme(base.dataTableTheme),
+      snackBarTheme: _buildSnackBarTheme(base.snackBarTheme),
     );
 
 TextTheme _buildTextTheme(TextTheme base) => base
@@ -123,3 +124,8 @@ DataTableThemeData _buildDataTableTheme(DataTableThemeData base) =>
         return Colors.transparent;
       },
     ));
+
+SnackBarThemeData _buildSnackBarTheme(SnackBarThemeData base) => base.copyWith(
+      behavior: SnackBarBehavior.floating,
+      actionTextColor: kOnDarkSurfaceHighEmphasis,
+    );
