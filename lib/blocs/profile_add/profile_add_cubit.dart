@@ -60,6 +60,8 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   }
 
   Future<void> submit() async {
+    form.markAllAsTouched();
+
     if (form.invalid) {
       return;
     }

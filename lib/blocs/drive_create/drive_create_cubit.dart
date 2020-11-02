@@ -33,6 +33,8 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         super(DriveCreateInitial());
 
   Future<void> submit() async {
+    form.markAllAsTouched();
+
     if (form.invalid) {
       return;
     }

@@ -34,6 +34,8 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
         super(FolderCreateInitial());
 
   Future<void> submit() async {
+    form.markAllAsTouched();
+
     if (form.invalid) {
       return;
     }

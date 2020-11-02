@@ -52,6 +52,8 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   }
 
   Future<void> submit() async {
+    form.markAllAsTouched();
+
     if (form.invalid) {
       return;
     }

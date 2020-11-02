@@ -34,23 +34,27 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
   }
 
   Future<void> submit() async {
-    if (form.valid) {
-      final String password = form.control('password').value;
+    form.markAllAsTouched();
 
-      try {
-        await _profileDao.loadDefaultProfile(password);
-      } catch (err) {
-        if (err is ProfilePasswordIncorrectException) {
-          form
-              .control('password')
-              .setErrors({AppValidationMessage.passwordIncorrect: true});
-          return;
-        }
+    if (form.invalid) {
+      return;
+    }
 
-        rethrow;
+    final String password = form.control('password').value;
+
+    try {
+      await _profileDao.loadDefaultProfile(password);
+    } catch (err) {
+      if (err is ProfilePasswordIncorrectException) {
+        form
+            .control('password')
+            .setErrors({AppValidationMessage.passwordIncorrect: true});
+        return;
       }
 
-      await _profileCubit.unlockDefaultProfile(password);
+      rethrow;
     }
+
+    await _profileCubit.unlockDefaultProfile(password);
   }
 }

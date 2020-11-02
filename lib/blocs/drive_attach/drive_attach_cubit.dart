@@ -33,6 +33,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         super(DriveAttachInitial());
 
   void submit() async {
+    form.markAllAsTouched();
+
     if (form.invalid) {
       return;
     }
