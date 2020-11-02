@@ -9,6 +9,11 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
 
+Future<void> promptToAttachDrive(BuildContext context) => showDialog(
+      context: context,
+      builder: (BuildContext context) => DriveAttachForm(),
+    );
+
 class DriveAttachForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BlocProvider<DriveAttachCubit>(

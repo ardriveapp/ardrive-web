@@ -141,7 +141,7 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   PopupMenuItem(
-                    value: (context) => _promptToAttachDrive(context),
+                    value: (context) => promptToAttachDrive(context),
                     child: ListTile(
                       title: Text('Attach drive'),
                     ),
@@ -188,12 +188,5 @@ class AppDrawer extends StatelessWidget {
         rethrow;
       }
     }
-  }
-
-  void _promptToAttachDrive(BuildContext context) async {
-    await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) => DriveAttachForm(),
-    );
   }
 }
