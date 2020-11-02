@@ -116,8 +116,6 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
         ownerAddress: entity.ownerAddress,
         rootFolderId: entity.rootFolderId,
         privacy: entity.privacy,
-        // TODO: Provide proper date created for attached drives.
-        // It should be the timestamp for the first entry of this drive.
         dateCreated: Value(entity.commitTime),
         lastUpdated: Value(entity.commitTime),
       ),
