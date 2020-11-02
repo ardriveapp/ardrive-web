@@ -33,6 +33,7 @@ dependencies:
       path: cryptography
   dio: ^3.0.10
   flutter_bloc: ^6.0.0
+  flutter_portal: ^0.3.0
   filesize: ^1.0.4
   file_picker_cross:
     git:

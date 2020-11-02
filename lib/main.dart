@@ -1,6 +1,7 @@
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_portal/flutter_portal.dart';
 
 import 'app_shell.dart';
 import 'blocs/blocs.dart';
@@ -89,7 +90,9 @@ class App extends StatelessWidget {
                   final content = ListTileTheme(
                     textColor: kOnSurfaceBodyTextColor,
                     iconColor: kOnSurfaceBodyTextColor,
-                    child: child,
+                    child: Portal(
+                      child: child,
+                    ),
                   );
 
                   if (state is! ProfileLoaded) {
