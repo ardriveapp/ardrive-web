@@ -81,40 +81,43 @@ class App extends StatelessWidget {
                 );
               }
 
-              final app = ListTileTheme(
-                textColor: kOnSurfaceBodyTextColor,
-                iconColor: kOnSurfaceBodyTextColor,
-                child: MaterialApp(
-                  title: 'ArDrive',
-                  theme: appTheme(),
-                  home: view,
-                ),
-              );
+              return MaterialApp(
+                title: 'ArDrive',
+                theme: appTheme(),
+                home: view,
+                builder: (context, child) {
+                  final content = ListTileTheme(
+                    textColor: kOnSurfaceBodyTextColor,
+                    iconColor: kOnSurfaceBodyTextColor,
+                    child: child,
+                  );
 
-              if (state is! ProfileLoaded) {
-                return app;
-              } else {
-                return MultiBlocProvider(
-                  providers: [
-                    BlocProvider(
-                      create: (context) => SyncCubit(
-                        profileCubit: context.bloc<ProfileCubit>(),
-                        arweave: context.repository<ArweaveService>(),
-                        drivesDao: context.repository<DrivesDao>(),
-                        driveDao: context.repository<DriveDao>(),
-                        db: db,
-                      ),
-                    ),
-                    BlocProvider(
-                      create: (context) => DrivesCubit(
-                        profileCubit: context.bloc<ProfileCubit>(),
-                        drivesDao: context.repository<DrivesDao>(),
-                      ),
-                    ),
-                  ],
-                  child: app,
-                );
-              }
+                  if (state is! ProfileLoaded) {
+                    return content;
+                  } else {
+                    return MultiBlocProvider(
+                      providers: [
+                        BlocProvider(
+                          create: (context) => SyncCubit(
+                            profileCubit: context.bloc<ProfileCubit>(),
+                            arweave: context.repository<ArweaveService>(),
+                            drivesDao: context.repository<DrivesDao>(),
+                            driveDao: context.repository<DriveDao>(),
+                            db: db,
+                          ),
+                        ),
+                        BlocProvider(
+                          create: (context) => DrivesCubit(
+                            profileCubit: context.bloc<ProfileCubit>(),
+                            drivesDao: context.repository<DrivesDao>(),
+                          ),
+                        ),
+                      ],
+                      child: content,
+                    );
+                  }
+                },
+              );
             },
           ),
         ),
