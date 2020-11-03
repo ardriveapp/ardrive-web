@@ -3,8 +3,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:test/test.dart';
 
-import '../mocks.dart';
-import '../utils.dart';
+import '../utils/utils.dart';
 
 void main() {
   group('DrivesCubit', () {

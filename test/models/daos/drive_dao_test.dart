@@ -1,9 +1,10 @@
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:test/test.dart';
 
-import '../../utils.dart';
+import '../../utils/utils.dart';
 
 void main() {
   Database db;
@@ -13,9 +14,12 @@ void main() {
     const driveId = 'drive-id';
     const rootFolderId = 'root-folder-id';
     const rootFolderFileCount = 5;
-    const nestedFolderIdPrefix = 'nested-folder-id';
-    const nestedFolderCount = 5;
+
+    const nestedFolderId = 'nested-folder-id';
     const nestedFolderFileCount = 5;
+
+    const emptyNestedFolderIdPrefix = 'empty-nested-folder-id';
+    const emptyNestedFolderCount = 5;
 
     setUp(() async {
       db = getTestDb();
@@ -42,13 +46,20 @@ void main() {
                 driveId: driveId,
                 name: 'drive-name',
                 path: ''),
+            FolderEntriesCompanion.insert(
+                id: nestedFolderId,
+                driveId: driveId,
+                parentFolderId: Value(rootFolderId),
+                name: nestedFolderId,
+                path: '/$nestedFolderId'),
             ...List.generate(
-              nestedFolderCount,
+              emptyNestedFolderCount,
               (i) {
-                final folderId = '$nestedFolderIdPrefix$i';
+                final folderId = '$emptyNestedFolderIdPrefix$i';
                 return FolderEntriesCompanion.insert(
                   id: folderId,
                   driveId: driveId,
+                  parentFolderId: Value(rootFolderId),
                   name: folderId,
                   path: '/$folderId',
                 );
@@ -79,13 +90,13 @@ void main() {
             ...List.generate(
               nestedFolderFileCount,
               (i) {
-                final fileId = nestedFolderIdPrefix + '0$i';
+                final fileId = '$nestedFolderId$i';
                 return FileEntriesCompanion.insert(
                   id: fileId,
                   driveId: driveId,
-                  parentFolderId: nestedFolderIdPrefix,
+                  parentFolderId: nestedFolderId,
                   name: fileId,
-                  path: '/$nestedFolderIdPrefix' '0' '/$fileId',
+                  path: '/$nestedFolderId/$fileId',
                   dataTxId: '',
                   size: 500,
                   lastModifiedDate: DateTime.now(),
@@ -109,7 +120,7 @@ void main() {
         expectLater(folderStream.map((f) => f.folder.id), emits(rootFolderId)),
         expectLater(
           folderStream.map((f) => f.subfolders.map((f) => f.name)),
-          emits(allOf(hasLength(nestedFolderCount), Sorted())),
+          emits(allOf(hasLength(emptyNestedFolderCount), Sorted())),
         ),
         expectLater(
           folderStream.map((f) => f.files.map((f) => f.id).toList()),
@@ -118,12 +129,12 @@ void main() {
       ]);
 
       folderStream = driveDao
-          .watchFolderContentsAtPath(driveId, '/$nestedFolderIdPrefix' '0')
+          .watchFolderContentsAtPath(driveId, '/$emptyNestedFolderIdPrefix' '0')
           .share();
 
       await Future.wait([
         expectLater(folderStream.map((f) => f.folder.id),
-            emits(nestedFolderIdPrefix + '0')),
+            emits(emptyNestedFolderIdPrefix + '0')),
         expectLater(
           folderStream.map((f) => f.subfolders.map((f) => f.id)),
           emits(hasLength(0)),
@@ -134,35 +145,26 @@ void main() {
         ),
       ]);
     });
+
+    test('getFolderTree() constructs tree correctly', () async {
+      var treeRoot = await driveDao.getFolderTree(driveId, rootFolderId);
+
+      expect(treeRoot.folder.id, equals(rootFolderId));
+      expect(treeRoot.files.length, equals(rootFolderFileCount));
+
+      final nestedSubfolderFileCount = treeRoot.subfolders
+          .where((f) => f.folder.id == nestedFolderId)
+          .single
+          .files
+          .length;
+      expect(nestedSubfolderFileCount, equals(nestedSubfolderFileCount));
+
+      final emptySubfolders = treeRoot.subfolders
+          .where((f) => f.folder.id.startsWith(emptyNestedFolderIdPrefix));
+      expect(emptySubfolders.map((f) => f.subfolders.length).toList(),
+          everyElement(equals(0)));
+      expect(emptySubfolders.map((f) => f.files.length).toList(),
+          everyElement(equals(0)));
+    });
   });
-}
-
-class Sorted extends Matcher {
-  Sorted();
-
-  @override
-  Description describe(Description description) =>
-      description.addDescriptionOf('sorted');
-
-  @override
-  Description describeMismatch(dynamic item, Description mismatchDescription,
-          Map matchState, bool verbose) =>
-      mismatchDescription.add('is not sorted');
-
-  @override
-  bool matches(dynamic item, Map matchState) {
-    if (item is Iterable<String>) {
-      String previousEl;
-      for (final element in item) {
-        if (previousEl != null && element.compareTo(previousEl) < 0) {
-          return false;
-        }
-        previousEl = element;
-      }
-
-      return true;
-    }
-
-    return false;
-  }
 }

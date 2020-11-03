@@ -4,6 +4,9 @@ import 'package:ardrive/models/models.dart';
 import 'package:arweave/arweave.dart';
 import 'package:moor/ffi.dart';
 
+export 'matchers.dart';
+export 'mocks.dart';
+
 Database getTestDb() => Database(VmDatabase.memory());
 
 Wallet getTestWallet() {
