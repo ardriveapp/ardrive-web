@@ -49,9 +49,10 @@ class SyncCubit extends Cubit<SyncState> {
       await _drivesDao.updateUserDrives(userDriveEntities, profile.cipherKey);
 
       // Sync the contents of each drive owned by the user.
-      final userDrives = await _drivesDao.getAllDrives();
+      final driveIds =
+          await _drivesDao.selectAllDrives().map((d) => d.id).get();
 
-      final driveSyncProcesses = userDrives.map((drive) => _syncDrive(drive));
+      final driveSyncProcesses = driveIds.map((driveId) => _syncDrive(driveId));
       await Future.wait(driveSyncProcesses);
     } catch (err) {
       addError(err);
@@ -60,8 +61,9 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncIdle());
   }
 
-  Future<void> _syncDrive(Drive drive) async {
+  Future<void> _syncDrive(String driveId) async {
     final profile = _profileCubit.state as ProfileLoaded;
+    final drive = await _driveDao.getDriveById(driveId);
     final driveKey = drive.isPrivate
         ? await _driveDao.getDriveKey(drive.id, profile.cipherKey)
         : null;
@@ -144,46 +146,18 @@ class SyncCubit extends Cubit<SyncState> {
         }
       });
 
-      // Construct a tree of the updated folders and files for path generation.
-      final staleFolderTree = <StaleFolderNode>[];
-
-      // Constructs a tree of folders and files that are children of the specified folder.
-      Future<StaleFolderNode> getStaleFolderTree(
-          FolderEntriesCompanion folder) async {
-        final folderId = folder.id.value;
-
-        // Get all the subfolders and files of this folder that are now stale.
-        final staleSubfolders = await _driveDao
-            .selectFoldersByParentFolderId(drive.id, folderId)
-            .get();
-        final staleFilesMap = {
-          await for (var f in _driveDao
-              .selectFilesByParentFolderId(drive.id, folderId)
-              .get()
-              .asStream()
-              .expand((f) => f))
-            f.id: f.name
-        };
-
-        return StaleFolderNode(
-          folder,
-          // Recursively get the stale contents of this folder's subfolders.
-          await Future.wait(staleSubfolders.map((f) =>
-              getStaleFolderTree(updatedFolders[f.id] ?? f.toCompanion(true)))),
-          staleFilesMap,
-        );
-      }
-
+      final staleFolderTree = <FolderNode>[];
       for (final folder in updatedFolders.values) {
-        final tree = await getStaleFolderTree(folder);
+        // Get trees of the updated folders and files for path generation.
+        final tree = await _driveDao.getFolderTree(driveId, folder.id.value);
 
+        // Remove any trees that are a subset of another.
         var newTreeIsSubsetOfExisting = false;
         var newTreeIsSupersetOfExisting = false;
         for (final existingTree in staleFolderTree) {
-          if (existingTree.searchForFolder(tree.folder.id.value) != null) {
+          if (existingTree.searchForFolder(tree.folder.id) != null) {
             newTreeIsSubsetOfExisting = true;
-          } else if (tree.searchForFolder(existingTree.folder.id.value) !=
-              null) {
+          } else if (tree.searchForFolder(existingTree.folder.id) != null) {
             staleFolderTree.remove(existingTree);
             staleFolderTree.add(tree);
             newTreeIsSupersetOfExisting = true;
@@ -195,15 +169,14 @@ class SyncCubit extends Cubit<SyncState> {
         }
       }
 
-      Future<void> updateFolderTree(
-          StaleFolderNode node, String parentPath) async {
+      Future<void> updateFolderTree(FolderNode node, String parentPath) async {
         // If this is the root folder, we should not include its name as part of the path.
-        final folderPath = node.folder.parentFolderId.value != null
-            ? parentPath + '/' + node.folder.name.value
+        final folderPath = node.folder.parentFolderId != null
+            ? parentPath + '/' + node.folder.name
             : '';
 
         await _driveDao
-            .updateFolderById(drive.id, node.folder.id.value)
+            .updateFolderById(drive.id, node.folder.id)
             .write(FolderEntriesCompanion(path: Value(folderPath)));
 
         for (final staleFileId in node.files.keys) {
@@ -221,11 +194,11 @@ class SyncCubit extends Cubit<SyncState> {
       for (final treeRoot in staleFolderTree) {
         // Get the path of this folder's parent.
         String parentPath;
-        if (treeRoot.folder.parentFolderId.value == null) {
+        if (treeRoot.folder.parentFolderId == null) {
           parentPath = '';
         } else {
           parentPath = await _driveDao
-              .selectFolderById(drive.id, treeRoot.folder.parentFolderId.value)
+              .selectFolderById(drive.id, treeRoot.folder.parentFolderId)
               .map((f) => f.path)
               .getSingle();
         }
@@ -259,23 +232,5 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncFailure());
     super.onError(error, stackTrace);
     emit(SyncIdle());
-  }
-}
-
-class StaleFolderNode {
-  final FolderEntriesCompanion folder;
-  final List<StaleFolderNode> subfolders;
-  final Map<String, String> files;
-
-  StaleFolderNode(this.folder, this.subfolders, this.files);
-
-  StaleFolderNode searchForFolder(String folderId) {
-    if (folder.id.value == folderId) return this;
-
-    for (final subfolder in subfolders) {
-      return subfolder.searchForFolder(folderId);
-    }
-
-    return null;
   }
 }

@@ -16,9 +16,12 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
 
   DrivesDao(Database db) : super(db);
 
-  Future<List<Drive>> getAllDrives() => select(drives).get();
+  SimpleSelectStatement<Drives, Drive> selectAllDrives() => select(drives);
+
+  Future<List<Drive>> getAllDrives() => selectAllDrives().get();
+
   Stream<List<Drive>> watchAllDrives() =>
-      (select(drives)..orderBy([(d) => OrderingTerm(expression: d.name)]))
+      (selectAllDrives()..orderBy([(d) => OrderingTerm(expression: d.name)]))
           .watch();
 
   /// Creates a drive with its accompanying root folder.

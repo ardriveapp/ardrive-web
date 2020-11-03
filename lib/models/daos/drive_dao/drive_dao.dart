@@ -1,14 +1,17 @@
 import 'dart:async';
 
+import 'package:ardrive/entities/entities.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:equatable/equatable.dart';
 import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../entities/entities.dart';
-import '../database/database.dart';
-import '../models.dart';
+import '../../models.dart';
+import 'folder_node.dart';
+import 'folder_with_contents.dart';
+
+export 'folder_node.dart';
+export 'folder_with_contents.dart';
 
 part 'drive_dao.g.dart';
 
@@ -159,6 +162,33 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeToFolder(Insertable<FolderEntry> folder) =>
       (update(folderEntries)..whereSamePrimaryKey(folder)).write(folder);
 
+  /// Constructs a tree of folders and files that are children of the specified folder.
+  Future<FolderNode> getFolderTree(String driveId, String rootFolderId) async {
+    final rootFolder = await getFolderById(driveId, rootFolderId);
+
+    Future<FolderNode> getFolderChildren(FolderEntry parentFolder) async {
+      final subfolders =
+          await selectFoldersByParentFolderId(driveId, parentFolder.id).get();
+
+      return FolderNode(
+        folder: parentFolder,
+        // Get the children of this folder's subfolders.
+        subfolders:
+            await Future.wait(subfolders.map((f) => getFolderChildren(f))),
+        files: {
+          await for (var f
+              in selectFilesByParentFolderId(driveId, parentFolder.id)
+                  .get()
+                  .asStream()
+                  .expand((f) => f))
+            f.id: f.name
+        },
+      );
+    }
+
+    return getFolderChildren(rootFolder);
+  }
+
   SimpleSelectStatement<FileEntries, FileEntry> selectFileById(
           String driveId, String fileId) =>
       (select(fileEntries)
@@ -215,15 +245,4 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
     );
   }
-}
-
-class FolderWithContents extends Equatable {
-  final FolderEntry folder;
-  final List<FolderEntry> subfolders;
-  final List<FileEntry> files;
-
-  FolderWithContents({this.folder, this.subfolders, this.files});
-
-  @override
-  List<Object> get props => [folder, subfolders, files];
 }
