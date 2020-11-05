@@ -13,8 +13,8 @@ class ProfileAuthAddScreen extends StatelessWidget {
         builder: (context, state) => state is ProfileAddPromptDetails
             ? ProfileAuthShell(
                 illustration: Image.asset(
-                  'assets/illustrations/illus_profile_add.png',
-                  fit: BoxFit.fitWidth,
+                  'assets/images/illustrations/illus_profile_add.png',
+                  fit: BoxFit.scaleDown,
                 ),
                 content: FractionallySizedBox(
                   widthFactor: 0.5,

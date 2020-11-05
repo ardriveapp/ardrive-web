@@ -17,8 +17,8 @@ class ProfileAuthUnlockScreen extends StatelessWidget {
         child: BlocBuilder<ProfileUnlockCubit, ProfileUnlockState>(
           builder: (context, state) => ProfileAuthShell(
             illustration: Image.asset(
-              'assets/illustrations/illus_profile_unlock.png',
-              fit: BoxFit.fitWidth,
+              'assets/images/illustrations/illus_profile_unlock.png',
+              fit: BoxFit.scaleDown,
             ),
             content: FractionallySizedBox(
               widthFactor: 0.5,

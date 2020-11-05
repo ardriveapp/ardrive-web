@@ -14,8 +14,14 @@ class ProfileAuthShell extends StatelessWidget {
             Expanded(
               child: Container(
                 color: kDarkSurfaceColor,
-                child: Center(
-                  child: illustration,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: 512),
+                      child: illustration,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -25,7 +31,7 @@ class ProfileAuthShell extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Image.asset(
-                    'assets/images/logo-vert-no-subtitle.png',
+                    'assets/images/brand/logo-vert-no-subtitle.png',
                     height: 126,
                     fit: BoxFit.contain,
                   ),

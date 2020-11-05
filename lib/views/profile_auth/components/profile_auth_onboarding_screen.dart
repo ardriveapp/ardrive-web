@@ -8,8 +8,8 @@ class ProfileAuthOnboarding extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ProfileAuthShell(
         illustration: Image.asset(
-          'assets/illustrations/illus_profile_onboarding.png',
-          fit: BoxFit.fitWidth,
+          'assets/images/illustrations/illus_profile_onboarding.png',
+          fit: BoxFit.scaleDown,
         ),
         content: FractionallySizedBox(
           widthFactor: 0.75,
