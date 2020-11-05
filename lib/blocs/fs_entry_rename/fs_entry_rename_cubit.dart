@@ -8,10 +8,11 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 part 'fs_entry_rename_state.dart';
 
+const _folderNameRegex = r'^(\w+\.?)*\w+$';
+const _fileNameRegex = r'([^\\\/]+)$';
+
 class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
-  final form = FormGroup({
-    'name': FormControl(validators: [Validators.required]),
-  });
+  final form;
 
   final String driveId;
   final String folderId;
@@ -30,7 +31,16 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     @required ArweaveService arweave,
     @required DriveDao driveDao,
     @required ProfileCubit profileCubit,
-  })  : _arweave = arweave,
+  })  : form = FormGroup({
+          'name': FormControl(
+            validators: [
+              Validators.required,
+              Validators.pattern(
+                  folderId != null ? _folderNameRegex : _fileNameRegex),
+            ],
+          ),
+        }),
+        _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         assert(folderId != null || fileId != null),
