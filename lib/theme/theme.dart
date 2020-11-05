@@ -42,7 +42,7 @@ TextTheme _buildTextTheme(TextTheme base) => base
       headline5: GoogleFonts.montserrat(
           fontSize: 24, fontWeight: FontWeight.w400, letterSpacing: 2),
       headline6: GoogleFonts.openSans(
-          fontSize: 16, fontWeight: FontWeight.w500, letterSpacing: 2),
+          fontSize: 16, fontWeight: FontWeight.w400, letterSpacing: 2),
       subtitle1: GoogleFonts.openSans(
           fontSize: 16, fontWeight: FontWeight.w400, letterSpacing: 0.15),
       subtitle2: GoogleFonts.montserrat(
