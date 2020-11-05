@@ -282,8 +282,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: web-base64-fix
-      resolved-ref: f9f9a0fe620179f6a848df91a0e0a0a9d624cb0e
+      ref: web-large-load-fix
+      resolved-ref: "624a67a3132428ca1c4ed1cf815fb9c1ec699d1e"
       url: "https://gitlab.com/CDDelta/file_picker_cross.git"
     source: git
     version: "4.2.6"
