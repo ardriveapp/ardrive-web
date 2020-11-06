@@ -27,64 +27,69 @@ class ProfileAuthOnboarding extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'ArDrive is a simple, yet robust app that protects and syncs your data to and from the cloud.',
-                        style: DefaultTextStyle.of(context).style,
-                      ),
+                          'ArDrive is a simple, yet robust app that protects and syncs your data to and from the cloud.'),
                       Container(height: 16),
                       Text.rich(
                         TextSpan(
                           text: 'No subscription needed! ',
-                          style: DefaultTextStyle.of(context).style,
-                          children: <TextSpan>[
+                          children: [
                             TextSpan(
-                                text: 'Pay once',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
+                              text: 'Pay once',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                             TextSpan(
-                                text:
-                                    ' to store your files, pictures, music, videos and apps permanently.'),
+                              text:
+                                  ' to store your files, pictures, music, videos and apps permanently.',
+                            ),
                           ],
                         ),
                       ),
                       Container(height: 16),
-                      Text.rich(TextSpan(
+                      Text.rich(
+                        TextSpan(
                           text:
                               'Your Private Drive is encrypted, meaning ArDrive or anyone else can’t read your content. ',
-                          style: DefaultTextStyle.of(context).style,
                           children: <TextSpan>[
                             TextSpan(
-                                text: 'Only you!',
-                                style: TextStyle(fontWeight: FontWeight.bold))
-                          ])),
+                              text: 'Only you!',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            )
+                          ],
+                        ),
+                      ),
                       Container(height: 16),
-                      Text.rich(TextSpan(
+                      Text.rich(
+                        TextSpan(
                           text:
                               'Your Public Drive is open for anyone on the internet to see. ',
-                          style: DefaultTextStyle.of(context).style,
                           children: [
                             TextSpan(
-                                text: 'Post carefully!',
-                                style: TextStyle(fontWeight: FontWeight.bold))
-                          ])),
+                              text: 'Post carefully!',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            )
+                          ],
+                        ),
+                      ),
                       Container(height: 16),
-                      Text.rich(TextSpan(
+                      Text.rich(
+                        TextSpan(
                           text:
                               'Any data uploaded is permanently stored and secured on a decentralized blockchain network. ',
-                          style: DefaultTextStyle.of(context).style,
                           children: [
                             TextSpan(
-                                text: 'Deleting is not an option!',
-                                style: TextStyle(fontWeight: FontWeight.bold))
-                          ])),
+                              text: 'Deleting is not an option!',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            )
+                          ],
+                        ),
+                      ),
                       Container(height: 16),
-                      Text.rich(TextSpan(
-                          text: 'Powered by the ',
-                          style: DefaultTextStyle.of(context).style,
-                          children: [
-                            TextSpan(
-                                text: 'Arweave',
-                                style: TextStyle(fontWeight: FontWeight.bold)),
-                            TextSpan(text: ' Permaweb.')
-                          ])),
+                      Text.rich(TextSpan(text: 'Powered by the ', children: [
+                        TextSpan(
+                            text: 'Arweave',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        TextSpan(text: ' Permaweb.')
+                      ])),
                     ],
                   ),
                 ),

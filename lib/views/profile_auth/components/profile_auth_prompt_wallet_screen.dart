@@ -20,6 +20,7 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
             children: [
               Text(
                 'WELCOME TO',
+                textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headline5,
               ),
               Container(height: 32),
