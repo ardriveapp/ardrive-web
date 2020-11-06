@@ -282,9 +282,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: web-large-load-fix
-      resolved-ref: "624a67a3132428ca1c4ed1cf815fb9c1ec699d1e"
-      url: "https://gitlab.com/CDDelta/file_picker_cross.git"
+      ref: "97a0343e94c5fda1702db2f0a36d978d64a7aca2"
+      resolved-ref: "97a0343e94c5fda1702db2f0a36d978d64a7aca2"
+      url: "https://gitlab.com/testapp-system/file_picker_cross.git"
     source: git
     version: "4.2.6"
   filesize:
