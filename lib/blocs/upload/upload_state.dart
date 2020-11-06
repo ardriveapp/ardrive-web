@@ -28,10 +28,13 @@ class UploadFileReady extends UploadState {
   final BigInt uploadCost;
   final int uploadSize;
 
+  final bool insufficientArBalance;
+
   UploadFileReady({
     @required this.fileName,
     @required this.uploadCost,
     @required this.uploadSize,
+    @required this.insufficientArBalance,
   });
 
   @override

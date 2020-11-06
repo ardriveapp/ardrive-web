@@ -12,6 +12,7 @@ ThemeData appTheme() => base.copyWith(
       primaryColor: kPrimarySwatch,
       primaryColorLight: kPrimarySwatch,
       accentColor: kSecondarySwatch.shade900,
+      errorColor: kPrimarySwatch.shade300,
       textTheme: _buildTextTheme(base.textTheme),
       textSelectionTheme: _buildTextSelectionTheme(base.textSelectionTheme),
       iconTheme: _buildIconTheme(base.iconTheme),

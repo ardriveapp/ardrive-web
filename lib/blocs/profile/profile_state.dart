@@ -13,7 +13,9 @@ class ProfileLoaded extends ProfileState {
   final String password;
 
   final Wallet wallet;
-  final String walletBalance;
+
+  /// The user's wallet balance in winston.
+  final BigInt walletBalance;
 
   final SecretKey cipherKey;
 
@@ -24,6 +26,21 @@ class ProfileLoaded extends ProfileState {
     @required this.walletBalance,
     @required this.cipherKey,
   });
+
+  ProfileLoaded copyWith({
+    String username,
+    String password,
+    Wallet wallet,
+    BigInt walletBalance,
+    SecretKey cipherKey,
+  }) =>
+      ProfileLoaded(
+        username: username ?? this.username,
+        password: password ?? this.password,
+        wallet: wallet ?? this.wallet,
+        walletBalance: walletBalance ?? this.walletBalance,
+        cipherKey: cipherKey ?? this.cipherKey,
+      );
 
   @override
   List<Object> get props => [username, password, wallet, cipherKey];

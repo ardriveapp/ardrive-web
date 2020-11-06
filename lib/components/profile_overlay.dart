@@ -31,7 +31,7 @@ class ProfileOverlay extends StatelessWidget {
                               ),
                               Container(height: 4),
                               Text(
-                                '${utils.winstonToAr(BigInt.parse(state.walletBalance))} AR',
+                                '${utils.winstonToAr(state.walletBalance)} AR',
                                 style: Theme.of(context)
                                     .textTheme
                                     .headline6

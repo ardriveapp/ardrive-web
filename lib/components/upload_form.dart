@@ -118,7 +118,16 @@ class UploadForm extends StatelessWidget {
                         subtitle: Text(filesize(state.uploadSize)),
                       ),
                       Container(height: 16),
-                      Text('Cost: ${utils.winstonToAr(state.uploadCost)} AR')
+                      Text('Cost: ${utils.winstonToAr(state.uploadCost)} AR'),
+                      if (state.insufficientArBalance) ...{
+                        Container(height: 8),
+                        Text(
+                          'Insufficient AR for upload.',
+                          style: DefaultTextStyle.of(context)
+                              .style
+                              .copyWith(color: Theme.of(context).errorColor),
+                        ),
+                      },
                     ],
                   ),
                 ),
@@ -129,7 +138,9 @@ class UploadForm extends StatelessWidget {
                   ),
                   ElevatedButton(
                     child: Text('UPLOAD'),
-                    onPressed: () => context.bloc<UploadCubit>().startUpload(),
+                    onPressed: !state.insufficientArBalance
+                        ? () => context.bloc<UploadCubit>().startUpload()
+                        : null,
                   ),
                 ],
               );

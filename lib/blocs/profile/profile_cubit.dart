@@ -51,6 +51,14 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
+  Future<void> refreshBalance() async {
+    final state = this.state as ProfileLoaded;
+    final walletBalance =
+        await _arweave.client.wallets.getBalance(state.wallet.address);
+
+    emit(state.copyWith(walletBalance: walletBalance));
+  }
+
   Future<void> signOut() async {
     emit(ProfileUnavailable());
     await promptToAuthenticate();

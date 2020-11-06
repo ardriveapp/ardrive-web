@@ -146,11 +146,14 @@ class UploadCubit extends Cubit<UploadState> {
     ];
 
     if (_fileUploadHandles.length == 1) {
+      final uploadCost = fileDataTx.reward;
+
       emit(
         UploadFileReady(
           fileName: fileEntity.name,
-          uploadCost: fileDataTx.reward,
+          uploadCost: uploadCost,
           uploadSize: fileEntity.size,
+          insufficientArBalance: profile.walletBalance < uploadCost,
         ),
       );
     } else {}
