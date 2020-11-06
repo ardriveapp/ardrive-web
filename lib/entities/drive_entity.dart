@@ -64,12 +64,11 @@ class DriveEntity extends Entity {
       ..addApplicationTags()
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.drive)
-      ..addTag(EntityTag.driveId, id);
+      ..addTag(EntityTag.driveId, id)
+      ..addTag(EntityTag.drivePrivacy, privacy);
 
     if (privacy == DrivePrivacy.private) {
-      tx
-        ..addTag(EntityTag.drivePrivacy, privacy)
-        ..addTag(EntityTag.driveAuthMode, authMode);
+      tx.addTag(EntityTag.driveAuthMode, authMode);
     }
 
     return tx;
