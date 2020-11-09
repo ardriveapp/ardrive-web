@@ -208,9 +208,9 @@ class ArweaveService {
     );
   }
 
-  /// Creates and signs a transaction representing the provided entity.
+  /// Creates and signs a [Transaction] representing the provided entity.
   ///
-  /// Optionally provide a [SecretKey] to encrypt the transaction data.
+  /// Optionally provide a [SecretKey] to encrypt the entity data.
   Future<Transaction> prepareEntityTx(
     Entity entity,
     Wallet wallet, [
@@ -224,6 +224,22 @@ class ArweaveService {
     await tx.sign(wallet);
 
     return tx;
+  }
+
+  /// Creates and signs a [DataItem] representing the provided entity.
+  ///
+  /// Optionally provide a [SecretKey] to encrypt the entity data.
+  Future<DataItem> prepareEntityDataItem(
+    Entity entity,
+    Wallet wallet, [
+    SecretKey key,
+  ]) async {
+    final item = await entity.asDataItem();
+    item.setOwner(wallet.owner);
+
+    await item.sign(wallet);
+
+    return item;
   }
 
   Future<void> postTx(Transaction transaction) =>

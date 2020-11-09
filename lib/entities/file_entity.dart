@@ -80,27 +80,13 @@ class FileEntity extends Entity {
   }
 
   @override
-  Future<Transaction> asTransaction([SecretKey fileKey]) async {
-    assert(id != null &&
-        driveId != null &&
-        parentFolderId != null &&
-        name != null &&
-        size != null);
-
-    final tx = fileKey == null
-        ? Transaction.withJsonData(data: this)
-        : await createEncryptedEntityTransaction(this, fileKey);
-
-    tx
-      ..addApplicationTags()
-      ..addArFsTag()
-      ..addTag(EntityTag.entityType, EntityType.file)
-      ..addTag(EntityTag.driveId, driveId)
-      ..addTag(EntityTag.parentFolderId, parentFolderId)
-      ..addTag(EntityTag.fileId, id);
-
-    return tx;
-  }
+  T addEntityTagsToTransaction<T extends TransactionBase>(T tx) => tx
+    ..addApplicationTags()
+    ..addArFsTag()
+    ..addTag(EntityTag.entityType, EntityType.file)
+    ..addTag(EntityTag.driveId, driveId)
+    ..addTag(EntityTag.parentFolderId, parentFolderId)
+    ..addTag(EntityTag.fileId, id);
 
   factory FileEntity.fromJson(Map<String, dynamic> json) =>
       _$FileEntityFromJson(json);

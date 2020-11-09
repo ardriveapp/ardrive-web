@@ -48,13 +48,7 @@ class FolderEntity extends Entity {
   }
 
   @override
-  Future<Transaction> asTransaction([SecretKey driveKey]) async {
-    assert(id != null && driveId != null && name != null);
-
-    final tx = driveKey == null
-        ? Transaction.withJsonData(data: this)
-        : await createEncryptedEntityTransaction(this, driveKey);
-
+  T addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
     tx
       ..addApplicationTags()
       ..addArFsTag()

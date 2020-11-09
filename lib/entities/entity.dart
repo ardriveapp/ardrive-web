@@ -12,23 +12,37 @@ abstract class Entity {
   @JsonKey(ignore: true)
   DateTime commitTime;
 
-  /// Returns a transaction with the entity's data along with the appropriate tags.
+  /// Returns a [Transaction] with the entity's data along with the appropriate tags.
   ///
   /// If a key is provided, the transaction data is encrypted.
+  Future<Transaction> asTransaction([SecretKey key]) async {
+    final tx = key == null
+        ? Transaction.withJsonData(data: this)
+        : await createEncryptedEntityTransaction(this, key);
+
+    return addEntityTagsToTransaction(tx);
+  }
+
+  /// Returns a [DataItem] with the entity's data along with the appropriate tags.
   ///
-  /// Throws an [EntityTransactionParseException] if the transaction represents an invalid entity.
-  Future<Transaction> asTransaction([SecretKey key]);
+  /// The `owner` on this [DataItem] will be unset.
+  ///
+  /// If a key is provided, the data item data is encrypted.
+  Future<DataItem> asDataItem([SecretKey key]) async {
+    final item = key == null
+        ? DataItem.withJsonData(data: this)
+        : await createEncryptedEntityDataItem(this, key);
+
+    return addEntityTagsToTransaction(item);
+  }
 
   @protected
-  static Future handleTransactionDecryptionException(Object err) =>
-      err is TransactionDecryptionException
-          ? Future.error(EntityTransactionParseException())
-          : null;
+  T addEntityTagsToTransaction<T extends TransactionBase>(T tx);
 }
 
 class EntityTransactionParseException implements Exception {}
 
-extension TransactionUtils on Transaction {
+extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the app name, version, and current time.
   void addApplicationTags() {
     addTag(EntityTag.appName, 'ArDrive-Web');
