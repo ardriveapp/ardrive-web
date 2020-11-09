@@ -42,8 +42,8 @@ class App extends StatelessWidget {
         ],
         child: BlocProvider(
           create: (context) => ProfileCubit(
-            arweave: context.repository<ArweaveService>(),
-            profileDao: context.repository<ProfileDao>(),
+            arweave: context.read<ArweaveService>(),
+            profileDao: context.read<ProfileDao>(),
           ),
           child: BlocBuilder<ProfileCubit, ProfileState>(
             builder: (context, state) {
@@ -58,9 +58,9 @@ class App extends StatelessWidget {
                         key: ValueKey(state.selectedDriveId),
                         create: (context) => DriveDetailCubit(
                           driveId: state.selectedDriveId,
-                          profileCubit: context.bloc<ProfileCubit>(),
-                          driveDao: context.repository<DriveDao>(),
-                          config: context.repository<AppConfig>(),
+                          profileCubit: context.read<ProfileCubit>(),
+                          driveDao: context.read<DriveDao>(),
+                          config: context.read<AppConfig>(),
                         ),
                         child: AppShell(
                           page: state.selectedDriveId != null
@@ -102,17 +102,17 @@ class App extends StatelessWidget {
                       providers: [
                         BlocProvider(
                           create: (context) => SyncCubit(
-                            profileCubit: context.bloc<ProfileCubit>(),
-                            arweave: context.repository<ArweaveService>(),
-                            drivesDao: context.repository<DrivesDao>(),
-                            driveDao: context.repository<DriveDao>(),
+                            profileCubit: context.read<ProfileCubit>(),
+                            arweave: context.read<ArweaveService>(),
+                            drivesDao: context.read<DrivesDao>(),
+                            driveDao: context.read<DriveDao>(),
                             db: db,
                           ),
                         ),
                         BlocProvider(
                           create: (context) => DrivesCubit(
-                            profileCubit: context.bloc<ProfileCubit>(),
-                            drivesDao: context.repository<DrivesDao>(),
+                            profileCubit: context.read<ProfileCubit>(),
+                            drivesDao: context.read<DrivesDao>(),
                           ),
                         ),
                       ],
@@ -125,7 +125,7 @@ class App extends StatelessWidget {
                                 action: SnackBarAction(
                                   label: 'TRY AGAIN',
                                   onPressed: () =>
-                                      context.bloc<SyncCubit>().startSync(),
+                                      context.read<SyncCubit>().startSync(),
                                 ),
                               ),
                             );

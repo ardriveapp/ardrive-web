@@ -55,7 +55,7 @@ class DriveDetailView extends StatelessWidget {
                                               folder.id == state.selectedItemId,
                                           onPressed: () {
                                             final bloc = context
-                                                .bloc<DriveDetailCubit>();
+                                                .read<DriveDetailCubit>();
                                             if (folder.id ==
                                                 state.selectedItemId) {
                                               bloc.openFolderAtPath(
@@ -77,7 +77,7 @@ class DriveDetailView extends StatelessWidget {
                                               file.id == state.selectedItemId,
                                           onPressed: () async {
                                             final bloc = context
-                                                .bloc<DriveDetailCubit>();
+                                                .read<DriveDetailCubit>();
                                             if (file.id ==
                                                 state.selectedItemId) {
                                               bloc.toggleSelectedItemDetails();

@@ -49,9 +49,9 @@ class FsEntryRenameForm extends StatelessWidget {
           driveId: driveId,
           folderId: folderId,
           fileId: fileId,
-          arweave: context.repository<ArweaveService>(),
-          driveDao: context.repository<DriveDao>(),
-          profileCubit: context.bloc<ProfileCubit>(),
+          arweave: context.read<ArweaveService>(),
+          driveDao: context.read<DriveDao>(),
+          profileCubit: context.read<ProfileCubit>(),
         ),
         child: BlocConsumer<FsEntryRenameCubit, FsEntryRenameState>(
           listener: (context, state) {
@@ -71,7 +71,7 @@ class FsEntryRenameForm extends StatelessWidget {
                 ? SizedBox(
                     width: kSmallDialogWidth,
                     child: ReactiveForm(
-                      formGroup: context.bloc<FsEntryRenameCubit>().form,
+                      formGroup: context.watch<FsEntryRenameCubit>().form,
                       child: ReactiveTextField(
                         formControlName: 'name',
                         autofocus: true,
@@ -91,7 +91,7 @@ class FsEntryRenameForm extends StatelessWidget {
               ),
               ElevatedButton(
                 child: Text('RENAME'),
-                onPressed: () => context.bloc<FsEntryRenameCubit>().submit(),
+                onPressed: () => context.read<FsEntryRenameCubit>().submit(),
               ),
             ],
           ),

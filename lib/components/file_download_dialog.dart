@@ -33,9 +33,9 @@ class FileDownloadDialog extends StatelessWidget {
         create: (_) => FileDownloadCubit(
           driveId: driveId,
           fileId: fileId,
-          profileCubit: context.bloc<ProfileCubit>(),
-          driveDao: context.repository<DriveDao>(),
-          arweave: context.repository<ArweaveService>(),
+          profileCubit: context.read<ProfileCubit>(),
+          driveDao: context.read<DriveDao>(),
+          arweave: context.read<ArweaveService>(),
         ),
         child: BlocConsumer<FileDownloadCubit, FileDownloadState>(
           listener: (context, state) async {

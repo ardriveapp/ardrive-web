@@ -98,7 +98,7 @@ class ProfileAuthOnboarding extends StatelessWidget {
               ElevatedButton(
                   child: Text('CONTINUE'),
                   onPressed: () =>
-                      context.bloc<ProfileAddCubit>().completeOnboarding()),
+                      context.read<ProfileAddCubit>().completeOnboarding()),
             ],
           ),
         ),

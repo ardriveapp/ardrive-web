@@ -22,7 +22,7 @@ class DriveInfoSideSheet extends StatelessWidget {
             driveId: driveId,
             folderId: folderId,
             fileId: fileId,
-            driveDao: context.repository<DriveDao>(),
+            driveDao: context.read<DriveDao>(),
           ),
           child: DefaultTabController(
             length: 2,
@@ -38,7 +38,7 @@ class DriveInfoSideSheet extends StatelessWidget {
                           trailing: IconButton(
                             icon: Icon(Icons.close),
                             onPressed: () => context
-                                .bloc<DriveDetailCubit>()
+                                .read<DriveDetailCubit>()
                                 .toggleSelectedItemDetails(),
                           ),
                         ),

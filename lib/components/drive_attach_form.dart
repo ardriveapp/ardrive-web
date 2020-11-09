@@ -18,10 +18,10 @@ class DriveAttachForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BlocProvider<DriveAttachCubit>(
         create: (context) => DriveAttachCubit(
-          arweave: context.repository<ArweaveService>(),
-          drivesDao: context.repository<DrivesDao>(),
-          syncBloc: context.bloc<SyncCubit>(),
-          drivesBloc: context.bloc<DrivesCubit>(),
+          arweave: context.read<ArweaveService>(),
+          drivesDao: context.read<DrivesDao>(),
+          syncBloc: context.read<SyncCubit>(),
+          drivesBloc: context.read<DrivesCubit>(),
         ),
         child: BlocConsumer<DriveAttachCubit, DriveAttachState>(
           listener: (context, state) {
@@ -40,7 +40,7 @@ class DriveAttachForm extends StatelessWidget {
             content: SizedBox(
               width: kMediumDialogWidth,
               child: ReactiveForm(
-                formGroup: context.bloc<DriveAttachCubit>().form,
+                formGroup: context.watch<DriveAttachCubit>().form,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -67,7 +67,7 @@ class DriveAttachForm extends StatelessWidget {
               ),
               ElevatedButton(
                 child: Text('ATTACH'),
-                onPressed: () => context.bloc<DriveAttachCubit>().submit(),
+                onPressed: () => context.read<DriveAttachCubit>().submit(),
               ),
             ],
           ),

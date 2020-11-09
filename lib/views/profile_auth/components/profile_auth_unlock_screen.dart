@@ -11,8 +11,8 @@ class ProfileAuthUnlockScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BlocProvider<ProfileUnlockCubit>(
         create: (context) => ProfileUnlockCubit(
-          profileCubit: context.bloc<ProfileCubit>(),
-          profileDao: context.repository<ProfileDao>(),
+          profileCubit: context.read<ProfileCubit>(),
+          profileDao: context.read<ProfileDao>(),
         ),
         child: BlocBuilder<ProfileUnlockCubit, ProfileUnlockState>(
           builder: (context, state) => ProfileAuthShell(
@@ -24,7 +24,7 @@ class ProfileAuthUnlockScreen extends StatelessWidget {
               widthFactor: 0.5,
               child: state is ProfileUnlockInitial
                   ? ReactiveForm(
-                      formGroup: context.bloc<ProfileUnlockCubit>().form,
+                      formGroup: context.watch<ProfileUnlockCubit>().form,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -49,7 +49,7 @@ class ProfileAuthUnlockScreen extends StatelessWidget {
                             child: ElevatedButton(
                               child: Text('UNLOCK'),
                               onPressed: () =>
-                                  context.bloc<ProfileUnlockCubit>().submit(),
+                                  context.read<ProfileUnlockCubit>().submit(),
                             ),
                           ),
                         ],

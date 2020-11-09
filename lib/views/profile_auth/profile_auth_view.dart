@@ -17,9 +17,9 @@ class ProfileAuthView extends StatelessWidget {
           if (state is ProfilePromptAdd) {
             return BlocProvider<ProfileAddCubit>(
               create: (context) => ProfileAddCubit(
-                profileCubit: context.bloc<ProfileCubit>(),
-                profileDao: context.repository<ProfileDao>(),
-                arweave: context.repository<ArweaveService>(),
+                profileCubit: context.read<ProfileCubit>(),
+                profileDao: context.read<ProfileDao>(),
+                arweave: context.read<ArweaveService>(),
               ),
               child: BlocBuilder<ProfileAddCubit, ProfileAddState>(
                   builder: (context, state) {

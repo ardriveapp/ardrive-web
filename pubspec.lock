@@ -40,8 +40,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: a8554f1eb1c15d85bbd4c6b75a24b99531760143
-      resolved-ref: a8554f1eb1c15d85bbd4c6b75a24b99531760143
+      ref: "1bff9df5329bce01e8ebbba5e9f8e6689035c6f2"
+      resolved-ref: "1bff9df5329bce01e8ebbba5e9f8e6689035c6f2"
       url: "https://github.com/CDDelta/arweave-dart.git"
     source: git
     version: "0.1.0"
@@ -58,14 +58,14 @@ packages:
       name: bloc
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.1"
+    version: "6.1.0"
   bloc_test:
     dependency: "direct dev"
     description:
       name: bloc_test
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.0.6"
+    version: "7.1.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -361,7 +361,7 @@ packages:
       name: flutter_bloc
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.1"
+    version: "6.1.0"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -693,7 +693,7 @@ packages:
       name: provider
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.3.2"
+    version: "4.3.2+2"
   pub_semver:
     dependency: transitive
     description:

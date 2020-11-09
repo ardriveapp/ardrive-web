@@ -46,9 +46,9 @@ class FsEntryMoveForm extends StatelessWidget {
           driveId: driveId,
           folderId: folderId,
           fileId: fileId,
-          arweave: context.repository<ArweaveService>(),
-          driveDao: context.repository<DriveDao>(),
-          profileCubit: context.bloc<ProfileCubit>(),
+          arweave: context.read<ArweaveService>(),
+          driveDao: context.read<DriveDao>(),
+          profileCubit: context.read<ProfileCubit>(),
         ),
         child: BlocConsumer<FsEntryMoveCubit, FsEntryMoveState>(
           listener: (context, state) {
@@ -87,7 +87,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                     label: Text(
                                         'Back to "${state.viewingFolder.folder.name}" folder'),
                                     onPressed: () => context
-                                        .bloc<FsEntryMoveCubit>()
+                                        .read<FsEntryMoveCubit>()
                                         .loadParentFolder()),
                                 Container(height: 16),
                               },
@@ -106,7 +106,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                             leading: Icon(Icons.folder),
                                             title: Text(f.name),
                                             onTap: () => context
-                                                .bloc<FsEntryMoveCubit>()
+                                                .read<FsEntryMoveCubit>()
                                                 .loadFolder(f.id),
                                             trailing: Icon(
                                                 Icons.keyboard_arrow_right),
@@ -155,7 +155,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                 ElevatedButton(
                                   child: Text('MOVE HERE'),
                                   onPressed: () =>
-                                      context.bloc<FsEntryMoveCubit>().submit(),
+                                      context.read<FsEntryMoveCubit>().submit(),
                                 ),
                               ],
                             ),

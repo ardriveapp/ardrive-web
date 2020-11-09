@@ -40,9 +40,9 @@ class UploadForm extends StatelessWidget {
           driveId: driveId,
           folderId: folderId,
           file: file,
-          arweave: context.repository<ArweaveService>(),
-          profileCubit: context.bloc<ProfileCubit>(),
-          driveDao: context.repository<DriveDao>(),
+          arweave: context.read<ArweaveService>(),
+          profileCubit: context.read<ProfileCubit>(),
+          driveDao: context.read<DriveDao>(),
         ),
         child: BlocConsumer<UploadCubit, UploadState>(
           listener: (context, state) async {
@@ -68,7 +68,7 @@ class UploadForm extends StatelessWidget {
                   ElevatedButton(
                     child: Text('UPLOAD AS NEW VERSION'),
                     onPressed: () =>
-                        context.bloc<UploadCubit>().prepareUpload(),
+                        context.read<UploadCubit>().prepareUpload(),
                   ),
                 ],
               );
@@ -139,7 +139,7 @@ class UploadForm extends StatelessWidget {
                   ElevatedButton(
                     child: Text('UPLOAD'),
                     onPressed: !state.insufficientArBalance
-                        ? () => context.bloc<UploadCubit>().startUpload()
+                        ? () => context.read<UploadCubit>().startUpload()
                         : null,
                   ),
                 ],

@@ -33,7 +33,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
           TextButton(
             style: _pathSegments.isEmpty ? selectedSegmentTheme : null,
             onPressed: () =>
-                context.bloc<DriveDetailCubit>().openFolderAtPath(''),
+                context.read<DriveDetailCubit>().openFolderAtPath(''),
             child: Text(
               'Drive Root',
             ),
@@ -50,7 +50,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
               TextButton(
                 style: isLastSegment ? selectedSegmentTheme : null,
                 onPressed: () => context
-                    .bloc<DriveDetailCubit>()
+                    .read<DriveDetailCubit>()
                     .openFolderAtPath(
                         '/${_pathSegments.sublist(0, s.key + 1).join('/')}'),
                 child: Text(s.value),

@@ -34,9 +34,9 @@ class FolderCreateForm extends StatelessWidget {
         create: (context) => FolderCreateCubit(
           targetDriveId: targetDriveId,
           targetFolderId: targetFolderId,
-          profileCubit: context.bloc<ProfileCubit>(),
-          arweave: context.repository<ArweaveService>(),
-          driveDao: context.repository<DriveDao>(),
+          profileCubit: context.read<ProfileCubit>(),
+          arweave: context.read<ArweaveService>(),
+          driveDao: context.read<DriveDao>(),
         ),
         child: BlocConsumer<FolderCreateCubit, FolderCreateState>(
           listener: (context, state) {
@@ -52,7 +52,7 @@ class FolderCreateForm extends StatelessWidget {
             content: SizedBox(
               width: kSmallDialogWidth,
               child: ReactiveForm(
-                formGroup: context.bloc<FolderCreateCubit>().form,
+                formGroup: context.watch<FolderCreateCubit>().form,
                 child: ReactiveTextField(
                   formControlName: 'name',
                   autofocus: true,
@@ -68,7 +68,7 @@ class FolderCreateForm extends StatelessWidget {
               ),
               ElevatedButton(
                 child: Text('CREATE'),
-                onPressed: () => context.bloc<FolderCreateCubit>().submit(),
+                onPressed: () => context.read<FolderCreateCubit>().submit(),
               ),
             ],
           ),

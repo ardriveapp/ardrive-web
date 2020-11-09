@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 class DriveDetailActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final bloc = context.bloc<DriveDetailCubit>();
+    final bloc = context.watch<DriveDetailCubit>();
 
     return BlocBuilder<DriveDetailCubit, DriveDetailState>(
       builder: (context, state) {

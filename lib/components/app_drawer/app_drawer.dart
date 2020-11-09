@@ -46,7 +46,7 @@ class AppDrawer extends StatelessWidget {
                           drive: d,
                           selected: state.selectedDriveId == d.id,
                           onPressed: () =>
-                              context.bloc<DrivesCubit>().selectDrive(d.id),
+                              context.read<DrivesCubit>().selectDrive(d.id),
                         ),
                       ),
                     },
@@ -68,7 +68,7 @@ class AppDrawer extends StatelessWidget {
                           drive: d,
                           selected: state.selectedDriveId == d.id,
                           onPressed: () =>
-                              context.bloc<DrivesCubit>().selectDrive(d.id),
+                              context.read<DrivesCubit>().selectDrive(d.id),
                         ),
                       ),
                     }
@@ -167,7 +167,7 @@ class AppDrawer extends StatelessWidget {
               )
             : IconButton(
                 icon: Icon(Icons.refresh),
-                onPressed: () => context.bloc<SyncCubit>().startSync(),
+                onPressed: () => context.read<SyncCubit>().startSync(),
                 tooltip: 'Sync',
               ),
       );

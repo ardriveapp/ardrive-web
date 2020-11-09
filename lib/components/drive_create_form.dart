@@ -18,10 +18,10 @@ class DriveCreateForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BlocProvider(
         create: (_) => DriveCreateCubit(
-          arweave: context.repository<ArweaveService>(),
-          drivesDao: context.repository<DrivesDao>(),
-          profileCubit: context.bloc<ProfileCubit>(),
-          drivesCubit: context.bloc<DrivesCubit>(),
+          arweave: context.read<ArweaveService>(),
+          drivesDao: context.read<DrivesDao>(),
+          profileCubit: context.read<ProfileCubit>(),
+          drivesCubit: context.read<DrivesCubit>(),
         ),
         child: BlocConsumer<DriveCreateCubit, DriveCreateState>(
           listener: (context, state) {
@@ -37,7 +37,7 @@ class DriveCreateForm extends StatelessWidget {
             content: SizedBox(
               width: kMediumDialogWidth,
               child: ReactiveForm(
-                formGroup: context.bloc<DriveCreateCubit>().form,
+                formGroup: context.watch<DriveCreateCubit>().form,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -75,7 +75,7 @@ class DriveCreateForm extends StatelessWidget {
               ),
               ElevatedButton(
                 child: Text('CREATE'),
-                onPressed: () => context.bloc<DriveCreateCubit>().submit(),
+                onPressed: () => context.read<DriveCreateCubit>().submit(),
               ),
             ],
           ),

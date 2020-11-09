@@ -54,7 +54,7 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
   void _pickWallet(BuildContext context) async {
     try {
       final chooseResult = await FilePickerCross.importFromStorage();
-      await context.bloc<ProfileAddCubit>().pickWallet(chooseResult.toString());
+      await context.read<ProfileAddCubit>().pickWallet(chooseResult.toString());
     } catch (err) {
       if (err is! FileSelectionCanceledError) {
         rethrow;

@@ -19,7 +19,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                 content: FractionallySizedBox(
                   widthFactor: 0.5,
                   child: ReactiveForm(
-                    formGroup: context.bloc<ProfileAddCubit>().form,
+                    formGroup: context.watch<ProfileAddCubit>().form,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -57,14 +57,14 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           child: ElevatedButton(
                             child: Text('ADD PROFILE'),
                             onPressed: () =>
-                                context.bloc<ProfileAddCubit>().submit(),
+                                context.read<ProfileAddCubit>().submit(),
                           ),
                         ),
                         Container(height: 16),
                         TextButton(
                           child: Text('Change wallet'),
                           onPressed: () =>
-                              context.bloc<ProfileAddCubit>().promptForWallet(),
+                              context.read<ProfileAddCubit>().promptForWallet(),
                         ),
                       ],
                     ),

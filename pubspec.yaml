@@ -26,13 +26,13 @@ dependencies:
   arweave:
     git:
       url: https://github.com/CDDelta/arweave-dart.git
-      ref: a8554f1eb1c15d85bbd4c6b75a24b99531760143
+      ref: 1bff9df5329bce01e8ebbba5e9f8e6689035c6f2
   cryptography:
     git:
       url: https://github.com/CDDelta/cryptography.git
       path: cryptography
   dio: ^3.0.10
-  flutter_bloc: ^6.0.0
+  flutter_bloc: ^6.1.0
   flutter_portal: ^0.3.0
   filesize: ^1.0.4
   file_picker_cross:
@@ -58,7 +58,7 @@ dev_dependencies:
     sdk: flutter
 
   test: ^1.15.4
-  bloc_test: ^7.0.4
+  bloc_test: ^7.1.0
   mockito: ^4.1.0
   build_runner: ^1.10.0
   moor_generator: ^3.3.1
