@@ -160,13 +160,11 @@ class UploadCubit extends Cubit<UploadState> {
 
       await for (final upload
           in _arweave.client.transactions.upload(_uploadTx)) {
-        final uploadProgress = upload.percentageComplete / 100;
-
         emit(UploadFileInProgress(
           fileName: uploadHandle.entity.name,
           fileSize: uploadEntity.size,
-          uploadProgress: uploadProgress,
-          uploadedFileSize: (uploadEntity.size * uploadProgress).toInt(),
+          uploadProgress: upload.progress,
+          uploadedFileSize: (uploadEntity.size * upload.progress).toInt(),
         ));
       }
     }
