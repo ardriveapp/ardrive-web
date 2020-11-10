@@ -234,7 +234,7 @@ class ArweaveService {
     Wallet wallet, [
     SecretKey key,
   ]) async {
-    final item = await entity.asDataItem();
+    final item = await entity.asDataItem(key);
     item.setOwner(wallet.owner);
 
     await item.sign(wallet);
