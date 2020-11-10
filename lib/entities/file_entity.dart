@@ -80,13 +80,21 @@ class FileEntity extends Entity {
   }
 
   @override
-  T addEntityTagsToTransaction<T extends TransactionBase>(T tx) => tx
-    ..addApplicationTags()
-    ..addArFsTag()
-    ..addTag(EntityTag.entityType, EntityType.file)
-    ..addTag(EntityTag.driveId, driveId)
-    ..addTag(EntityTag.parentFolderId, parentFolderId)
-    ..addTag(EntityTag.fileId, id);
+  void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
+    assert(id != null &&
+        driveId != null &&
+        parentFolderId != null &&
+        name != null &&
+        size != null);
+
+    tx
+      ..addApplicationTags()
+      ..addArFsTag()
+      ..addTag(EntityTag.entityType, EntityType.file)
+      ..addTag(EntityTag.driveId, driveId)
+      ..addTag(EntityTag.parentFolderId, parentFolderId)
+      ..addTag(EntityTag.fileId, id);
+  }
 
   factory FileEntity.fromJson(Map<String, dynamic> json) =>
       _$FileEntityFromJson(json);

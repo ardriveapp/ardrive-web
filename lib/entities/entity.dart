@@ -20,7 +20,9 @@ abstract class Entity {
         ? Transaction.withJsonData(data: this)
         : await createEncryptedEntityTransaction(this, key);
 
-    return addEntityTagsToTransaction(tx);
+    addEntityTagsToTransaction(tx);
+
+    return tx;
   }
 
   /// Returns a [DataItem] with the entity's data along with the appropriate tags.
@@ -33,11 +35,13 @@ abstract class Entity {
         ? DataItem.withJsonData(data: this)
         : await createEncryptedEntityDataItem(this, key);
 
-    return addEntityTagsToTransaction(item);
+    addEntityTagsToTransaction(item);
+
+    return item;
   }
 
   @protected
-  T addEntityTagsToTransaction<T extends TransactionBase>(T tx);
+  void addEntityTagsToTransaction<T extends TransactionBase>(T tx);
 }
 
 class EntityTransactionParseException implements Exception {}

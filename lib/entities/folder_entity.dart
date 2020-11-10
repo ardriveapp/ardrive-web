@@ -48,7 +48,9 @@ class FolderEntity extends Entity {
   }
 
   @override
-  T addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
+  void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
+    assert(id != null && driveId != null && name != null);
+
     tx
       ..addApplicationTags()
       ..addArFsTag()
@@ -59,8 +61,6 @@ class FolderEntity extends Entity {
     if (parentFolderId != null) {
       tx.addTag(EntityTag.parentFolderId, parentFolderId);
     }
-
-    return tx;
   }
 
   factory FolderEntity.fromJson(Map<String, dynamic> json) =>

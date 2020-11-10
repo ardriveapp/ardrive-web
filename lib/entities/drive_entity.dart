@@ -53,7 +53,9 @@ class DriveEntity extends Entity {
   }
 
   @override
-  T addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
+  void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
+    assert(id != null && rootFolderId != null);
+
     tx
       ..addApplicationTags()
       ..addArFsTag()
@@ -64,8 +66,6 @@ class DriveEntity extends Entity {
     if (privacy == DrivePrivacy.private) {
       tx.addTag(EntityTag.driveAuthMode, authMode);
     }
-
-    return tx;
   }
 
   factory DriveEntity.fromJson(Map<String, dynamic> json) =>
