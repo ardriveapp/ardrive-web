@@ -29,6 +29,8 @@ class UploadCubit extends Cubit<UploadState> {
 
   Drive _targetDrive;
   FolderEntry _targetFolder;
+
+  Transaction _uploadTx;
   List<_FileUploadHandle> _fileUploadHandles;
 
   UploadCubit({
@@ -105,49 +107,38 @@ class UploadCubit extends Cubit<UploadState> {
         private ? await deriveFileKey(driveKey, fileEntity.id) : null;
 
     final fileData = file.toUint8List();
-    final fileDataTx = await _arweave.client.transactions.prepare(
-      private
-          ? await createEncryptedTransaction(fileData, fileKey)
-          : Transaction.withBlobData(data: fileData),
-      profile.wallet,
-    );
+    final fileDataItem = private
+        ? await createEncryptedDataItem(fileData, fileKey)
+        : DataItem.withBlobData(data: fileData);
 
-    fileDataTx.addApplicationTags();
+    fileDataItem.setOwner(profile.wallet.owner);
+    fileDataItem.addApplicationTags();
 
     // Don't include the file's Content-Type tag if it is meant to be private.
     if (!private) {
-      fileDataTx.addTag(
+      fileDataItem.addTag(
         EntityTag.contentType,
         fileEntity.dataContentType,
       );
     }
 
-    await fileDataTx.sign(profile.wallet);
+    await fileDataItem.sign(profile.wallet);
 
-    fileEntity.dataTxId = fileDataTx.id;
+    fileEntity.dataTxId = fileDataItem.id;
 
-    final fileEntityTx =
-        await _arweave.prepareEntityTx(fileEntity, profile.wallet, fileKey);
+    final fileEntityItem = await _arweave.prepareEntityDataItem(
+        fileEntity, profile.wallet, fileKey);
 
-    // Sometimes, files that are too large will result in the transaction having a data size of zero.
-    // TODO: Investigate problems with large file uploads on web.
-    if (fileDataTx.dataSize == '0' || fileDataTx.reward == BigInt.zero) {
-      emit(UploadPreparationFailure());
-      return;
-    }
+    _uploadTx = await _arweave.prepareDataBundleTx(
+        DataBundle(items: [fileEntityItem, fileDataItem]), profile.wallet);
 
     _fileUploadHandles = [
-      _FileUploadHandle(
-        entity: fileEntity,
-        path: filePath,
-        entityTx: fileEntityTx,
-        dataTx: fileDataTx,
-      ),
+      _FileUploadHandle(entity: fileEntity, path: filePath),
     ];
 
-    if (_fileUploadHandles.length == 1) {
-      final uploadCost = fileDataTx.reward;
+    final uploadCost = _uploadTx.reward;
 
+    if (_fileUploadHandles.length == 1) {
       emit(
         UploadFileReady(
           fileName: fileEntity.name,
@@ -167,10 +158,8 @@ class UploadCubit extends Cubit<UploadState> {
       emit(UploadFileInProgress(
           fileName: uploadHandle.entity.name, fileSize: uploadEntity.size));
 
-      await _arweave.postTx(uploadHandle.entityTx);
-
       await for (final upload
-          in _arweave.client.transactions.upload(uploadHandle.dataTx)) {
+          in _arweave.client.transactions.upload(_uploadTx)) {
         final uploadProgress = upload.percentageComplete / 100;
 
         emit(UploadFileInProgress(
@@ -179,11 +168,6 @@ class UploadCubit extends Cubit<UploadState> {
           uploadProgress: uploadProgress,
           uploadedFileSize: (uploadEntity.size * uploadProgress).toInt(),
         ));
-      }
-    } else {
-      for (final uploadHandle in _fileUploadHandles) {
-        await _arweave
-            .batchPostTxs([uploadHandle.entityTx, uploadHandle.dataTx]);
       }
     }
 
@@ -199,8 +183,5 @@ class _FileUploadHandle {
   final FileEntity entity;
   final String path;
 
-  final Transaction entityTx;
-  final Transaction dataTx;
-
-  _FileUploadHandle({this.entity, this.path, this.entityTx, this.dataTx});
+  _FileUploadHandle({this.entity, this.path});
 }

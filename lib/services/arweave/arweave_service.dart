@@ -242,11 +242,21 @@ class ArweaveService {
     return item;
   }
 
+  /// Creates and signs a [Transaction] representing the provided [DataBundle].
+  Future<Transaction> prepareDataBundleTx(
+      DataBundle bundle, Wallet wallet) async {
+    final bundleTx = await client.transactions.prepare(
+      Transaction.withDataBundle(bundle: bundle),
+      wallet,
+    );
+
+    await bundleTx.sign(wallet);
+
+    return bundleTx;
+  }
+
   Future<void> postTx(Transaction transaction) =>
       client.transactions.post(transaction);
-
-  Future<void> batchPostTxs(List<Transaction> transactions) =>
-      Future.wait(transactions.map((tx) => client.transactions.post(tx)));
 }
 
 /// The entity history of a particular drive, chunked by block height.
