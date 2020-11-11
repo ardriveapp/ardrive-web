@@ -13,17 +13,15 @@ jobs:
           persist-credentials: false
       - uses: subosito/flutter-action@v1
         with:
-          channel: "dev"
+          channel: 'dev'
       - name: Build app
         run: |
           flutter pub get
           flutter pub run build_runner build
           flutter config --enable-web
           flutter build web
-      - name: Deploy app
-        uses: JamesIves/github-pages-deploy-action@3.6.1
+      - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: gh-pages
-          FOLDER: build/web
-          CLEAN: true
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
+          channelId: live
