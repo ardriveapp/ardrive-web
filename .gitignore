@@ -1,3 +1,6 @@
+# Credentials
+ci-service-account.json
+
 # Generated code
 *.g.dart
 graphql_api.dart

@@ -1,5 +1,8 @@
 name: pr check
-on: pull_request
+on:
+  pull_request:
+    branches:
+      - dev
 
 jobs:
   test:
@@ -10,10 +13,30 @@ jobs:
           persist-credentials: false
       - uses: subosito/flutter-action@v1
         with:
-          channel: "dev"
+          channel: 'dev'
       - name: Prepare app
         run: |
           flutter pub get
           flutter pub run build_runner build
       - name: Run tests
         run: flutter test
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'dev'
+      - name: Build app
+        run: |
+          flutter pub get
+          flutter pub run build_runner build
+          flutter config --enable-web
+          flutter build web
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
+          expires: 30d
