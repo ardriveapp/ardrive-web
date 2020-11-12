@@ -19,7 +19,7 @@ jobs:
           flutter pub get
           flutter pub run build_runner build
           flutter config --enable-web
-          flutter build web
+          flutter build web --profile
       - uses: JamesIves/github-pages-deploy-action@3.6.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
