@@ -48,12 +48,8 @@ class FolderEntity extends Entity {
   }
 
   @override
-  Future<Transaction> asTransaction([SecretKey driveKey]) async {
+  void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
     assert(id != null && driveId != null && name != null);
-
-    final tx = driveKey == null
-        ? Transaction.withJsonData(data: this)
-        : await createEncryptedEntityTransaction(this, driveKey);
 
     tx
       ..addApplicationTags()
@@ -65,8 +61,6 @@ class FolderEntity extends Entity {
     if (parentFolderId != null) {
       tx.addTag(EntityTag.parentFolderId, parentFolderId);
     }
-
-    return tx;
   }
 
   factory FolderEntity.fromJson(Map<String, dynamic> json) =>
