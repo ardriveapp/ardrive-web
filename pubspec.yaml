@@ -26,7 +26,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/CDDelta/arweave-dart.git
-      ref: 1bff9df5329bce01e8ebbba5e9f8e6689035c6f2
+      ref: ec941370d72619e2ee770866b72944e5a9df8e58
   cryptography:
     git:
       url: https://github.com/CDDelta/cryptography.git
@@ -50,7 +50,7 @@ dependencies:
   reactive_forms: ^6.0.2
   rxdart: ^0.24.1
   timeago: ^2.0.28
-  url_launcher: ^5.7.8
+  url_launcher: ^5.7.10
   uuid: ^2.2.0
 
 dev_dependencies:

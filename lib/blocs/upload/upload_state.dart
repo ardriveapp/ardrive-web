@@ -10,64 +10,40 @@ class UploadPreparationInProgress extends UploadState {}
 
 class UploadPreparationFailure extends UploadState {}
 
-class UploadFileAlreadyExists extends UploadState {
-  final String existingFileId;
-  final String existingFileName;
+class UploadFileConflict extends UploadState {
+  final List<String> conflictingFileNames;
 
-  UploadFileAlreadyExists({
-    @required this.existingFileId,
-    @required this.existingFileName,
-  });
+  UploadFileConflict({@required this.conflictingFileNames});
 
   @override
-  List<Object> get props => [existingFileId, existingFileName];
+  List<Object> get props => [conflictingFileNames];
 }
 
-class UploadFileReady extends UploadState {
-  final String fileName;
+class UploadReady extends UploadState {
   final BigInt uploadCost;
-  final int uploadSize;
-
   final bool insufficientArBalance;
+  final List<FileUploadHandle> files;
 
-  UploadFileReady({
-    @required this.fileName,
-    @required this.uploadCost,
-    @required this.uploadSize,
-    @required this.insufficientArBalance,
-  });
-
-  @override
-  List<Object> get props => [fileName, uploadCost, uploadSize];
-}
-
-class UploadFileInProgress extends UploadState {
-  final String fileName;
-  final int fileSize;
-
-  final double uploadProgress;
-  final int uploadedFileSize;
-
-  UploadFileInProgress({
-    @required this.fileName,
-    @required this.fileSize,
-    this.uploadProgress = 0,
-    this.uploadedFileSize = 0,
-  });
+  UploadReady(
+      {@required this.uploadCost,
+      @required this.insufficientArBalance,
+      @required this.files});
 
   @override
-  List<Object> get props => [fileName, uploadProgress];
+  List<Object> get props => [uploadCost, insufficientArBalance, files];
 }
 
-class UploadFileFailure extends UploadState {}
+class UploadInProgress extends UploadState {
+  final List<FileUploadHandle> files;
 
-class UploadFolderInProgress extends UploadState {
-  final List<UploadFileInProgress> fileUploads;
+  final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
 
-  UploadFolderInProgress({@required this.fileUploads});
+  UploadInProgress({this.files});
 
   @override
-  List<Object> get props => [fileUploads];
+  List<Object> get props => [files, _equatableBust];
 }
+
+class UploadFailure extends UploadState {}
 
 class UploadComplete extends UploadState {}

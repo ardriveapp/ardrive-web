@@ -53,12 +53,8 @@ class DriveEntity extends Entity {
   }
 
   @override
-  Future<Transaction> asTransaction([SecretKey driveKey]) async {
+  void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
     assert(id != null && rootFolderId != null);
-
-    final tx = driveKey == null
-        ? Transaction.withJsonData(data: this)
-        : await createEncryptedEntityTransaction(this, driveKey);
 
     tx
       ..addApplicationTags()
@@ -70,8 +66,6 @@ class DriveEntity extends Entity {
     if (privacy == DrivePrivacy.private) {
       tx.addTag(EntityTag.driveAuthMode, authMode);
     }
-
-    return tx;
   }
 
   factory DriveEntity.fromJson(Map<String, dynamic> json) =>

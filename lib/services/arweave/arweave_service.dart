@@ -208,9 +208,9 @@ class ArweaveService {
     );
   }
 
-  /// Creates and signs a transaction representing the provided entity.
+  /// Creates and signs a [Transaction] representing the provided entity.
   ///
-  /// Optionally provide a [SecretKey] to encrypt the transaction data.
+  /// Optionally provide a [SecretKey] to encrypt the entity data.
   Future<Transaction> prepareEntityTx(
     Entity entity,
     Wallet wallet, [
@@ -226,11 +226,37 @@ class ArweaveService {
     return tx;
   }
 
+  /// Creates and signs a [DataItem] representing the provided entity.
+  ///
+  /// Optionally provide a [SecretKey] to encrypt the entity data.
+  Future<DataItem> prepareEntityDataItem(
+    Entity entity,
+    Wallet wallet, [
+    SecretKey key,
+  ]) async {
+    final item = await entity.asDataItem(key);
+    item.setOwner(wallet.owner);
+
+    await item.sign(wallet);
+
+    return item;
+  }
+
+  /// Creates and signs a [Transaction] representing the provided [DataBundle].
+  Future<Transaction> prepareDataBundleTx(
+      DataBundle bundle, Wallet wallet) async {
+    final bundleTx = await client.transactions.prepare(
+      Transaction.withDataBundle(bundle: bundle),
+      wallet,
+    );
+
+    await bundleTx.sign(wallet);
+
+    return bundleTx;
+  }
+
   Future<void> postTx(Transaction transaction) =>
       client.transactions.post(transaction);
-
-  Future<void> batchPostTxs(List<Transaction> transactions) =>
-      Future.wait(transactions.map((tx) => client.transactions.post(tx)));
 }
 
 /// The entity history of a particular drive, chunked by block height.

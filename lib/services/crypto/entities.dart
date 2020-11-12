@@ -57,7 +57,11 @@ Future<Transaction> createEncryptedEntityTransaction(
         Entity entity, SecretKey key) =>
     createEncryptedTransaction(utf8.encode(json.encode(entity)), key);
 
-/// Creates a transaction with the provided data encrypted along with the appropriate cipher tags.
+/// Creates a data item with the provided entity's JSON data encrypted along with the appropriate cipher tags.
+Future<DataItem> createEncryptedEntityDataItem(Entity entity, SecretKey key) =>
+    createEncryptedDataItem(utf8.encode(json.encode(entity)), key);
+
+/// Creates a [Transaction] with the provided data encrypted along with the appropriate cipher tags.
 Future<Transaction> createEncryptedTransaction(
   Uint8List data,
   SecretKey key,
@@ -66,6 +70,23 @@ Future<Transaction> createEncryptedTransaction(
   final encryptedData = await aesGcm.encrypt(data, secretKey: key, nonce: iv);
 
   return Transaction.withBlobData(data: encryptedData)
+    ..addTag(EntityTag.contentType, ContentType.octetStream)
+    ..addTag(EntityTag.cipher, Cipher.aes256)
+    ..addTag(
+      EntityTag.cipherIv,
+      utils.encodeBytesToBase64(iv.bytes),
+    );
+}
+
+/// Creates a [DataItem] with the provided data encrypted along with the appropriate cipher tags.
+Future<DataItem> createEncryptedDataItem(
+  Uint8List data,
+  SecretKey key,
+) async {
+  final iv = Nonce.randomBytes(96 ~/ 8);
+  final encryptedData = await aesGcm.encrypt(data, secretKey: key, nonce: iv);
+
+  return DataItem.withBlobData(data: encryptedData)
     ..addTag(EntityTag.contentType, ContentType.octetStream)
     ..addTag(EntityTag.cipher, Cipher.aes256)
     ..addTag(
