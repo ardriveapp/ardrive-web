@@ -114,15 +114,15 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUpload() async {
     emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
 
-    for (final uploadHandle in _fileUploadHandles.values) {
-      await for (final _ in uploadHandle.upload(_arweave)) {
-        emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
-      }
-    }
+    await _driveDao.transaction(() async {
+      for (final uploadHandle in _fileUploadHandles.values) {
+        await _driveDao.writeFileEntity(uploadHandle.entity, uploadHandle.path);
 
-    for (final uploadHandle in _fileUploadHandles.values) {
-      await _driveDao.writeFileEntity(uploadHandle.entity, uploadHandle.path);
-    }
+        await for (final _ in uploadHandle.upload(_arweave)) {
+          emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
+        }
+      }
+    });
 
     emit(UploadComplete());
   }
