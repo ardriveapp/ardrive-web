@@ -10,36 +10,47 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'components.dart';
 
-Future<void> promptToUpload(
+Future<void> promptToUploadFile(
   BuildContext context, {
   @required String driveId,
   @required String folderId,
-  @required FilePickerCross file,
-}) =>
-    showDialog(
+  bool allowSelectMultiple = false,
+}) async {
+  try {
+    final selectedFiles = allowSelectMultiple
+        ? await FilePickerCross.importMultipleFromStorage()
+        : [FilePickerCross.importFromStorage()];
+
+    await showDialog(
       context: context,
       builder: (_) => UploadForm(
         driveId: driveId,
         folderId: folderId,
-        file: file,
+        files: selectedFiles,
       ),
       barrierDismissible: false,
     );
+  } catch (err) {
+    if (err is! FileSelectionCanceledError) {
+      rethrow;
+    }
+  }
+}
 
 class UploadForm extends StatelessWidget {
   final String driveId;
   final String folderId;
-  final FilePickerCross file;
+  final List<FilePickerCross> files;
 
   UploadForm(
-      {@required this.driveId, @required this.folderId, @required this.file});
+      {@required this.driveId, @required this.folderId, @required this.files});
 
   @override
   Widget build(BuildContext context) => BlocProvider<UploadCubit>(
         create: (context) => UploadCubit(
           driveId: driveId,
           folderId: folderId,
-          file: file,
+          files: files,
           arweave: context.read<ArweaveService>(),
           profileCubit: context.read<ProfileCubit>(),
           driveDao: context.read<DriveDao>(),
@@ -51,13 +62,25 @@ class UploadForm extends StatelessWidget {
             }
           },
           builder: (context, state) {
-            if (state is UploadFileAlreadyExists) {
+            if (state is UploadFileConflict) {
               return AppDialog(
-                title: 'File with name already exists',
+                title: 'Conflicting file(s) found',
                 content: SizedBox(
                   width: kMediumDialogWidth,
-                  child: Text(
-                    '"${state.existingFileName}" already exists at this location. Do you want to continue and version this file?',
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        state.conflictingFileNames.length == 1
+                            ? 'A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?'
+                            : '${state.conflictingFileNames.length} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?',
+                      ),
+                      Container(height: 16),
+                      Text('Conflicting files:'),
+                      Container(height: 8),
+                      Text(state.conflictingFileNames.join(', ')),
+                    ],
                   ),
                 ),
                 actions: <Widget>[
@@ -66,7 +89,7 @@ class UploadForm extends StatelessWidget {
                     onPressed: () => Navigator.of(context).pop(false),
                   ),
                   ElevatedButton(
-                    child: Text('UPLOAD AS NEW VERSION'),
+                    child: Text('CONTINUE'),
                     onPressed: () =>
                         context.read<UploadCubit>().prepareUpload(),
                   ),
@@ -103,20 +126,33 @@ class UploadForm extends StatelessWidget {
                   ),
                 ],
               );
-            } else if (state is UploadFileReady) {
+            } else if (state is UploadReady) {
               return AppDialog(
-                title: 'Upload file',
+                title: 'Upload file(s)',
                 content: SizedBox(
                   width: kMediumDialogWidth,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(state.fileName),
-                        subtitle: Text(filesize(state.uploadSize)),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 256),
+                        child: Scrollbar(
+                          child: ListView(
+                            shrinkWrap: true,
+                            children: [
+                              for (final file in state.files) ...{
+                                ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(file.entity.name),
+                                  subtitle: Text(filesize(file.uploadSize)),
+                                ),
+                              },
+                            ],
+                          ),
+                        ),
                       ),
+                      Divider(),
                       Container(height: 16),
                       Text('Cost: ${utils.winstonToAr(state.uploadCost)} AR'),
                       if (state.insufficientArBalance) ...{
@@ -144,23 +180,35 @@ class UploadForm extends StatelessWidget {
                   ),
                 ],
               );
-            } else if (state is UploadFileInProgress) {
+            } else if (state is UploadInProgress) {
               return AppDialog(
                 dismissable: false,
-                title: 'Uploading file...',
+                title: 'Uploading file(s)...',
                 content: SizedBox(
                   width: kMediumDialogWidth,
-                  child: ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(state.fileName),
-                    subtitle: Text(
-                        '${filesize(state.uploadedFileSize)}/${filesize(state.fileSize)}'),
-                    trailing: CircularProgressIndicator(
-                        // Show an indeterminate progress indicator if the upload hasn't started yet as
-                        // small uploads might never report a progress.
-                        value: state.uploadProgress != 0
-                            ? state.uploadProgress
-                            : null),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 256),
+                    child: Scrollbar(
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: [
+                          for (final file in state.files) ...{
+                            ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(file.entity.name),
+                              subtitle: Text(
+                                  '${filesize(file.uploadedSize)}/${filesize(file.uploadSize)}'),
+                              trailing: CircularProgressIndicator(
+                                  // Show an indeterminate progress indicator if the upload hasn't started yet as
+                                  // small uploads might never report a progress.
+                                  value: file.uploadProgress != 0
+                                      ? file.uploadProgress
+                                      : null),
+                            ),
+                          },
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               );

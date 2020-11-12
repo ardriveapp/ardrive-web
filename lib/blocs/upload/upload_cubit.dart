@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
@@ -14,13 +15,14 @@ import 'package:pedantic/pedantic.dart';
 import 'package:uuid/uuid.dart';
 
 import '../blocs.dart';
+import 'file_upload_handle.dart';
 
 part 'upload_state.dart';
 
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
   final String folderId;
-  final FilePickerCross file;
+  final List<FilePickerCross> files;
 
   final _uuid = Uuid();
   final ProfileCubit _profileCubit;
@@ -30,13 +32,16 @@ class UploadCubit extends Cubit<UploadState> {
   Drive _targetDrive;
   FolderEntry _targetFolder;
 
-  Transaction _uploadTx;
-  List<_FileUploadHandle> _fileUploadHandles;
+  /// Map of conflicting file ids keyed by their file names.
+  final Map<String, String> conflictingFiles = {};
+
+  /// A map of [FileUploadHandle]s keyed by their respective file's id.
+  final Map<String, FileUploadHandle> _fileUploadHandles = {};
 
   UploadCubit({
     @required this.driveId,
     @required this.folderId,
-    @required this.file,
+    @required this.files,
     @required ProfileCubit profileCubit,
     @required DriveDao driveDao,
     @required ArweaveService arweave,
@@ -47,40 +52,82 @@ class UploadCubit extends Cubit<UploadState> {
     () async {
       _targetDrive = await _driveDao.getDriveById(driveId);
       _targetFolder = await _driveDao.getFolderById(driveId, folderId);
-      unawaited(checkTargetFileVersioning());
+
+      unawaited(checkConflictingFiles());
     }();
   }
 
-  /// Tries to find a file in the target folder by the same name as the file being uploaded.
+  /// Tries to find a files that conflict with the files in the target folder.
   ///
   /// If there's one, prompt the user to upload the file as a version of the existing one.
   /// If there isn't one, prepare to upload the file.
-  Future<void> checkTargetFileVersioning() async {
+  Future<void> checkConflictingFiles() async {
     emit(UploadPreparationInProgress());
 
-    final fileName = basename(file.path);
-    final existingFileId = await _driveDao
-        .selectFileInFolderByName(
-          _targetDrive.id,
-          _targetFolder.id,
-          fileName,
-        )
-        .map((f) => f.id)
-        .getSingle();
+    for (final file in files) {
+      final fileName = basename(file.path);
+      final existingFileId = await _driveDao
+          .selectFileInFolderByName(
+            _targetDrive.id,
+            _targetFolder.id,
+            fileName,
+          )
+          .map((f) => f.id)
+          .getSingle();
 
-    if (existingFileId != null) {
-      emit(UploadFileAlreadyExists(
-          existingFileId: existingFileId, existingFileName: fileName));
+      if (existingFileId != null) {
+        conflictingFiles[fileName] = existingFileId;
+      }
+    }
+
+    if (conflictingFiles.isNotEmpty) {
+      emit(UploadFileConflict(
+          conflictingFileNames: conflictingFiles.keys.toList()));
     } else {
       unawaited(prepareUpload());
     }
   }
 
   Future<void> prepareUpload() async {
-    final previousState = state;
+    final profile = _profileCubit.state as ProfileLoaded;
 
     emit(UploadPreparationInProgress());
 
+    for (final file in files) {
+      final uploadHandle = await prepareFileUpload(file);
+      _fileUploadHandles[uploadHandle.entity.id] = uploadHandle;
+    }
+
+    final uploadCost = _fileUploadHandles.values
+        .map((f) => f.cost)
+        .reduce((total, cost) => total + cost);
+
+    emit(
+      UploadReady(
+        files: _fileUploadHandles.values.toList(),
+        uploadCost: uploadCost,
+        insufficientArBalance: profile.walletBalance < uploadCost,
+      ),
+    );
+  }
+
+  Future<void> startUpload() async {
+    emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
+
+    for (final uploadHandle in _fileUploadHandles.values) {
+      await for (final _ in uploadHandle.upload(_arweave)) {
+        emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
+      }
+    }
+
+    for (final uploadHandle in _fileUploadHandles.values) {
+      await _driveDao.writeFileEntity(uploadHandle.entity, uploadHandle.path);
+    }
+
+    emit(UploadComplete());
+  }
+
+  Future<FileUploadHandle> prepareFileUpload(FilePickerCross file) async {
     final profile = _profileCubit.state as ProfileLoaded;
 
     final fileName = basename(file.path);
@@ -95,9 +142,8 @@ class UploadCubit extends Cubit<UploadState> {
       dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
     );
 
-    fileEntity.id = previousState is UploadFileAlreadyExists
-        ? previousState.existingFileId
-        : _uuid.v4();
+    // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
+    fileEntity.id = conflictingFiles[fileName] ?? _uuid.v4();
 
     final private = _targetDrive.isPrivate;
     final driveKey = private
@@ -107,79 +153,61 @@ class UploadCubit extends Cubit<UploadState> {
         private ? await deriveFileKey(driveKey, fileEntity.id) : null;
 
     final fileData = file.toUint8List();
-    final fileDataItem = private
-        ? await createEncryptedDataItem(fileData, fileKey)
-        : DataItem.withBlobData(data: fileData);
 
-    fileDataItem.setOwner(profile.wallet.owner);
-    fileDataItem.addApplicationTags();
+    final uploadHandle = FileUploadHandle(entity: fileEntity, path: filePath);
+
+    // Only use [DataBundle]s if the file being uploaded can be serialised as one.
+    // The limitation occurs as a result of string size limitations in JS implementations which is about 512MB.
+    // We aim switch slightly below that to give ourselves some buffer.
+    final fileSizeWithinBundleLimits =
+        fileData.lengthInBytes < (512 - 12) * math.pow(10, 6);
+
+    if (fileSizeWithinBundleLimits) {
+      uploadHandle.dataTx = private
+          ? await createEncryptedDataItem(fileData, fileKey)
+          : DataItem.withBlobData(data: fileData);
+      uploadHandle.dataTx.setOwner(profile.wallet.owner);
+    } else {
+      uploadHandle.dataTx = await _arweave.client.transactions.prepare(
+        private
+            ? await createEncryptedTransaction(fileData, fileKey)
+            : Transaction.withBlobData(data: fileData),
+        profile.wallet,
+      );
+    }
+
+    uploadHandle.dataTx.addApplicationTags();
 
     // Don't include the file's Content-Type tag if it is meant to be private.
     if (!private) {
-      fileDataItem.addTag(
+      uploadHandle.dataTx.addTag(
         EntityTag.contentType,
         fileEntity.dataContentType,
       );
     }
 
-    await fileDataItem.sign(profile.wallet);
+    await uploadHandle.dataTx.sign(profile.wallet);
 
-    fileEntity.dataTxId = fileDataItem.id;
+    fileEntity.dataTxId = uploadHandle.dataTx.id;
 
-    final fileEntityItem = await _arweave.prepareEntityDataItem(
-        fileEntity, profile.wallet, fileKey);
+    if (fileSizeWithinBundleLimits) {
+      uploadHandle.entityTx = await _arweave.prepareEntityDataItem(
+          fileEntity, profile.wallet, fileKey);
 
-    _uploadTx = await _arweave.prepareDataBundleTx(
-        DataBundle(items: [fileEntityItem, fileDataItem]), profile.wallet);
-
-    _fileUploadHandles = [
-      _FileUploadHandle(entity: fileEntity, path: filePath),
-    ];
-
-    final uploadCost = _uploadTx.reward;
-
-    if (_fileUploadHandles.length == 1) {
-      emit(
-        UploadFileReady(
-          fileName: fileEntity.name,
-          uploadCost: uploadCost,
-          uploadSize: fileEntity.size,
-          insufficientArBalance: profile.walletBalance < uploadCost,
+      uploadHandle.bundleTx = await _arweave.prepareDataBundleTx(
+        DataBundle(
+          items: [
+            uploadHandle.entityTx as DataItem,
+            uploadHandle.dataTx as DataItem,
+          ],
         ),
+        profile.wallet,
       );
-    } else {}
-  }
-
-  Future<void> startUpload() async {
-    if (_fileUploadHandles.length == 1) {
-      final uploadHandle = _fileUploadHandles.single;
-      final uploadEntity = uploadHandle.entity;
-
-      emit(UploadFileInProgress(
-          fileName: uploadHandle.entity.name, fileSize: uploadEntity.size));
-
-      await for (final upload
-          in _arweave.client.transactions.upload(_uploadTx)) {
-        emit(UploadFileInProgress(
-          fileName: uploadHandle.entity.name,
-          fileSize: uploadEntity.size,
-          uploadProgress: upload.progress,
-          uploadedFileSize: (uploadEntity.size * upload.progress).toInt(),
-        ));
-      }
+    } else {
+      uploadHandle.entityTx =
+          await _arweave.prepareEntityTx(fileEntity, profile.wallet, fileKey);
     }
 
-    for (final uploadHandle in _fileUploadHandles) {
-      await _driveDao.writeFileEntity(uploadHandle.entity, uploadHandle.path);
-    }
-
-    emit(UploadComplete());
+    return uploadHandle;
   }
-}
-
-class _FileUploadHandle {
-  final FileEntity entity;
-  final String path;
-
-  _FileUploadHandle({this.entity, this.path});
 }

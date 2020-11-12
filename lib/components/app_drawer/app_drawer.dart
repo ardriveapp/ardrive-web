@@ -1,6 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/theme/theme.dart';
-import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -119,14 +118,15 @@ class AppDrawer extends StatelessWidget {
                   PopupMenuDivider(),
                   PopupMenuItem(
                     enabled: state.hasWritePermissions,
-                    value: (context) => _promptToUploadFile(
+                    value: (context) => promptToUploadFile(
                       context,
-                      state.currentDrive.id,
-                      state.currentFolder.folder.id,
+                      driveId: state.currentDrive.id,
+                      folderId: state.currentFolder.folder.id,
+                      allowSelectMultiple: true,
                     ),
                     child: ListTile(
                       enabled: state.hasWritePermissions,
-                      title: Text('Upload file'),
+                      title: Text('Upload file(s)'),
                     ),
                   ),
                   PopupMenuDivider(),
@@ -171,22 +171,4 @@ class AppDrawer extends StatelessWidget {
                 tooltip: 'Sync',
               ),
       );
-
-  void _promptToUploadFile(
-      BuildContext context, String targetDriveId, String targetFolderId) async {
-    try {
-      final fileChooseResult = await FilePickerCross.importFromStorage();
-
-      await promptToUpload(
-        context,
-        driveId: targetDriveId,
-        folderId: targetFolderId,
-        file: fileChooseResult,
-      );
-    } catch (err) {
-      if (err is! FileSelectionCanceledError) {
-        rethrow;
-      }
-    }
-  }
 }
