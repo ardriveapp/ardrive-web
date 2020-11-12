@@ -34,9 +34,9 @@ jobs:
           flutter pub get
           flutter pub run build_runner build
           flutter config --enable-web
-          flutter build web
+          flutter build web --profile
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
-          expires: 30d
+          expires: 14d
