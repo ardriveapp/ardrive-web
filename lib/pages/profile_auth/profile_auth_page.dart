@@ -10,7 +10,7 @@ import 'components/profile_auth_onboarding_screen.dart';
 import 'components/profile_auth_prompt_wallet_screen.dart';
 import 'components/profile_auth_unlock_screen.dart';
 
-class ProfileAuthView extends StatelessWidget {
+class ProfileAuthPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BlocBuilder<ProfileCubit, ProfileState>(
         builder: (context, state) {

@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 
-import 'app_shell.dart';
 import 'blocs/blocs.dart';
 import 'models/models.dart';
+import 'pages/pages.dart';
 import 'services/services.dart';
 import 'theme/theme.dart';
-import 'views/views.dart';
 
 ConfigService configService;
 AppConfig config;
@@ -30,6 +29,9 @@ void main() async {
 }
 
 class App extends StatelessWidget {
+  final _routerDelegate = AppRouterDelegate();
+  final _routeInformationParser = AppRouteInformationParser();
+
   @override
   Widget build(BuildContext context) => MultiRepositoryProvider(
         providers: [
@@ -46,98 +48,52 @@ class App extends StatelessWidget {
             profileDao: context.read<ProfileDao>(),
           ),
           child: BlocBuilder<ProfileCubit, ProfileState>(
-            builder: (context, state) {
-              Widget view;
-              if (state is! ProfileLoaded) {
-                view = ProfileAuthView();
-              } else {
-                view = BlocBuilder<DrivesCubit, DrivesState>(
-                  builder: (context, state) {
-                    if (state is DrivesLoadSuccess) {
-                      return BlocProvider(
-                        key: ValueKey(state.selectedDriveId),
-                        create: (context) => DriveDetailCubit(
-                          driveId: state.selectedDriveId,
-                          profileCubit: context.read<ProfileCubit>(),
-                          driveDao: context.read<DriveDao>(),
-                          config: context.read<AppConfig>(),
-                        ),
-                        child: AppShell(
-                          page: state.selectedDriveId != null
-                              ? DriveDetailView()
-                              : Center(
-                                  child: Text(
-                                    'You have no personal or attached drives.\nClick the "new" button to add some!',
-                                    textAlign: TextAlign.center,
-                                    style:
-                                        Theme.of(context).textTheme.headline6,
-                                  ),
-                                ),
-                        ),
-                      );
-                    } else {
-                      return Container();
-                    }
-                  },
+            builder: (context, state) => MaterialApp.router(
+              title: 'ArDrive',
+              theme: appTheme(),
+              routeInformationParser: _routeInformationParser,
+              routerDelegate: _routerDelegate,
+              builder: (context, child) {
+                final content = ListTileTheme(
+                  textColor: kOnSurfaceBodyTextColor,
+                  iconColor: kOnSurfaceBodyTextColor,
+                  child: Portal(
+                    child: child,
+                  ),
                 );
-              }
 
-              return MaterialApp(
-                title: 'ArDrive',
-                theme: appTheme(),
-                home: view,
-                builder: (context, child) {
-                  final content = ListTileTheme(
-                    textColor: kOnSurfaceBodyTextColor,
-                    iconColor: kOnSurfaceBodyTextColor,
-                    child: Portal(
-                      child: child,
+                if (state is! ProfileLoaded) {
+                  return content;
+                } else {
+                  return BlocProvider(
+                    create: (context) => SyncCubit(
+                      profileCubit: context.read<ProfileCubit>(),
+                      arweave: context.read<ArweaveService>(),
+                      drivesDao: context.read<DrivesDao>(),
+                      driveDao: context.read<DriveDao>(),
+                      db: db,
+                    ),
+                    child: BlocListener<SyncCubit, SyncState>(
+                      listener: (context, state) {
+                        if (state is SyncFailure) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Failed to sync drive contents.'),
+                              action: SnackBarAction(
+                                label: 'TRY AGAIN',
+                                onPressed: () =>
+                                    context.read<SyncCubit>().startSync(),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      child: content,
                     ),
                   );
-
-                  if (state is! ProfileLoaded) {
-                    return content;
-                  } else {
-                    return MultiBlocProvider(
-                      providers: [
-                        BlocProvider(
-                          create: (context) => SyncCubit(
-                            profileCubit: context.read<ProfileCubit>(),
-                            arweave: context.read<ArweaveService>(),
-                            drivesDao: context.read<DrivesDao>(),
-                            driveDao: context.read<DriveDao>(),
-                            db: db,
-                          ),
-                        ),
-                        BlocProvider(
-                          create: (context) => DrivesCubit(
-                            profileCubit: context.read<ProfileCubit>(),
-                            drivesDao: context.read<DrivesDao>(),
-                          ),
-                        ),
-                      ],
-                      child: BlocListener<SyncCubit, SyncState>(
-                        listener: (context, state) {
-                          if (state is SyncFailure) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Failed to sync drive contents.'),
-                                action: SnackBarAction(
-                                  label: 'TRY AGAIN',
-                                  onPressed: () =>
-                                      context.read<SyncCubit>().startSync(),
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        child: content,
-                      ),
-                    );
-                  }
-                },
-              );
-            },
+                }
+              },
+            ),
           ),
         ),
       );

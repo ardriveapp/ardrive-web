@@ -23,6 +23,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   DriveDetailCubit({
     @required this.driveId,
+    String initialFolderId,
     @required ProfileCubit profileCubit,
     @required DriveDao driveDao,
     @required AppConfig config,
@@ -31,7 +32,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         _config = config,
         super(DriveDetailLoadInProgress()) {
     if (driveId != null) {
-      openFolderAtPath('');
+      if (initialFolderId != null) {
+        () async {
+          final folder =
+              await _driveDao.getFolderById(driveId, initialFolderId);
+          openFolderAtPath(folder.path);
+        }();
+      } else {
+        openFolderAtPath('');
+      }
     }
   }
 
