@@ -14,12 +14,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 part 'profile_add_state.dart';
 
 class ProfileAddCubit extends Cubit<ProfileAddState> {
-  final form = FormGroup({
-    'username': FormControl(validators: [Validators.required]),
-    'password': FormControl(
-      validators: [Validators.required],
-    ),
-  });
+  FormGroup form;
 
   Wallet _wallet;
   List<TransactionCommonMixin> _driveTxs;
@@ -52,11 +47,27 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       emit(ProfileAddOnboardingNewUser());
     } else {
       emit(ProfileAddPromptDetails(isExistingUser: true));
+      setupForm(withPasswordConfirmation: false);
     }
   }
 
   Future<void> completeOnboarding() async {
     emit(ProfileAddPromptDetails(isExistingUser: false));
+    setupForm(withPasswordConfirmation: true);
+  }
+
+  void setupForm({bool withPasswordConfirmation}) {
+    form = FormGroup(
+      {
+        'username': FormControl(validators: [Validators.required]),
+        'password': FormControl(validators: [Validators.required]),
+        if (withPasswordConfirmation) 'passwordConfirmation': FormControl(),
+      },
+      validators: [
+        if (withPasswordConfirmation)
+          Validators.mustMatch('password', 'passwordConfirmation'),
+      ],
+    );
   }
 
   Future<void> submit() async {

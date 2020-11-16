@@ -31,13 +31,15 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           style: Theme.of(context).textTheme.headline5,
                         ),
                         Container(height: 32),
-                        if (state.isExistingUser) ...{
+                        if (state.isExistingUser)
                           Text(
-                            'Please provide the same password as you have used before.',
-                            textAlign: TextAlign.center,
-                          ),
-                          Container(height: 16),
-                        },
+                              'Please provide the same password as the one you used before.',
+                              textAlign: TextAlign.center)
+                        else
+                          Text(
+                              'Your password can never be changed or recovered. Please keep it safe!',
+                              textAlign: TextAlign.center),
+                        Container(height: 16),
                         ReactiveTextField(
                           formControlName: 'username',
                           autofocus: true,
@@ -51,6 +53,20 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           decoration: InputDecoration(labelText: 'Password'),
                           validationMessages: kValidationMessages,
                         ),
+                        if (!state.isExistingUser) ...{
+                          Container(height: 16),
+                          ReactiveTextField(
+                            formControlName: 'passwordConfirmation',
+                            obscureText: true,
+                            decoration:
+                                InputDecoration(labelText: 'Confirm Password'),
+                            validationMessages: const {
+                              ...kValidationMessages,
+                              'mustMatch':
+                                  'The confirmation password does not match.',
+                            },
+                          ),
+                        },
                         Container(height: 32),
                         SizedBox(
                           width: double.infinity,
