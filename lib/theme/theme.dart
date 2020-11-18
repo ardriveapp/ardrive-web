@@ -41,7 +41,10 @@ TextTheme _buildTextTheme(TextTheme base) => base
       headline4: GoogleFonts.montserrat(
           fontSize: 34, fontWeight: FontWeight.w400, letterSpacing: 0.25),
       headline5: GoogleFonts.montserrat(
-          fontSize: 24, fontWeight: FontWeight.w400, letterSpacing: 2),
+          fontSize: 24,
+          fontWeight: FontWeight.w400,
+          letterSpacing: 2,
+          color: kPrimarySwatch),
       headline6: GoogleFonts.openSans(
           fontSize: 16, fontWeight: FontWeight.w400, letterSpacing: 2),
       subtitle1: GoogleFonts.openSans(
@@ -61,7 +64,7 @@ TextTheme _buildTextTheme(TextTheme base) => base
     )
     .apply(
       bodyColor: kOnSurfaceBodyTextColor,
-      displayColor: kOnSurfaceBodyTextColor,
+      displayColor: kPrimarySwatch,
     );
 
 IconThemeData _buildIconTheme(IconThemeData base) =>

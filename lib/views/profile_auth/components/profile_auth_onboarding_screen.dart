@@ -1,107 +1,278 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 
 import 'profile_auth_shell.dart';
 
-class ProfileAuthOnboarding extends StatelessWidget {
+class ProfileAuthOnboarding extends StatefulWidget {
   @override
-  Widget build(BuildContext context) => ProfileAuthShell(
-        illustration: Image.asset(
-          R.images.profile.profileOnboarding,
-          fit: BoxFit.scaleDown,
-        ),
-        content: FractionallySizedBox(
-          widthFactor: 0.75,
-          child: Column(
-            children: [
-              Text(
-                'HOW DOES IT WORK?',
-                style: Theme.of(context).textTheme.headline5,
-              ),
-              Container(height: 32),
-              DefaultTextStyle(
-                style: Theme.of(context).textTheme.headline6,
-                child: Builder(
-                  builder: (context) => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                          'ArDrive is a simple, yet robust app that protects and syncs your data to and from the cloud.'),
-                      Container(height: 16),
-                      Text.rich(
-                        TextSpan(
-                          text: 'No subscription needed! ',
-                          children: [
-                            TextSpan(
-                              text: 'Pay once',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            TextSpan(
-                              text:
-                                  ' to store your files, pictures, music, videos and apps permanently.',
-                            ),
-                          ],
+  _ProfileAuthOnboardingState createState() => _ProfileAuthOnboardingState();
+}
+
+class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
+  int _onboardingStepIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (_onboardingStepIndex) {
+      case 0:
+        return ProfileAuthShell(
+          illustration: _buildIllustrationSection(
+            Image.asset(
+              R.images.profile.newUserPermanent,
+              fit: BoxFit.scaleDown,
+            ),
+          ),
+          content: FractionallySizedBox(
+            widthFactor: 0.75,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                DefaultTextStyle(
+                  style: Theme.of(context).textTheme.headline6,
+                  textAlign: TextAlign.center,
+                  child: Builder(
+                    builder: (context) => Column(
+                      children: [
+                        Text(
+                          'WELCOME TO THE PERMAWEB',
+                          style: Theme.of(context).textTheme.headline5,
                         ),
-                      ),
-                      Container(height: 16),
-                      Text.rich(
-                        TextSpan(
-                          text:
-                              'Your Private Drive is encrypted, meaning ArDrive or anyone else can’t read your content. ',
-                          children: <TextSpan>[
-                            TextSpan(
-                              text: 'Only you!',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            )
-                          ],
-                        ),
-                      ),
-                      Container(height: 16),
-                      Text.rich(
-                        TextSpan(
-                          text:
-                              'Your Public Drive is open for anyone on the internet to see. ',
-                          children: [
-                            TextSpan(
-                              text: 'Post carefully!',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            )
-                          ],
-                        ),
-                      ),
-                      Container(height: 16),
-                      Text.rich(
-                        TextSpan(
-                          text:
-                              'Any data uploaded is permanently stored and secured on a decentralized blockchain network. ',
-                          children: [
-                            TextSpan(
-                              text: 'Deleting is not an option!',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            )
-                          ],
-                        ),
-                      ),
-                      Container(height: 16),
-                      Text.rich(TextSpan(text: 'Powered by the ', children: [
-                        TextSpan(
-                            text: 'Arweave',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        TextSpan(text: ' Permaweb.')
-                      ])),
-                    ],
+                        Container(height: 32),
+                        Text(
+                            'ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.'),
+                        Container(height: 16),
+                        Text('Any files you upload here will outlive you!'),
+                        Container(height: 16),
+                        Text('That also means we do a few things differently.'),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              Container(height: 32),
-              ElevatedButton(
-                  child: Text('CONTINUE'),
-                  onPressed: () =>
-                      context.read<ProfileAddCubit>().completeOnboarding()),
-            ],
+                Container(height: 64),
+                _buildOnboardingStepFooter(),
+              ],
+            ),
           ),
-        ),
+        );
+      case 1:
+        return ProfileAuthShell(
+          illustration: _buildIllustrationSection(
+            Image.asset(
+              R.images.profile.newUserPayment,
+              fit: BoxFit.scaleDown,
+            ),
+          ),
+          content: FractionallySizedBox(
+            widthFactor: 0.75,
+            child: Column(
+              children: [
+                DefaultTextStyle(
+                  style: Theme.of(context).textTheme.headline6,
+                  textAlign: TextAlign.center,
+                  child: Builder(
+                    builder: (context) => Column(
+                      children: [
+                        Text(
+                          'PAY PER FILE',
+                          style: Theme.of(context).textTheme.headline5,
+                        ),
+                        Container(height: 32),
+                        Text('No subscriptions are needed!'),
+                        Container(height: 16),
+                        Text(
+                            'Instead of another monthly charge for empty space you don’t use, pay a few cents once and store your files forever on ArDrive.'),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(height: 64),
+                _buildOnboardingStepFooter(),
+              ],
+            ),
+          ),
+        );
+      case 2:
+        return ProfileAuthShell(
+          illustration: _buildIllustrationSection(
+            Image.asset(
+              R.images.profile.newUserPermanent,
+              fit: BoxFit.scaleDown,
+            ),
+          ),
+          content: FractionallySizedBox(
+            widthFactor: 0.75,
+            child: Column(
+              children: [
+                DefaultTextStyle(
+                  style: Theme.of(context).textTheme.headline6,
+                  textAlign: TextAlign.center,
+                  child: Builder(
+                    builder: (context) => Column(
+                      children: [
+                        Text(
+                          'SECONDS FROM FOREVER',
+                          style: Theme.of(context).textTheme.headline5,
+                        ),
+                        Container(height: 32),
+                        Text(
+                            'Decentralized, permanent data storage doesn’t happen in an instant.'),
+                        Container(height: 16),
+                        Text(
+                            'When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.'),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(height: 64),
+                _buildOnboardingStepFooter(),
+              ],
+            ),
+          ),
+        );
+      case 3:
+        return ProfileAuthShell(
+          illustration: _buildIllustrationSection(
+            Image.asset(
+              R.images.profile.newUserPrivate,
+              fit: BoxFit.scaleDown,
+            ),
+          ),
+          content: FractionallySizedBox(
+            widthFactor: 0.75,
+            child: Column(
+              children: [
+                DefaultTextStyle(
+                  style: Theme.of(context).textTheme.headline6,
+                  textAlign: TextAlign.center,
+                  child: Builder(
+                    builder: (context) => Column(
+                      children: [
+                        Text(
+                          'TOTAL PRIVACY CONTROL',
+                          style: Theme.of(context).textTheme.headline5,
+                        ),
+                        Container(height: 32),
+                        Text(
+                            'Your choice: make files public or private using the best encryption.'),
+                        Container(height: 16),
+                        Text('No one will see what you don’t want them to.'),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(height: 64),
+                _buildOnboardingStepFooter(),
+              ],
+            ),
+          ),
+        );
+      case 4:
+        return ProfileAuthShell(
+          illustration: _buildIllustrationSection(
+            Image.asset(
+              R.images.profile.newUserDelete,
+              fit: BoxFit.scaleDown,
+            ),
+          ),
+          content: FractionallySizedBox(
+            widthFactor: 0.75,
+            child: Column(
+              children: [
+                DefaultTextStyle(
+                  style: Theme.of(context).textTheme.headline6,
+                  textAlign: TextAlign.center,
+                  child: Builder(
+                    builder: (context) => Column(
+                      children: [
+                        Text(
+                          'NEVER DELETED',
+                          style: Theme.of(context).textTheme.headline5,
+                        ),
+                        Container(height: 32),
+                        Text(
+                            'Remember: There is no delete button (for you or us)!'),
+                        Container(height: 16),
+                        Text('Once uploaded, your data can’t be removed.'),
+                        Container(height: 16),
+                        Text(
+                            'Think twice before uploading all your teenage love poetry...'),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(height: 64),
+                _buildOnboardingStepFooter(),
+              ],
+            ),
+          ),
+        );
+      default:
+        return Container();
+    }
+  }
+
+  Widget _buildIllustrationSection(Widget illustration) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          illustration,
+          Container(height: 48),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 256, minHeight: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                for (var i = 0; i < 5; i++)
+                  if (_onboardingStepIndex == i)
+                    AnimatedContainer(
+                      height: 16,
+                      width: 16,
+                      duration: const Duration(milliseconds: 200),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.all(Radius.circular(20)),
+                      ),
+                    )
+                  else
+                    AnimatedContainer(
+                      height: 8,
+                      width: 8,
+                      duration: const Duration(milliseconds: 200),
+                      decoration: BoxDecoration(
+                        color: Colors.white70,
+                        borderRadius: BorderRadius.all(Radius.circular(20)),
+                      ),
+                    ),
+              ],
+            ),
+          )
+        ],
+      );
+
+  Widget _buildOnboardingStepFooter() => Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          ElevatedButton(
+            child: Text('BACK'),
+            onPressed: () {
+              if (_onboardingStepIndex > 0) {
+                setState(() => _onboardingStepIndex--);
+              } else {
+                context.read<ProfileAddCubit>().promptForWallet();
+              }
+            },
+          ),
+          ElevatedButton(
+            child: Text('NEXT'),
+            onPressed: () {
+              if (_onboardingStepIndex < 4) {
+                setState(() => _onboardingStepIndex++);
+              } else {
+                context.read<ProfileAddCubit>().completeOnboarding();
+              }
+            },
+          )
+        ],
       );
 }

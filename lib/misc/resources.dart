@@ -11,11 +11,10 @@ class Images {
 class Profile {
   const Profile();
 
-  final profileAdd = 'assets/images/profile/illus_profile_add.png';
-  final profileOnboarding =
-      'assets/images/profile/illus_profile_onboarding.png';
-  final profileUnlock = 'assets/images/profile/illus_profile_unlock.png';
-  final profileWelcome = 'assets/images/profile/illus_profile_welcome.png';
+  final profileAdd = 'assets/images/profile/profile_add.png';
+  final profileOnboarding = 'assets/images/profile/profile_onboarding.png';
+  final profileUnlock = 'assets/images/profile/profile_unlock.png';
+  final profileWelcome = 'assets/images/profile/profile_welcome.png';
 
   final newUserPermanent =
       'assets/images/profile/profile_new_user_permanent.png';
