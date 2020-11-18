@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -8,7 +9,7 @@ class ProfileAuthOnboarding extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ProfileAuthShell(
         illustration: Image.asset(
-          'assets/images/illustrations/illus_profile_onboarding.png',
+          R.images.profile.profileOnboarding,
           fit: BoxFit.scaleDown,
         ),
         content: FractionallySizedBox(
