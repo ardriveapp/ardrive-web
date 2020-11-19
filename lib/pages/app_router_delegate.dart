@@ -107,7 +107,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         driveFolderId != null) {
       this.driveFolderId = driveFolderId;
     }
+
     this.driveId = driveId;
+
     notifyListeners();
   }
 }
