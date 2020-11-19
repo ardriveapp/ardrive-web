@@ -3,7 +3,7 @@ import 'package:ardrive/components/components.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/link.dart';
 
 class DriveDetailActionRow extends StatelessWidget {
   @override
@@ -26,11 +26,14 @@ class DriveDetailActionRow extends StatelessWidget {
                   tooltip: 'Download',
                 ),
                 if (state.currentDrive.isPublic)
-                  IconButton(
-                    icon: Icon(Icons.open_in_new),
-                    onPressed: () async =>
-                        launch(await bloc.getSelectedFilePreviewUrl()),
-                    tooltip: 'Preview',
+                  Link(
+                    uri: state.selectedFilePreviewUrl,
+                    target: LinkTarget.blank,
+                    builder: (context, followLink) => IconButton(
+                      icon: Icon(Icons.open_in_new),
+                      onPressed: followLink,
+                      tooltip: 'Preview',
+                    ),
                   ),
               },
               if (state.hasWritePermissions) ...{
