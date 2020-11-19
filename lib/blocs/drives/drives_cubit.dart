@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -17,6 +18,7 @@ class DrivesCubit extends Cubit<DrivesState> {
   StreamSubscription _drivesSubscription;
 
   DrivesCubit({
+    String initialSelectedDriveId,
     @required ProfileCubit profileCubit,
     @required DrivesDao drivesDao,
   })  : _profileCubit = profileCubit,
@@ -34,7 +36,9 @@ class DrivesCubit extends Cubit<DrivesState> {
       if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
         selectedDriveId = state.selectedDriveId;
       } else {
-        selectedDriveId = drives.isNotEmpty ? drives.first.id : null;
+        selectedDriveId = drives.isNotEmpty
+            ? (initialSelectedDriveId ?? drives.first.id)
+            : null;
       }
 
       emit(

@@ -18,6 +18,8 @@ class DrivesLoadSuccess extends DrivesState {
 
   final bool canCreateNewDrive;
 
+  bool get hasNoDrives => userDrives.isEmpty && sharedDrives.isEmpty;
+
   DrivesLoadSuccess({
     this.selectedDriveId,
     this.userDrives,
