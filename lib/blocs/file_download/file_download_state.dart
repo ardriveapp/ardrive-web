@@ -11,20 +11,15 @@ class FileDownloadStarting extends FileDownloadState {}
 
 class FileDownloadInProgress extends FileDownloadState {
   final String fileName;
-  final double downloadProgress;
-  final int downloadedByteCount;
   final int totalByteCount;
 
   FileDownloadInProgress({
     @required this.fileName,
-    this.downloadProgress = 0,
-    this.downloadedByteCount = 0,
-    this.totalByteCount = 0,
+    this.totalByteCount,
   });
 
   @override
-  List<Object> get props =>
-      [fileName, downloadProgress, downloadedByteCount, totalByteCount];
+  List<Object> get props => [fileName, totalByteCount];
 }
 
 class FileDownloadSuccess extends FileDownloadState {
