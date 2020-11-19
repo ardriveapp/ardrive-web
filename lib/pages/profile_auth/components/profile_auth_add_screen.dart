@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/l11n.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -13,7 +14,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
         builder: (context, state) => state is ProfileAddPromptDetails
             ? ProfileAuthShell(
                 illustration: Image.asset(
-                  'assets/images/illustrations/illus_profile_add.png',
+                  R.images.profile.profileAdd,
                   fit: BoxFit.scaleDown,
                 ),
                 content: FractionallySizedBox(

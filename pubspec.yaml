@@ -31,7 +31,6 @@ dependencies:
     git:
       url: https://github.com/CDDelta/cryptography.git
       path: cryptography
-  dio: ^3.0.10
   flutter_bloc: ^6.1.0
   flutter_portal: ^0.3.0
   filesize: ^1.0.4
@@ -70,4 +69,4 @@ flutter:
     - assets/config/
     - assets/fonts/
     - assets/images/brand/
-    - assets/images/illustrations/
+    - assets/images/profile/

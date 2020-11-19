@@ -62,14 +62,8 @@ class FileDownloadDialog extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      subtitle: Text(
-                          '${filesize(state.downloadedByteCount)}/${filesize(state.totalByteCount)}'),
-                      trailing: CircularProgressIndicator(
-                        // If the download hasn't started yet, show an indeterminate spinner.
-                        value: state.downloadProgress != 0
-                            ? state.downloadProgress
-                            : null,
-                      ),
+                      subtitle: Text(filesize(state.totalByteCount)),
+                      trailing: CircularProgressIndicator(),
                     ),
                   ),
                 )

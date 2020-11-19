@@ -4,8 +4,8 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
-import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
+import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:path/path.dart';
 
@@ -40,29 +40,20 @@ class FileDownloadCubit extends Cubit<FileDownloadState> {
         FileDownloadInProgress(fileName: file.name, totalByteCount: file.size));
 
     final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
-    final dataRes = await Dio().get<Uint8List>(
-      _arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}',
-      options: Options(responseType: ResponseType.bytes),
-      onReceiveProgress: (receive, total) => emit(
-        FileDownloadInProgress(
-          fileName: file.name,
-          downloadProgress: receive / total,
-          downloadedByteCount: receive,
-          totalByteCount: total,
-        ),
-      ),
-    );
+    final dataRes = await http
+        .get(_arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}');
 
     Uint8List dataBytes;
 
     if (drive.isPublic) {
-      dataBytes = dataRes.data;
+      dataBytes = dataRes.bodyBytes;
     } else if (drive.isPrivate) {
       final profile = _profileCubit.state as ProfileLoaded;
       final driveKey = await _driveDao.getDriveKey(drive.id, profile.cipherKey);
       final fileKey = await deriveFileKey(driveKey, file.id);
 
-      dataBytes = await decryptTransactionData(dataTx, dataRes.data, fileKey);
+      dataBytes =
+          await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey);
     }
 
     emit(

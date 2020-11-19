@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,7 +11,7 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ProfileAuthShell(
         illustration: Image.asset(
-          'assets/images/illustrations/illus_profile_welcome.png',
+          R.images.profile.profileWelcome,
           fit: BoxFit.scaleDown,
         ),
         content: FractionallySizedBox(
