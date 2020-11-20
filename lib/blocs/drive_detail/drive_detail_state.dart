@@ -18,6 +18,11 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final bool selectedItemIsFolder;
   final bool showSelectedItemDetails;
 
+  /// The preview URL for the selected file.
+  ///
+  /// Null if no file is selected.
+  final Uri selectedFilePreviewUrl;
+
   DriveDetailLoadSuccess({
     this.currentDrive,
     this.hasWritePermissions,
@@ -25,6 +30,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     this.selectedItemId,
     this.selectedItemIsFolder = false,
     this.showSelectedItemDetails = false,
+    this.selectedFilePreviewUrl,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -34,6 +40,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     String selectedItemId,
     bool selectedItemIsFolder,
     bool showSelectedItemDetails,
+    Uri selectedFilePreviewUrl,
   }) =>
       DriveDetailLoadSuccess(
         currentDrive: currentDrive ?? this.currentDrive,
@@ -43,6 +50,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         selectedItemIsFolder: selectedItemIsFolder ?? this.selectedItemIsFolder,
         showSelectedItemDetails:
             showSelectedItemDetails ?? this.showSelectedItemDetails,
+        selectedFilePreviewUrl:
+            selectedFilePreviewUrl ?? this.selectedFilePreviewUrl,
       );
 
   @override
@@ -53,5 +62,6 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         selectedItemId,
         selectedItemIsFolder,
         showSelectedItemDetails,
+        selectedFilePreviewUrl,
       ];
 }

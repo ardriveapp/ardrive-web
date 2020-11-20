@@ -43,14 +43,20 @@ class ProfileAuthAddScreen extends StatelessWidget {
                       ReactiveTextField(
                         formControlName: 'username',
                         autofocus: true,
-                        decoration: InputDecoration(labelText: 'Username'),
+                        decoration: InputDecoration(
+                          labelText: 'Username',
+                          prefixIcon: const Icon(Icons.person),
+                        ),
                         validationMessages: kValidationMessages,
                       ),
                       Container(height: 16),
                       ReactiveTextField(
                         formControlName: 'password',
                         obscureText: true,
-                        decoration: InputDecoration(labelText: 'Password'),
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          prefixIcon: const Icon(Icons.lock),
+                        ),
                         validationMessages: kValidationMessages,
                       ),
                       if (!state.isExistingUser) ...{
@@ -58,8 +64,10 @@ class ProfileAuthAddScreen extends StatelessWidget {
                         ReactiveTextField(
                           formControlName: 'passwordConfirmation',
                           obscureText: true,
-                          decoration:
-                              InputDecoration(labelText: 'Confirm Password'),
+                          decoration: InputDecoration(
+                            labelText: 'Confirm Password',
+                            prefixIcon: const Icon(Icons.lock),
+                          ),
                           validationMessages: const {
                             ...kValidationMessages,
                             'mustMatch':

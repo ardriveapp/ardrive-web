@@ -23,6 +23,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   DriveDetailCubit({
     @required this.driveId,
+    String initialFolderId,
     @required ProfileCubit profileCubit,
     @required DriveDao driveDao,
     @required AppConfig config,
@@ -31,7 +32,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         _config = config,
         super(DriveDetailLoadInProgress()) {
     if (driveId != null) {
-      openFolderAtPath('');
+      if (initialFolderId != null) {
+        () async {
+          final folder =
+              await _driveDao.getFolderById(driveId, initialFolderId);
+          openFolderAtPath(folder.path);
+        }();
+      } else {
+        openFolderAtPath('');
+      }
     }
   }
 
@@ -65,24 +74,28 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     ).listen((_) {});
   }
 
-  void selectItem(String itemId, {bool isFolder = false}) {
-    final state = this.state as DriveDetailLoadSuccess;
-    emit(state.copyWith(
+  Future<void> selectItem(String itemId, {bool isFolder = false}) async {
+    var state = this.state as DriveDetailLoadSuccess;
+
+    state = state.copyWith(
       selectedItemId: itemId,
       selectedItemIsFolder: isFolder,
-    ));
+    );
+
+    if (state.currentDrive.isPublic && !isFolder) {
+      final file = await _driveDao.getFileById(driveId, state.selectedItemId);
+      state = state.copyWith(
+          selectedFilePreviewUrl: Uri.parse(
+              '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}'));
+    }
+
+    emit(state);
   }
 
   void toggleSelectedItemDetails() {
     final state = this.state as DriveDetailLoadSuccess;
     emit(state.copyWith(
         showSelectedItemDetails: !state.showSelectedItemDetails));
-  }
-
-  Future<String> getSelectedFilePreviewUrl() async {
-    final state = this.state as DriveDetailLoadSuccess;
-    final file = await _driveDao.getFileById(driveId, state.selectedItemId);
-    return '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
   }
 
   @override
