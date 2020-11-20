@@ -19,45 +19,43 @@ class ProfileAuthUnlockScreen extends StatelessWidget {
           builder: (context, state) => ProfileAuthShell(
             illustration: Image.asset(
               R.images.profile.profileUnlock,
-              fit: BoxFit.scaleDown,
+              fit: BoxFit.contain,
             ),
-            content: FractionallySizedBox(
-              widthFactor: 0.5,
-              child: state is ProfileUnlockInitial
-                  ? ReactiveForm(
-                      formGroup: context.watch<ProfileUnlockCubit>().form,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'WELCOME BACK, ${state.username.toUpperCase()}',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.headline5,
+            contentWidthFactor: 0.5,
+            content: state is ProfileUnlockInitial
+                ? ReactiveForm(
+                    formGroup: context.watch<ProfileUnlockCubit>().form,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'WELCOME BACK, ${state.username.toUpperCase()}',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headline5,
+                        ),
+                        Container(height: 32),
+                        ReactiveTextField(
+                          formControlName: 'password',
+                          autofocus: true,
+                          obscureText: true,
+                          decoration: InputDecoration(labelText: 'Password'),
+                          showErrors: (control) =>
+                              control.dirty && control.invalid,
+                          validationMessages: kValidationMessages,
+                        ),
+                        Container(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            child: Text('UNLOCK'),
+                            onPressed: () =>
+                                context.read<ProfileUnlockCubit>().submit(),
                           ),
-                          Container(height: 32),
-                          ReactiveTextField(
-                            formControlName: 'password',
-                            autofocus: true,
-                            obscureText: true,
-                            decoration: InputDecoration(labelText: 'Password'),
-                            showErrors: (control) =>
-                                control.dirty && control.invalid,
-                            validationMessages: kValidationMessages,
-                          ),
-                          Container(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              child: Text('UNLOCK'),
-                              onPressed: () =>
-                                  context.read<ProfileUnlockCubit>().submit(),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : Container(),
-            ),
+                        ),
+                      ],
+                    ),
+                  )
+                : Container(),
           ),
         ),
       );

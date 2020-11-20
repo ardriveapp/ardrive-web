@@ -8,7 +8,7 @@ class ProfileAuthLoadingScreen extends StatelessWidget {
   Widget build(BuildContext context) => ProfileAuthShell(
         illustration: Image.asset(
           R.images.profile.profileUnlock,
-          fit: BoxFit.scaleDown,
+          fit: BoxFit.contain,
         ),
         content: Center(child: CircularProgressIndicator()),
       );

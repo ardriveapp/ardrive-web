@@ -21,192 +21,155 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
           illustration: _buildIllustrationSection(
             Image.asset(
               R.images.profile.newUserPermanent,
-              fit: BoxFit.scaleDown,
+              fit: BoxFit.contain,
             ),
           ),
-          content: FractionallySizedBox(
-            widthFactor: 0.75,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                DefaultTextStyle(
-                  style: Theme.of(context).textTheme.headline6,
-                  textAlign: TextAlign.center,
-                  child: Builder(
-                    builder: (context) => Column(
-                      children: [
-                        Text(
-                          'WELCOME TO THE PERMAWEB',
-                          style: Theme.of(context).textTheme.headline5,
-                        ),
-                        Container(height: 32),
-                        Text(
-                            'ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.'),
-                        Container(height: 16),
-                        Text('Any files you upload here will outlive you!'),
-                        Container(height: 16),
-                        Text('That also means we do a few things differently.'),
-                      ],
-                    ),
+          contentWidthFactor: 0.75,
+          content: DefaultTextStyle(
+            style: Theme.of(context).textTheme.headline6,
+            textAlign: TextAlign.center,
+            child: Builder(
+              builder: (context) => Column(
+                children: [
+                  Text(
+                    'WELCOME TO THE PERMAWEB',
+                    style: Theme.of(context).textTheme.headline5,
                   ),
-                ),
-                Container(height: 64),
-                _buildOnboardingStepFooter(),
-              ],
+                  Container(height: 32),
+                  Text(
+                      'ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.'),
+                  Container(height: 16),
+                  Text('Any files you upload here will outlive you!'),
+                  Container(height: 16),
+                  Text('That also means we do a few things differently.'),
+                ],
+              ),
             ),
           ),
+          contentFooter: _buildOnboardingStepFooter(),
         );
       case 1:
         return ProfileAuthShell(
           illustration: _buildIllustrationSection(
             Image.asset(
               R.images.profile.newUserPayment,
-              fit: BoxFit.scaleDown,
+              fit: BoxFit.contain,
             ),
           ),
-          content: FractionallySizedBox(
-            widthFactor: 0.75,
-            child: Column(
-              children: [
-                DefaultTextStyle(
-                  style: Theme.of(context).textTheme.headline6,
-                  textAlign: TextAlign.center,
-                  child: Builder(
-                    builder: (context) => Column(
-                      children: [
-                        Text(
-                          'PAY PER FILE',
-                          style: Theme.of(context).textTheme.headline5,
-                        ),
-                        Container(height: 32),
-                        Text('No subscriptions are needed!'),
-                        Container(height: 16),
-                        Text(
-                            'Instead of another monthly charge for empty space you don’t use, pay a few cents once and store your files forever on ArDrive.'),
-                      ],
-                    ),
+          contentWidthFactor: 0.75,
+          content: DefaultTextStyle(
+            style: Theme.of(context).textTheme.headline6,
+            textAlign: TextAlign.center,
+            child: Builder(
+              builder: (context) => Column(
+                children: [
+                  Text(
+                    'PAY PER FILE',
+                    style: Theme.of(context).textTheme.headline5,
                   ),
-                ),
-                Container(height: 64),
-                _buildOnboardingStepFooter(),
-              ],
+                  Container(height: 32),
+                  Text('No subscriptions are needed!'),
+                  Container(height: 16),
+                  Text(
+                      'Instead of another monthly charge for empty space you don’t use, pay a few cents once and store your files forever on ArDrive.'),
+                ],
+              ),
             ),
           ),
+          contentFooter: _buildOnboardingStepFooter(),
         );
       case 2:
         return ProfileAuthShell(
           illustration: _buildIllustrationSection(
             Image.asset(
               R.images.profile.newUserPermanent,
-              fit: BoxFit.scaleDown,
+              fit: BoxFit.contain,
             ),
           ),
-          content: FractionallySizedBox(
-            widthFactor: 0.75,
-            child: Column(
-              children: [
-                DefaultTextStyle(
-                  style: Theme.of(context).textTheme.headline6,
-                  textAlign: TextAlign.center,
-                  child: Builder(
-                    builder: (context) => Column(
-                      children: [
-                        Text(
-                          'SECONDS FROM FOREVER',
-                          style: Theme.of(context).textTheme.headline5,
-                        ),
-                        Container(height: 32),
-                        Text(
-                            'Decentralized, permanent data storage doesn’t happen in an instant.'),
-                        Container(height: 16),
-                        Text(
-                            'When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.'),
-                      ],
-                    ),
+          contentWidthFactor: 0.75,
+          content: DefaultTextStyle(
+            style: Theme.of(context).textTheme.headline6,
+            textAlign: TextAlign.center,
+            child: Builder(
+              builder: (context) => Column(
+                children: [
+                  Text(
+                    'SECONDS FROM FOREVER',
+                    style: Theme.of(context).textTheme.headline5,
                   ),
-                ),
-                Container(height: 64),
-                _buildOnboardingStepFooter(),
-              ],
+                  Container(height: 32),
+                  Text(
+                      'Decentralized, permanent data storage doesn’t happen in an instant.'),
+                  Container(height: 16),
+                  Text(
+                      'When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.'),
+                ],
+              ),
             ),
           ),
+          contentFooter: _buildOnboardingStepFooter(),
         );
       case 3:
         return ProfileAuthShell(
           illustration: _buildIllustrationSection(
             Image.asset(
               R.images.profile.newUserPrivate,
-              fit: BoxFit.scaleDown,
+              fit: BoxFit.contain,
             ),
           ),
-          content: FractionallySizedBox(
-            widthFactor: 0.75,
-            child: Column(
-              children: [
-                DefaultTextStyle(
-                  style: Theme.of(context).textTheme.headline6,
-                  textAlign: TextAlign.center,
-                  child: Builder(
-                    builder: (context) => Column(
-                      children: [
-                        Text(
-                          'TOTAL PRIVACY CONTROL',
-                          style: Theme.of(context).textTheme.headline5,
-                        ),
-                        Container(height: 32),
-                        Text(
-                            'Your choice: make files public or private using the best encryption.'),
-                        Container(height: 16),
-                        Text('No one will see what you don’t want them to.'),
-                      ],
-                    ),
+          contentWidthFactor: 0.75,
+          content: DefaultTextStyle(
+            style: Theme.of(context).textTheme.headline6,
+            textAlign: TextAlign.center,
+            child: Builder(
+              builder: (context) => Column(
+                children: [
+                  Text(
+                    'TOTAL PRIVACY CONTROL',
+                    style: Theme.of(context).textTheme.headline5,
                   ),
-                ),
-                Container(height: 64),
-                _buildOnboardingStepFooter(),
-              ],
+                  Container(height: 32),
+                  Text(
+                      'Your choice: make files public or private using the best encryption.'),
+                  Container(height: 16),
+                  Text('No one will see what you don’t want them to.'),
+                ],
+              ),
             ),
           ),
+          contentFooter: _buildOnboardingStepFooter(),
         );
       case 4:
         return ProfileAuthShell(
           illustration: _buildIllustrationSection(
             Image.asset(
               R.images.profile.newUserDelete,
-              fit: BoxFit.scaleDown,
+              fit: BoxFit.contain,
             ),
           ),
-          content: FractionallySizedBox(
-            widthFactor: 0.75,
-            child: Column(
-              children: [
-                DefaultTextStyle(
-                  style: Theme.of(context).textTheme.headline6,
-                  textAlign: TextAlign.center,
-                  child: Builder(
-                    builder: (context) => Column(
-                      children: [
-                        Text(
-                          'NEVER DELETED',
-                          style: Theme.of(context).textTheme.headline5,
-                        ),
-                        Container(height: 32),
-                        Text(
-                            'Remember: There is no delete button (for you or us)!'),
-                        Container(height: 16),
-                        Text('Once uploaded, your data can’t be removed.'),
-                        Container(height: 16),
-                        Text(
-                            'Think twice before uploading all your teenage love poetry...'),
-                      ],
-                    ),
+          contentWidthFactor: 0.75,
+          content: DefaultTextStyle(
+            style: Theme.of(context).textTheme.headline6,
+            textAlign: TextAlign.center,
+            child: Builder(
+              builder: (context) => Column(
+                children: [
+                  Text(
+                    'NEVER DELETED',
+                    style: Theme.of(context).textTheme.headline5,
                   ),
-                ),
-                Container(height: 64),
-                _buildOnboardingStepFooter(),
-              ],
+                  Container(height: 32),
+                  Text('Remember: There is no delete button (for you or us)!'),
+                  Container(height: 16),
+                  Text('Once uploaded, your data can’t be removed.'),
+                  Container(height: 16),
+                  Text(
+                      'Think twice before uploading all your teenage love poetry...'),
+                ],
+              ),
             ),
           ),
+          contentFooter: _buildOnboardingStepFooter(),
         );
       default:
         return Container();
