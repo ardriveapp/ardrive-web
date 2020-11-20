@@ -38,7 +38,10 @@ class ProfileAuthUnlockScreen extends StatelessWidget {
                           formControlName: 'password',
                           autofocus: true,
                           obscureText: true,
-                          decoration: InputDecoration(labelText: 'Password'),
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: const Icon(Icons.lock),
+                          ),
                           validationMessages: kValidationMessages,
                         ),
                         Container(height: 16),
