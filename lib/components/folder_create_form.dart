@@ -57,6 +57,7 @@ class FolderCreateForm extends StatelessWidget {
                   formControlName: 'name',
                   autofocus: true,
                   decoration: const InputDecoration(labelText: 'Folder name'),
+                  showErrors: (control) => control.dirty && control.invalid,
                   validationMessages: kValidationMessages,
                 ),
               ),

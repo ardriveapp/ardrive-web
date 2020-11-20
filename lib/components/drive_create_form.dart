@@ -46,12 +46,14 @@ class DriveCreateForm extends StatelessWidget {
                       autofocus: true,
                       textCapitalization: TextCapitalization.words,
                       decoration: const InputDecoration(labelText: 'Name'),
+                      showErrors: (control) => control.dirty && control.invalid,
                       validationMessages: kValidationMessages,
                     ),
                     Container(height: 16),
                     ReactiveDropdownField(
                       formControlName: 'privacy',
                       decoration: const InputDecoration(labelText: 'Privacy'),
+                      showErrors: (control) => control.dirty && control.invalid,
                       validationMessages: kValidationMessages,
                       items: const [
                         DropdownMenuItem(
