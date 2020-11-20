@@ -65,7 +65,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       },
       validators: [
         if (withPasswordConfirmation)
-          Validators.mustMatch('password', 'passwordConfirmation'),
+          _mustMatch('password', 'passwordConfirmation'),
       ],
     );
   }
@@ -114,5 +114,25 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     await _profileDao.addProfile(username, password, _wallet);
 
     await _profileCubit.unlockDefaultProfile(password);
+  }
+
+  ValidatorFunction _mustMatch(String controlName, String matchingControlName) {
+    return (AbstractControl control) {
+      final form = control as FormGroup;
+
+      final formControl = form.control(controlName);
+      final matchingFormControl = form.control(matchingControlName);
+
+      if (formControl.value != matchingFormControl.value) {
+        matchingFormControl.setErrors({'mustMatch': true});
+
+        // Do not mark the matching form control as touched like the default `mustMatch` validator does.
+        // matchingFormControl.markAsTouched();
+      } else {
+        matchingFormControl.setErrors({});
+      }
+
+      return null;
+    };
   }
 }
