@@ -25,12 +25,13 @@ class ProfileAuthPage extends StatelessWidget {
                   builder: (context, state) {
                 if (state is ProfileAddPromptWallet) {
                   return ProfileAuthPromptWalletScreen();
-                } else if (state is ProfileAddUserStateLoadInProgress) {
-                  return ProfileAuthLoadingScreen();
                 } else if (state is ProfileAddOnboardingNewUser) {
                   return ProfileAuthOnboarding();
                 } else if (state is ProfileAddPromptDetails) {
                   return ProfileAuthAddScreen();
+                } else if (state is ProfileAddUserStateLoadInProgress ||
+                    state is ProfileAddInProgress) {
+                  return ProfileAuthLoadingScreen();
                 }
 
                 return Container();

@@ -77,6 +77,8 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       return;
     }
 
+    emit(ProfileAddInProgress());
+
     final String username = form.control('username').value;
     final String password = form.control('password').value;
 

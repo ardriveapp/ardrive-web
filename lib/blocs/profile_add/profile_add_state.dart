@@ -8,6 +8,7 @@ abstract class ProfileAddState extends Equatable {
 
 class ProfileAddPromptWallet extends ProfileAddState {}
 
+/// The user's profile usage is being checked for.
 class ProfileAddUserStateLoadInProgress extends ProfileAddState {}
 
 class ProfileAddOnboardingNewUser extends ProfileAddState {}
@@ -20,3 +21,6 @@ class ProfileAddPromptDetails extends ProfileAddState {
   @override
   List<Object> get props => [isExistingUser];
 }
+
+/// The user's profile details is being validated and added.
+class ProfileAddInProgress extends ProfileAddState {}
