@@ -7,18 +7,22 @@ import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
+import 'package:pedantic/pedantic.dart';
 
 part 'profile_state.dart';
 
 class ProfileCubit extends Cubit<ProfileState> {
   final ArweaveService _arweave;
   final ProfileDao _profileDao;
+  final Database _db;
 
   ProfileCubit({
     @required ArweaveService arweave,
     @required ProfileDao profileDao,
+    @required Database db,
   })  : _arweave = arweave,
         _profileDao = profileDao,
+        _db = db,
         super(ProfileUnavailable()) {
     promptToAuthenticate();
   }
@@ -62,5 +66,17 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> signOut() async {
     emit(ProfileUnavailable());
     await promptToAuthenticate();
+  }
+
+  /// Removes the user's existing profile and its associated data then prompts them to add another.
+  Future<void> removeProfile() async {
+    emit(ProfileRemoveInProgress());
+
+    await _db.delete(_db.profiles).go();
+    await _db.delete(_db.drives).go();
+    await _db.delete(_db.folderEntries).go();
+    await _db.delete(_db.fileEntries).go();
+
+    unawaited(promptToAuthenticate());
   }
 }

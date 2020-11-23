@@ -51,3 +51,5 @@ class ProfileUnavailable extends ProfileState {}
 class ProfilePromptAdd extends ProfileUnavailable {}
 
 class ProfilePromptUnlock extends ProfileUnavailable {}
+
+class ProfileRemoveInProgress extends ProfileUnavailable {}

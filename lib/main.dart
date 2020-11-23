@@ -12,7 +12,6 @@ import 'theme/theme.dart';
 ConfigService configService;
 AppConfig config;
 ArweaveService arweave;
-Database db;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,8 +21,6 @@ void main() async {
 
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl)));
-
-  db = Database();
 
   runApp(App());
 }
@@ -38,14 +35,19 @@ class App extends StatelessWidget {
           RepositoryProvider<ArweaveService>(create: (_) => arweave),
           RepositoryProvider<PstService>(create: (_) => PstService()),
           RepositoryProvider<AppConfig>(create: (_) => config),
-          RepositoryProvider<ProfileDao>(create: (_) => db.profileDao),
-          RepositoryProvider<DrivesDao>(create: (_) => db.drivesDao),
-          RepositoryProvider<DriveDao>(create: (_) => db.driveDao),
+          RepositoryProvider<Database>(create: (_) => Database()),
+          RepositoryProvider<ProfileDao>(
+              create: (context) => context.read<Database>().profileDao),
+          RepositoryProvider<DrivesDao>(
+              create: (context) => context.read<Database>().drivesDao),
+          RepositoryProvider<DriveDao>(
+              create: (context) => context.read<Database>().driveDao),
         ],
         child: BlocProvider(
           create: (context) => ProfileCubit(
             arweave: context.read<ArweaveService>(),
             profileDao: context.read<ProfileDao>(),
+            db: context.read<Database>(),
           ),
           child: BlocBuilder<ProfileCubit, ProfileState>(
             builder: (context, state) => MaterialApp.router(
@@ -71,7 +73,7 @@ class App extends StatelessWidget {
                       arweave: context.read<ArweaveService>(),
                       drivesDao: context.read<DrivesDao>(),
                       driveDao: context.read<DriveDao>(),
-                      db: db,
+                      db: context.read<Database>(),
                     ),
                     child: BlocListener<SyncCubit, SyncState>(
                       listener: (context, state) {
