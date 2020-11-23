@@ -42,7 +42,7 @@ class ProfileAuthUnlockScreen extends StatelessWidget {
                             labelText: 'Password',
                             prefixIcon: const Icon(Icons.lock),
                           ),
-                          validationMessages: kValidationMessages,
+                          validationMessages: (_) => kValidationMessages,
                         ),
                         Container(height: 16),
                         SizedBox(

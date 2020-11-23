@@ -47,7 +47,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           labelText: 'Username',
                           prefixIcon: const Icon(Icons.person),
                         ),
-                        validationMessages: kValidationMessages,
+                        validationMessages: (_) => kValidationMessages,
                       ),
                       Container(height: 16),
                       ReactiveTextField(
@@ -57,7 +57,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           labelText: 'Password',
                           prefixIcon: const Icon(Icons.lock),
                         ),
-                        validationMessages: kValidationMessages,
+                        validationMessages: (_) => kValidationMessages,
                       ),
                       if (!state.isExistingUser) ...{
                         Container(height: 16),
@@ -68,7 +68,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                             labelText: 'Confirm Password',
                             prefixIcon: const Icon(Icons.lock),
                           ),
-                          validationMessages: const {
+                          validationMessages: (_) => const {
                             ...kValidationMessages,
                             'mustMatch':
                                 'The confirmation password does not match.',

@@ -95,7 +95,7 @@ class DriveDetailPage extends StatelessWidget {
                                                   state.selectedItemId) {
                                                 bloc.toggleSelectedItemDetails();
                                               } else {
-                                                bloc.selectItem(file.id);
+                                                await bloc.selectItem(file.id);
                                               }
                                             },
                                           ),

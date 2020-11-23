@@ -22,7 +22,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  artemis: 6.7.1-beta.1
+  artemis: ^6.17.1
   arweave:
     git:
       url: https://github.com/CDDelta/arweave-dart.git
@@ -46,7 +46,7 @@ dependencies:
   moor: ^3.3.1
   path_provider: ^1.6.11
   pedantic: ^1.9.2
-  reactive_forms: ^6.0.2
+  reactive_forms: ^7.3.0
   rxdart: ^0.24.1
   timeago: ^2.0.28
   url_launcher: ^5.7.10

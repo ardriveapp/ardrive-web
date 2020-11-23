@@ -81,7 +81,7 @@ class FsEntryRenameForm extends StatelessWidget {
                                 : 'File name'),
                         showErrors: (control) =>
                             control.dirty && control.invalid,
-                        validationMessages: kValidationMessages,
+                        validationMessages: (_) => kValidationMessages,
                       ),
                     ),
                   )
