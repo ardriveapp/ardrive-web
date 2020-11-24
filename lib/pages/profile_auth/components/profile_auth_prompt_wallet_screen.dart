@@ -23,18 +23,18 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headline5,
             ),
-            Container(height: 32),
+            const SizedBox(height: 32),
             Text(
               'Your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headline6,
             ),
-            Container(height: 32),
+            const SizedBox(height: 32),
             ElevatedButton(
               child: Text('SELECT WALLET'),
               onPressed: () => _pickWallet(context),
             ),
-            Container(height: 16),
+            const SizedBox(height: 16),
             Link(
               uri: Uri.parse('https://tokens.arweave.org'),
               target: LinkTarget.blank,

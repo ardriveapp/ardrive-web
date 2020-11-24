@@ -51,7 +51,7 @@ class DriveAttachForm extends StatelessWidget {
                       showErrors: (control) => control.dirty && control.invalid,
                       validationMessages: (_) => kValidationMessages,
                     ),
-                    Container(height: 16),
+                    const SizedBox(height: 16),
                     ReactiveTextField(
                       formControlName: 'name',
                       decoration: InputDecoration(labelText: 'Name'),

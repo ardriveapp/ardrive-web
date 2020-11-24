@@ -39,7 +39,7 @@ class _AppShellState extends State<AppShell> {
                     portal: ProfileOverlay(),
                     portalAnchor: Alignment.topRight,
                     childAnchor: Alignment.centerLeft,
-                    child: Icon(Icons.account_circle),
+                    child: const Icon(Icons.account_circle),
                   ),
                 ),
                 onPressed: () => toggleProfileOverlay(),

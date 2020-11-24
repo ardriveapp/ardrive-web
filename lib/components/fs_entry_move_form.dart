@@ -83,13 +83,13 @@ class FsEntryMoveForm extends StatelessWidget {
                                             .textTheme
                                             .subtitle1,
                                         padding: const EdgeInsets.all(16)),
-                                    icon: Icon(Icons.arrow_back),
+                                    icon: const Icon(Icons.arrow_back),
                                     label: Text(
                                         'Back to "${state.viewingFolder.folder.name}" folder'),
                                     onPressed: () => context
                                         .read<FsEntryMoveCubit>()
                                         .loadParentFolder()),
-                                Container(height: 16),
+                                const SizedBox(height: 16),
                               },
                               Scrollbar(
                                 child: SingleChildScrollView(
@@ -103,7 +103,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                           (f) => ListTile(
                                             key: ValueKey(f.id),
                                             dense: true,
-                                            leading: Icon(Icons.folder),
+                                            leading: const Icon(Icons.folder),
                                             title: Text(f.name),
                                             onTap: () => context
                                                 .read<FsEntryMoveCubit>()
@@ -138,7 +138,7 @@ class FsEntryMoveForm extends StatelessWidget {
                           children: [
                             if (state is FsEntryMoveFolderLoadSuccess)
                               TextButton.icon(
-                                icon: Icon(Icons.create_new_folder),
+                                icon: const Icon(Icons.create_new_folder),
                                 label: Text('CREATE FOLDER'),
                                 onPressed: () => promptToCreateFolder(
                                   context,

@@ -49,7 +49,7 @@ class DriveCreateForm extends StatelessWidget {
                       showErrors: (control) => control.dirty && control.invalid,
                       validationMessages: (_) => kValidationMessages,
                     ),
-                    Container(height: 16),
+                    const SizedBox(height: 16),
                     ReactiveDropdownField(
                       formControlName: 'privacy',
                       decoration: const InputDecoration(labelText: 'Privacy'),

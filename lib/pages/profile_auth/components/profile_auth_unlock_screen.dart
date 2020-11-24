@@ -33,7 +33,7 @@ class ProfileAuthUnlockScreen extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.headline5,
                         ),
-                        Container(height: 32),
+                        const SizedBox(height: 32),
                         ReactiveTextField(
                           formControlName: 'password',
                           autofocus: true,
@@ -44,7 +44,7 @@ class ProfileAuthUnlockScreen extends StatelessWidget {
                           ),
                           validationMessages: (_) => kValidationMessages,
                         ),
-                        Container(height: 16),
+                        const SizedBox(height: 16),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(

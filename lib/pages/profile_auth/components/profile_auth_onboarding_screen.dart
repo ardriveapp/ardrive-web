@@ -35,12 +35,12 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
                     'WELCOME TO THE PERMAWEB',
                     style: Theme.of(context).textTheme.headline5,
                   ),
-                  Container(height: 32),
+                  const SizedBox(height: 32),
                   Text(
                       'ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.'),
-                  Container(height: 16),
+                  const SizedBox(height: 16),
                   Text('Any files you upload here will outlive you!'),
-                  Container(height: 16),
+                  const SizedBox(height: 16),
                   Text('That also means we do a few things differently.'),
                 ],
               ),
@@ -67,9 +67,9 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
                     'PAY PER FILE',
                     style: Theme.of(context).textTheme.headline5,
                   ),
-                  Container(height: 32),
+                  const SizedBox(height: 32),
                   Text('No subscriptions are needed!'),
-                  Container(height: 16),
+                  const SizedBox(height: 16),
                   Text(
                       'Instead of another monthly charge for empty space you don’t use, pay a few cents once and store your files forever on ArDrive.'),
                 ],
@@ -97,10 +97,10 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
                     'SECONDS FROM FOREVER',
                     style: Theme.of(context).textTheme.headline5,
                   ),
-                  Container(height: 32),
+                  const SizedBox(height: 32),
                   Text(
                       'Decentralized, permanent data storage doesn’t happen in an instant.'),
-                  Container(height: 16),
+                  const SizedBox(height: 16),
                   Text(
                       'When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.'),
                 ],
@@ -128,10 +128,10 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
                     'TOTAL PRIVACY CONTROL',
                     style: Theme.of(context).textTheme.headline5,
                   ),
-                  Container(height: 32),
+                  const SizedBox(height: 32),
                   Text(
                       'Your choice: make files public or private using the best encryption.'),
-                  Container(height: 16),
+                  const SizedBox(height: 16),
                   Text('No one will see what you don’t want them to.'),
                 ],
               ),
@@ -158,11 +158,11 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
                     'NEVER DELETED',
                     style: Theme.of(context).textTheme.headline5,
                   ),
-                  Container(height: 32),
+                  const SizedBox(height: 32),
                   Text('Remember: There is no delete button (for you or us)!'),
-                  Container(height: 16),
+                  const SizedBox(height: 16),
                   Text('Once uploaded, your data can’t be removed.'),
-                  Container(height: 16),
+                  const SizedBox(height: 16),
                   Text(
                       'Think twice before uploading all your teenage love poetry...'),
                 ],
@@ -180,7 +180,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
         mainAxisSize: MainAxisSize.min,
         children: [
           illustration,
-          Container(height: 48),
+          const SizedBox(height: 48),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 256, minHeight: 16),
             child: Row(
@@ -217,7 +217,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           TextButton.icon(
-            icon: Icon(Icons.chevron_left),
+            icon: const Icon(Icons.chevron_left),
             label: Text('BACK'),
             onPressed: () {
               if (_onboardingStepIndex > 0) {
@@ -234,7 +234,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               children: [
                 Text('NEXT'),
                 const SizedBox(width: 8),
-                Icon(Icons.chevron_right),
+                const Icon(Icons.chevron_right),
               ],
             ),
             onPressed: () {

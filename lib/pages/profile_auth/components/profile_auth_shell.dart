@@ -46,7 +46,7 @@ class ProfileAuthShell extends StatelessWidget {
                             height: 126,
                             fit: BoxFit.contain,
                           ),
-                          Container(height: 32),
+                          const SizedBox(height: 32),
                           content,
                         ],
                       ),

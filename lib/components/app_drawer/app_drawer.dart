@@ -97,7 +97,7 @@ class AppDrawer extends StatelessWidget {
                 width: 128,
                 child: FloatingActionButton.extended(
                   onPressed: null,
-                  icon: Icon(Icons.add),
+                  icon: const Icon(Icons.add),
                   label: Text('NEW'),
                 ),
               ),
@@ -166,7 +166,7 @@ class AppDrawer extends StatelessWidget {
                 tooltip: 'Syncing...',
               )
             : IconButton(
-                icon: Icon(Icons.refresh),
+                icon: const Icon(Icons.refresh),
                 onPressed: () => context.read<SyncCubit>().startSync(),
                 tooltip: 'Sync',
               ),

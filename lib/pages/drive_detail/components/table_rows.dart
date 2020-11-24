@@ -25,7 +25,7 @@ DataRow buildFolderRow({
             children: [
               Padding(
                 padding: const EdgeInsetsDirectional.only(end: 8.0),
-                child: Icon(Icons.folder),
+                child: const Icon(Icons.folder),
               ),
               Text(folder.name),
             ],

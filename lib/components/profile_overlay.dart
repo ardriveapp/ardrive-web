@@ -29,7 +29,7 @@ class ProfileOverlay extends StatelessWidget {
                                 state.wallet.address,
                                 style: Theme.of(context).textTheme.bodyText2,
                               ),
-                              Container(height: 4),
+                              const SizedBox(height: 4),
                               Text(
                                 '${utils.winstonToAr(state.walletBalance)} AR',
                                 style: Theme.of(context)
@@ -43,7 +43,7 @@ class ProfileOverlay extends StatelessWidget {
                             ],
                           ),
                           trailing: IconButton(
-                              icon: Icon(Icons.logout),
+                              icon: const Icon(Icons.logout),
                               onPressed: () =>
                                   context.read<ProfileCubit>().signOut()),
                         ),

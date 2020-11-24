@@ -14,8 +14,8 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
               child: Row(
                 children: [
-                  Icon(Icons.folder_open),
-                  Container(width: 16),
+                  const Icon(Icons.folder_open),
+                  const SizedBox(width: 16),
                   if (promptToAddFiles)
                     Text(
                       'There\'s nothing to see here. Click "new" to add some files.',

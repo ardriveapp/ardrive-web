@@ -30,7 +30,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headline5,
                       ),
-                      Container(height: 32),
+                      const SizedBox(height: 32),
                       if (state.isExistingUser)
                         Text(
                             'Please provide the same password as the one you used before.',
@@ -39,7 +39,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                         Text(
                             'Your password can never be changed or recovered. Please keep it safe!',
                             textAlign: TextAlign.center),
-                      Container(height: 16),
+                      const SizedBox(height: 16),
                       ReactiveTextField(
                         formControlName: 'username',
                         autofocus: true,
@@ -49,7 +49,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                         ),
                         validationMessages: (_) => kValidationMessages,
                       ),
-                      Container(height: 16),
+                      const SizedBox(height: 16),
                       ReactiveTextField(
                         formControlName: 'password',
                         obscureText: true,
@@ -60,7 +60,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                         validationMessages: (_) => kValidationMessages,
                       ),
                       if (!state.isExistingUser) ...{
-                        Container(height: 16),
+                        const SizedBox(height: 16),
                         ReactiveTextField(
                           formControlName: 'passwordConfirmation',
                           obscureText: true,
@@ -75,7 +75,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           },
                         ),
                       },
-                      Container(height: 32),
+                      const SizedBox(height: 32),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -84,7 +84,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                               context.read<ProfileAddCubit>().submit(),
                         ),
                       ),
-                      Container(height: 16),
+                      const SizedBox(height: 16),
                       TextButton(
                         child: Text('Change wallet'),
                         onPressed: () =>

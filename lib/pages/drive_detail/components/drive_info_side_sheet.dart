@@ -32,11 +32,11 @@ class DriveInfoSideSheet extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Container(height: 8),
+                        const SizedBox(height: 8),
                         ListTile(
                           title: Text(state.name),
                           trailing: IconButton(
-                            icon: Icon(Icons.close),
+                            icon: const Icon(Icons.close),
                             onPressed: () => context
                                 .read<DriveDetailCubit>()
                                 .toggleSelectedItemDetails(),

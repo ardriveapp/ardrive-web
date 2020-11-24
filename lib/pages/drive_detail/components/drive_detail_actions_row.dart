@@ -17,7 +17,7 @@ class DriveDetailActionRow extends StatelessWidget {
             if (state.selectedItemId != null) ...{
               if (!state.selectedItemIsFolder) ...{
                 IconButton(
-                  icon: Icon(Icons.file_download),
+                  icon: const Icon(Icons.file_download),
                   onPressed: () => promptToDownloadFile(
                     context,
                     driveId: state.currentDrive.id,
@@ -30,7 +30,7 @@ class DriveDetailActionRow extends StatelessWidget {
                     uri: state.selectedFilePreviewUrl,
                     target: LinkTarget.blank,
                     builder: (context, followLink) => IconButton(
-                      icon: Icon(Icons.open_in_new),
+                      icon: const Icon(Icons.open_in_new),
                       onPressed: followLink,
                       tooltip: 'Preview',
                     ),
@@ -38,7 +38,7 @@ class DriveDetailActionRow extends StatelessWidget {
               },
               if (state.hasWritePermissions) ...{
                 IconButton(
-                  icon: Icon(Icons.drive_file_rename_outline),
+                  icon: const Icon(Icons.drive_file_rename_outline),
                   onPressed: () {
                     if (state.selectedItemIsFolder) {
                       promptToRenameFolder(context,
@@ -53,7 +53,7 @@ class DriveDetailActionRow extends StatelessWidget {
                   tooltip: 'Rename',
                 ),
                 IconButton(
-                  icon: Icon(Icons.drive_file_move),
+                  icon: const Icon(Icons.drive_file_move),
                   onPressed: () {
                     if (state.selectedItemIsFolder) {
                       promptToMoveFolder(context,
@@ -75,26 +75,26 @@ class DriveDetailActionRow extends StatelessWidget {
             children: [
               ...fsActions,
               if (fsActions.isNotEmpty)
-                Container(height: 32, child: VerticalDivider()),
+                const SizedBox(height: 32, child: VerticalDivider()),
               if (!state.hasWritePermissions)
                 IconButton(
-                  icon: Icon(Icons.remove_red_eye),
+                  icon: const Icon(Icons.remove_red_eye),
                   onPressed: () => bloc.toggleSelectedItemDetails(),
                   tooltip: 'View Only',
                 ),
               state.currentDrive.isPrivate
                   ? IconButton(
-                      icon: Icon(Icons.lock),
+                      icon: const Icon(Icons.lock),
                       onPressed: () => bloc.toggleSelectedItemDetails(),
                       tooltip: 'Private',
                     )
                   : IconButton(
-                      icon: Icon(Icons.public),
+                      icon: const Icon(Icons.public),
                       onPressed: () => bloc.toggleSelectedItemDetails(),
                       tooltip: 'Public',
                     ),
               IconButton(
-                icon: Icon(Icons.info),
+                icon: const Icon(Icons.info),
                 onPressed: () => bloc.toggleSelectedItemDetails(),
                 tooltip: 'View Info',
               ),
