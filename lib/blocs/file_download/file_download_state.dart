@@ -36,3 +36,5 @@ class FileDownloadSuccess extends FileDownloadState {
   @override
   List<Object> get props => [fileName, fileExtension, fileDataBytes];
 }
+
+class FileDownloadFailure extends FileDownloadState {}

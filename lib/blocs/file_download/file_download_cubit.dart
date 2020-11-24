@@ -33,35 +33,46 @@ class FileDownloadCubit extends Cubit<FileDownloadState> {
   }
 
   Future<void> download() async {
-    final drive = await _driveDao.getDriveById(driveId);
-    final file = await _driveDao.getFileById(driveId, fileId);
+    try {
+      final drive = await _driveDao.getDriveById(driveId);
+      final file = await _driveDao.getFileById(driveId, fileId);
 
-    emit(
-        FileDownloadInProgress(fileName: file.name, totalByteCount: file.size));
+      emit(FileDownloadInProgress(
+          fileName: file.name, totalByteCount: file.size));
 
-    final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
-    final dataRes = await http
-        .get(_arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}');
+      final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
+      final dataRes = await http
+          .get(_arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}');
 
-    Uint8List dataBytes;
+      Uint8List dataBytes;
 
-    if (drive.isPublic) {
-      dataBytes = dataRes.bodyBytes;
-    } else if (drive.isPrivate) {
-      final profile = _profileCubit.state as ProfileLoaded;
-      final driveKey = await _driveDao.getDriveKey(drive.id, profile.cipherKey);
-      final fileKey = await deriveFileKey(driveKey, file.id);
+      if (drive.isPublic) {
+        dataBytes = dataRes.bodyBytes;
+      } else if (drive.isPrivate) {
+        final profile = _profileCubit.state as ProfileLoaded;
+        final driveKey =
+            await _driveDao.getDriveKey(drive.id, profile.cipherKey);
+        final fileKey = await deriveFileKey(driveKey, file.id);
 
-      dataBytes =
-          await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey);
+        dataBytes =
+            await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey);
+      }
+
+      emit(
+        FileDownloadSuccess(
+          fileName: file.name,
+          fileExtension: extension(file.name),
+          fileDataBytes: dataBytes,
+        ),
+      );
+    } catch (err) {
+      addError(err);
     }
+  }
 
-    emit(
-      FileDownloadSuccess(
-        fileName: file.name,
-        fileExtension: extension(file.name),
-        fileDataBytes: dataBytes,
-      ),
-    );
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    emit(FileDownloadFailure());
+    super.onError(error, stackTrace);
   }
 }

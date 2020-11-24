@@ -38,36 +38,54 @@ class FileDownloadDialog extends StatelessWidget {
           arweave: context.read<ArweaveService>(),
         ),
         child: BlocConsumer<FileDownloadCubit, FileDownloadState>(
-          listener: (context, state) async {
-            if (state is FileDownloadSuccess) {
-              await FilePickerCross(
-                state.fileDataBytes,
-                path: state.fileName,
-                fileExtension: state.fileExtension,
-              ).exportToStorage();
+            listener: (context, state) async {
+          if (state is FileDownloadSuccess) {
+            await FilePickerCross(
+              state.fileDataBytes,
+              path: state.fileName,
+              fileExtension: state.fileExtension,
+            ).exportToStorage();
 
-              Navigator.pop(context);
-            }
-          },
-          builder: (context, state) => state is FileDownloadInProgress
-              ? AppDialog(
-                  dismissable: false,
-                  title: 'Downloading file...',
-                  content: SizedBox(
-                    width: kSmallDialogWidth,
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        state.fileName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(filesize(state.totalByteCount)),
-                      trailing: CircularProgressIndicator(),
-                    ),
+            Navigator.pop(context);
+          }
+        }, builder: (context, state) {
+          if (state is FileDownloadInProgress) {
+            return AppDialog(
+              dismissable: false,
+              title: 'Downloading file...',
+              content: SizedBox(
+                width: kSmallDialogWidth,
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    state.fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                )
-              : Container(),
-        ),
+                  subtitle: Text(filesize(state.totalByteCount)),
+                  trailing: CircularProgressIndicator(),
+                ),
+              ),
+            );
+          } else if (state is FileDownloadFailure) {
+            return AppDialog(
+              dismissable: false,
+              title: 'File download failed',
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Text(
+                    'This can happen if the file was only uploaded recently. Please try again later.'),
+              ),
+              actions: [
+                ElevatedButton(
+                  child: Text('OK'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            );
+          } else {
+            return const SizedBox();
+          }
+        }),
       );
 }
