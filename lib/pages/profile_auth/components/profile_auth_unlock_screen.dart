@@ -53,11 +53,11 @@ class ProfileAuthUnlockScreen extends StatelessWidget {
                                 context.read<ProfileUnlockCubit>().submit(),
                           ),
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         TextButton(
-                          child: Text('Remove and change profile'),
+                          child: Text('Logout and change profile'),
                           onPressed: () =>
-                              context.read<ProfileCubit>().removeProfile(),
+                              context.read<ProfileCubit>().logoutProfile(),
                         ),
                       ],
                     ),

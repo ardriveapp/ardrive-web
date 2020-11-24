@@ -63,14 +63,11 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(state.copyWith(walletBalance: walletBalance));
   }
 
-  Future<void> signOut() async {
-    emit(ProfileUnavailable());
-    await promptToAuthenticate();
-  }
-
   /// Removes the user's existing profile and its associated data then prompts them to add another.
-  Future<void> removeProfile() async {
-    emit(ProfileRemoveInProgress());
+  ///
+  /// Works even when the user is not authenticated.
+  Future<void> logoutProfile() async {
+    emit(ProfileLogoutInProgress());
 
     await _db.delete(_db.profiles).go();
     await _db.delete(_db.drives).go();
