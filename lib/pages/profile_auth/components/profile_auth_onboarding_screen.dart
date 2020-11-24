@@ -82,7 +82,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
         return ProfileAuthShell(
           illustration: _buildIllustrationSection(
             Image.asset(
-              R.images.profile.newUserPermanent,
+              R.images.profile.newUserUpload,
               fit: BoxFit.contain,
             ),
           ),
