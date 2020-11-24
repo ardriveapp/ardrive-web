@@ -216,8 +216,9 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
   Widget _buildOnboardingStepFooter() => Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          ElevatedButton(
-            child: Text('BACK'),
+          TextButton.icon(
+            icon: Icon(Icons.chevron_left),
+            label: Text('BACK'),
             onPressed: () {
               if (_onboardingStepIndex > 0) {
                 setState(() => _onboardingStepIndex--);
@@ -226,8 +227,16 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               }
             },
           ),
-          ElevatedButton(
-            child: Text('NEXT'),
+          TextButton(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('NEXT'),
+                const SizedBox(width: 8),
+                Icon(Icons.chevron_right),
+              ],
+            ),
             onPressed: () {
               if (_onboardingStepIndex < 4) {
                 setState(() => _onboardingStepIndex++);
