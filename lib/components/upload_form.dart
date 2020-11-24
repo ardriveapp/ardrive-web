@@ -78,9 +78,9 @@ class UploadForm extends StatelessWidget {
                             ? 'A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?'
                             : '${state.conflictingFileNames.length} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?',
                       ),
-                      Container(height: 16),
+                      const SizedBox(height: 16),
                       Text('Conflicting files:'),
-                      Container(height: 8),
+                      const SizedBox(height: 8),
                       Text(state.conflictingFileNames.join(', ')),
                     ],
                   ),
@@ -106,7 +106,7 @@ class UploadForm extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       CircularProgressIndicator(),
-                      Container(height: 16),
+                      const SizedBox(height: 16),
                       Text('This may take a while...'),
                     ],
                   ),
@@ -158,10 +158,14 @@ class UploadForm extends StatelessWidget {
                         ),
                       ),
                       Divider(),
-                      Container(height: 16),
+                      const SizedBox(height: 16),
                       Text('Cost: ${utils.winstonToAr(state.uploadCost)} AR'),
+                      if (state.uploadIsPublic) ...{
+                        const SizedBox(height: 8),
+                        Text('These file(s) will be uploaded publicly.'),
+                      },
                       if (state.insufficientArBalance) ...{
-                        Container(height: 8),
+                        const SizedBox(height: 8),
                         Text(
                           'Insufficient AR for upload.',
                           style: DefaultTextStyle.of(context)
@@ -222,7 +226,7 @@ class UploadForm extends StatelessWidget {
               );
             }
 
-            return Container();
+            return SizedBox();
           },
         ),
       );

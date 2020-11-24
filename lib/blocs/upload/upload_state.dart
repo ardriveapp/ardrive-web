@@ -22,12 +22,15 @@ class UploadFileConflict extends UploadState {
 class UploadReady extends UploadState {
   final BigInt uploadCost;
   final bool insufficientArBalance;
+  final bool uploadIsPublic;
   final List<FileUploadHandle> files;
 
-  UploadReady(
-      {@required this.uploadCost,
-      @required this.insufficientArBalance,
-      @required this.files});
+  UploadReady({
+    @required this.uploadCost,
+    @required this.insufficientArBalance,
+    @required this.uploadIsPublic,
+    @required this.files,
+  });
 
   @override
   List<Object> get props => [uploadCost, insufficientArBalance, files];

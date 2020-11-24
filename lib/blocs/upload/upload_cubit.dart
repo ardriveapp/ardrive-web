@@ -106,6 +106,7 @@ class UploadCubit extends Cubit<UploadState> {
       UploadReady(
         files: _fileUploadHandles.values.toList(),
         uploadCost: uploadCost,
+        uploadIsPublic: _targetDrive.isPublic,
         insufficientArBalance: profile.walletBalance < uploadCost,
       ),
     );
