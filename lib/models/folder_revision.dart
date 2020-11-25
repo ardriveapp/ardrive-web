@@ -8,9 +8,9 @@ class FolderRevisions extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get folderId => text()();
   TextColumn get driveId => text().customConstraint('REFERENCES drives(id)')();
-  TextColumn get parentFolderId => text()();
 
   TextColumn get name => text().withLength(min: 1)();
+  TextColumn get parentFolderId => text().nullable()();
 
   TextColumn get metadataTxId => text()();
 

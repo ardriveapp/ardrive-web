@@ -11,12 +11,11 @@ class FileRevisions extends Table {
   TextColumn get parentFolderId => text()();
 
   TextColumn get name => text().withLength(min: 1)();
+  IntColumn get size => integer()();
+  DateTimeColumn get lastModifiedDate => dateTime()();
 
   TextColumn get metadataTxId => text()();
   TextColumn get dataTxId => text()();
-
-  IntColumn get size => integer()();
-  DateTimeColumn get lastModifiedDate => dateTime()();
 
   /// The date on which this revision was created.
   DateTimeColumn get dateCreated =>

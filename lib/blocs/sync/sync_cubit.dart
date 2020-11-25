@@ -92,7 +92,15 @@ class SyncCubit extends Cubit<SyncState> {
       final updatedFilesById = await _computeRefreshedFileEntriesFromRevisions(
           driveId, fileRevisions);
 
-      await _writeFsEntriesWithPaths(
+      // Update the folder and file entries before generating their new paths.
+      await _db.batch((b) {
+        b.insertAllOnConflictUpdate(
+            _db.folderEntries, updatedFoldersById.values.toList());
+        b.insertAllOnConflictUpdate(
+            _db.fileEntries, updatedFilesById.values.toList());
+      });
+
+      await _generateFsEntryPaths(
           driveId, updatedFoldersById, updatedFilesById);
 
       await _driveDao.writeToDrive(DrivesCompanion(
@@ -112,18 +120,22 @@ class SyncCubit extends Cubit<SyncState> {
       if (!latestRevisions.containsKey(entity.id)) {
         latestRevisions[entity.id] =
             (await _driveDao.getLatestFolderRevisionById(driveId, entity.id))
-                .toCompanion(true);
+                ?.toCompanion(true);
       }
 
       final revision = FolderRevisionsCompanion.insert(
         folderId: entity.id,
         driveId: entity.driveId,
         name: entity.name,
-        parentFolderId: entity.parentFolderId,
+        parentFolderId: Value(entity.parentFolderId),
         metadataTxId: entity.txId,
         dateCreated: Value(entity.commitTime),
         action: entity.getPerformedRevisionAction(latestRevisions[entity.id]),
       );
+
+      if (revision.action.value == null) {
+        continue;
+      }
 
       newRevisions.add(revision);
       latestRevisions[entity.id] = revision;
@@ -145,7 +157,7 @@ class SyncCubit extends Cubit<SyncState> {
       if (!latestRevisions.containsKey(entity.id)) {
         latestRevisions[entity.id] =
             (await _driveDao.getLatestFileRevisionById(driveId, entity.id))
-                .toCompanion(true);
+                ?.toCompanion(true);
       }
 
       final revision = FileRevisionsCompanion.insert(
@@ -161,6 +173,10 @@ class SyncCubit extends Cubit<SyncState> {
         action: entity.getPerformedRevisionAction(latestRevisions[entity.id]),
       );
 
+      if (revision.action.value == null) {
+        continue;
+      }
+
       newRevisions.add(revision);
       latestRevisions[entity.id] = revision;
     }
@@ -174,41 +190,46 @@ class SyncCubit extends Cubit<SyncState> {
   Future<Map<String, FolderEntriesCompanion>>
       _computeRefreshedFolderEntriesFromRevisions(String driveId,
           List<FolderRevisionsCompanion> revisionsByFolderId) async {
-    final updatedFoldersById =
-        Map.fromIterable(revisionsByFolderId, key: (f) => f.id).map((id, r) =>
-            MapEntry<String, FolderEntriesCompanion>(id, r.toEntryCompanion()));
+    final updatedFoldersById = {
+      for (final revision in revisionsByFolderId)
+        revision.folderId.value: revision.toEntryCompanion(),
+    };
 
     for (final folderId in updatedFoldersById.keys) {
       final oldestRevision =
           await _driveDao.getOldestFolderRevisionById(driveId, folderId);
 
-      updatedFoldersById[folderId] = updatedFoldersById[folderId]
-          .copyWith(dateCreated: Value(oldestRevision.dateCreated));
+      updatedFoldersById[folderId] = updatedFoldersById[folderId].copyWith(
+          dateCreated: Value(oldestRevision?.dateCreated ??
+              updatedFoldersById[folderId].dateCreated));
     }
 
     return updatedFoldersById;
   }
 
-    /// Computes the refreshed file entries from the provided revisions and returns them as a map keyed by their ids.
+  /// Computes the refreshed file entries from the provided revisions and returns them as a map keyed by their ids.
   Future<Map<String, FileEntriesCompanion>>
       _computeRefreshedFileEntriesFromRevisions(String driveId,
           List<FileRevisionsCompanion> revisionsByFileId) async {
-    final updatedFilesById =
-        Map.fromIterable(revisionsByFileId, key: (f) => f.id).map((id, r) =>
-            MapEntry<String, FileEntriesCompanion>(id, r.toEntryCompanion()));
+    final updatedFilesById = {
+      for (final revision in revisionsByFileId)
+        revision.fileId.value: revision.toEntryCompanion(),
+    };
 
-    for (final folderId in updatedFilesById.keys) {
+    for (final fileId in updatedFilesById.keys) {
       final oldestRevision =
-          await _driveDao.getOldestFileRevisionById(driveId, folderId);
+          await _driveDao.getOldestFileRevisionById(driveId, fileId);
 
-      updatedFilesById[folderId] = updatedFilesById[folderId]
-          .copyWith(dateCreated: Value(oldestRevision.dateCreated));
+      updatedFilesById[fileId] = updatedFilesById[fileId].copyWith(
+          dateCreated: Value(oldestRevision?.dateCreated ??
+              updatedFilesById[fileId].dateCreated));
     }
 
     return updatedFilesById;
   }
 
-  Future<void> _writeFsEntriesWithPaths(
+  /// Generates paths for the folders (and their subchildren) and files provided.
+  Future<void> _generateFsEntryPaths(
     String driveId,
     Map<String, FolderEntriesCompanion> foldersByIdMap,
     Map<String, FileEntriesCompanion> filesByIdMap,
@@ -243,30 +264,16 @@ class SyncCubit extends Cubit<SyncState> {
           ? parentPath + '/' + node.folder.name
           : '';
 
-      // If the folder details are stale, update them,
-      // else just update the path.
-      if (foldersByIdMap.containsKey(folderId)) {
-        await _driveDao.writeToFolder(
-            foldersByIdMap[folderId].copyWith(path: Value(folderPath)));
-      } else {
-        await _driveDao
-            .updateFolderById(driveId, folderId)
-            .write(FolderEntriesCompanion(path: Value(folderPath)));
-      }
+      await _driveDao
+          .updateFolderById(driveId, folderId)
+          .write(FolderEntriesCompanion(path: Value(folderPath)));
 
-      // Similarly, if the file details are stale, update them,
-      // else just update the path.
       for (final staleFileId in node.files.keys) {
         final filePath = folderPath + '/' + node.files[staleFileId];
 
-        if (filesByIdMap.containsKey(staleFileId)) {
-          await _driveDao.writeToFile(
-              filesByIdMap[staleFileId].copyWith(path: Value(filePath)));
-        } else {
-          await _driveDao
-              .updateFileById(driveId, staleFileId)
-              .write(FileEntriesCompanion(path: Value(filePath)));
-        }
+        await _driveDao
+            .updateFileById(driveId, staleFileId)
+            .write(FileEntriesCompanion(path: Value(filePath)));
       }
 
       for (final staleFolder in node.subfolders) {
@@ -291,24 +298,18 @@ class SyncCubit extends Cubit<SyncState> {
 
     // Update paths of files whose parent folders were not updated.
     final staleOrphanFiles = filesByIdMap.values
-        .where((f) => filesByIdMap[f.parentFolderId] == null);
+        .where((f) => !foldersByIdMap.containsKey(f.parentFolderId));
     for (final staleOrphanFile in staleOrphanFiles) {
-      final fileId = staleOrphanFile.id;
       final parentPath = await _driveDao
           .selectFolderById(driveId, staleOrphanFile.parentFolderId.value)
           .map((f) => f.path)
           .getSingle();
       final filePath = parentPath + '/' + staleOrphanFile.name.value;
 
-      if (filesByIdMap.containsKey(fileId)) {
-        await _driveDao
-            .writeToFile(filesByIdMap[fileId].copyWith(path: Value(filePath)));
-      } else {
-        await _driveDao.writeToFile(FileEntriesCompanion(
-            id: staleOrphanFile.id,
-            driveId: staleOrphanFile.driveId,
-            path: Value(filePath)));
-      }
+      await _driveDao.writeToFile(FileEntriesCompanion(
+          id: staleOrphanFile.id,
+          driveId: staleOrphanFile.driveId,
+          path: Value(filePath)));
     }
   }
 
