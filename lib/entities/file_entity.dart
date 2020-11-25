@@ -72,6 +72,7 @@ class FileEntity extends Entity {
         ..driveId = transaction.getTag(EntityTag.driveId)
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
         ..lastModifiedDate ??= commitTime
+        ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..commitTime = commitTime;
     } catch (_) {

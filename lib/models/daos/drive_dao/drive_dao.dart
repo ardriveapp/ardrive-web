@@ -15,7 +15,13 @@ export 'folder_with_contents.dart';
 
 part 'drive_dao.g.dart';
 
-@UseDao(tables: [Drives, FolderEntries, FileEntries])
+@UseDao(tables: [
+  Drives,
+  FolderEntries,
+  FolderRevisions,
+  FileEntries,
+  FileRevisions
+])
 class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   final _uuid = Uuid();
 
@@ -245,4 +251,55 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
     );
   }
+
+  SimpleSelectStatement<FolderRevisions, FolderRevision>
+      selectFolderRevisionById(String driveId, String folderId) =>
+          (select(folderRevisions)
+            ..where((f) =>
+                f.driveId.equals(driveId) & f.folderId.equals(folderId)));
+
+  Future<FolderRevision> getLatestFolderRevisionById(
+          String driveId, String folderId) =>
+      (selectFolderRevisionById(driveId, folderId)
+            ..orderBy([
+              (f) => OrderingTerm(
+                  expression: f.dateCreated, mode: OrderingMode.desc)
+            ])
+            ..limit(1))
+          .getSingle();
+
+  Future<FolderRevision> getOldestFolderRevisionById(
+          String driveId, String folderId) =>
+      (selectFolderRevisionById(driveId, folderId)
+            ..orderBy([
+              (f) => OrderingTerm(
+                  expression: f.dateCreated, mode: OrderingMode.asc)
+            ])
+            ..limit(1))
+          .getSingle();
+
+  SimpleSelectStatement<FileRevisions, FileRevision> selectFileRevisionById(
+          String driveId, String fileId) =>
+      (select(fileRevisions)
+        ..where((f) => f.driveId.equals(driveId) & f.fileId.equals(fileId)));
+
+  Future<FileRevision> getLatestFileRevisionById(
+          String driveId, String fileId) =>
+      (selectFileRevisionById(driveId, fileId)
+            ..orderBy([
+              (f) => OrderingTerm(
+                  expression: f.dateCreated, mode: OrderingMode.desc)
+            ])
+            ..limit(1))
+          .getSingle();
+
+  Future<FileRevision> getOldestFileRevisionById(
+          String driveId, String fileId) =>
+      (selectFileRevisionById(driveId, fileId)
+            ..orderBy([
+              (f) => OrderingTerm(
+                  expression: f.dateCreated, mode: OrderingMode.asc)
+            ])
+            ..limit(1))
+          .getSingle();
 }

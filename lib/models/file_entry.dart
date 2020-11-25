@@ -13,15 +13,15 @@ class FileEntries extends Table {
   TextColumn get name => text().withLength(min: 1)();
   TextColumn get path => text()();
 
-  TextColumn get dataTxId => text()();
-
   IntColumn get size => integer()();
+  DateTimeColumn get lastModifiedDate => dateTime()();
+
+  TextColumn get dataTxId => text()();
 
   DateTimeColumn get dateCreated =>
       dateTime().clientDefault(() => DateTime.now())();
   DateTimeColumn get lastUpdated =>
       dateTime().clientDefault(() => DateTime.now())();
-  DateTimeColumn get lastModifiedDate => dateTime()();
 
   @override
   Set<Column> get primaryKey => {id, driveId};

@@ -7,8 +7,15 @@ import 'package:meta/meta.dart';
 import 'entities.dart';
 
 abstract class Entity {
+  /// The id of the transaction that represents this entity.
+  @JsonKey(ignore: true)
+  String txId;
+
+  /// The address of the owner of this entity.
   @JsonKey(ignore: true)
   String ownerAddress;
+
+  /// The time this entity was commited ie. its `Unix-Time`.
   @JsonKey(ignore: true)
   DateTime commitTime;
 
