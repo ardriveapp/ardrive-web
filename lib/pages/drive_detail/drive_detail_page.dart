@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'components/drive_detail_actions_row.dart';
 import 'components/drive_detail_breadcrumb_row.dart';
 import 'components/drive_detail_folder_empty_card.dart';
-import 'components/drive_info_side_sheet.dart';
+import 'components/fs_entry_side_sheet.dart';
 import 'components/table_rows.dart';
 
 class DriveDetailPage extends StatelessWidget {
@@ -116,7 +116,7 @@ class DriveDetailPage extends StatelessWidget {
                 ),
                 if (state.showSelectedItemDetails) ...{
                   VerticalDivider(width: 1),
-                  DriveInfoSideSheet(
+                  FsEntrySideSheet(
                     driveId: state.currentDrive.id,
                     folderId: state.selectedItemIsFolder
                         ? state.selectedItemId

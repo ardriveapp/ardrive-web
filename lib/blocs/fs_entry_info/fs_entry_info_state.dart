@@ -1,29 +1,29 @@
-part of 'drive_info_cubit.dart';
+part of 'fs_entry_info_cubit.dart';
 
-abstract class DriveInfoState extends Equatable {
-  const DriveInfoState();
+abstract class FsEntryInfoState extends Equatable {
+  const FsEntryInfoState();
 
   @override
   List<Object> get props => [];
 }
 
-class DriveInfoLoadInProgress extends DriveInfoState {}
+class FsEntryLoadInProgress extends FsEntryInfoState {}
 
-abstract class DriveInfoGeneralLoadSuccess extends DriveInfoState {
+abstract class FsEntryGeneralLoadSuccess extends FsEntryInfoState {
   final String name;
   final DateTime lastUpdated;
   final DateTime dateCreated;
 
-  DriveInfoGeneralLoadSuccess({this.name, this.lastUpdated, this.dateCreated});
+  FsEntryGeneralLoadSuccess({this.name, this.lastUpdated, this.dateCreated});
 
   @override
   List<Object> get props => [name, lastUpdated, dateCreated];
 }
 
-class DriveInfoDriveLoadSuccess extends DriveInfoGeneralLoadSuccess {
+class FsEntryDriveLoadSuccess extends FsEntryGeneralLoadSuccess {
   final Drive drive;
 
-  DriveInfoDriveLoadSuccess({
+  FsEntryDriveLoadSuccess({
     String name,
     DateTime lastUpdated,
     DateTime dateCreated,
@@ -34,10 +34,10 @@ class DriveInfoDriveLoadSuccess extends DriveInfoGeneralLoadSuccess {
   List<Object> get props => [name, lastUpdated, dateCreated, drive];
 }
 
-class DriveInfoFolderLoadSuccess extends DriveInfoGeneralLoadSuccess {
+class FsEntryFolderLoadSuccess extends FsEntryGeneralLoadSuccess {
   final FolderEntry folder;
 
-  DriveInfoFolderLoadSuccess(
+  FsEntryFolderLoadSuccess(
       {String name, DateTime lastUpdated, DateTime dateCreated, this.folder})
       : super(name: name, lastUpdated: lastUpdated, dateCreated: dateCreated);
 
@@ -45,10 +45,10 @@ class DriveInfoFolderLoadSuccess extends DriveInfoGeneralLoadSuccess {
   List<Object> get props => [name, lastUpdated, dateCreated, folder];
 }
 
-class DriveInfoFileLoadSuccess extends DriveInfoGeneralLoadSuccess {
+class FsEntryFileLoadSuccess extends FsEntryGeneralLoadSuccess {
   final FileEntry file;
 
-  DriveInfoFileLoadSuccess(
+  FsEntryFileLoadSuccess(
       {String name, DateTime lastUpdated, DateTime dateCreated, this.file})
       : super(name: name, lastUpdated: lastUpdated, dateCreated: dateCreated);
 

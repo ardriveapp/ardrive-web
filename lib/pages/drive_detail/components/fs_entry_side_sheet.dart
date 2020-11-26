@@ -5,20 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-class DriveInfoSideSheet extends StatelessWidget {
+class FsEntrySideSheet extends StatelessWidget {
   final String driveId;
   final String folderId;
   final String fileId;
 
-  DriveInfoSideSheet({@required this.driveId, this.folderId, this.fileId});
+  FsEntrySideSheet({@required this.driveId, this.folderId, this.fileId});
 
   @override
   Widget build(BuildContext context) => Drawer(
         elevation: 1,
-        child: BlocProvider<DriveInfoCubit>(
+        child: BlocProvider<FsEntryInfoCubit>(
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
           key: ValueKey(driveId + (folderId ?? fileId ?? '')),
-          create: (context) => DriveInfoCubit(
+          create: (context) => FsEntryInfoCubit(
             driveId: driveId,
             folderId: folderId,
             fileId: fileId,
@@ -26,8 +26,8 @@ class DriveInfoSideSheet extends StatelessWidget {
           ),
           child: DefaultTabController(
             length: 2,
-            child: BlocBuilder<DriveInfoCubit, DriveInfoState>(
-              builder: (context, state) => state is DriveInfoGeneralLoadSuccess
+            child: BlocBuilder<FsEntryInfoCubit, FsEntryInfoState>(
+              builder: (context, state) => state is FsEntryGeneralLoadSuccess
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -58,7 +58,7 @@ class DriveInfoSideSheet extends StatelessWidget {
                                   DataColumn(label: Text('')),
                                 ],
                                 rows: [
-                                  if (state is DriveInfoDriveLoadSuccess) ...{
+                                  if (state is FsEntryDriveLoadSuccess) ...{
                                     DataRow(cells: [
                                       DataCell(Text('Drive ID')),
                                       DataCell(SelectableText(state.drive.id)),
@@ -67,11 +67,9 @@ class DriveInfoSideSheet extends StatelessWidget {
                                       DataCell(Text('Privacy')),
                                       DataCell(Text(state.drive.privacy))
                                     ]),
-                                  } else if (state
-                                      is DriveInfoFolderLoadSuccess)
+                                  } else if (state is FsEntryFolderLoadSuccess)
                                     ...{}
-                                  else if (state
-                                      is DriveInfoFileLoadSuccess) ...{
+                                  else if (state is FsEntryFileLoadSuccess) ...{
                                     DataRow(cells: [
                                       DataCell(Text('Size')),
                                       DataCell(Text(filesize(state.file.size)))
