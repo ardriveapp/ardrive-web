@@ -1,6 +1,4 @@
-import 'package:equatable/equatable.dart';
-
-import '../../models.dart';
+part of 'drive_dao.dart';
 
 class FolderWithContents extends Equatable {
   final FolderEntry folder;
