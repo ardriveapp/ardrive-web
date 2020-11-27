@@ -253,24 +253,27 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   }
 
   SimpleSelectStatement<FolderRevisions, FolderRevision>
-      selectFolderRevisionById(String driveId, String folderId) =>
+      selectFolderRevisionsById(String driveId, String folderId) =>
           (select(folderRevisions)
             ..where((f) =>
                 f.driveId.equals(driveId) & f.folderId.equals(folderId)));
 
-  Future<FolderRevision> getLatestFolderRevisionById(
-          String driveId, String folderId) =>
-      (selectFolderRevisionById(driveId, folderId)
+  SimpleSelectStatement<FolderRevisions, FolderRevision>
+      selectLatestFolderRevisionsById(String driveId, String folderId) =>
+          selectFolderRevisionsById(driveId, folderId)
             ..orderBy([
               (f) => OrderingTerm(
                   expression: f.dateCreated, mode: OrderingMode.desc)
-            ])
-            ..limit(1))
+            ]);
+
+  Future<FolderRevision> getLatestFolderRevisionById(
+          String driveId, String folderId) =>
+      (selectLatestFolderRevisionsById(driveId, folderId)..limit(1))
           .getSingle();
 
   Future<FolderRevision> getOldestFolderRevisionById(
           String driveId, String folderId) =>
-      (selectFolderRevisionById(driveId, folderId)
+      (selectFolderRevisionsById(driveId, folderId)
             ..orderBy([
               (f) => OrderingTerm(
                   expression: f.dateCreated, mode: OrderingMode.asc)
@@ -278,24 +281,26 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             ..limit(1))
           .getSingle();
 
-  SimpleSelectStatement<FileRevisions, FileRevision> selectFileRevisionById(
+  SimpleSelectStatement<FileRevisions, FileRevision> selectFileRevisionsById(
           String driveId, String fileId) =>
       (select(fileRevisions)
         ..where((f) => f.driveId.equals(driveId) & f.fileId.equals(fileId)));
 
-  Future<FileRevision> getLatestFileRevisionById(
-          String driveId, String fileId) =>
-      (selectFileRevisionById(driveId, fileId)
+  SimpleSelectStatement<FileRevisions, FileRevision>
+      selectLatestFileRevisionsById(String driveId, String fileId) =>
+          selectFileRevisionsById(driveId, fileId)
             ..orderBy([
               (f) => OrderingTerm(
                   expression: f.dateCreated, mode: OrderingMode.desc)
-            ])
-            ..limit(1))
-          .getSingle();
+            ]);
+
+  Future<FileRevision> getLatestFileRevisionById(
+          String driveId, String fileId) =>
+      (selectLatestFileRevisionsById(driveId, fileId)..limit(1)).getSingle();
 
   Future<FileRevision> getOldestFileRevisionById(
           String driveId, String fileId) =>
-      (selectFileRevisionById(driveId, fileId)
+      (selectFileRevisionsById(driveId, fileId)
             ..orderBy([
               (f) => OrderingTerm(
                   expression: f.dateCreated, mode: OrderingMode.asc)

@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/fs_entry_activity/fs_entry_activity_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,8 @@ class FsEntrySideSheet extends StatelessWidget {
   final String driveId;
   final String folderId;
   final String fileId;
+
+  bool get _isShowingDriveDetails => folderId == null && fileId == null;
 
   FsEntrySideSheet({@required this.driveId, this.folderId, this.fileId});
 
@@ -105,6 +108,90 @@ class FsEntrySideSheet extends StatelessWidget {
         ],
       );
 
-  Widget _buildActivityTab(FsEntryGeneralLoadSuccess state) =>
-      Center(child: Text('We\'re still working on this!'));
+  Widget _buildActivityTab(FsEntryGeneralLoadSuccess state) => Padding(
+        padding: const EdgeInsets.only(top: 16),
+        child: !_isShowingDriveDetails
+            ? BlocProvider(
+                create: (context) => FsEntryActivityCubit(
+                  driveId: driveId,
+                  folderId: folderId,
+                  fileId: fileId,
+                  driveDao: context.read<DriveDao>(),
+                ),
+                child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
+                  builder: (context, state) {
+                    if (state is FsEntryActivitySuccess) {
+                      return ListView.separated(
+                        itemBuilder: (BuildContext context, int index) {
+                          final revision = state.revisions[index];
+
+                          Widget content;
+                          Widget dateCreated;
+
+                          if (revision is FolderRevision) {
+                            switch (revision.action) {
+                              case RevisionAction.create:
+                                content = Text(
+                                    'This folder was created with the name ${revision.name}.');
+                                break;
+                              case RevisionAction.rename:
+                                content = Text(
+                                    'This folder was renamed to ${revision.name}.');
+                                break;
+                              case RevisionAction.move:
+                                content = Text('This folder was moved.');
+                                break;
+                              default:
+                                content = Text('This folder was modified');
+                            }
+
+                            dateCreated = Text(DateFormat.yMMMd()
+                                .format(revision.dateCreated));
+                          } else if (revision is FileRevision) {
+                            switch (revision.action) {
+                              case RevisionAction.create:
+                                content = Text(
+                                    'This file was created with the name ${revision.name}.');
+                                break;
+                              case RevisionAction.rename:
+                                content = Text(
+                                    'This file was renamed to ${revision.name}.');
+                                break;
+                              case RevisionAction.move:
+                                content = Text('This file was moved.');
+                                break;
+                              case RevisionAction.uploadNewVersion:
+                                content = Text(
+                                    'A new version of this file was uploaded.');
+                                break;
+                              default:
+                                content = Text('This file was modified');
+                            }
+
+                            dateCreated = Text(DateFormat.yMMMd()
+                                .format(revision.dateCreated));
+                          }
+
+                          return ListTile(
+                            title: DefaultTextStyle(
+                              style: Theme.of(context).textTheme.subtitle2,
+                              child: content,
+                            ),
+                            subtitle: DefaultTextStyle(
+                              style: Theme.of(context).textTheme.caption,
+                              child: dateCreated,
+                            ),
+                          );
+                        },
+                        separatorBuilder: (context, index) => Divider(),
+                        itemCount: state.revisions.length,
+                      );
+                    } else {
+                      return Center(child: CircularProgressIndicator());
+                    }
+                  },
+                ),
+              )
+            : Center(child: Text('We\'re still working on this!')),
+      );
 }

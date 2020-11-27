@@ -49,8 +49,8 @@ TextTheme _buildTextTheme(TextTheme base) => base
           fontSize: 16, fontWeight: FontWeight.w400, letterSpacing: 2),
       subtitle1: GoogleFonts.openSans(
           fontSize: 16, fontWeight: FontWeight.w400, letterSpacing: 0.15),
-      subtitle2: GoogleFonts.montserrat(
-          fontSize: 14, fontWeight: FontWeight.w500, letterSpacing: 0.1),
+      subtitle2: GoogleFonts.openSans(
+          fontSize: 14, fontWeight: FontWeight.w400, letterSpacing: 0.15),
       bodyText1: GoogleFonts.openSans(
           fontSize: 16, fontWeight: FontWeight.w400, letterSpacing: 0.5),
       bodyText2: GoogleFonts.openSans(

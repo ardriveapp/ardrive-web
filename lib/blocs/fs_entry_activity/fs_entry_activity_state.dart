@@ -8,3 +8,11 @@ abstract class FsEntryActivityState extends Equatable {
 }
 
 class FsEntryActivityInitial extends FsEntryActivityState {}
+
+class FsEntryActivitySuccess<T> extends FsEntryActivityState {
+  final List<T> revisions;
+
+  FsEntryActivitySuccess({this.revisions});
+}
+
+class FsEntryActivityFailure extends FsEntryActivityState {}
