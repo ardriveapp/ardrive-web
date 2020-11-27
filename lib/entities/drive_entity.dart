@@ -45,6 +45,7 @@ class DriveEntity extends Entity {
         ..id = transaction.getTag(EntityTag.driveId)
         ..privacy = drivePrivacy
         ..authMode = transaction.getTag(EntityTag.driveAuthMode)
+        ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..commitTime = transaction.getCommitTime();
     } catch (_) {

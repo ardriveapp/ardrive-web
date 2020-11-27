@@ -5,9 +5,9 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 
-part 'drive_info_state.dart';
+part 'fs_entry_info_state.dart';
 
-class DriveInfoCubit extends Cubit<DriveInfoState> {
+class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
   final String driveId;
   final String folderId;
   final String fileId;
@@ -16,17 +16,17 @@ class DriveInfoCubit extends Cubit<DriveInfoState> {
 
   StreamSubscription _entrySubscription;
 
-  DriveInfoCubit(
+  FsEntryInfoCubit(
       {@required this.driveId,
       this.folderId,
       this.fileId,
       @required DriveDao driveDao})
       : _driveDao = driveDao,
-        super(DriveInfoLoadInProgress()) {
+        super(FsEntryLoadInProgress()) {
     if (folderId != null) {
       _entrySubscription = _driveDao.watchFolderById(driveId, folderId).listen(
             (f) => emit(
-              DriveInfoFolderLoadSuccess(
+              FsEntryFolderLoadSuccess(
                 name: f.name,
                 lastUpdated: f.lastUpdated,
                 dateCreated: f.dateCreated,
@@ -37,7 +37,7 @@ class DriveInfoCubit extends Cubit<DriveInfoState> {
     } else if (fileId != null) {
       _entrySubscription = _driveDao.watchFileById(driveId, fileId).listen(
             (f) => emit(
-              DriveInfoFileLoadSuccess(
+              FsEntryFileLoadSuccess(
                   name: f.name,
                   lastUpdated: f.lastUpdated,
                   dateCreated: f.dateCreated,
@@ -47,7 +47,7 @@ class DriveInfoCubit extends Cubit<DriveInfoState> {
     } else {
       _entrySubscription = _driveDao.watchDriveById(driveId).listen(
             (d) => emit(
-              DriveInfoDriveLoadSuccess(
+              FsEntryDriveLoadSuccess(
                 name: d.name,
                 lastUpdated: d.lastUpdated,
                 dateCreated: d.dateCreated,

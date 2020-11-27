@@ -40,6 +40,7 @@ class FolderEntity extends Entity {
         ..id = transaction.getTag(EntityTag.folderId)
         ..driveId = transaction.getTag(EntityTag.driveId)
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
+        ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..commitTime = transaction.getCommitTime();
     } catch (_) {

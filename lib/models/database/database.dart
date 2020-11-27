@@ -6,7 +6,14 @@ import 'shared.dart';
 part 'database.g.dart';
 
 @UseMoor(
-  tables: [Drives, FolderEntries, FileEntries, Profiles],
+  tables: [
+    Drives,
+    FolderEntries,
+    FolderRevisions,
+    FileEntries,
+    FileRevisions,
+    Profiles,
+  ],
   daos: [DrivesDao, DriveDao, ProfileDao],
 )
 class Database extends _$Database {
