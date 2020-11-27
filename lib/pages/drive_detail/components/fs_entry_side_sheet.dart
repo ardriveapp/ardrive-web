@@ -30,7 +30,7 @@ class FsEntrySideSheet extends StatelessWidget {
           child: DefaultTabController(
             length: 2,
             child: BlocBuilder<FsEntryInfoCubit, FsEntryInfoState>(
-              builder: (context, state) => state is FsEntryGeneralLoadSuccess
+              builder: (context, state) => state is FsEntryInfoSuccess
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -67,7 +67,7 @@ class FsEntrySideSheet extends StatelessWidget {
         ),
       );
 
-  Widget _buildInfoTab(FsEntryGeneralLoadSuccess state) => DataTable(
+  Widget _buildInfoTab(FsEntryInfoSuccess state) => DataTable(
         // Hide the data table header.
         headingRowHeight: 0,
         columns: const [
@@ -75,26 +75,26 @@ class FsEntrySideSheet extends StatelessWidget {
           DataColumn(label: Text('')),
         ],
         rows: [
-          if (state is FsEntryDriveLoadSuccess) ...{
+          if (state is FsEntryInfoSuccess<Drive>) ...{
             DataRow(cells: [
               DataCell(Text('Drive ID')),
-              DataCell(SelectableText(state.drive.id)),
+              DataCell(SelectableText(state.entry.id)),
             ]),
             DataRow(cells: [
               DataCell(Text('Privacy')),
-              DataCell(Text(state.drive.privacy))
+              DataCell(Text(state.entry.privacy))
             ]),
-          } else if (state is FsEntryFolderLoadSuccess)
+          } else if (state is FsEntryInfoSuccess<FolderEntry>)
             ...{}
-          else if (state is FsEntryFileLoadSuccess) ...{
+          else if (state is FsEntryInfoSuccess<FileEntry>) ...{
             DataRow(cells: [
               DataCell(Text('Size')),
-              DataCell(Text(filesize(state.file.size)))
+              DataCell(Text(filesize(state.entry.size)))
             ]),
             DataRow(cells: [
               DataCell(Text('Last modified')),
               DataCell(
-                  Text(DateFormat.yMMMd().format(state.file.lastModifiedDate)))
+                  Text(DateFormat.yMMMd().format(state.entry.lastModifiedDate)))
             ]),
           },
           DataRow(cells: [
@@ -108,7 +108,7 @@ class FsEntrySideSheet extends StatelessWidget {
         ],
       );
 
-  Widget _buildActivityTab(FsEntryGeneralLoadSuccess state) => Padding(
+  Widget _buildActivityTab(FsEntryInfoSuccess state) => Padding(
         padding: const EdgeInsets.only(top: 16),
         child: !_isShowingDriveDetails
             ? BlocProvider(

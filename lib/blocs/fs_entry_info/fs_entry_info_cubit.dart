@@ -22,40 +22,47 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
       this.fileId,
       @required DriveDao driveDao})
       : _driveDao = driveDao,
-        super(FsEntryLoadInProgress()) {
+        super(FsEntryInfoInitial()) {
     if (folderId != null) {
       _entrySubscription = _driveDao.watchFolderById(driveId, folderId).listen(
             (f) => emit(
-              FsEntryFolderLoadSuccess(
+              FsEntryInfoSuccess<FolderEntry>(
                 name: f.name,
                 lastUpdated: f.lastUpdated,
                 dateCreated: f.dateCreated,
-                folder: f,
+                entry: f,
               ),
             ),
           );
     } else if (fileId != null) {
       _entrySubscription = _driveDao.watchFileById(driveId, fileId).listen(
             (f) => emit(
-              FsEntryFileLoadSuccess(
-                  name: f.name,
-                  lastUpdated: f.lastUpdated,
-                  dateCreated: f.dateCreated,
-                  file: f),
+              FsEntryInfoSuccess<FileEntry>(
+                name: f.name,
+                lastUpdated: f.lastUpdated,
+                dateCreated: f.dateCreated,
+                entry: f,
+              ),
             ),
           );
     } else {
       _entrySubscription = _driveDao.watchDriveById(driveId).listen(
             (d) => emit(
-              FsEntryDriveLoadSuccess(
+              FsEntryInfoSuccess<Drive>(
                 name: d.name,
                 lastUpdated: d.lastUpdated,
                 dateCreated: d.dateCreated,
-                drive: d,
+                entry: d,
               ),
             ),
           );
     }
+  }
+
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    emit(FsEntryInfoFailure());
+    super.onError(error, stackTrace);
   }
 
   @override

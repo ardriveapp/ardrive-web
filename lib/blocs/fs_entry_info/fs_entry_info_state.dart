@@ -7,51 +7,19 @@ abstract class FsEntryInfoState extends Equatable {
   List<Object> get props => [];
 }
 
-class FsEntryLoadInProgress extends FsEntryInfoState {}
+class FsEntryInfoInitial extends FsEntryInfoState {}
 
-abstract class FsEntryGeneralLoadSuccess extends FsEntryInfoState {
+class FsEntryInfoSuccess<T> extends FsEntryInfoState {
   final String name;
   final DateTime lastUpdated;
   final DateTime dateCreated;
+  final T entry;
 
-  FsEntryGeneralLoadSuccess({this.name, this.lastUpdated, this.dateCreated});
+  FsEntryInfoSuccess(
+      {this.name, this.lastUpdated, this.dateCreated, this.entry});
 
   @override
   List<Object> get props => [name, lastUpdated, dateCreated];
 }
 
-class FsEntryDriveLoadSuccess extends FsEntryGeneralLoadSuccess {
-  final Drive drive;
-
-  FsEntryDriveLoadSuccess({
-    String name,
-    DateTime lastUpdated,
-    DateTime dateCreated,
-    this.drive,
-  }) : super(name: name, lastUpdated: lastUpdated, dateCreated: dateCreated);
-
-  @override
-  List<Object> get props => [name, lastUpdated, dateCreated, drive];
-}
-
-class FsEntryFolderLoadSuccess extends FsEntryGeneralLoadSuccess {
-  final FolderEntry folder;
-
-  FsEntryFolderLoadSuccess(
-      {String name, DateTime lastUpdated, DateTime dateCreated, this.folder})
-      : super(name: name, lastUpdated: lastUpdated, dateCreated: dateCreated);
-
-  @override
-  List<Object> get props => [name, lastUpdated, dateCreated, folder];
-}
-
-class FsEntryFileLoadSuccess extends FsEntryGeneralLoadSuccess {
-  final FileEntry file;
-
-  FsEntryFileLoadSuccess(
-      {String name, DateTime lastUpdated, DateTime dateCreated, this.file})
-      : super(name: name, lastUpdated: lastUpdated, dateCreated: dateCreated);
-
-  @override
-  List<Object> get props => [name, lastUpdated, dateCreated, file];
-}
+class FsEntryInfoFailure extends FsEntryInfoState {}
