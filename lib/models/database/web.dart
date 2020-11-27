@@ -3,5 +3,5 @@ import 'package:moor/moor_web.dart';
 
 LazyDatabase openConnection() {
   return LazyDatabase(
-      () => WebDatabase.withStorage(MoorWebStorage.indexedDb('db')));
+      () => WebDatabase.withStorage(MoorWebStorage.indexedDbIfSupported('db')));
 }
