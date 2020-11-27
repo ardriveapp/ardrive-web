@@ -5,21 +5,21 @@ on:
       - dev
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          persist-credentials: false
-      - uses: subosito/flutter-action@v1
-        with:
-          channel: 'dev'
-      - name: Prepare app
-        run: |
-          flutter pub get
-          flutter pub run build_runner build
-      - name: Run tests
-        run: flutter test
+  # test:
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #    - uses: actions/checkout@v2
+  #      with:
+  #        persist-credentials: false
+  #    - uses: subosito/flutter-action@v1
+  #      with:
+  #        channel: 'dev'
+  #    - name: Prepare app
+  #      run: |
+  #        flutter pub get
+  #        flutter pub run build_runner build
+  #    - name: Run tests
+  #      run: flutter test
   deploy-preview:
     runs-on: ubuntu-latest
     steps:
