@@ -51,49 +51,8 @@ class FsEntrySideSheet extends StatelessWidget {
                         Expanded(
                           child: TabBarView(
                             children: [
-                              DataTable(
-                                headingRowHeight: 0,
-                                columns: const [
-                                  DataColumn(label: Text('')),
-                                  DataColumn(label: Text('')),
-                                ],
-                                rows: [
-                                  if (state is FsEntryDriveLoadSuccess) ...{
-                                    DataRow(cells: [
-                                      DataCell(Text('Drive ID')),
-                                      DataCell(SelectableText(state.drive.id)),
-                                    ]),
-                                    DataRow(cells: [
-                                      DataCell(Text('Privacy')),
-                                      DataCell(Text(state.drive.privacy))
-                                    ]),
-                                  } else if (state is FsEntryFolderLoadSuccess)
-                                    ...{}
-                                  else if (state is FsEntryFileLoadSuccess) ...{
-                                    DataRow(cells: [
-                                      DataCell(Text('Size')),
-                                      DataCell(Text(filesize(state.file.size)))
-                                    ]),
-                                    DataRow(cells: [
-                                      DataCell(Text('Last modified')),
-                                      DataCell(Text(DateFormat.yMMMd()
-                                          .format(state.file.lastModifiedDate)))
-                                    ]),
-                                  },
-                                  DataRow(cells: [
-                                    DataCell(Text('Last updated')),
-                                    DataCell(Text(DateFormat.yMMMd()
-                                        .format(state.lastUpdated))),
-                                  ]),
-                                  DataRow(cells: [
-                                    DataCell(Text('Date created')),
-                                    DataCell(Text(DateFormat.yMMMd()
-                                        .format(state.dateCreated))),
-                                  ]),
-                                ],
-                              ),
-                              Center(
-                                  child: Text('We\'re still working on this!')),
+                              _buildInfoTab(state),
+                              _buildActivityTab(state),
                             ],
                           ),
                         )
@@ -104,4 +63,48 @@ class FsEntrySideSheet extends StatelessWidget {
           ),
         ),
       );
+
+  Widget _buildInfoTab(FsEntryGeneralLoadSuccess state) => DataTable(
+        // Hide the data table header.
+        headingRowHeight: 0,
+        columns: const [
+          DataColumn(label: Text('')),
+          DataColumn(label: Text('')),
+        ],
+        rows: [
+          if (state is FsEntryDriveLoadSuccess) ...{
+            DataRow(cells: [
+              DataCell(Text('Drive ID')),
+              DataCell(SelectableText(state.drive.id)),
+            ]),
+            DataRow(cells: [
+              DataCell(Text('Privacy')),
+              DataCell(Text(state.drive.privacy))
+            ]),
+          } else if (state is FsEntryFolderLoadSuccess)
+            ...{}
+          else if (state is FsEntryFileLoadSuccess) ...{
+            DataRow(cells: [
+              DataCell(Text('Size')),
+              DataCell(Text(filesize(state.file.size)))
+            ]),
+            DataRow(cells: [
+              DataCell(Text('Last modified')),
+              DataCell(
+                  Text(DateFormat.yMMMd().format(state.file.lastModifiedDate)))
+            ]),
+          },
+          DataRow(cells: [
+            DataCell(Text('Last updated')),
+            DataCell(Text(DateFormat.yMMMd().format(state.lastUpdated))),
+          ]),
+          DataRow(cells: [
+            DataCell(Text('Date created')),
+            DataCell(Text(DateFormat.yMMMd().format(state.dateCreated))),
+          ]),
+        ],
+      );
+
+  Widget _buildActivityTab(FsEntryGeneralLoadSuccess state) =>
+      Center(child: Text('We\'re still working on this!'));
 }
