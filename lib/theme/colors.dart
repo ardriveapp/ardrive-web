@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+part of 'theme.dart';
 
 const kPrimaryValue = 0xFF700327;
 const kPrimarySwatch = MaterialColor(

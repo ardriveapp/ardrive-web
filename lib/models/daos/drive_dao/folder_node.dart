@@ -1,4 +1,4 @@
-import '../../models.dart';
+part of 'drive_dao.dart';
 
 class FolderNode {
   final FolderEntry folder;

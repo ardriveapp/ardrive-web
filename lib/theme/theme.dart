@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'colors.dart';
-
-export 'colors.dart';
-export 'constants.dart';
+part 'colors.dart';
+part 'constants.dart';
 
 final base = ThemeData.light();
 

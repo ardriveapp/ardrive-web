@@ -2,18 +2,16 @@ import 'dart:async';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:equatable/equatable.dart';
 import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../models.dart';
-import 'folder_node.dart';
-import 'folder_with_contents.dart';
-
-export 'folder_node.dart';
-export 'folder_with_contents.dart';
 
 part 'drive_dao.g.dart';
+part 'folder_node.dart';
+part 'folder_with_contents.dart';
 
 @UseDao(tables: [
   Drives,
