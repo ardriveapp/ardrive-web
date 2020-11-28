@@ -66,7 +66,8 @@ class UploadForm extends StatelessWidget {
           builder: (context, state) {
             if (state is UploadFileConflict) {
               return AppDialog(
-                title: 'Conflicting file(s) found',
+                title:
+                    '${state.conflictingFileNames.length} conflicting file(s) found',
                 content: SizedBox(
                   width: kMediumDialogWidth,
                   child: Column(
@@ -130,7 +131,7 @@ class UploadForm extends StatelessWidget {
               );
             } else if (state is UploadReady) {
               return AppDialog(
-                title: 'Upload file(s)',
+                title: 'Upload ${state.files.length} file(s)',
                 content: SizedBox(
                   width: kMediumDialogWidth,
                   child: Column(
@@ -192,7 +193,7 @@ class UploadForm extends StatelessWidget {
             } else if (state is UploadInProgress) {
               return AppDialog(
                 dismissable: false,
-                title: 'Uploading file(s)...',
+                title: 'Uploading ${state.files.length} file(s)...',
                 content: SizedBox(
                   width: kMediumDialogWidth,
                   child: ConstrainedBox(
@@ -226,7 +227,7 @@ class UploadForm extends StatelessWidget {
               );
             }
 
-            return SizedBox();
+            return const SizedBox();
           },
         ),
       );
