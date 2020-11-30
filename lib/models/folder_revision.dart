@@ -5,7 +5,9 @@ import 'models.dart';
 
 @DataClassName('FolderRevision')
 class FolderRevisions extends Table {
-  IntColumn get id => integer().autoIncrement()();
+  /// The ID of revisions should always be the ID of its metadata transaction.
+  TextColumn get id => text()();
+
   TextColumn get folderId => text()();
   TextColumn get driveId => text().customConstraint('REFERENCES drives(id)')();
 
@@ -19,6 +21,9 @@ class FolderRevisions extends Table {
       dateTime().clientDefault(() => DateTime.now())();
 
   TextColumn get action => text()();
+
+  @override
+  Set<Column> get primaryKey => {id};
 }
 
 extension FolderRevisionExtensions on FolderRevisionsCompanion {

@@ -124,6 +124,7 @@ class SyncCubit extends Cubit<SyncState> {
       }
 
       final revision = FolderRevisionsCompanion.insert(
+        id: entity.txId,
         folderId: entity.id,
         driveId: entity.driveId,
         name: entity.name,
@@ -161,6 +162,7 @@ class SyncCubit extends Cubit<SyncState> {
       }
 
       final revision = FileRevisionsCompanion.insert(
+        id: entity.txId,
         fileId: entity.id,
         driveId: entity.driveId,
         name: entity.name,
