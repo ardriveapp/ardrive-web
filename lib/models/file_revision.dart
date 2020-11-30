@@ -9,7 +9,7 @@ class FileRevisions extends Table {
   TextColumn get id => text()();
 
   TextColumn get fileId => text()();
-  TextColumn get driveId => text().customConstraint('REFERENCES drives(id)')();
+  TextColumn get driveId => text()();
   TextColumn get parentFolderId => text()();
 
   TextColumn get name => text().withLength(min: 1)();

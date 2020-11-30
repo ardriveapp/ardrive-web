@@ -5,8 +5,7 @@ import './database/database.dart';
 
 class Drives extends Table {
   TextColumn get id => text()();
-  TextColumn get rootFolderId =>
-      text().customConstraint('REFERENCES folderEntries(id)')();
+  TextColumn get rootFolderId => text()();
 
   TextColumn get ownerAddress => text()();
 

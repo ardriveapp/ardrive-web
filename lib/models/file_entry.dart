@@ -6,11 +6,10 @@ import './database/database.dart';
 @DataClassName('FileEntry')
 class FileEntries extends Table {
   TextColumn get id => text()();
-  TextColumn get driveId => text().customConstraint('REFERENCES drives(id)')();
+  TextColumn get driveId => text()();
 
   TextColumn get name => text().withLength(min: 1)();
-  TextColumn get parentFolderId =>
-      text().customConstraint('REFERENCES folderEntries(id)')();
+  TextColumn get parentFolderId => text()();
   TextColumn get path => text()();
 
   IntColumn get size => integer()();
