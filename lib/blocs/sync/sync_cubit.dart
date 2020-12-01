@@ -142,7 +142,8 @@ class SyncCubit extends Cubit<SyncState> {
       latestRevisions[entity.id] = revision;
     }
 
-    await _db.batch((b) => b.insertAll(_db.folderRevisions, newRevisions));
+    await _db.batch(
+        (b) => b.insertAllOnConflictUpdate(_db.folderRevisions, newRevisions));
 
     return latestRevisions.values.toList();
   }
@@ -183,7 +184,8 @@ class SyncCubit extends Cubit<SyncState> {
       latestRevisions[entity.id] = revision;
     }
 
-    await _db.batch((b) => b.insertAll(_db.fileRevisions, newRevisions));
+    await _db.batch(
+        (b) => b.insertAllOnConflictUpdate(_db.fileRevisions, newRevisions));
 
     return latestRevisions.values.toList();
   }
@@ -306,12 +308,18 @@ class SyncCubit extends Cubit<SyncState> {
           .selectFolderById(driveId, staleOrphanFile.parentFolderId.value)
           .map((f) => f.path)
           .getSingle();
-      final filePath = parentPath + '/' + staleOrphanFile.name.value;
 
-      await _driveDao.writeToFile(FileEntriesCompanion(
-          id: staleOrphanFile.id,
-          driveId: staleOrphanFile.driveId,
-          path: Value(filePath)));
+      if (parentPath != null) {
+        final filePath = parentPath + '/' + staleOrphanFile.name.value;
+
+        await _driveDao.writeToFile(FileEntriesCompanion(
+            id: staleOrphanFile.id,
+            driveId: staleOrphanFile.driveId,
+            path: Value(filePath)));
+      } else {
+        print(
+            'Stale orphan file ${staleOrphanFile.id.value} parent folder ${staleOrphanFile.parentFolderId.value} could not be found.');
+      }
     }
   }
 
