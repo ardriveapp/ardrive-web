@@ -1,0 +1,20 @@
+query TransactionStatuses($transactionIds: [ID!]) {
+  transactions(ids: $transactionIds) {
+    edges {
+      node {
+        id
+        block {
+          height
+        }
+      }
+    }
+  }
+  blocks(first: 1) {
+    edges {
+      node {
+        id
+        height
+      }
+    }
+  }
+}

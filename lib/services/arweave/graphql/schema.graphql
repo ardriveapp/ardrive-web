@@ -10,20 +10,48 @@ type Amount {
   ar: String!
 }
 
-# The block in which the transaction was included.
 type Block {
+  # The block ID.
   id: ID!
+  # The block timestamp (UTC).
   timestamp: Int!
+  # The block height.
   height: Int!
+  # The previous block ID.
   previous: ID!
 }
 
-# Find transactions within the given block range
+# Paginated result set using the GraphQL cursor spec,
+# see: https://relay.dev/graphql/connections.htm.
+type BlockConnection {
+  pageInfo: PageInfo!
+  edges: [BlockEdge!]!
+}
+
+# Paginated result set using the GraphQL cursor spec.
+type BlockEdge {
+  # The cursor value for fetching the next page.
+  #
+  # Pass this to the \`after\` parameter in \`blocks(after: $cursor)\`, the next
+  # page will start from the next item after this.
+  cursor: String!
+  # A block object.
+  node: Block!
+}
+
+# Find blocks within a given range
 input BlockFilter {
   # Minimum block height to filter from
   min: Int
   # Maximum block height to filter to
   max: Int
+}
+
+# The data bundle containing the current data item.
+# See: https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-102.md.
+type Bundle {
+  # ID of the containing data bundle.
+  id: ID!
 }
 
 enum CacheControlScope {
@@ -34,7 +62,7 @@ enum CacheControlScope {
 # Basic metadata about the transaction data payload.
 type MetaData {
   # Size of the associated data in bytes.
-  size: Int!
+  size: String!
   # Type is derrived from the \`content-type\` tag on a transaction.
   type: String
 }
@@ -71,15 +99,31 @@ type Query {
     recipients: [String!]
     # Find transactions using tags.
     tags: [TagFilter!]
-    # Only match the first n transactions.
+    # Find data items from the given data bundles.
+    # See: https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-102.md
+    bundledIn: [ID!]
+    # Find transactions within a given block height range.
+    block: BlockFilter
+    # Result page size (max: 100)
     first: Int = 10
     # A pagination cursor value, for fetching subsequent pages from a result set.
     after: String
-    # Find transactions within the given block range
-    block: BlockFilter
     # Optionally specify the result sort order.
     sort: SortOrder = HEIGHT_DESC
   ): TransactionConnection!
+  block(id: String): Block
+  blocks(
+    # Find blocks from a list of ids.
+    ids: [ID!]
+    # Find blocks within a given block height range.
+    height: BlockFilter
+    # Result page size (max: 100)
+    first: Int = 10
+    # A pagination cursor value, for fetching subsequent pages from a result set.
+    after: String
+    # Optionally specify the result sort order.
+    sort: SortOrder = HEIGHT_DESC
+  ): BlockConnection!
 }
 
 # Optionally reverse the result sort order from `HEIGHT_DESC` (default) to `HEIGHT_ASC`.
@@ -109,7 +153,7 @@ input TagFilter {
   #
   # e.g.
   #
-  # \`{name: "app-name", values: ["app-1"]}\`
+  # \`{name: "app-name", values: ["app-1"]}`\
   #
   # Returns all transactions where the \`app-name\` tag has a value of \`app-1\`.
   #
@@ -117,6 +161,16 @@ input TagFilter {
   #
   # Returns all transactions where the \`app-name\` tag has a value of either \`app-1\` _or_ \`app-2\` _or_ \`app-3\`.
   values: [String!]!
+  # The operator to apply to to the tag filter. Defaults to EQ (equal).
+  op: TagOperator = EQ
+}
+
+# The operator to apply to a tag value.
+enum TagOperator {
+  # Equal
+  EQ
+  # Not equal
+  NEQ
 }
 
 type Transaction {
@@ -134,7 +188,10 @@ type Transaction {
   block: Block
   # Transactions with parent are Bundled Data Items as defined in the ANS-102 data spec.
   # https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-102.md
-  parent: Parent
+  parent: Parent @deprecated(reason: "Use `bundledIn`")
+  # For bundled data items this references the containing bundle ID.
+  # See: https://github.com/ArweaveTeam/arweave-standards/blob/master/ans/ANS-102.md
+  bundledIn: Bundle
 }
 
 # Paginated result set using the GraphQL cursor spec,

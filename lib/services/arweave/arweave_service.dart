@@ -208,6 +208,36 @@ class ArweaveService {
     );
   }
 
+  /// Returns the number of confirmations each specified transaction has as a map,
+  /// keyed by the transactions' ids.
+  Future<Map<String, int>> getTransactionConfirmations(
+      List<String> transactionIds) async {
+    final query = await _gql.execute(
+      TransactionStatusesQuery(
+          variables:
+              TransactionStatusesArguments(transactionIds: transactionIds)),
+    );
+
+    final currentBlockHeight = query.data.blocks.edges.first.node.height;
+
+    final transactionConfirmations = {
+      for (final transactionId in transactionIds) transactionId: 0
+    };
+
+    for (final transaction
+        in query.data.transactions.edges.map((e) => e.node)) {
+      // Transactions not in a block are unmined ie. have 0 confirmations.
+      if (transaction.block == null) {
+        continue;
+      }
+
+      transactionConfirmations[transaction.id] =
+          currentBlockHeight - transaction.block.height + 1;
+    }
+
+    return transactionConfirmations;
+  }
+
   /// Creates and signs a [Transaction] representing the provided entity.
   ///
   /// Optionally provide a [SecretKey] to encrypt the entity data.

@@ -15,6 +15,8 @@ class FolderRevisions extends Table {
   TextColumn get parentFolderId => text().nullable()();
 
   TextColumn get metadataTxId => text()();
+  BoolColumn get metadataTxConfirmed =>
+      boolean().withDefault(const Constant(false))();
 
   /// The date on which this revision was created.
   DateTimeColumn get dateCreated =>

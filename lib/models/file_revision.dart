@@ -17,7 +17,12 @@ class FileRevisions extends Table {
   DateTimeColumn get lastModifiedDate => dateTime()();
 
   TextColumn get metadataTxId => text()();
+  BoolColumn get metadataTxConfirmed =>
+      boolean().withDefault(const Constant(false))();
+
   TextColumn get dataTxId => text()();
+  BoolColumn get dataTxConfirmed =>
+      boolean().withDefault(const Constant(false))();
 
   /// The date on which this revision was created.
   DateTimeColumn get dateCreated =>
