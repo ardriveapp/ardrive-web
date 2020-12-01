@@ -7,6 +7,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../blocs.dart';
 
@@ -18,6 +19,8 @@ class SyncCubit extends Cubit<SyncState> {
   final DrivesDao _drivesDao;
   final DriveDao _driveDao;
   final Database _db;
+
+  StreamSubscription _syncSub;
 
   SyncCubit({
     @required ProfileCubit profileCubit,
@@ -31,7 +34,10 @@ class SyncCubit extends Cubit<SyncState> {
         _driveDao = driveDao,
         _db = db,
         super(SyncIdle()) {
-    startSync();
+    // Sync the user's drives on start and periodically.
+    _syncSub = interval(const Duration(minutes: 2))
+        .startWith(null)
+        .listen((_) => startSync());
   }
 
   Future<void> startSync() async {
@@ -328,5 +334,11 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncFailure());
     super.onError(error, stackTrace);
     emit(SyncIdle());
+  }
+
+  @override
+  Future<void> close() {
+    _syncSub?.cancel();
+    return super.close();
   }
 }
