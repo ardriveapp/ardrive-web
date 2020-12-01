@@ -77,6 +77,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       return;
     }
 
+    final previousState = state;
     emit(ProfileAddInProgress());
 
     final String username = form.control('username').value;
@@ -107,6 +108,9 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         form
             .control('password')
             .setErrors({AppValidationMessage.passwordIncorrect: true});
+
+        // Reemit the previous state so form errors can be shown again.
+        emit(previousState);
         return;
       }
 
