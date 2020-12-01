@@ -69,10 +69,10 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> logoutProfile() async {
     emit(ProfileLogoutInProgress());
 
-    await _db.delete(_db.profiles).go();
-    await _db.delete(_db.drives).go();
-    await _db.delete(_db.folderEntries).go();
-    await _db.delete(_db.fileEntries).go();
+    // Delete all table data.
+    for (final table in _db.allTables) {
+      await _db.delete(table).go();
+    }
 
     unawaited(promptToAuthenticate());
   }
