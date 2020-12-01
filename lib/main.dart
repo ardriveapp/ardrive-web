@@ -55,46 +55,13 @@ class App extends StatelessWidget {
               theme: appTheme(),
               routeInformationParser: _routeInformationParser,
               routerDelegate: _routerDelegate,
-              builder: (context, child) {
-                final content = ListTileTheme(
-                  textColor: kOnSurfaceBodyTextColor,
-                  iconColor: kOnSurfaceBodyTextColor,
-                  child: Portal(
-                    child: child,
-                  ),
-                );
-
-                if (state is! ProfileLoaded) {
-                  return content;
-                } else {
-                  return BlocProvider(
-                    create: (context) => SyncCubit(
-                      profileCubit: context.read<ProfileCubit>(),
-                      arweave: context.read<ArweaveService>(),
-                      drivesDao: context.read<DrivesDao>(),
-                      driveDao: context.read<DriveDao>(),
-                      db: context.read<Database>(),
-                    ),
-                    child: BlocListener<SyncCubit, SyncState>(
-                      listener: (context, state) {
-                        if (state is SyncFailure) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Failed to sync drive contents.'),
-                              action: SnackBarAction(
-                                label: 'TRY AGAIN',
-                                onPressed: () =>
-                                    context.read<SyncCubit>().startSync(),
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      child: content,
-                    ),
-                  );
-                }
-              },
+              builder: (context, child) => ListTileTheme(
+                textColor: kOnSurfaceBodyTextColor,
+                iconColor: kOnSurfaceBodyTextColor,
+                child: Portal(
+                  child: child,
+                ),
+              ),
             ),
           ),
         ),
