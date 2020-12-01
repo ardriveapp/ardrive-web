@@ -8,6 +8,7 @@ const arweave = Arweave.init({
   host: 'arweave.net',
   port: 443,
   protocol: 'https',
+  logging: false,
 });
 
 const pstContractId = '-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ';

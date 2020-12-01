@@ -13,7 +13,7 @@
     "typescript": "^4.0.5"
   },
   "dependencies": {
-    "arweave": "^1.9.1",
-    "smartweave": "^0.4.0"
+    "arweave": "^1.10.0",
+    "smartweave": "^0.4.12"
   }
 }
