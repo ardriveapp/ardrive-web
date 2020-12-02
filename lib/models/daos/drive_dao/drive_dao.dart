@@ -251,8 +251,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   }
 
   SimpleSelectStatement<FolderRevisions, FolderRevision>
-      selectUnconfirmedFolderRevisions() => select(folderRevisions)
-        ..where((r) => r.metadataTxConfirmed.equals(false));
+      selectUnconfirmedFolderRevisions(String driveId) =>
+          select(folderRevisions)
+            ..where((r) =>
+                r.driveId.equals(driveId) &
+                r.metadataTxStatus.equals(TransactionStatus.pending));
 
   SimpleSelectStatement<FolderRevisions, FolderRevision>
       selectFolderRevisionsById(String driveId, String folderId) =>
@@ -289,10 +292,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           .write(folderRevision);
 
   SimpleSelectStatement<FileRevisions, FileRevision>
-      selectUnconfirmedFileRevisions() => select(fileRevisions)
+      selectUnconfirmedFileRevisions(String driveId) => select(fileRevisions)
         ..where((r) =>
-            r.metadataTxConfirmed.equals(false) &
-            r.dataTxConfirmed.equals(false));
+            r.driveId.equals(driveId) &
+            r.metadataTxStatus.equals(TransactionStatus.pending) &
+            r.dataTxStatus.equals(TransactionStatus.pending));
 
   SimpleSelectStatement<FileRevisions, FileRevision> selectFileRevisionsById(
           String driveId, String fileId) =>

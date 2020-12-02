@@ -210,30 +210,49 @@ class ArweaveService {
 
   /// Returns the number of confirmations each specified transaction has as a map,
   /// keyed by the transactions' ids.
+  ///
+  /// When the number of confirmations is 0, the transaction has yet to be mined. When
+  /// it is -1, the transaction could not be found.
   Future<Map<String, int>> getTransactionConfirmations(
       List<String> transactionIds) async {
-    final query = await _gql.execute(
-      TransactionStatusesQuery(
-          variables:
-              TransactionStatusesArguments(transactionIds: transactionIds)),
-    );
-
-    final currentBlockHeight = query.data.blocks.edges.first.node.height;
-
     final transactionConfirmations = {
-      for (final transactionId in transactionIds) transactionId: 0
+      for (final transactionId in transactionIds) transactionId: -1
     };
 
-    for (final transaction
-        in query.data.transactions.edges.map((e) => e.node)) {
-      // Transactions not in a block are unmined ie. have 0 confirmations.
-      if (transaction.block == null) {
-        continue;
-      }
+    // Chunk the transaction confirmation query to workaround the 10 item limit of the gateway API
+    // and run it in parallel.
+    const chunkSize = 10;
 
-      transactionConfirmations[transaction.id] =
-          currentBlockHeight - transaction.block.height + 1;
+    final confirmationFutures = <Future<void>>[];
+
+    for (var i = 0; i < transactionIds.length; i += chunkSize) {
+      confirmationFutures.add(() async {
+        final chunkEnd = (i + chunkSize < transactionIds.length)
+            ? i + chunkSize
+            : transactionIds.length;
+
+        final query = await _gql.execute(
+          TransactionStatusesQuery(
+              variables: TransactionStatusesArguments(
+                  transactionIds: transactionIds.sublist(i, chunkEnd))),
+        );
+
+        final currentBlockHeight = query.data.blocks.edges.first.node.height;
+
+        for (final transaction
+            in query.data.transactions.edges.map((e) => e.node)) {
+          if (transaction.block == null) {
+            transactionConfirmations[transaction.id] = 0;
+            continue;
+          }
+
+          transactionConfirmations[transaction.id] =
+              currentBlockHeight - transaction.block.height + 1;
+        }
+      }());
     }
+
+    await Future.wait(confirmationFutures);
 
     return transactionConfirmations;
   }

@@ -1,5 +1,4 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/confirmation/confirmation_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
@@ -98,12 +97,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     drivesDao: context.read<DrivesDao>(),
                     driveDao: context.read<DriveDao>(),
                     db: context.read<Database>(),
-                  ),
-                ),
-                BlocProvider(
-                  create: (context) => ConfirmationCubit(
-                    arweave: context.read<ArweaveService>(),
-                    driveDao: context.read<DriveDao>(),
                   ),
                 ),
                 BlocProvider(

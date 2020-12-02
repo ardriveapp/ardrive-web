@@ -17,12 +17,12 @@ class FileRevisions extends Table {
   DateTimeColumn get lastModifiedDate => dateTime()();
 
   TextColumn get metadataTxId => text()();
-  BoolColumn get metadataTxConfirmed =>
-      boolean().withDefault(const Constant(false))();
+  TextColumn get metadataTxStatus =>
+      text().withDefault(const Constant(TransactionStatus.pending))();
 
   TextColumn get dataTxId => text()();
-  BoolColumn get dataTxConfirmed =>
-      boolean().withDefault(const Constant(false))();
+  TextColumn get dataTxStatus =>
+      text().withDefault(const Constant(TransactionStatus.pending))();
 
   /// The date on which this revision was created.
   DateTimeColumn get dateCreated =>
@@ -34,7 +34,21 @@ class FileRevisions extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-extension FileRevisionExtensions on FileRevisionsCompanion {
+extension FileRevisionExtensions on FileRevision {
+  String get confirmationStatus {
+    if (metadataTxStatus == TransactionStatus.failed ||
+        dataTxStatus == TransactionStatus.failed) {
+      return TransactionStatus.failed;
+    } else if (metadataTxStatus == TransactionStatus.pending ||
+        dataTxStatus == TransactionStatus.pending) {
+      return TransactionStatus.pending;
+    } else {
+      return TransactionStatus.confirmed;
+    }
+  }
+}
+
+extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
   /// Converts the revision to an instance of [FileEntriesCompanion].
   ///
   /// This instance will lack a proper path and `dateCreated`.

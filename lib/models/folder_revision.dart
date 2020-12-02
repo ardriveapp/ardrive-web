@@ -15,8 +15,8 @@ class FolderRevisions extends Table {
   TextColumn get parentFolderId => text().nullable()();
 
   TextColumn get metadataTxId => text()();
-  BoolColumn get metadataTxConfirmed =>
-      boolean().withDefault(const Constant(false))();
+  TextColumn get metadataTxStatus =>
+      text().withDefault(const Constant(TransactionStatus.pending))();
 
   /// The date on which this revision was created.
   DateTimeColumn get dateCreated =>
@@ -28,7 +28,11 @@ class FolderRevisions extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-extension FolderRevisionExtensions on FolderRevisionsCompanion {
+extension FolderRevisionExtensions on FolderRevision {
+  String get confirmationStatus => metadataTxStatus;
+}
+
+extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {
   /// Converts the revision to an instance of [FolderEntriesCompanion].
   ///
   /// This instance will lack a proper path and `dateCreated`.
