@@ -10,7 +10,9 @@ class DriveListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListTile(
-        leading: Icon(drive.isPrivate ? Icons.folder : Icons.folder_shared),
+        leading: drive.isPrivate
+            ? const Icon(Icons.folder)
+            : const Icon(Icons.folder_shared),
         title: Text(drive.name),
         selected: selected,
         onTap: onPressed,
