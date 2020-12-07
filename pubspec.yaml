@@ -26,7 +26,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/CDDelta/arweave-dart.git
-      ref: ec941370d72619e2ee770866b72944e5a9df8e58
+      ref: cedada9b624ae77b4579cd94fb6e088cbc2c3340
   cryptography:
     git:
       url: https://github.com/CDDelta/cryptography.git

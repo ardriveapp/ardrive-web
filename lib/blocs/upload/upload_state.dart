@@ -19,21 +19,37 @@ class UploadFileConflict extends UploadState {
   List<Object> get props => [conflictingFileNames];
 }
 
+/// [UploadReady] means that the upload is ready to be performed and is awaiting confirmation from the user.
 class UploadReady extends UploadState {
+  /// The cost to upload the data.
   final BigInt uploadCost;
-  final bool insufficientArBalance;
+
+  /// The fee amount provided to PST holders.
+  final BigInt pstFee;
+
+  /// The sum of the upload cost and fees.
+  final BigInt totalCost;
+
+  /// Whether or not the user has sufficient AR to cover the `totalCost`.
+  final bool sufficientArBalance;
+
+  /// Whether or not the upload will be made public ie. without encryption.
   final bool uploadIsPublic;
+
   final List<FileUploadHandle> files;
 
   UploadReady({
     @required this.uploadCost,
-    @required this.insufficientArBalance,
+    @required this.pstFee,
+    @required this.totalCost,
+    @required this.sufficientArBalance,
     @required this.uploadIsPublic,
     @required this.files,
   });
 
   @override
-  List<Object> get props => [uploadCost, insufficientArBalance, files];
+  List<Object> get props =>
+      [uploadCost, pstFee, totalCost, sufficientArBalance, files];
 }
 
 class UploadInProgress extends UploadState {

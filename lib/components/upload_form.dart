@@ -54,6 +54,7 @@ class UploadForm extends StatelessWidget {
           folderId: folderId,
           files: files,
           arweave: context.read<ArweaveService>(),
+          pst: context.read<PstService>(),
           profileCubit: context.read<ProfileCubit>(),
           driveDao: context.read<DriveDao>(),
         ),
@@ -160,12 +161,12 @@ class UploadForm extends StatelessWidget {
                       ),
                       Divider(),
                       const SizedBox(height: 16),
-                      Text('Cost: ${utils.winstonToAr(state.uploadCost)} AR'),
+                      Text('Cost: ${utils.winstonToAr(state.totalCost)} AR'),
                       if (state.uploadIsPublic) ...{
                         const SizedBox(height: 8),
                         Text('These file(s) will be uploaded publicly.'),
                       },
-                      if (state.insufficientArBalance) ...{
+                      if (!state.sufficientArBalance) ...{
                         const SizedBox(height: 8),
                         Text(
                           'Insufficient AR for upload.',
@@ -184,7 +185,7 @@ class UploadForm extends StatelessWidget {
                   ),
                   ElevatedButton(
                     child: Text('UPLOAD'),
-                    onPressed: !state.insufficientArBalance
+                    onPressed: state.sufficientArBalance
                         ? () => context.read<UploadCubit>().startUpload()
                         : null,
                   ),
