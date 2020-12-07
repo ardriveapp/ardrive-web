@@ -122,7 +122,11 @@ class UploadCubit extends Cubit<UploadState> {
         quantity: pstFee,
       ),
       profile.wallet,
-    );
+    )
+      ..addApplicationTags()
+      ..addTag('Type', 'fee')
+      ..addTag(TipType.tagName, TipType.dataUpload);
+
     await feeTx.sign(profile.wallet);
 
     emit(
