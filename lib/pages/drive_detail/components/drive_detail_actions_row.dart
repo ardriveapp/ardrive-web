@@ -25,6 +25,10 @@ class DriveDetailActionRow extends StatelessWidget {
                   ),
                   tooltip: 'Download',
                 ),
+                IconButton(
+                  icon: const Icon(Icons.share),
+                  tooltip: 'Share',
+                ),
                 if (state.currentDrive.isPublic)
                   Link(
                     uri: state.selectedFilePreviewUrl,
