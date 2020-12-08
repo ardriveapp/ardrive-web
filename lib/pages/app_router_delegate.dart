@@ -12,9 +12,16 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String driveId;
   String driveFolderId;
 
+  String sharedFileId;
+
+  bool get isViewingSharedFile => sharedFileId != null;
+
   @override
-  AppRoutePath get currentConfiguration =>
-      AppRoutePath(driveId: driveId, driveFolderId: driveFolderId);
+  AppRoutePath get currentConfiguration => AppRoutePath(
+        driveId: driveId,
+        driveFolderId: driveFolderId,
+        sharedFileId: sharedFileId,
+      );
 
   @override
   final GlobalKey<NavigatorState> navigatorKey;
@@ -25,7 +32,16 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   Widget build(BuildContext context) => BlocBuilder<ProfileCubit, ProfileState>(
         builder: (context, state) {
           Widget shell;
-          if (state is! ProfileLoaded) {
+          if (isViewingSharedFile) {
+            shell = BlocProvider<SharedFileCubit>(
+              key: ValueKey(sharedFileId),
+              create: (_) => SharedFileCubit(
+                fileId: sharedFileId,
+                arweave: context.read<ArweaveService>(),
+              ),
+              child: SharedFilePage(),
+            );
+          } else if (state is! ProfileLoaded) {
             shell = ProfileAuthPage();
           } else {
             shell = BlocConsumer<DrivesCubit, DrivesState>(
@@ -85,7 +101,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             },
           );
 
-          if (state is! ProfileLoaded) {
+          if (state is! ProfileLoaded || isViewingSharedFile) {
             return navigator;
           } else {
             return MultiBlocProvider(
@@ -133,6 +149,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   Future<void> setNewRoutePath(AppRoutePath path) async {
     driveId = path.driveId;
     driveFolderId = path.driveFolderId;
+    sharedFileId = path.sharedFileId;
   }
 
   void navigateToDriveDetailPage(String driveId, [String driveFolderId]) {
