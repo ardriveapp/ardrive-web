@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
@@ -7,9 +8,6 @@ import 'package:meta/meta.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'fs_entry_rename_state.dart';
-
-const _folderNameRegex = r'^(\w+\.?)*\w+$';
-const _fileNameRegex = r'([^\\\/]+)$';
 
 class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   final form;
@@ -36,7 +34,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
             validators: [
               Validators.required,
               Validators.pattern(
-                  folderId != null ? _folderNameRegex : _fileNameRegex),
+                  folderId != null ? kFolderNameRegex : kFileNameRegex),
             ],
           ),
         }),

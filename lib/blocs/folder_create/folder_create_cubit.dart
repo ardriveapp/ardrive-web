@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
@@ -11,7 +12,12 @@ part 'folder_create_state.dart';
 
 class FolderCreateCubit extends Cubit<FolderCreateState> {
   final form = FormGroup({
-    'name': FormControl(validators: [Validators.required]),
+    'name': FormControl(
+      validators: [
+        Validators.required,
+        Validators.pattern(kFolderNameRegex),
+      ],
+    ),
   });
 
   final String targetDriveId;
