@@ -12,37 +12,48 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
       return AppRoutePath.unknown();
     }
 
-    // Handle '/drives/:driveId' and '/drives/:driveId/folders/:folderId
-    if (uri.pathSegments.length == 2 || uri.pathSegments.length == 4) {
-      if (uri.pathSegments[0] != 'drives') return AppRoutePath.unknown();
-      final driveId = uri.pathSegments[1];
-      if (uri.pathSegments.length == 2) {
-        return AppRoutePath(driveId: driveId);
-      } else {
-        if (uri.pathSegments[2] != 'folders') return AppRoutePath.unknown();
-        return AppRoutePath(
-            driveId: driveId, driveFolderId: uri.pathSegments[3]);
-      }
-    }
+    switch (uri.pathSegments.first) {
+      case 'drives':
+        if (uri.pathSegments.length > 1) {
+          final driveId = uri.pathSegments[1];
 
-    // Handle unknown routes
-    return AppRoutePath.unknown();
+          if (uri.pathSegments.length == 2) {
+            // Handle '/drives/:driveId'
+            return AppRoutePath.driveDetail(driveId: driveId);
+          } else if (uri.pathSegments.length == 4 &&
+              uri.pathSegments[2] == 'folders') {
+            //  Handle /drives/:driveId/folders/:folderId
+            return AppRoutePath.folderDetail(
+                driveId: driveId, driveFolderId: uri.pathSegments[3]);
+          }
+        }
+
+        return AppRoutePath.unknown();
+      case 'file':
+        // Handle '/file/:sharedFileId'
+        if (uri.pathSegments.length > 1) {
+          final fileId = uri.pathSegments[1];
+          return AppRoutePath.sharedFile(sharedFileId: fileId);
+        }
+
+        return AppRoutePath.unknown();
+      default:
+        return AppRoutePath.unknown();
+    }
   }
 
   @override
   RouteInformation restoreRouteInformation(AppRoutePath path) {
-    if (path.driveId == null) {
-      return RouteInformation(location: '/');
-    }
     if (path.driveId != null) {
-      if (path.driveFolderId != null) {
-        return RouteInformation(
-            location: '/drives/${path.driveId}/folders/${path.driveFolderId}');
-      } else {
-        return RouteInformation(location: '/drives/${path.driveId}');
-      }
+      return path.driveFolderId == null
+          ? RouteInformation(location: '/drives/${path.driveId}')
+          : RouteInformation(
+              location:
+                  '/drives/${path.driveId}/folders/${path.driveFolderId}');
+    } else if (path.sharedFileId != null) {
+      return RouteInformation(location: '/file/${path.sharedFileId}');
     }
 
-    return null;
+    return RouteInformation(location: '/');
   }
 }
