@@ -10,5 +10,6 @@ export 'fs_entry_rename/fs_entry_rename_cubit.dart';
 export 'profile/profile_cubit.dart';
 export 'profile_add/profile_add_cubit.dart';
 export 'profile_unlock/profile_unlock_cubit.dart';
+export 'shared_file/shared_file_cubit.dart';
 export 'sync/sync_cubit.dart';
 export 'upload/upload_cubit.dart';

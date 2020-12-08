@@ -190,22 +190,53 @@ class ArweaveService {
     String driveId, [
     SecretKey driveKey,
   ]) async {
-    final initialDriveEntityQuery = await _gql.execute(
-      InitialDriveEntityQuery(
-          variables: InitialDriveEntityArguments(driveId: driveId)),
-    );
+    final initialDriveEntityQuery = await _gql.execute(InitialDriveEntityQuery(
+        variables: InitialDriveEntityArguments(driveId: driveId)));
 
     final queryEdges = initialDriveEntityQuery.data.transactions.edges;
-    if (queryEdges.isEmpty) return null;
+    if (queryEdges.isEmpty) {
+      return null;
+    }
 
-    final driveTx = queryEdges[0].node;
+    final driveTx = queryEdges.first.node;
     final driveDataRes = await client.api.get(driveTx.id);
 
     return DriveEntity.fromTransaction(
-      driveTx,
-      driveDataRes.bodyBytes,
-      driveKey,
-    );
+        driveTx, driveDataRes.bodyBytes, driveKey);
+  }
+
+  /// Tries to get the latest file entity with the provided file id.
+  ///
+  /// This function first checks for the owner of the first instance of the file entity
+  /// with the specified id and then queries for the latest instance of the file entity
+  /// by that owner.
+  ///
+  /// Returns `null` if no valid file is found.
+  Future<FileEntity> tryGetLatestFileEntityWithId(String fileId,
+      [SecretKey fileKey]) async {
+    final firstOwnerQuery = await _gql.execute(FirstFileEntityWithIdOwnerQuery(
+        variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
+
+    if (firstOwnerQuery.data.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    final fileOwner =
+        firstOwnerQuery.data.transactions.edges.first.node.owner.address;
+
+    final latestFileQuery = await _gql.execute(LatestFileEntityWithIdQuery(
+        variables:
+            LatestFileEntityWithIdArguments(fileId: fileId, owner: fileOwner)));
+
+    final queryEdges = latestFileQuery.data.transactions.edges;
+    if (queryEdges.isEmpty) {
+      return null;
+    }
+
+    final fileTx = queryEdges.first.node;
+    final fileDataRes = await client.api.get(fileTx.id);
+
+    return FileEntity.fromTransaction(fileTx, fileDataRes.bodyBytes, fileKey);
   }
 
   /// Creates and signs a [Transaction] representing the provided entity.
