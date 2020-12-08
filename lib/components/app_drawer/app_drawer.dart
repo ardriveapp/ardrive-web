@@ -158,7 +158,7 @@ class AppDrawer extends StatelessWidget {
   Widget _buildSyncButton() => BlocBuilder<SyncCubit, SyncState>(
         builder: (context, syncState) => syncState is SyncInProgress
             ? IconButton(
-                icon: CircularProgressIndicator(
+                icon: const CircularProgressIndicator(
                   valueColor:
                       AlwaysStoppedAnimation<Color>(kOnDarkSurfaceHighEmphasis),
                 ),

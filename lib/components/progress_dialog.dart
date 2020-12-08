@@ -23,10 +23,8 @@ class ProgressDialog extends StatelessWidget {
           width: kSmallDialogWidth,
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Center(
-                child: CircularProgressIndicator(),
-              ),
+            children: [
+              const Center(child: CircularProgressIndicator()),
             ],
           ),
         ),

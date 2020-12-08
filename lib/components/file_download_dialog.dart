@@ -63,7 +63,7 @@ class FileDownloadDialog extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   subtitle: Text(filesize(state.totalByteCount)),
-                  trailing: CircularProgressIndicator(),
+                  trailing: const CircularProgressIndicator(),
                 ),
               ),
             );
