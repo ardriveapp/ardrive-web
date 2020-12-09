@@ -25,7 +25,6 @@ class AppDrawer extends StatelessWidget {
             child: Container(
               color: kDarkSurfaceColor,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildDriveActionsButton(context, state),
                   if (state is DrivesLoadSuccess)
