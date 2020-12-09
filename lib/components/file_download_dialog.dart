@@ -2,7 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
-import 'package:file_picker_cross/file_picker_cross.dart';
+import 'package:cross_file/cross_file.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -40,11 +40,12 @@ class FileDownloadDialog extends StatelessWidget {
         child: BlocConsumer<FileDownloadCubit, FileDownloadState>(
             listener: (context, state) async {
           if (state is FileDownloadSuccess) {
-            await FilePickerCross(
+            final downloadedFile = XFile.fromData(
               state.fileDataBytes,
-              path: state.fileName,
-              fileExtension: state.fileExtension,
-            ).exportToStorage();
+              name: state.fileName,
+            );
+
+            downloadedFile.saveTo('');
 
             Navigator.pop(context);
           }

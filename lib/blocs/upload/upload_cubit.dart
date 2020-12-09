@@ -7,7 +7,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:file_picker_cross/file_picker_cross.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
 import 'package:path/path.dart';
@@ -22,7 +22,7 @@ part 'upload_state.dart';
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
   final String folderId;
-  final List<FilePickerCross> files;
+  final List<XFile> files;
 
   final _uuid = Uuid();
   final ProfileCubit _profileCubit;
@@ -159,7 +159,7 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
-  Future<FileUploadHandle> prepareFileUpload(FilePickerCross file) async {
+  Future<FileUploadHandle> prepareFileUpload(XFile file) async {
     final profile = _profileCubit.state as ProfileLoaded;
 
     final fileName = basename(file.path);
@@ -167,9 +167,8 @@ class UploadCubit extends Cubit<UploadState> {
     final fileEntity = FileEntity(
       driveId: _targetDrive.id,
       name: fileName,
-      size: file.length,
-      // TODO: Replace with time reported by OS.
-      lastModifiedDate: DateTime.now(),
+      size: await file.length(),
+      lastModifiedDate: await file.lastModified(),
       parentFolderId: _targetFolder.id,
       dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
     );
@@ -184,7 +183,7 @@ class UploadCubit extends Cubit<UploadState> {
     final fileKey =
         private ? await deriveFileKey(driveKey, fileEntity.id) : null;
 
-    final fileData = file.toUint8List();
+    final fileData = await file.readAsBytes();
 
     final uploadHandle = FileUploadHandle(entity: fileEntity, path: filePath);
 

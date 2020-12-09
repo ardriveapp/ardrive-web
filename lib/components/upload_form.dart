@@ -3,7 +3,8 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:arweave/utils.dart' as utils;
-import 'package:file_picker_cross/file_picker_cross.dart';
+import 'package:cross_file/cross_file.dart';
+import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,8 +19,8 @@ Future<void> promptToUploadFile(
 }) async {
   try {
     final selectedFiles = allowSelectMultiple
-        ? await FilePickerCross.importMultipleFromStorage()
-        : [FilePickerCross.importFromStorage()];
+        ? await file_selector.openFiles()
+        : [await file_selector.openFile()];
 
     await showDialog(
       context: context,
@@ -40,7 +41,7 @@ Future<void> promptToUploadFile(
 class UploadForm extends StatelessWidget {
   final String driveId;
   final String folderId;
-  final List<FilePickerCross> files;
+  final List<XFile> files;
 
   final filesScrollController = ScrollController();
 
