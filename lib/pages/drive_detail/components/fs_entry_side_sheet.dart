@@ -1,10 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/fs_entry_activity/fs_entry_activity_cubit.dart';
+import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 
 class FsEntrySideSheet extends StatelessWidget {
   final String driveId;
@@ -54,8 +53,8 @@ class FsEntrySideSheet extends StatelessWidget {
                         Expanded(
                           child: TabBarView(
                             children: [
-                              _buildInfoTab(state),
-                              _buildActivityTab(state),
+                              _buildInfoTab(context, state),
+                              _buildActivityTab(context, state),
                             ],
                           ),
                         )
@@ -67,9 +66,11 @@ class FsEntrySideSheet extends StatelessWidget {
         ),
       );
 
-  Widget _buildInfoTab(FsEntryInfoSuccess state) => DataTable(
+  Widget _buildInfoTab(BuildContext context, FsEntryInfoSuccess state) =>
+      DataTable(
         // Hide the data table header.
         headingRowHeight: 0,
+        dataTextStyle: Theme.of(context).textTheme.subtitle2,
         columns: const [
           DataColumn(label: Text('')),
           DataColumn(label: Text('')),
@@ -84,9 +85,16 @@ class FsEntrySideSheet extends StatelessWidget {
               DataCell(Text('Privacy')),
               DataCell(Text(state.entry.privacy))
             ]),
-          } else if (state is FsEntryInfoSuccess<FolderEntry>)
-            ...{}
-          else if (state is FsEntryInfoSuccess<FileEntry>) ...{
+          } else if (state is FsEntryInfoSuccess<FolderEntry>) ...{
+            DataRow(cells: [
+              DataCell(Text('Folder ID')),
+              DataCell(SelectableText(state.entry.id)),
+            ]),
+          } else if (state is FsEntryInfoSuccess<FileEntry>) ...{
+            DataRow(cells: [
+              DataCell(Text('File ID')),
+              DataCell(SelectableText(state.entry.id)),
+            ]),
             DataRow(cells: [
               DataCell(Text('Size')),
               DataCell(Text(filesize(state.entry.size)))
@@ -94,21 +102,22 @@ class FsEntrySideSheet extends StatelessWidget {
             DataRow(cells: [
               DataCell(Text('Last modified')),
               DataCell(
-                  Text(DateFormat.yMMMd().format(state.entry.lastModifiedDate)))
+                  Text(yMMdDateFormatter.format(state.entry.lastModifiedDate)))
             ]),
           },
           DataRow(cells: [
             DataCell(Text('Last updated')),
-            DataCell(Text(DateFormat.yMMMd().format(state.lastUpdated))),
+            DataCell(Text(yMMdDateFormatter.format(state.lastUpdated))),
           ]),
           DataRow(cells: [
             DataCell(Text('Date created')),
-            DataCell(Text(DateFormat.yMMMd().format(state.dateCreated))),
+            DataCell(Text(yMMdDateFormatter.format(state.dateCreated))),
           ]),
         ],
       );
 
-  Widget _buildActivityTab(FsEntryInfoSuccess state) => Padding(
+  Widget _buildActivityTab(BuildContext context, FsEntryInfoSuccess state) =>
+      Padding(
         padding: const EdgeInsets.only(top: 16),
         child: !_isShowingDriveDetails
             ? BlocProvider(
@@ -145,8 +154,8 @@ class FsEntrySideSheet extends StatelessWidget {
                                 content = Text('This folder was modified');
                             }
 
-                            dateCreated = Text(DateFormat.yMMMd()
-                                .format(revision.dateCreated));
+                            dateCreated = Text(
+                                yMMdDateFormatter.format(revision.dateCreated));
                           } else if (revision is FileRevision) {
                             switch (revision.action) {
                               case RevisionAction.create:
@@ -168,8 +177,8 @@ class FsEntrySideSheet extends StatelessWidget {
                                 content = Text('This file was modified');
                             }
 
-                            dateCreated = Text(DateFormat.yMMMd()
-                                .format(revision.dateCreated));
+                            dateCreated = Text(
+                                yMMdDateFormatter.format(revision.dateCreated));
                           }
 
                           return ListTile(
