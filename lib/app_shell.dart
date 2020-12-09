@@ -58,6 +58,7 @@ class _AppShellState extends State<AppShell> {
                     child: const Icon(Icons.account_circle),
                   ),
                 ),
+                tooltip: 'Profile',
                 onPressed: () => toggleProfileOverlay(),
               ),
             ],
