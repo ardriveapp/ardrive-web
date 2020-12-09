@@ -187,7 +187,7 @@ class FsEntrySideSheet extends StatelessWidget {
                         itemCount: state.revisions.length,
                       );
                     } else {
-                      return Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     }
                   },
                 ),

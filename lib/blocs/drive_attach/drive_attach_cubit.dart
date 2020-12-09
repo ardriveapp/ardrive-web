@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
@@ -13,7 +14,12 @@ part 'drive_attach_state.dart';
 class DriveAttachCubit extends Cubit<DriveAttachState> {
   final form = FormGroup({
     'driveId': FormControl(validators: [Validators.required]),
-    'name': FormControl(validators: [Validators.required]),
+    'name': FormControl(
+      validators: [
+        Validators.required,
+        Validators.pattern(kDriveNameRegex),
+      ],
+    ),
   });
 
   final ArweaveService _arweave;

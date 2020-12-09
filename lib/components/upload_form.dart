@@ -107,7 +107,7 @@ class UploadForm extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      CircularProgressIndicator(),
+                      const CircularProgressIndicator(),
                       const SizedBox(height: 16),
                       Text('This may take a while...'),
                     ],

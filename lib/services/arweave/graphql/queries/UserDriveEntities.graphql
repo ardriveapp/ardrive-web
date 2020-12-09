@@ -1,5 +1,6 @@
 query UserDriveEntities($owner: String!) {
   transactions(
+    first: 100
     sort: HEIGHT_DESC
     tags: [
       { name: "ArFS", values: ["0.10", "0.11"] }
