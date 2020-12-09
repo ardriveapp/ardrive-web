@@ -17,25 +17,23 @@ Future<void> promptToUploadFile(
   @required String folderId,
   bool allowSelectMultiple = false,
 }) async {
-  try {
-    final selectedFiles = allowSelectMultiple
-        ? await file_selector.openFiles()
-        : [await file_selector.openFile()];
+  final selectedFiles = allowSelectMultiple
+      ? await file_selector.openFiles()
+      : [await file_selector.openFile()];
 
-    await showDialog(
-      context: context,
-      builder: (_) => UploadForm(
-        driveId: driveId,
-        folderId: folderId,
-        files: selectedFiles,
-      ),
-      barrierDismissible: false,
-    );
-  } catch (err) {
-    if (err is! FileSelectionCanceledError) {
-      rethrow;
-    }
+  if (selectedFiles.isEmpty || selectedFiles.first == null) {
+    return;
   }
+
+  await showDialog(
+    context: context,
+    builder: (_) => UploadForm(
+      driveId: driveId,
+      folderId: folderId,
+      files: selectedFiles,
+    ),
+    barrierDismissible: false,
+  );
 }
 
 class UploadForm extends StatelessWidget {

@@ -51,18 +51,16 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
       );
 
   void _pickWallet(BuildContext context) async {
-    try {
-      final walletFile = await file_selector.openFile(acceptedTypeGroups: [
-        file_selector.XTypeGroup(label: 'wallet keys', extensions: ['json'])
-      ]);
+    final walletFile = await file_selector.openFile(acceptedTypeGroups: [
+      file_selector.XTypeGroup(label: 'wallet keys', extensions: ['json'])
+    ]);
 
-      await context
-          .read<ProfileAddCubit>()
-          .pickWallet(await walletFile.readAsString());
-    } catch (err) {
-      if (err is! FileSelectionCanceledError) {
-        rethrow;
-      }
+    if (walletFile == null) {
+      return;
     }
+
+    await context
+        .read<ProfileAddCubit>()
+        .pickWallet(await walletFile.readAsString());
   }
 }
