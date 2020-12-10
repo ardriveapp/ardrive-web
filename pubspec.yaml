@@ -47,7 +47,7 @@ dependencies:
   path_provider: ^1.6.11
   pedantic: ^1.9.2
   reactive_forms: ^7.3.0
-  rxdart: ^0.24.1
+  rxdart: ^0.25.0
   timeago: ^2.0.28
   url_launcher: ^5.7.10
   uuid: ^2.2.0
