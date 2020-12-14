@@ -30,11 +30,7 @@ Future<void> promptToUploadFile(
       ),
       barrierDismissible: false,
     );
-  } catch (err) {
-    if (err is! FileSelectionCanceledError) {
-      rethrow;
-    }
-  }
+  } on FileSelectionCanceledError catch (_) {}
 }
 
 class UploadForm extends StatelessWidget {

@@ -49,12 +49,8 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         wallet: Wallet.fromJwk(walletJwk),
         key: profileKdRes.key,
       );
-    } catch (err) {
-      if (err is MacValidationException) {
-        throw ProfilePasswordIncorrectException();
-      }
-
-      rethrow;
+    } on MacValidationException catch (_) {
+      throw ProfilePasswordIncorrectException();
     }
   }
 
