@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -13,6 +14,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String driveFolderId;
 
   String sharedFileId;
+  SecretKey sharedFileKey;
+  String sharedRawFileKey;
 
   bool get isViewingSharedFile => sharedFileId != null;
 
@@ -21,6 +24,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         driveId: driveId,
         driveFolderId: driveFolderId,
         sharedFileId: sharedFileId,
+        sharedFileKey: sharedFileKey,
+        sharedRawFileKey: sharedRawFileKey,
       );
 
   @override

@@ -185,7 +185,7 @@ class ArweaveService {
   ///
   /// Optionally provide a `driveKey` to load private drive entities.
   ///
-  /// Returns `null` if no drive could be found.
+  /// Returns `null` if no drive could be found or the provided `driveKey` is incorrect.
   Future<DriveEntity> tryGetFirstDriveEntityWithId(
     String driveId, [
     SecretKey driveKey,
@@ -201,8 +201,16 @@ class ArweaveService {
     final driveTx = queryEdges.first.node;
     final driveDataRes = await client.api.get(driveTx.id);
 
-    return DriveEntity.fromTransaction(
-        driveTx, driveDataRes.bodyBytes, driveKey);
+    try {
+      return DriveEntity.fromTransaction(
+          driveTx, driveDataRes.bodyBytes, driveKey);
+    } catch (err) {
+      if (err is EntityTransactionParseException) {
+        return null;
+      } else {
+        rethrow;
+      }
+    }
   }
 
   /// Tries to get the latest file entity with the provided file id.
@@ -211,7 +219,7 @@ class ArweaveService {
   /// with the specified id and then queries for the latest instance of the file entity
   /// by that owner.
   ///
-  /// Returns `null` if no valid file is found.
+  /// Returns `null` if no valid file is found or the provided `fileKey` is incorrect.
   Future<FileEntity> tryGetLatestFileEntityWithId(String fileId,
       [SecretKey fileKey]) async {
     final firstOwnerQuery = await _gql.execute(FirstFileEntityWithIdOwnerQuery(
@@ -236,7 +244,15 @@ class ArweaveService {
     final fileTx = queryEdges.first.node;
     final fileDataRes = await client.api.get(fileTx.id);
 
-    return FileEntity.fromTransaction(fileTx, fileDataRes.bodyBytes, fileKey);
+    try {
+      return FileEntity.fromTransaction(fileTx, fileDataRes.bodyBytes, fileKey);
+    } catch (err) {
+      if (err is EntityTransactionParseException) {
+        return null;
+      } else {
+        rethrow;
+      }
+    }
   }
 
   /// Creates and signs a [Transaction] representing the provided entity.

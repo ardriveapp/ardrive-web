@@ -1,6 +1,10 @@
+import 'package:arweave/utils.dart' as utils;
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 
 import 'pages.dart';
+
+const fileKeyQueryParamName = 'fileKey';
 
 class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
   @override
@@ -33,7 +37,19 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
         // Handle '/file/:sharedFileId'
         if (uri.pathSegments.length > 1) {
           final fileId = uri.pathSegments[1];
-          return AppRoutePath.sharedFile(sharedFileId: fileId);
+          final fileKeyBase64 = uri.queryParameters[fileKeyQueryParamName];
+
+          if (fileKeyBase64 != null) {
+            final sharedFilePkBytes = utils.decodeBase64ToBytes(fileKeyBase64);
+
+            return AppRoutePath.sharedFile(
+              sharedFileId: fileId,
+              sharedFilePk: SecretKey(sharedFilePkBytes),
+              sharedRawFileKey: fileKeyBase64,
+            );
+          } else {
+            return AppRoutePath.sharedFile(sharedFileId: fileId);
+          }
         }
 
         return AppRoutePath.unknown();
@@ -48,10 +64,19 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
       return path.driveFolderId == null
           ? RouteInformation(location: '/drives/${path.driveId}')
           : RouteInformation(
-              location:
-                  '/drives/${path.driveId}/folders/${path.driveFolderId}');
+              location: '/drives/${path.driveId}/folders/${path.driveFolderId}',
+            );
     } else if (path.sharedFileId != null) {
-      return RouteInformation(location: '/file/${path.sharedFileId}');
+      final sharedFilePath = '/file/${path.sharedFileId}';
+
+      if (path.sharedRawFileKey != null) {
+        return RouteInformation(
+          location: sharedFilePath +
+              '?$fileKeyQueryParamName=${path.sharedRawFileKey}',
+        );
+      } else {
+        return RouteInformation(location: sharedFilePath);
+      }
     }
 
     return RouteInformation(location: '/');
