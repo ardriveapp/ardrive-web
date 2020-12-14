@@ -79,8 +79,16 @@ class _FileShareDialogState extends State<FileShareDialog> {
                         style: TextButton.styleFrom(
                             padding:
                                 const EdgeInsets.symmetric(horizontal: 16)),
-                        onPressed: () => Clipboard.setData(
-                            ClipboardData(text: shareLinkController.text)),
+                        onPressed: () {
+                          // Select the entire link to give the user some feedback on their action.
+                          shareLinkController.selection = TextSelection(
+                            baseOffset: 0,
+                            extentOffset: shareLinkController.text.length,
+                          );
+
+                          Clipboard.setData(
+                              ClipboardData(text: shareLinkController.text));
+                        },
                       ),
                     ],
                   ),
