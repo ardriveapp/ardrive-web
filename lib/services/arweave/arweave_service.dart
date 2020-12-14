@@ -68,7 +68,10 @@ class ArweaveService {
               transaction, rawEntityData[i], driveKey);
         } else if (entityType == EntityType.file) {
           entity = await FileEntity.fromTransaction(
-              transaction, rawEntityData[i], driveKey);
+            transaction,
+            rawEntityData[i],
+            driveKey: driveKey,
+          );
         }
 
         if (blockHistory.isEmpty ||
@@ -177,27 +180,73 @@ class ArweaveService {
   ///
   /// Optionally provide a `driveKey` to load private drive entities.
   ///
-  /// Returns `null` if no drive could be found.
+  /// Returns `null` if no drive could be found or the provided `driveKey` is incorrect.
   Future<DriveEntity> tryGetFirstDriveEntityWithId(
     String driveId, [
     SecretKey driveKey,
   ]) async {
-    final initialDriveEntityQuery = await _gql.execute(
-      InitialDriveEntityQuery(
-          variables: InitialDriveEntityArguments(driveId: driveId)),
-    );
+    final initialDriveEntityQuery = await _gql.execute(InitialDriveEntityQuery(
+        variables: InitialDriveEntityArguments(driveId: driveId)));
 
     final queryEdges = initialDriveEntityQuery.data.transactions.edges;
-    if (queryEdges.isEmpty) return null;
+    if (queryEdges.isEmpty) {
+      return null;
+    }
 
-    final driveTx = queryEdges[0].node;
+    final driveTx = queryEdges.first.node;
     final driveDataRes = await client.api.get(driveTx.id);
 
-    return DriveEntity.fromTransaction(
-      driveTx,
-      driveDataRes.bodyBytes,
-      driveKey,
-    );
+    try {
+      return await DriveEntity.fromTransaction(
+        driveTx,
+        driveDataRes.bodyBytes,
+        driveKey,
+      );
+    } on EntityTransactionParseException catch (_) {
+      return null;
+    }
+  }
+
+  /// Tries to get the latest file entity with the provided file id.
+  ///
+  /// This function first checks for the owner of the first instance of the file entity
+  /// with the specified id and then queries for the latest instance of the file entity
+  /// by that owner.
+  ///
+  /// Returns `null` if no valid file is found or the provided `fileKey` is incorrect.
+  Future<FileEntity> tryGetLatestFileEntityWithId(String fileId,
+      [SecretKey fileKey]) async {
+    final firstOwnerQuery = await _gql.execute(FirstFileEntityWithIdOwnerQuery(
+        variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
+
+    if (firstOwnerQuery.data.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    final fileOwner =
+        firstOwnerQuery.data.transactions.edges.first.node.owner.address;
+
+    final latestFileQuery = await _gql.execute(LatestFileEntityWithIdQuery(
+        variables:
+            LatestFileEntityWithIdArguments(fileId: fileId, owner: fileOwner)));
+
+    final queryEdges = latestFileQuery.data.transactions.edges;
+    if (queryEdges.isEmpty) {
+      return null;
+    }
+
+    final fileTx = queryEdges.first.node;
+    final fileDataRes = await client.api.get(fileTx.id);
+
+    try {
+      return await FileEntity.fromTransaction(
+        fileTx,
+        fileDataRes.bodyBytes,
+        fileKey: fileKey,
+      );
+    } on EntityTransactionParseException catch (_) {
+      return null;
+    }
   }
 
   /// Creates and signs a [Transaction] representing the provided entity.
