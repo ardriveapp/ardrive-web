@@ -341,27 +341,47 @@ class SyncCubit extends Cubit<SyncState> {
     final unconfirmedFileRevisions =
         await _driveDao.selectUnconfirmedFileRevisions(driveId).get();
 
-    // Construct a list of transactions that are unconfirmed, filtering out ones that are already confirmed.
-    final unconfirmedTxIds = unconfirmedFolderRevisions
-        .map((r) => r.metadataTxId)
-        .followedBy(unconfirmedFileRevisions
-            .where((r) => r.metadataTxStatus == TransactionStatus.pending)
-            .map((r) => r.metadataTxId))
-        .followedBy(unconfirmedFileRevisions
-            .where((r) => r.dataTxStatus == TransactionStatus.pending)
-            .map((r) => r.dataTxId))
-        .toList();
+    // Construct a list of revisions with transactions that are unconfirmed,
+    // filtering out ones that are already confirmed.
+    final unconfirmedRevisionsByTxId = Map.fromEntries(
+        unconfirmedFolderRevisions
+            .map((r) => MapEntry<String, Object>(r.metadataTxId, r))
+            .followedBy(unconfirmedFileRevisions
+                .where((r) => r.metadataTxStatus == TransactionStatus.pending)
+                .map((r) => MapEntry<String, Object>(r.metadataTxId, r)))
+            .followedBy(unconfirmedFileRevisions
+                .where((r) => r.dataTxStatus == TransactionStatus.pending)
+                .map((r) => MapEntry<String, Object>(r.dataTxId, r))));
 
-    final txConfirmations =
-        await _arweave.getTransactionConfirmations(unconfirmedTxIds);
+    final txConfirmations = await _arweave
+        .getTransactionConfirmations(unconfirmedRevisionsByTxId.keys.toList());
     final txStatuses =
-        txConfirmations.map<String, String>((key, confirmations) {
+        txConfirmations.map<String, String>((txId, confirmations) {
       if (confirmations >= kRequiredTxConfirmationCount) {
-        return MapEntry(key, TransactionStatus.confirmed);
+        return MapEntry(txId, TransactionStatus.confirmed);
       } else if (confirmations >= 0) {
-        return MapEntry(key, TransactionStatus.pending);
+        return MapEntry(txId, TransactionStatus.pending);
       } else {
-        return MapEntry(key, TransactionStatus.failed);
+        final revision = unconfirmedRevisionsByTxId[txId];
+
+        // Only mark revisions as failed if they exceed are unconfirmed for over 45 minutes
+        // as the transaction might not be queryable for right after it was created.
+        var abovePendingThreshold = false;
+
+        if (revision is FileRevision) {
+          abovePendingThreshold =
+              DateTime.now().difference(revision.dateCreated).inMinutes > 45;
+        } else if (revision is FolderRevision) {
+          abovePendingThreshold =
+              DateTime.now().difference(revision.dateCreated).inMinutes > 45;
+        }
+
+        return MapEntry(
+          txId,
+          abovePendingThreshold
+              ? TransactionStatus.failed
+              : TransactionStatus.pending,
+        );
       }
     });
 
