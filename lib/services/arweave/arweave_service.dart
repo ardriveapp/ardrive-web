@@ -197,9 +197,11 @@ class ArweaveService {
     final driveDataRes = await client.api.get(driveTx.id);
 
     try {
-      final drive = await DriveEntity.fromTransaction(
-          driveTx, driveDataRes.bodyBytes, driveKey);
-      return drive;
+      return await DriveEntity.fromTransaction(
+        driveTx,
+        driveDataRes.bodyBytes,
+        driveKey,
+      );
     } on EntityTransactionParseException catch (_) {
       return null;
     }
@@ -237,12 +239,11 @@ class ArweaveService {
     final fileDataRes = await client.api.get(fileTx.id);
 
     try {
-      final file = await FileEntity.fromTransaction(
+      return await FileEntity.fromTransaction(
         fileTx,
         fileDataRes.bodyBytes,
         fileKey: fileKey,
       );
-      return file;
     } on EntityTransactionParseException catch (_) {
       return null;
     }
