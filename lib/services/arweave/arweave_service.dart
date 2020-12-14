@@ -77,13 +77,9 @@ class ArweaveService {
         }
 
         blockHistory.last.entities.add(entity);
-      } catch (err) {
+
         // If there are errors in parsing the entity, ignore it.
-        // TODO: Test graceful handling of invalid entities.
-        if (err is! EntityTransactionParseException) {
-          rethrow;
-        }
-      }
+      } on EntityTransactionParseException catch (_) {}
     }
 
     // Sort the entities in each block by ascending commit time.
@@ -168,13 +164,9 @@ class ArweaveService {
 
         drivesById[drive.id] = drive;
         drivesWithKey[drive] = driveKey;
-      } catch (err) {
+
         // If there's an error parsing the drive entity, just ignore it.
-        // TODO: Test graceful handling of invalid entities.
-        if (err is! EntityTransactionParseException) {
-          rethrow;
-        }
-      }
+      } on EntityTransactionParseException catch (_) {}
     }
 
     return drivesWithKey;
@@ -295,7 +287,7 @@ class ArweaveService {
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
     final bundleTx = await client.transactions.prepare(
-      Transaction.withDataBundle(bundle: bundle),
+      Transaction.withDataBundle(bundle: bundle)..addApplicationTags(),
       wallet,
     );
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_portal/flutter_portal.dart';
+import 'package:url_launcher/link.dart';
 
 import 'blocs/blocs.dart';
 import 'components/components.dart';
@@ -27,6 +28,21 @@ class _AppShellState extends State<AppShell> {
               fit: BoxFit.contain,
             ),
             actions: [
+              Link(
+                uri: Uri.parse(
+                    'https://community.xyz/#-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ'),
+                target: LinkTarget.blank,
+                builder: (context, onPressed) => Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.people_alt),
+                      tooltip: 'CommunityXYZ',
+                      onPressed: onPressed,
+                    ),
+                  ],
+                ),
+              ),
               IconButton(
                 icon: PortalEntry(
                   visible: showProfileOverlay,
@@ -42,6 +58,7 @@ class _AppShellState extends State<AppShell> {
                     child: const Icon(Icons.account_circle),
                   ),
                 ),
+                tooltip: 'Profile',
                 onPressed: () => toggleProfileOverlay(),
               ),
             ],

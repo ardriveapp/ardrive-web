@@ -14,3 +14,9 @@ To start code generation, run:
 ```shell
 flutter packages pub run build_runner watch
 ```
+
+To start a development instance for web, run:
+
+```shell
+flutter run -d Chrome
+```

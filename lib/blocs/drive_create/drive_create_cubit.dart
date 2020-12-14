@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
@@ -12,7 +13,12 @@ part 'drive_create_state.dart';
 
 class DriveCreateCubit extends Cubit<DriveCreateState> {
   final form = FormGroup({
-    'name': FormControl(validators: [Validators.required]),
+    'name': FormControl(
+      validators: [
+        Validators.required,
+        Validators.pattern(kDriveNameRegex),
+      ],
+    ),
     'privacy': FormControl(
         value: DrivePrivacy.private, validators: [Validators.required]),
   });

@@ -28,7 +28,7 @@ class DriveDetailPage extends StatelessWidget {
           },
           builder: (context, state) {
             if (state is DriveDetailLoadInProgress) {
-              return Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator());
             } else if (state is DriveDetailLoadSuccess) {
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -54,7 +54,7 @@ class FileDownloadDialog extends StatelessWidget {
               dismissable: false,
               title: 'Downloading file...',
               content: SizedBox(
-                width: kSmallDialogWidth,
+                width: kMediumDialogWidth,
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(
@@ -63,7 +63,7 @@ class FileDownloadDialog extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   subtitle: Text(filesize(state.totalByteCount)),
-                  trailing: CircularProgressIndicator(),
+                  trailing: const CircularProgressIndicator(),
                 ),
               ),
             );

@@ -10,6 +10,6 @@ class ProfileAuthLoadingScreen extends StatelessWidget {
           R.images.profile.profileUnlock,
           fit: BoxFit.contain,
         ),
-        content: Center(child: CircularProgressIndicator()),
+        content: const Center(child: CircularProgressIndicator()),
       );
 }

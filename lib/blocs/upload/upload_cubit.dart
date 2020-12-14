@@ -28,6 +28,7 @@ class UploadCubit extends Cubit<UploadState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
+  final PstService _pst;
 
   Drive _targetDrive;
   FolderEntry _targetFolder;
@@ -38,6 +39,9 @@ class UploadCubit extends Cubit<UploadState> {
   /// A map of [FileUploadHandle]s keyed by their respective file's id.
   final Map<String, FileUploadHandle> _fileUploadHandles = {};
 
+  /// The [Transaction] that pays `pstFee` to a random PST holder.
+  Transaction feeTx;
+
   UploadCubit({
     @required this.driveId,
     @required this.folderId,
@@ -45,9 +49,11 @@ class UploadCubit extends Cubit<UploadState> {
     @required ProfileCubit profileCubit,
     @required DriveDao driveDao,
     @required ArweaveService arweave,
+    @required PstService pst,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
+        _pst = pst,
         super(UploadPreparationInProgress()) {
     () async {
       _targetDrive = await _driveDao.getDriveById(driveId);
@@ -102,18 +108,43 @@ class UploadCubit extends Cubit<UploadState> {
         .map((f) => f.cost)
         .reduce((total, cost) => total + cost);
 
+    // Workaround [BigInt] percentage division problems
+    // by first multiplying by the percentage * 100 and then dividing by 100.
+    final pstFee = uploadCost *
+        BigInt.from((await _pst.getPstFeePercentage()) * 100) ~/
+        BigInt.from(100);
+
+    final totalCost = uploadCost + pstFee;
+
+    feeTx = await _arweave.client.transactions.prepare(
+      Transaction(
+        target: await _pst.getWeightedPstHolder(),
+        quantity: pstFee,
+      ),
+      profile.wallet,
+    )
+      ..addApplicationTags()
+      ..addTag('Type', 'fee')
+      ..addTag(TipType.tagName, TipType.dataUpload);
+
+    await feeTx.sign(profile.wallet);
+
     emit(
       UploadReady(
-        files: _fileUploadHandles.values.toList(),
         uploadCost: uploadCost,
+        pstFee: pstFee,
+        totalCost: totalCost,
         uploadIsPublic: _targetDrive.isPublic,
-        insufficientArBalance: profile.walletBalance < uploadCost,
+        sufficientArBalance: profile.walletBalance >= totalCost,
+        files: _fileUploadHandles.values.toList(),
       ),
     );
   }
 
   Future<void> startUpload() async {
     emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
+
+    await _arweave.postTx(feeTx);
 
     await _driveDao.transaction(() async {
       for (final uploadHandle in _fileUploadHandles.values) {
