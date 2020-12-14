@@ -3,6 +3,7 @@ export 'drive_create/drive_create_cubit.dart';
 export 'drive_detail/drive_detail_cubit.dart';
 export 'drives/drives_cubit.dart';
 export 'file_download/file_download_cubit.dart';
+export 'file_share/file_share_cubit.dart';
 export 'folder_create/folder_create_cubit.dart';
 export 'fs_entry_info/fs_entry_info_cubit.dart';
 export 'fs_entry_move/fs_entry_move_cubit.dart';

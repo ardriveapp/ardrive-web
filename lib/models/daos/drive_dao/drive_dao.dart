@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:moor/moor.dart';
@@ -34,6 +35,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Stream<Drive> watchDriveById(String driveId) =>
       selectDriveById(driveId).watchSingle();
 
+  /// Returns the encryption key for the specified drive.
+  ///
+  /// `null` if the drive is public and unencrypted.
   Future<SecretKey> getDriveKey(String driveId, SecretKey profileKey) async {
     final drive = await getDriveById(driveId);
 
@@ -48,6 +52,22 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
 
     return SecretKey(driveKeyData);
+  }
+
+  /// Returns the encryption key for the specified file.
+  ///
+  /// `null` if the file is public and unencrypted.
+  Future<SecretKey> getFileKey(
+    String driveId,
+    String fileId,
+    SecretKey profileKey,
+  ) async {
+    final driveKey = await getDriveKey(driveId, profileKey);
+    if (driveKey != null) {
+      return deriveFileKey(driveKey, fileId);
+    } else {
+      return null;
+    }
   }
 
   Future<void> writeToDrive(Insertable<Drive> drive) =>

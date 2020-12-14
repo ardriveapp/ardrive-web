@@ -42,6 +42,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               key: ValueKey(sharedFileId),
               create: (_) => SharedFileCubit(
                 fileId: sharedFileId,
+                fileKey: sharedFileKey,
                 arweave: context.read<ArweaveService>(),
               ),
               child: SharedFilePage(),
@@ -155,6 +156,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveId = path.driveId;
     driveFolderId = path.driveFolderId;
     sharedFileId = path.sharedFileId;
+    sharedFileKey = path.sharedFileKey;
+    sharedRawFileKey = path.sharedRawFileKey;
   }
 
   void navigateToDriveDetailPage(String driveId, [String driveFolderId]) {

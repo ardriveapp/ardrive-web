@@ -28,6 +28,11 @@ class DriveDetailActionRow extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.share),
                   tooltip: 'Share',
+                  onPressed: () => promptToShareFile(
+                    context: context,
+                    driveId: state.currentDrive.id,
+                    fileId: state.selectedItemId,
+                  ),
                 ),
                 if (state.currentDrive.isPublic)
                   Link(

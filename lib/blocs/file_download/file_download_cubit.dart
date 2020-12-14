@@ -50,9 +50,8 @@ class FileDownloadCubit extends Cubit<FileDownloadState> {
         dataBytes = dataRes.bodyBytes;
       } else if (drive.isPrivate) {
         final profile = _profileCubit.state as ProfileLoaded;
-        final driveKey =
-            await _driveDao.getDriveKey(drive.id, profile.cipherKey);
-        final fileKey = await deriveFileKey(driveKey, file.id);
+        final fileKey =
+            await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
 
         dataBytes =
             await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey);

@@ -68,7 +68,10 @@ class ArweaveService {
               transaction, rawEntityData[i], driveKey);
         } else if (entityType == EntityType.file) {
           entity = await FileEntity.fromTransaction(
-              transaction, rawEntityData[i], driveKey);
+            transaction,
+            rawEntityData[i],
+            driveKey: driveKey,
+          );
         }
 
         if (blockHistory.isEmpty ||
@@ -202,14 +205,11 @@ class ArweaveService {
     final driveDataRes = await client.api.get(driveTx.id);
 
     try {
-      return DriveEntity.fromTransaction(
+      final drive = await DriveEntity.fromTransaction(
           driveTx, driveDataRes.bodyBytes, driveKey);
-    } catch (err) {
-      if (err is EntityTransactionParseException) {
-        return null;
-      } else {
-        rethrow;
-      }
+      return drive;
+    } on EntityTransactionParseException catch (_) {
+      return null;
     }
   }
 
@@ -245,13 +245,14 @@ class ArweaveService {
     final fileDataRes = await client.api.get(fileTx.id);
 
     try {
-      return FileEntity.fromTransaction(fileTx, fileDataRes.bodyBytes, fileKey);
-    } catch (err) {
-      if (err is EntityTransactionParseException) {
-        return null;
-      } else {
-        rethrow;
-      }
+      final file = await FileEntity.fromTransaction(
+        fileTx,
+        fileDataRes.bodyBytes,
+        fileKey: fileKey,
+      );
+      return file;
+    } on EntityTransactionParseException catch (_) {
+      return null;
     }
   }
 

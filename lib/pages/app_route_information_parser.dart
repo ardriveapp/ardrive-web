@@ -34,8 +34,8 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
 
         return AppRoutePath.unknown();
       case 'file':
-        // Handle '/file/:sharedFileId'
-        if (uri.pathSegments.length > 1) {
+        // Handle '/file/:sharedFileId/view'
+        if (uri.pathSegments.length == 3 && uri.pathSegments[2] == 'view') {
           final fileId = uri.pathSegments[1];
           final fileKeyBase64 = uri.queryParameters[fileKeyQueryParamName];
 
@@ -67,7 +67,7 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
               location: '/drives/${path.driveId}/folders/${path.driveFolderId}',
             );
     } else if (path.sharedFileId != null) {
-      final sharedFilePath = '/file/${path.sharedFileId}';
+      final sharedFilePath = '/file/${path.sharedFileId}/view';
 
       if (path.sharedRawFileKey != null) {
         return RouteInformation(
