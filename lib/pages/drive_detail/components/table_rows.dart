@@ -1,7 +1,7 @@
+import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:timeago/timeago.dart';
 
 List<DataColumn> buildTableColumns() => [
@@ -58,7 +58,7 @@ DataRow buildFileRow({
             // Show a relative timestamp if the file was updated at most 3 days ago.
             file.lastUpdated.difference(DateTime.now()).inDays > 3
                 ? format(file.lastUpdated)
-                : DateFormat.yMMMd().format(file.lastUpdated),
+                : yMMdDateFormatter.format(file.lastUpdated),
           ),
         ),
       ],

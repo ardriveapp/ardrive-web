@@ -5,6 +5,7 @@ export 'drives/drives_cubit.dart';
 export 'file_download/file_download_cubit.dart';
 export 'file_share/file_share_cubit.dart';
 export 'folder_create/folder_create_cubit.dart';
+export 'fs_entry_activity/fs_entry_activity_cubit.dart';
 export 'fs_entry_info/fs_entry_info_cubit.dart';
 export 'fs_entry_move/fs_entry_move_cubit.dart';
 export 'fs_entry_rename/fs_entry_rename_cubit.dart';

@@ -103,18 +103,15 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
           checkDriveKey,
         );
       }
-    } catch (err) {
-      if (err is EntityTransactionParseException) {
-        form
-            .control('password')
-            .setErrors({AppValidationMessage.passwordIncorrect: true});
+    } on EntityTransactionParseException catch (_) {
+      form
+          .control('password')
+          .setErrors({AppValidationMessage.passwordIncorrect: true});
 
-        // Reemit the previous state so form errors can be shown again.
-        emit(previousState);
-        return;
-      }
+      // Reemit the previous state so form errors can be shown again.
+      emit(previousState);
 
-      rethrow;
+      return;
     }
 
     await _profileDao.addProfile(username, password, _wallet);

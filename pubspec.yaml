@@ -38,7 +38,6 @@ dependencies:
     git:
       url: https://gitlab.com/CDDelta/file_picker_cross.git
       ref: dfa07cd90175ddffded7ac33e497abd9dfcf7ffb
-  firebase_analytics: ^6.1.0
   google_fonts: ^1.1.1
   intl: ^0.16.1
   json_annotation: ^3.0.1
@@ -47,7 +46,7 @@ dependencies:
   path_provider: ^1.6.11
   pedantic: ^1.9.2
   reactive_forms: ^7.3.0
-  rxdart: ^0.24.1
+  rxdart: ^0.25.0
   timeago: ^2.0.28
   url_launcher: ^5.7.10
   uuid: ^2.2.0
