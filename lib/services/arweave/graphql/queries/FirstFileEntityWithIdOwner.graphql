@@ -1,0 +1,18 @@
+query FirstFileEntityWithIdOwner($fileId: String!) {
+  transactions(
+    first: 1
+    sort: HEIGHT_ASC
+    tags: [
+      { name: "ArFS", values: ["0.10", "0.11"] }
+      { name: "File-Id", values: [$fileId] }
+    ]
+  ) {
+    edges {
+      node {
+        owner {
+          address
+        }
+      }
+    }
+  }
+}

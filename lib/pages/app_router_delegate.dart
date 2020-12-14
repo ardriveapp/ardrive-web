@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -12,9 +13,20 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String driveId;
   String driveFolderId;
 
+  String sharedFileId;
+  SecretKey sharedFileKey;
+  String sharedRawFileKey;
+
+  bool get isViewingSharedFile => sharedFileId != null;
+
   @override
-  AppRoutePath get currentConfiguration =>
-      AppRoutePath(driveId: driveId, driveFolderId: driveFolderId);
+  AppRoutePath get currentConfiguration => AppRoutePath(
+        driveId: driveId,
+        driveFolderId: driveFolderId,
+        sharedFileId: sharedFileId,
+        sharedFileKey: sharedFileKey,
+        sharedRawFileKey: sharedRawFileKey,
+      );
 
   @override
   final GlobalKey<NavigatorState> navigatorKey;
@@ -25,7 +37,17 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   Widget build(BuildContext context) => BlocBuilder<ProfileCubit, ProfileState>(
         builder: (context, state) {
           Widget shell;
-          if (state is! ProfileLoaded) {
+          if (isViewingSharedFile) {
+            shell = BlocProvider<SharedFileCubit>(
+              key: ValueKey(sharedFileId),
+              create: (_) => SharedFileCubit(
+                fileId: sharedFileId,
+                fileKey: sharedFileKey,
+                arweave: context.read<ArweaveService>(),
+              ),
+              child: SharedFilePage(),
+            );
+          } else if (state is! ProfileLoaded) {
             shell = ProfileAuthPage();
           } else {
             shell = BlocConsumer<DrivesCubit, DrivesState>(
@@ -85,7 +107,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             },
           );
 
-          if (state is! ProfileLoaded) {
+          if (state is! ProfileLoaded || isViewingSharedFile) {
             return navigator;
           } else {
             return MultiBlocProvider(
@@ -133,6 +155,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   Future<void> setNewRoutePath(AppRoutePath path) async {
     driveId = path.driveId;
     driveFolderId = path.driveFolderId;
+    sharedFileId = path.sharedFileId;
+    sharedFileKey = path.sharedFileKey;
+    sharedRawFileKey = path.sharedRawFileKey;
   }
 
   void navigateToDriveDetailPage(String driveId, [String driveFolderId]) {
