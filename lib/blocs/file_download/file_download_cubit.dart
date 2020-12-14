@@ -40,7 +40,6 @@ class FileDownloadCubit extends Cubit<FileDownloadState> {
       emit(FileDownloadInProgress(
           fileName: file.name, totalByteCount: file.size));
 
-      final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
       final dataRes = await http
           .get(_arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}');
 
@@ -50,6 +49,9 @@ class FileDownloadCubit extends Cubit<FileDownloadState> {
         dataBytes = dataRes.bodyBytes;
       } else if (drive.isPrivate) {
         final profile = _profileCubit.state as ProfileLoaded;
+
+        final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
+
         final fileKey =
             await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
 
