@@ -1,5 +1,6 @@
 part of 'shared_file_cubit.dart';
 
+@immutable
 abstract class SharedFileState extends Equatable {
   const SharedFileState();
 
@@ -13,8 +14,12 @@ class SharedFileLoadInProgress extends SharedFileState {}
 /// loaded successfully.
 class SharedFileLoadSuccess extends SharedFileState {
   final FileEntity file;
+  final SecretKey fileKey;
 
-  const SharedFileLoadSuccess({this.file});
+  const SharedFileLoadSuccess({@required this.file, this.fileKey});
+
+  @override
+  List<Object> get props => [file, fileKey];
 }
 
 class SharedFileNotFound extends SharedFileState {}

@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/components.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +46,11 @@ class SharedFilePage extends StatelessWidget {
                       ElevatedButton.icon(
                         icon: Icon(Icons.file_download),
                         label: Text('Download'),
+                        onPressed: () => promptToDownloadSharedFile(
+                          context: context,
+                          fileId: state.file.id,
+                          fileKey: state.fileKey,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       _buildReturnToAppLink(),
@@ -66,7 +72,7 @@ class SharedFilePage extends StatelessWidget {
         ),
       );
 
-  _buildReturnToAppLink() => Link(
+  Widget _buildReturnToAppLink() => Link(
         uri: Uri(path: '/'),
         builder: (context, onPressed) => TextButton(
           child: Text('Return to app'),

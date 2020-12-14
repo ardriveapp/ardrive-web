@@ -18,8 +18,8 @@ class DriveDetailActionRow extends StatelessWidget {
               if (!state.selectedItemIsFolder) ...{
                 IconButton(
                   icon: const Icon(Icons.file_download),
-                  onPressed: () => promptToDownloadFile(
-                    context,
+                  onPressed: () => promptToDownloadProfileFile(
+                    context: context,
                     driveId: state.currentDrive.id,
                     fileId: state.selectedItemId,
                   ),

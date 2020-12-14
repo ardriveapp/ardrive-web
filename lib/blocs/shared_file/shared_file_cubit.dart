@@ -3,6 +3,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
+import 'package:meta/meta.dart';
 
 part 'shared_file_state.dart';
 
@@ -12,7 +13,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
 
   /// The [SecretKey] that can be used to decode the target file.
   ///
-  /// Null if the file is public.
+  /// `null` if the file is public.
   final SecretKey fileKey;
 
   final ArweaveService _arweave;
@@ -29,7 +30,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     final file = await _arweave.tryGetLatestFileEntityWithId(fileId, fileKey);
 
     if (file != null) {
-      emit(SharedFileLoadSuccess(file: file));
+      emit(SharedFileLoadSuccess(file: file, fileKey: fileKey));
     } else {
       emit(SharedFileNotFound());
     }
