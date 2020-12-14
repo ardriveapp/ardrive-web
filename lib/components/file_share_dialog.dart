@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'components.dart';
@@ -43,32 +44,62 @@ class _FileShareDialogState extends State<FileShareDialog> {
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<FileShareCubit, FileShareState>(
-          listener: (context, state) {
-            if (state is FileShareLoadSuccess) {
-              shareLinkController.text = state.fileShareLink.toString();
-            }
-          },
-          builder: (context, state) => AppDialog(
-                dismissable: false,
-                title: 'Share file with others',
-                content: SizedBox(
-                  width: kMediumDialogWidth,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        listener: (context, state) {
+          if (state is FileShareLoadSuccess) {
+            shareLinkController.text = state.fileShareLink.toString();
+          }
+        },
+        builder: (context, state) => AppDialog(
+          title: 'Share file with others',
+          content: SizedBox(
+            width: kLargeDialogWidth,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (state is FileShareLoadInProgress)
+                  const Center(child: CircularProgressIndicator())
+                else if (state is FileShareLoadSuccess) ...{
+                  ListTile(
+                    title: Text(state.fileName),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      if (state is FileShareLoadInProgress)
-                        const Center(child: CircularProgressIndicator())
-                      else if (state is FileShareLoadSuccess) ...{
-                        Text(state.fileName),
-                        const SizedBox(height: 16),
-                        TextField(
+                      Expanded(
+                        child: TextField(
                           controller: shareLinkController,
                           readOnly: true,
                         ),
-                      }
+                      ),
+                      const SizedBox(width: 16),
+                      TextButton(
+                        child: Text('Copy link'),
+                        style: TextButton.styleFrom(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16)),
+                        onPressed: () => Clipboard.setData(
+                            ClipboardData(text: shareLinkController.text)),
+                      ),
                     ],
                   ),
-                ),
-              ));
+                  const SizedBox(height: 16),
+                  Text(
+                    'Anyone can access this file using the link above.',
+                    style: Theme.of(context).textTheme.subtitle2,
+                  ),
+                }
+              ],
+            ),
+          ),
+          actions: [
+            if (state is FileShareLoadSuccess)
+              ElevatedButton(
+                child: Text('DONE'),
+                onPressed: () => Navigator.pop(context),
+              ),
+          ],
+        ),
+      );
 }
