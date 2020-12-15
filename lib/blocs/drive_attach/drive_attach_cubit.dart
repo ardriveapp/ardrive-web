@@ -11,16 +11,9 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 part 'drive_attach_state.dart';
 
+/// [DriveAttachCubit] includes logic for attaching drives to the user's profile.
 class DriveAttachCubit extends Cubit<DriveAttachState> {
-  final form = FormGroup({
-    'driveId': FormControl(validators: [Validators.required]),
-    'name': FormControl(
-      validators: [
-        Validators.required,
-        Validators.pattern(kDriveNameRegex),
-      ],
-    ),
-  });
+  FormGroup form;
 
   final ArweaveService _arweave;
   final DrivesDao _drivesDao;
@@ -36,7 +29,24 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         _drivesDao = drivesDao,
         _syncBloc = syncBloc,
         _drivesBloc = drivesBloc,
-        super(DriveAttachInitial());
+        super(DriveAttachInitial()) {
+    form = FormGroup(
+      {
+        'driveId': FormControl<String>(
+          validators: [Validators.required],
+          asyncValidators: [_driveNameLoader],
+          // Debounce drive name loading by 500ms.
+          asyncValidatorsDebounceTime: 500,
+        ),
+        'name': FormControl<String>(
+          validators: [
+            Validators.required,
+            Validators.pattern(kDriveNameRegex),
+          ],
+        ),
+      },
+    );
+  }
 
   void submit() async {
     form.markAllAsTouched();
@@ -51,13 +61,13 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       final String driveId = form.control('driveId').value;
       final String driveName = form.control('name').value;
 
-      final driveEntity = await _arweave.tryGetFirstDriveEntityWithId(driveId);
+      final driveEntity = await _arweave.getLatestDriveEntityWithId(driveId);
 
       if (driveEntity == null) {
         form
             .control('driveId')
             .setErrors({AppValidationMessage.driveNotFound: true});
-        emit(DriveAttachInitial());
+        emit(DriveAttachFailure());
         return;
       }
 
@@ -70,6 +80,24 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     }
 
     emit(DriveAttachSuccess());
+  }
+
+  Future<Map<String, dynamic>> _driveNameLoader(
+      AbstractControl<dynamic> driveIdControl) async {
+    if ((driveIdControl as AbstractControl<String>).isNullOrEmpty) {
+      return null;
+    }
+
+    final String driveId = driveIdControl.value;
+    final drive = await _arweave.getLatestDriveEntityWithId(driveId);
+
+    if (drive == null) {
+      return null;
+    }
+
+    form.control('name').updateValue(drive.name);
+
+    return null;
   }
 
   @override

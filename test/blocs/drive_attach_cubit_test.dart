@@ -28,10 +28,10 @@ void main() {
       syncBloc = MockSyncBloc();
       drivesBloc = MockDrivesCubit();
 
-      when(arweave.tryGetFirstDriveEntityWithId(validDriveId))
+      when(arweave.getLatestDriveEntityWithId(validDriveId))
           .thenAnswer((_) => Future.value(DriveEntity()));
 
-      when(arweave.tryGetFirstDriveEntityWithId(notFoundDriveId))
+      when(arweave.getLatestDriveEntityWithId(notFoundDriveId))
           .thenAnswer((_) => Future.value(null));
 
       driveAttachCubit = DriveAttachCubit(

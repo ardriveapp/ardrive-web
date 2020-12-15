@@ -98,7 +98,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
           password,
         );
 
-        await _arweave.tryGetFirstDriveEntityWithId(
+        await _arweave.getLatestDriveEntityWithId(
           checkDriveId,
           checkDriveKey,
         );

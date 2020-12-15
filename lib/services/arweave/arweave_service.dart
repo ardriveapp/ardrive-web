@@ -175,46 +175,55 @@ class ArweaveService {
     return drivesWithKey;
   }
 
-  /// Tries to get the first drive entity instance with the provided drive id.
-  /// Important for verifying the owner of a drive.
+  /// Gets the latest drive entity with the provided id.
   ///
-  /// Optionally provide a `driveKey` to load private drive entities.
+  /// This function first checks for the owner of the first instance of the [DriveEntity]
+  /// with the specified id and then queries for the latest instance of the [FileEntity]
+  /// by that owner.
   ///
-  /// Returns `null` if no drive could be found or the provided `driveKey` is incorrect.
-  Future<DriveEntity> tryGetFirstDriveEntityWithId(
+  /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
+  Future<DriveEntity> getLatestDriveEntityWithId(
     String driveId, [
     SecretKey driveKey,
   ]) async {
-    final initialDriveEntityQuery = await _gql.execute(InitialDriveEntityQuery(
-        variables: InitialDriveEntityArguments(driveId: driveId)));
+    final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
+        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
 
-    final queryEdges = initialDriveEntityQuery.data.transactions.edges;
+    if (firstOwnerQuery.data.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    final driveOwner =
+        firstOwnerQuery.data.transactions.edges.first.node.owner.address;
+
+    final latestDriveQuery = await _gql.execute(LatestDriveEntityWithIdQuery(
+        variables: LatestDriveEntityWithIdArguments(
+            driveId: driveId, owner: driveOwner)));
+
+    final queryEdges = latestDriveQuery.data.transactions.edges;
     if (queryEdges.isEmpty) {
       return null;
     }
 
-    final driveTx = queryEdges.first.node;
-    final driveDataRes = await client.api.get(driveTx.id);
+    final fileTx = queryEdges.first.node;
+    final fileDataRes = await client.api.get(fileTx.id);
 
     try {
       return await DriveEntity.fromTransaction(
-        driveTx,
-        driveDataRes.bodyBytes,
-        driveKey,
-      );
+          fileTx, fileDataRes.bodyBytes, driveKey);
     } on EntityTransactionParseException catch (_) {
       return null;
     }
   }
 
-  /// Tries to get the latest file entity with the provided file id.
+  /// Gets the latest file entity with the provided id.
   ///
-  /// This function first checks for the owner of the first instance of the file entity
-  /// with the specified id and then queries for the latest instance of the file entity
+  /// This function first checks for the owner of the first instance of the [FileEntity]
+  /// with the specified id and then queries for the latest instance of the [FileEntity]
   /// by that owner.
   ///
   /// Returns `null` if no valid file is found or the provided `fileKey` is incorrect.
-  Future<FileEntity> tryGetLatestFileEntityWithId(String fileId,
+  Future<FileEntity> getLatestFileEntityWithId(String fileId,
       [SecretKey fileKey]) async {
     final firstOwnerQuery = await _gql.execute(FirstFileEntityWithIdOwnerQuery(
         variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));

@@ -19,7 +19,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   Future<void> download() async {
     try {
-      final file = await _arweave.tryGetLatestFileEntityWithId(fileId, fileKey);
+      final file = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
 
       emit(FileDownloadInProgress(
           fileName: file.name, totalByteCount: file.size));
