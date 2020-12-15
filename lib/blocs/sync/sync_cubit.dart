@@ -364,7 +364,7 @@ class SyncCubit extends Cubit<SyncState> {
       } else {
         final revision = unconfirmedRevisionsByTxId[txId];
 
-        // Only mark revisions as failed if they exceed are unconfirmed for over 45 minutes
+        // Only mark revisions as failed if they are unconfirmed for over 45 minutes
         // as the transaction might not be queryable for right after it was created.
         var abovePendingThreshold = false;
 
