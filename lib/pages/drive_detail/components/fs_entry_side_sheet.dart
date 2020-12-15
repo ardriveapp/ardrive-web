@@ -135,7 +135,8 @@ class FsEntrySideSheet extends StatelessWidget {
                           final revision = state.revisions[index];
 
                           Widget content;
-                          Widget dateCreated;
+                          Widget dateCreatedSubtitle;
+                          String revisionConfirmationStatus;
 
                           if (revision is FolderRevision) {
                             switch (revision.action) {
@@ -154,8 +155,11 @@ class FsEntrySideSheet extends StatelessWidget {
                                 content = Text('This folder was modified');
                             }
 
-                            dateCreated = Text(
+                            dateCreatedSubtitle = Text(
                                 yMMdDateFormatter.format(revision.dateCreated));
+
+                            revisionConfirmationStatus =
+                                revision.confirmationStatus;
                           } else if (revision is FileRevision) {
                             switch (revision.action) {
                               case RevisionAction.create:
@@ -177,8 +181,32 @@ class FsEntrySideSheet extends StatelessWidget {
                                 content = Text('This file was modified');
                             }
 
-                            dateCreated = Text(
+                            dateCreatedSubtitle = Text(
                                 yMMdDateFormatter.format(revision.dateCreated));
+
+                            revisionConfirmationStatus =
+                                revision.confirmationStatus;
+                          }
+
+                          Widget statusIcon;
+                          if (revisionConfirmationStatus ==
+                              TransactionStatus.pending) {
+                            statusIcon = Tooltip(
+                              message: 'Pending',
+                              child: const Icon(Icons.pending),
+                            );
+                          } else if (revisionConfirmationStatus ==
+                              TransactionStatus.confirmed) {
+                            statusIcon = Tooltip(
+                              message: 'Confirmed',
+                              child: const Icon(Icons.check),
+                            );
+                          } else if (revisionConfirmationStatus ==
+                              TransactionStatus.failed) {
+                            statusIcon = Tooltip(
+                              message: 'Failed',
+                              child: const Icon(Icons.error_outline),
+                            );
                           }
 
                           return ListTile(
@@ -188,8 +216,9 @@ class FsEntrySideSheet extends StatelessWidget {
                             ),
                             subtitle: DefaultTextStyle(
                               style: Theme.of(context).textTheme.caption,
-                              child: dateCreated,
+                              child: dateCreatedSubtitle,
                             ),
+                            trailing: statusIcon,
                           );
                         },
                         separatorBuilder: (context, index) => Divider(),

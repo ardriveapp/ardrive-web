@@ -271,6 +271,13 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   }
 
   SimpleSelectStatement<FolderRevisions, FolderRevision>
+      selectUnconfirmedFolderRevisions(String driveId) =>
+          select(folderRevisions)
+            ..where((r) =>
+                r.driveId.equals(driveId) &
+                r.metadataTxStatus.equals(TransactionStatus.pending));
+
+  SimpleSelectStatement<FolderRevisions, FolderRevision>
       selectFolderRevisionsById(String driveId, String folderId) =>
           (select(folderRevisions)
             ..where((f) =>
@@ -299,6 +306,18 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             ..limit(1))
           .getSingle();
 
+  Future<void> writeToFolderRevision(
+          Insertable<FolderRevision> folderRevision) =>
+      (update(folderRevisions)..whereSamePrimaryKey(folderRevision))
+          .write(folderRevision);
+
+  SimpleSelectStatement<FileRevisions, FileRevision>
+      selectUnconfirmedFileRevisions(String driveId) => select(fileRevisions)
+        ..where((r) =>
+            r.driveId.equals(driveId) &
+            r.metadataTxStatus.equals(TransactionStatus.pending) &
+            r.dataTxStatus.equals(TransactionStatus.pending));
+
   SimpleSelectStatement<FileRevisions, FileRevision> selectFileRevisionsById(
           String driveId, String fileId) =>
       (select(fileRevisions)
@@ -325,4 +344,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             ])
             ..limit(1))
           .getSingle();
+
+  Future<void> writeToFileRevision(Insertable<FileRevision> fileRevision) =>
+      (update(fileRevisions)..whereSamePrimaryKey(fileRevision))
+          .write(fileRevision);
 }
