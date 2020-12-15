@@ -16,8 +16,11 @@ class Drives extends Table {
 
   TextColumn get privacy => text()();
 
+  /// The encryption key of the drive, encrypted using the client side profile key.
+  ///
+  /// `null` if not applicable ie. public drive.
   BlobColumn get encryptedKey => blob().nullable()();
-  BlobColumn get keyIv => blob().nullable()();
+  BlobColumn get keyEncryptionIv => blob().nullable()();
 
   DateTimeColumn get dateCreated =>
       dateTime().clientDefault(() => DateTime.now())();

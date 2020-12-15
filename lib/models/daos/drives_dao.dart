@@ -138,7 +138,7 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
 
     return drive.copyWith(
       encryptedKey: Value(encryptedWallet),
-      keyIv: Value(iv.bytes),
+      keyEncryptionIv: Value(iv.bytes),
     );
   }
 }

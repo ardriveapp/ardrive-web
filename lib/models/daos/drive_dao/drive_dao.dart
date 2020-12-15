@@ -48,7 +48,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     final driveKeyData = await aesGcm.decrypt(
       drive.encryptedKey,
       secretKey: profileKey,
-      nonce: Nonce(drive.keyIv),
+      nonce: Nonce(drive.keyEncryptionIv),
     );
 
     return SecretKey(driveKeyData);
