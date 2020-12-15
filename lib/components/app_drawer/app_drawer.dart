@@ -165,7 +165,7 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   PopupMenuItem(
-                    value: (context) => promptToAttachDrive(context),
+                    value: (context) => promptToAttachDrive(context: context),
                     child: ListTile(
                       title: Text('Attach drive'),
                     ),

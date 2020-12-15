@@ -31,16 +31,19 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         _driveDao = driveDao,
         _config = config,
         super(DriveDetailLoadInProgress()) {
-    if (driveId != null) {
-      if (initialFolderId != null) {
-        () async {
-          final folder =
-              await _driveDao.getFolderById(driveId, initialFolderId);
-          openFolderAtPath(folder.path);
-        }();
-      } else {
-        openFolderAtPath('');
-      }
+    if (driveId == null) {
+      return;
+    }
+
+    if (initialFolderId != null) {
+      // TODO: Handle deep-linking folders of unattached drives.
+      Future.microtask(() async {
+        final folder = await _driveDao.getFolderById(driveId, initialFolderId);
+        // Open the root folder if the deep-linked folder could not be found.
+        openFolderAtPath(folder?.path ?? '');
+      });
+    } else {
+      openFolderAtPath('');
     }
   }
 
@@ -55,6 +58,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       _driveDao.watchFolderContentsAtPath(driveId, path),
       _profileCubit.startWith(null),
       (drive, folderContents, _) {
+        if (drive == null) {
+          emit(DriveDetailLoadNotFound());
+          return;
+        }
+
+        // Emit the loading state as it can be a while between the drive being not found, then added,
+        // and then the folders being loaded.
+        emit(DriveDetailLoadInProgress());
+
         if (folderContents?.folder != null) {
           final state = this.state is! DriveDetailLoadSuccess
               ? DriveDetailLoadSuccess()

@@ -28,32 +28,33 @@ class DrivesCubit extends Cubit<DrivesState> {
       _drivesDao.watchAllDrives(),
       _profileCubit.startWith(null),
       (drives, _) => drives,
-    ).listen((drives) {
-      final state = this.state;
-      final profile = _profileCubit.state as ProfileLoaded;
+    ).listen(
+      (drives) {
+        final state = this.state;
+        final profile = _profileCubit.state as ProfileLoaded;
 
-      String selectedDriveId;
-      if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
-        selectedDriveId = state.selectedDriveId;
-      } else {
-        selectedDriveId = drives.isNotEmpty
-            ? (initialSelectedDriveId ?? drives.first.id)
-            : null;
-      }
+        String selectedDriveId;
+        if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
+          selectedDriveId = state.selectedDriveId;
+        } else {
+          selectedDriveId = initialSelectedDriveId ??
+              (drives.isNotEmpty ? drives.first.id : null);
+        }
 
-      emit(
-        DrivesLoadSuccess(
-          selectedDriveId: selectedDriveId,
-          userDrives: drives
-              .where((d) => d.ownerAddress == profile.wallet.address)
-              .toList(),
-          sharedDrives: drives
-              .where((d) => d.ownerAddress != profile.wallet.address)
-              .toList(),
-          canCreateNewDrive: _profileCubit.state is ProfileLoaded,
-        ),
-      );
-    });
+        emit(
+          DrivesLoadSuccess(
+            selectedDriveId: selectedDriveId,
+            userDrives: drives
+                .where((d) => d.ownerAddress == profile.wallet.address)
+                .toList(),
+            sharedDrives: drives
+                .where((d) => d.ownerAddress != profile.wallet.address)
+                .toList(),
+            canCreateNewDrive: _profileCubit.state is ProfileLoaded,
+          ),
+        );
+      },
+    );
   }
 
   void selectDrive(String driveId) {

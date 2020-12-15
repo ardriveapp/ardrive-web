@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/components.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
@@ -83,7 +84,15 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     driveDao: context.read<DriveDao>(),
                     config: context.read<AppConfig>(),
                   ),
-                  child: AppShell(page: shellPage),
+                  child: BlocListener<DriveDetailCubit, DriveDetailState>(
+                    listener: (context, state) {
+                      if (state is DriveDetailLoadNotFound) {
+                        promptToAttachDrive(
+                            context: context, initialDriveId: driveId);
+                      }
+                    },
+                    child: AppShell(page: shellPage),
+                  ),
                 );
               },
             );
