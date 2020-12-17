@@ -38,8 +38,6 @@ class UploadForm extends StatelessWidget {
   final String folderId;
   final List<FilePickerCross> files;
 
-  final filesScrollController = ScrollController();
-
   UploadForm(
       {@required this.driveId, @required this.folderId, @required this.files});
 
@@ -138,11 +136,8 @@ class UploadForm extends StatelessWidget {
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxHeight: 256),
                         child: Scrollbar(
-                          isAlwaysShown: true,
-                          controller: filesScrollController,
                           child: ListView(
                             shrinkWrap: true,
-                            controller: filesScrollController,
                             children: [
                               for (final file in state.files) ...{
                                 ListTile(
@@ -196,11 +191,8 @@ class UploadForm extends StatelessWidget {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxHeight: 256),
                     child: Scrollbar(
-                      isAlwaysShown: true,
-                      controller: filesScrollController,
                       child: ListView(
                         shrinkWrap: true,
-                        controller: filesScrollController,
                         children: [
                           for (final file in state.files) ...{
                             ListTile(
