@@ -37,9 +37,8 @@ class ArweaveService {
         .map((e) => e.node)
         .toList();
     final rawEntityData =
-        (await Future.wait(entityTxs.map((e) => client.api.get(e.id))))
-            .map((r) => r.bodyBytes)
-            .toList();
+        await Future.wait(entityTxs.map((e) => client.api.get(e.id)))
+            .then((rs) => rs.map((r) => r.bodyBytes).toList());
 
     final blockHistory = <BlockEntities>[];
     for (var i = 0; i < entityTxs.length; i++) {

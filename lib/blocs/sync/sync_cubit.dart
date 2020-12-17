@@ -130,9 +130,9 @@ class SyncCubit extends Cubit<SyncState> {
     final newRevisions = <FolderRevisionsCompanion>[];
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
-        latestRevisions[entity.id] =
-            (await _driveDao.getLatestFolderRevisionById(driveId, entity.id))
-                ?.toCompanion(true);
+        latestRevisions[entity.id] = await _driveDao
+            .getLatestFolderRevisionById(driveId, entity.id)
+            .then((r) => r?.toCompanion(true));
       }
 
       final revision = FolderRevisionsCompanion.insert(
@@ -169,9 +169,9 @@ class SyncCubit extends Cubit<SyncState> {
     final newRevisions = <FileRevisionsCompanion>[];
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
-        latestRevisions[entity.id] =
-            (await _driveDao.getLatestFileRevisionById(driveId, entity.id))
-                ?.toCompanion(true);
+        latestRevisions[entity.id] = await _driveDao
+            .getLatestFileRevisionById(driveId, entity.id)
+            .then((r) => r?.toCompanion(true));
       }
 
       final revision = FileRevisionsCompanion.insert(
