@@ -16,9 +16,15 @@ Future<void> promptToRenameFolder(
 }) =>
     showDialog(
       context: context,
-      builder: (_) => FsEntryRenameForm(
-        driveId: driveId,
-        folderId: folderId,
+      builder: (_) => BlocProvider(
+        create: (context) => FsEntryRenameCubit(
+          driveId: driveId,
+          folderId: folderId,
+          arweave: context.read<ArweaveService>(),
+          driveDao: context.read<DriveDao>(),
+          profileCubit: context.read<ProfileCubit>(),
+        ),
+        child: FsEntryRenameForm(),
       ),
     );
 
@@ -29,74 +35,63 @@ Future<void> promptToRenameFile(
 }) =>
     showDialog(
       context: context,
-      builder: (_) => FsEntryRenameForm(
-        driveId: driveId,
-        fileId: fileId,
-      ),
-    );
-
-class FsEntryRenameForm extends StatelessWidget {
-  final String driveId;
-  final String folderId;
-  final String fileId;
-
-  FsEntryRenameForm({@required this.driveId, this.folderId, this.fileId})
-      : assert(folderId != null || fileId != null);
-
-  @override
-  Widget build(BuildContext context) => BlocProvider(
+      builder: (_) => BlocProvider(
         create: (context) => FsEntryRenameCubit(
           driveId: driveId,
-          folderId: folderId,
           fileId: fileId,
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),
         ),
-        child: BlocConsumer<FsEntryRenameCubit, FsEntryRenameState>(
-          listener: (context, state) {
-            if (state is FolderEntryRenameInProgress) {
-              showProgressDialog(context, 'RENAMING FOLDER...');
-            } else if (state is FileEntryRenameInProgress) {
-              showProgressDialog(context, 'RENAMING FILE...');
-            } else if (state is FolderEntryRenameSuccess ||
-                state is FileEntryRenameSuccess) {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            }
-          },
-          builder: (context, state) => AppDialog(
-            title: state.isRenamingFolder ? 'RENAME FOLDER' : 'RENAME FILE',
-            content: state is! FsEntryRenameInitializing
-                ? SizedBox(
-                    width: kSmallDialogWidth,
-                    child: ReactiveForm(
-                      formGroup: context.watch<FsEntryRenameCubit>().form,
-                      child: ReactiveTextField(
-                        formControlName: 'name',
-                        autofocus: true,
-                        decoration: InputDecoration(
-                            labelText: state.isRenamingFolder
-                                ? 'Folder name'
-                                : 'File name'),
-                        showErrors: (control) =>
-                            control.dirty && control.invalid,
-                        validationMessages: (_) => kValidationMessages,
-                      ),
+        child: FsEntryRenameForm(),
+      ),
+    );
+
+class FsEntryRenameForm extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) =>
+      BlocConsumer<FsEntryRenameCubit, FsEntryRenameState>(
+        listener: (context, state) {
+          if (state is FolderEntryRenameInProgress) {
+            showProgressDialog(context, 'RENAMING FOLDER...');
+          } else if (state is FileEntryRenameInProgress) {
+            showProgressDialog(context, 'RENAMING FILE...');
+          } else if (state is FolderEntryRenameSuccess ||
+              state is FileEntryRenameSuccess) {
+            Navigator.pop(context);
+            Navigator.pop(context);
+          }
+        },
+        builder: (context, state) => AppDialog(
+          title: state.isRenamingFolder ? 'RENAME FOLDER' : 'RENAME FILE',
+          content: state is! FsEntryRenameInitializing
+              ? SizedBox(
+                  width: kSmallDialogWidth,
+                  child: ReactiveForm(
+                    formGroup: context.watch<FsEntryRenameCubit>().form,
+                    child: ReactiveTextField(
+                      formControlName: 'name',
+                      autofocus: true,
+                      decoration: InputDecoration(
+                          labelText: state.isRenamingFolder
+                              ? 'Folder name'
+                              : 'File name'),
+                      showErrors: (control) => control.dirty && control.invalid,
+                      validationMessages: (_) => kValidationMessages,
                     ),
-                  )
-                : null,
-            actions: [
-              TextButton(
-                child: Text('CANCEL'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              ElevatedButton(
-                child: Text('RENAME'),
-                onPressed: () => context.read<FsEntryRenameCubit>().submit(),
-              ),
-            ],
-          ),
+                  ),
+                )
+              : null,
+          actions: [
+            TextButton(
+              child: Text('CANCEL'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            ElevatedButton(
+              child: Text('RENAME'),
+              onPressed: () => context.read<FsEntryRenameCubit>().submit(),
+            ),
+          ],
         ),
       );
 }

@@ -11,95 +11,96 @@ import 'components.dart';
 
 Future<void> promptToAttachDrive(BuildContext context) => showDialog(
       context: context,
-      builder: (BuildContext context) => DriveAttachForm(),
-    );
-
-class DriveAttachForm extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => BlocProvider<DriveAttachCubit>(
+      builder: (BuildContext context) => BlocProvider<DriveAttachCubit>(
         create: (context) => DriveAttachCubit(
           arweave: context.read<ArweaveService>(),
           drivesDao: context.read<DrivesDao>(),
           syncBloc: context.read<SyncCubit>(),
           drivesBloc: context.read<DrivesCubit>(),
         ),
-        child: BlocConsumer<DriveAttachCubit, DriveAttachState>(
-          listener: (context, state) {
-            if (state is DriveAttachInProgress) {
-              showProgressDialog(context, 'ATTACHING DRIVE...');
-            } else if (state is DriveAttachFailure) {
-              // Close the progress dialog if the drive attachment fails.
-              Navigator.pop(context);
-            } else if (state is DriveAttachSuccess) {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            }
-          },
-          builder: (context, state) => AppDialog(
-            title: 'ATTACH DRIVE',
-            content: SizedBox(
-              width: kMediumDialogWidth,
-              child: ReactiveForm(
-                formGroup: context.watch<DriveAttachCubit>().form,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ReactiveTextField(
-                      formControlName: 'driveId',
-                      autofocus: true,
-                      decoration: InputDecoration(labelText: 'Drive ID'),
-                      validationMessages: (_) => kValidationMessages,
-                    ),
-                    const SizedBox(height: 16),
-                    ReactiveTextField(
-                      formControlName: 'name',
-                      decoration: InputDecoration(
-                        labelText: 'Name',
-                        // Listen to `driveId` status changes to show an indicator for
-                        // when the drive name is being loaded.
-                        //
-                        // Use `suffixIcon` here to prevent indicator from being hidden when
-                        // input is unfocused.
-                        suffixIcon: StreamBuilder<ControlStatus>(
-                          stream: context
-                              .watch<DriveAttachCubit>()
-                              .form
-                              .control('driveId')
-                              .statusChanged,
-                          builder: (context, driveIdControlStatusSnapshot) =>
-                              driveIdControlStatusSnapshot.data ==
-                                      ControlStatus.pending
-                                  ? const Padding(
-                                      padding: EdgeInsets.only(right: 8),
-                                      child: SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                    )
-                                  : const SizedBox(),
-                        ),
-                        // Account for the progress indicator padding in the constraints.
-                        suffixIconConstraints: const BoxConstraints.tightFor(
-                            width: 32, height: 24),
+        child: DriveAttachForm(),
+      ),
+    );
+
+class DriveAttachForm extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) =>
+      BlocConsumer<DriveAttachCubit, DriveAttachState>(
+        listener: (context, state) {
+          if (state is DriveAttachInProgress) {
+            showProgressDialog(context, 'ATTACHING DRIVE...');
+          } else if (state is DriveAttachFailure) {
+            // Close the progress dialog if the drive attachment fails.
+            Navigator.pop(context);
+          } else if (state is DriveAttachSuccess) {
+            Navigator.pop(context);
+            Navigator.pop(context);
+          }
+        },
+        builder: (context, state) => AppDialog(
+          title: 'ATTACH DRIVE',
+          content: SizedBox(
+            width: kMediumDialogWidth,
+            child: ReactiveForm(
+              formGroup: context.watch<DriveAttachCubit>().form,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ReactiveTextField(
+                    formControlName: 'driveId',
+                    autofocus: true,
+                    decoration: InputDecoration(labelText: 'Drive ID'),
+                    validationMessages: (_) => kValidationMessages,
+                  ),
+                  const SizedBox(height: 16),
+                  ReactiveTextField(
+                    formControlName: 'name',
+                    decoration: InputDecoration(
+                      labelText: 'Name',
+                      // Listen to `driveId` status changes to show an indicator for
+                      // when the drive name is being loaded.
+                      //
+                      // Use `suffixIcon` here to prevent indicator from being hidden when
+                      // input is unfocused.
+                      suffixIcon: StreamBuilder<ControlStatus>(
+                        stream: context
+                            .watch<DriveAttachCubit>()
+                            .form
+                            .control('driveId')
+                            .statusChanged,
+                        builder: (context, driveIdControlStatusSnapshot) =>
+                            driveIdControlStatusSnapshot.data ==
+                                    ControlStatus.pending
+                                ? const Padding(
+                                    padding: EdgeInsets.only(right: 8),
+                                    child: SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  )
+                                : const SizedBox(),
                       ),
-                      validationMessages: (_) => kValidationMessages,
+                      // Account for the progress indicator padding in the constraints.
+                      suffixIconConstraints:
+                          const BoxConstraints.tightFor(width: 32, height: 24),
                     ),
-                  ],
-                ),
+                    validationMessages: (_) => kValidationMessages,
+                  ),
+                ],
               ),
             ),
-            actions: [
-              TextButton(
-                child: Text('CANCEL'),
-                onPressed: () => Navigator.of(context).pop(null),
-              ),
-              ElevatedButton(
-                child: Text('ATTACH'),
-                onPressed: () => context.read<DriveAttachCubit>().submit(),
-              ),
-            ],
           ),
+          actions: [
+            TextButton(
+              child: Text('CANCEL'),
+              onPressed: () => Navigator.of(context).pop(null),
+            ),
+            ElevatedButton(
+              child: Text('ATTACH'),
+              onPressed: () => context.read<DriveAttachCubit>().submit(),
+            ),
+          ],
         ),
       );
 }

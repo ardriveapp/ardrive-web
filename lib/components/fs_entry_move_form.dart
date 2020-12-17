@@ -14,9 +14,15 @@ Future<void> promptToMoveFolder(
 }) =>
     showDialog(
       context: context,
-      builder: (_) => FsEntryMoveForm(
-        driveId: driveId,
-        folderId: folderId,
+      builder: (_) => BlocProvider(
+        create: (context) => FsEntryMoveCubit(
+          driveId: driveId,
+          folderId: folderId,
+          arweave: context.read<ArweaveService>(),
+          driveDao: context.read<DriveDao>(),
+          profileCubit: context.read<ProfileCubit>(),
+        ),
+        child: FsEntryMoveForm(),
       ),
     );
 
@@ -27,143 +33,130 @@ Future<void> promptToMoveFile(
 }) =>
     showDialog(
       context: context,
-      builder: (_) => FsEntryMoveForm(
-        driveId: driveId,
-        fileId: fileId,
-      ),
-    );
-
-class FsEntryMoveForm extends StatelessWidget {
-  final String driveId;
-  final String folderId;
-  final String fileId;
-
-  FsEntryMoveForm({@required this.driveId, this.folderId, this.fileId})
-      : assert(folderId != null || fileId != null);
-
-  @override
-  Widget build(BuildContext context) => BlocProvider(
+      builder: (_) => BlocProvider(
         create: (context) => FsEntryMoveCubit(
           driveId: driveId,
-          folderId: folderId,
           fileId: fileId,
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),
         ),
-        child: BlocConsumer<FsEntryMoveCubit, FsEntryMoveState>(
-          listener: (context, state) {
-            if (state is FolderEntryMoveInProgress) {
-              showProgressDialog(context, 'MOVING FOLDER...');
-            } else if (state is FileEntryMoveInProgress) {
-              showProgressDialog(context, 'MOVING FILE...');
-            } else if (state is FolderEntryMoveSuccess ||
-                state is FileEntryMoveSuccess) {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            }
-          },
-          builder: (context, state) => AppDialog(
-            title: state.isMovingFolder ? 'MOVE FOLDER' : 'MOVE FILE',
-            contentPadding: EdgeInsets.zero,
-            content: state is FsEntryMoveFolderLoadSuccess
-                ? SizedBox(
-                    width: kLargeDialogWidth,
-                    height: 325,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 16),
-                        if (!state.viewingRootFolder)
-                          Padding(
-                            padding: const EdgeInsets.only(
-                                left: 16, right: 16, bottom: 8),
-                            child: TextButton.icon(
-                                style: TextButton.styleFrom(
-                                    textStyle:
-                                        Theme.of(context).textTheme.subtitle2,
-                                    padding: const EdgeInsets.all(16)),
-                                icon: const Icon(Icons.arrow_back),
-                                label: Text(
-                                    'Back to "${state.viewingFolder.folder.name}" folder'),
-                                onPressed: () => context
-                                    .read<FsEntryMoveCubit>()
-                                    .loadParentFolder()),
-                          ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Scrollbar(
-                              child: ListView(
-                                shrinkWrap: true,
-                                children: [
-                                  ...state.viewingFolder.subfolders.map(
-                                    (f) => ListTile(
-                                      key: ValueKey(f.id),
-                                      dense: true,
-                                      leading: const Icon(Icons.folder),
-                                      title: Text(f.name),
-                                      onTap: () => context
-                                          .read<FsEntryMoveCubit>()
-                                          .loadFolder(f.id),
-                                      trailing:
-                                          Icon(Icons.keyboard_arrow_right),
-                                    ),
+        child: FsEntryMoveForm(),
+      ),
+    );
+
+class FsEntryMoveForm extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) =>
+      BlocConsumer<FsEntryMoveCubit, FsEntryMoveState>(
+        listener: (context, state) {
+          if (state is FolderEntryMoveInProgress) {
+            showProgressDialog(context, 'MOVING FOLDER...');
+          } else if (state is FileEntryMoveInProgress) {
+            showProgressDialog(context, 'MOVING FILE...');
+          } else if (state is FolderEntryMoveSuccess ||
+              state is FileEntryMoveSuccess) {
+            Navigator.pop(context);
+            Navigator.pop(context);
+          }
+        },
+        builder: (context, state) => AppDialog(
+          title: state.isMovingFolder ? 'MOVE FOLDER' : 'MOVE FILE',
+          contentPadding: EdgeInsets.zero,
+          content: state is FsEntryMoveFolderLoadSuccess
+              ? SizedBox(
+                  width: kLargeDialogWidth,
+                  height: 325,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 16),
+                      if (!state.viewingRootFolder)
+                        Padding(
+                          padding: const EdgeInsets.only(
+                              left: 16, right: 16, bottom: 8),
+                          child: TextButton.icon(
+                              style: TextButton.styleFrom(
+                                  textStyle:
+                                      Theme.of(context).textTheme.subtitle2,
+                                  padding: const EdgeInsets.all(16)),
+                              icon: const Icon(Icons.arrow_back),
+                              label: Text(
+                                  'Back to "${state.viewingFolder.folder.name}" folder'),
+                              onPressed: () => context
+                                  .read<FsEntryMoveCubit>()
+                                  .loadParentFolder()),
+                        ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Scrollbar(
+                            child: ListView(
+                              shrinkWrap: true,
+                              children: [
+                                ...state.viewingFolder.subfolders.map(
+                                  (f) => ListTile(
+                                    key: ValueKey(f.id),
+                                    dense: true,
+                                    leading: const Icon(Icons.folder),
+                                    title: Text(f.name),
+                                    onTap: () => context
+                                        .read<FsEntryMoveCubit>()
+                                        .loadFolder(f.id),
+                                    trailing: Icon(Icons.keyboard_arrow_right),
                                   ),
-                                  ...state.viewingFolder.files.map(
-                                    (f) => ListTile(
-                                      key: ValueKey(f.id),
-                                      leading: Icon(Icons.insert_drive_file),
-                                      title: Text(f.name),
-                                      enabled: false,
-                                      dense: true,
-                                    ),
+                                ),
+                                ...state.viewingFolder.files.map(
+                                  (f) => ListTile(
+                                    key: ValueKey(f.id),
+                                    leading: Icon(Icons.insert_drive_file),
+                                    title: Text(f.name),
+                                    enabled: false,
+                                    dense: true,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        Divider(),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              if (state is FsEntryMoveFolderLoadSuccess)
-                                TextButton.icon(
-                                  icon: const Icon(Icons.create_new_folder),
-                                  label: Text('CREATE FOLDER'),
-                                  onPressed: () => promptToCreateFolder(
-                                    context,
-                                    targetDriveId:
-                                        state.viewingFolder.folder.driveId,
-                                    targetFolderId:
-                                        state.viewingFolder.folder.id,
-                                  ),
+                      ),
+                      Divider(),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (state is FsEntryMoveFolderLoadSuccess)
+                              TextButton.icon(
+                                icon: const Icon(Icons.create_new_folder),
+                                label: Text('CREATE FOLDER'),
+                                onPressed: () => promptToCreateFolder(
+                                  context,
+                                  targetDriveId:
+                                      state.viewingFolder.folder.driveId,
+                                  targetFolderId: state.viewingFolder.folder.id,
                                 ),
-                              ButtonBar(
-                                children: [
-                                  TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: Text('CANCEL')),
-                                  ElevatedButton(
-                                    child: Text('MOVE HERE'),
-                                    onPressed: () => context
-                                        .read<FsEntryMoveCubit>()
-                                        .submit(),
-                                  ),
-                                ],
                               ),
-                            ],
-                          ),
+                            ButtonBar(
+                              children: [
+                                TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: Text('CANCEL')),
+                                ElevatedButton(
+                                  child: Text('MOVE HERE'),
+                                  onPressed: () =>
+                                      context.read<FsEntryMoveCubit>().submit(),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  )
-                : const SizedBox(),
-          ),
+                      ),
+                    ],
+                  ),
+                )
+              : const SizedBox(),
         ),
       );
 }
