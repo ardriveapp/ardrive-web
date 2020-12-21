@@ -29,7 +29,7 @@ class FileShareCubit extends Cubit<FileShareState> {
   Future<void> loadFileShareDetails() async {
     emit(FileShareLoadInProgress());
 
-    final profile = _profileCubit.state as ProfileLoaded;
+    final profile = _profileCubit.state as ProfileLoggedIn;
 
     final file = await _driveDao.getFileById(driveId, fileId);
 

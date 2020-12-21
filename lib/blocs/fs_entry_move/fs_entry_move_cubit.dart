@@ -60,7 +60,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
   Future<void> submit() async {
     try {
       final state = this.state as FsEntryMoveFolderLoadSuccess;
-      final profile = _profileCubit.state as ProfileLoaded;
+      final profile = _profileCubit.state as ProfileLoggedIn;
 
       final parentFolder = state.viewingFolder.folder;
       final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);

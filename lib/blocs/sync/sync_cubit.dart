@@ -48,7 +48,7 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncInProgress());
 
     try {
-      final profile = _profileCubit.state as ProfileLoaded;
+      final profile = _profileCubit.state as ProfileLoggedIn;
 
       // Sync in drives owned by the user.
       final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
@@ -72,7 +72,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> _syncDrive(String driveId) async {
-    final profile = _profileCubit.state as ProfileLoaded;
+    final profile = _profileCubit.state as ProfileLoggedIn;
     final drive = await _driveDao.getDriveById(driveId);
     final driveKey = drive.isPrivate
         ? await _driveDao.getDriveKey(drive.id, profile.cipherKey)

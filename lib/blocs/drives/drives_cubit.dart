@@ -30,7 +30,7 @@ class DrivesCubit extends Cubit<DrivesState> {
       (drives, _) => drives,
     ).listen((drives) {
       final state = this.state;
-      final profile = _profileCubit.state as ProfileLoaded;
+      final profile = _profileCubit.state as ProfileLoggedIn;
 
       String selectedDriveId;
       if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
@@ -50,7 +50,7 @@ class DrivesCubit extends Cubit<DrivesState> {
           sharedDrives: drives
               .where((d) => d.ownerAddress != profile.wallet.address)
               .toList(),
-          canCreateNewDrive: _profileCubit.state is ProfileLoaded,
+          canCreateNewDrive: _profileCubit.state is ProfileLoggedIn,
         ),
       );
     });
