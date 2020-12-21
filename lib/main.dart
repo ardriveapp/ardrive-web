@@ -49,18 +49,16 @@ class App extends StatelessWidget {
             profileDao: context.read<ProfileDao>(),
             db: context.read<Database>(),
           ),
-          child: BlocBuilder<ProfileCubit, ProfileState>(
-            builder: (context, state) => MaterialApp.router(
-              title: 'ArDrive',
-              theme: appTheme(),
-              routeInformationParser: _routeInformationParser,
-              routerDelegate: _routerDelegate,
-              builder: (context, child) => ListTileTheme(
-                textColor: kOnSurfaceBodyTextColor,
-                iconColor: kOnSurfaceBodyTextColor,
-                child: Portal(
-                  child: child,
-                ),
+          child: MaterialApp.router(
+            title: 'ArDrive',
+            theme: appTheme(),
+            routeInformationParser: _routeInformationParser,
+            routerDelegate: _routerDelegate,
+            builder: (context, child) => ListTileTheme(
+              textColor: kOnSurfaceBodyTextColor,
+              iconColor: kOnSurfaceBodyTextColor,
+              child: Portal(
+                child: child,
               ),
             ),
           ),
