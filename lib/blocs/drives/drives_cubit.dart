@@ -11,6 +11,8 @@ import '../blocs.dart';
 
 part 'drives_state.dart';
 
+/// [DrivesCubit] includes logic for displaying the drives attached in the app.
+/// It works even if the user profile is unavailable.
 class DrivesCubit extends Cubit<DrivesState> {
   final ProfileCubit _profileCubit;
   final DrivesDao _drivesDao;
@@ -30,7 +32,6 @@ class DrivesCubit extends Cubit<DrivesState> {
       (drives, _) => drives,
     ).listen((drives) {
       final state = this.state;
-      final profile = _profileCubit.state as ProfileLoggedIn;
 
       String selectedDriveId;
       if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
@@ -40,14 +41,21 @@ class DrivesCubit extends Cubit<DrivesState> {
             (drives.isNotEmpty ? drives.first.id : null);
       }
 
+      final profile = _profileCubit.state;
+
       emit(
         DrivesLoadSuccess(
           selectedDriveId: selectedDriveId,
+          // If the user is not logged in, all drives are considered shared ones.
           userDrives: drives
-              .where((d) => d.ownerAddress == profile.wallet.address)
+              .where((d) => profile is ProfileLoggedIn
+                  ? d.ownerAddress == profile.wallet.address
+                  : false)
               .toList(),
           sharedDrives: drives
-              .where((d) => d.ownerAddress != profile.wallet.address)
+              .where((d) => profile is ProfileLoggedIn
+                  ? d.ownerAddress != profile.wallet.address
+                  : true)
               .toList(),
           canCreateNewDrive: _profileCubit.state is ProfileLoggedIn,
         ),
