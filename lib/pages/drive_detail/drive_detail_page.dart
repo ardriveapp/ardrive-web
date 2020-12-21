@@ -1,5 +1,4 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/pages/pages.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -16,16 +15,7 @@ class DriveDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox.expand(
-        child: BlocConsumer<DriveDetailCubit, DriveDetailState>(
-          listener: (context, state) {
-            if (state is DriveDetailLoadSuccess) {
-              Router.navigate(
-                context,
-                () => Router.of(context).delegate.navigateToDriveDetailPage(
-                    state.currentDrive.id, state.currentFolder.folder.id),
-              );
-            }
-          },
+        child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
           builder: (context, state) {
             if (state is DriveDetailLoadInProgress) {
               return const Center(child: CircularProgressIndicator());

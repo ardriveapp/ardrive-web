@@ -18,6 +18,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   SecretKey sharedFileKey;
   String sharedRawFileKey;
 
+  bool get isViewingDrive => driveId != null;
+
   bool get isViewingSharedFile => sharedFileId != null;
 
   @override
@@ -38,6 +40,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   Widget build(BuildContext context) => BlocBuilder<ProfileCubit, ProfileState>(
         builder: (context, state) {
           Widget shell;
+
+          // Only prompt the user to log in if they do not have a profile and are not trying to view a linked drive.
+          final showAuthPage = state is! ProfileLoggedIn &&
+              !(state is ProfileUnavailable && isViewingDrive);
+
           if (isViewingSharedFile) {
             shell = BlocProvider<SharedFileCubit>(
               key: ValueKey(sharedFileId),
@@ -48,13 +55,19 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               ),
               child: SharedFilePage(),
             );
-          } else if (state is! ProfileLoggedIn) {
+          } else if (showAuthPage) {
             shell = ProfileAuthPage();
           } else {
             shell = BlocConsumer<DrivesCubit, DrivesState>(
               listener: (context, state) {
                 if (state is DrivesLoadSuccess) {
-                  navigateToDriveDetailPage(state.selectedDriveId);
+                  final selectedDriveChanged = driveId != state.selectedDriveId;
+                  if (selectedDriveChanged) {
+                    driveFolderId = null;
+                  }
+
+                  driveId = state.selectedDriveId;
+                  notifyListeners();
                 }
               },
               builder: (context, state) {
@@ -86,7 +99,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   ),
                   child: BlocListener<DriveDetailCubit, DriveDetailState>(
                     listener: (context, state) {
-                      if (state is DriveDetailLoadNotFound) {
+                      if (state is DriveDetailLoadSuccess) {
+                        driveId = state.currentDrive.id;
+                        driveFolderId = state.currentFolder.folder.id;
+                        notifyListeners();
+                      } else if (state is DriveDetailLoadNotFound) {
                         promptToAttachDrive(
                             context: context, initialDriveId: driveId);
                       }
@@ -116,7 +133,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             },
           );
 
-          if (state is! ProfileLoggedIn || isViewingSharedFile) {
+          if (showAuthPage || isViewingSharedFile) {
             return navigator;
           } else {
             return MultiBlocProvider(
@@ -167,18 +184,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     sharedFileId = path.sharedFileId;
     sharedFileKey = path.sharedFileKey;
     sharedRawFileKey = path.sharedRawFileKey;
-  }
-
-  void navigateToDriveDetailPage(String driveId, [String driveFolderId]) {
-    // Only update the drive folder id to null if the drive id is changing.
-    if ((driveFolderId == null && this.driveId != driveId) ||
-        driveFolderId != null) {
-      this.driveFolderId = driveFolderId;
-    }
-
-    this.driveId = driveId;
-
-    notifyListeners();
   }
 }
 
