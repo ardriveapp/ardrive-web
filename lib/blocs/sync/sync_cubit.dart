@@ -48,20 +48,19 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncInProgress());
 
     try {
-      final profile = _profileCubit.state as ProfileLoggedIn;
+      final profile = _profileCubit.state;
 
-      // Sync in drives owned by the user.
-      final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
-        profile.wallet,
-        profile.password,
-      );
+      // Only sync in drives owned by the user if they're logged in.
+      if (profile is ProfileLoggedIn) {
+        final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
+            profile.wallet, profile.password);
 
-      await _drivesDao.updateUserDrives(userDriveEntities, profile.cipherKey);
+        await _drivesDao.updateUserDrives(userDriveEntities, profile.cipherKey);
+      }
 
-      // Sync the contents of each drive owned by the user.
+      // Sync the contents of each drive attached in the app.
       final driveIds =
           await _drivesDao.selectAllDrives().map((d) => d.id).get();
-
       final driveSyncProcesses = driveIds.map((driveId) => _syncDrive(driveId));
       await Future.wait(driveSyncProcesses);
     } catch (err) {
@@ -72,11 +71,14 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> _syncDrive(String driveId) async {
-    final profile = _profileCubit.state as ProfileLoggedIn;
+    //final profile = _profileCubit.state as ProfileLoggedIn;
     final drive = await _driveDao.getDriveById(driveId);
-    final driveKey = drive.isPrivate
-        ? await _driveDao.getDriveKey(drive.id, profile.cipherKey)
-        : null;
+
+    if (drive.isPrivate) {
+      return;
+    }
+
+    final driveKey = drive.isPrivate ? null : null;
 
     final entityHistory = await _arweave.getNewEntitiesForDriveSinceBlock(
       drive.id,
