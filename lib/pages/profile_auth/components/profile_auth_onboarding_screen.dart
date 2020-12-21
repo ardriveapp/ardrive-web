@@ -172,7 +172,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
           contentFooter: _buildOnboardingStepFooter(),
         );
       default:
-        return Container();
+        return const SizedBox();
     }
   }
 

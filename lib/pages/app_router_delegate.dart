@@ -71,7 +71,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     shellPage = DriveDetailPage(driveId: state.selectedDriveId);
                   }
                 } else {
-                  shellPage = Container();
+                  shellPage = const SizedBox();
                 }
 
                 return BlocProvider(

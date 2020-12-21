@@ -53,6 +53,6 @@ class ProfileOverlay extends StatelessWidget {
                   ),
                 ],
               )
-            : Container(),
+            : const SizedBox(),
       );
 }
