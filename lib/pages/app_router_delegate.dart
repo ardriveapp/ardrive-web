@@ -48,7 +48,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               ),
               child: SharedFilePage(),
             );
-          } else if (state is! ProfileLoaded) {
+          } else if (state is! ProfileLoggedIn) {
             shell = ProfileAuthPage();
           } else {
             shell = BlocConsumer<DrivesCubit, DrivesState>(
@@ -72,7 +72,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     shellPage = DriveDetailPage(driveId: state.selectedDriveId);
                   }
                 } else {
-                  shellPage = Container();
+                  shellPage = const SizedBox();
                 }
 
                 return BlocProvider(
@@ -116,7 +116,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             },
           );
 
-          if (state is! ProfileLoaded || isViewingSharedFile) {
+          if (state is! ProfileLoggedIn || isViewingSharedFile) {
             return navigator;
           } else {
             return MultiBlocProvider(

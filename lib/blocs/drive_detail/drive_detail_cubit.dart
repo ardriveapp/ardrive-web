@@ -76,7 +76,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           emit(
             state.copyWith(
               currentDrive: drive,
-              hasWritePermissions: profile is ProfileLoaded &&
+              hasWritePermissions: profile is ProfileLoggedIn &&
                   drive.ownerAddress == profile.wallet.address,
               currentFolder: folderContents,
             ),

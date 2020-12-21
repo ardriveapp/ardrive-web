@@ -11,6 +11,8 @@ import 'package:pedantic/pedantic.dart';
 
 part 'profile_state.dart';
 
+/// [ProfileCubit] includes logic for managing the user's profile login status
+/// and wallet balance.
 class ProfileCubit extends Cubit<ProfileState> {
   final ArweaveService _arweave;
   final ProfileDao _profileDao;
@@ -23,7 +25,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   })  : _arweave = arweave,
         _profileDao = profileDao,
         _db = db,
-        super(ProfileUnavailable()) {
+        super(ProfileCheckingAvailability()) {
     promptToAuthenticate();
   }
 
@@ -33,7 +35,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   Future<void> unlockDefaultProfile(String password) async {
-    emit(ProfileLoading());
+    emit(ProfileLoggingIn());
 
     final profile = await _profileDao.loadDefaultProfile(password);
 
@@ -42,7 +44,7 @@ class ProfileCubit extends Cubit<ProfileState> {
           await _arweave.client.wallets.getBalance(profile.wallet.address);
 
       emit(
-        ProfileLoaded(
+        ProfileLoggedIn(
           username: profile.details.username,
           password: password,
           wallet: profile.wallet,
@@ -51,12 +53,12 @@ class ProfileCubit extends Cubit<ProfileState> {
         ),
       );
     } else {
-      emit(ProfileUnavailable());
+      emit(ProfilePromptAdd());
     }
   }
 
   Future<void> refreshBalance() async {
-    final state = this.state as ProfileLoaded;
+    final state = this.state as ProfileLoggedIn;
     final walletBalance =
         await _arweave.client.wallets.getBalance(state.wallet.address);
 
@@ -67,7 +69,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   ///
   /// Works even when the user is not authenticated.
   Future<void> logoutProfile() async {
-    emit(ProfileLogoutInProgress());
+    emit(ProfileLoggingOut());
 
     // Delete all table data.
     await _db.transaction(() async {

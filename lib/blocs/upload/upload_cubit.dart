@@ -95,7 +95,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> prepareUpload() async {
-    final profile = _profileCubit.state as ProfileLoaded;
+    final profile = _profileCubit.state as ProfileLoggedIn;
 
     emit(UploadPreparationInProgress());
 
@@ -160,7 +160,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<FileUploadHandle> prepareFileUpload(FilePickerCross file) async {
-    final profile = _profileCubit.state as ProfileLoaded;
+    final profile = _profileCubit.state as ProfileLoggedIn;
 
     final fileName = basename(file.path);
     final filePath = '${_targetFolder.path}/${fileName}';

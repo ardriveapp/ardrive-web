@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ProfileOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BlocBuilder<ProfileCubit, ProfileState>(
-        builder: (context, state) => state is ProfileLoaded
+        builder: (context, state) => state is ProfileLoggedIn
             ? Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -53,6 +53,6 @@ class ProfileOverlay extends StatelessWidget {
                   ),
                 ],
               )
-            : Container(),
+            : const SizedBox(),
       );
 }

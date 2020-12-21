@@ -68,7 +68,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
     try {
       final String newName = form.control('name').value;
-      final profile = _profileCubit.state as ProfileLoaded;
+      final profile = _profileCubit.state as ProfileLoggedIn;
       final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
 
       if (_isRenamingFolder) {

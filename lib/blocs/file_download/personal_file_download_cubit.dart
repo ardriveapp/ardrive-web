@@ -39,7 +39,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       if (drive.isPublic) {
         dataBytes = dataRes.bodyBytes;
       } else if (drive.isPrivate) {
-        final profile = _profileCubit.state as ProfileLoaded;
+        final profile = _profileCubit.state as ProfileLoggedIn;
 
         final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
 

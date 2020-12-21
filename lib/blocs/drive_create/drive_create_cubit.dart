@@ -52,7 +52,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       final String driveName = form.control('name').value;
       final String drivePrivacy = form.control('privacy').value;
 
-      final profile = _profileCubit.state as ProfileLoaded;
+      final profile = _profileCubit.state as ProfileLoggedIn;
       final wallet = profile.wallet;
 
       final createRes = await _drivesDao.createDrive(

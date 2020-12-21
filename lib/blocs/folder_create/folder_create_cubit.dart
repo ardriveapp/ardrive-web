@@ -49,7 +49,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     emit(FolderCreateInProgress());
 
     try {
-      final profile = _profileCubit.state as ProfileLoaded;
+      final profile = _profileCubit.state as ProfileLoggedIn;
       final String folderName = form.control('name').value;
 
       await _driveDao.transaction(() async {

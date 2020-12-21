@@ -48,7 +48,7 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncInProgress());
 
     try {
-      final profile = _profileCubit.state as ProfileLoaded;
+      final profile = _profileCubit.state as ProfileLoggedIn;
 
       // Sync in drives owned by the user.
       final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
@@ -72,7 +72,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> _syncDrive(String driveId) async {
-    final profile = _profileCubit.state as ProfileLoaded;
+    final profile = _profileCubit.state as ProfileLoggedIn;
     final drive = await _driveDao.getDriveById(driveId);
     final driveKey = drive.isPrivate
         ? await _driveDao.getDriveKey(drive.id, profile.cipherKey)
@@ -130,9 +130,9 @@ class SyncCubit extends Cubit<SyncState> {
     final newRevisions = <FolderRevisionsCompanion>[];
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
-        latestRevisions[entity.id] =
-            (await _driveDao.getLatestFolderRevisionById(driveId, entity.id))
-                ?.toCompanion(true);
+        latestRevisions[entity.id] = await _driveDao
+            .getLatestFolderRevisionById(driveId, entity.id)
+            .then((r) => r?.toCompanion(true));
       }
 
       final revision = FolderRevisionsCompanion.insert(
@@ -169,9 +169,9 @@ class SyncCubit extends Cubit<SyncState> {
     final newRevisions = <FileRevisionsCompanion>[];
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
-        latestRevisions[entity.id] =
-            (await _driveDao.getLatestFileRevisionById(driveId, entity.id))
-                ?.toCompanion(true);
+        latestRevisions[entity.id] = await _driveDao
+            .getLatestFileRevisionById(driveId, entity.id)
+            .then((r) => r?.toCompanion(true));
       }
 
       final revision = FileRevisionsCompanion.insert(

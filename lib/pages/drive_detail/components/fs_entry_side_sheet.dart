@@ -60,7 +60,7 @@ class FsEntrySideSheet extends StatelessWidget {
                         )
                       ],
                     )
-                  : Container(),
+                  : const SizedBox(),
             ),
           ),
         ),

@@ -31,7 +31,7 @@ void main() {
       profileCubit = MockProfileCubit();
 
       when(profileCubit.state).thenReturn(
-        ProfileLoaded(
+        ProfileLoggedIn(
           password: '123',
           wallet: getTestWallet(),
           cipherKey: SecretKey.randomBytes(32),
