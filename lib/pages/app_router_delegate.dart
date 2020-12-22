@@ -6,6 +6,8 @@ import 'package:ardrive/services/services.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_portal/flutter_portal.dart';
+import 'package:url_launcher/link.dart';
 
 import '../app_shell.dart';
 
@@ -106,7 +108,22 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                             context: context, initialDriveId: driveId);
                       }
                     },
-                    child: AppShell(page: shellPage),
+                    child: PortalEntry(
+                        portal: Link(
+                          uri: Uri.parse('https://ardrive.io/faq/'),
+                          target: LinkTarget.blank,
+                          builder: (context, onPressed) => Padding(
+                            padding:
+                                const EdgeInsets.only(right: 16, bottom: 16),
+                            child: FloatingActionButton(
+                              child: const Icon(Icons.help_outline),
+                              onPressed: onPressed,
+                            ),
+                          ),
+                        ),
+                        portalAnchor: Alignment.bottomRight,
+                        childAnchor: Alignment.bottomRight,
+                        child: AppShell(page: shellPage)),
                   ),
                 );
               },
