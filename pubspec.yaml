@@ -45,6 +45,7 @@ dependencies:
   moor:
     git:
       url: https://github.com/CDDelta/moor.git
+      path: moor
       ref: f3962f875513726d1889979874c9609e6c24cf54
   path_provider: ^1.6.11
   pedantic: ^1.9.2
