@@ -473,9 +473,11 @@ packages:
   moor:
     dependency: "direct main"
     description:
-      path: "../moor/moor"
-      relative: true
-    source: path
+      path: moor
+      ref: f3962f875513726d1889979874c9609e6c24cf54
+      resolved-ref: f3962f875513726d1889979874c9609e6c24cf54
+      url: "https://github.com/CDDelta/moor.git"
+    source: git
     version: "3.4.0"
   nested:
     dependency: transitive
