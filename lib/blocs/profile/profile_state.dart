@@ -18,6 +18,8 @@ abstract class ProfileAvailable extends ProfileState {}
 /// the user no profile that can/has been logged into.
 abstract class ProfileUnavailable extends ProfileState {}
 
+class ProfilePromptLogIn extends ProfileAvailable {}
+
 class ProfileLoggingIn extends ProfileAvailable {}
 
 class ProfileLoggedIn extends ProfileAvailable {
@@ -59,7 +61,5 @@ class ProfileLoggedIn extends ProfileAvailable {
 }
 
 class ProfilePromptAdd extends ProfileUnavailable {}
-
-class ProfilePromptUnlock extends ProfileUnavailable {}
 
 class ProfileLoggingOut extends ProfileUnavailable {}

@@ -37,7 +37,7 @@ class ProfileAuthPage extends StatelessWidget {
                 return const SizedBox();
               }),
             );
-          } else if (state is ProfilePromptUnlock) {
+          } else if (state is ProfilePromptLogIn) {
             return ProfileAuthUnlockScreen();
           } else {
             return ProfileAuthLoadingScreen();
