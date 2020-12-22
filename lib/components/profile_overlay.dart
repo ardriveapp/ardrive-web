@@ -45,6 +45,7 @@ class ProfileOverlay extends StatelessWidget {
                           ),
                           trailing: IconButton(
                             icon: const Icon(Icons.logout),
+                            tooltip: 'Logout',
                             onPressed: () =>
                                 context.read<ProfileCubit>().logoutProfile(),
                           ),
@@ -58,6 +59,7 @@ class ProfileOverlay extends StatelessWidget {
                             uri: Uri(path: '/'),
                             builder: (context, onPressed) => IconButton(
                               icon: const Icon(Icons.login),
+                              tooltip: 'Login',
                               onPressed: onPressed,
                             ),
                           ),

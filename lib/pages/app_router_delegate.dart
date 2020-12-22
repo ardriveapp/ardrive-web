@@ -117,6 +117,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                                 const EdgeInsets.only(right: 16, bottom: 16),
                             child: FloatingActionButton(
                               child: const Icon(Icons.help_outline),
+                              tooltip: 'Help',
                               onPressed: onPressed,
                             ),
                           ),
