@@ -4,6 +4,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
@@ -71,14 +72,19 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> _syncDrive(String driveId) async {
-    //final profile = _profileCubit.state as ProfileLoggedIn;
     final drive = await _driveDao.getDriveById(driveId);
 
+    SecretKey driveKey;
     if (drive.isPrivate) {
-      return;
-    }
+      final profile = _profileCubit.state;
 
-    final driveKey = drive.isPrivate ? null : null;
+      // Only sync private drives when the user is logged in.
+      if (profile is ProfileLoggedIn) {
+        driveKey = await _driveDao.getDriveKey(drive.id, profile.cipherKey);
+      } else {
+        return;
+      }
+    }
 
     final entityHistory = await _arweave.getNewEntitiesForDriveSinceBlock(
       drive.id,
