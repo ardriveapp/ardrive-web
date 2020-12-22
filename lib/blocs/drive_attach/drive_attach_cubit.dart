@@ -21,6 +21,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   final DrivesCubit _drivesBloc;
 
   DriveAttachCubit({
+    String initialDriveId,
     @required ArweaveService arweave,
     @required DrivesDao drivesDao,
     @required SyncCubit syncBloc,
@@ -46,6 +47,13 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         ),
       },
     );
+
+    // Add the initial drive id in a microtask to properly trigger the drive name loader.
+    Future.microtask(() {
+      if (initialDriveId != null) {
+        form.control('driveId').updateValue(initialDriveId);
+      }
+    });
   }
 
   void submit() async {
@@ -71,7 +79,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         return;
       }
 
-      await _drivesDao.insertDriveEntity(name: driveName, entity: driveEntity);
+      await _drivesDao.writeDriveEntity(name: driveName, entity: driveEntity);
 
       _drivesBloc.selectDrive(driveId);
       unawaited(_syncBloc.startSync());

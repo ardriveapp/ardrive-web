@@ -65,3 +65,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         selectedFilePreviewUrl,
       ];
 }
+
+/// [DriveDetailLoadNotFound] means that the specified drive could not be found attached to
+/// the user's profile.
+class DriveDetailLoadNotFound extends DriveDetailState {}

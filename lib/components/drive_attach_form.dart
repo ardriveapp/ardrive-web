@@ -5,14 +5,18 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:meta/meta.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
 
-Future<void> promptToAttachDrive(BuildContext context) => showDialog(
+Future<void> promptToAttachDrive(
+        {@required BuildContext context, String initialDriveId}) =>
+    showDialog(
       context: context,
       builder: (BuildContext context) => BlocProvider<DriveAttachCubit>(
         create: (context) => DriveAttachCubit(
+          initialDriveId: initialDriveId,
           arweave: context.read<ArweaveService>(),
           drivesDao: context.read<DrivesDao>(),
           syncBloc: context.read<SyncCubit>(),
@@ -22,6 +26,7 @@ Future<void> promptToAttachDrive(BuildContext context) => showDialog(
       ),
     );
 
+/// Depends on a provided [DriveAttachCubit] for business logic.
 class DriveAttachForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>

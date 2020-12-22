@@ -4,6 +4,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
@@ -48,20 +49,19 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncInProgress());
 
     try {
-      final profile = _profileCubit.state as ProfileLoggedIn;
+      final profile = _profileCubit.state;
 
-      // Sync in drives owned by the user.
-      final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
-        profile.wallet,
-        profile.password,
-      );
+      // Only sync in drives owned by the user if they're logged in.
+      if (profile is ProfileLoggedIn) {
+        final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
+            profile.wallet, profile.password);
 
-      await _drivesDao.updateUserDrives(userDriveEntities, profile.cipherKey);
+        await _drivesDao.updateUserDrives(userDriveEntities, profile.cipherKey);
+      }
 
-      // Sync the contents of each drive owned by the user.
+      // Sync the contents of each drive attached in the app.
       final driveIds =
           await _drivesDao.selectAllDrives().map((d) => d.id).get();
-
       final driveSyncProcesses = driveIds.map((driveId) => _syncDrive(driveId));
       await Future.wait(driveSyncProcesses);
     } catch (err) {
@@ -72,11 +72,19 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> _syncDrive(String driveId) async {
-    final profile = _profileCubit.state as ProfileLoggedIn;
     final drive = await _driveDao.getDriveById(driveId);
-    final driveKey = drive.isPrivate
-        ? await _driveDao.getDriveKey(drive.id, profile.cipherKey)
-        : null;
+
+    SecretKey driveKey;
+    if (drive.isPrivate) {
+      final profile = _profileCubit.state;
+
+      // Only sync private drives when the user is logged in.
+      if (profile is ProfileLoggedIn) {
+        driveKey = await _driveDao.getDriveKey(drive.id, profile.cipherKey);
+      } else {
+        return;
+      }
+    }
 
     final entityHistory = await _arweave.getNewEntitiesForDriveSinceBlock(
       drive.id,

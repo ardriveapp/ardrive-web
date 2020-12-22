@@ -102,25 +102,25 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
         }
       });
 
-  /// Inserts the provided [DriveEntity] with the provided name.
-  ///
-  /// Only works for public drives.
-  Future<void> insertDriveEntity({
+  Future<void> writeDriveEntity({
     String name,
     DriveEntity entity,
   }) {
     assert(entity.privacy == DrivePrivacy.public);
 
+    final companion = DrivesCompanion.insert(
+      id: entity.id,
+      name: name,
+      ownerAddress: entity.ownerAddress,
+      rootFolderId: entity.rootFolderId,
+      privacy: entity.privacy,
+      dateCreated: Value(entity.commitTime),
+      lastUpdated: Value(entity.commitTime),
+    );
+
     return into(drives).insert(
-      DrivesCompanion.insert(
-        id: entity.id,
-        name: name,
-        ownerAddress: entity.ownerAddress,
-        rootFolderId: entity.rootFolderId,
-        privacy: entity.privacy,
-        dateCreated: Value(entity.commitTime),
-        lastUpdated: Value(entity.commitTime),
-      ),
+      companion,
+      onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
     );
   }
 
