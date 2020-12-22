@@ -73,17 +73,15 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               builder: (context, state) {
                 Widget shellPage;
                 if (state is DrivesLoadSuccess) {
-                  if (state.hasNoDrives) {
-                    shellPage = Center(
-                      child: Text(
-                        'You have no personal or attached drives.\nClick the "new" button to add some!',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headline6,
-                      ),
-                    );
-                  } else {
-                    shellPage = DriveDetailPage(driveId: state.selectedDriveId);
-                  }
+                  shellPage = !state.hasNoDrives
+                      ? DriveDetailPage()
+                      : Center(
+                          child: Text(
+                            'You have no personal or attached drives.\nClick the "new" button to add some!',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.headline6,
+                          ),
+                        );
                 } else {
                   shellPage = const SizedBox();
                 }
