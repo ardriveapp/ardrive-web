@@ -15,6 +15,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.40.6"
+  analyzer_plugin_fork:
+    dependency: transitive
+    description:
+      name: analyzer_plugin_fork
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.3.0"
   args:
     dependency: transitive
     description:
@@ -479,6 +486,13 @@ packages:
       url: "https://github.com/CDDelta/moor.git"
     source: git
     version: "3.4.0"
+  moor_generator:
+    dependency: "direct dev"
+    description:
+      name: moor_generator
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.4.0"
   nested:
     dependency: transitive
     description:
@@ -729,6 +743,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.1.8"
+  sqlparser:
+    dependency: transitive
+    description:
+      name: sqlparser
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.11.0"
   stack_trace:
     dependency: transitive
     description:
