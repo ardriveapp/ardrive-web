@@ -42,7 +42,10 @@ dependencies:
   intl: ^0.16.1
   json_annotation: ^3.0.1
   mime: ^0.9.7
-  moor: ^3.3.1
+  moor:
+    git:
+      url: https://github.com/CDDelta/moor.git
+      ref: f3962f875513726d1889979874c9609e6c24cf54
   path_provider: ^1.6.11
   pedantic: ^1.9.2
   reactive_forms: ^7.3.0
@@ -59,7 +62,6 @@ dev_dependencies:
   bloc_test: ^7.1.0
   mockito: ^4.1.0
   build_runner: ^1.10.0
-  moor_generator: ^3.3.1
   json_serializable: ^3.3.0
 
 flutter:
