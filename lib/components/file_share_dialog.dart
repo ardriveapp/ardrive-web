@@ -21,19 +21,12 @@ Future<void> promptToShareFile({
           profileCubit: context.read<ProfileCubit>(),
           driveDao: context.read<DriveDao>(),
         ),
-        child: FileShareDialog(
-          driveId: driveId,
-          fileId: fileId,
-        ),
+        child: FileShareDialog(),
       ),
     );
 
+/// Depends on a provided [FileShareCubit] for business logic.
 class FileShareDialog extends StatefulWidget {
-  final String driveId;
-  final String fileId;
-
-  FileShareDialog({@required this.driveId, @required this.fileId});
-
   @override
   _FileShareDialogState createState() => _FileShareDialogState();
 }
