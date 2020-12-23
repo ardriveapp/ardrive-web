@@ -1,6 +1,7 @@
 export 'drive_attach/drive_attach_cubit.dart';
 export 'drive_create/drive_create_cubit.dart';
 export 'drive_detail/drive_detail_cubit.dart';
+export 'drive_share/drive_share_cubit.dart';
 export 'drives/drives_cubit.dart';
 export 'file_download/file_download_cubit.dart';
 export 'file_share/file_share_cubit.dart';

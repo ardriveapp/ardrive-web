@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/components/drive_share_dialog.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,6 +15,7 @@ class DriveDetailActionRow extends StatelessWidget {
       builder: (context, state) {
         if (state is DriveDetailLoadSuccess) {
           final fsActions = <Widget>[
+            // A folder/file is selected.
             if (state.selectedItemId != null) ...{
               if (!state.selectedItemIsFolder) ...{
                 IconButton(
@@ -27,7 +29,7 @@ class DriveDetailActionRow extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.share),
-                  tooltip: 'Share',
+                  tooltip: 'Share File',
                   onPressed: () => promptToShareFile(
                     context: context,
                     driveId: state.currentDrive.id,
@@ -77,7 +79,18 @@ class DriveDetailActionRow extends StatelessWidget {
                   tooltip: 'Move',
                 ),
               },
-            },
+              // Nothing is selected.
+            } else ...{
+              if (state.currentDrive.isPublic)
+                IconButton(
+                  icon: const Icon(Icons.share),
+                  onPressed: () => promptToShareDrive(
+                    context: context,
+                    driveId: state.currentDrive.id,
+                  ),
+                  tooltip: 'Share Drive',
+                ),
+            }
           ];
 
           return Row(
