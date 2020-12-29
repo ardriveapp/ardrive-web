@@ -42,7 +42,9 @@ class SyncCubit extends Cubit<SyncState> {
     // Sync the user's drives on start and periodically.
     _syncSub = interval(const Duration(minutes: 2))
         .startWith(null)
-        .listen((_) => startSync());
+        // Do not start another sync until the previous sync has completed.
+        .exhaustMap((value) => Stream.fromFuture(startSync()))
+        .listen((_) {});
   }
 
   Future<void> startSync() async {
