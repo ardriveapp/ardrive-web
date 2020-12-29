@@ -178,6 +178,14 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return id;
   }
 
+  SimpleSelectStatement<FolderEntries, FolderEntry> selectFolderInFolderByName(
+          String driveId, String folderId, String folderName) =>
+      (select(folderEntries)
+        ..where((f) =>
+            f.driveId.equals(driveId) &
+            f.parentFolderId.equals(folderId) &
+            f.name.equals(folderName)));
+
   UpdateStatement<FolderEntries, FolderEntry> updateFolderById(
           String driveId, String folderId) =>
       update(folderEntries)

@@ -66,7 +66,7 @@ class FsEntryRenameForm extends StatelessWidget {
           title: state.isRenamingFolder ? 'RENAME FOLDER' : 'RENAME FILE',
           content: state is! FsEntryRenameInitializing
               ? SizedBox(
-                  width: kSmallDialogWidth,
+                  width: kMediumDialogWidth,
                   child: ReactiveForm(
                     formGroup: context.watch<FsEntryRenameCubit>().form,
                     child: ReactiveTextField(
@@ -76,7 +76,6 @@ class FsEntryRenameForm extends StatelessWidget {
                           labelText: state.isRenamingFolder
                               ? 'Folder name'
                               : 'File name'),
-                      showErrors: (control) => control.dirty && control.invalid,
                       validationMessages: (_) => kValidationMessages,
                     ),
                   ),
