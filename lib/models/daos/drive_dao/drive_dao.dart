@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import '../../models.dart';
 
 part 'drive_dao.g.dart';
+part 'drive_order.dart';
 part 'folder_node.dart';
 part 'folder_with_contents.dart';
 
@@ -91,56 +92,64 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
                 f.driveId.equals(driveId) &
                 f.parentFolderId.equals(parentFolderId)));
 
-  Stream<FolderWithContents> watchFolderContentsById(
-      String driveId, String folderId) {
+  Stream<FolderWithContents> watchFolderContents(String driveId,
+      {String folderId,
+      String folderPath,
+      DriveOrder orderBy = DriveOrder.name,
+      OrderingMode orderingMode = OrderingMode.asc}) {
     final folderStream = (select(folderEntries)
-          ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)))
-        .watchSingle();
-
-    final subfoldersStream = (select(folderEntries)
           ..where((f) =>
-              f.driveId.equals(driveId) & f.parentFolderId.equals(folderId))
-          ..orderBy([(f) => OrderingTerm(expression: f.name)]))
-        .watch();
-
-    final filesStream = (select(fileEntries)
-          ..where((f) =>
-              f.driveId.equals(driveId) & f.parentFolderId.equals(folderId))
-          ..orderBy([(f) => OrderingTerm(expression: f.name)]))
-        .watch();
-
-    return Rx.combineLatest3(
-      folderStream,
-      subfoldersStream,
-      filesStream,
-      (folder, subfolders, files) => FolderWithContents(
-        folder: folder,
-        subfolders: subfolders,
-        files: files,
-      ),
-    );
-  }
-
-  Stream<FolderWithContents> watchFolderContentsAtPath(
-      String driveId, String folderPath) {
-    final folderStream = (select(folderEntries)
-          ..where((f) => f.driveId.equals(driveId) & f.path.equals(folderPath)))
+              f.driveId.equals(driveId) &
+              (folderId != null
+                  ? f.id.equals(folderId)
+                  : f.path.equals(folderPath))))
         .watchSingle();
 
     final subfoldersStream = (select(folderEntries)
           ..where((f) =>
               f.driveId.equals(driveId) &
-              f.path.like('$folderPath/%') &
-              f.path.like('$folderPath/%/%').not())
-          ..orderBy([(f) => OrderingTerm(expression: f.name)]))
+              (folderId != null
+                  ? f.parentFolderId.equals(folderId)
+                  : f.path.like('$folderPath/%') &
+                      f.path.like('$folderPath/%/%').not()))
+          ..orderBy([
+            (f) {
+              switch (orderBy) {
+                // Folders have no size or proper last updated time to be sorted by
+                // so we just sort them ascendingly by name.
+                case DriveOrder.lastUpdated:
+                case DriveOrder.size:
+                  return OrderingTerm(
+                      expression: f.name, mode: OrderingMode.asc);
+                case DriveOrder.name:
+                default:
+                  return OrderingTerm(expression: f.name, mode: orderingMode);
+              }
+            }
+          ]))
         .watch();
 
     final filesStream = (select(fileEntries)
           ..where((f) =>
               f.driveId.equals(driveId) &
-              f.path.like('$folderPath/%') &
-              f.path.like('$folderPath/%/%').not())
-          ..orderBy([(f) => OrderingTerm(expression: f.name)]))
+              (folderId != null
+                  ? f.parentFolderId.equals(folderId)
+                  : f.path.like('$folderPath/%') &
+                      f.path.like('$folderPath/%/%').not()))
+          ..orderBy([
+            (f) {
+              switch (orderBy) {
+                case DriveOrder.lastUpdated:
+                  return OrderingTerm(
+                      expression: f.lastUpdated, mode: orderingMode);
+                case DriveOrder.size:
+                  return OrderingTerm(expression: f.size, mode: orderingMode);
+                case DriveOrder.name:
+                default:
+                  return OrderingTerm(expression: f.name, mode: orderingMode);
+              }
+            }
+          ]))
         .watch();
 
     return Rx.combineLatest3(

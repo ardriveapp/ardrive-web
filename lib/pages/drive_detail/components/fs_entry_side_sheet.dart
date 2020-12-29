@@ -1,9 +1,4 @@
-import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/l11n/l11n.dart';
-import 'package:ardrive/models/models.dart';
-import 'package:filesize/filesize.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+part of '../drive_detail_page.dart';
 
 class FsEntrySideSheet extends StatelessWidget {
   final String driveId;

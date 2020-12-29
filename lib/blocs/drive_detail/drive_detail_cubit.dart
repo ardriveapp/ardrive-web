@@ -40,14 +40,17 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       Future.microtask(() async {
         final folder = await _driveDao.getFolderById(driveId, initialFolderId);
         // Open the root folder if the deep-linked folder could not be found.
-        openFolderAtPath(folder?.path ?? '');
+        openFolder(path: folder?.path ?? '');
       });
     } else {
-      openFolderAtPath('');
+      openFolder(path: '');
     }
   }
 
-  void openFolderAtPath(String path) {
+  void openFolder(
+      {@required String path,
+      DriveOrder contentOrderBy = DriveOrder.name,
+      OrderingMode contentOrderingMode = OrderingMode.asc}) {
     emit(DriveDetailLoadInProgress());
 
     unawaited(_folderSubscription?.cancel());
@@ -55,7 +58,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _folderSubscription =
         Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
       _driveDao.watchDriveById(driveId),
-      _driveDao.watchFolderContentsAtPath(driveId, path),
+      _driveDao.watchFolderContents(driveId,
+          folderPath: path,
+          orderBy: contentOrderBy,
+          orderingMode: contentOrderingMode),
       _profileCubit.startWith(null),
       (drive, folderContents, _) {
         if (drive == null) {
@@ -79,6 +85,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               hasWritePermissions: profile is ProfileLoggedIn &&
                   drive.ownerAddress == profile.wallet.address,
               currentFolder: folderContents,
+              contentOrderBy: contentOrderBy,
+              contentOrderingMode: contentOrderingMode,
             ),
           );
         }
@@ -102,6 +110,16 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
 
     emit(state);
+  }
+
+  void sortFolder(
+      {DriveOrder contentOrderBy = DriveOrder.name,
+      OrderingMode contentOrderingMode = OrderingMode.asc}) {
+    final state = this.state as DriveDetailLoadSuccess;
+    openFolder(
+        path: state.currentFolder.folder.path,
+        contentOrderBy: contentOrderBy,
+        contentOrderingMode: contentOrderingMode);
   }
 
   void toggleSelectedItemDetails() {
