@@ -639,7 +639,7 @@ packages:
     source: hosted
     version: "0.1.7"
   quiver:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: quiver
       url: "https://pub.dartlang.org"

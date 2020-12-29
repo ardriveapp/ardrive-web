@@ -64,8 +64,9 @@ class SyncCubit extends Cubit<SyncState> {
       // Sync the contents of each drive attached in the app.
       final driveIds =
           await _drivesDao.selectAllDrives().map((d) => d.id).get();
-      final driveSyncProcesses = driveIds.map((driveId) => _syncDrive(driveId));
-      await Future.wait(driveSyncProcesses);
+      for (final driveId in driveIds) {
+        await _syncDrive(driveId).catchError((_) {});
+      }
     } catch (err) {
       addError(err);
     }

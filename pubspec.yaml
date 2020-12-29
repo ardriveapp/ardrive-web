@@ -45,6 +45,7 @@ dependencies:
   moor: ^3.3.1
   path_provider: ^1.6.11
   pedantic: ^1.9.2
+  quiver: ^2.1.5
   reactive_forms: ^7.3.0
   rxdart: ^0.25.0
   timeago: ^2.0.28
