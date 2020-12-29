@@ -651,7 +651,7 @@ packages:
       name: reactive_forms
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.6.2"
+    version: "7.6.3"
   recase:
     dependency: transitive
     description:
@@ -693,7 +693,7 @@ packages:
       name: shelf_static
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.8"
+    version: "0.2.9+1"
   shelf_web_socket:
     dependency: transitive
     description:
