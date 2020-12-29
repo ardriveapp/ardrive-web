@@ -1,0 +1,2 @@
+schema: 'lib/services/arweave/graphql/schema.graphql'
+documents: 'lib/services/arweave/graphql/**/*.{graphql,js,ts,jsx,tsx}'
