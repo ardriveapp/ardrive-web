@@ -11,7 +11,7 @@ query LatestDriveEntityWithId($driveId: String!, $owner: String!) {
   ) {
     edges {
       node {
-        ...transactionCommon
+        ...TransactionCommon
       }
     }
   }

@@ -10,7 +10,7 @@ query LatestFileEntityWithId($fileId: String!, $owner: String!) {
   ) {
     edges {
       node {
-        ...transactionCommon
+        ...TransactionCommon
       }
     }
   }
