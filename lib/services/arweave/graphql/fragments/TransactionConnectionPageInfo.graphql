@@ -1,0 +1,5 @@
+fragment TransactionConnectionPageInfo on TransactionConnection {
+  pageInfo {
+    hasNextPage
+  }
+}

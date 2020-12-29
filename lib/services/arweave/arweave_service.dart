@@ -1,7 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:ardrive/entities/entities.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:quiver/iterables.dart';
 
 import '../services.dart';
 
@@ -25,20 +28,37 @@ class ArweaveService {
     int startingBlockHeight, [
     SecretKey driveKey,
   ]) async {
-    final driveEntityHistoryQuery = await _gql.execute(
-      DriveEntityHistoryQuery(
-        variables: DriveEntityHistoryArguments(
-          driveId: driveId,
-          startingBlockHeight: startingBlockHeight,
+    final entityTxs = await retrieveAllQueryResults<TransactionCommonMixin>(
+        (accumulator, cursor) async {
+      final driveEntityHistoryQuery = await _gql.execute(
+        DriveEntityHistoryQuery(
+          variables: DriveEntityHistoryArguments(
+            driveId: driveId,
+            after: cursor,
+            startingBlockHeight: startingBlockHeight,
+          ),
         ),
-      ),
-    );
-    final entityTxs = driveEntityHistoryQuery.data.transactions.edges
-        .map((e) => e.node)
-        .toList();
-    final rawEntityData =
-        await Future.wait(entityTxs.map((e) => client.api.get(e.id)))
-            .then((rs) => rs.map((r) => r.bodyBytes).toList());
+      );
+
+      final queryTxs = driveEntityHistoryQuery.data.transactions;
+
+      accumulator.addAll(queryTxs.edges.map((e) => e.node));
+
+      return queryTxs.pageInfo.hasNextPage ? queryTxs.edges.last.cursor : null;
+    });
+
+    Iterable<Uint8List> dataIterable = <Uint8List>[];
+
+    // Batch data requests to avoid overwhelming the gateway.
+    for (final txBatch in partition(entityTxs, 100)) {
+      final dataBatch =
+          await Future.wait(txBatch.map((e) => client.api.get(e.id)))
+              .then((rs) => rs.map((r) => r.bodyBytes));
+
+      dataIterable = dataIterable.followedBy(dataBatch);
+    }
+
+    final rawEntityData = dataIterable.toList();
 
     final blockHistory = <BlockEntities>[];
     for (var i = 0; i < entityTxs.length; i++) {
@@ -355,6 +375,25 @@ class ArweaveService {
 
   Future<void> postTx(Transaction transaction) =>
       client.transactions.post(transaction);
+
+  /// Retrieves all of the results of a specified query by paginating through the entire result set.
+  ///
+  /// @query a function that performs the necessary query with the provided cursor and accumulates the
+  /// individual query results. Should return `null` to stop paginating.
+  ///
+  /// Result accumulation should ideally be done lazily instead of performing `addAll` on the accumulating list
+  /// but isn't implemented here.
+  Future<List<T>> retrieveAllQueryResults<T>(
+      Future<String> Function(List<T> accumulator, String cursor) query) async {
+    final accumulator = <T>[];
+
+    String nextCursor;
+    do {
+      nextCursor = await query(accumulator, nextCursor);
+    } while (nextCursor != null);
+
+    return accumulator;
+  }
 }
 
 /// The entity history of a particular drive, chunked by block height.

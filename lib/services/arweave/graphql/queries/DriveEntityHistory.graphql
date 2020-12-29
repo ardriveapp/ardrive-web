@@ -1,4 +1,8 @@
-query DriveEntityHistory($driveId: String!, $startingBlockHeight: Int) {
+query DriveEntityHistory(
+  $driveId: String!
+  $after: String
+  $startingBlockHeight: Int
+) {
   transactions(
     first: 100
     sort: HEIGHT_ASC
@@ -6,12 +10,15 @@ query DriveEntityHistory($driveId: String!, $startingBlockHeight: Int) {
       { name: "ArFS", values: ["0.10", "0.11"] }
       { name: "Drive-Id", values: [$driveId] }
     ]
+    after: $after
     block: { min: $startingBlockHeight }
   ) {
     edges {
       node {
         ...TransactionCommon
       }
+      cursor
     }
+    ...TransactionConnectionPageInfo
   }
 }
