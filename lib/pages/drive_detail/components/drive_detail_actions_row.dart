@@ -1,10 +1,4 @@
-import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/components/components.dart';
-import 'package:ardrive/components/drive_share_dialog.dart';
-import 'package:ardrive/models/models.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/link.dart';
+part of '../drive_detail_page.dart';
 
 class DriveDetailActionRow extends StatelessWidget {
   @override
