@@ -47,7 +47,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           final showAuthPage = state is! ProfileLoggedIn &&
               !(state is ProfileUnavailable && isViewingDrive);
 
-          if (isViewingSharedFile) {
+          // Show an alert if the screen size is too small as the app is not fully responsive yet.
+          final screenNotSupported = MediaQuery.of(context).size.width <= 576;
+          if (screenNotSupported) {
+            shell = ScreenNotSupportedPage();
+          } else if (isViewingSharedFile) {
             shell = BlocProvider<SharedFileCubit>(
               key: ValueKey(sharedFileId),
               create: (_) => SharedFileCubit(
@@ -149,7 +153,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             },
           );
 
-          if (showAuthPage || isViewingSharedFile) {
+          if (screenNotSupported || showAuthPage || isViewingSharedFile) {
             return navigator;
           } else {
             return MultiBlocProvider(
