@@ -40,8 +40,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "1e7020d9b7b09fcb9ed0f00bf83d24408cf3c52e"
-      resolved-ref: "1e7020d9b7b09fcb9ed0f00bf83d24408cf3c52e"
+      ref: b1a89002e8a2686a01da96d95823c299195aaa18
+      resolved-ref: b1a89002e8a2686a01da96d95823c299195aaa18
       url: "https://github.com/CDDelta/arweave-dart.git"
     source: git
     version: "0.1.0"
