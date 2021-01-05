@@ -65,13 +65,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeToDrive(Insertable<Drive> drive) =>
       (update(drives)..whereSamePrimaryKey(drive)).write(drive);
 
-  SimpleSelectStatement<FolderEntries, FolderEntry>
-      selectFoldersByParentFolderId(String driveId, String parentFolderId) =>
-          (select(folderEntries)
-            ..where((f) =>
-                f.driveId.equals(driveId) &
-                f.parentFolderId.equals(parentFolderId)));
-
   Stream<FolderWithContents> watchFolderContents(String driveId,
       {String folderId,
       String folderPath,
@@ -189,7 +182,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     Future<FolderNode> getFolderChildren(FolderEntry parentFolder) async {
       final subfolders =
-          await selectFoldersByParentFolderId(driveId, parentFolder.id).get();
+          await foldersWithParentFolder(driveId, parentFolder.id).get();
 
       return FolderNode(
         folder: parentFolder,
@@ -197,11 +190,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         subfolders:
             await Future.wait(subfolders.map((f) => getFolderChildren(f))),
         files: {
-          await for (var f
-              in selectFilesByParentFolderId(driveId, parentFolder.id)
-                  .get()
-                  .asStream()
-                  .expand((f) => f))
+          await for (var f in filesWithParentFolder(driveId, parentFolder.id)
+              .get()
+              .asStream()
+              .expand((f) => f))
             f.id: f.name
         },
       );
@@ -217,13 +209,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             f.driveId.equals(driveId) &
             f.parentFolderId.equals(folderId) &
             f.name.equals(fileName)));
-
-  SimpleSelectStatement<FileEntries, FileEntry> selectFilesByParentFolderId(
-          String driveId, String parentFolderId) =>
-      (select(fileEntries)
-        ..where((f) =>
-            f.driveId.equals(driveId) &
-            f.parentFolderId.equals(parentFolderId)));
 
   UpdateStatement<FileEntries, FileEntry> updateFileById(
           String driveId, String fileId) =>
@@ -261,35 +246,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
                 r.driveId.equals(driveId) &
                 r.metadataTxStatus.equals(TransactionStatus.pending));
 
-  SimpleSelectStatement<FolderRevisions, FolderRevision>
-      selectFolderRevisionsById(String driveId, String folderId) =>
-          (select(folderRevisions)
-            ..where((f) =>
-                f.driveId.equals(driveId) & f.folderId.equals(folderId)));
-
-  SimpleSelectStatement<FolderRevisions, FolderRevision>
-      selectLatestFolderRevisionsById(String driveId, String folderId) =>
-          selectFolderRevisionsById(driveId, folderId)
-            ..orderBy([
-              (f) => OrderingTerm(
-                  expression: f.dateCreated, mode: OrderingMode.desc)
-            ]);
-
-  Future<FolderRevision> getLatestFolderRevisionById(
-          String driveId, String folderId) =>
-      (selectLatestFolderRevisionsById(driveId, folderId)..limit(1))
-          .getSingle();
-
-  Future<FolderRevision> getOldestFolderRevisionById(
-          String driveId, String folderId) =>
-      (selectFolderRevisionsById(driveId, folderId)
-            ..orderBy([
-              (f) => OrderingTerm(
-                  expression: f.dateCreated, mode: OrderingMode.asc)
-            ])
-            ..limit(1))
-          .getSingle();
-
   Future<void> writeToFolderRevision(
           Insertable<FolderRevision> folderRevision) =>
       (update(folderRevisions)..whereSamePrimaryKey(folderRevision))
@@ -301,33 +257,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             r.driveId.equals(driveId) &
             r.metadataTxStatus.equals(TransactionStatus.pending) &
             r.dataTxStatus.equals(TransactionStatus.pending));
-
-  SimpleSelectStatement<FileRevisions, FileRevision> selectFileRevisionsById(
-          String driveId, String fileId) =>
-      (select(fileRevisions)
-        ..where((f) => f.driveId.equals(driveId) & f.fileId.equals(fileId)));
-
-  SimpleSelectStatement<FileRevisions, FileRevision>
-      selectLatestFileRevisionsById(String driveId, String fileId) =>
-          selectFileRevisionsById(driveId, fileId)
-            ..orderBy([
-              (f) => OrderingTerm(
-                  expression: f.dateCreated, mode: OrderingMode.desc)
-            ]);
-
-  Future<FileRevision> getLatestFileRevisionById(
-          String driveId, String fileId) =>
-      (selectLatestFileRevisionsById(driveId, fileId)..limit(1)).getSingle();
-
-  Future<FileRevision> getOldestFileRevisionById(
-          String driveId, String fileId) =>
-      (selectFileRevisionsById(driveId, fileId)
-            ..orderBy([
-              (f) => OrderingTerm(
-                  expression: f.dateCreated, mode: OrderingMode.asc)
-            ])
-            ..limit(1))
-          .getSingle();
 
   Future<void> writeToFileRevision(Insertable<FileRevision> fileRevision) =>
       (update(fileRevisions)..whereSamePrimaryKey(fileRevision))
