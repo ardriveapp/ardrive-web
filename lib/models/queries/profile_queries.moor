@@ -1,0 +1,3 @@
+import '../tables/profiles.moor';
+
+defaultProfile: SELECT * FROM profiles;

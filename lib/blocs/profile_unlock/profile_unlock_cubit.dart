@@ -25,10 +25,8 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
         _profileDao = profileDao,
         super(ProfileUnlockInitializing()) {
     () async {
-      final existingUsername = await _profileDao
-          .selectDefaultProfile()
-          .map((p) => p.username)
-          .getSingle();
+      final existingUsername =
+          await _profileDao.defaultProfile().map((p) => p.username).getSingle();
       emit(ProfileUnlockInitial(username: existingUsername));
     }();
   }

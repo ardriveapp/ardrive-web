@@ -222,24 +222,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
-  SimpleSelectStatement<FolderRevisions, FolderRevision>
-      selectUnconfirmedFolderRevisions(String driveId) =>
-          select(folderRevisions)
-            ..where((r) =>
-                r.driveId.equals(driveId) &
-                r.metadataTxStatus.equals(TransactionStatus.pending));
-
   Future<void> writeToFolderRevision(
           Insertable<FolderRevision> folderRevision) =>
       (update(folderRevisions)..whereSamePrimaryKey(folderRevision))
           .write(folderRevision);
-
-  SimpleSelectStatement<FileRevisions, FileRevision>
-      selectUnconfirmedFileRevisions(String driveId) => select(fileRevisions)
-        ..where((r) =>
-            r.driveId.equals(driveId) &
-            r.metadataTxStatus.equals(TransactionStatus.pending) &
-            r.dataTxStatus.equals(TransactionStatus.pending));
 
   Future<void> writeToFileRevision(Insertable<FileRevision> fileRevision) =>
       (update(fileRevisions)..whereSamePrimaryKey(fileRevision))

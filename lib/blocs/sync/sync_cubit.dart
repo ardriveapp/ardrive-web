@@ -350,9 +350,9 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> _updateRevisionTransactionStatuses(String driveId) async {
     final unconfirmedFolderRevisions =
-        await _driveDao.selectUnconfirmedFolderRevisions(driveId).get();
+        await _driveDao.pendingFolderRevisionsInDrive(driveId).get();
     final unconfirmedFileRevisions =
-        await _driveDao.selectUnconfirmedFileRevisions(driveId).get();
+        await _driveDao.pendingFileRevisionsInDrive(driveId).get();
 
     // Construct a list of revisions with transactions that are unconfirmed,
     // filtering out ones that are already confirmed.

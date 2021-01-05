@@ -10,13 +10,17 @@ driveById: SELECT * FROM drives WHERE id = :driveId;
 folderById: SELECT * FROM folder_entries WHERE driveId = :driveId AND id = :folderId;
 foldersInFolder: SELECT * FROM folder_entries WHERE driveId = :driveId AND parentFolderId = :parentFolderId;
 foldersInFolderWithName: SELECT * FROM folder_entries WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;
+
 oldestFolderRevisionByFolderId: SELECT * FROM folder_revisions WHERE driveId = :driveId AND folderId = :folderId ORDER BY dateCreated ASC LIMIT 1;
 latestFolderRevisionsByFolderId: SELECT * FROM folder_revisions WHERE driveId = :driveId AND folderId = :folderId ORDER BY dateCreated DESC;
 latestFolderRevisionByFolderId: SELECT * FROM folder_revisions WHERE driveId = :driveId AND folderId = :folderId ORDER BY dateCreated DESC LIMIT 1;
+pendingFolderRevisionsInDrive: SELECT * FROM folder_revisions WHERE driveId = :driveId AND metadataTxStatus = 'pending';
 
 fileById: SELECT * FROM file_entries WHERE driveId = :driveId AND id = :fileId;
 filesInFolder: SELECT * FROM file_entries WHERE driveId = :driveId AND parentFolderId = :parentFolderId;
 filesInFolderWithName: SELECT * FROM file_entries WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;
+
 oldestFileRevisionByFileId: SELECT * FROM file_revisions WHERE driveId = :driveId AND fileId = :fileId ORDER BY dateCreated ASC LIMIT 1;
 latestFileRevisionsByFileId: SELECT * FROM file_revisions WHERE driveId = :driveId AND fileId = :fileId ORDER BY dateCreated DESC;
 latestFileRevisionByFileId: SELECT * FROM file_revisions WHERE driveId = :driveId AND fileId = :fileId ORDER BY dateCreated DESC LIMIT 1;
+pendingFileRevisionsInDrive: SELECT * FROM file_revisions WHERE driveId = :driveId AND (metadataTxStatus = 'pending' OR dataTxStatus = 'pending');

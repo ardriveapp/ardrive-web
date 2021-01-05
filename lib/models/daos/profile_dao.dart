@@ -13,18 +13,15 @@ const keyByteLength = 256 ~/ 8;
 
 class ProfilePasswordIncorrectException implements Exception {}
 
-@UseDao(include: {'../tables/profiles.moor'})
+@UseDao(include: {'../queries/profile_queries.moor'})
 class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   ProfileDao(Database db) : super(db);
-
-  SimpleSelectStatement<Profiles, Profile> selectDefaultProfile() =>
-      select(profiles);
 
   /// Loads the default profile with the provided password.
   ///
   /// Throws a [ProfilePasswordIncorrectException] if the provided password is incorrect.
   Future<ProfileLoadDetails> loadDefaultProfile(String password) async {
-    final profile = await selectDefaultProfile().getSingle();
+    final profile = await defaultProfile().getSingle();
 
     if (profile == null) {
       return null;
@@ -53,8 +50,6 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       throw ProfilePasswordIncorrectException();
     }
   }
-
-  Future<List<Profile>> getProfiles() => select(profiles).get();
 
   /// Adds the specified profile and returns a profile key that was used to encrypt the user's wallet
   /// and can be used to encrypt the user's drive keys.
