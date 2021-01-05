@@ -24,7 +24,7 @@ class _AppShellState extends State<AppShell> {
         builder: (context, state) => Scaffold(
           appBar: AppBar(
             title: Image.asset(
-              R.images.logoHorizontalNoSubtitle,
+              R.images.brand.logoHorizontalNoSubtitle,
               height: 64,
               fit: BoxFit.contain,
             ),
