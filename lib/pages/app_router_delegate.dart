@@ -178,7 +178,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   create: (context) => DrivesCubit(
                     initialSelectedDriveId: driveId,
                     profileCubit: context.read<ProfileCubit>(),
-                    drivesDao: context.read<DrivesDao>(),
+                    driveDao: context.read<DriveDao>(),
                   ),
                 ),
               ],
