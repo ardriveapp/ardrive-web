@@ -4,6 +4,9 @@ import 'package:moor/moor.dart';
 
 @immutable
 class AppRoutePath {
+  /// Whether or not the user is trying to sign in.
+  final bool signingIn;
+
   final String driveId;
   final String driveFolderId;
 
@@ -16,12 +19,16 @@ class AppRoutePath {
   final String sharedRawFileKey;
 
   AppRoutePath({
+    this.signingIn = false,
     this.driveId,
     this.driveFolderId,
     this.sharedFileId,
     this.sharedFileKey,
     this.sharedRawFileKey,
   });
+
+  /// Creates a route that lets the user sign in.
+  factory AppRoutePath.signIn() => AppRoutePath(signingIn: true);
 
   /// Creates a route that points to a particular drive.
   factory AppRoutePath.driveDetail({@required String driveId}) =>

@@ -15,7 +15,7 @@ class ProfileCheckingAvailability extends ProfileState {}
 abstract class ProfileAvailable extends ProfileState {}
 
 /// [ProfileUnavailable] is a superclass state that indicates that
-/// the user no profile that can/has been logged into.
+/// the user has no profile to log into.
 abstract class ProfileUnavailable extends ProfileState {}
 
 class ProfilePromptLogIn extends ProfileAvailable {}

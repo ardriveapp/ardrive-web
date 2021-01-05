@@ -17,6 +17,8 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
     }
 
     switch (uri.pathSegments.first) {
+      case 'sign-in':
+        return AppRoutePath.signIn();
       case 'drives':
         if (uri.pathSegments.length > 1) {
           final driveId = uri.pathSegments[1];
@@ -60,7 +62,9 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
 
   @override
   RouteInformation restoreRouteInformation(AppRoutePath path) {
-    if (path.driveId != null) {
+    if (path.signingIn) {
+      return RouteInformation(location: '/sign-in');
+    } else if (path.driveId != null) {
       return path.driveFolderId == null
           ? RouteInformation(location: '/drives/${path.driveId}')
           : RouteInformation(

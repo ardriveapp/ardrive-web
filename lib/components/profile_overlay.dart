@@ -43,11 +43,16 @@ class ProfileOverlay extends StatelessWidget {
                               ),
                             ],
                           ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.logout),
-                            tooltip: 'Logout',
-                            onPressed: () =>
-                                context.read<ProfileCubit>().logoutProfile(),
+                          trailing: Link(
+                            uri: Uri(path: '/sign-in'),
+                            builder: (context, redirectToSignIn) => IconButton(
+                              icon: const Icon(Icons.logout),
+                              tooltip: 'Logout',
+                              onPressed: () {
+                                redirectToSignIn();
+                                context.read<ProfileCubit>().logoutProfile();
+                              },
+                            ),
                           ),
                         )
                       : ListTile(
@@ -56,7 +61,7 @@ class ProfileOverlay extends StatelessWidget {
                           subtitle: Text(
                               'Log in to experience all of ArDrive\'s features!'),
                           trailing: Link(
-                            uri: Uri(path: '/'),
+                            uri: Uri(path: '/sign-in'),
                             builder: (context, onPressed) => IconButton(
                               icon: const Icon(Icons.login),
                               tooltip: 'Login',
