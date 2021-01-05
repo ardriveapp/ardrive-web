@@ -21,8 +21,6 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
 
   SimpleSelectStatement<Drives, Drive> selectAllDrives() => select(drives);
 
-  Future<List<Drive>> getAllDrives() => selectAllDrives().get();
-
   Stream<List<Drive>> watchAllDrives() =>
       (selectAllDrives()..orderBy([(d) => OrderingTerm(expression: d.name)]))
           .watch();

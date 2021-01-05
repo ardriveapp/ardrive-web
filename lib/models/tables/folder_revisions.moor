@@ -8,7 +8,7 @@ CREATE TABLE folder_revisions (
     parentFolderId TEXT,
 
     metadataTxId TEXT NOT NULL,
-    metadataTxStatus TEXT NOT NULL,
+    metadataTxStatus TEXT NOT NULL DEFAULT 'pending',
 
     dateCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     

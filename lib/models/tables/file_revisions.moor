@@ -10,10 +10,10 @@ CREATE TABLE file_revisions (
     lastModifiedDate DATETIME NOT NULL,
 
     metadataTxId TEXT NOT NULL,
-    metadataTxStatus TEXT NOT NULL,
+    metadataTxStatus TEXT NOT NULL DEFAULT 'pending',
 
     dataTxId TEXT NOT NULL,
-    dataTxStatus TEXT NOT NULL,
+    dataTxStatus TEXT NOT NULL DEFAULT 'pending',
 
     dateCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
