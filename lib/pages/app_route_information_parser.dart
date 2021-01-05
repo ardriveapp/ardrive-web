@@ -18,6 +18,7 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
 
     switch (uri.pathSegments.first) {
       case 'sign-in':
+        // Handle '/sign-in'
         return AppRoutePath.signIn();
       case 'drives':
         if (uri.pathSegments.length > 1) {

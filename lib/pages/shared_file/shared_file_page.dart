@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +29,7 @@ class SharedFilePage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/images/brand/logo-vert-no-subtitle.png',
+                      R.images.brand.logoVerticalNoSubtitle,
                       height: 96,
                       fit: BoxFit.contain,
                     ),
