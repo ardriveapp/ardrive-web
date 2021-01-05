@@ -1,0 +1,10 @@
+import '../tables/drives.moor';
+import '../tables/folder_entries.moor';
+import '../tables/file_entries.moor';
+
+allDrives: SELECT * FROM drives;
+driveById: SELECT * FROM drives WHERE id = :driveId;
+
+folderById: SELECT * FROM folder_entries WHERE driveId = :driveId AND id = :folderId;
+
+fileById: SELECT * FROM file_entries WHERE driveId = :driveId AND id = :fileId;

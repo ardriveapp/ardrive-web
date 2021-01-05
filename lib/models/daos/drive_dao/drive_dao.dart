@@ -16,7 +16,7 @@ part 'folder_node.dart';
 part 'folder_with_contents.dart';
 
 @UseDao(include: {
-  '../../tables/drives.moor',
+  '../../queries/drive_queries.moor',
   '../../tables/folder_entries.moor',
   '../../tables/folder_revisions.moor',
   '../../tables/file_entries.moor',
@@ -27,20 +27,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   DriveDao(Database db) : super(db);
 
-  SimpleSelectStatement<Drives, Drive> selectDriveById(String driveId) =>
-      select(drives)..where((d) => d.id.equals(driveId));
-
-  Future<Drive> getDriveById(String driveId) =>
-      selectDriveById(driveId).getSingle();
-
-  Stream<Drive> watchDriveById(String driveId) =>
-      selectDriveById(driveId).watchSingle();
-
   /// Returns the encryption key for the specified drive.
   ///
   /// `null` if the drive is public and unencrypted.
   Future<SecretKey> getDriveKey(String driveId, SecretKey profileKey) async {
-    final drive = await getDriveById(driveId);
+    final drive = await driveById(driveId).getSingle();
 
     if (drive.encryptedKey == null) {
       return null;
@@ -73,17 +64,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<void> writeToDrive(Insertable<Drive> drive) =>
       (update(drives)..whereSamePrimaryKey(drive)).write(drive);
-
-  SimpleSelectStatement<FolderEntries, FolderEntry> selectFolderById(
-          String driveId, String folderId) =>
-      (select(folderEntries)
-        ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)));
-
-  Future<FolderEntry> getFolderById(String driveId, String folderId) =>
-      selectFolderById(driveId, folderId).getSingle();
-
-  Stream<FolderEntry> watchFolderById(String driveId, String folderId) =>
-      selectFolderById(driveId, folderId).watchSingle();
 
   SimpleSelectStatement<FolderEntries, FolderEntry>
       selectFoldersByParentFolderId(String driveId, String parentFolderId) =>
@@ -205,7 +185,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   /// Constructs a tree of folders and files that are children of the specified folder.
   Future<FolderNode> getFolderTree(String driveId, String rootFolderId) async {
-    final rootFolder = await getFolderById(driveId, rootFolderId);
+    final rootFolder = await folderById(driveId, rootFolderId).getSingle();
 
     Future<FolderNode> getFolderChildren(FolderEntry parentFolder) async {
       final subfolders =
@@ -229,19 +209,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     return getFolderChildren(rootFolder);
   }
-
-  SimpleSelectStatement<FileEntries, FileEntry> selectFileById(
-          String driveId, String fileId) =>
-      (select(fileEntries)
-        ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)));
-
-  Future<FileEntry> getFileById(String driveId, String fileId) =>
-      selectFileById(driveId, fileId).getSingle();
-
-  Stream<FileEntry> watchFileById(String driveId, String fileId) =>
-      (select(fileEntries)
-            ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)))
-          .watchSingle();
 
   SimpleSelectStatement<FileEntries, FileEntry> selectFileInFolderByName(
           String driveId, String folderId, String fileName) =>

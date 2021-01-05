@@ -29,8 +29,8 @@ class FileShareCubit extends Cubit<FileShareState> {
   Future<void> loadFileShareDetails() async {
     emit(FileShareLoadInProgress());
 
-    final drive = await _driveDao.getDriveById(driveId);
-    final file = await _driveDao.getFileById(driveId, fileId);
+    final drive = await _driveDao.driveById(driveId).getSingle();
+    final file = await _driveDao.fileById(driveId, fileId).getSingle();
 
     final isPublicFile = drive.isPublic;
 

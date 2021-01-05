@@ -24,29 +24,31 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
       : _driveDao = driveDao,
         super(FsEntryInfoInitial()) {
     if (folderId != null) {
-      _entrySubscription = _driveDao.watchFolderById(driveId, folderId).listen(
-            (f) => emit(
-              FsEntryInfoSuccess<FolderEntry>(
-                name: f.name,
-                lastUpdated: f.lastUpdated,
-                dateCreated: f.dateCreated,
-                entry: f,
-              ),
-            ),
-          );
+      _entrySubscription =
+          _driveDao.folderById(driveId, folderId).watchSingle().listen(
+                (f) => emit(
+                  FsEntryInfoSuccess<FolderEntry>(
+                    name: f.name,
+                    lastUpdated: f.lastUpdated,
+                    dateCreated: f.dateCreated,
+                    entry: f,
+                  ),
+                ),
+              );
     } else if (fileId != null) {
-      _entrySubscription = _driveDao.watchFileById(driveId, fileId).listen(
-            (f) => emit(
-              FsEntryInfoSuccess<FileEntry>(
-                name: f.name,
-                lastUpdated: f.lastUpdated,
-                dateCreated: f.dateCreated,
-                entry: f,
-              ),
-            ),
-          );
+      _entrySubscription =
+          _driveDao.fileById(driveId, fileId).watchSingle().listen(
+                (f) => emit(
+                  FsEntryInfoSuccess<FileEntry>(
+                    name: f.name,
+                    lastUpdated: f.lastUpdated,
+                    dateCreated: f.dateCreated,
+                    entry: f,
+                  ),
+                ),
+              );
     } else {
-      _entrySubscription = _driveDao.watchDriveById(driveId).listen(
+      _entrySubscription = _driveDao.driveById(driveId).watchSingle().listen(
             (d) => emit(
               FsEntryInfoSuccess<Drive>(
                 name: d.name,

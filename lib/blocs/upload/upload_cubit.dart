@@ -56,8 +56,8 @@ class UploadCubit extends Cubit<UploadState> {
         _pst = pst,
         super(UploadPreparationInProgress()) {
     () async {
-      _targetDrive = await _driveDao.getDriveById(driveId);
-      _targetFolder = await _driveDao.getFolderById(driveId, folderId);
+      _targetDrive = await _driveDao.driveById(driveId).getSingle();
+      _targetFolder = await _driveDao.folderById(driveId, folderId).getSingle();
 
       unawaited(checkConflictingFiles());
     }();

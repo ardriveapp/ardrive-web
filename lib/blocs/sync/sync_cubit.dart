@@ -62,8 +62,7 @@ class SyncCubit extends Cubit<SyncState> {
       }
 
       // Sync the contents of each drive attached in the app.
-      final driveIds =
-          await _drivesDao.selectAllDrives().map((d) => d.id).get();
+      final driveIds = await _driveDao.allDrives().map((d) => d.id).get();
       final driveSyncProcesses = driveIds.map((driveId) => _syncDrive(driveId));
       await Future.wait(driveSyncProcesses);
     } catch (err) {
@@ -74,7 +73,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> _syncDrive(String driveId) async {
-    final drive = await _driveDao.getDriveById(driveId);
+    final drive = await _driveDao.driveById(driveId).getSingle();
 
     SecretKey driveKey;
     if (drive.isPrivate) {
@@ -314,7 +313,7 @@ class SyncCubit extends Cubit<SyncState> {
         parentPath = '';
       } else {
         parentPath = await _driveDao
-            .selectFolderById(driveId, treeRoot.folder.parentFolderId)
+            .folderById(driveId, treeRoot.folder.parentFolderId)
             .map((f) => f.path)
             .getSingle();
       }
@@ -327,7 +326,7 @@ class SyncCubit extends Cubit<SyncState> {
         .where((f) => !foldersByIdMap.containsKey(f.parentFolderId));
     for (final staleOrphanFile in staleOrphanFiles) {
       final parentPath = await _driveDao
-          .selectFolderById(driveId, staleOrphanFile.parentFolderId.value)
+          .folderById(driveId, staleOrphanFile.parentFolderId.value)
           .map((f) => f.path)
           .getSingle();
 

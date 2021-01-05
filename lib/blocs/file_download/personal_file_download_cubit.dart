@@ -25,8 +25,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
   Future<void> download() async {
     try {
-      final drive = await _driveDao.getDriveById(driveId);
-      final file = await _driveDao.getFileById(driveId, fileId);
+      final drive = await _driveDao.driveById(driveId).getSingle();
+      final file = await _driveDao.fileById(driveId, fileId).getSingle();
 
       emit(FileDownloadInProgress(
           fileName: file.name, totalByteCount: file.size));
