@@ -17,6 +17,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
+  final DrivesDao _drivesDao;
   final ProfileCubit _profileCubit;
 
   StreamSubscription _folderSubscription;
@@ -29,14 +30,19 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
     this.fileId,
     @required ArweaveService arweave,
     @required DriveDao driveDao,
+    @required DrivesDao drivesDao,
     @required ProfileCubit profileCubit,
   })  : _arweave = arweave,
         _driveDao = driveDao,
+        _drivesDao = drivesDao,
         _profileCubit = profileCubit,
         assert(folderId != null || fileId != null),
         super(
             FsEntryMoveFolderLoadInProgress(isMovingFolder: folderId != null)) {
-    _driveDao.getDriveById(driveId).then((d) => loadFolder(d.rootFolderId));
+    _drivesDao
+        .driveById(driveId)
+        .getSingle()
+        .then((d) => loadFolder(d.rootFolderId));
   }
 
   Future<void> loadParentFolder() {

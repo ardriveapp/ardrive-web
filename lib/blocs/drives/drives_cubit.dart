@@ -27,7 +27,7 @@ class DrivesCubit extends Cubit<DrivesState> {
         _drivesDao = drivesDao,
         super(DrivesLoadInProgress()) {
     _drivesSubscription = Rx.combineLatest2<List<Drive>, void, List<Drive>>(
-      _drivesDao.watchAllDrives(),
+      _drivesDao.allDrives().watch(),
       _profileCubit.startWith(null),
       (drives, _) => drives,
     ).listen((drives) {

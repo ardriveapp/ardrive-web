@@ -13,15 +13,18 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
   final String fileId;
 
   final DriveDao _driveDao;
+  final DrivesDao _drivesDao;
 
   StreamSubscription _entrySubscription;
 
-  FsEntryInfoCubit(
-      {@required this.driveId,
-      this.folderId,
-      this.fileId,
-      @required DriveDao driveDao})
-      : _driveDao = driveDao,
+  FsEntryInfoCubit({
+    @required this.driveId,
+    this.folderId,
+    this.fileId,
+    @required DriveDao driveDao,
+    @required DrivesDao drivesDao,
+  })  : _driveDao = driveDao,
+        _drivesDao = drivesDao,
         super(FsEntryInfoInitial()) {
     if (folderId != null) {
       _entrySubscription = _driveDao.watchFolderById(driveId, folderId).listen(
@@ -46,7 +49,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
             ),
           );
     } else {
-      _entrySubscription = _driveDao.watchDriveById(driveId).listen(
+      _entrySubscription = _drivesDao.driveById(driveId).watchSingle().listen(
             (d) => emit(
               FsEntryInfoSuccess<Drive>(
                 name: d.name,

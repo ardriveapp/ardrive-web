@@ -27,6 +27,7 @@ class UploadCubit extends Cubit<UploadState> {
   final _uuid = Uuid();
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
+  final DrivesDao _drivesDao;
   final ArweaveService _arweave;
   final PstService _pst;
 
@@ -48,15 +49,17 @@ class UploadCubit extends Cubit<UploadState> {
     @required this.files,
     @required ProfileCubit profileCubit,
     @required DriveDao driveDao,
+    @required DrivesDao drivesDao,
     @required ArweaveService arweave,
     @required PstService pst,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
+        _drivesDao = drivesDao,
         _arweave = arweave,
         _pst = pst,
         super(UploadPreparationInProgress()) {
     () async {
-      _targetDrive = await _driveDao.getDriveById(driveId);
+      _targetDrive = await _drivesDao.driveById(driveId).getSingle();
       _targetFolder = await _driveDao.getFolderById(driveId, folderId);
 
       unawaited(checkConflictingFiles());
