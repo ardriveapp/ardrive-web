@@ -6,8 +6,6 @@ import 'package:ardrive/services/services.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_portal/flutter_portal.dart';
-import 'package:url_launcher/link.dart';
 
 import '../app_shell.dart';
 
@@ -93,18 +91,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               builder: (context, state) {
                 Widget shellPage;
                 if (state is DrivesLoadSuccess) {
-                  shellPage = !state.hasNoDrives
-                      ? DriveDetailPage()
-                      : Center(
-                          child: Text(
-                            'You have no personal or attached drives.\nClick the "new" button to add some!',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context).textTheme.headline6,
-                          ),
-                        );
-                } else {
-                  shellPage = const SizedBox();
+                  shellPage =
+                      !state.hasNoDrives ? DriveDetailPage() : NoDrivesPage();
                 }
+
+                shellPage ??= const SizedBox();
 
                 return BlocProvider(
                   key: ValueKey(driveId),
@@ -132,23 +123,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                             context: context, initialDriveId: driveId);
                       }
                     },
-                    child: PortalEntry(
-                        portal: Link(
-                          uri: Uri.parse('https://ardrive.io/faq/'),
-                          target: LinkTarget.blank,
-                          builder: (context, onPressed) => Padding(
-                            padding:
-                                const EdgeInsets.only(right: 16, bottom: 16),
-                            child: FloatingActionButton(
-                              child: const Icon(Icons.help_outline),
-                              tooltip: 'Help',
-                              onPressed: onPressed,
-                            ),
-                          ),
-                        ),
-                        portalAnchor: Alignment.bottomRight,
-                        childAnchor: Alignment.bottomRight,
-                        child: AppShell(page: shellPage)),
+                    child: FloatingHelpButtonPortalEntry(
+                      child: AppShell(page: shellPage),
+                    ),
                   ),
                 );
               },
@@ -163,9 +140,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               ),
               child: SharedFilePage(),
             );
-          } else {
-            shell = const SizedBox();
           }
+
+          shell ??= const SizedBox();
 
           final navigator = Navigator(
             key: navigatorKey,
