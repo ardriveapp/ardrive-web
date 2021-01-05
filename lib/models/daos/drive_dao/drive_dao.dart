@@ -160,14 +160,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return id;
   }
 
-  SimpleSelectStatement<FolderEntries, FolderEntry> selectFolderInFolderByName(
-          String driveId, String folderId, String folderName) =>
-      (select(folderEntries)
-        ..where((f) =>
-            f.driveId.equals(driveId) &
-            f.parentFolderId.equals(folderId) &
-            f.name.equals(folderName)));
-
   UpdateStatement<FolderEntries, FolderEntry> updateFolderById(
           String driveId, String folderId) =>
       update(folderEntries)
@@ -181,8 +173,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     final rootFolder = await folderById(driveId, rootFolderId).getSingle();
 
     Future<FolderNode> getFolderChildren(FolderEntry parentFolder) async {
-      final subfolders =
-          await foldersWithParentFolder(driveId, parentFolder.id).get();
+      final subfolders = await foldersInFolder(driveId, parentFolder.id).get();
 
       return FolderNode(
         folder: parentFolder,
@@ -190,7 +181,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         subfolders:
             await Future.wait(subfolders.map((f) => getFolderChildren(f))),
         files: {
-          await for (var f in filesWithParentFolder(driveId, parentFolder.id)
+          await for (var f in filesInFolder(driveId, parentFolder.id)
               .get()
               .asStream()
               .expand((f) => f))
@@ -201,14 +192,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     return getFolderChildren(rootFolder);
   }
-
-  SimpleSelectStatement<FileEntries, FileEntry> selectFileInFolderByName(
-          String driveId, String folderId, String fileName) =>
-      (select(fileEntries)
-        ..where((f) =>
-            f.driveId.equals(driveId) &
-            f.parentFolderId.equals(folderId) &
-            f.name.equals(fileName)));
 
   UpdateStatement<FileEntries, FileEntry> updateFileById(
           String driveId, String fileId) =>

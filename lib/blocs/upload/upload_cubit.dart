@@ -73,7 +73,7 @@ class UploadCubit extends Cubit<UploadState> {
     for (final file in files) {
       final fileName = basename(file.path);
       final existingFileId = await _driveDao
-          .selectFileInFolderByName(
+          .filesInFolderWithName(
             _targetDrive.id,
             _targetFolder.id,
             fileName,

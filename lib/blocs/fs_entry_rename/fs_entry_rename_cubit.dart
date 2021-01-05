@@ -127,8 +127,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
     // Check that the current folder does not already have a folder with the target file name.
     final foldersWithName = await _driveDao
-        .selectFolderInFolderByName(
-            driveId, folder.parentFolderId, newFolderName)
+        .foldersInFolderWithName(driveId, folder.parentFolderId, newFolderName)
         .get();
     final nameAlreadyExists = foldersWithName.isNotEmpty;
 
@@ -151,7 +150,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
     // Check that the current folder does not already have a file with the target file name.
     final filesWithName = await _driveDao
-        .selectFileInFolderByName(driveId, file.parentFolderId, newFileName)
+        .filesInFolderWithName(driveId, file.parentFolderId, newFileName)
         .get();
     final nameAlreadyExists = filesWithName.isNotEmpty;
 
