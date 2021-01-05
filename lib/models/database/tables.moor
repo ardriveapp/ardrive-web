@@ -1,0 +1,90 @@
+CREATE TABLE drives (
+    id TEXT NOT NULL PRIMARY KEY,
+    rootFolderId TEXT NOT NULL,
+
+    ownerAddress TEXT NOT NULL,
+
+    name TEXT NOT NULL,
+
+    latestSyncedBlock INTEGER DEFAULT 0,
+
+    privacy TEXT NOT NULL,
+
+    encryptedKey BLOB,
+    keyEncryptionIv BLOB,
+
+    dateCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    lastUpdated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE folder_entries (
+    id TEXT NOT NULL,
+    driveId TEXT NOT NULL,
+
+    name TEXT NOT NULL,
+    parentFolderId TEXT,
+    path TEXT NOT NULL,
+
+    dateCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    lastUpdated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id, driveId)
+) As FolderEntry;
+
+CREATE TABLE file_entries (
+    id TEXT NOT NULL,
+    driveId TEXT NOT NULL,
+
+    name TEXT NOT NULL,
+    parentFolderId TEXT NOT NULL,
+    path TEXT NOT NULL,
+
+    size INTEGER NOT NULL,
+    lastModifiedDate DATETIME NOT NULL,
+
+    dataTxId TEXT NOT NULL,
+
+    dateCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    lastUpdated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id, driveId)
+) AS FileEntry;
+
+CREATE TABLE folder_revisions (
+    id TEXT NOT NULL PRIMARY KEY,
+
+    folderId TEXT NOT NULL,
+    driveId TEXT NOT NULL,
+
+    name TEXT NOT NULL,
+    parentFolderId TEXT NOT NULL,
+
+    metadataTxId TEXT NOT NULL,
+    metadataTxStatus TEXT NOT NULL,
+
+    dateCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    [action] TEXT NOT NULL
+);
+
+CREATE TABLE file_revisions (
+    id TEXT NOT NULL PRIMARY KEY,
+
+    fileId TEXT NOT NULL,
+    driveId TEXT NOT NULL,
+
+    name TEXT NOT NULL,
+    parentFolderId TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    lastModifiedDate DATETIME NOT NULL,
+
+    metadataTxId TEXT NOT NULL,
+    metadataTxStatus TEXT NOT NULL,
+
+    dataTxId TEXT NOT NULL,
+    dataTxStatus TEXT NOT NULL,
+
+    dateCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    [action] TEXT NOT NULL
+);

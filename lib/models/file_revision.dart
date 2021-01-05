@@ -1,38 +1,6 @@
 import 'package:ardrive/entities/entities.dart';
-import 'package:moor/moor.dart';
 
 import 'models.dart';
-
-@DataClassName('FileRevision')
-class FileRevisions extends Table {
-  /// The ID of revisions should always be the ID of its metadata transaction.
-  TextColumn get id => text()();
-
-  TextColumn get fileId => text()();
-  TextColumn get driveId => text()();
-  TextColumn get parentFolderId => text()();
-
-  TextColumn get name => text().withLength(min: 1)();
-  IntColumn get size => integer()();
-  DateTimeColumn get lastModifiedDate => dateTime()();
-
-  TextColumn get metadataTxId => text()();
-  TextColumn get metadataTxStatus =>
-      text().withDefault(const Constant(TransactionStatus.pending))();
-
-  TextColumn get dataTxId => text()();
-  TextColumn get dataTxStatus =>
-      text().withDefault(const Constant(TransactionStatus.pending))();
-
-  /// The date on which this revision was created.
-  DateTimeColumn get dateCreated =>
-      dateTime().clientDefault(() => DateTime.now())();
-
-  TextColumn get action => text()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
 
 extension FileRevisionExtensions on FileRevision {
   String get confirmationStatus {
