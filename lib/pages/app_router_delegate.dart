@@ -29,6 +29,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   @override
   AppRoutePath get currentConfiguration => AppRoutePath(
+        signingIn: signingIn,
         driveId: driveId,
         driveFolderId: driveFolderId,
         sharedFileId: sharedFileId,
