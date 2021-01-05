@@ -5,7 +5,7 @@ CREATE TABLE folder_revisions (
     driveId TEXT NOT NULL,
 
     name TEXT NOT NULL,
-    parentFolderId TEXT NOT NULL,
+    parentFolderId TEXT,
 
     metadataTxId TEXT NOT NULL,
     metadataTxStatus TEXT NOT NULL,
