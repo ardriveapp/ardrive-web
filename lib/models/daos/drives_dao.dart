@@ -10,7 +10,7 @@ import '../models.dart';
 part 'drives_dao.g.dart';
 
 @UseDao(include: {
-  '../queries/drive_queries.moor',
+  '../tables/drives.moor',
   '../tables/folder_entries.moor',
   '../tables/file_entries.moor'
 })
@@ -18,6 +18,14 @@ class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
   final uuid = Uuid();
 
   DrivesDao(Database db) : super(db);
+
+  SimpleSelectStatement<Drives, Drive> selectAllDrives() => select(drives);
+
+  Future<List<Drive>> getAllDrives() => selectAllDrives().get();
+
+  Stream<List<Drive>> watchAllDrives() =>
+      (selectAllDrives()..orderBy([(d) => OrderingTerm(expression: d.name)]))
+          .watch();
 
   /// Creates a drive with its accompanying root folder.
   Future<CreateDriveResult> createDrive({

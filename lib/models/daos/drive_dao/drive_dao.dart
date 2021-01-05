@@ -33,6 +33,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<Drive> getDriveById(String driveId) =>
       selectDriveById(driveId).getSingle();
 
+  Stream<Drive> watchDriveById(String driveId) =>
+      selectDriveById(driveId).watchSingle();
+
   /// Returns the encryption key for the specified drive.
   ///
   /// `null` if the drive is public and unencrypted.

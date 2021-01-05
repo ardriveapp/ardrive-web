@@ -1,4 +1,0 @@
-import '../tables/drives.moor';
-
-allDrives: SELECT * FROM drives;
-driveById: SELECT * FROM drives WHERE id = :id;

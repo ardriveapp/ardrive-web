@@ -17,7 +17,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final String driveId;
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
-  final DrivesDao _drivesDao;
   final AppConfig _config;
 
   StreamSubscription _folderSubscription;
@@ -27,11 +26,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     String initialFolderId,
     @required ProfileCubit profileCubit,
     @required DriveDao driveDao,
-    @required DrivesDao drivesDao,
     @required AppConfig config,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
-        _drivesDao = drivesDao,
         _config = config,
         super(DriveDetailLoadInProgress()) {
     if (driveId == null) {
@@ -60,7 +57,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     _folderSubscription =
         Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
-      _drivesDao.driveById(driveId).watchSingle(),
+      _driveDao.watchDriveById(driveId),
       _driveDao.watchFolderContents(driveId,
           folderPath: path,
           orderBy: contentOrderBy,

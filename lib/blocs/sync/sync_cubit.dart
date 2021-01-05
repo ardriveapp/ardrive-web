@@ -62,7 +62,8 @@ class SyncCubit extends Cubit<SyncState> {
       }
 
       // Sync the contents of each drive attached in the app.
-      final driveIds = await _drivesDao.allDrives().map((d) => d.id).get();
+      final driveIds =
+          await _drivesDao.selectAllDrives().map((d) => d.id).get();
       final driveSyncProcesses = driveIds.map((driveId) => _syncDrive(driveId));
       await Future.wait(driveSyncProcesses);
     } catch (err) {
@@ -73,7 +74,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> _syncDrive(String driveId) async {
-    final drive = await _drivesDao.driveById(driveId).getSingle();
+    final drive = await _driveDao.getDriveById(driveId);
 
     SecretKey driveKey;
     if (drive.isPrivate) {

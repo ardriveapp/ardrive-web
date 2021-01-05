@@ -8,7 +8,6 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
-  final DrivesDao _drivesDao;
   final ArweaveService _arweave;
 
   ProfileFileDownloadCubit({
@@ -16,11 +15,9 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     @required this.fileId,
     @required ProfileCubit profileCubit,
     @required DriveDao driveDao,
-    @required DrivesDao drivesDao,
     @required ArweaveService arweave,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
-        _drivesDao = drivesDao,
         _arweave = arweave,
         super(FileDownloadStarting()) {
     download();
@@ -28,7 +25,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
   Future<void> download() async {
     try {
-      final drive = await _drivesDao.driveById(driveId).getSingle();
+      final drive = await _driveDao.getDriveById(driveId);
       final file = await _driveDao.getFileById(driveId, fileId);
 
       emit(FileDownloadInProgress(

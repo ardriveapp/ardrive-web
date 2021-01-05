@@ -54,6 +54,8 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     }
   }
 
+  Future<List<Profile>> getProfiles() => select(profiles).get();
+
   /// Adds the specified profile and returns a profile key that was used to encrypt the user's wallet
   /// and can be used to encrypt the user's drive keys.
   Future<SecretKey> addProfile(

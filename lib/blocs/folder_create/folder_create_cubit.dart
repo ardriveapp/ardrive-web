@@ -27,7 +27,6 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
-  final DrivesDao _drivesDao;
 
   FolderCreateCubit({
     @required this.targetDriveId,
@@ -35,11 +34,9 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     @required ProfileCubit profileCubit,
     @required ArweaveService arweave,
     @required DriveDao driveDao,
-    @required DrivesDao drivesDao,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _driveDao = driveDao,
-        _drivesDao = drivesDao,
         super(FolderCreateInitial());
 
   Future<void> submit() async {
@@ -56,8 +53,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
       final String folderName = form.control('name').value;
 
       await _driveDao.transaction(() async {
-        final targetDrive =
-            await _drivesDao.driveById(targetDriveId).getSingle();
+        final targetDrive = await _driveDao.getDriveById(targetDriveId);
         final targetFolder =
             await _driveDao.getFolderById(targetDriveId, targetFolderId);
 
