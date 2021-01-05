@@ -15,13 +15,13 @@ part 'drive_order.dart';
 part 'folder_node.dart';
 part 'folder_with_contents.dart';
 
-@UseDao(tables: [
-  Drives,
-  FolderEntries,
-  FolderRevisions,
-  FileEntries,
-  FileRevisions
-])
+@UseDao(include: {
+  '../../tables/drives.moor',
+  '../../tables/folder_entries.moor',
+  '../../tables/folder_revisions.moor',
+  '../../tables/file_entries.moor',
+  '../../tables/file_revisions.moor'
+})
 class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   final _uuid = Uuid();
 

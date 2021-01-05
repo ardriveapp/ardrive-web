@@ -1,0 +1,16 @@
+CREATE TABLE folder_revisions (
+    id TEXT NOT NULL PRIMARY KEY,
+
+    folderId TEXT NOT NULL,
+    driveId TEXT NOT NULL,
+
+    name TEXT NOT NULL,
+    parentFolderId TEXT NOT NULL,
+
+    metadataTxId TEXT NOT NULL,
+    metadataTxStatus TEXT NOT NULL,
+
+    dateCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    [action] TEXT NOT NULL
+);

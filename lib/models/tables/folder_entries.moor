@@ -1,0 +1,13 @@
+CREATE TABLE folder_entries (
+    id TEXT NOT NULL,
+    driveId TEXT NOT NULL,
+
+    name TEXT NOT NULL,
+    parentFolderId TEXT,
+    path TEXT NOT NULL,
+
+    dateCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    lastUpdated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id, driveId)
+) As FolderEntry;

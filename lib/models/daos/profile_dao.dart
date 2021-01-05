@@ -13,7 +13,7 @@ const keyByteLength = 256 ~/ 8;
 
 class ProfilePasswordIncorrectException implements Exception {}
 
-@UseDao(tables: [Profiles])
+@UseDao(include: {'../tables/profiles.moor'})
 class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   ProfileDao(Database db) : super(db);
 
