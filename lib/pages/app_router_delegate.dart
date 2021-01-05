@@ -13,6 +13,8 @@ import '../app_shell.dart';
 
 class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppRoutePath> {
+  bool signingIn;
+
   String driveId;
   String driveFolderId;
 
@@ -20,8 +22,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   SecretKey sharedFileKey;
   String sharedRawFileKey;
 
-  bool get isViewingDrive => driveId != null;
-
+  bool canAnonymouslyShowDriveDetail(ProfileState profileState) =>
+      profileState is ProfileUnavailable && tryingToViewDrive;
+  bool get tryingToViewDrive => driveId != null;
   bool get isViewingSharedFile => sharedFileId != null;
 
   @override
@@ -39,31 +42,35 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   AppRouterDelegate() : navigatorKey = GlobalKey<NavigatorState>();
 
   @override
-  Widget build(BuildContext context) => BlocBuilder<ProfileCubit, ProfileState>(
+  Widget build(BuildContext context) =>
+      BlocConsumer<ProfileCubit, ProfileState>(
+        listener: (context, state) {
+          if (state is! ProfileLoggedIn &&
+              !signingIn &&
+              !canAnonymouslyShowDriveDetail(state)) {
+            signingIn = true;
+            notifyListeners();
+          }
+
+          // Redirect the user away from sign in if they are already signed in.
+          if (signingIn && state is ProfileLoggedIn) {
+            signingIn = false;
+            notifyListeners();
+          }
+        },
         builder: (context, state) {
           Widget shell;
 
-          // Only prompt the user to log in if they do not have a profile and are not trying to view a linked drive.
-          final showAuthPage = state is! ProfileLoggedIn &&
-              !(state is ProfileUnavailable && isViewingDrive);
+          final anonymouslyShowDriveDetail =
+              canAnonymouslyShowDriveDetail(state);
 
           // Show an alert if the screen size is too small as the app is not fully responsive yet.
           final screenNotSupported = MediaQuery.of(context).size.width <= 576;
           if (screenNotSupported) {
             shell = ScreenNotSupportedPage();
-          } else if (isViewingSharedFile) {
-            shell = BlocProvider<SharedFileCubit>(
-              key: ValueKey(sharedFileId),
-              create: (_) => SharedFileCubit(
-                fileId: sharedFileId,
-                fileKey: sharedFileKey,
-                arweave: context.read<ArweaveService>(),
-              ),
-              child: SharedFilePage(),
-            );
-          } else if (showAuthPage) {
+          } else if (signingIn) {
             shell = ProfileAuthPage();
-          } else {
+          } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
             shell = BlocConsumer<DrivesCubit, DrivesState>(
               listener: (context, state) {
                 if (state is DrivesLoadSuccess) {
@@ -133,6 +140,18 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 );
               },
             );
+          } else if (isViewingSharedFile) {
+            shell = BlocProvider<SharedFileCubit>(
+              key: ValueKey(sharedFileId),
+              create: (_) => SharedFileCubit(
+                fileId: sharedFileId,
+                fileKey: sharedFileKey,
+                arweave: context.read<ArweaveService>(),
+              ),
+              child: SharedFilePage(),
+            );
+          } else {
+            shell = const SizedBox();
           }
 
           final navigator = Navigator(
@@ -153,9 +172,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             },
           );
 
-          if (screenNotSupported || showAuthPage || isViewingSharedFile) {
-            return navigator;
-          } else {
+          if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
             return MultiBlocProvider(
               providers: [
                 BlocProvider(
@@ -193,12 +210,15 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 child: navigator,
               ),
             );
+          } else {
+            return navigator;
           }
         },
       );
 
   @override
   Future<void> setNewRoutePath(AppRoutePath path) async {
+    signingIn = path.signingIn;
     driveId = path.driveId;
     driveFolderId = path.driveFolderId;
     sharedFileId = path.sharedFileId;
