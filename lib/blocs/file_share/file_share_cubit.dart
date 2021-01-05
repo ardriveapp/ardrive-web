@@ -29,13 +29,10 @@ class FileShareCubit extends Cubit<FileShareState> {
   Future<void> loadFileShareDetails() async {
     emit(FileShareLoadInProgress());
 
-    final profile = _profileCubit.state as ProfileLoggedIn;
-
+    final drive = await _driveDao.getDriveById(driveId);
     final file = await _driveDao.getFileById(driveId, fileId);
 
-    final fileKey =
-        await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
-    final isPublicFile = fileKey == null;
+    final isPublicFile = drive.isPublic;
 
     // On web, link to the current origin the user is on.
     // Elsewhere, link to app.ardrive.io.
@@ -43,7 +40,12 @@ class FileShareCubit extends Cubit<FileShareState> {
     var fileShareLink = '$linkOrigin/#/file/${file.id}/view';
 
     if (!isPublicFile) {
+      final profile = _profileCubit.state as ProfileLoggedIn;
+
+      final fileKey =
+          await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
       final fileKeyBase64 = utils.encodeBytesToBase64(await fileKey.extract());
+
       fileShareLink = fileShareLink + '?fileKey=$fileKeyBase64';
     }
 
