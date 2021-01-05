@@ -45,9 +45,15 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   Widget build(BuildContext context) =>
       BlocConsumer<ProfileCubit, ProfileState>(
         listener: (context, state) {
-          if (state is! ProfileLoggedIn &&
-              !signingIn &&
-              !canAnonymouslyShowDriveDetail(state)) {
+          final anonymouslyShowDriveDetail =
+              state is! ProfileLoggedIn && canAnonymouslyShowDriveDetail(state);
+
+          // If the user is not already signing in and not anonymously viewing a drive,
+          // redirect them to sign in.
+          //
+          // Additionally, redirect the user to sign in if they are logging out.
+          if (!signingIn &&
+              (!anonymouslyShowDriveDetail || state is ProfileLoggingOut)) {
             signingIn = true;
             notifyListeners();
           }
@@ -115,6 +121,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         driveFolderId = state.currentFolder.folder.id;
                         notifyListeners();
                       } else if (state is DriveDetailLoadNotFound) {
+                        // Do not prompt the user to attach an unfound drive if they are logging out.
+                        final profileCubit = context.read<ProfileCubit>();
+                        if (profileCubit.state is ProfileLoggingOut) {
+                          return;
+                        }
+
                         promptToAttachDrive(
                             context: context, initialDriveId: driveId);
                       }

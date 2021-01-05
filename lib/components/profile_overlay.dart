@@ -43,16 +43,11 @@ class ProfileOverlay extends StatelessWidget {
                               ),
                             ],
                           ),
-                          trailing: Link(
-                            uri: Uri(path: '/sign-in'),
-                            builder: (context, redirectToSignIn) => IconButton(
-                              icon: const Icon(Icons.logout),
-                              tooltip: 'Logout',
-                              onPressed: () {
-                                redirectToSignIn();
-                                context.read<ProfileCubit>().logoutProfile();
-                              },
-                            ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.logout),
+                            tooltip: 'Logout',
+                            onPressed: () =>
+                                context.read<ProfileCubit>().logoutProfile(),
                           ),
                         )
                       : ListTile(
