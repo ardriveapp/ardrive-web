@@ -1,6 +1,6 @@
-CREATE TABLE file_revisions (
-    id TEXT NOT NULL PRIMARY KEY,
+import 'network_transactions.moor';
 
+CREATE TABLE file_revisions (
     fileId TEXT NOT NULL,
     driveId TEXT NOT NULL,
 
@@ -10,12 +10,13 @@ CREATE TABLE file_revisions (
     lastModifiedDate DATETIME NOT NULL,
 
     metadataTxId TEXT NOT NULL,
-    metadataTxStatus TEXT NOT NULL DEFAULT 'pending',
-
     dataTxId TEXT NOT NULL,
-    dataTxStatus TEXT NOT NULL DEFAULT 'pending',
 
     dateCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
-    [action] TEXT NOT NULL
+    [action] TEXT NOT NULL,
+
+    PRIMARY KEY (fileId, driveId, dateCreated),
+    FOREIGN KEY (metadataTxId) REFERENCES network_transactions(id),
+    FOREIGN KEY (dataTxId) REFERENCES network_transactions(id)
 );

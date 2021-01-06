@@ -183,7 +183,6 @@ class SyncCubit extends Cubit<SyncState> {
       }
 
       final revision = FileRevisionsCompanion.insert(
-        id: entity.txId,
         fileId: entity.id,
         driveId: entity.driveId,
         name: entity.name,
@@ -347,9 +346,9 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> _updateRevisionTransactionStatuses(String driveId) async {
     final unconfirmedFolderRevisions =
-        await _driveDao.pendingFolderRevisionsInDrive(driveId).get();
+        await _driveDao.pendingFolderRevisionsInDriveWithStatus(driveId).get();
     final unconfirmedFileRevisions =
-        await _driveDao.pendingFileRevisionsInDrive(driveId).get();
+        await _driveDao.pendingFileRevisionsInDriveWithStatus(driveId).get();
 
     // Construct a list of revisions with transactions that are unconfirmed,
     // filtering out ones that are already confirmed.
@@ -357,10 +356,10 @@ class SyncCubit extends Cubit<SyncState> {
         unconfirmedFolderRevisions
             .map((r) => MapEntry<String, Object>(r.metadataTxId, r))
             .followedBy(unconfirmedFileRevisions
-                .where((r) => r.metadataTxStatus == TransactionStatus.pending)
+                .where((r) => r.metadataTx.status == TransactionStatus.pending)
                 .map((r) => MapEntry<String, Object>(r.metadataTxId, r)))
             .followedBy(unconfirmedFileRevisions
-                .where((r) => r.dataTxStatus == TransactionStatus.pending)
+                .where((r) => r.dataTx.status == TransactionStatus.pending)
                 .map((r) => MapEntry<String, Object>(r.dataTxId, r))));
 
     final txConfirmations = await _arweave

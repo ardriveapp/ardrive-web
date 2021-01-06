@@ -25,13 +25,13 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
         super(FsEntryActivityInitial()) {
     if (folderId != null) {
       _entrySubscription = _driveDao
-          .latestFolderRevisionsByFolderId(driveId, folderId)
+          .latestFolderRevisionsByFolderIdWithStatus(driveId, folderId)
           .watch()
           .listen((r) =>
               emit(FsEntryActivitySuccess<FolderRevision>(revisions: r)));
     } else if (fileId != null) {
       _entrySubscription = _driveDao
-          .latestFileRevisionsByFileId(driveId, fileId)
+          .latestFileRevisionsByFileIdWithStatus(driveId, fileId)
           .watch()
           .listen(
               (r) => emit(FsEntryActivitySuccess<FileRevision>(revisions: r)));
