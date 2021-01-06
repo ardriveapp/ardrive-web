@@ -1,7 +1,9 @@
 import 'package:moor/moor.dart';
 
 import '../models.dart';
-import 'shared.dart';
+import 'unsupported.dart'
+    if (dart.library.html) 'web.dart'
+    if (dart.library.io) 'ffi.dart';
 
 part 'database.g.dart';
 
