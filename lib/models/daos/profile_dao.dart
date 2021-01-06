@@ -5,7 +5,7 @@ import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:moor/moor.dart';
 
-import '../models.dart';
+import '../database/database.dart';
 
 part 'profile_dao.g.dart';
 

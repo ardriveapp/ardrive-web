@@ -5,7 +5,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:moor/moor.dart';
 import 'package:uuid/uuid.dart';
 
-import '../models.dart';
+import '../database/database.dart';
 
 part 'drives_dao.g.dart';
 
