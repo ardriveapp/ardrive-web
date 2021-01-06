@@ -12,7 +12,6 @@ part 'drives_dao.g.dart';
 @UseDao(include: {
   '../tables/drives.moor',
   '../tables/folder_entries.moor',
-  '../tables/file_entries.moor'
 })
 class DrivesDao extends DatabaseAccessor<Database> with _$DrivesDaoMixin {
   final uuid = Uuid();
