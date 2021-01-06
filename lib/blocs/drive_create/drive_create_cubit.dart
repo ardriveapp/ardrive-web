@@ -24,17 +24,17 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
   });
 
   final ArweaveService _arweave;
-  final DrivesDao _drivesDao;
+  final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final DrivesCubit _drivesCubit;
 
   DriveCreateCubit({
     @required ArweaveService arweave,
-    @required DrivesDao drivesDao,
+    @required DriveDao driveDao,
     @required ProfileCubit profileCubit,
     @required DrivesCubit drivesCubit,
   })  : _arweave = arweave,
-        _drivesDao = drivesDao,
+        _driveDao = driveDao,
         _profileCubit = profileCubit,
         _drivesCubit = drivesCubit,
         super(DriveCreateInitial());
@@ -55,7 +55,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       final profile = _profileCubit.state as ProfileLoggedIn;
       final wallet = profile.wallet;
 
-      final createRes = await _drivesDao.createDrive(
+      final createRes = await _driveDao.createDrive(
         name: driveName,
         ownerAddress: wallet.address,
         privacy: drivePrivacy,

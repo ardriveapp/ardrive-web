@@ -21,7 +21,6 @@ const kRequiredTxConfirmationCount = 15;
 class SyncCubit extends Cubit<SyncState> {
   final ProfileCubit _profileCubit;
   final ArweaveService _arweave;
-  final DrivesDao _drivesDao;
   final DriveDao _driveDao;
   final Database _db;
 
@@ -30,12 +29,10 @@ class SyncCubit extends Cubit<SyncState> {
   SyncCubit({
     @required ProfileCubit profileCubit,
     @required ArweaveService arweave,
-    @required DrivesDao drivesDao,
     @required DriveDao driveDao,
     @required Database db,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
-        _drivesDao = drivesDao,
         _driveDao = driveDao,
         _db = db,
         super(SyncIdle()) {
@@ -58,7 +55,7 @@ class SyncCubit extends Cubit<SyncState> {
         final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
             profile.wallet, profile.password);
 
-        await _drivesDao.updateUserDrives(userDriveEntities, profile.cipherKey);
+        await _driveDao.updateUserDrives(userDriveEntities, profile.cipherKey);
       }
 
       // Sync the contents of each drive attached in the app.

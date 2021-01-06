@@ -7,7 +7,7 @@ part 'database.g.dart';
 
 @UseMoor(
   include: {'../tables/all.moor'},
-  daos: [DrivesDao, DriveDao, ProfileDao],
+  daos: [DriveDao, ProfileDao],
 )
 class Database extends _$Database {
   Database([QueryExecutor e]) : super(e ?? openConnection());

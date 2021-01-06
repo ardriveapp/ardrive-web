@@ -43,8 +43,6 @@ class _AppState extends State<App> {
           RepositoryProvider<Database>(create: (_) => Database()),
           RepositoryProvider<ProfileDao>(
               create: (context) => context.read<Database>().profileDao),
-          RepositoryProvider<DrivesDao>(
-              create: (context) => context.read<Database>().drivesDao),
           RepositoryProvider<DriveDao>(
               create: (context) => context.read<Database>().driveDao),
         ],

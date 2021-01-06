@@ -169,7 +169,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   create: (context) => SyncCubit(
                     profileCubit: context.read<ProfileCubit>(),
                     arweave: context.read<ArweaveService>(),
-                    drivesDao: context.read<DrivesDao>(),
                     driveDao: context.read<DriveDao>(),
                     db: context.read<Database>(),
                   ),

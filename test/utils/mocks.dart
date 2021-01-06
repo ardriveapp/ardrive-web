@@ -11,7 +11,7 @@ class MockArweaveService extends Mock implements ArweaveService {}
 
 class MockProfileDao extends Mock implements ProfileDao {}
 
-class MockDrivesDao extends Mock implements DrivesDao {}
+class MockDriveDao extends Mock implements DriveDao {}
 
 class MockSyncBloc extends MockBloc<SyncState> implements SyncCubit {}
 
