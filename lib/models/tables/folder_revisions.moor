@@ -1,6 +1,6 @@
-CREATE TABLE folder_revisions (
-    id TEXT NOT NULL PRIMARY KEY,
+import 'network_transactions.moor';
 
+CREATE TABLE folder_revisions (
     folderId TEXT NOT NULL,
     driveId TEXT NOT NULL,
 
@@ -8,9 +8,11 @@ CREATE TABLE folder_revisions (
     parentFolderId TEXT,
 
     metadataTxId TEXT NOT NULL,
-    metadataTxStatus TEXT NOT NULL DEFAULT 'pending',
 
-    dateCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
     
-    [action] TEXT NOT NULL
+    [action] TEXT NOT NULL,
+
+    PRIMARY KEY (folderId, driveId, dateCreated),
+    FOREIGN KEY (metadataTxId) REFERENCES network_transactions(id)
 );

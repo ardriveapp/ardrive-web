@@ -133,7 +133,7 @@ class FsEntrySideSheet extends StatelessWidget {
                           Widget dateCreatedSubtitle;
                           String revisionConfirmationStatus;
 
-                          if (revision is FolderRevision) {
+                          if (revision is FolderRevisionWithTransaction) {
                             switch (revision.action) {
                               case RevisionAction.create:
                                 content = Text(
@@ -155,7 +155,7 @@ class FsEntrySideSheet extends StatelessWidget {
 
                             revisionConfirmationStatus =
                                 revision.confirmationStatus;
-                          } else if (revision is FileRevision) {
+                          } else if (revision is FileRevisionWithTransactions) {
                             switch (revision.action) {
                               case RevisionAction.create:
                                 content = Text(

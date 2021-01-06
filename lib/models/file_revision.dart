@@ -2,13 +2,14 @@ import 'package:ardrive/entities/entities.dart';
 
 import 'models.dart';
 
-extension FileRevisionExtensions on FileRevision {
+extension FileRevisionWithTransactionsExtensions
+    on FileRevisionWithTransactions {
   String get confirmationStatus {
-    if (metadataTxStatus == TransactionStatus.failed ||
-        dataTxStatus == TransactionStatus.failed) {
+    if (metadataTx.status == TransactionStatus.failed ||
+        dataTx.status == TransactionStatus.failed) {
       return TransactionStatus.failed;
-    } else if (metadataTxStatus == TransactionStatus.pending ||
-        dataTxStatus == TransactionStatus.pending) {
+    } else if (metadataTx.status == TransactionStatus.pending ||
+        dataTx.status == TransactionStatus.pending) {
       return TransactionStatus.pending;
     } else {
       return TransactionStatus.confirmed;

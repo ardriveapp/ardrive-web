@@ -4,3 +4,4 @@ import 'file_revisions.moor';
 import 'folder_entries.moor';
 import 'folder_revisions.moor';
 import 'profiles.moor';
+import 'network_transactions.moor';

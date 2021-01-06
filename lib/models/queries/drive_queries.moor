@@ -3,6 +3,7 @@ import '../tables/folder_entries.moor';
 import '../tables/folder_revisions.moor';
 import '../tables/file_entries.moor';
 import '../tables/file_revisions.moor';
+import '../tables/network_transactions.moor';
 
 allDrives: SELECT * FROM drives;
 driveById: SELECT * FROM drives WHERE id = :driveId;
@@ -21,17 +22,15 @@ oldestFolderRevisionByFolderId:
     SELECT * FROM folder_revisions
     WHERE driveId = :driveId AND folderId = :folderId
     ORDER BY dateCreated ASC LIMIT 1;
-latestFolderRevisionsByFolderId:
-    SELECT * FROM folder_revisions
-    WHERE driveId = :driveId AND folderId = :folderId
-    ORDER BY dateCreated DESC;
 latestFolderRevisionByFolderId:
     SELECT * FROM folder_revisions
     WHERE driveId = :driveId AND folderId = :folderId
     ORDER BY dateCreated DESC LIMIT 1;
-pendingFolderRevisionsInDrive:
-    SELECT * FROM folder_revisions
-    WHERE driveId = :driveId AND metadataTxStatus = 'pending';
+latestFolderRevisionsByFolderIdWithTransactions AS FolderRevisionWithTransaction:
+    SELECT rev.*, metadataTx.** FROM folder_revisions rev
+    INNER JOIN network_transactions metadataTx ON metadataTx.id = rev.metadataTxId
+    WHERE driveId = :driveId AND folderId = :folderId
+    ORDER BY rev.dateCreated DESC;
 
 fileById:
     SELECT * FROM file_entries
@@ -47,14 +46,17 @@ oldestFileRevisionByFileId:
     SELECT * FROM file_revisions
     WHERE driveId = :driveId AND fileId = :fileId
     ORDER BY dateCreated ASC LIMIT 1;
-latestFileRevisionsByFileId:
-    SELECT * FROM file_revisions
-    WHERE driveId = :driveId AND fileId = :fileId
-    ORDER BY dateCreated DESC;
 latestFileRevisionByFileId:
     SELECT * FROM file_revisions
     WHERE driveId = :driveId AND fileId = :fileId
     ORDER BY dateCreated DESC LIMIT 1;
-pendingFileRevisionsInDrive:
-    SELECT * FROM file_revisions
-    WHERE driveId = :driveId AND (metadataTxStatus = 'pending' OR dataTxStatus = 'pending');
+latestFileRevisionsByFileIdWithTransactions AS FileRevisionWithTransactions:
+    SELECT rev.*, metadataTx.**, dataTx.** FROM file_revisions rev
+    INNER JOIN network_transactions metadataTx ON metadataTx.id = rev.metadataTxId
+    INNER JOIN network_transactions dataTx ON dataTx.id = rev.dataTxId
+    WHERE driveId = :driveId AND fileId = :fileId
+    ORDER BY rev.dateCreated DESC;
+
+pendingTransactions:
+    SELECT * FROM network_transactions
+    WHERE status = 'pending';
