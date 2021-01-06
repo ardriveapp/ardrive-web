@@ -339,8 +339,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
-  Future<void> writeToTransactions(
-          Insertable<NetworkTransaction> transaction) =>
+  Future<void> writeToTransaction(Insertable<NetworkTransaction> transaction) =>
       (update(networkTransactions)..whereSamePrimaryKey(transaction))
           .write(transaction);
 }

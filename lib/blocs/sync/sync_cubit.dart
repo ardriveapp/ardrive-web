@@ -401,7 +401,7 @@ class SyncCubit extends Cubit<SyncState> {
           }
         }
 
-        await _driveDao.writeToTransactions(
+        await _driveDao.writeToTransaction(
           NetworkTransactionsCompanion(
             id: Value(txId),
             status: Value(txStatus),
