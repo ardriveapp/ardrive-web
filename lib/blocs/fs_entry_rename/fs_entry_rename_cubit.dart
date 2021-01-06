@@ -51,11 +51,11 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     () async {
       final name = _isRenamingFolder
           ? await _driveDao
-              .selectFolderById(driveId, folderId)
+              .folderById(driveId, folderId)
               .map((f) => f.name)
               .getSingle()
           : await _driveDao
-              .selectFileById(driveId, fileId)
+              .fileById(driveId, fileId)
               .map((f) => f.name)
               .getSingle();
 
@@ -80,7 +80,8 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
         emit(FolderEntryRenameInProgress());
 
         await _driveDao.transaction(() async {
-          var folder = await _driveDao.getFolderById(driveId, folderId);
+          var folder =
+              await _driveDao.folderById(driveId, folderId).getSingle();
           folder = folder.copyWith(name: newName, lastUpdated: DateTime.now());
 
           final folderTx = await _arweave.prepareEntityTx(
@@ -95,7 +96,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
         emit(FileEntryRenameInProgress());
 
         await _driveDao.transaction(() async {
-          var file = await _driveDao.getFileById(driveId, fileId);
+          var file = await _driveDao.fileById(driveId, fileId).getSingle();
           file = file.copyWith(name: newName, lastUpdated: DateTime.now());
 
           final fileKey =
@@ -117,7 +118,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
   Future<Map<String, dynamic>> _uniqueFolderName(
       AbstractControl<dynamic> control) async {
-    final folder = await _driveDao.getFolderById(driveId, folderId);
+    final folder = await _driveDao.folderById(driveId, folderId).getSingle();
     final String newFolderName = control.value;
 
     if (newFolderName == folder.name) {
@@ -126,8 +127,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
     // Check that the current folder does not already have a folder with the target file name.
     final foldersWithName = await _driveDao
-        .selectFolderInFolderByName(
-            driveId, folder.parentFolderId, newFolderName)
+        .foldersInFolderWithName(driveId, folder.parentFolderId, newFolderName)
         .get();
     final nameAlreadyExists = foldersWithName.isNotEmpty;
 
@@ -141,7 +141,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
   Future<Map<String, dynamic>> _uniqueFileName(
       AbstractControl<dynamic> control) async {
-    final file = await _driveDao.getFileById(driveId, fileId);
+    final file = await _driveDao.fileById(driveId, fileId).getSingle();
     final String newFileName = control.value;
 
     if (newFileName == file.name) {
@@ -150,7 +150,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
     // Check that the current folder does not already have a file with the target file name.
     final filesWithName = await _driveDao
-        .selectFileInFolderByName(driveId, file.parentFolderId, newFileName)
+        .filesInFolderWithName(driveId, file.parentFolderId, newFileName)
         .get();
     final nameAlreadyExists = filesWithName.isNotEmpty;
 

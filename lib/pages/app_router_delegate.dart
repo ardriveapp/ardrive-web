@@ -169,7 +169,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   create: (context) => SyncCubit(
                     profileCubit: context.read<ProfileCubit>(),
                     arweave: context.read<ArweaveService>(),
-                    drivesDao: context.read<DrivesDao>(),
                     driveDao: context.read<DriveDao>(),
                     db: context.read<Database>(),
                   ),
@@ -178,7 +177,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   create: (context) => DrivesCubit(
                     initialSelectedDriveId: driveId,
                     profileCubit: context.read<ProfileCubit>(),
-                    drivesDao: context.read<DrivesDao>(),
+                    driveDao: context.read<DriveDao>(),
                   ),
                 ),
               ],

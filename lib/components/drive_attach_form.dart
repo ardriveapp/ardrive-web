@@ -18,7 +18,7 @@ Future<void> promptToAttachDrive(
         create: (context) => DriveAttachCubit(
           initialDriveId: initialDriveId,
           arweave: context.read<ArweaveService>(),
-          drivesDao: context.read<DrivesDao>(),
+          driveDao: context.read<DriveDao>(),
           syncBloc: context.read<SyncCubit>(),
           drivesBloc: context.read<DrivesCubit>(),
         ),

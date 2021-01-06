@@ -15,19 +15,19 @@ part 'drives_state.dart';
 /// It works even if the user profile is unavailable.
 class DrivesCubit extends Cubit<DrivesState> {
   final ProfileCubit _profileCubit;
-  final DrivesDao _drivesDao;
+  final DriveDao _driveDao;
 
   StreamSubscription _drivesSubscription;
 
   DrivesCubit({
     String initialSelectedDriveId,
     @required ProfileCubit profileCubit,
-    @required DrivesDao drivesDao,
+    @required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
-        _drivesDao = drivesDao,
+        _driveDao = driveDao,
         super(DrivesLoadInProgress()) {
     _drivesSubscription = Rx.combineLatest2<List<Drive>, void, List<Drive>>(
-      _drivesDao.watchAllDrives(),
+      _driveDao.allDrives().watch(),
       _profileCubit.startWith(null),
       (drives, _) => drives,
     ).listen((drives) {

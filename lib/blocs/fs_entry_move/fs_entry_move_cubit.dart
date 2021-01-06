@@ -36,7 +36,10 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         assert(folderId != null || fileId != null),
         super(
             FsEntryMoveFolderLoadInProgress(isMovingFolder: folderId != null)) {
-    _driveDao.getDriveById(driveId).then((d) => loadFolder(d.rootFolderId));
+    _driveDao
+        .driveById(driveId)
+        .getSingle()
+        .then((d) => loadFolder(d.rootFolderId));
   }
 
   Future<void> loadParentFolder() {
@@ -70,7 +73,8 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         emit(FolderEntryMoveInProgress());
 
         await _driveDao.transaction(() async {
-          var folder = await _driveDao.getFolderById(driveId, folderId);
+          var folder =
+              await _driveDao.folderById(driveId, folderId).getSingle();
           folder = folder.copyWith(
               parentFolderId: parentFolder.id,
               path: '${parentFolder.path}/${folder.name}',
@@ -88,7 +92,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         emit(FileEntryMoveInProgress());
 
         await _driveDao.transaction(() async {
-          var file = await _driveDao.getFileById(driveId, fileId);
+          var file = await _driveDao.fileById(driveId, fileId).getSingle();
           file = file.copyWith(
               parentFolderId: parentFolder.id,
               path: '${parentFolder.path}/${file.name}',

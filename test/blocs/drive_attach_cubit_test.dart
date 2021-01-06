@@ -12,7 +12,7 @@ import '../utils/utils.dart';
 void main() {
   group('DriveAttachCubit', () {
     ArweaveService arweave;
-    DrivesDao drivesDao;
+    DriveDao driveDao;
     SyncCubit syncBloc;
     DrivesCubit drivesBloc;
     DriveAttachCubit driveAttachCubit;
@@ -24,7 +24,7 @@ void main() {
 
     setUp(() {
       arweave = MockArweaveService();
-      drivesDao = MockDrivesDao();
+      driveDao = MockDriveDao();
       syncBloc = MockSyncBloc();
       drivesBloc = MockDrivesCubit();
 
@@ -36,7 +36,7 @@ void main() {
 
       driveAttachCubit = DriveAttachCubit(
         arweave: arweave,
-        drivesDao: drivesDao,
+        driveDao: driveDao,
         syncBloc: syncBloc,
         drivesBloc: drivesBloc,
       );
@@ -85,7 +85,7 @@ void main() {
       expect: [],
       verify: (_) {
         verifyZeroInteractions(arweave);
-        verifyZeroInteractions(drivesDao);
+        verifyZeroInteractions(driveDao);
         verifyZeroInteractions(syncBloc);
         verifyZeroInteractions(drivesBloc);
       },

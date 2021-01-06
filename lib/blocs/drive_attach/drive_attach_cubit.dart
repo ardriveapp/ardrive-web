@@ -16,18 +16,18 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   FormGroup form;
 
   final ArweaveService _arweave;
-  final DrivesDao _drivesDao;
+  final DriveDao _driveDao;
   final SyncCubit _syncBloc;
   final DrivesCubit _drivesBloc;
 
   DriveAttachCubit({
     String initialDriveId,
     @required ArweaveService arweave,
-    @required DrivesDao drivesDao,
+    @required DriveDao driveDao,
     @required SyncCubit syncBloc,
     @required DrivesCubit drivesBloc,
   })  : _arweave = arweave,
-        _drivesDao = drivesDao,
+        _driveDao = driveDao,
         _syncBloc = syncBloc,
         _drivesBloc = drivesBloc,
         super(DriveAttachInitial()) {
@@ -79,7 +79,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         return;
       }
 
-      await _drivesDao.writeDriveEntity(name: driveName, entity: driveEntity);
+      await _driveDao.writeDriveEntity(name: driveName, entity: driveEntity);
 
       _drivesBloc.selectDrive(driveId);
       unawaited(_syncBloc.startSync());

@@ -21,7 +21,6 @@ const kRequiredTxConfirmationCount = 15;
 class SyncCubit extends Cubit<SyncState> {
   final ProfileCubit _profileCubit;
   final ArweaveService _arweave;
-  final DrivesDao _drivesDao;
   final DriveDao _driveDao;
   final Database _db;
 
@@ -30,12 +29,10 @@ class SyncCubit extends Cubit<SyncState> {
   SyncCubit({
     @required ProfileCubit profileCubit,
     @required ArweaveService arweave,
-    @required DrivesDao drivesDao,
     @required DriveDao driveDao,
     @required Database db,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
-        _drivesDao = drivesDao,
         _driveDao = driveDao,
         _db = db,
         super(SyncIdle()) {
@@ -58,12 +55,11 @@ class SyncCubit extends Cubit<SyncState> {
         final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
             profile.wallet, profile.password);
 
-        await _drivesDao.updateUserDrives(userDriveEntities, profile.cipherKey);
+        await _driveDao.updateUserDrives(userDriveEntities, profile.cipherKey);
       }
 
       // Sync the contents of each drive attached in the app.
-      final driveIds =
-          await _drivesDao.selectAllDrives().map((d) => d.id).get();
+      final driveIds = await _driveDao.allDrives().map((d) => d.id).get();
       final driveSyncProcesses = driveIds.map((driveId) => _syncDrive(driveId));
       await Future.wait(driveSyncProcesses);
     } catch (err) {
@@ -74,7 +70,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> _syncDrive(String driveId) async {
-    final drive = await _driveDao.getDriveById(driveId);
+    final drive = await _driveDao.driveById(driveId).getSingle();
 
     SecretKey driveKey;
     if (drive.isPrivate) {
@@ -141,7 +137,8 @@ class SyncCubit extends Cubit<SyncState> {
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
         latestRevisions[entity.id] = await _driveDao
-            .getLatestFolderRevisionById(driveId, entity.id)
+            .latestFolderRevisionByFolderId(driveId, entity.id)
+            .getSingle()
             .then((r) => r?.toCompanion(true));
       }
 
@@ -180,7 +177,8 @@ class SyncCubit extends Cubit<SyncState> {
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
         latestRevisions[entity.id] = await _driveDao
-            .getLatestFileRevisionById(driveId, entity.id)
+            .latestFileRevisionByFileId(driveId, entity.id)
+            .getSingle()
             .then((r) => r?.toCompanion(true));
       }
 
@@ -222,8 +220,9 @@ class SyncCubit extends Cubit<SyncState> {
     };
 
     for (final folderId in updatedFoldersById.keys) {
-      final oldestRevision =
-          await _driveDao.getOldestFolderRevisionById(driveId, folderId);
+      final oldestRevision = await _driveDao
+          .oldestFolderRevisionByFolderId(driveId, folderId)
+          .getSingle();
 
       updatedFoldersById[folderId] = updatedFoldersById[folderId].copyWith(
           dateCreated: Value(oldestRevision?.dateCreated ??
@@ -243,8 +242,9 @@ class SyncCubit extends Cubit<SyncState> {
     };
 
     for (final fileId in updatedFilesById.keys) {
-      final oldestRevision =
-          await _driveDao.getOldestFileRevisionById(driveId, fileId);
+      final oldestRevision = await _driveDao
+          .oldestFileRevisionByFileId(driveId, fileId)
+          .getSingle();
 
       updatedFilesById[fileId] = updatedFilesById[fileId].copyWith(
           dateCreated: Value(oldestRevision?.dateCreated ??
@@ -314,7 +314,7 @@ class SyncCubit extends Cubit<SyncState> {
         parentPath = '';
       } else {
         parentPath = await _driveDao
-            .selectFolderById(driveId, treeRoot.folder.parentFolderId)
+            .folderById(driveId, treeRoot.folder.parentFolderId)
             .map((f) => f.path)
             .getSingle();
       }
@@ -327,7 +327,7 @@ class SyncCubit extends Cubit<SyncState> {
         .where((f) => !foldersByIdMap.containsKey(f.parentFolderId));
     for (final staleOrphanFile in staleOrphanFiles) {
       final parentPath = await _driveDao
-          .selectFolderById(driveId, staleOrphanFile.parentFolderId.value)
+          .folderById(driveId, staleOrphanFile.parentFolderId.value)
           .map((f) => f.path)
           .getSingle();
 
@@ -347,9 +347,9 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> _updateRevisionTransactionStatuses(String driveId) async {
     final unconfirmedFolderRevisions =
-        await _driveDao.selectUnconfirmedFolderRevisions(driveId).get();
+        await _driveDao.pendingFolderRevisionsInDrive(driveId).get();
     final unconfirmedFileRevisions =
-        await _driveDao.selectUnconfirmedFileRevisions(driveId).get();
+        await _driveDao.pendingFileRevisionsInDrive(driveId).get();
 
     // Construct a list of revisions with transactions that are unconfirmed,
     // filtering out ones that are already confirmed.

@@ -2,45 +2,153 @@ import 'dart:async';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../models.dart';
+import '../../database/database.dart';
 
+part 'create_drive_result.dart';
 part 'drive_dao.g.dart';
 part 'drive_order.dart';
 part 'folder_node.dart';
 part 'folder_with_contents.dart';
 
-@UseDao(tables: [
-  Drives,
-  FolderEntries,
-  FolderRevisions,
-  FileEntries,
-  FileRevisions
-])
+@UseDao(include: {
+  '../../queries/drive_queries.moor',
+})
 class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   final _uuid = Uuid();
 
   DriveDao(Database db) : super(db);
 
-  SimpleSelectStatement<Drives, Drive> selectDriveById(String driveId) =>
-      select(drives)..where((d) => d.id.equals(driveId));
+  /// Creates a drive with its accompanying root folder.
+  Future<CreateDriveResult> createDrive({
+    @required String name,
+    @required String ownerAddress,
+    @required String privacy,
+    Wallet wallet,
+    String password,
+    SecretKey profileKey,
+  }) async {
+    final driveId = _uuid.v4();
+    final rootFolderId = _uuid.v4();
 
-  Future<Drive> getDriveById(String driveId) =>
-      selectDriveById(driveId).getSingle();
+    var insertDriveOp = DrivesCompanion.insert(
+      id: driveId,
+      name: name,
+      ownerAddress: ownerAddress,
+      rootFolderId: rootFolderId,
+      privacy: privacy,
+    );
 
-  Stream<Drive> watchDriveById(String driveId) =>
-      selectDriveById(driveId).watchSingle();
+    SecretKey driveKey;
+    if (privacy == DrivePrivacy.private) {
+      driveKey = await deriveDriveKey(wallet, driveId, password);
+      insertDriveOp = await _addDriveKeyToDriveCompanion(
+          insertDriveOp, profileKey, driveKey);
+    }
+
+    await batch((batch) {
+      batch.insert(drives, insertDriveOp);
+
+      batch.insert(
+        folderEntries,
+        FolderEntriesCompanion.insert(
+          id: rootFolderId,
+          driveId: driveId,
+          name: name,
+          path: '',
+        ),
+      );
+    });
+
+    return CreateDriveResult(
+      driveId,
+      rootFolderId,
+      driveKey,
+    );
+  }
+
+  /// Adds or updates the user's drives with the provided drive entities.
+  Future<void> updateUserDrives(
+          Map<DriveEntity, SecretKey> driveEntities, SecretKey profileKey) =>
+      db.batch((b) async {
+        for (final entry in driveEntities.entries) {
+          final entity = entry.key;
+
+          var driveCompanion = DrivesCompanion.insert(
+            id: entity.id,
+            name: entity.name,
+            ownerAddress: entity.ownerAddress,
+            rootFolderId: entity.rootFolderId,
+            privacy: entity.privacy,
+            dateCreated: Value(entity.commitTime),
+            lastUpdated: Value(entity.commitTime),
+          );
+
+          if (entity.privacy == DrivePrivacy.private) {
+            driveCompanion = await _addDriveKeyToDriveCompanion(
+                driveCompanion, profileKey, entry.value);
+          }
+
+          b.insert(
+            drives,
+            driveCompanion,
+            onConflict:
+                DoUpdate((_) => driveCompanion.copyWith(dateCreated: null)),
+          );
+        }
+      });
+
+  Future<void> writeDriveEntity({
+    String name,
+    DriveEntity entity,
+  }) {
+    assert(entity.privacy == DrivePrivacy.public);
+
+    final companion = DrivesCompanion.insert(
+      id: entity.id,
+      name: name,
+      ownerAddress: entity.ownerAddress,
+      rootFolderId: entity.rootFolderId,
+      privacy: entity.privacy,
+      dateCreated: Value(entity.commitTime),
+      lastUpdated: Value(entity.commitTime),
+    );
+
+    return into(drives).insert(
+      companion,
+      onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
+    );
+  }
+
+  Future<DrivesCompanion> _addDriveKeyToDriveCompanion(
+    DrivesCompanion drive,
+    SecretKey profileKey,
+    SecretKey driveKey,
+  ) async {
+    final iv = Nonce.randomBytes(96 ~/ 8);
+    final encryptedWallet = await aesGcm.encrypt(
+      await driveKey.extract(),
+      secretKey: profileKey,
+      nonce: iv,
+    );
+
+    return drive.copyWith(
+      encryptedKey: Value(encryptedWallet),
+      keyEncryptionIv: Value(iv.bytes),
+    );
+  }
 
   /// Returns the encryption key for the specified drive.
   ///
   /// `null` if the drive is public and unencrypted.
   Future<SecretKey> getDriveKey(String driveId, SecretKey profileKey) async {
-    final drive = await getDriveById(driveId);
+    final drive = await driveById(driveId).getSingle();
 
     if (drive.encryptedKey == null) {
       return null;
@@ -73,24 +181,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<void> writeToDrive(Insertable<Drive> drive) =>
       (update(drives)..whereSamePrimaryKey(drive)).write(drive);
-
-  SimpleSelectStatement<FolderEntries, FolderEntry> selectFolderById(
-          String driveId, String folderId) =>
-      (select(folderEntries)
-        ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId)));
-
-  Future<FolderEntry> getFolderById(String driveId, String folderId) =>
-      selectFolderById(driveId, folderId).getSingle();
-
-  Stream<FolderEntry> watchFolderById(String driveId, String folderId) =>
-      selectFolderById(driveId, folderId).watchSingle();
-
-  SimpleSelectStatement<FolderEntries, FolderEntry>
-      selectFoldersByParentFolderId(String driveId, String parentFolderId) =>
-          (select(folderEntries)
-            ..where((f) =>
-                f.driveId.equals(driveId) &
-                f.parentFolderId.equals(parentFolderId)));
 
   Stream<FolderWithContents> watchFolderContents(String driveId,
       {String folderId,
@@ -187,14 +277,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return id;
   }
 
-  SimpleSelectStatement<FolderEntries, FolderEntry> selectFolderInFolderByName(
-          String driveId, String folderId, String folderName) =>
-      (select(folderEntries)
-        ..where((f) =>
-            f.driveId.equals(driveId) &
-            f.parentFolderId.equals(folderId) &
-            f.name.equals(folderName)));
-
   UpdateStatement<FolderEntries, FolderEntry> updateFolderById(
           String driveId, String folderId) =>
       update(folderEntries)
@@ -205,11 +287,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   /// Constructs a tree of folders and files that are children of the specified folder.
   Future<FolderNode> getFolderTree(String driveId, String rootFolderId) async {
-    final rootFolder = await getFolderById(driveId, rootFolderId);
+    final rootFolder = await folderById(driveId, rootFolderId).getSingle();
 
     Future<FolderNode> getFolderChildren(FolderEntry parentFolder) async {
-      final subfolders =
-          await selectFoldersByParentFolderId(driveId, parentFolder.id).get();
+      final subfolders = await foldersInFolder(driveId, parentFolder.id).get();
 
       return FolderNode(
         folder: parentFolder,
@@ -217,11 +298,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         subfolders:
             await Future.wait(subfolders.map((f) => getFolderChildren(f))),
         files: {
-          await for (var f
-              in selectFilesByParentFolderId(driveId, parentFolder.id)
-                  .get()
-                  .asStream()
-                  .expand((f) => f))
+          await for (var f in filesInFolder(driveId, parentFolder.id)
+              .get()
+              .asStream()
+              .expand((f) => f))
             f.id: f.name
         },
       );
@@ -229,34 +309,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     return getFolderChildren(rootFolder);
   }
-
-  SimpleSelectStatement<FileEntries, FileEntry> selectFileById(
-          String driveId, String fileId) =>
-      (select(fileEntries)
-        ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)));
-
-  Future<FileEntry> getFileById(String driveId, String fileId) =>
-      selectFileById(driveId, fileId).getSingle();
-
-  Stream<FileEntry> watchFileById(String driveId, String fileId) =>
-      (select(fileEntries)
-            ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId)))
-          .watchSingle();
-
-  SimpleSelectStatement<FileEntries, FileEntry> selectFileInFolderByName(
-          String driveId, String folderId, String fileName) =>
-      (select(fileEntries)
-        ..where((f) =>
-            f.driveId.equals(driveId) &
-            f.parentFolderId.equals(folderId) &
-            f.name.equals(fileName)));
-
-  SimpleSelectStatement<FileEntries, FileEntry> selectFilesByParentFolderId(
-          String driveId, String parentFolderId) =>
-      (select(fileEntries)
-        ..where((f) =>
-            f.driveId.equals(driveId) &
-            f.parentFolderId.equals(parentFolderId)));
 
   UpdateStatement<FileEntries, FileEntry> updateFileById(
           String driveId, String fileId) =>
@@ -287,80 +339,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
-  SimpleSelectStatement<FolderRevisions, FolderRevision>
-      selectUnconfirmedFolderRevisions(String driveId) =>
-          select(folderRevisions)
-            ..where((r) =>
-                r.driveId.equals(driveId) &
-                r.metadataTxStatus.equals(TransactionStatus.pending));
-
-  SimpleSelectStatement<FolderRevisions, FolderRevision>
-      selectFolderRevisionsById(String driveId, String folderId) =>
-          (select(folderRevisions)
-            ..where((f) =>
-                f.driveId.equals(driveId) & f.folderId.equals(folderId)));
-
-  SimpleSelectStatement<FolderRevisions, FolderRevision>
-      selectLatestFolderRevisionsById(String driveId, String folderId) =>
-          selectFolderRevisionsById(driveId, folderId)
-            ..orderBy([
-              (f) => OrderingTerm(
-                  expression: f.dateCreated, mode: OrderingMode.desc)
-            ]);
-
-  Future<FolderRevision> getLatestFolderRevisionById(
-          String driveId, String folderId) =>
-      (selectLatestFolderRevisionsById(driveId, folderId)..limit(1))
-          .getSingle();
-
-  Future<FolderRevision> getOldestFolderRevisionById(
-          String driveId, String folderId) =>
-      (selectFolderRevisionsById(driveId, folderId)
-            ..orderBy([
-              (f) => OrderingTerm(
-                  expression: f.dateCreated, mode: OrderingMode.asc)
-            ])
-            ..limit(1))
-          .getSingle();
-
   Future<void> writeToFolderRevision(
           Insertable<FolderRevision> folderRevision) =>
       (update(folderRevisions)..whereSamePrimaryKey(folderRevision))
           .write(folderRevision);
-
-  SimpleSelectStatement<FileRevisions, FileRevision>
-      selectUnconfirmedFileRevisions(String driveId) => select(fileRevisions)
-        ..where((r) =>
-            r.driveId.equals(driveId) &
-            r.metadataTxStatus.equals(TransactionStatus.pending) &
-            r.dataTxStatus.equals(TransactionStatus.pending));
-
-  SimpleSelectStatement<FileRevisions, FileRevision> selectFileRevisionsById(
-          String driveId, String fileId) =>
-      (select(fileRevisions)
-        ..where((f) => f.driveId.equals(driveId) & f.fileId.equals(fileId)));
-
-  SimpleSelectStatement<FileRevisions, FileRevision>
-      selectLatestFileRevisionsById(String driveId, String fileId) =>
-          selectFileRevisionsById(driveId, fileId)
-            ..orderBy([
-              (f) => OrderingTerm(
-                  expression: f.dateCreated, mode: OrderingMode.desc)
-            ]);
-
-  Future<FileRevision> getLatestFileRevisionById(
-          String driveId, String fileId) =>
-      (selectLatestFileRevisionsById(driveId, fileId)..limit(1)).getSingle();
-
-  Future<FileRevision> getOldestFileRevisionById(
-          String driveId, String fileId) =>
-      (selectFileRevisionsById(driveId, fileId)
-            ..orderBy([
-              (f) => OrderingTerm(
-                  expression: f.dateCreated, mode: OrderingMode.asc)
-            ])
-            ..limit(1))
-          .getSingle();
 
   Future<void> writeToFileRevision(Insertable<FileRevision> fileRevision) =>
       (update(fileRevisions)..whereSamePrimaryKey(fileRevision))

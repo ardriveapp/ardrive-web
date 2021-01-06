@@ -1,20 +1,15 @@
 import 'package:moor/moor.dart';
 
 import '../models.dart';
-import 'shared.dart';
+import 'unsupported.dart'
+    if (dart.library.html) 'web.dart'
+    if (dart.library.io) 'ffi.dart';
 
 part 'database.g.dart';
 
 @UseMoor(
-  tables: [
-    Drives,
-    FolderEntries,
-    FolderRevisions,
-    FileEntries,
-    FileRevisions,
-    Profiles,
-  ],
-  daos: [DrivesDao, DriveDao, ProfileDao],
+  include: {'../tables/all.moor'},
+  daos: [DriveDao, ProfileDao],
 )
 class Database extends _$Database {
   Database([QueryExecutor e]) : super(e ?? openConnection());
@@ -38,4 +33,6 @@ class Database extends _$Database {
           }
         },
       );
+
+  void a() {}
 }

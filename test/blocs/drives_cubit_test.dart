@@ -8,20 +8,20 @@ import '../utils/utils.dart';
 void main() {
   group('DrivesCubit', () {
     Database db;
-    DrivesDao drivesDao;
+    DriveDao driveDao;
 
     ProfileCubit profileCubit;
     DrivesCubit drivesCubit;
 
     setUp(() {
       db = getTestDb();
-      drivesDao = db.drivesDao;
+      driveDao = db.driveDao;
 
       profileCubit = MockProfileCubit();
 
       drivesCubit = DrivesCubit(
         profileCubit: profileCubit,
-        drivesDao: drivesDao,
+        driveDao: driveDao,
       );
     });
 
