@@ -3,5 +3,5 @@ CREATE TABLE network_transactions (
 
     status TEXT NOT NULL DEFAULT 'pending',
 
-    dateCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now'))
 );

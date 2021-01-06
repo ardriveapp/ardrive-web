@@ -11,8 +11,8 @@ CREATE TABLE file_entries (
 
     dataTxId TEXT NOT NULL,
 
-    dateCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    lastUpdated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
+    lastUpdated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
 
     PRIMARY KEY (id, driveId)
 ) AS FileEntry;

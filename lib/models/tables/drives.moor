@@ -13,6 +13,6 @@ CREATE TABLE drives (
     encryptedKey BLOB,
     keyEncryptionIv BLOB,
 
-    dateCreated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    lastUpdated DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
+    lastUpdated DATETIME NOT NULL DEFAULT (strftime('%s','now'))
 );

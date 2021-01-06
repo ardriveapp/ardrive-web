@@ -127,7 +127,8 @@ class SyncCubit extends Cubit<SyncState> {
     });
   }
 
-  /// Computes the new folder revisions from the provided entities, inserts them into the database, and returns them.
+  /// Computes the new folder revisions from the provided entities, inserts them into the database
+  /// , and returns only the latest revisions.
   Future<List<FolderRevisionsCompanion>> _addNewFolderEntityRevisions(
       String driveId, Iterable<FolderEntity> newEntities) async {
     // The latest folder revisions, keyed by their entity ids.
@@ -160,13 +161,25 @@ class SyncCubit extends Cubit<SyncState> {
       latestRevisions[entity.id] = revision;
     }
 
-    await _db.batch(
-        (b) => b.insertAllOnConflictUpdate(_db.folderRevisions, newRevisions));
+    await _db.batch((b) {
+      b.insertAllOnConflictUpdate(_db.folderRevisions, newRevisions);
+      b.insertAllOnConflictUpdate(
+          _db.networkTransactions,
+          newRevisions
+              .map(
+                (rev) => NetworkTransactionsCompanion.insert(
+                  id: rev.metadataTxId.value,
+                  status: Value(TransactionStatus.confirmed),
+                ),
+              )
+              .toList());
+    });
 
     return latestRevisions.values.toList();
   }
 
-  /// Computes the new file revisions from the provided entities, inserts them into the database, and returns them.
+  /// Computes the new file revisions from the provided entities, inserts them into the database,
+  /// and returns only the latest revisions.
   Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions(
       String driveId, Iterable<FileEntity> newEntities) async {
     // The latest file revisions, keyed by their entity ids.
@@ -202,8 +215,27 @@ class SyncCubit extends Cubit<SyncState> {
       latestRevisions[entity.id] = revision;
     }
 
-    await _db.batch(
-        (b) => b.insertAllOnConflictUpdate(_db.fileRevisions, newRevisions));
+    await _db.batch((b) {
+      b.insertAllOnConflictUpdate(_db.fileRevisions, newRevisions);
+      b.insertAllOnConflictUpdate(
+          _db.networkTransactions,
+          newRevisions
+              .expand(
+                (rev) => [
+                  NetworkTransactionsCompanion.insert(
+                    id: rev.metadataTxId.value,
+                    status: Value(TransactionStatus.confirmed),
+                  ),
+                  // We cannot be sure that the data tx of files have been mined
+                  // so we'll mark it as pending initially.
+                  NetworkTransactionsCompanion.insert(
+                    id: rev.dataTxId.value,
+                    status: Value(TransactionStatus.pending),
+                  ),
+                ],
+              )
+              .toList());
+    });
 
     return latestRevisions.values.toList();
   }
@@ -349,7 +381,7 @@ class SyncCubit extends Cubit<SyncState> {
     };
 
     final txConfirmations =
-        await _arweave.getTransactionConfirmations(pendingTxMap.keys);
+        await _arweave.getTransactionConfirmations(pendingTxMap.keys.toList());
 
     await _driveDao.transaction(() async {
       for (final txId in pendingTxMap.keys) {
