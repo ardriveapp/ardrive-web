@@ -339,12 +339,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
-  Future<void> writeToFolderRevision(
-          Insertable<FolderRevision> folderRevision) =>
-      (update(folderRevisions)..whereSamePrimaryKey(folderRevision))
-          .write(folderRevision);
-
-  Future<void> writeToFileRevision(Insertable<FileRevision> fileRevision) =>
-      (update(fileRevisions)..whereSamePrimaryKey(fileRevision))
-          .write(fileRevision);
+  Future<void> writeToTransactions(
+          Insertable<NetworkTransaction> transaction) =>
+      (update(networkTransactions)..whereSamePrimaryKey(transaction))
+          .write(transaction);
 }

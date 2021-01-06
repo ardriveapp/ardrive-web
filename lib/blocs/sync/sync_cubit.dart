@@ -62,6 +62,8 @@ class SyncCubit extends Cubit<SyncState> {
       final driveIds = await _driveDao.allDrives().map((d) => d.id).get();
       final driveSyncProcesses = driveIds.map((driveId) => _syncDrive(driveId));
       await Future.wait(driveSyncProcesses);
+
+      await _updateTransactionStatuses();
     } catch (err) {
       addError(err);
     }
@@ -119,8 +121,6 @@ class SyncCubit extends Cubit<SyncState> {
       await _generateFsEntryPaths(
           driveId, updatedFoldersById, updatedFilesById);
 
-      await _updateRevisionTransactionStatuses(driveId);
-
       await _driveDao.writeToDrive(DrivesCompanion(
           id: Value(drive.id),
           latestSyncedBlock: Value(entityHistory.latestBlockHeight)));
@@ -143,7 +143,6 @@ class SyncCubit extends Cubit<SyncState> {
       }
 
       final revision = FolderRevisionsCompanion.insert(
-        id: entity.txId,
         folderId: entity.id,
         driveId: entity.driveId,
         name: entity.name,
@@ -344,83 +343,36 @@ class SyncCubit extends Cubit<SyncState> {
     }
   }
 
-  Future<void> _updateRevisionTransactionStatuses(String driveId) async {
-    final unconfirmedFolderRevisions =
-        await _driveDao.pendingFolderRevisionsInDriveWithStatus(driveId).get();
-    final unconfirmedFileRevisions =
-        await _driveDao.pendingFileRevisionsInDriveWithStatus(driveId).get();
+  Future<void> _updateTransactionStatuses() async {
+    final pendingTxMap = {
+      for (final tx in await _driveDao.pendingTransactions().get()) tx.id: tx,
+    };
 
-    // Construct a list of revisions with transactions that are unconfirmed,
-    // filtering out ones that are already confirmed.
-    final unconfirmedRevisionsByTxId = Map.fromEntries(
-        unconfirmedFolderRevisions
-            .map((r) => MapEntry<String, Object>(r.metadataTxId, r))
-            .followedBy(unconfirmedFileRevisions
-                .where((r) => r.metadataTx.status == TransactionStatus.pending)
-                .map((r) => MapEntry<String, Object>(r.metadataTxId, r)))
-            .followedBy(unconfirmedFileRevisions
-                .where((r) => r.dataTx.status == TransactionStatus.pending)
-                .map((r) => MapEntry<String, Object>(r.dataTxId, r))));
-
-    final txConfirmations = await _arweave
-        .getTransactionConfirmations(unconfirmedRevisionsByTxId.keys.toList());
-    final txStatuses =
-        txConfirmations.map<String, String>((txId, confirmations) {
-      if (confirmations >= kRequiredTxConfirmationCount) {
-        return MapEntry(txId, TransactionStatus.confirmed);
-      } else if (confirmations >= 0) {
-        return MapEntry(txId, TransactionStatus.pending);
-      } else {
-        final revision = unconfirmedRevisionsByTxId[txId];
-
-        // Only mark revisions as failed if they are unconfirmed for over 45 minutes
-        // as the transaction might not be queryable for right after it was created.
-        var abovePendingThreshold = false;
-
-        if (revision is FileRevision) {
-          abovePendingThreshold =
-              DateTime.now().difference(revision.dateCreated).inMinutes > 45;
-        } else if (revision is FolderRevision) {
-          abovePendingThreshold =
-              DateTime.now().difference(revision.dateCreated).inMinutes > 45;
-        }
-
-        return MapEntry(
-          txId,
-          abovePendingThreshold
-              ? TransactionStatus.failed
-              : TransactionStatus.pending,
-        );
-      }
-    });
+    final txConfirmations =
+        await _arweave.getTransactionConfirmations(pendingTxMap.keys);
 
     await _driveDao.transaction(() async {
-      for (final folderRevision in unconfirmedFolderRevisions) {
-        await _driveDao.writeToFolderRevision(
-          FolderRevisionsCompanion(
-            id: Value(folderRevision.id),
-            metadataTxStatus: Value(txStatuses[folderRevision.metadataTxId]),
-          ),
-        );
-      }
+      for (final txId in pendingTxMap.keys) {
+        var txStatus = txConfirmations[txId] >= kRequiredTxConfirmationCount
+            ? TransactionStatus.confirmed
+            : TransactionStatus.pending;
 
-      for (final fileRevision in unconfirmedFileRevisions) {
-        // If a transaction does not have a corresponding confirmation status, it was filtered out above and
-        // has already been confirmed.
-        final metadataTxStatus =
-            txStatuses.containsKey(fileRevision.metadataTxId)
-                ? txStatuses[fileRevision.metadataTxId]
-                : TransactionStatus.confirmed;
+        if (txStatus == TransactionStatus.pending) {
+          // Only mark transactions as failed if they are unconfirmed for over 45 minutes
+          // as the transaction might not be queryable for right after it was created.
+          final abovePendingThreshold = DateTime.now()
+                  .difference(pendingTxMap[txId].dateCreated)
+                  .inMinutes >
+              45;
+          if (abovePendingThreshold) {
+            txStatus = TransactionStatus.failed;
+          }
+        }
 
-        final dataTxStatus = txStatuses.containsKey(fileRevision.dataTxId)
-            ? txStatuses[fileRevision.dataTxId]
-            : TransactionStatus.confirmed;
-
-        await _driveDao.writeToFileRevision(
-          FileRevisionsCompanion(
-            id: Value(fileRevision.id),
-            metadataTxStatus: Value(metadataTxStatus),
-            dataTxStatus: Value(dataTxStatus),
+        await _driveDao.writeToTransactions(
+          NetworkTransactionsCompanion(
+            id: Value(txId),
+            status: Value(txStatus),
           ),
         );
       }

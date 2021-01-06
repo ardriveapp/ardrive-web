@@ -2,8 +2,9 @@ import 'package:ardrive/entities/entities.dart';
 
 import 'models.dart';
 
-extension FolderRevisionExtensions on FolderRevision {
-  String get confirmationStatus => metadataTxStatus;
+extension FolderRevisionWithTransactionExtensions
+    on FolderRevisionWithTransaction {
+  String get confirmationStatus => metadataTx.status;
 }
 
 extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {

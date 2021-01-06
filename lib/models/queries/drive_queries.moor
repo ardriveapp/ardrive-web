@@ -26,15 +26,11 @@ latestFolderRevisionByFolderId:
     SELECT * FROM folder_revisions
     WHERE driveId = :driveId AND folderId = :folderId
     ORDER BY dateCreated DESC LIMIT 1;
-latestFolderRevisionsByFolderIdWithStatus:
+latestFolderRevisionsByFolderIdWithTransactions AS FolderRevisionWithTransaction:
     SELECT rev.*, metadataTx.** FROM folder_revisions rev
     INNER JOIN network_transactions metadataTx ON metadataTx.id = rev.metadataTxId
     WHERE driveId = :driveId AND folderId = :folderId
-    ORDER BY dateCreated DESC;
-pendingFolderRevisionsInDriveWithStatus:
-    SELECT rev.*, metadataTx.** FROM folder_revisions rev
-    INNER JOIN network_transactions metadataTx ON metadataTx.id = rev.metadataTxId
-    WHERE rev.driveId = :driveId AND metadataTx.status = 'pending';
+    ORDER BY rev.dateCreated DESC;
 
 fileById:
     SELECT * FROM file_entries
@@ -54,14 +50,13 @@ latestFileRevisionByFileId:
     SELECT * FROM file_revisions
     WHERE driveId = :driveId AND fileId = :fileId
     ORDER BY dateCreated DESC LIMIT 1;
-latestFileRevisionsByFileIdWithStatus:
+latestFileRevisionsByFileIdWithTransactions AS FileRevisionWithTransactions:
     SELECT rev.*, metadataTx.**, dataTx.** FROM file_revisions rev
     INNER JOIN network_transactions metadataTx ON metadataTx.id = rev.metadataTxId
     INNER JOIN network_transactions dataTx ON dataTx.id = rev.dataTxId
     WHERE driveId = :driveId AND fileId = :fileId
-    ORDER BY dateCreated DESC;
-pendingFileRevisionsInDriveWithStatus:
-    SELECT rev.*, metadataTx.**, dataTx.** FROM file_revisions rev
-    INNER JOIN network_transactions metadataTx ON metadataTx.id = rev.metadataTxId
-    INNER JOIN network_transactions dataTx ON dataTx.id = rev.dataTxId
-    WHERE rev.driveId = :driveId AND (metadataTx.status = 'pending' OR dataTx.status = 'pending');
+    ORDER BY rev.dateCreated DESC;
+
+pendingTransactions:
+    SELECT * FROM network_transactions
+    WHERE status = 'pending';
