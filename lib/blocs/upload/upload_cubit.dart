@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
@@ -191,8 +190,10 @@ class UploadCubit extends Cubit<UploadState> {
     // Only use [DataBundle]s if the file being uploaded can be serialised as one.
     // The limitation occurs as a result of string size limitations in JS implementations which is about 512MB.
     // We aim switch slightly below that to give ourselves some buffer.
-    final fileSizeWithinBundleLimits =
-        fileData.lengthInBytes < (512 - 12) * math.pow(10, 6);
+    //
+    // TODO: Reenable once we understand the problems with data bundle transactions.
+    final fileSizeWithinBundleLimits = false;
+    // fileData.lengthInBytes < (512 - 12) * math.pow(10, 6);
 
     if (fileSizeWithinBundleLimits) {
       uploadHandle.dataTx = private
