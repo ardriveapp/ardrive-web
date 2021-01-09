@@ -2,7 +2,6 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
@@ -68,10 +67,11 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
             : null,
       );
 
-      final driveDataItem = await _arweave.prepareEntityDataItem(
-          drive, wallet, createRes.driveKey);
+      // TODO: Revert back to using data bundles when the api is stable again.
+      final driveTx =
+          await _arweave.prepareEntityTx(drive, wallet, createRes.driveKey);
 
-      final rootFolderDataItem = await _arweave.prepareEntityDataItem(
+      final rootFolderTx = await _arweave.prepareEntityTx(
         FolderEntity(
           id: drive.rootFolderId,
           driveId: drive.id,
@@ -81,10 +81,8 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         createRes.driveKey,
       );
 
-      final createTx = await _arweave.prepareDataBundleTx(
-          DataBundle(items: [driveDataItem, rootFolderDataItem]), wallet);
-
-      await _arweave.postTx(createTx);
+      await _arweave.postTx(driveTx);
+      await _arweave.postTx(rootFolderTx);
 
       _drivesCubit.selectDrive(drive.id);
     } catch (err) {
