@@ -39,9 +39,13 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
       emit(
         FileDownloadSuccess(
-          fileName: file.name,
-          fileExtension: extension(file.name),
-          fileDataBytes: dataBytes,
+          file: XFile.fromData(
+            dataBytes,
+            name: file.name,
+            mimeType: lookupMimeType(file.name),
+            length: dataBytes.lengthInBytes,
+            lastModified: file.lastModifiedDate,
+          ),
         ),
       );
     } catch (err) {
