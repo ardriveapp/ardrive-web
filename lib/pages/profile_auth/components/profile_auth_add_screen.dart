@@ -94,6 +94,6 @@ class ProfileAuthAddScreen extends StatelessWidget {
                   ),
                 ),
               )
-            : Container(),
+            : const SizedBox(),
       );
 }

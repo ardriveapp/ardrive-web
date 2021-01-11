@@ -1,4 +1,0 @@
-projects:
-  arweave:
-    schemaPath: lib/entities/graphql/schema.graphql
-    includes: ["lib/entities/graphql/**/*.graphql"]

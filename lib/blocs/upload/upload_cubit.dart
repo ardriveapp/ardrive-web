@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
@@ -56,8 +55,8 @@ class UploadCubit extends Cubit<UploadState> {
         _pst = pst,
         super(UploadPreparationInProgress()) {
     () async {
-      _targetDrive = await _driveDao.getDriveById(driveId);
-      _targetFolder = await _driveDao.getFolderById(driveId, folderId);
+      _targetDrive = await _driveDao.driveById(driveId).getSingle();
+      _targetFolder = await _driveDao.folderById(driveId, folderId).getSingle();
 
       unawaited(checkConflictingFiles());
     }();
@@ -73,7 +72,7 @@ class UploadCubit extends Cubit<UploadState> {
     for (final file in files) {
       final fileName = basename(file.path);
       final existingFileId = await _driveDao
-          .selectFileInFolderByName(
+          .filesInFolderWithName(
             _targetDrive.id,
             _targetFolder.id,
             fileName,
@@ -95,7 +94,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> prepareUpload() async {
-    final profile = _profileCubit.state as ProfileLoaded;
+    final profile = _profileCubit.state as ProfileLoggedIn;
 
     emit(UploadPreparationInProgress());
 
@@ -160,7 +159,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<FileUploadHandle> prepareFileUpload(XFile file) async {
-    final profile = _profileCubit.state as ProfileLoaded;
+    final profile = _profileCubit.state as ProfileLoggedIn;
 
     final fileName = basename(file.path);
     final filePath = '${_targetFolder.path}/${fileName}';
@@ -190,8 +189,10 @@ class UploadCubit extends Cubit<UploadState> {
     // Only use [DataBundle]s if the file being uploaded can be serialised as one.
     // The limitation occurs as a result of string size limitations in JS implementations which is about 512MB.
     // We aim switch slightly below that to give ourselves some buffer.
-    final fileSizeWithinBundleLimits =
-        fileData.lengthInBytes < (512 - 12) * math.pow(10, 6);
+    //
+    // TODO: Reenable once we understand the problems with data bundle transactions.
+    final fileSizeWithinBundleLimits = false;
+    // fileData.lengthInBytes < (512 - 12) * math.pow(10, 6);
 
     if (fileSizeWithinBundleLimits) {
       uploadHandle.dataTx = private

@@ -3,9 +3,19 @@ class R {
 }
 
 class Images {
-  Images();
+  const Images();
 
-  final profile = Profile();
+  final brand = const Brand();
+  final profile = const Profile();
+}
+
+class Brand {
+  const Brand();
+
+  final logoHorizontalNoSubtitle =
+      'assets/images/brand/logo-horiz-beta-no-subtitle.png';
+  final logoVerticalNoSubtitle =
+      'assets/images/brand/logo-vert-no-subtitle.png';
 }
 
 class Profile {

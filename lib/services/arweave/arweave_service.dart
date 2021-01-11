@@ -37,9 +37,8 @@ class ArweaveService {
         .map((e) => e.node)
         .toList();
     final rawEntityData =
-        (await Future.wait(entityTxs.map((e) => client.api.get(e.id))))
-            .map((r) => r.bodyBytes)
-            .toList();
+        await Future.wait(entityTxs.map((e) => client.api.get(e.id)))
+            .then((rs) => rs.map((r) => r.bodyBytes).toList());
 
     final blockHistory = <BlockEntities>[];
     for (var i = 0; i < entityTxs.length; i++) {
@@ -68,7 +67,10 @@ class ArweaveService {
               transaction, rawEntityData[i], driveKey);
         } else if (entityType == EntityType.file) {
           entity = await FileEntity.fromTransaction(
-              transaction, rawEntityData[i], driveKey);
+            transaction,
+            rawEntityData[i],
+            driveKey: driveKey,
+          );
         }
 
         if (blockHistory.isEmpty ||
@@ -77,13 +79,9 @@ class ArweaveService {
         }
 
         blockHistory.last.entities.add(entity);
-      } catch (err) {
+
         // If there are errors in parsing the entity, ignore it.
-        // TODO: Test graceful handling of invalid entities.
-        if (err is! EntityTransactionParseException) {
-          rethrow;
-        }
-      }
+      } on EntityTransactionParseException catch (_) {}
     }
 
     // Sort the entities in each block by ascending commit time.
@@ -168,44 +166,144 @@ class ArweaveService {
 
         drivesById[drive.id] = drive;
         drivesWithKey[drive] = driveKey;
-      } catch (err) {
+
         // If there's an error parsing the drive entity, just ignore it.
-        // TODO: Test graceful handling of invalid entities.
-        if (err is! EntityTransactionParseException) {
-          rethrow;
-        }
-      }
+      } on EntityTransactionParseException catch (_) {}
     }
 
     return drivesWithKey;
   }
 
-  /// Tries to get the first drive entity instance with the provided drive id.
-  /// Important for verifying the owner of a drive.
+  /// Gets the latest drive entity with the provided id.
   ///
-  /// Optionally provide a `driveKey` to load private drive entities.
+  /// This function first checks for the owner of the first instance of the [DriveEntity]
+  /// with the specified id and then queries for the latest instance of the [FileEntity]
+  /// by that owner.
   ///
-  /// Returns `null` if no drive could be found.
-  Future<DriveEntity> tryGetFirstDriveEntityWithId(
+  /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
+  Future<DriveEntity> getLatestDriveEntityWithId(
     String driveId, [
     SecretKey driveKey,
   ]) async {
-    final initialDriveEntityQuery = await _gql.execute(
-      InitialDriveEntityQuery(
-          variables: InitialDriveEntityArguments(driveId: driveId)),
-    );
+    final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
+        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
 
-    final queryEdges = initialDriveEntityQuery.data.transactions.edges;
-    if (queryEdges.isEmpty) return null;
+    if (firstOwnerQuery.data.transactions.edges.isEmpty) {
+      return null;
+    }
 
-    final driveTx = queryEdges[0].node;
-    final driveDataRes = await client.api.get(driveTx.id);
+    final driveOwner =
+        firstOwnerQuery.data.transactions.edges.first.node.owner.address;
 
-    return DriveEntity.fromTransaction(
-      driveTx,
-      driveDataRes.bodyBytes,
-      driveKey,
-    );
+    final latestDriveQuery = await _gql.execute(LatestDriveEntityWithIdQuery(
+        variables: LatestDriveEntityWithIdArguments(
+            driveId: driveId, owner: driveOwner)));
+
+    final queryEdges = latestDriveQuery.data.transactions.edges;
+    if (queryEdges.isEmpty) {
+      return null;
+    }
+
+    final fileTx = queryEdges.first.node;
+    final fileDataRes = await client.api.get(fileTx.id);
+
+    try {
+      return await DriveEntity.fromTransaction(
+          fileTx, fileDataRes.bodyBytes, driveKey);
+    } on EntityTransactionParseException catch (_) {
+      return null;
+    }
+  }
+
+  /// Gets the latest file entity with the provided id.
+  ///
+  /// This function first checks for the owner of the first instance of the [FileEntity]
+  /// with the specified id and then queries for the latest instance of the [FileEntity]
+  /// by that owner.
+  ///
+  /// Returns `null` if no valid file is found or the provided `fileKey` is incorrect.
+  Future<FileEntity> getLatestFileEntityWithId(String fileId,
+      [SecretKey fileKey]) async {
+    final firstOwnerQuery = await _gql.execute(FirstFileEntityWithIdOwnerQuery(
+        variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
+
+    if (firstOwnerQuery.data.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    final fileOwner =
+        firstOwnerQuery.data.transactions.edges.first.node.owner.address;
+
+    final latestFileQuery = await _gql.execute(LatestFileEntityWithIdQuery(
+        variables:
+            LatestFileEntityWithIdArguments(fileId: fileId, owner: fileOwner)));
+
+    final queryEdges = latestFileQuery.data.transactions.edges;
+    if (queryEdges.isEmpty) {
+      return null;
+    }
+
+    final fileTx = queryEdges.first.node;
+    final fileDataRes = await client.api.get(fileTx.id);
+
+    try {
+      return await FileEntity.fromTransaction(
+        fileTx,
+        fileDataRes.bodyBytes,
+        fileKey: fileKey,
+      );
+    } on EntityTransactionParseException catch (_) {
+      return null;
+    }
+  }
+
+  /// Returns the number of confirmations each specified transaction has as a map,
+  /// keyed by the transactions' ids.
+  ///
+  /// When the number of confirmations is 0, the transaction has yet to be mined. When
+  /// it is -1, the transaction could not be found.
+  Future<Map<String, int>> getTransactionConfirmations(
+      List<String> transactionIds) async {
+    final transactionConfirmations = {
+      for (final transactionId in transactionIds) transactionId: -1
+    };
+
+    // Chunk the transaction confirmation query to workaround the 10 item limit of the gateway API
+    // and run it in parallel.
+    const chunkSize = 10;
+
+    final confirmationFutures = <Future<void>>[];
+
+    for (var i = 0; i < transactionIds.length; i += chunkSize) {
+      confirmationFutures.add(() async {
+        final chunkEnd = (i + chunkSize < transactionIds.length)
+            ? i + chunkSize
+            : transactionIds.length;
+
+        final query = await _gql.execute(
+          TransactionStatusesQuery(
+              variables: TransactionStatusesArguments(
+                  transactionIds: transactionIds.sublist(i, chunkEnd))),
+        );
+
+        final currentBlockHeight = query.data.blocks.edges.first.node.height;
+
+        for (final transaction
+            in query.data.transactions.edges.map((e) => e.node)) {
+          if (transaction.block == null) {
+            transactionConfirmations[transaction.id] = 0;
+            continue;
+          }
+
+          transactionConfirmations[transaction.id] =
+              currentBlockHeight - transaction.block.height + 1;
+        }
+      }());
+    }
+
+    await Future.wait(confirmationFutures);
+
+    return transactionConfirmations;
   }
 
   /// Creates and signs a [Transaction] representing the provided entity.
@@ -246,7 +344,7 @@ class ArweaveService {
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
     final bundleTx = await client.transactions.prepare(
-      Transaction.withDataBundle(bundle: bundle),
+      Transaction.withDataBundle(bundle: bundle)..addApplicationTags(),
       wallet,
     );
 

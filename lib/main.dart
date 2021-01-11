@@ -25,7 +25,12 @@ void main() async {
   runApp(App());
 }
 
-class App extends StatelessWidget {
+class App extends StatefulWidget {
+  @override
+  _AppState createState() => _AppState();
+}
+
+class _AppState extends State<App> {
   final _routerDelegate = AppRouterDelegate();
   final _routeInformationParser = AppRouteInformationParser();
 
@@ -38,8 +43,6 @@ class App extends StatelessWidget {
           RepositoryProvider<Database>(create: (_) => Database()),
           RepositoryProvider<ProfileDao>(
               create: (context) => context.read<Database>().profileDao),
-          RepositoryProvider<DrivesDao>(
-              create: (context) => context.read<Database>().drivesDao),
           RepositoryProvider<DriveDao>(
               create: (context) => context.read<Database>().driveDao),
         ],
@@ -49,18 +52,16 @@ class App extends StatelessWidget {
             profileDao: context.read<ProfileDao>(),
             db: context.read<Database>(),
           ),
-          child: BlocBuilder<ProfileCubit, ProfileState>(
-            builder: (context, state) => MaterialApp.router(
-              title: 'ArDrive',
-              theme: appTheme(),
-              routeInformationParser: _routeInformationParser,
-              routerDelegate: _routerDelegate,
-              builder: (context, child) => ListTileTheme(
-                textColor: kOnSurfaceBodyTextColor,
-                iconColor: kOnSurfaceBodyTextColor,
-                child: Portal(
-                  child: child,
-                ),
+          child: MaterialApp.router(
+            title: 'ArDrive',
+            theme: appTheme(),
+            routeInformationParser: _routeInformationParser,
+            routerDelegate: _routerDelegate,
+            builder: (context, child) => ListTileTheme(
+              textColor: kOnSurfaceBodyTextColor,
+              iconColor: kOnSurfaceBodyTextColor,
+              child: Portal(
+                child: child,
               ),
             ),
           ),

@@ -2,7 +2,6 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/link.dart';
 
 import '../components.dart';
 import 'drive_list_tile.dart';
@@ -84,18 +83,6 @@ class AppDrawer extends StatelessWidget {
                         }
                       ],
                     ),
-                  const Expanded(child: SizedBox()),
-                  const SizedBox(height: 8),
-                  Link(
-                    uri: Uri.parse('https://ardrive.io/faq/'),
-                    target: LinkTarget.blank,
-                    builder: (context, onPressed) => ListTile(
-                      leading: Icon(Icons.help),
-                      title: Text('Need Help?'),
-                      onTap: onPressed,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -165,7 +152,7 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   PopupMenuItem(
-                    value: (context) => promptToAttachDrive(context),
+                    value: (context) => promptToAttachDrive(context: context),
                     child: ListTile(
                       title: Text('Attach drive'),
                     ),

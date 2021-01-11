@@ -4,6 +4,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
@@ -13,10 +14,13 @@ import '../blocs.dart';
 
 part 'sync_state.dart';
 
+const kRequiredTxConfirmationCount = 15;
+
+/// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
+/// It also checks the status of unconfirmed transactions made by revisions.
 class SyncCubit extends Cubit<SyncState> {
   final ProfileCubit _profileCubit;
   final ArweaveService _arweave;
-  final DrivesDao _drivesDao;
   final DriveDao _driveDao;
   final Database _db;
 
@@ -25,41 +29,41 @@ class SyncCubit extends Cubit<SyncState> {
   SyncCubit({
     @required ProfileCubit profileCubit,
     @required ArweaveService arweave,
-    @required DrivesDao drivesDao,
     @required DriveDao driveDao,
     @required Database db,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
-        _drivesDao = drivesDao,
         _driveDao = driveDao,
         _db = db,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
     _syncSub = interval(const Duration(minutes: 2))
         .startWith(null)
-        .listen((_) => startSync());
+        // Do not start another sync until the previous sync has completed.
+        .exhaustMap((value) => Stream.fromFuture(startSync()))
+        .listen((_) {});
   }
 
   Future<void> startSync() async {
     emit(SyncInProgress());
 
     try {
-      final profile = _profileCubit.state as ProfileLoaded;
+      final profile = _profileCubit.state;
 
-      // Sync in drives owned by the user.
-      final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
-        profile.wallet,
-        profile.password,
-      );
+      // Only sync in drives owned by the user if they're logged in.
+      if (profile is ProfileLoggedIn) {
+        final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
+            profile.wallet, profile.password);
 
-      await _drivesDao.updateUserDrives(userDriveEntities, profile.cipherKey);
+        await _driveDao.updateUserDrives(userDriveEntities, profile.cipherKey);
+      }
 
-      // Sync the contents of each drive owned by the user.
-      final driveIds =
-          await _drivesDao.selectAllDrives().map((d) => d.id).get();
-
+      // Sync the contents of each drive attached in the app.
+      final driveIds = await _driveDao.allDrives().map((d) => d.id).get();
       final driveSyncProcesses = driveIds.map((driveId) => _syncDrive(driveId));
       await Future.wait(driveSyncProcesses);
+
+      await _updateTransactionStatuses();
     } catch (err) {
       addError(err);
     }
@@ -68,11 +72,19 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> _syncDrive(String driveId) async {
-    final profile = _profileCubit.state as ProfileLoaded;
-    final drive = await _driveDao.getDriveById(driveId);
-    final driveKey = drive.isPrivate
-        ? await _driveDao.getDriveKey(drive.id, profile.cipherKey)
-        : null;
+    final drive = await _driveDao.driveById(driveId).getSingle();
+
+    SecretKey driveKey;
+    if (drive.isPrivate) {
+      final profile = _profileCubit.state;
+
+      // Only sync private drives when the user is logged in.
+      if (profile is ProfileLoggedIn) {
+        driveKey = await _driveDao.getDriveKey(drive.id, profile.cipherKey);
+      } else {
+        return;
+      }
+    }
 
     final entityHistory = await _arweave.getNewEntitiesForDriveSinceBlock(
       drive.id,
@@ -115,7 +127,8 @@ class SyncCubit extends Cubit<SyncState> {
     });
   }
 
-  /// Computes the new folder revisions from the provided entities, inserts them into the database, and returns them.
+  /// Computes the new folder revisions from the provided entities, inserts them into the database
+  /// , and returns only the latest revisions.
   Future<List<FolderRevisionsCompanion>> _addNewFolderEntityRevisions(
       String driveId, Iterable<FolderEntity> newEntities) async {
     // The latest folder revisions, keyed by their entity ids.
@@ -124,13 +137,13 @@ class SyncCubit extends Cubit<SyncState> {
     final newRevisions = <FolderRevisionsCompanion>[];
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
-        latestRevisions[entity.id] =
-            (await _driveDao.getLatestFolderRevisionById(driveId, entity.id))
-                ?.toCompanion(true);
+        latestRevisions[entity.id] = await _driveDao
+            .latestFolderRevisionByFolderId(driveId, entity.id)
+            .getSingle()
+            .then((r) => r?.toCompanion(true));
       }
 
       final revision = FolderRevisionsCompanion.insert(
-        id: entity.txId,
         folderId: entity.id,
         driveId: entity.driveId,
         name: entity.name,
@@ -148,13 +161,25 @@ class SyncCubit extends Cubit<SyncState> {
       latestRevisions[entity.id] = revision;
     }
 
-    await _db.batch(
-        (b) => b.insertAllOnConflictUpdate(_db.folderRevisions, newRevisions));
+    await _db.batch((b) {
+      b.insertAllOnConflictUpdate(_db.folderRevisions, newRevisions);
+      b.insertAllOnConflictUpdate(
+          _db.networkTransactions,
+          newRevisions
+              .map(
+                (rev) => NetworkTransactionsCompanion.insert(
+                  id: rev.metadataTxId.value,
+                  status: Value(TransactionStatus.confirmed),
+                ),
+              )
+              .toList());
+    });
 
     return latestRevisions.values.toList();
   }
 
-  /// Computes the new file revisions from the provided entities, inserts them into the database, and returns them.
+  /// Computes the new file revisions from the provided entities, inserts them into the database,
+  /// and returns only the latest revisions.
   Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions(
       String driveId, Iterable<FileEntity> newEntities) async {
     // The latest file revisions, keyed by their entity ids.
@@ -163,13 +188,13 @@ class SyncCubit extends Cubit<SyncState> {
     final newRevisions = <FileRevisionsCompanion>[];
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
-        latestRevisions[entity.id] =
-            (await _driveDao.getLatestFileRevisionById(driveId, entity.id))
-                ?.toCompanion(true);
+        latestRevisions[entity.id] = await _driveDao
+            .latestFileRevisionByFileId(driveId, entity.id)
+            .getSingle()
+            .then((r) => r?.toCompanion(true));
       }
 
       final revision = FileRevisionsCompanion.insert(
-        id: entity.txId,
         fileId: entity.id,
         driveId: entity.driveId,
         name: entity.name,
@@ -190,8 +215,27 @@ class SyncCubit extends Cubit<SyncState> {
       latestRevisions[entity.id] = revision;
     }
 
-    await _db.batch(
-        (b) => b.insertAllOnConflictUpdate(_db.fileRevisions, newRevisions));
+    await _db.batch((b) {
+      b.insertAllOnConflictUpdate(_db.fileRevisions, newRevisions);
+      b.insertAllOnConflictUpdate(
+          _db.networkTransactions,
+          newRevisions
+              .expand(
+                (rev) => [
+                  NetworkTransactionsCompanion.insert(
+                    id: rev.metadataTxId.value,
+                    status: Value(TransactionStatus.confirmed),
+                  ),
+                  // We cannot be sure that the data tx of files have been mined
+                  // so we'll mark it as pending initially.
+                  NetworkTransactionsCompanion.insert(
+                    id: rev.dataTxId.value,
+                    status: Value(TransactionStatus.pending),
+                  ),
+                ],
+              )
+              .toList());
+    });
 
     return latestRevisions.values.toList();
   }
@@ -206,8 +250,9 @@ class SyncCubit extends Cubit<SyncState> {
     };
 
     for (final folderId in updatedFoldersById.keys) {
-      final oldestRevision =
-          await _driveDao.getOldestFolderRevisionById(driveId, folderId);
+      final oldestRevision = await _driveDao
+          .oldestFolderRevisionByFolderId(driveId, folderId)
+          .getSingle();
 
       updatedFoldersById[folderId] = updatedFoldersById[folderId].copyWith(
           dateCreated: Value(oldestRevision?.dateCreated ??
@@ -227,8 +272,9 @@ class SyncCubit extends Cubit<SyncState> {
     };
 
     for (final fileId in updatedFilesById.keys) {
-      final oldestRevision =
-          await _driveDao.getOldestFileRevisionById(driveId, fileId);
+      final oldestRevision = await _driveDao
+          .oldestFileRevisionByFileId(driveId, fileId)
+          .getSingle();
 
       updatedFilesById[fileId] = updatedFilesById[fileId].copyWith(
           dateCreated: Value(oldestRevision?.dateCreated ??
@@ -298,7 +344,7 @@ class SyncCubit extends Cubit<SyncState> {
         parentPath = '';
       } else {
         parentPath = await _driveDao
-            .selectFolderById(driveId, treeRoot.folder.parentFolderId)
+            .folderById(driveId, treeRoot.folder.parentFolderId)
             .map((f) => f.path)
             .getSingle();
       }
@@ -311,7 +357,7 @@ class SyncCubit extends Cubit<SyncState> {
         .where((f) => !foldersByIdMap.containsKey(f.parentFolderId));
     for (final staleOrphanFile in staleOrphanFiles) {
       final parentPath = await _driveDao
-          .selectFolderById(driveId, staleOrphanFile.parentFolderId.value)
+          .folderById(driveId, staleOrphanFile.parentFolderId.value)
           .map((f) => f.path)
           .getSingle();
 
@@ -327,6 +373,42 @@ class SyncCubit extends Cubit<SyncState> {
             'Stale orphan file ${staleOrphanFile.id.value} parent folder ${staleOrphanFile.parentFolderId.value} could not be found.');
       }
     }
+  }
+
+  Future<void> _updateTransactionStatuses() async {
+    final pendingTxMap = {
+      for (final tx in await _driveDao.pendingTransactions().get()) tx.id: tx,
+    };
+
+    final txConfirmations =
+        await _arweave.getTransactionConfirmations(pendingTxMap.keys.toList());
+
+    await _driveDao.transaction(() async {
+      for (final txId in pendingTxMap.keys) {
+        var txStatus = txConfirmations[txId] >= kRequiredTxConfirmationCount
+            ? TransactionStatus.confirmed
+            : TransactionStatus.pending;
+
+        if (txStatus == TransactionStatus.pending) {
+          // Only mark transactions as failed if they are unconfirmed for over 45 minutes
+          // as the transaction might not be queryable for right after it was created.
+          final abovePendingThreshold = DateTime.now()
+                  .difference(pendingTxMap[txId].dateCreated)
+                  .inMinutes >
+              45;
+          if (abovePendingThreshold) {
+            txStatus = TransactionStatus.failed;
+          }
+        }
+
+        await _driveDao.writeToTransaction(
+          NetworkTransactionsCompanion(
+            id: Value(txId),
+            status: Value(txStatus),
+          ),
+        );
+      }
+    });
   }
 
   @override

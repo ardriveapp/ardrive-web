@@ -1,4 +1,4 @@
-fragment transactionCommon on Transaction {
+fragment TransactionCommon on Transaction {
   id
   owner {
     address

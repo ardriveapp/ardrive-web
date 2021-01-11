@@ -1,7 +1,4 @@
-import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/theme/theme.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+part of '../drive_detail_page.dart';
 
 class DriveDetailBreadcrumbRow extends StatelessWidget {
   final List<String> _pathSegments;
@@ -33,7 +30,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
           TextButton(
             style: _pathSegments.isEmpty ? selectedSegmentTheme : null,
             onPressed: () =>
-                context.read<DriveDetailCubit>().openFolderAtPath(''),
+                context.read<DriveDetailCubit>().openFolder(path: ''),
             child: Text(
               'Drive Root',
             ),
@@ -49,10 +46,8 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
             return [
               TextButton(
                 style: isLastSegment ? selectedSegmentTheme : null,
-                onPressed: () => context
-                    .read<DriveDetailCubit>()
-                    .openFolderAtPath(
-                        '/${_pathSegments.sublist(0, s.key + 1).join('/')}'),
+                onPressed: () => context.read<DriveDetailCubit>().openFolder(
+                    path: '/${_pathSegments.sublist(0, s.key + 1).join('/')}'),
                 child: Text(s.value),
               ),
               if (!isLastSegment)

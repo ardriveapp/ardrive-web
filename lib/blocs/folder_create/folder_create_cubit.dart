@@ -49,13 +49,15 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     emit(FolderCreateInProgress());
 
     try {
-      final profile = _profileCubit.state as ProfileLoaded;
+      final profile = _profileCubit.state as ProfileLoggedIn;
       final String folderName = form.control('name').value;
 
       await _driveDao.transaction(() async {
-        final targetDrive = await _driveDao.getDriveById(targetDriveId);
-        final targetFolder =
-            await _driveDao.getFolderById(targetDriveId, targetFolderId);
+        final targetDrive =
+            await _driveDao.driveById(targetDriveId).getSingle();
+        final targetFolder = await _driveDao
+            .folderById(targetDriveId, targetFolderId)
+            .getSingle();
 
         final driveKey = targetDrive.isPrivate
             ? await _driveDao.getDriveKey(

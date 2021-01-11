@@ -1,3 +1,4 @@
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 
@@ -42,7 +43,7 @@ class ProfileAuthShell extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Image.asset(
-                            'assets/images/brand/logo-vert-no-subtitle.png',
+                            R.images.brand.logoVerticalNoSubtitle,
                             height: 126,
                             fit: BoxFit.contain,
                           ),

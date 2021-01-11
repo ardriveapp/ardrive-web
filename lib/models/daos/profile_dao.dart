@@ -5,7 +5,7 @@ import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:moor/moor.dart';
 
-import '../models.dart';
+import '../database/database.dart';
 
 part 'profile_dao.g.dart';
 
@@ -13,18 +13,15 @@ const keyByteLength = 256 ~/ 8;
 
 class ProfilePasswordIncorrectException implements Exception {}
 
-@UseDao(tables: [Profiles])
+@UseDao(include: {'../queries/profile_queries.moor'})
 class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   ProfileDao(Database db) : super(db);
-
-  SimpleSelectStatement<Profiles, Profile> selectDefaultProfile() =>
-      select(profiles);
 
   /// Loads the default profile with the provided password.
   ///
   /// Throws a [ProfilePasswordIncorrectException] if the provided password is incorrect.
   Future<ProfileLoadDetails> loadDefaultProfile(String password) async {
-    final profile = await selectDefaultProfile().getSingle();
+    final profile = await defaultProfile().getSingle();
 
     if (profile == null) {
       return null;
@@ -49,16 +46,10 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         wallet: Wallet.fromJwk(walletJwk),
         key: profileKdRes.key,
       );
-    } catch (err) {
-      if (err is MacValidationException) {
-        throw ProfilePasswordIncorrectException();
-      }
-
-      rethrow;
+    } on MacValidationException catch (_) {
+      throw ProfilePasswordIncorrectException();
     }
   }
-
-  Future<List<Profile>> getProfiles() => select(profiles).get();
 
   /// Adds the specified profile and returns a profile key that was used to encrypt the user's wallet
   /// and can be used to encrypt the user's drive keys.

@@ -31,30 +31,49 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         _driveDao = driveDao,
         _config = config,
         super(DriveDetailLoadInProgress()) {
-    if (driveId != null) {
-      if (initialFolderId != null) {
-        () async {
-          final folder =
-              await _driveDao.getFolderById(driveId, initialFolderId);
-          openFolderAtPath(folder.path);
-        }();
-      } else {
-        openFolderAtPath('');
-      }
+    if (driveId == null) {
+      return;
+    }
+
+    if (initialFolderId != null) {
+      // TODO: Handle deep-linking folders of unattached drives.
+      Future.microtask(() async {
+        final folder =
+            await _driveDao.folderById(driveId, initialFolderId).getSingle();
+        // Open the root folder if the deep-linked folder could not be found.
+        openFolder(path: folder?.path ?? '');
+      });
+    } else {
+      openFolder(path: '');
     }
   }
 
-  void openFolderAtPath(String path) {
+  void openFolder(
+      {@required String path,
+      DriveOrder contentOrderBy = DriveOrder.name,
+      OrderingMode contentOrderingMode = OrderingMode.asc}) {
     emit(DriveDetailLoadInProgress());
 
     unawaited(_folderSubscription?.cancel());
 
     _folderSubscription =
         Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
-      _driveDao.watchDriveById(driveId),
-      _driveDao.watchFolderContentsAtPath(driveId, path),
+      _driveDao.driveById(driveId).watchSingle(),
+      _driveDao.watchFolderContents(driveId,
+          folderPath: path,
+          orderBy: contentOrderBy,
+          orderingMode: contentOrderingMode),
       _profileCubit.startWith(null),
       (drive, folderContents, _) {
+        if (drive == null) {
+          emit(DriveDetailLoadNotFound());
+          return;
+        }
+
+        // Emit the loading state as it can be a while between the drive being not found, then added,
+        // and then the folders being loaded.
+        emit(DriveDetailLoadInProgress());
+
         if (folderContents?.folder != null) {
           final state = this.state is! DriveDetailLoadSuccess
               ? DriveDetailLoadSuccess()
@@ -64,9 +83,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           emit(
             state.copyWith(
               currentDrive: drive,
-              hasWritePermissions: profile is ProfileLoaded &&
+              hasWritePermissions: profile is ProfileLoggedIn &&
                   drive.ownerAddress == profile.wallet.address,
               currentFolder: folderContents,
+              contentOrderBy: contentOrderBy,
+              contentOrderingMode: contentOrderingMode,
             ),
           );
         }
@@ -83,13 +104,23 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
 
     if (state.currentDrive.isPublic && !isFolder) {
-      final file = await _driveDao.getFileById(driveId, state.selectedItemId);
+      final file = await _driveDao.fileById(driveId, state.selectedItemId).getSingle();
       state = state.copyWith(
           selectedFilePreviewUrl: Uri.parse(
               '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}'));
     }
 
     emit(state);
+  }
+
+  void sortFolder(
+      {DriveOrder contentOrderBy = DriveOrder.name,
+      OrderingMode contentOrderingMode = OrderingMode.asc}) {
+    final state = this.state as DriveDetailLoadSuccess;
+    openFolder(
+        path: state.currentFolder.folder.path,
+        contentOrderBy: contentOrderBy,
+        contentOrderingMode: contentOrderingMode);
   }
 
   void toggleSelectedItemDetails() {

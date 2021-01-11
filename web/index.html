@@ -1,53 +1,40 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
-    <meta name="description" content="Secure, permanent storage." />
 
-    <!-- iOS meta tags & icons -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-    <meta name="apple-mobile-web-app-title" content="drive" />
-    <link rel="apple-touch-icon" href="icons/Icon-192.png" />
+<head>
+  <meta charset="UTF-8" />
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+  <meta name="description" content="Secure, permanent storage." />
 
-    <!-- Favicon -->
-    <link rel="shortcut icon" type="image/png" href="favicon.png" />
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="drive" />
+  <link rel="apple-touch-icon" href="icons/Icon-192.png" />
 
-    <title>ArDrive</title>
-    <link rel="manifest" href="manifest.json" />
-  </head>
-  <body>
-    <script>
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", function () {
-          navigator.serviceWorker.register("flutter_service_worker.js");
-        });
-      }
-    </script>
-    <script src="pst.min.js"></script>
-    <script defer src="sql-wasm.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/7.14.3/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/7.14.3/firebase-analytics.js"></script>
-    <script>
-      firebase.initializeApp({
-        apiKey: "AIzaSyDXp0ZnEQfkUl4wEcfRVVR_EOwehrTFYrU",
-        authDomain: "ardrive-web.firebaseapp.com",
-        databaseURL: "https://ardrive-web.firebaseio.com",
-        projectId: "ardrive-web",
-        storageBucket: "ardrive-web.appspot.com",
-        messagingSenderId: "305132849030",
-        appId: "1:305132849030:web:b2d30975b28774f8ffce07",
-        measurementId: "G-P05MMD1NHD"
+  <!-- Favicon -->
+  <link rel="shortcut icon" type="image/png" href="favicon.png" />
+
+  <title>ArDrive</title>
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- Cloudflare Web Analytics -->
+  <script defer src='https://static.cloudflareinsights.com/beacon.min.js'
+    data-cf-beacon='{"token": "590dc3369856495eadb700ec1975c29d"}'></script>
+  <!-- End Cloudflare Web Analytics -->
+</head>
+
+<body>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("flutter_service_worker.js");
       });
-      firebase.analytics();
+    }
+  </script>
+  <script src="pst.min.js"></script>
+  <script defer src="sql-wasm.js"></script>
+  <script src="main.dart.js" type="application/javascript"></script>
+</body>
 
-      // Only enable analytics in production.
-      // TODO: Disable analytics in Dart instead.
-      if (window.origin !== 'https://app.ardrive.io') {
-        firebase.analytics().setAnalyticsCollectionEnabled(false);
-      }
-    </script>
-    <script src="main.dart.js" type="application/javascript"></script>
-  </body>
 </html>

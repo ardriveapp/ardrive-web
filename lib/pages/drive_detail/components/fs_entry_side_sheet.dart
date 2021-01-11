@@ -1,9 +1,4 @@
-import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/l11n/l11n.dart';
-import 'package:ardrive/models/models.dart';
-import 'package:filesize/filesize.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+part of '../drive_detail_page.dart';
 
 class FsEntrySideSheet extends StatelessWidget {
   final String driveId;
@@ -60,7 +55,7 @@ class FsEntrySideSheet extends StatelessWidget {
                         )
                       ],
                     )
-                  : Container(),
+                  : const SizedBox(),
             ),
           ),
         ),
@@ -135,9 +130,10 @@ class FsEntrySideSheet extends StatelessWidget {
                           final revision = state.revisions[index];
 
                           Widget content;
-                          Widget dateCreated;
+                          Widget dateCreatedSubtitle;
+                          String revisionConfirmationStatus;
 
-                          if (revision is FolderRevision) {
+                          if (revision is FolderRevisionWithTransaction) {
                             switch (revision.action) {
                               case RevisionAction.create:
                                 content = Text(
@@ -154,9 +150,12 @@ class FsEntrySideSheet extends StatelessWidget {
                                 content = Text('This folder was modified');
                             }
 
-                            dateCreated = Text(
+                            dateCreatedSubtitle = Text(
                                 yMMdDateFormatter.format(revision.dateCreated));
-                          } else if (revision is FileRevision) {
+
+                            revisionConfirmationStatus =
+                                revision.confirmationStatus;
+                          } else if (revision is FileRevisionWithTransactions) {
                             switch (revision.action) {
                               case RevisionAction.create:
                                 content = Text(
@@ -177,8 +176,32 @@ class FsEntrySideSheet extends StatelessWidget {
                                 content = Text('This file was modified');
                             }
 
-                            dateCreated = Text(
+                            dateCreatedSubtitle = Text(
                                 yMMdDateFormatter.format(revision.dateCreated));
+
+                            revisionConfirmationStatus =
+                                revision.confirmationStatus;
+                          }
+
+                          Widget statusIcon;
+                          if (revisionConfirmationStatus ==
+                              TransactionStatus.pending) {
+                            statusIcon = Tooltip(
+                              message: 'Pending',
+                              child: const Icon(Icons.pending),
+                            );
+                          } else if (revisionConfirmationStatus ==
+                              TransactionStatus.confirmed) {
+                            statusIcon = Tooltip(
+                              message: 'Confirmed',
+                              child: const Icon(Icons.check),
+                            );
+                          } else if (revisionConfirmationStatus ==
+                              TransactionStatus.failed) {
+                            statusIcon = Tooltip(
+                              message: 'Failed',
+                              child: const Icon(Icons.error_outline),
+                            );
                           }
 
                           return ListTile(
@@ -188,8 +211,9 @@ class FsEntrySideSheet extends StatelessWidget {
                             ),
                             subtitle: DefaultTextStyle(
                               style: Theme.of(context).textTheme.caption,
-                              child: dateCreated,
+                              child: dateCreatedSubtitle,
                             ),
+                            trailing: statusIcon,
                           );
                         },
                         separatorBuilder: (context, index) => Divider(),

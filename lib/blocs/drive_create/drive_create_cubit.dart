@@ -3,7 +3,6 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
@@ -24,17 +23,17 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
   });
 
   final ArweaveService _arweave;
-  final DrivesDao _drivesDao;
+  final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final DrivesCubit _drivesCubit;
 
   DriveCreateCubit({
     @required ArweaveService arweave,
-    @required DrivesDao drivesDao,
+    @required DriveDao driveDao,
     @required ProfileCubit profileCubit,
     @required DrivesCubit drivesCubit,
   })  : _arweave = arweave,
-        _drivesDao = drivesDao,
+        _driveDao = driveDao,
         _profileCubit = profileCubit,
         _drivesCubit = drivesCubit,
         super(DriveCreateInitial());
@@ -52,10 +51,10 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       final String driveName = form.control('name').value;
       final String drivePrivacy = form.control('privacy').value;
 
-      final profile = _profileCubit.state as ProfileLoaded;
+      final profile = _profileCubit.state as ProfileLoggedIn;
       final wallet = profile.wallet;
 
-      final createRes = await _drivesDao.createDrive(
+      final createRes = await _driveDao.createDrive(
         name: driveName,
         ownerAddress: wallet.address,
         privacy: drivePrivacy,
@@ -74,10 +73,11 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
             : null,
       );
 
-      final driveDataItem = await _arweave.prepareEntityDataItem(
-          drive, wallet, createRes.driveKey);
+      // TODO: Revert back to using data bundles when the api is stable again.
+      final driveTx =
+          await _arweave.prepareEntityTx(drive, wallet, createRes.driveKey);
 
-      final rootFolderDataItem = await _arweave.prepareEntityDataItem(
+      final rootFolderTx = await _arweave.prepareEntityTx(
         FolderEntity(
           id: drive.rootFolderId,
           driveId: drive.id,
@@ -87,10 +87,8 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         createRes.driveKey,
       );
 
-      final createTx = await _arweave.prepareDataBundleTx(
-          DataBundle(items: [driveDataItem, rootFolderDataItem]), wallet);
-
-      await _arweave.postTx(createTx);
+      await _arweave.postTx(driveTx);
+      await _arweave.postTx(rootFolderTx);
 
       _drivesCubit.selectDrive(drive.id);
     } catch (err) {

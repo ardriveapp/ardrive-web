@@ -25,10 +25,8 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
         _profileDao = profileDao,
         super(ProfileUnlockInitializing()) {
     () async {
-      final existingUsername = await _profileDao
-          .selectDefaultProfile()
-          .map((p) => p.username)
-          .getSingle();
+      final existingUsername =
+          await _profileDao.defaultProfile().map((p) => p.username).getSingle();
       emit(ProfileUnlockInitial(username: existingUsername));
     }();
   }
@@ -44,15 +42,12 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
 
     try {
       await _profileDao.loadDefaultProfile(password);
-    } catch (err) {
-      if (err is ProfilePasswordIncorrectException) {
-        form
-            .control('password')
-            .setErrors({AppValidationMessage.passwordIncorrect: true});
-        return;
-      }
+    } on ProfilePasswordIncorrectException catch (_) {
+      form
+          .control('password')
+          .setErrors({AppValidationMessage.passwordIncorrect: true});
 
-      rethrow;
+      return;
     }
 
     await _profileCubit.unlockDefaultProfile(password);

@@ -65,7 +65,7 @@ class ProfileAuthUnlockScreen extends StatelessWidget {
                       ],
                     ),
                   )
-                : Container(),
+                : const SizedBox(),
           ),
         ),
       );

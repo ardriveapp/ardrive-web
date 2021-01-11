@@ -13,7 +13,7 @@ import '../utils/utils.dart';
 void main() {
   group('DriveCreateCubit', () {
     Database db;
-    DrivesDao drivesDao;
+    DriveDao driveDao;
 
     ArweaveService arweave;
     DrivesCubit drivesCubit;
@@ -24,14 +24,14 @@ void main() {
 
     setUp(() {
       db = getTestDb();
-      drivesDao = db.drivesDao;
+      driveDao = db.driveDao;
 
       arweave = ArweaveService(Arweave());
       drivesCubit = MockDrivesCubit();
       profileCubit = MockProfileCubit();
 
       when(profileCubit.state).thenReturn(
-        ProfileLoaded(
+        ProfileLoggedIn(
           password: '123',
           wallet: getTestWallet(),
           cipherKey: SecretKey.randomBytes(32),
@@ -40,7 +40,7 @@ void main() {
 
       driveCreateCubit = DriveCreateCubit(
         arweave: arweave,
-        drivesDao: drivesDao,
+        driveDao: driveDao,
         drivesCubit: drivesCubit,
         profileCubit: profileCubit,
       );

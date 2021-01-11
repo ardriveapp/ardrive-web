@@ -1,3 +1,4 @@
+import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_portal/flutter_portal.dart';
@@ -16,14 +17,14 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  bool showProfileOverlay = false;
+  bool _showProfileOverlay = false;
 
   @override
   Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
         builder: (context, state) => Scaffold(
           appBar: AppBar(
             title: Image.asset(
-              'assets/images/brand/logo-horiz-beta-no-subtitle.png',
+              R.images.brand.logoHorizontalNoSubtitle,
               height: 64,
               fit: BoxFit.contain,
             ),
@@ -45,13 +46,13 @@ class _AppShellState extends State<AppShell> {
               ),
               IconButton(
                 icon: PortalEntry(
-                  visible: showProfileOverlay,
+                  visible: _showProfileOverlay,
                   portal: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () => toggleProfileOverlay(),
                   ),
                   child: PortalEntry(
-                    visible: showProfileOverlay,
+                    visible: _showProfileOverlay,
                     portal: ProfileOverlay(),
                     portalAnchor: Alignment.topRight,
                     childAnchor: Alignment.centerLeft,
@@ -75,5 +76,5 @@ class _AppShellState extends State<AppShell> {
       );
 
   void toggleProfileOverlay() =>
-      setState(() => showProfileOverlay = !showProfileOverlay);
+      setState(() => _showProfileOverlay = !_showProfileOverlay);
 }

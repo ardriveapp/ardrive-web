@@ -1,0 +1,18 @@
+CREATE TABLE drives (
+    id TEXT NOT NULL PRIMARY KEY,
+    rootFolderId TEXT NOT NULL,
+
+    ownerAddress TEXT NOT NULL,
+
+    name TEXT NOT NULL,
+
+    latestSyncedBlock INTEGER DEFAULT 0,
+
+    privacy TEXT NOT NULL,
+
+    encryptedKey BLOB,
+    keyEncryptionIv BLOB,
+
+    dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
+    lastUpdated DATETIME NOT NULL DEFAULT (strftime('%s','now'))
+);

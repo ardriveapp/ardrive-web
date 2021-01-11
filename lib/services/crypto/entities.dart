@@ -41,12 +41,8 @@ Future<Uint8List> decryptTransactionData(
         nonce: Nonce(cipherIv),
       );
     }
-  } catch (err) {
-    if (err is MacValidationException) {
-      throw TransactionDecryptionException();
-    }
-
-    rethrow;
+  } on MacValidationException catch (_) {
+    throw TransactionDecryptionException();
   }
 
   throw ArgumentError();

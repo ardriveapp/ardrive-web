@@ -3,42 +3,54 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:cross_file/cross_file.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'components.dart';
 
-Future<void> promptToDownloadFile(
-  BuildContext context, {
+Future<void> promptToDownloadProfileFile({
+  @required BuildContext context,
   @required String driveId,
   @required String fileId,
 }) =>
     showDialog(
       context: context,
-      builder: (_) => FileDownloadDialog(
-        driveId: driveId,
-        fileId: fileId,
-      ),
-    );
-
-class FileDownloadDialog extends StatelessWidget {
-  final String driveId;
-  final String fileId;
-
-  FileDownloadDialog({@required this.driveId, @required this.fileId});
-
-  @override
-  Widget build(BuildContext context) => BlocProvider(
-        create: (_) => FileDownloadCubit(
+      builder: (_) => BlocProvider<FileDownloadCubit>(
+        create: (_) => ProfileFileDownloadCubit(
           driveId: driveId,
           fileId: fileId,
           profileCubit: context.read<ProfileCubit>(),
           driveDao: context.read<DriveDao>(),
           arweave: context.read<ArweaveService>(),
         ),
-        child: BlocConsumer<FileDownloadCubit, FileDownloadState>(
-            listener: (context, state) async {
+        child: FileDownloadDialog(),
+      ),
+    );
+
+Future<void> promptToDownloadSharedFile({
+  @required BuildContext context,
+  @required String fileId,
+  SecretKey fileKey,
+}) =>
+    showDialog(
+      context: context,
+      builder: (_) => BlocProvider<FileDownloadCubit>(
+        create: (_) => SharedFileDownloadCubit(
+          fileId: fileId,
+          fileKey: fileKey,
+          arweave: context.read<ArweaveService>(),
+        ),
+        child: FileDownloadDialog(),
+      ),
+    );
+
+class FileDownloadDialog extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) =>
+      BlocConsumer<FileDownloadCubit, FileDownloadState>(
+        listener: (context, state) async {
           if (state is FileDownloadSuccess) {
             final downloadedFile = XFile.fromData(
               state.fileDataBytes,
@@ -49,13 +61,25 @@ class FileDownloadDialog extends StatelessWidget {
 
             Navigator.pop(context);
           }
-        }, builder: (context, state) {
-          if (state is FileDownloadInProgress) {
+        },
+        builder: (context, state) {
+          if (state is FileDownloadStarting) {
+            return AppDialog(
+              dismissable: false,
+              title: 'Downloading file...',
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Center(child: CircularProgressIndicator()),
+                ],
+              ),
+            );
+          } else if (state is FileDownloadInProgress) {
             return AppDialog(
               dismissable: false,
               title: 'Downloading file...',
               content: SizedBox(
-                width: kSmallDialogWidth,
+                width: kMediumDialogWidth,
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(
@@ -87,6 +111,6 @@ class FileDownloadDialog extends StatelessWidget {
           } else {
             return const SizedBox();
           }
-        }),
+        },
       );
 }

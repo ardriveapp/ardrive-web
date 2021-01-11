@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+part of '../drive_detail_page.dart';
 
 class DriveDetailFolderEmptyCard extends StatelessWidget {
   final bool promptToAddFiles;

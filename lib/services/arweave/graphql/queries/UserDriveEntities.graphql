@@ -10,7 +10,7 @@ query UserDriveEntities($owner: String!) {
   ) {
     edges {
       node {
-        ...transactionCommon
+        ...TransactionCommon
       }
     }
   }
