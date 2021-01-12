@@ -70,14 +70,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           return;
         }
 
-        // Emit the loading state as it can be a while between the drive being not found, then added,
-        // and then the folders being loaded.
-        emit(DriveDetailLoadInProgress());
-
-        if (folderContents?.folder != null) {
-          final state = this.state is! DriveDetailLoadSuccess
-              ? DriveDetailLoadSuccess()
-              : this.state as DriveDetailLoadSuccess;
+        if (folderContents?.folder == null) {
+          // Emit the loading state as it can be a while between the drive being not found, then added,
+          // and then the folders being loaded.
+          emit(DriveDetailLoadInProgress());
+        } else {
+          final state = this.state is DriveDetailLoadSuccess
+              ? this.state as DriveDetailLoadSuccess
+              : DriveDetailLoadSuccess();
           final profile = _profileCubit.state;
 
           emit(
@@ -104,7 +104,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
 
     if (state.currentDrive.isPublic && !isFolder) {
-      final file = await _driveDao.fileById(driveId, state.selectedItemId).getSingle();
+      final file =
+          await _driveDao.fileById(driveId, state.selectedItemId).getSingle();
       state = state.copyWith(
           selectedFilePreviewUrl: Uri.parse(
               '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}'));
