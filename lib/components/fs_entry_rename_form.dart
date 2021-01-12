@@ -76,6 +76,7 @@ class FsEntryRenameForm extends StatelessWidget {
                           labelText: state.isRenamingFolder
                               ? 'Folder name'
                               : 'File name'),
+                      showErrors: (control) => control.invalid,
                       validationMessages: (_) => kValidationMessages,
                     ),
                   ),
