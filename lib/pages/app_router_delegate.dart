@@ -51,10 +51,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           // redirect them to sign in.
           //
           // Additionally, redirect the user to sign in if they are logging out.
+          final showingAnonymousRoute =
+              anonymouslyShowDriveDetail || isViewingSharedFile;
+
           if (!signingIn &&
-              (!anonymouslyShowDriveDetail ||
-                  !isViewingSharedFile ||
-                  state is ProfileLoggingOut)) {
+              (!showingAnonymousRoute || state is ProfileLoggingOut)) {
             signingIn = true;
             notifyListeners();
           }
