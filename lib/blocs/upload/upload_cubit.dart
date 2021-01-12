@@ -107,26 +107,30 @@ class UploadCubit extends Cubit<UploadState> {
         .map((f) => f.cost)
         .reduce((total, cost) => total + cost);
 
-    // Workaround [BigInt] percentage division problems
-    // by first multiplying by the percentage * 100 and then dividing by 100.
-    final pstFee = uploadCost *
-        BigInt.from((await _pst.getPstFeePercentage()) * 100) ~/
-        BigInt.from(100);
+    var pstFee = BigInt.zero;
+
+    try {
+      // Workaround [BigInt] percentage division problems
+      // by first multiplying by the percentage * 100 and then dividing by 100.
+      pstFee = uploadCost *
+          BigInt.from((await _pst.getPstFeePercentage()) * 100) ~/
+          BigInt.from(100);
+
+      feeTx = await _arweave.client.transactions.prepare(
+        Transaction(
+          target: await _pst.getWeightedPstHolder(),
+          quantity: pstFee,
+        ),
+        profile.wallet,
+      )
+        ..addApplicationTags()
+        ..addTag('Type', 'fee')
+        ..addTag(TipType.tagName, TipType.dataUpload);
+
+      await feeTx.sign(profile.wallet);
+    } on UnimplementedError catch (_) {}
 
     final totalCost = uploadCost + pstFee;
-
-    feeTx = await _arweave.client.transactions.prepare(
-      Transaction(
-        target: await _pst.getWeightedPstHolder(),
-        quantity: pstFee,
-      ),
-      profile.wallet,
-    )
-      ..addApplicationTags()
-      ..addTag('Type', 'fee')
-      ..addTag(TipType.tagName, TipType.dataUpload);
-
-    await feeTx.sign(profile.wallet);
 
     emit(
       UploadReady(
@@ -143,7 +147,9 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUpload() async {
     emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
 
-    await _arweave.postTx(feeTx);
+    if (feeTx != null) {
+      await _arweave.postTx(feeTx);
+    }
 
     await _driveDao.transaction(() async {
       for (final uploadHandle in _fileUploadHandles.values) {
