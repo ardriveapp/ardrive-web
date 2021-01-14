@@ -41,7 +41,8 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
     _wallet = Wallet.fromJwk(json.decode(walletJson));
 
-    _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(_wallet.address);
+    _driveTxs =
+        await _arweave.getUniqueUserDriveEntityTxs(await _wallet.getAddress());
 
     if (_driveTxs.isEmpty) {
       emit(ProfileAddOnboardingNewUser());

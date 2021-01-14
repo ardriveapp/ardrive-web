@@ -128,7 +128,8 @@ class ArweaveService {
   ) async {
     final userDriveEntitiesQuery = await _gql.execute(
       UserDriveEntitiesQuery(
-          variables: UserDriveEntitiesArguments(owner: wallet.address)),
+          variables:
+              UserDriveEntitiesArguments(owner: await wallet.getAddress())),
     );
 
     final driveTxs = userDriveEntitiesQuery.data.transactions.edges
@@ -333,7 +334,7 @@ class ArweaveService {
     SecretKey key,
   ]) async {
     final item = await entity.asDataItem(key);
-    item.setOwner(wallet.owner);
+    item.setOwner(await wallet.getOwner());
 
     await item.sign(wallet);
 

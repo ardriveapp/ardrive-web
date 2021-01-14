@@ -34,7 +34,7 @@ void main() {
         ProfileLoggedIn(
           password: '123',
           wallet: getTestWallet(),
-          cipherKey: SecretKey.randomBytes(32),
+          cipherKey: SecretKey.(32),
         ),
       );
 

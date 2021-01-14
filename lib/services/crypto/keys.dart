@@ -5,6 +5,8 @@ import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:uuid/uuid.dart';
 
+import 'crypto.dart';
+
 const keyByteLength = 256 ~/ 8;
 final _uuid = Uuid();
 
@@ -16,7 +18,7 @@ final pbkdf2 = Pbkdf2(
 final hkdf = Hkdf(Hmac(sha256));
 
 Future<ProfileKeyDerivationResult> deriveProfileKey(String password,
-    [Nonce salt]) async {
+    [List<int> salt]) async {
   salt ??= Nonce.randomBytes(128 ~/ 8);
 
   final keyBytes = await pbkdf2.deriveBits(
@@ -36,7 +38,7 @@ Future<SecretKey> deriveDriveKey(
       .sign(Uint8List.fromList(utf8.encode('drive') + _uuid.parse(driveId)));
 
   return hkdf.deriveKey(
-    SecretKey(walletSignature),
+    secretKey: SecretKey(walletSignature),
     info: utf8.encode(password),
     outputLength: keyByteLength,
   );
@@ -46,7 +48,7 @@ Future<SecretKey> deriveFileKey(SecretKey driveKey, String fileId) async {
   final fileIdBytes = Uint8List.fromList(_uuid.parse(fileId));
 
   return hkdf.deriveKey(
-    driveKey,
+    secretKey: driveKey,
     info: fileIdBytes,
     outputLength: keyByteLength,
   );
@@ -54,7 +56,7 @@ Future<SecretKey> deriveFileKey(SecretKey driveKey, String fileId) async {
 
 class ProfileKeyDerivationResult {
   final SecretKey key;
-  final Nonce salt;
+  final List<int> salt;
 
   ProfileKeyDerivationResult(this.key, this.salt);
 }

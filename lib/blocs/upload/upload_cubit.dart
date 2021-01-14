@@ -9,6 +9,7 @@ import 'package:equatable/equatable.dart';
 import 'package:file_picker_cross/file_picker_cross.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
+import 'package:moor/moor.dart';
 import 'package:path/path.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:uuid/uuid.dart';
@@ -205,7 +206,7 @@ class UploadCubit extends Cubit<UploadState> {
       uploadHandle.dataTx = private
           ? await createEncryptedDataItem(fileData, fileKey)
           : DataItem.withBlobData(data: fileData);
-      uploadHandle.dataTx.setOwner(profile.wallet.owner);
+      uploadHandle.dataTx.setOwner(await profile.wallet.getOwner());
     } else {
       uploadHandle.dataTx = await _arweave.client.transactions.prepare(
         private

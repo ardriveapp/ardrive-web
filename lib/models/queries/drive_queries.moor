@@ -6,11 +6,15 @@ import '../tables/file_revisions.moor';
 import '../tables/network_transactions.moor';
 
 allDrives: SELECT * FROM drives;
-driveById: SELECT * FROM drives WHERE id = :driveId;
+driveById:
+    SELECT * FROM drives
+    WHERE id = :driveId
+    LIMIT 1;
 
 folderById:
     SELECT * FROM folder_entries
-    WHERE driveId = :driveId AND id = :folderId;
+    WHERE driveId = :driveId AND id = :folderId
+    LIMIT 1;
 foldersInFolder:
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId;
@@ -34,7 +38,8 @@ latestFolderRevisionsByFolderIdWithTransactions AS FolderRevisionWithTransaction
 
 fileById:
     SELECT * FROM file_entries
-    WHERE driveId = :driveId AND id = :fileId;
+    WHERE driveId = :driveId AND id = :fileId
+    LIMIT 1;
 filesInFolder:
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId;
@@ -45,11 +50,13 @@ filesInFolderWithName:
 oldestFileRevisionByFileId:
     SELECT * FROM file_revisions
     WHERE driveId = :driveId AND fileId = :fileId
-    ORDER BY dateCreated ASC LIMIT 1;
+    ORDER BY dateCreated ASC
+    LIMIT 1;
 latestFileRevisionByFileId:
     SELECT * FROM file_revisions
     WHERE driveId = :driveId AND fileId = :fileId
-    ORDER BY dateCreated DESC LIMIT 1;
+    ORDER BY dateCreated DESC
+    LIMIT 1;
 latestFileRevisionsByFileIdWithTransactions AS FileRevisionWithTransactions:
     SELECT rev.*, metadataTx.**, dataTx.** FROM file_revisions rev
     INNER JOIN network_transactions metadataTx ON metadataTx.id = rev.metadataTxId

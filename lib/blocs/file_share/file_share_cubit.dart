@@ -5,6 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:meta/meta.dart';
+import 'package:moor/moor.dart';
 
 part 'file_share_state.dart';
 
@@ -44,7 +45,8 @@ class FileShareCubit extends Cubit<FileShareState> {
 
       final fileKey =
           await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
-      final fileKeyBase64 = utils.encodeBytesToBase64(await fileKey.extract());
+      final fileKeyBase64 =
+          utils.encodeBytesToBase64(await fileKey.extractBytes());
 
       fileShareLink = fileShareLink + '?fileKey=$fileKeyBase64';
     }

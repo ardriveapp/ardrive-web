@@ -13,7 +13,7 @@ void main() async {
   final keyByteLength = 256 ~/ 8;
   final kdf = Hkdf(Hmac(sha256));
 
-  final wallet = await arweave.wallets.generate();
+  final wallet = await Wallet.generate();
 
   final data = utf8.encode('<cool user data>');
 

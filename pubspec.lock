@@ -439,7 +439,7 @@ packages:
       name: json_serializable
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.0.0-nullsafety.0"
+    version: "3.5.1"
   jwk:
     dependency: transitive
     description:

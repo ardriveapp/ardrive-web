@@ -131,16 +131,14 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     SecretKey profileKey,
     SecretKey driveKey,
   ) async {
-    final iv = Nonce.randomBytes(96 ~/ 8);
-    final encryptedWallet = await aesGcm.encrypt(
-      await driveKey.extract(),
+    final encryptionRes = await aesGcm.encrypt(
+      await driveKey.extractBytes(),
       secretKey: profileKey,
-      nonce: iv,
     );
 
     return drive.copyWith(
-      encryptedKey: Value(encryptedWallet),
-      keyEncryptionIv: Value(iv.bytes),
+      encryptedKey: Value(encryptionRes.concatenation(nonce: false)),
+      keyEncryptionIv: Value(encryptionRes.nonce),
     );
   }
 
@@ -155,9 +153,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     }
 
     final driveKeyData = await aesGcm.decrypt(
-      drive.encryptedKey,
+      SecretBox(drive.encryptedKey, nonce: drive.keyEncryptionIv),
       secretKey: profileKey,
-      nonce: Nonce(drive.keyEncryptionIv),
     );
 
     return SecretKey(driveKeyData);

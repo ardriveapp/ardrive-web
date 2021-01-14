@@ -8,6 +8,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
+import 'package:moor/moor.dart';
 import 'package:path/path.dart';
 
 part 'file_download_state.dart';
