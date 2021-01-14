@@ -26,11 +26,8 @@ dependencies:
   arweave:
     git:
       url: https://github.com/CDDelta/arweave-dart.git
-      ref: b1a89002e8a2686a01da96d95823c299195aaa18
-  cryptography:
-    git:
-      url: https://github.com/CDDelta/cryptography.git
-      path: cryptography
+      ref: d2c4606a75c098adfbbb709625b3b0581216f041
+  cryptography: ^2.0.0-nullsafety.2
   flutter_bloc: ^6.1.0
   flutter_portal: ^0.3.0
   filesize: ^1.0.4
@@ -40,9 +37,9 @@ dependencies:
       ref: dfa07cd90175ddffded7ac33e497abd9dfcf7ffb
   google_fonts: ^1.1.1
   intl: ^0.16.1
-  json_annotation: ^3.0.1
+  json_annotation: ^4.0.0-nullsafety.0
   mime: ^0.9.7
-  moor: ^3.3.1
+  moor: ^4.0.0-nullsafety.1
   path_provider: ^1.6.11
   pedantic: ^1.9.2
   reactive_forms: ^8.0.1
@@ -57,10 +54,16 @@ dev_dependencies:
 
   test: ^1.15.4
   bloc_test: ^7.1.0
-  mockito: ^4.1.0
+  mockito: ^5.0.0-nullsafety.2
   build_runner: ^1.10.0
-  moor_generator: ^3.3.1
-  json_serializable: ^3.3.0
+  moor_generator: ^4.0.0-dev
+  json_serializable: ^4.0.0-nullsafety.0
+
+dependency_overrides:
+  crypto: ^3.0.0-nullsafety.0
+  ffi: ^0.2.0-nullsafety.1
+  mockito: ^5.0.0-nullsafety.2
+  json_annotation: ^4.0.0-nullsafety.0
 
 flutter:
   uses-material-design: true
