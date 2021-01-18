@@ -41,8 +41,9 @@ class ProfileCubit extends Cubit<ProfileState> {
     final profile = await _profileDao.loadDefaultProfile(password);
 
     if (profile != null) {
+      final walletAddress = await profile.wallet.getAddress();
       final walletBalance =
-          await _arweave.client.wallets.getBalance(profile.wallet.address);
+          await _arweave.client.wallets.getBalance(walletAddress);
 
       emit(
         ProfileLoggedIn(
@@ -59,11 +60,13 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   Future<void> refreshBalance() async {
-    final state = this.state as ProfileLoggedIn;
-    final walletBalance =
-        await _arweave.client.wallets.getBalance(state.wallet.address);
+    final profile = state as ProfileLoggedIn;
 
-    emit(state.copyWith(walletBalance: walletBalance));
+    final walletAddress = await profile.wallet.getAddress();
+    final walletBalance =
+        await _arweave.client.wallets.getBalance(walletAddress);
+
+    emit(profile.copyWith(walletBalance: walletBalance));
   }
 
   /// Removes the user's existing profile and its associated data then prompts them to add another.

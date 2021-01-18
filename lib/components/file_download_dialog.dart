@@ -7,6 +7,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pedantic/pedantic.dart';
 
 import 'components.dart';
 
@@ -53,7 +54,7 @@ class FileDownloadDialog extends StatelessWidget {
         listener: (context, state) async {
           if (state is FileDownloadSuccess) {
             final savePath = await getSavePath();
-            state.file.saveTo(savePath);
+            unawaited(state.file.saveTo(savePath));
 
             Navigator.pop(context);
           }

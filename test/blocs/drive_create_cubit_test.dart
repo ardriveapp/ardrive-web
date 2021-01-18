@@ -22,18 +22,23 @@ void main() {
 
     const validDriveName = 'valid-drive-name';
 
-    setUp(() {
+    setUp(()async {
       db = getTestDb();
       driveDao = db.driveDao;
 
       arweave = ArweaveService(Arweave());
       drivesCubit = MockDrivesCubit();
       profileCubit = MockProfileCubit();
+      
+      final wallet =  getTestWallet();
+  final walletAddress=  await wallet.getAddress();
 
       when(profileCubit.state).thenReturn(
         ProfileLoggedIn(
           password: '123',
-          wallet: getTestWallet(),
+          wallet:wallet,
+          walletAddress: walletAddress,
+          walletBalance: BigInt.one,
           cipherKey: SecretKey.(32),
         ),
       );
