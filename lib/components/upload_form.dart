@@ -134,7 +134,7 @@ class UploadForm extends StatelessWidget {
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(file.entity.name),
-                                subtitle: Text(filesize(file.uploadSize)),
+                                subtitle: Text(filesize(file.size)),
                               ),
                             },
                           ],
@@ -190,7 +190,7 @@ class UploadForm extends StatelessWidget {
                             contentPadding: EdgeInsets.zero,
                             title: Text(file.entity.name),
                             subtitle: Text(
-                                '${filesize(file.uploadedSize)}/${filesize(file.uploadSize)}'),
+                                '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
                             trailing: CircularProgressIndicator(
                                 // Show an indeterminate progress indicator if the upload hasn't started yet as
                                 // small uploads might never report a progress.

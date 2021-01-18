@@ -43,7 +43,7 @@ class FolderCreateForm extends StatelessWidget {
         builder: (context, state) => AppDialog(
           title: 'CREATE FOLDER',
           content: SizedBox(
-            width: kSmallDialogWidth,
+            width: kMediumDialogWidth,
             child: ReactiveForm(
               formGroup: context.watch<FolderCreateCubit>().form,
               child: ReactiveTextField(

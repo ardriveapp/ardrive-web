@@ -385,11 +385,15 @@ class SyncCubit extends Cubit<SyncState> {
 
     await _driveDao.transaction(() async {
       for (final txId in pendingTxMap.keys) {
-        var txStatus = txConfirmations[txId] >= kRequiredTxConfirmationCount
-            ? TransactionStatus.confirmed
-            : TransactionStatus.pending;
+        final txConfirmed =
+            txConfirmations[txId] >= kRequiredTxConfirmationCount;
+        final txNotFound = txConfirmations[txId] < 0;
 
-        if (txStatus == TransactionStatus.pending) {
+        var txStatus;
+
+        if (txConfirmed) {
+          txStatus = TransactionStatus.confirmed;
+        } else if (txNotFound) {
           // Only mark transactions as failed if they are unconfirmed for over 45 minutes
           // as the transaction might not be queryable for right after it was created.
           final abovePendingThreshold = DateTime.now()
@@ -401,12 +405,14 @@ class SyncCubit extends Cubit<SyncState> {
           }
         }
 
-        await _driveDao.writeToTransaction(
-          NetworkTransactionsCompanion(
-            id: Value(txId),
-            status: Value(txStatus),
-          ),
-        );
+        if (txStatus != null) {
+          await _driveDao.writeToTransaction(
+            NetworkTransactionsCompanion(
+              id: Value(txId),
+              status: Value(txStatus),
+            ),
+          );
+        }
       }
     });
   }

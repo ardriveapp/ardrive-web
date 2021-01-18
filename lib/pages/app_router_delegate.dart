@@ -47,12 +47,15 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           final anonymouslyShowDriveDetail =
               state is! ProfileLoggedIn && canAnonymouslyShowDriveDetail(state);
 
-          // If the user is not already signing in and not anonymously viewing a drive,
+          // If the user is not already signing in, not viewing a shared file and not anonymously viewing a drive,
           // redirect them to sign in.
           //
           // Additionally, redirect the user to sign in if they are logging out.
+          final showingAnonymousRoute =
+              anonymouslyShowDriveDetail || isViewingSharedFile;
+
           if (!signingIn &&
-              (!anonymouslyShowDriveDetail || state is ProfileLoggingOut)) {
+              (!showingAnonymousRoute || state is ProfileLoggingOut)) {
             signingIn = true;
             notifyListeners();
           }
