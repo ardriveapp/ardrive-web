@@ -12,8 +12,7 @@ driveById: SELECT * FROM drives WHERE id = :driveId;
 
 folderById:
     SELECT * FROM folder_entries
-    WHERE driveId = :driveId AND id = :folderId
-    LIMIT 1;
+    WHERE driveId = :driveId AND id = :folderId;
 foldersInFolder:
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId;
@@ -24,11 +23,13 @@ foldersInFolderWithName:
 oldestFolderRevisionByFolderId:
     SELECT * FROM folder_revisions
     WHERE driveId = :driveId AND folderId = :folderId
-    ORDER BY dateCreated ASC LIMIT 1;
+    ORDER BY dateCreated ASC 
+    LIMIT 1;
 latestFolderRevisionByFolderId:
     SELECT * FROM folder_revisions
     WHERE driveId = :driveId AND folderId = :folderId
-    ORDER BY dateCreated DESC LIMIT 1;
+    ORDER BY dateCreated DESC
+    LIMIT 1;
 latestFolderRevisionsByFolderIdWithTransactions AS FolderRevisionWithTransaction:
     SELECT rev.*, metadataTx.** FROM folder_revisions rev
     INNER JOIN network_transactions metadataTx ON metadataTx.id = rev.metadataTxId
@@ -37,8 +38,7 @@ latestFolderRevisionsByFolderIdWithTransactions AS FolderRevisionWithTransaction
 
 fileById:
     SELECT * FROM file_entries
-    WHERE driveId = :driveId AND id = :fileId
-    LIMIT 1;
+    WHERE driveId = :driveId AND id = :fileId;
 filesInFolder:
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId;
