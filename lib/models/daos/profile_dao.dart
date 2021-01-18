@@ -30,7 +30,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       final walletJwk = json.decode(
         utf8.decode(
           await aesGcm.decrypt(
-            SecretBox(profile.encryptedWallet, nonce: profileSalt),
+            SecretBox.fromConcatenation(profile.encryptedWallet),
             secretKey: profileKdRes.key,
           ),
         ),
@@ -51,7 +51,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   Future<SecretKey> addProfile(
       String username, String password, Wallet wallet) async {
     final profileKdRes = await deriveProfileKey(password);
-    final profileSalt = profileKdRes.salt.bytes;
+    final profileSalt = profileKdRes.salt;
 
     final walletJson = utf8.encode(json.encode(wallet.toJwk()));
     final encryptedWallet = await aesGcm.encrypt(

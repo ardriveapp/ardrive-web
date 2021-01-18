@@ -7,11 +7,10 @@ import 'package:cryptography/cryptography.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
-  final arweave = Arweave();
   final uuid = Uuid();
 
   final keyByteLength = 256 ~/ 8;
-  final kdf = Hkdf(Hmac(sha256));
+  final kdf = Hkdf(hmac: Hmac(Sha256()), outputLength: keyByteLength);
 
   final wallet = await Wallet.generate();
 
@@ -32,9 +31,9 @@ void main() async {
   final password = '<password provided by user>';
 
   final driveKey = await kdf.deriveKey(
-    SecretKey(walletSignature),
+    secretKey: SecretKey(walletSignature),
     info: utf8.encode(password),
-    outputLength: keyByteLength,
+    nonce: Uint8List(0),
   );
 
   // Derive a file key from the user's drive key and the file id.
@@ -43,26 +42,25 @@ void main() async {
   final fileIdBytes = Uint8List.fromList(uuid.parse('<file uuid>'));
 
   final fileKey = await kdf.deriveKey(
-    driveKey,
+    secretKey: driveKey,
     info: fileIdBytes,
-    outputLength: keyByteLength,
+    nonce: Uint8List(0),
   );
 
   // Encrypt the data using AES256-GCM using a 96-bit IV as recommended.
   // No need to provide any additional data.
   // See https://crypto.stackexchange.com/questions/35727/does-aad-make-gcm-encryption-more-secure
-  final iv = Nonce.randomBytes(96 ~/ 8);
+  final aesGcm = AesGcm.with256bits();
+
   final encryptedData = await aesGcm.encrypt(
     data,
     secretKey: fileKey,
-    nonce: iv,
   );
 
   // Encrypted data can then be decrypted using the derived file key and publicly available IV.
-  final decryptedData =
-      await aesGcm.decrypt(encryptedData, secretKey: fileKey, nonce: iv);
+  final decryptedData = await aesGcm.decrypt(encryptedData, secretKey: fileKey);
 
   print(utf8.decode(decryptedData));
-  print(hex.encode(await driveKey.extract()));
-  print(hex.encode(await fileKey.extract()));
+  print(hex.encode(await driveKey.extractBytes()));
+  print(hex.encode(await fileKey.extractBytes()));
 }
