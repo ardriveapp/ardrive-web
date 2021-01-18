@@ -9,7 +9,6 @@ import 'package:equatable/equatable.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
-import 'package:path/path.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:uuid/uuid.dart';
 
@@ -70,7 +69,7 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadPreparationInProgress());
 
     for (final file in files) {
-      final fileName = basename(file.path);
+      final fileName = file.name;
       final existingFileId = await _driveDao
           .filesInFolderWithName(
             _targetDrive.id,
@@ -167,7 +166,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<FileUploadHandle> prepareFileUpload(XFile file) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
-    final fileName = basename(file.path);
+    final fileName = file.name;
     final filePath = '${_targetFolder.path}/${fileName}';
     final fileEntity = FileEntity(
       driveId: _targetDrive.id,
