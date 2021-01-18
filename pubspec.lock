@@ -203,7 +203,7 @@ packages:
     dependency: "direct main"
     description:
       path: cryptography
-      ref: HEAD
+      ref: "675aa0855fb29e6afc6aa05f67d9c29b66f95835"
       resolved-ref: "675aa0855fb29e6afc6aa05f67d9c29b66f95835"
       url: "https://github.com/CDDelta/cryptography.git"
     source: git
