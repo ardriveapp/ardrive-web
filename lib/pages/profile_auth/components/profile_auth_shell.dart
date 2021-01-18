@@ -20,14 +20,29 @@ class ProfileAuthShell extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Container(
-                color: kDarkSurfaceColor,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: illustration,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Container(
+                    color: kDarkSurfaceColor,
                   ),
-                ),
+                  FittedBox(
+                    fit: BoxFit.fitWidth,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(R.images.profile.permahillsBg),
+                        SizedBox(height: 128),
+                      ],
+                    ),
+                  ),
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: illustration,
+                    ),
+                  ),
+                ],
               ),
             ),
             Expanded(

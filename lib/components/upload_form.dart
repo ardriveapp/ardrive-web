@@ -3,7 +3,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:arweave/utils.dart' as utils;
-import 'package:file_picker_cross/file_picker_cross.dart';
+import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,28 +16,30 @@ Future<void> promptToUploadFile(
   @required String folderId,
   bool allowSelectMultiple = false,
 }) async {
-  try {
-    final selectedFiles = allowSelectMultiple
-        ? await FilePickerCross.importMultipleFromStorage()
-        : [FilePickerCross.importFromStorage()];
+  final selectedFiles = allowSelectMultiple
+      ? await file_selector.openFiles()
+      : [await file_selector.openFile()];
 
-    await showDialog(
-      context: context,
-      builder: (_) => BlocProvider<UploadCubit>(
-        create: (context) => UploadCubit(
-          driveId: driveId,
-          folderId: folderId,
-          files: selectedFiles,
-          arweave: context.read<ArweaveService>(),
-          pst: context.read<PstService>(),
-          profileCubit: context.read<ProfileCubit>(),
-          driveDao: context.read<DriveDao>(),
-        ),
-        child: UploadForm(),
+  if (selectedFiles.isEmpty || selectedFiles.first == null) {
+    return;
+  }
+
+  await showDialog(
+    context: context,
+    builder: (_) => BlocProvider<UploadCubit>(
+      create: (context) => UploadCubit(
+        driveId: driveId,
+        folderId: folderId,
+        files: selectedFiles,
+        arweave: context.read<ArweaveService>(),
+        pst: context.read<PstService>(),
+        profileCubit: context.read<ProfileCubit>(),
+        driveDao: context.read<DriveDao>(),
       ),
-      barrierDismissible: false,
-    );
-  } on FileSelectionCanceledError catch (_) {}
+      child: UploadForm(),
+    ),
+    barrierDismissible: false,
+  );
 }
 
 class UploadForm extends StatelessWidget {
