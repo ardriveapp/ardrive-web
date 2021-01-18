@@ -5,6 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:meta/meta.dart';
+import 'package:moor/moor.dart';
 
 part 'file_share_state.dart';
 

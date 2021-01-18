@@ -139,7 +139,7 @@ class SyncCubit extends Cubit<SyncState> {
       if (!latestRevisions.containsKey(entity.id)) {
         latestRevisions[entity.id] = await _driveDao
             .latestFolderRevisionByFolderId(driveId, entity.id)
-            .getSingle()
+            .getSingleOrNull()
             .then((r) => r?.toCompanion(true));
       }
 
@@ -190,7 +190,7 @@ class SyncCubit extends Cubit<SyncState> {
       if (!latestRevisions.containsKey(entity.id)) {
         latestRevisions[entity.id] = await _driveDao
             .latestFileRevisionByFileId(driveId, entity.id)
-            .getSingle()
+            .getSingleOrNull()
             .then((r) => r?.toCompanion(true));
       }
 
@@ -252,7 +252,7 @@ class SyncCubit extends Cubit<SyncState> {
     for (final folderId in updatedFoldersById.keys) {
       final oldestRevision = await _driveDao
           .oldestFolderRevisionByFolderId(driveId, folderId)
-          .getSingle();
+          .getSingleOrNull();
 
       updatedFoldersById[folderId] = updatedFoldersById[folderId].copyWith(
           dateCreated: Value(oldestRevision?.dateCreated ??
@@ -274,7 +274,7 @@ class SyncCubit extends Cubit<SyncState> {
     for (final fileId in updatedFilesById.keys) {
       final oldestRevision = await _driveDao
           .oldestFileRevisionByFileId(driveId, fileId)
-          .getSingle();
+          .getSingleOrNull();
 
       updatedFilesById[fileId] = updatedFilesById[fileId].copyWith(
           dateCreated: Value(oldestRevision?.dateCreated ??
@@ -359,7 +359,7 @@ class SyncCubit extends Cubit<SyncState> {
       final parentPath = await _driveDao
           .folderById(driveId, staleOrphanFile.parentFolderId.value)
           .map((f) => f.path)
-          .getSingle();
+          .getSingleOrNull();
 
       if (parentPath != null) {
         final filePath = parentPath + '/' + staleOrphanFile.name.value;

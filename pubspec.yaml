@@ -42,7 +42,7 @@ dependencies:
   intl: ^0.16.1
   json_annotation: ^3.0.1
   mime: ^0.9.7
-  moor: ^3.3.1
+  moor: ^4.0.0-nullsafety.1
   path_provider: ^1.6.11
   pedantic: ^1.9.2
   reactive_forms: ^8.0.1
@@ -57,9 +57,9 @@ dev_dependencies:
 
   test: ^1.15.4
   bloc_test: ^7.1.0
-  mockito: ^4.1.0
+  mockito: ^5.0.0-nullsafety.2
   build_runner: ^1.10.0
-  moor_generator: ^3.3.1
+  moor_generator: ^4.0.0-dev
   json_serializable: ^3.3.0
 
 dependency_overrides:
@@ -68,6 +68,7 @@ dependency_overrides:
       url: https://github.com/CDDelta/cryptography.git
       path: cryptography
       ref: 675aa0855fb29e6afc6aa05f67d9c29b66f95835
+  mockito: ^5.0.0-nullsafety.2
 
 flutter:
   uses-material-design: true

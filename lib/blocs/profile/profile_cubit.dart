@@ -7,6 +7,7 @@ import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
+import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
 
 part 'profile_state.dart';
@@ -30,7 +31,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   Future<void> promptToAuthenticate() async {
-    final profile = await _profileDao.defaultProfile().getSingle();
+    final profile = await _profileDao.defaultProfile().getSingleOrNull();
     emit(profile != null ? ProfilePromptLogIn() : ProfilePromptAdd());
   }
 

@@ -23,10 +23,6 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   Future<ProfileLoadDetails> loadDefaultProfile(String password) async {
     final profile = await defaultProfile().getSingle();
 
-    if (profile == null) {
-      return null;
-    }
-
     final profileSalt = Nonce(profile.keySalt);
     final profileKdRes = await deriveProfileKey(password, profileSalt);
 

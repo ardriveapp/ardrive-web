@@ -10,6 +10,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
+import 'package:moor/moor.dart';
 
 part 'file_download_state.dart';
 part 'personal_file_download_cubit.dart';

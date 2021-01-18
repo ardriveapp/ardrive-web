@@ -193,7 +193,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
               (folderId != null
                   ? f.id.equals(folderId)
                   : f.path.equals(folderPath))))
-        .watchSingle();
+        .watchSingleOrNull();
 
     final subfoldersStream = (select(folderEntries)
           ..where((f) =>

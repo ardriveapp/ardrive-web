@@ -9,6 +9,7 @@ import 'package:equatable/equatable.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
+import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:uuid/uuid.dart';
 
@@ -77,7 +78,7 @@ class UploadCubit extends Cubit<UploadState> {
             fileName,
           )
           .map((f) => f.id)
-          .getSingle();
+          .getSingleOrNull();
 
       if (existingFileId != null) {
         conflictingFiles[fileName] = existingFileId;
