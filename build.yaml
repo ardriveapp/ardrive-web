@@ -8,3 +8,6 @@ targets:
               schema: lib/services/arweave/graphql/schema.graphql
               queries_glob: lib/services/arweave/graphql/queries/**.graphql
           fragments_glob: lib/services/arweave/graphql/fragments/**.graphql
+      moor_generator:
+        options:
+          named_parameters: true

@@ -5,11 +5,10 @@ import '../tables/file_entries.moor';
 import '../tables/file_revisions.moor';
 import '../tables/network_transactions.moor';
 
-allDrives: SELECT * FROM drives;
-driveById:
+allDrives ($order = ''):
     SELECT * FROM drives
-    WHERE id = :driveId
-    LIMIT 1;
+    ORDER BY $order;
+driveById: SELECT * FROM drives WHERE id = :driveId;
 
 folderById:
     SELECT * FROM folder_entries

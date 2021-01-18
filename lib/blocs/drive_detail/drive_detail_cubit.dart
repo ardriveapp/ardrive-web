@@ -38,8 +38,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     if (initialFolderId != null) {
       // TODO: Handle deep-linking folders of unattached drives.
       Future.microtask(() async {
-        final folder =
-            await _driveDao.folderById(driveId, initialFolderId).getSingle();
+        final folder = await _driveDao
+            .folderById(driveId: driveId, folderId: initialFolderId)
+            .getSingleOrNull();
         // Open the root folder if the deep-linked folder could not be found.
         openFolder(path: folder?.path ?? '');
       });
@@ -58,7 +59,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     _folderSubscription =
         Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
-      _driveDao.driveById(driveId).watchSingle(),
+      _driveDao.driveById(driveId: driveId).watchSingleOrNull(),
       _driveDao.watchFolderContents(driveId,
           folderPath: path,
           orderBy: contentOrderBy,
@@ -104,8 +105,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
 
     if (state.currentDrive.isPublic && !isFolder) {
-      final file =
-          await _driveDao.fileById(driveId, state.selectedItemId).getSingle();
+      final file = await _driveDao
+          .fileById(driveId: driveId, fileId: state.selectedItemId)
+          .getSingle();
       state = state.copyWith(
           selectedFilePreviewUrl: Uri.parse(
               '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}'));

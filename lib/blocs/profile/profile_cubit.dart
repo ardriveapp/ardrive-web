@@ -31,7 +31,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   Future<void> promptToAuthenticate() async {
-    final profile = await _profileDao.defaultProfile().getSingle();
+    final profile = await _profileDao.defaultProfile().getSingleOrNull();
     emit(profile != null ? ProfilePromptLogIn() : ProfilePromptAdd());
   }
 
