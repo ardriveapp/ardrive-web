@@ -55,8 +55,10 @@ class UploadCubit extends Cubit<UploadState> {
         _pst = pst,
         super(UploadPreparationInProgress()) {
     () async {
-      _targetDrive = await _driveDao.driveById(driveId).getSingle();
-      _targetFolder = await _driveDao.folderById(driveId, folderId).getSingle();
+      _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
+      _targetFolder = await _driveDao
+          .folderById(driveId: driveId, folderId: folderId)
+          .getSingle();
 
       unawaited(checkConflictingFiles());
     }();
@@ -73,9 +75,9 @@ class UploadCubit extends Cubit<UploadState> {
       final fileName = file.name;
       final existingFileId = await _driveDao
           .filesInFolderWithName(
-            _targetDrive.id,
-            _targetFolder.id,
-            fileName,
+            driveId: _targetDrive.id,
+            parentFolderId: _targetFolder.id,
+            name: fileName,
           )
           .map((f) => f.id)
           .getSingleOrNull();

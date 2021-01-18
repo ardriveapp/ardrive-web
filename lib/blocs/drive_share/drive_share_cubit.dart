@@ -23,7 +23,7 @@ class DriveShareCubit extends Cubit<DriveShareState> {
   Future<void> loadDriveShareDetails() async {
     emit(DriveShareLoadInProgress());
 
-    final drive = await _driveDao.driveById(driveId).getSingle();
+    final drive = await _driveDao.driveById(driveId: driveId).getSingle();
 
     // On web, link to the current origin the user is on.
     // Elsewhere, link to app.ardrive.io.

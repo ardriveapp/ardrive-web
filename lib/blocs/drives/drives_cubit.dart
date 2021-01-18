@@ -5,6 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
+import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../blocs.dart';
@@ -27,7 +28,9 @@ class DrivesCubit extends Cubit<DrivesState> {
         _driveDao = driveDao,
         super(DrivesLoadInProgress()) {
     _drivesSubscription = Rx.combineLatest2<List<Drive>, void, List<Drive>>(
-      _driveDao.allDrives().watch(),
+      _driveDao
+          .allDrives(order: OrderBy([OrderingTerm.asc(_driveDao.drives.name)]))
+          .watch(),
       _profileCubit.startWith(null),
       (drives, _) => drives,
     ).listen((drives) {

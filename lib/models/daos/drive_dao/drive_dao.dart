@@ -148,7 +148,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   ///
   /// `null` if the drive is public and unencrypted.
   Future<SecretKey> getDriveKey(String driveId, SecretKey profileKey) async {
-    final drive = await driveById(driveId).getSingle();
+    final drive = await driveById(driveId: driveId).getSingle();
 
     if (drive.encryptedKey == null) {
       return null;
@@ -287,10 +287,13 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   /// Constructs a tree of folders and files that are children of the specified folder.
   Future<FolderNode> getFolderTree(String driveId, String rootFolderId) async {
-    final rootFolder = await folderById(driveId, rootFolderId).getSingle();
+    final rootFolder =
+        await folderById(driveId: driveId, folderId: rootFolderId).getSingle();
 
     Future<FolderNode> getFolderChildren(FolderEntry parentFolder) async {
-      final subfolders = await foldersInFolder(driveId, parentFolder.id).get();
+      final subfolders = await foldersInFolder(
+              driveId: driveId, parentFolderId: parentFolder.id)
+          .get();
 
       return FolderNode(
         folder: parentFolder,
@@ -298,7 +301,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         subfolders:
             await Future.wait(subfolders.map((f) => getFolderChildren(f))),
         files: {
-          await for (var f in filesInFolder(driveId, parentFolder.id)
+          await for (var f in filesInFolder(
+                  driveId: driveId, parentFolderId: parentFolder.id)
               .get()
               .asStream()
               .expand((f) => f))
