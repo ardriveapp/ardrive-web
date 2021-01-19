@@ -26,7 +26,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/CDDelta/arweave-dart.git
-      ref: d2c4606a75c098adfbbb709625b3b0581216f041
+      ref: d8ecfc9a61eaaf69464824f4dbc1f2b8060dbd41
   cryptography: ^2.0.0-nullsafety.2
   flutter_bloc: ^6.1.0
   flutter_portal: ^0.3.0
@@ -36,7 +36,7 @@ dependencies:
   filesize: ^1.0.4
   google_fonts: ^1.1.1
   intl: ^0.16.1
-  json_annotation: ^4.0.0-nullsafety.0
+  json_annotation: ^3.0.1
   mime: ^0.9.7
   moor: ^4.0.0-nullsafety.1
   path_provider: ^1.6.11
@@ -61,8 +61,8 @@ dev_dependencies:
 dependency_overrides:
   crypto: ^3.0.0-nullsafety.0
   ffi: ^0.2.0-nullsafety.1
+  json_annotation: ^3.0.1
   mockito: ^5.0.0-nullsafety.2
-  json_annotation: ^4.0.0-nullsafety.0
 
 flutter:
   uses-material-design: true

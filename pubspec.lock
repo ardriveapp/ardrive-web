@@ -40,8 +40,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: d2c4606a75c098adfbbb709625b3b0581216f041
-      resolved-ref: d2c4606a75c098adfbbb709625b3b0581216f041
+      ref: d8ecfc9a61eaaf69464824f4dbc1f2b8060dbd41
+      resolved-ref: d8ecfc9a61eaaf69464824f4dbc1f2b8060dbd41
       url: "https://github.com/CDDelta/arweave-dart.git"
     source: git
     version: "0.1.0"
@@ -430,7 +430,7 @@ packages:
       name: json_annotation
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.0.0-nullsafety.0"
+    version: "3.1.1"
   json_serializable:
     dependency: "direct dev"
     description:
