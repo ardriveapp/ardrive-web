@@ -42,14 +42,14 @@ class ProfileCubit extends Cubit<ProfileState> {
 
     if (profile != null) {
       final walletAddress = await profile.wallet.getAddress();
-      final walletBalance =
-          await _arweave.client.wallets.getBalance(walletAddress);
+      final walletBalance = await _arweave.getWalletBalance(walletAddress);
 
       emit(
         ProfileLoggedIn(
           username: profile.details.username,
           password: password,
           wallet: profile.wallet,
+          walletAddress: walletAddress,
           walletBalance: walletBalance,
           cipherKey: profile.key,
         ),
@@ -63,8 +63,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     final profile = state as ProfileLoggedIn;
 
     final walletAddress = await profile.wallet.getAddress();
-    final walletBalance =
-        await _arweave.client.wallets.getBalance(walletAddress);
+    final walletBalance = await _arweave.getWalletBalance(walletAddress);
 
     emit(profile.copyWith(walletBalance: walletBalance));
   }

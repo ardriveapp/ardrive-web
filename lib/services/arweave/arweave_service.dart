@@ -13,6 +13,10 @@ class ArweaveService {
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
 
+  Future<BigInt> getWalletBalance(String address) => client.api
+      .get('wallet/$address/balance')
+      .then((res) => BigInt.parse(res.body));
+
   Future<TransactionCommonMixin> getTransactionDetails(String txId) async {
     final query = await _gql.execute(TransactionDetailsQuery(
         variables: TransactionDetailsArguments(txId: txId)));
