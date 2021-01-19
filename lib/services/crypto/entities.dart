@@ -37,10 +37,12 @@ Future<Uint8List> decryptTransactionData(
       final cipherIv =
           utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv));
 
-      return aesGcm.decrypt(
-        SecretBox(data, nonce: cipherIv),
-        secretKey: key,
-      );
+      return aesGcm
+          .decrypt(
+            secretBoxFromDataWithMacConcatenation(data, nonce: cipherIv),
+            secretKey: key,
+          )
+          .then((res) => Uint8List.fromList(res));
     }
   } on SecretBoxAuthenticationError catch (_) {
     throw TransactionDecryptionException();

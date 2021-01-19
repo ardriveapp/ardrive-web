@@ -30,7 +30,10 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       final walletJwk = json.decode(
         utf8.decode(
           await aesGcm.decrypt(
-            SecretBox.fromConcatenation(profile.encryptedWallet),
+            secretBoxFromDataWithMacConcatenation(
+              profile.encryptedWallet,
+              nonce: profileSalt,
+            ),
             secretKey: profileKdRes.key,
           ),
         ),
