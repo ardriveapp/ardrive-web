@@ -6,7 +6,7 @@ CREATE TABLE drives (
 
     name TEXT NOT NULL,
 
-    latestSyncedBlock INTEGER DEFAULT 0,
+    syncCursor TEXT,
 
     privacy TEXT NOT NULL,
 
