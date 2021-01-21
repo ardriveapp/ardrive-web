@@ -1,6 +1,6 @@
 import 'package:moor/moor.dart';
 
-import '../models.dart';
+import '../daos/daos.dart';
 import 'unsupported.dart'
     if (dart.library.html) 'web.dart'
     if (dart.library.io) 'ffi.dart';
@@ -15,7 +15,7 @@ class Database extends _$Database {
   Database([QueryExecutor e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -23,7 +23,7 @@ class Database extends _$Database {
           return m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          if (from == 1 || from == 2 || from == 3 || from == 4) {
+          if (from == 1 || from == 2 || from == 3 || from == 4 || from == 5) {
             // Reset the database.
             for (final table in allTables) {
               await m.deleteTable(table.actualTableName);
@@ -33,6 +33,4 @@ class Database extends _$Database {
           }
         },
       );
-
-  void a() {}
 }
