@@ -8,6 +8,8 @@ import 'package:cryptography/cryptography.dart' hide Cipher;
 
 import '../services.dart';
 
+final aesGcm = AesGcm.with256bits();
+
 /// Decrypts the provided transaction details and data into JSON using the provided key.
 ///
 /// Throws a [TransactionDecryptionException] if decryption fails.
@@ -35,13 +37,14 @@ Future<Uint8List> decryptTransactionData(
       final cipherIv =
           utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv));
 
-      return aesGcm.decrypt(
-        data,
-        secretKey: key,
-        nonce: Nonce(cipherIv),
-      );
+      return aesGcm
+          .decrypt(
+            secretBoxFromDataWithMacConcatenation(data, nonce: cipherIv),
+            secretKey: key,
+          )
+          .then((res) => Uint8List.fromList(res));
     }
-  } on MacValidationException catch (_) {
+  } on SecretBoxAuthenticationError catch (_) {
     throw TransactionDecryptionException();
   }
 
@@ -62,15 +65,16 @@ Future<Transaction> createEncryptedTransaction(
   Uint8List data,
   SecretKey key,
 ) async {
-  final iv = Nonce.randomBytes(96 ~/ 8);
-  final encryptedData = await aesGcm.encrypt(data, secretKey: key, nonce: iv);
+  final encryptionRes = await aesGcm.encrypt(data, secretKey: key);
 
-  return Transaction.withBlobData(data: encryptedData)
+  return Transaction.withBlobData(
+      // The encrypted data should be a concatenation of the cipher text and MAC.
+      data: encryptionRes.concatenation(nonce: false))
     ..addTag(EntityTag.contentType, ContentType.octetStream)
     ..addTag(EntityTag.cipher, Cipher.aes256)
     ..addTag(
       EntityTag.cipherIv,
-      utils.encodeBytesToBase64(iv.bytes),
+      utils.encodeBytesToBase64(encryptionRes.nonce),
     );
 }
 
@@ -79,15 +83,16 @@ Future<DataItem> createEncryptedDataItem(
   Uint8List data,
   SecretKey key,
 ) async {
-  final iv = Nonce.randomBytes(96 ~/ 8);
-  final encryptedData = await aesGcm.encrypt(data, secretKey: key, nonce: iv);
+  final encryptionRes = await aesGcm.encrypt(data, secretKey: key);
 
-  return DataItem.withBlobData(data: encryptedData)
+  return DataItem.withBlobData(
+      // The encrypted data should be a concatenation of the cipher text and MAC.
+      data: encryptionRes.concatenation(nonce: false))
     ..addTag(EntityTag.contentType, ContentType.octetStream)
     ..addTag(EntityTag.cipher, Cipher.aes256)
     ..addTag(
       EntityTag.cipherIv,
-      utils.encodeBytesToBase64(iv.bytes),
+      utils.encodeBytesToBase64(encryptionRes.nonce),
     );
 }
 

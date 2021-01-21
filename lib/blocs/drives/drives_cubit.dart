@@ -33,7 +33,7 @@ class DrivesCubit extends Cubit<DrivesState> {
           .watch(),
       _profileCubit.startWith(null),
       (drives, _) => drives,
-    ).listen((drives) {
+    ).listen((drives) async {
       final state = this.state;
 
       String selectedDriveId;
@@ -45,6 +45,8 @@ class DrivesCubit extends Cubit<DrivesState> {
       }
 
       final profile = _profileCubit.state;
+      final walletAddress =
+          profile is ProfileLoggedIn ? await profile.wallet.getAddress() : '';
 
       emit(
         DrivesLoadSuccess(
@@ -52,12 +54,12 @@ class DrivesCubit extends Cubit<DrivesState> {
           // If the user is not logged in, all drives are considered shared ones.
           userDrives: drives
               .where((d) => profile is ProfileLoggedIn
-                  ? d.ownerAddress == profile.wallet.address
+                  ? d.ownerAddress == walletAddress
                   : false)
               .toList(),
           sharedDrives: drives
               .where((d) => profile is ProfileLoggedIn
-                  ? d.ownerAddress != profile.wallet.address
+                  ? d.ownerAddress != walletAddress
                   : true)
               .toList(),
           canCreateNewDrive: _profileCubit.state is ProfileLoggedIn,

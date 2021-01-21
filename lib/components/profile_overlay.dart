@@ -27,7 +27,7 @@ class ProfileOverlay extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                state.wallet.address,
+                                state.walletAddress,
                                 style: Theme.of(context).textTheme.bodyText2,
                               ),
                               const SizedBox(height: 4),

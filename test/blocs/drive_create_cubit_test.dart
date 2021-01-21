@@ -5,7 +5,9 @@ import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:cryptography/helpers.dart';
 import 'package:mockito/mockito.dart';
+import 'package:moor/moor.dart';
 import 'package:test/test.dart';
 
 import '../utils/utils.dart';
@@ -22,7 +24,7 @@ void main() {
 
     const validDriveName = 'valid-drive-name';
 
-    setUp(() {
+    setUp(() async {
       db = getTestDb();
       driveDao = db.driveDao;
 
@@ -30,11 +32,20 @@ void main() {
       drivesCubit = MockDrivesCubit();
       profileCubit = MockProfileCubit();
 
+      final wallet = getTestWallet();
+      final walletAddress = await wallet.getAddress();
+
+      final keyBytes = Uint8List(32);
+      fillBytesWithSecureRandom(keyBytes);
+
       when(profileCubit.state).thenReturn(
         ProfileLoggedIn(
+          username: 'Test',
           password: '123',
-          wallet: getTestWallet(),
-          cipherKey: SecretKey.randomBytes(32),
+          wallet: wallet,
+          walletAddress: walletAddress,
+          walletBalance: BigInt.one,
+          cipherKey: SecretKey(keyBytes),
         ),
       );
 

@@ -28,6 +28,8 @@ class ProfileLoggedIn extends ProfileAvailable {
 
   final Wallet wallet;
 
+  final String walletAddress;
+
   /// The user's wallet balance in winston.
   final BigInt walletBalance;
 
@@ -37,6 +39,7 @@ class ProfileLoggedIn extends ProfileAvailable {
     @required this.username,
     @required this.password,
     @required this.wallet,
+    @required this.walletAddress,
     @required this.walletBalance,
     @required this.cipherKey,
   });
@@ -45,6 +48,7 @@ class ProfileLoggedIn extends ProfileAvailable {
     String username,
     String password,
     Wallet wallet,
+    String walletAddress,
     BigInt walletBalance,
     SecretKey cipherKey,
   }) =>
@@ -52,6 +56,7 @@ class ProfileLoggedIn extends ProfileAvailable {
         username: username ?? this.username,
         password: password ?? this.password,
         wallet: wallet ?? this.wallet,
+        walletAddress: walletAddress ?? this.walletAddress,
         walletBalance: walletBalance ?? this.walletBalance,
         cipherKey: cipherKey ?? this.cipherKey,
       );

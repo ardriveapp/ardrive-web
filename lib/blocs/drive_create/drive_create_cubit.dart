@@ -56,7 +56,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
       final createRes = await _driveDao.createDrive(
         name: driveName,
-        ownerAddress: wallet.address,
+        ownerAddress: await wallet.getAddress(),
         privacy: drivePrivacy,
         wallet: wallet,
         password: profile.password,

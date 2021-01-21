@@ -14,7 +14,7 @@ packages:
       name: analyzer
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.41.2"
+    version: "0.41.1"
   analyzer_plugin:
     dependency: transitive
     description:
@@ -35,13 +35,13 @@ packages:
       name: artemis
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.18.3"
+    version: "6.17.3"
   arweave:
     dependency: "direct main"
     description:
       path: "."
-      ref: b1a89002e8a2686a01da96d95823c299195aaa18
-      resolved-ref: b1a89002e8a2686a01da96d95823c299195aaa18
+      ref: d8ecfc9a61eaaf69464824f4dbc1f2b8060dbd41
+      resolved-ref: d8ecfc9a61eaaf69464824f4dbc1f2b8060dbd41
       url: "https://github.com/CDDelta/arweave-dart.git"
     source: git
     version: "0.1.0"
@@ -121,14 +121,14 @@ packages:
       name: built_collection
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.3.2"
+    version: "5.0.0-nullsafety.0"
   built_value:
     dependency: transitive
     description:
       name: built_value
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.1.0"
+    version: "8.0.0-nullsafety.0"
   characters:
     dependency: transitive
     description:
@@ -156,7 +156,7 @@ packages:
       name: cli_util
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.0"
+    version: "0.1.4"
   clock:
     dependency: transitive
     description:
@@ -191,7 +191,7 @@ packages:
       name: coverage
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.15.0"
+    version: "0.14.2"
   cross_file:
     dependency: transitive
     description:
@@ -200,21 +200,19 @@ packages:
     source: hosted
     version: "0.2.0"
   crypto:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: crypto
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.5"
+    version: "3.0.0-nullsafety.0"
   cryptography:
     dependency: "direct main"
     description:
-      path: cryptography
-      ref: "675aa0855fb29e6afc6aa05f67d9c29b66f95835"
-      resolved-ref: "675aa0855fb29e6afc6aa05f67d9c29b66f95835"
-      url: "https://github.com/CDDelta/cryptography.git"
-    source: git
-    version: "1.4.1"
+      name: cryptography
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.0-nullsafety.2"
   dart_style:
     dependency: transitive
     description:
@@ -237,7 +235,7 @@ packages:
     source: hosted
     version: "1.2.0-nullsafety.3"
   ffi:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: ffi
       url: "https://pub.dartlang.org"
@@ -291,7 +289,7 @@ packages:
       name: fixnum
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.10.11"
+    version: "1.0.0-nullsafety.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -440,6 +438,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.5.1"
+  jwk:
+    dependency: transitive
+    description:
+      name: jwk
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.1.0-nullsafety.1"
   logging:
     dependency: transitive
     description:
@@ -474,7 +479,7 @@ packages:
       name: mockito
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.0-nullsafety.4"
+    version: "5.0.0-nullsafety.2"
   moor:
     dependency: "direct main"
     description:
@@ -537,7 +542,7 @@ packages:
       name: path_provider
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.6.14"
+    version: "1.6.27"
   path_provider_linux:
     dependency: transitive
     description:
@@ -559,6 +564,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.4"
+  path_provider_windows:
+    dependency: transitive
+    description:
+      name: path_provider_windows
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.0.4+3"
   pedantic:
     dependency: "direct main"
     description:
@@ -593,7 +605,7 @@ packages:
       name: pointycastle
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.1"
+    version: "2.0.0"
   pool:
     dependency: transitive
     description:
@@ -629,13 +641,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.1.7"
-  quiver:
-    dependency: transitive
-    description:
-      name: quiver
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.1.5"
   reactive_forms:
     dependency: "direct main"
     description:
@@ -780,7 +785,7 @@ packages:
       name: test
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.16.0-nullsafety.15"
+    version: "1.16.0-nullsafety.13"
   test_api:
     dependency: transitive
     description:
@@ -794,7 +799,7 @@ packages:
       name: test_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.3.12-nullsafety.14"
+    version: "0.3.12-nullsafety.12"
   timeago:
     dependency: "direct main"
     description:
@@ -900,6 +905,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.7.4"
+  win32:
+    dependency: transitive
+    description:
+      name: win32
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.7.4"
   xdg_directories:
     dependency: transitive
     description:

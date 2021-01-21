@@ -46,7 +46,8 @@ class FileShareCubit extends Cubit<FileShareState> {
 
       final fileKey =
           await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
-      final fileKeyBase64 = utils.encodeBytesToBase64(await fileKey.extract());
+      final fileKeyBase64 =
+          utils.encodeBytesToBase64(await fileKey.extractBytes());
 
       fileShareLink = fileShareLink + '?fileKey=$fileKeyBase64';
     }

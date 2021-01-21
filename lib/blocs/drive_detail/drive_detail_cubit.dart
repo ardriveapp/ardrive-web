@@ -65,7 +65,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           orderBy: contentOrderBy,
           orderingMode: contentOrderingMode),
       _profileCubit.startWith(null),
-      (drive, folderContents, _) {
+      (drive, folderContents, _) async {
         if (drive == null) {
           emit(DriveDetailLoadNotFound());
           return;
@@ -85,7 +85,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             state.copyWith(
               currentDrive: drive,
               hasWritePermissions: profile is ProfileLoggedIn &&
-                  drive.ownerAddress == profile.wallet.address,
+                  drive.ownerAddress == await profile.wallet.getAddress(),
               currentFolder: folderContents,
               contentOrderBy: contentOrderBy,
               contentOrderingMode: contentOrderingMode,

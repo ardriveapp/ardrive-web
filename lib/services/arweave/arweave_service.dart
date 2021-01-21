@@ -13,6 +13,10 @@ class ArweaveService {
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
 
+  Future<BigInt> getWalletBalance(String address) => client.api
+      .get('wallet/$address/balance')
+      .then((res) => BigInt.parse(res.body));
+
   Future<TransactionCommonMixin> getTransactionDetails(String txId) async {
     final query = await _gql.execute(TransactionDetailsQuery(
         variables: TransactionDetailsArguments(txId: txId)));
@@ -122,7 +126,8 @@ class ArweaveService {
   ) async {
     final userDriveEntitiesQuery = await _gql.execute(
       UserDriveEntitiesQuery(
-          variables: UserDriveEntitiesArguments(owner: wallet.address)),
+          variables:
+              UserDriveEntitiesArguments(owner: await wallet.getAddress())),
     );
 
     final driveTxs = userDriveEntitiesQuery.data.transactions.edges
@@ -327,7 +332,7 @@ class ArweaveService {
     SecretKey key,
   ]) async {
     final item = await entity.asDataItem(key);
-    item.setOwner(wallet.owner);
+    item.setOwner(await wallet.getOwner());
 
     await item.sign(wallet);
 
