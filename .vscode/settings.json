@@ -3,5 +3,6 @@
     "source.organizeImports": true
   },
   "bloc.newBlocTemplate": "equatable",
-  "bloc.newCubitTemplate": "equatable"
+  "bloc.newCubitTemplate": "equatable",
+  "dart.additionalAnalyzerFileExtensions": ["moor"]
 }

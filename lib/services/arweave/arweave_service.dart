@@ -20,22 +20,18 @@ class ArweaveService {
   }
 
   /// Gets the entity history for a particular drive starting from the specified block height.
-  Future<DriveEntityHistory> getNewEntitiesForDriveSinceBlock(
-    String driveId,
-    int startingBlockHeight, [
-    SecretKey driveKey,
-  ]) async {
+  Future<DriveEntityHistory> getNewEntitiesForDrive(String driveId,
+      {String after, SecretKey driveKey}) async {
     final driveEntityHistoryQuery = await _gql.execute(
       DriveEntityHistoryQuery(
         variables: DriveEntityHistoryArguments(
           driveId: driveId,
-          startingBlockHeight: startingBlockHeight,
+          after: after,
         ),
       ),
     );
-    final entityTxs = driveEntityHistoryQuery.data.transactions.edges
-        .map((e) => e.node)
-        .toList();
+    final queryEdges = driveEntityHistoryQuery.data.transactions.edges;
+    final entityTxs = queryEdges.map((e) => e.node).toList();
     final rawEntityData =
         await Future.wait(entityTxs.map((e) => client.api.get(e.id)))
             .then((rs) => rs.map((r) => r.bodyBytes).toList());
@@ -90,9 +86,7 @@ class ArweaveService {
     }
 
     return DriveEntityHistory(
-      blockHistory.isNotEmpty
-          ? blockHistory.last.blockHeight
-          : startingBlockHeight,
+      queryEdges.isNotEmpty ? queryEdges.last.cursor : null,
       blockHistory,
     );
   }
@@ -359,12 +353,13 @@ class ArweaveService {
 
 /// The entity history of a particular drive, chunked by block height.
 class DriveEntityHistory {
-  final int latestBlockHeight;
+  /// A cursor for continuing through this drive's history.
+  final String cursor;
 
   /// A list of block entities, ordered by ascending block height.
   final List<BlockEntities> blockHistory;
 
-  DriveEntityHistory(this.latestBlockHeight, this.blockHistory);
+  DriveEntityHistory(this.cursor, this.blockHistory);
 }
 
 /// The entities present in a particular block.
