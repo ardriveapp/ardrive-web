@@ -105,6 +105,8 @@ class FsEntryMoveForm extends StatelessWidget {
                                         .read<FsEntryMoveCubit>()
                                         .loadFolder(f.id),
                                     trailing: Icon(Icons.keyboard_arrow_right),
+                                    // Do not allow users to navigate into the folder they are currently trying to move.
+                                    enabled: f.id != state.movingEntryId,
                                   ),
                                 ),
                                 ...state.viewingFolder.files.map(
