@@ -74,21 +74,43 @@ class FsEntrySideSheet extends StatelessWidget {
           if (state is FsEntryInfoSuccess<Drive>) ...{
             DataRow(cells: [
               DataCell(Text('Drive ID')),
-              DataCell(SelectableText(state.entry.id)),
+              DataCell(
+                CopyIconButton(
+                  tooltip: 'Copy Drive ID',
+                  value: state.entry.id,
+                ),
+              ),
             ]),
             DataRow(cells: [
               DataCell(Text('Privacy')),
-              DataCell(Text(state.entry.privacy))
+              // Capitalise the privacy enums of drives for display.
+              DataCell(
+                Text(
+                  state.entry.privacy == DrivePrivacy.private
+                      ? 'Private'
+                      : 'Public',
+                ),
+              )
             ]),
           } else if (state is FsEntryInfoSuccess<FolderEntry>) ...{
             DataRow(cells: [
               DataCell(Text('Folder ID')),
-              DataCell(SelectableText(state.entry.id)),
+              DataCell(
+                CopyIconButton(
+                  tooltip: 'Copy Folder ID',
+                  value: state.entry.id,
+                ),
+              ),
             ]),
           } else if (state is FsEntryInfoSuccess<FileEntry>) ...{
             DataRow(cells: [
               DataCell(Text('File ID')),
-              DataCell(SelectableText(state.entry.id)),
+              DataCell(
+                CopyIconButton(
+                  tooltip: 'Copy File ID',
+                  value: state.entry.id,
+                ),
+              ),
             ]),
             DataRow(cells: [
               DataCell(Text('Size')),
@@ -232,5 +254,19 @@ class FsEntrySideSheet extends StatelessWidget {
                 ),
               )
             : Center(child: Text('We\'re still working on this!')),
+      );
+}
+
+class CopyIconButton extends StatelessWidget {
+  final String value;
+  final String tooltip;
+
+  CopyIconButton({this.value, this.tooltip});
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+        icon: Icon(Icons.copy, color: Colors.black54),
+        tooltip: tooltip,
+        onPressed: () => Clipboard.setData(ClipboardData(text: value)),
       );
 }
