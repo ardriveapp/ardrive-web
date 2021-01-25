@@ -135,9 +135,8 @@ class FsEntryMoveForm extends StatelessWidget {
                                 label: Text('CREATE FOLDER'),
                                 onPressed: () => promptToCreateFolder(
                                   context,
-                                  targetDriveId:
-                                      state.viewingFolder.folder.driveId,
-                                  targetFolderId: state.viewingFolder.folder.id,
+                                  driveId: state.viewingFolder.folder.driveId,
+                                  parentFolderId: state.viewingFolder.folder.id,
                                 ),
                               ),
                             ButtonBar(

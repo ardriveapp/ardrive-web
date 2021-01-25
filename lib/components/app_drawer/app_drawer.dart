@@ -118,8 +118,8 @@ class AppDrawer extends StatelessWidget {
                     enabled: state.hasWritePermissions,
                     value: (context) => promptToCreateFolder(
                       context,
-                      targetDriveId: state.currentDrive.id,
-                      targetFolderId: state.currentFolder.folder.id,
+                      driveId: state.currentDrive.id,
+                      parentFolderId: state.currentFolder.folder.id,
                     ),
                     child: ListTile(
                       enabled: state.hasWritePermissions,

@@ -11,15 +11,15 @@ import 'components.dart';
 
 Future<void> promptToCreateFolder(
   BuildContext context, {
-  @required String targetDriveId,
-  @required String targetFolderId,
+  @required String driveId,
+  @required String parentFolderId,
 }) =>
     showDialog(
       context: context,
       builder: (_) => BlocProvider(
         create: (context) => FolderCreateCubit(
-          targetDriveId: targetDriveId,
-          targetFolderId: targetFolderId,
+          driveId: driveId,
+          parentFolderId: parentFolderId,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
