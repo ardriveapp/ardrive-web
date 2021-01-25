@@ -56,7 +56,7 @@ class ProfileAuthUnlockScreen extends StatelessWidget {
                         const SizedBox(height: 16),
                         TextButton(
                           child: Text(
-                            'Logout and change profile',
+                            'Forget wallet and change profile',
                             textAlign: TextAlign.center,
                           ),
                           onPressed: () =>
