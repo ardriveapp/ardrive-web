@@ -14,7 +14,7 @@ class FloatingHelpButtonPortalEntry extends StatelessWidget {
   @override
   Widget build(BuildContext context) => PortalEntry(
         portal: Link(
-          uri: Uri.parse('https://ardrive.io/faq/'),
+          uri: Uri.parse('https://ardrive.typeform.com/to/pGeAVvtg'),
           target: LinkTarget.blank,
           builder: (context, onPressed) => Padding(
             padding: const EdgeInsets.only(right: 16, bottom: 16),
