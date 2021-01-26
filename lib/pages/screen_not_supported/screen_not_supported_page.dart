@@ -1,5 +1,6 @@
 import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/link.dart';
 
 class ScreenNotSupportedPage extends StatelessWidget {
   @override
@@ -20,10 +21,21 @@ class ScreenNotSupportedPage extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 32),
-                Text('This screen size is too small.',
-                    style: Theme.of(context).textTheme.headline6),
+                Text('WE\'RE SORRY!',
+                    style: Theme.of(context).textTheme.headline5),
                 const SizedBox(height: 16),
-                Text('Please access ArDrive on a device with a larger screen.'),
+                Text('ArDrive is currently only optimized for larger screens.'),
+                const SizedBox(height: 8),
+                Text(
+                    'Please try on another device or stay updated for our upcoming mobile app by subscribing to our newsletter below.'),
+                const SizedBox(height: 24),
+                Link(
+                  uri: Uri.parse('https://ardrive.io/about/newsletter/'),
+                  builder: (context, onPressed) => ElevatedButton(
+                    child: Text('SUBSCRIBE'),
+                    onPressed: onPressed,
+                  ),
+                ),
               ],
             ),
           ),
