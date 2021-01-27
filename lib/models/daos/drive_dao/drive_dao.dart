@@ -86,8 +86,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             ownerAddress: entity.ownerAddress,
             rootFolderId: entity.rootFolderId,
             privacy: entity.privacy,
-            dateCreated: Value(entity.commitTime),
-            lastUpdated: Value(entity.commitTime),
+            dateCreated: Value(entity.createdAt),
+            lastUpdated: Value(entity.createdAt),
           );
 
           if (entity.privacy == DrivePrivacy.private) {
@@ -116,8 +116,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       ownerAddress: entity.ownerAddress,
       rootFolderId: entity.rootFolderId,
       privacy: entity.privacy,
-      dateCreated: Value(entity.commitTime),
-      lastUpdated: Value(entity.commitTime),
+      dateCreated: Value(entity.createdAt),
+      lastUpdated: Value(entity.createdAt),
     );
 
     return into(drives).insert(
@@ -346,4 +346,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeToTransaction(Insertable<NetworkTransaction> transaction) =>
       (update(networkTransactions)..whereSamePrimaryKey(transaction))
           .write(transaction);
+
+  Future<void> insertFolderRevision(Insertable<FolderRevision> revision) =>
+      into(folderRevisions).insert(revision);
+
+  Future<void> insertFileRevision(Insertable<FileRevision> revision) =>
+      into(fileRevisions).insert(revision);
 }

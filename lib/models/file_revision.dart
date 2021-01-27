@@ -1,4 +1,5 @@
 import 'package:ardrive/entities/entities.dart';
+import 'package:moor/moor.dart';
 
 import 'models.dart';
 
@@ -35,6 +36,23 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
 }
 
 extension FileEntityExtensions on FileEntity {
+  /// Converts the entity to an instance of [FileRevisionsCompanion].
+  ///
+  /// This requires a `performedAction` to be specified.
+  FileRevisionsCompanion toRevisionCompanion(String performedAction) =>
+      FileRevisionsCompanion.insert(
+        fileId: id,
+        driveId: driveId,
+        name: name,
+        parentFolderId: parentFolderId,
+        size: size,
+        lastModifiedDate: lastModifiedDate,
+        metadataTxId: txId,
+        dataTxId: dataTxId,
+        dateCreated: Value(createdAt),
+        action: performedAction,
+      );
+
   /// Returns the action performed on the file that lead to the new revision.
   String getPerformedRevisionAction([FileRevisionsCompanion previousRevision]) {
     if (previousRevision == null) {

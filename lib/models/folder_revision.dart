@@ -1,4 +1,5 @@
 import 'package:ardrive/entities/entities.dart';
+import 'package:moor/moor.dart';
 
 import 'models.dart';
 
@@ -22,6 +23,20 @@ extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {
 }
 
 extension FolderEntityExtensions on FolderEntity {
+  /// Converts the entity to an instance of [FolderRevisionsCompanion].
+  ///
+  /// This requires a `performedAction` to be specified.
+  FolderRevisionsCompanion toRevisionCompanion(String performedAction) =>
+      FolderRevisionsCompanion.insert(
+        folderId: id,
+        driveId: driveId,
+        name: name,
+        parentFolderId: Value(parentFolderId),
+        metadataTxId: txId,
+        dateCreated: Value(createdAt),
+        action: performedAction,
+      );
+
   /// Returns the action performed on the folder that lead to the new revision.
   String getPerformedRevisionAction(
       [FolderRevisionsCompanion previousRevision]) {

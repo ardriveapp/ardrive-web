@@ -77,18 +77,23 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       final driveTx =
           await _arweave.prepareEntityTx(drive, wallet, createRes.driveKey);
 
+      final rootFolderEntity = FolderEntity(
+        id: drive.rootFolderId,
+        driveId: drive.id,
+        name: driveName,
+      );
+
       final rootFolderTx = await _arweave.prepareEntityTx(
-        FolderEntity(
-          id: drive.rootFolderId,
-          driveId: drive.id,
-          name: driveName,
-        ),
+        rootFolderEntity,
         wallet,
         createRes.driveKey,
       );
 
       await _arweave.postTx(driveTx);
       await _arweave.postTx(rootFolderTx);
+
+      await _driveDao.insertFolderRevision(
+          rootFolderEntity.toRevisionCompanion(RevisionAction.create));
 
       _drivesCubit.selectDrive(drive.id);
     } catch (err) {

@@ -88,18 +88,19 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               .folderById(driveId: driveId, folderId: folderId)
               .getSingle();
           folder = folder.copyWith(name: newName, lastUpdated: DateTime.now());
+
+          final folderEntity = folder.asEntity();
+
           final folderTx = await _arweave.prepareEntityTx(
-              folder.asEntity(), profile.wallet, driveKey);
+              folderEntity, profile.wallet, driveKey);
 
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
-          final folderEntryCompanion = FolderEntriesCompanion.insert(
-            id: folder.id,
-            driveId: driveId,
-            name: folder.name,
-            path: folder.path,
-          );
-          final folderMap = {folder.id: folderEntryCompanion};
+
+          await _driveDao.insertFolderRevision(
+              folderEntity.toRevisionCompanion(RevisionAction.rename));
+
+          final folderMap = {folder.id: folder.toCompanion(false)};
           await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
         });
 
@@ -116,11 +117,16 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           final fileKey =
               driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
 
+          final fileEntity = file.asEntity();
+
           final fileTx = await _arweave.prepareEntityTx(
-              file.asEntity(), profile.wallet, fileKey);
+              fileEntity, profile.wallet, fileKey);
 
           await _arweave.postTx(fileTx);
           await _driveDao.writeToFile(file);
+
+          await _driveDao.insertFileRevision(
+              fileEntity.toRevisionCompanion(RevisionAction.rename));
         });
 
         emit(FileEntryRenameSuccess());

@@ -84,11 +84,16 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
               path: '${parentFolder.path}/${folder.name}',
               lastUpdated: DateTime.now());
 
+          final folderEntity = folder.asEntity();
+
           final folderTx = await _arweave.prepareEntityTx(
-              folder.asEntity(), profile.wallet, driveKey);
+              folderEntity, profile.wallet, driveKey);
 
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
+
+          await _driveDao.insertFolderRevision(
+              folderEntity.toRevisionCompanion(RevisionAction.move));
         });
 
         emit(FolderEntryMoveSuccess());
@@ -107,11 +112,16 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
           final fileKey =
               driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
 
+          final fileEntity = file.asEntity();
+
           final fileTx = await _arweave.prepareEntityTx(
-              file.asEntity(), profile.wallet, fileKey);
+              fileEntity, profile.wallet, fileKey);
 
           await _arweave.postTx(fileTx);
           await _driveDao.writeToFile(file);
+
+          await _driveDao.insertFileRevision(
+              fileEntity.toRevisionCompanion(RevisionAction.move));
         });
 
         emit(FileEntryMoveSuccess());

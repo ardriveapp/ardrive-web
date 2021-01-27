@@ -142,15 +142,9 @@ class SyncCubit extends Cubit<SyncState> {
             .then((r) => r?.toCompanion(true));
       }
 
-      final revision = FolderRevisionsCompanion.insert(
-        folderId: entity.id,
-        driveId: entity.driveId,
-        name: entity.name,
-        parentFolderId: Value(entity.parentFolderId),
-        metadataTxId: entity.txId,
-        dateCreated: Value(entity.commitTime),
-        action: entity.getPerformedRevisionAction(latestRevisions[entity.id]),
-      );
+      final revisionPerformedAction =
+          entity.getPerformedRevisionAction(latestRevisions[entity.id]);
+      final revision = entity.toRevisionCompanion(revisionPerformedAction);
 
       if (revision.action.value == null) {
         continue;
@@ -193,18 +187,9 @@ class SyncCubit extends Cubit<SyncState> {
             .then((r) => r?.toCompanion(true));
       }
 
-      final revision = FileRevisionsCompanion.insert(
-        fileId: entity.id,
-        driveId: entity.driveId,
-        name: entity.name,
-        parentFolderId: entity.parentFolderId,
-        size: entity.size,
-        lastModifiedDate: entity.lastModifiedDate,
-        metadataTxId: entity.txId,
-        dataTxId: entity.dataTxId,
-        dateCreated: Value(entity.commitTime),
-        action: entity.getPerformedRevisionAction(latestRevisions[entity.id]),
-      );
+      final revisionPerformedAction =
+          entity.getPerformedRevisionAction(latestRevisions[entity.id]);
+      final revision = entity.toRevisionCompanion(revisionPerformedAction);
 
       if (revision.action.value == null) {
         continue;
