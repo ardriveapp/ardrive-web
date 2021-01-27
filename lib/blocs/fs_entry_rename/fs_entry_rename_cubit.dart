@@ -97,6 +97,8 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
 
+          await _driveDao
+              .writeTransaction(folderEntity.toTransactionCompanion());
           await _driveDao.insertFolderRevision(
               folderEntity.toRevisionCompanion(RevisionAction.rename));
 
@@ -125,6 +127,9 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           await _arweave.postTx(fileTx);
           await _driveDao.writeToFile(file);
 
+          await Future.wait(fileEntity
+              .toTransactionCompanions()
+              .map((tx) => _driveDao.writeTransaction(tx)));
           await _driveDao.insertFileRevision(
               fileEntity.toRevisionCompanion(RevisionAction.rename));
         });

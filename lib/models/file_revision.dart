@@ -53,6 +53,15 @@ extension FileEntityExtensions on FileEntity {
         action: performedAction,
       );
 
+  /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions
+  /// of this entity.
+  List<NetworkTransactionsCompanion> toTransactionCompanions() => [
+        NetworkTransactionsCompanion.insert(
+            id: txId, dateCreated: Value(createdAt)),
+        NetworkTransactionsCompanion.insert(
+            id: dataTxId, dateCreated: Value(createdAt)),
+      ];
+
   /// Returns the action performed on the file that lead to the new revision.
   String getPerformedRevisionAction([FileRevisionsCompanion previousRevision]) {
     if (previousRevision == null) {

@@ -37,6 +37,12 @@ extension FolderEntityExtensions on FolderEntity {
         action: performedAction,
       );
 
+  /// Returns a [NetworkTransactionsCompanion] representing the metadata transaction
+  /// of this entity.
+  NetworkTransactionsCompanion toTransactionCompanion() =>
+      NetworkTransactionsCompanion.insert(
+          id: txId, dateCreated: Value(createdAt));
+
   /// Returns the action performed on the folder that lead to the new revision.
   String getPerformedRevisionAction(
       [FolderRevisionsCompanion previousRevision]) {

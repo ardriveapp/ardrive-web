@@ -352,4 +352,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<void> insertFileRevision(Insertable<FileRevision> revision) =>
       into(fileRevisions).insert(revision);
+
+  Future<void> writeTransaction(Insertable<NetworkTransaction> transaction) =>
+      into(networkTransactions).insertOnConflictUpdate(transaction);
 }
