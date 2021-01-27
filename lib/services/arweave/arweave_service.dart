@@ -86,7 +86,7 @@ class ArweaveService {
 
     // Sort the entities in each block by ascending commit time.
     for (final block in blockHistory) {
-      block.entities.sort((e1, e2) => e1.commitTime.compareTo(e2.commitTime));
+      block.entities.sort((e1, e2) => e1.createdAt.compareTo(e2.createdAt));
     }
 
     return DriveEntityHistory(

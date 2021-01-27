@@ -78,7 +78,7 @@ class FileEntity extends Entity {
         ..lastModifiedDate ??= commitTime
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
-        ..commitTime = commitTime;
+        ..createdAt = commitTime;
     } catch (_) {
       throw EntityTransactionParseException();
     }
@@ -93,7 +93,7 @@ class FileEntity extends Entity {
         size != null);
 
     tx
-      ..addApplicationTags()
+      ..addApplicationTags(unixTime: createdAt)
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.file)
       ..addTag(EntityTag.driveId, driveId)

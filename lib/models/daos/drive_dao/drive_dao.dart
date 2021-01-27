@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -86,8 +87,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             ownerAddress: entity.ownerAddress,
             rootFolderId: entity.rootFolderId,
             privacy: entity.privacy,
-            dateCreated: Value(entity.commitTime),
-            lastUpdated: Value(entity.commitTime),
+            dateCreated: Value(entity.createdAt),
+            lastUpdated: Value(entity.createdAt),
           );
 
           if (entity.privacy == DrivePrivacy.private) {
@@ -116,8 +117,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       ownerAddress: entity.ownerAddress,
       rootFolderId: entity.rootFolderId,
       privacy: entity.privacy,
-      dateCreated: Value(entity.commitTime),
-      lastUpdated: Value(entity.commitTime),
+      dateCreated: Value(entity.createdAt),
+      lastUpdated: Value(entity.createdAt),
     );
 
     return into(drives).insert(
@@ -346,4 +347,23 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeToTransaction(Insertable<NetworkTransaction> transaction) =>
       (update(networkTransactions)..whereSamePrimaryKey(transaction))
           .write(transaction);
+
+  Future<void> insertFolderRevision(FolderRevisionsCompanion revision) async {
+    await db.transaction(() async {
+      await writeTransaction(revision.getTransactionCompanion());
+      await into(folderRevisions).insert(revision);
+    });
+  }
+
+  Future<void> insertFileRevision(FileRevisionsCompanion revision) async {
+    await db.transaction(() async {
+      await Future.wait(revision
+          .getTransactionCompanions()
+          .map((tx) => writeTransaction(tx)));
+      await await into(fileRevisions).insert(revision);
+    });
+  }
+
+  Future<void> writeTransaction(Insertable<NetworkTransaction> transaction) =>
+      into(networkTransactions).insertOnConflictUpdate(transaction);
 }
