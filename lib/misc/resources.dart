@@ -13,7 +13,7 @@ class Brand {
   const Brand();
 
   final logoHorizontalNoSubtitle =
-      'assets/images/brand/logo-horiz-beta-no-subtitle.png';
+      'assets/images/brand/logo-horiz-no-subtitle.png';
   final logoVerticalNoSubtitle =
       'assets/images/brand/logo-vert-no-subtitle.png';
 }

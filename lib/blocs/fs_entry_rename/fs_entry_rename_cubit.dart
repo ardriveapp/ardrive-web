@@ -99,7 +99,6 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
             name: folder.name,
             path: folder.path,
           );
-
           final folderMap = {folder.id: folderEntryCompanion};
           await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
         });

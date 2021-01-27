@@ -53,7 +53,7 @@ class SharedFilePage extends StatelessWidget {
                           fileKey: state.fileKey,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 16),
                       _buildReturnToAppLink(),
                     } else if (state is SharedFileNotFound) ...{
                       const Icon(Icons.error_outline, size: 36),
@@ -74,9 +74,9 @@ class SharedFilePage extends StatelessWidget {
       );
 
   Widget _buildReturnToAppLink() => Link(
-        uri: Uri(path: '/'),
+        uri: Uri(path: '/sign-in'),
         builder: (context, onPressed) => TextButton(
-          child: Text('Return to app'),
+          child: Text('Go to app'),
           onPressed: onPressed,
         ),
       );

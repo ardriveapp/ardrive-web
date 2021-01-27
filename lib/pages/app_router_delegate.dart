@@ -11,7 +11,7 @@ import '../app_shell.dart';
 
 class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppRoutePath> {
-  bool signingIn;
+  bool signingIn = false;
 
   String driveId;
   String driveFolderId;
