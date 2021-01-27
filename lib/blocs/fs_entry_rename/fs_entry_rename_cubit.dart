@@ -21,7 +21,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
-
+  final SyncCubit _syncCubit;
   bool get _isRenamingFolder => folderId != null;
 
   FsEntryRenameCubit({
@@ -31,9 +31,11 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     @required ArweaveService arweave,
     @required DriveDao driveDao,
     @required ProfileCubit profileCubit,
+    @required SyncCubit syncCubit,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
+        _syncCubit = syncCubit,
         assert(folderId != null || fileId != null),
         super(FsEntryRenameInitializing(isRenamingFolder: folderId != null)) {
     form = FormGroup({
@@ -85,12 +87,20 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               .folderById(driveId: driveId, folderId: folderId)
               .getSingle();
           folder = folder.copyWith(name: newName, lastUpdated: DateTime.now());
-
           final folderTx = await _arweave.prepareEntityTx(
               folder.asEntity(), profile.wallet, driveKey);
 
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
+          var folderEntryCompanion = FolderEntriesCompanion.insert(
+            id: folder.id,
+            driveId: driveId,
+            name: folder.name,
+            path: folder.path,
+          );
+
+          var folderMap = {folder.id: folderEntryCompanion};
+          await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
         });
 
         emit(FolderEntryRenameSuccess());

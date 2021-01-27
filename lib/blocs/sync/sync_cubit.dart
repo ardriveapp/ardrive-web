@@ -118,8 +118,7 @@ class SyncCubit extends Cubit<SyncState> {
             _db.fileEntries, updatedFilesById.values.toList());
       });
 
-      await _generateFsEntryPaths(
-          driveId, updatedFoldersById, updatedFilesById);
+      await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
 
       await _driveDao.writeToDrive(DrivesCompanion(
           id: Value(drive.id), syncCursor: Value(entityHistory.cursor)));
@@ -285,7 +284,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   /// Generates paths for the folders (and their subchildren) and files provided.
-  Future<void> _generateFsEntryPaths(
+  Future<void> generateFsEntryPaths(
     String driveId,
     Map<String, FolderEntriesCompanion> foldersByIdMap,
     Map<String, FileEntriesCompanion> filesByIdMap,
