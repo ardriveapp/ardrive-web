@@ -22,6 +22,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
+
   bool get _isRenamingFolder => folderId != null;
 
   FsEntryRenameCubit({
@@ -92,14 +93,13 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
-          var folderEntryCompanion = FolderEntriesCompanion.insert(
+          final folderEntryCompanion = FolderEntriesCompanion.insert(
             id: folder.id,
             driveId: driveId,
             name: folder.name,
             path: folder.path,
           );
-
-          var folderMap = {folder.id: folderEntryCompanion};
+          final folderMap = {folder.id: folderEntryCompanion};
           await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
         });
 
