@@ -23,6 +23,7 @@ Future<void> promptToRenameFolder(
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),
+          syncCubit: context.read<SyncCubit>(),
         ),
         child: FsEntryRenameForm(),
       ),
