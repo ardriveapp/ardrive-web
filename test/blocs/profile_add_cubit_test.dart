@@ -23,7 +23,7 @@ void main() {
 
     const fakePassword = '123';
 
-    setUp(() {
+    setUp(() async {
       db = getTestDb();
       profileDao = db.profileDao;
 
@@ -35,7 +35,8 @@ void main() {
       profileAddCubit = ProfileAddCubit(
           profileCubit: profileCubit, profileDao: profileDao, arweave: arweave);
 
-      when(arweave.getUniqueUserDriveEntityTxs(newUserWallet.address))
+      final walletAddress = await newUserWallet.getAddress();
+      when(arweave.getUniqueUserDriveEntityTxs(walletAddress))
           .thenAnswer((_) => Future.value([]));
     });
 

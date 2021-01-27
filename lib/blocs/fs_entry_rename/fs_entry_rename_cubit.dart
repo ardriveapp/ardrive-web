@@ -1,18 +1,18 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/l11n/validation_messages.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
+import 'package:moor/moor.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'fs_entry_rename_state.dart';
 
-const _folderNameRegex = r'^(\w+\.?)*\w+$';
-const _fileNameRegex = r'([^\\\/]+)$';
-
 class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
-  final form;
+  FormGroup form;
 
   final String driveId;
   final String folderId;
@@ -21,6 +21,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
+  final SyncCubit _syncCubit;
 
   bool get _isRenamingFolder => folderId != null;
 
@@ -31,28 +32,34 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     @required ArweaveService arweave,
     @required DriveDao driveDao,
     @required ProfileCubit profileCubit,
-  })  : form = FormGroup({
-          'name': FormControl(
-            validators: [
-              Validators.required,
-              Validators.pattern(
-                  folderId != null ? _folderNameRegex : _fileNameRegex),
-            ],
-          ),
-        }),
-        _arweave = arweave,
+    @required SyncCubit syncCubit,
+  })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
+        _syncCubit = syncCubit,
         assert(folderId != null || fileId != null),
         super(FsEntryRenameInitializing(isRenamingFolder: folderId != null)) {
+    form = FormGroup({
+      'name': FormControl<String>(
+        validators: [
+          Validators.required,
+          Validators.pattern(
+              folderId != null ? kFolderNameRegex : kFileNameRegex),
+        ],
+        asyncValidators: [
+          folderId != null ? _uniqueFolderName : _uniqueFileName,
+        ],
+      ),
+    });
+
     () async {
       final name = _isRenamingFolder
           ? await _driveDao
-              .selectFolderById(driveId, folderId)
+              .folderById(driveId: driveId, folderId: folderId)
               .map((f) => f.name)
               .getSingle()
           : await _driveDao
-              .selectFileById(driveId, fileId)
+              .fileById(driveId: driveId, fileId: fileId)
               .map((f) => f.name)
               .getSingle();
 
@@ -69,22 +76,34 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     }
 
     try {
-      final String newName = form.control('name').value;
-      final profile = _profileCubit.state as ProfileLoaded;
+      final newName = form.control('name').value.toString().trim();
+      final profile = _profileCubit.state as ProfileLoggedIn;
       final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
 
       if (_isRenamingFolder) {
         emit(FolderEntryRenameInProgress());
 
         await _driveDao.transaction(() async {
-          var folder = await _driveDao.getFolderById(driveId, folderId);
+          var folder = await _driveDao
+              .folderById(driveId: driveId, folderId: folderId)
+              .getSingle();
           folder = folder.copyWith(name: newName, lastUpdated: DateTime.now());
 
+          final folderEntity = folder.asEntity();
+
           final folderTx = await _arweave.prepareEntityTx(
-              folder.asEntity(), profile.wallet, driveKey);
+              folderEntity, profile.wallet, driveKey);
 
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
+
+          folderEntity.txId = folderTx.id;
+
+          await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
+              performedAction: RevisionAction.rename));
+
+          final folderMap = {folder.id: folder.toCompanion(false)};
+          await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
         });
 
         emit(FolderEntryRenameSuccess());
@@ -92,17 +111,26 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
         emit(FileEntryRenameInProgress());
 
         await _driveDao.transaction(() async {
-          var file = await _driveDao.getFileById(driveId, fileId);
+          var file = await _driveDao
+              .fileById(driveId: driveId, fileId: fileId)
+              .getSingle();
           file = file.copyWith(name: newName, lastUpdated: DateTime.now());
 
           final fileKey =
               driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
 
+          final fileEntity = file.asEntity();
+
           final fileTx = await _arweave.prepareEntityTx(
-              file.asEntity(), profile.wallet, fileKey);
+              fileEntity, profile.wallet, fileKey);
 
           await _arweave.postTx(fileTx);
           await _driveDao.writeToFile(file);
+
+          fileEntity.txId = fileTx.id;
+
+          await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
+              performedAction: RevisionAction.rename));
         });
 
         emit(FileEntryRenameSuccess());
@@ -110,6 +138,61 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     } catch (err) {
       addError(err);
     }
+  }
+
+  Future<Map<String, dynamic>> _uniqueFolderName(
+      AbstractControl<dynamic> control) async {
+    final folder = await _driveDao
+        .folderById(driveId: driveId, folderId: folderId)
+        .getSingle();
+    final String newFolderName = control.value;
+
+    if (newFolderName == folder.name) {
+      return null;
+    }
+
+    // Check that the current folder does not already have a folder with the target file name.
+    final foldersWithName = await _driveDao
+        .foldersInFolderWithName(
+            driveId: driveId,
+            parentFolderId: folder.parentFolderId,
+            name: newFolderName)
+        .get();
+    final nameAlreadyExists = foldersWithName.isNotEmpty;
+
+    if (nameAlreadyExists) {
+      control.markAsTouched();
+      return {AppValidationMessage.nameAlreadyPresent: true};
+    }
+
+    return null;
+  }
+
+  Future<Map<String, dynamic>> _uniqueFileName(
+      AbstractControl<dynamic> control) async {
+    final file =
+        await _driveDao.fileById(driveId: driveId, fileId: fileId).getSingle();
+    final String newFileName = control.value;
+
+    if (newFileName == file.name) {
+      return null;
+    }
+
+    // Check that the current folder does not already have a file with the target file name.
+    final filesWithName = await _driveDao
+        .filesInFolderWithName(
+            driveId: driveId,
+            parentFolderId: file.parentFolderId,
+            name: newFileName)
+        .get();
+    final nameAlreadyExists = filesWithName.isNotEmpty;
+
+    if (nameAlreadyExists) {
+      control.markAsTouched();
+      return {AppValidationMessage.nameAlreadyPresent: true};
+    }
+
+    return null;
   }
 
   @override

@@ -1,47 +1,16 @@
 PODS:
-  - file_chooser (0.0.2):
+  - file_selector_macos (0.0.1):
     - FlutterMacOS
-  - Firebase/CoreOnly (6.33.0):
-    - FirebaseCore (= 6.10.3)
-  - firebase_core (0.5.2):
-    - Firebase/CoreOnly (~> 6.33.0)
-    - FlutterMacOS
-  - FirebaseCore (6.10.3):
-    - FirebaseCoreDiagnostics (~> 1.6)
-    - GoogleUtilities/Environment (~> 6.7)
-    - GoogleUtilities/Logger (~> 6.7)
-  - FirebaseCoreDiagnostics (1.7.0):
-    - GoogleDataTransport (~> 7.4)
-    - GoogleUtilities/Environment (~> 6.7)
-    - GoogleUtilities/Logger (~> 6.7)
-    - nanopb (~> 1.30906.0)
-  - FlutterMacOS (1.0.0)
-  - GoogleDataTransport (7.5.1):
-    - nanopb (~> 1.30906.0)
-  - GoogleUtilities/Environment (6.7.2):
-    - PromisesObjC (~> 1.2)
-  - GoogleUtilities/Logger (6.7.2):
-    - GoogleUtilities/Environment
-  - nanopb (1.30906.0):
-    - nanopb/decode (= 1.30906.0)
-    - nanopb/encode (= 1.30906.0)
-  - nanopb/decode (1.30906.0)
-  - nanopb/encode (1.30906.0)
-  - package_info (0.0.1):
-    - FlutterMacOS
+  - FlutterMacOS (1.22.4)
   - path_provider (0.0.1)
   - path_provider_macos (0.0.1):
     - FlutterMacOS
-  - PromisesObjC (1.2.11)
   - url_launcher (0.0.1)
   - url_launcher_macos (0.0.1):
     - FlutterMacOS
 
 DEPENDENCIES:
-  - file_chooser (from `Flutter/ephemeral/.symlinks/plugins/file_chooser/macos`)
-  - firebase_core (from `Flutter/ephemeral/.symlinks/plugins/firebase_core/macos`)
-  - FlutterMacOS (from `Flutter/ephemeral/.symlinks/flutter/darwin-x64`)
-  - package_info (from `Flutter/ephemeral/.symlinks/plugins/package_info/macos`)
+  - file_selector_macos (from `Flutter/ephemeral/.symlinks/plugins/file_selector_macos/macos`)
   - path_provider (from `Flutter/ephemeral/.symlinks/plugins/path_provider/macos`)
   - path_provider_macos (from `Flutter/ephemeral/.symlinks/plugins/path_provider_macos/macos`)
   - url_launcher (from `Flutter/ephemeral/.symlinks/plugins/url_launcher/macos`)
@@ -49,23 +18,11 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
-    - Firebase
-    - FirebaseCore
-    - FirebaseCoreDiagnostics
-    - GoogleDataTransport
-    - GoogleUtilities
-    - nanopb
-    - PromisesObjC
+    - FlutterMacOS
 
 EXTERNAL SOURCES:
-  file_chooser:
-    :path: Flutter/ephemeral/.symlinks/plugins/file_chooser/macos
-  firebase_core:
-    :path: Flutter/ephemeral/.symlinks/plugins/firebase_core/macos
-  FlutterMacOS:
-    :path: Flutter/ephemeral/.symlinks/flutter/darwin-x64
-  package_info:
-    :path: Flutter/ephemeral/.symlinks/plugins/package_info/macos
+  file_selector_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/file_selector_macos/macos
   path_provider:
     :path: Flutter/ephemeral/.symlinks/plugins/path_provider/macos
   path_provider_macos:
@@ -76,19 +33,10 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
 
 SPEC CHECKSUMS:
-  file_chooser: 24432cf5dc836722b05c11c2a0a30d19c3c9b996
-  Firebase: 8db6f2d1b2c5e2984efba4949a145875a8f65fe5
-  firebase_core: 3cf644c3c5fe191b680a91658486c3f3da62a23f
-  FirebaseCore: d889d9e12535b7f36ac8bfbf1713a0836a3012cd
-  FirebaseCoreDiagnostics: 770ac5958e1372ce67959ae4b4f31d8e127c3ac1
-  FlutterMacOS: 15bea8a44d2fa024068daa0140371c020b4b6ff9
-  GoogleDataTransport: f56af7caa4ed338dc8e138a5d7c5973e66440833
-  GoogleUtilities: 7f2f5a07f888cdb145101d6042bc4422f57e70b3
-  nanopb: 59317e09cf1f1a0af72f12af412d54edf52603fc
-  package_info: 6eba2fd8d3371dda2d85c8db6fe97488f24b74b2
+  file_selector_macos: ff6dc948d4ddd34e8602a1f60b7d0b4cc6051a47
+  FlutterMacOS: ac210ef71944b3f04789076d70d4c72c7ec0c619
   path_provider: e0848572d1d38b9a7dd099e79cf83f5b7e2cde9f
   path_provider_macos: a0a3fd666cb7cd0448e936fb4abad4052961002b
-  PromisesObjC: 8c196f5a328c2cba3e74624585467a557dcb482f
   url_launcher: af78307ef9bafff91273b34f1c6c0c86a0004fd7
   url_launcher_macos: 45af3d61de06997666568a7149c1be98b41c95d4
 

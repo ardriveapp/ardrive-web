@@ -47,7 +47,7 @@ class DriveEntity extends Entity {
         ..authMode = transaction.getTag(EntityTag.driveAuthMode)
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
-        ..commitTime = transaction.getCommitTime();
+        ..createdAt = transaction.getCommitTime();
     } catch (_) {
       throw EntityTransactionParseException();
     }
@@ -58,7 +58,7 @@ class DriveEntity extends Entity {
     assert(id != null && rootFolderId != null);
 
     tx
-      ..addApplicationTags()
+      ..addApplicationTags(unixTime: createdAt)
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.drive)
       ..addTag(EntityTag.driveId, id)

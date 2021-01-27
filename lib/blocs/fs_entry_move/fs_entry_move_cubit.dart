@@ -6,6 +6,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
+import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
 
 part 'fs_entry_move_state.dart';
@@ -36,7 +37,10 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         assert(folderId != null || fileId != null),
         super(
             FsEntryMoveFolderLoadInProgress(isMovingFolder: folderId != null)) {
-    _driveDao.getDriveById(driveId).then((d) => loadFolder(d.rootFolderId));
+    _driveDao
+        .driveById(driveId: driveId)
+        .getSingle()
+        .then((d) => loadFolder(d.rootFolderId));
   }
 
   Future<void> loadParentFolder() {
@@ -48,19 +52,22 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
     unawaited(_folderSubscription?.cancel());
 
     _folderSubscription =
-        _driveDao.watchFolderContentsById(driveId, folderId).listen((f) => emit(
-              FsEntryMoveFolderLoadSuccess(
-                viewingRootFolder: f.folder.parentFolderId == null,
-                viewingFolder: f,
-                isMovingFolder: _isMovingFolder,
+        _driveDao.watchFolderContents(driveId, folderId: folderId).listen(
+              (f) => emit(
+                FsEntryMoveFolderLoadSuccess(
+                  viewingRootFolder: f.folder.parentFolderId == null,
+                  viewingFolder: f,
+                  isMovingFolder: _isMovingFolder,
+                  movingEntryId: this.folderId ?? fileId,
+                ),
               ),
-            ));
+            );
   }
 
   Future<void> submit() async {
     try {
       final state = this.state as FsEntryMoveFolderLoadSuccess;
-      final profile = _profileCubit.state as ProfileLoaded;
+      final profile = _profileCubit.state as ProfileLoggedIn;
 
       final parentFolder = state.viewingFolder.folder;
       final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
@@ -69,17 +76,26 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         emit(FolderEntryMoveInProgress());
 
         await _driveDao.transaction(() async {
-          var folder = await _driveDao.getFolderById(driveId, folderId);
+          var folder = await _driveDao
+              .folderById(driveId: driveId, folderId: folderId)
+              .getSingle();
           folder = folder.copyWith(
               parentFolderId: parentFolder.id,
               path: '${parentFolder.path}/${folder.name}',
               lastUpdated: DateTime.now());
 
+          final folderEntity = folder.asEntity();
+
           final folderTx = await _arweave.prepareEntityTx(
-              folder.asEntity(), profile.wallet, driveKey);
+              folderEntity, profile.wallet, driveKey);
 
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
+
+          folderEntity.txId = folderTx.id;
+
+          await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
+              performedAction: RevisionAction.move));
         });
 
         emit(FolderEntryMoveSuccess());
@@ -87,7 +103,9 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         emit(FileEntryMoveInProgress());
 
         await _driveDao.transaction(() async {
-          var file = await _driveDao.getFileById(driveId, fileId);
+          var file = await _driveDao
+              .fileById(driveId: driveId, fileId: fileId)
+              .getSingle();
           file = file.copyWith(
               parentFolderId: parentFolder.id,
               path: '${parentFolder.path}/${file.name}',
@@ -96,11 +114,18 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
           final fileKey =
               driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
 
+          final fileEntity = file.asEntity();
+
           final fileTx = await _arweave.prepareEntityTx(
-              file.asEntity(), profile.wallet, fileKey);
+              fileEntity, profile.wallet, fileKey);
 
           await _arweave.postTx(fileTx);
           await _driveDao.writeToFile(file);
+
+          fileEntity.txId = fileTx.id;
+
+          await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
+              performedAction: RevisionAction.move));
         });
 
         emit(FileEntryMoveSuccess());

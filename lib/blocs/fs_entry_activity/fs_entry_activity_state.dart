@@ -13,6 +13,9 @@ class FsEntryActivitySuccess<T> extends FsEntryActivityState {
   final List<T> revisions;
 
   FsEntryActivitySuccess({this.revisions});
+
+  @override
+  List<Object> get props => [revisions];
 }
 
 class FsEntryActivityFailure extends FsEntryActivityState {}

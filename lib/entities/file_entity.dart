@@ -50,18 +50,22 @@ class FileEntity extends Entity {
 
   static Future<FileEntity> fromTransaction(
     TransactionCommonMixin transaction,
-    Uint8List data, [
+    Uint8List data, {
     SecretKey driveKey,
-  ]) async {
+    SecretKey fileKey,
+  }) async {
     try {
       Map<String, dynamic> entityJson;
-      if (driveKey == null) {
+      if (driveKey == null && fileKey == null) {
         entityJson = json.decode(utf8.decode(data));
       } else {
+        fileKey ??=
+            await deriveFileKey(driveKey, transaction.getTag(EntityTag.fileId));
+
         entityJson = await decryptEntityJson(
           transaction,
           data,
-          await deriveFileKey(driveKey, transaction.getTag(EntityTag.fileId)),
+          fileKey,
         );
       }
 
@@ -74,7 +78,7 @@ class FileEntity extends Entity {
         ..lastModifiedDate ??= commitTime
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
-        ..commitTime = commitTime;
+        ..createdAt = commitTime;
     } catch (_) {
       throw EntityTransactionParseException();
     }
@@ -89,7 +93,7 @@ class FileEntity extends Entity {
         size != null);
 
     tx
-      ..addApplicationTags()
+      ..addApplicationTags(unixTime: createdAt)
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.file)
       ..addTag(EntityTag.driveId, driveId)

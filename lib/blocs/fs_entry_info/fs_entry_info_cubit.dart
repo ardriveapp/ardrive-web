@@ -4,6 +4,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
+import 'package:moor/moor.dart';
 
 part 'fs_entry_info_state.dart';
 
@@ -24,7 +25,10 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
       : _driveDao = driveDao,
         super(FsEntryInfoInitial()) {
     if (folderId != null) {
-      _entrySubscription = _driveDao.watchFolderById(driveId, folderId).listen(
+      _entrySubscription = _driveDao
+          .folderById(driveId: driveId, folderId: folderId)
+          .watchSingle()
+          .listen(
             (f) => emit(
               FsEntryInfoSuccess<FolderEntry>(
                 name: f.name,
@@ -35,7 +39,10 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
             ),
           );
     } else if (fileId != null) {
-      _entrySubscription = _driveDao.watchFileById(driveId, fileId).listen(
+      _entrySubscription = _driveDao
+          .fileById(driveId: driveId, fileId: fileId)
+          .watchSingle()
+          .listen(
             (f) => emit(
               FsEntryInfoSuccess<FileEntry>(
                 name: f.name,
@@ -46,16 +53,17 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
             ),
           );
     } else {
-      _entrySubscription = _driveDao.watchDriveById(driveId).listen(
-            (d) => emit(
-              FsEntryInfoSuccess<Drive>(
-                name: d.name,
-                lastUpdated: d.lastUpdated,
-                dateCreated: d.dateCreated,
-                entry: d,
-              ),
-            ),
-          );
+      _entrySubscription =
+          _driveDao.driveById(driveId: driveId).watchSingle().listen(
+                (d) => emit(
+                  FsEntryInfoSuccess<Drive>(
+                    name: d.name,
+                    lastUpdated: d.lastUpdated,
+                    dateCreated: d.dateCreated,
+                    entry: d,
+                  ),
+                ),
+              );
     }
   }
 

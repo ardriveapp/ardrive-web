@@ -6,10 +6,10 @@ import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:file_picker_cross/file_picker_cross.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
-import 'package:path/path.dart';
+import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:uuid/uuid.dart';
 
@@ -21,7 +21,7 @@ part 'upload_state.dart';
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
   final String folderId;
-  final List<FilePickerCross> files;
+  final List<XFile> files;
 
   final _uuid = Uuid();
   final ProfileCubit _profileCubit;
@@ -55,8 +55,10 @@ class UploadCubit extends Cubit<UploadState> {
         _pst = pst,
         super(UploadPreparationInProgress()) {
     () async {
-      _targetDrive = await _driveDao.getDriveById(driveId);
-      _targetFolder = await _driveDao.getFolderById(driveId, folderId);
+      _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
+      _targetFolder = await _driveDao
+          .folderById(driveId: driveId, folderId: folderId)
+          .getSingle();
 
       unawaited(checkConflictingFiles());
     }();
@@ -70,15 +72,15 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadPreparationInProgress());
 
     for (final file in files) {
-      final fileName = basename(file.path);
+      final fileName = file.name;
       final existingFileId = await _driveDao
-          .selectFileInFolderByName(
-            _targetDrive.id,
-            _targetFolder.id,
-            fileName,
+          .filesInFolderWithName(
+            driveId: _targetDrive.id,
+            parentFolderId: _targetFolder.id,
+            name: fileName,
           )
           .map((f) => f.id)
-          .getSingle();
+          .getSingleOrNull();
 
       if (existingFileId != null) {
         conflictingFiles[fileName] = existingFileId;
@@ -94,7 +96,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> prepareUpload() async {
-    final profile = _profileCubit.state as ProfileLoaded;
+    final profile = _profileCubit.state as ProfileLoggedIn;
 
     emit(UploadPreparationInProgress());
 
@@ -107,26 +109,30 @@ class UploadCubit extends Cubit<UploadState> {
         .map((f) => f.cost)
         .reduce((total, cost) => total + cost);
 
-    // Workaround [BigInt] percentage division problems
-    // by first multiplying by the percentage * 100 and then dividing by 100.
-    final pstFee = uploadCost *
-        BigInt.from((await _pst.getPstFeePercentage()) * 100) ~/
-        BigInt.from(100);
+    var pstFee = BigInt.zero;
+
+    try {
+      // Workaround [BigInt] percentage division problems
+      // by first multiplying by the percentage * 100 and then dividing by 100.
+      pstFee = uploadCost *
+          BigInt.from((await _pst.getPstFeePercentage()) * 100) ~/
+          BigInt.from(100);
+
+      feeTx = await _arweave.client.transactions.prepare(
+        Transaction(
+          target: await _pst.getWeightedPstHolder(),
+          quantity: pstFee,
+        ),
+        profile.wallet,
+      )
+        ..addApplicationTags()
+        ..addTag('Type', 'fee')
+        ..addTag(TipType.tagName, TipType.dataUpload);
+
+      await feeTx.sign(profile.wallet);
+    } on UnimplementedError catch (_) {}
 
     final totalCost = uploadCost + pstFee;
-
-    feeTx = await _arweave.client.transactions.prepare(
-      Transaction(
-        target: await _pst.getWeightedPstHolder(),
-        quantity: pstFee,
-      ),
-      profile.wallet,
-    )
-      ..addApplicationTags()
-      ..addTag('Type', 'fee')
-      ..addTag(TipType.tagName, TipType.dataUpload);
-
-    await feeTx.sign(profile.wallet);
 
     emit(
       UploadReady(
@@ -143,7 +149,9 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUpload() async {
     emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
 
-    await _arweave.postTx(feeTx);
+    if (feeTx != null) {
+      await _arweave.postTx(feeTx);
+    }
 
     await _driveDao.transaction(() async {
       for (final uploadHandle in _fileUploadHandles.values) {
@@ -158,17 +166,16 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
-  Future<FileUploadHandle> prepareFileUpload(FilePickerCross file) async {
-    final profile = _profileCubit.state as ProfileLoaded;
+  Future<FileUploadHandle> prepareFileUpload(XFile file) async {
+    final profile = _profileCubit.state as ProfileLoggedIn;
 
-    final fileName = basename(file.path);
+    final fileName = file.name;
     final filePath = '${_targetFolder.path}/${fileName}';
     final fileEntity = FileEntity(
       driveId: _targetDrive.id,
       name: fileName,
-      size: file.length,
-      // TODO: Replace with time reported by OS.
-      lastModifiedDate: DateTime.now(),
+      size: await file.length(),
+      lastModifiedDate: await file.lastModified(),
       parentFolderId: _targetFolder.id,
       dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
     );
@@ -183,7 +190,7 @@ class UploadCubit extends Cubit<UploadState> {
     final fileKey =
         private ? await deriveFileKey(driveKey, fileEntity.id) : null;
 
-    final fileData = file.toUint8List();
+    final fileData = await file.readAsBytes();
 
     final uploadHandle = FileUploadHandle(entity: fileEntity, path: filePath);
 
@@ -199,7 +206,7 @@ class UploadCubit extends Cubit<UploadState> {
       uploadHandle.dataTx = private
           ? await createEncryptedDataItem(fileData, fileKey)
           : DataItem.withBlobData(data: fileData);
-      uploadHandle.dataTx.setOwner(profile.wallet.owner);
+      uploadHandle.dataTx.setOwner(await profile.wallet.getOwner());
     } else {
       uploadHandle.dataTx = await _arweave.client.transactions.prepare(
         private

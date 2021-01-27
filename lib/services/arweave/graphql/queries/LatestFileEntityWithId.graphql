@@ -1,0 +1,17 @@
+query LatestFileEntityWithId($fileId: String!, $owner: String!) {
+  transactions(
+    first: 1
+    sort: HEIGHT_DESC
+    owners: [$owner]
+    tags: [
+      { name: "ArFS", values: ["0.10", "0.11"] }
+      { name: "File-Id", values: [$fileId] }
+    ]
+  ) {
+    edges {
+      node {
+        ...TransactionCommon
+      }
+    }
+  }
+}

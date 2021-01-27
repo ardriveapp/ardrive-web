@@ -1,9 +1,4 @@
-import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/components/components.dart';
-import 'package:ardrive/models/models.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/link.dart';
+part of '../drive_detail_page.dart';
 
 class DriveDetailActionRow extends StatelessWidget {
   @override
@@ -14,16 +9,26 @@ class DriveDetailActionRow extends StatelessWidget {
       builder: (context, state) {
         if (state is DriveDetailLoadSuccess) {
           final fsActions = <Widget>[
+            // A folder/file is selected.
             if (state.selectedItemId != null) ...{
               if (!state.selectedItemIsFolder) ...{
                 IconButton(
                   icon: const Icon(Icons.file_download),
-                  onPressed: () => promptToDownloadFile(
-                    context,
+                  onPressed: () => promptToDownloadProfileFile(
+                    context: context,
                     driveId: state.currentDrive.id,
                     fileId: state.selectedItemId,
                   ),
                   tooltip: 'Download',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.share),
+                  tooltip: 'Share File',
+                  onPressed: () => promptToShareFile(
+                    context: context,
+                    driveId: state.currentDrive.id,
+                    fileId: state.selectedItemId,
+                  ),
                 ),
                 if (state.currentDrive.isPublic)
                   Link(
@@ -68,7 +73,18 @@ class DriveDetailActionRow extends StatelessWidget {
                   tooltip: 'Move',
                 ),
               },
-            },
+              // Nothing is selected.
+            } else ...{
+              if (state.currentDrive.isPublic)
+                IconButton(
+                  icon: const Icon(Icons.share),
+                  onPressed: () => promptToShareDrive(
+                    context: context,
+                    driveId: state.currentDrive.id,
+                  ),
+                  tooltip: 'Share Drive',
+                ),
+            }
           ];
 
           return Row(
@@ -102,7 +118,7 @@ class DriveDetailActionRow extends StatelessWidget {
           );
         }
 
-        return Container();
+        return const SizedBox();
       },
     );
   }

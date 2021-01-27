@@ -31,42 +31,64 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         _driveDao = driveDao,
         _config = config,
         super(DriveDetailLoadInProgress()) {
-    if (driveId != null) {
-      if (initialFolderId != null) {
-        () async {
-          final folder =
-              await _driveDao.getFolderById(driveId, initialFolderId);
-          openFolderAtPath(folder.path);
-        }();
-      } else {
-        openFolderAtPath('');
-      }
+    if (driveId == null) {
+      return;
+    }
+
+    if (initialFolderId != null) {
+      // TODO: Handle deep-linking folders of unattached drives.
+      Future.microtask(() async {
+        final folder = await _driveDao
+            .folderById(driveId: driveId, folderId: initialFolderId)
+            .getSingleOrNull();
+        // Open the root folder if the deep-linked folder could not be found.
+        openFolder(path: folder?.path ?? '');
+      });
+    } else {
+      openFolder(path: '');
     }
   }
 
-  void openFolderAtPath(String path) {
+  void openFolder(
+      {@required String path,
+      DriveOrder contentOrderBy = DriveOrder.name,
+      OrderingMode contentOrderingMode = OrderingMode.asc}) {
     emit(DriveDetailLoadInProgress());
 
     unawaited(_folderSubscription?.cancel());
 
     _folderSubscription =
         Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
-      _driveDao.watchDriveById(driveId),
-      _driveDao.watchFolderContentsAtPath(driveId, path),
+      _driveDao.driveById(driveId: driveId).watchSingleOrNull(),
+      _driveDao.watchFolderContents(driveId,
+          folderPath: path,
+          orderBy: contentOrderBy,
+          orderingMode: contentOrderingMode),
       _profileCubit.startWith(null),
-      (drive, folderContents, _) {
-        if (folderContents?.folder != null) {
-          final state = this.state is! DriveDetailLoadSuccess
-              ? DriveDetailLoadSuccess()
-              : this.state as DriveDetailLoadSuccess;
+      (drive, folderContents, _) async {
+        if (drive == null) {
+          emit(DriveDetailLoadNotFound());
+          return;
+        }
+
+        if (folderContents?.folder == null) {
+          // Emit the loading state as it can be a while between the drive being not found, then added,
+          // and then the folders being loaded.
+          emit(DriveDetailLoadInProgress());
+        } else {
+          final state = this.state is DriveDetailLoadSuccess
+              ? this.state as DriveDetailLoadSuccess
+              : DriveDetailLoadSuccess();
           final profile = _profileCubit.state;
 
           emit(
             state.copyWith(
               currentDrive: drive,
-              hasWritePermissions: profile is ProfileLoaded &&
-                  drive.ownerAddress == profile.wallet.address,
+              hasWritePermissions: profile is ProfileLoggedIn &&
+                  drive.ownerAddress == await profile.wallet.getAddress(),
               currentFolder: folderContents,
+              contentOrderBy: contentOrderBy,
+              contentOrderingMode: contentOrderingMode,
             ),
           );
         }
@@ -83,13 +105,25 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
 
     if (state.currentDrive.isPublic && !isFolder) {
-      final file = await _driveDao.getFileById(driveId, state.selectedItemId);
+      final file = await _driveDao
+          .fileById(driveId: driveId, fileId: state.selectedItemId)
+          .getSingle();
       state = state.copyWith(
           selectedFilePreviewUrl: Uri.parse(
               '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}'));
     }
 
     emit(state);
+  }
+
+  void sortFolder(
+      {DriveOrder contentOrderBy = DriveOrder.name,
+      OrderingMode contentOrderingMode = OrderingMode.asc}) {
+    final state = this.state as DriveDetailLoadSuccess;
+    openFolder(
+        path: state.currentFolder.folder.path,
+        contentOrderBy: contentOrderBy,
+        contentOrderingMode: contentOrderingMode);
   }
 
   void toggleSelectedItemDetails() {

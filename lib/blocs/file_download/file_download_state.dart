@@ -23,18 +23,14 @@ class FileDownloadInProgress extends FileDownloadState {
 }
 
 class FileDownloadSuccess extends FileDownloadState {
-  final String fileName;
-  final String fileExtension;
-  final Uint8List fileDataBytes;
+  final XFile file;
 
   FileDownloadSuccess({
-    @required this.fileName,
-    @required this.fileExtension,
-    @required this.fileDataBytes,
+    @required this.file,
   });
 
   @override
-  List<Object> get props => [fileName, fileExtension, fileDataBytes];
+  List<Object> get props => [file];
 }
 
 class FileDownloadFailure extends FileDownloadState {}

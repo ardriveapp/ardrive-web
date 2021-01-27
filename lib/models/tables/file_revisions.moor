@@ -1,0 +1,22 @@
+import 'network_transactions.moor';
+
+CREATE TABLE file_revisions (
+    fileId TEXT NOT NULL,
+    driveId TEXT NOT NULL,
+
+    name TEXT NOT NULL,
+    parentFolderId TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    lastModifiedDate DATETIME NOT NULL,
+
+    metadataTxId TEXT NOT NULL,
+    dataTxId TEXT NOT NULL,
+
+    dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
+    
+    [action] TEXT NOT NULL,
+
+    PRIMARY KEY (fileId, driveId, dateCreated),
+    FOREIGN KEY (metadataTxId) REFERENCES network_transactions(id),
+    FOREIGN KEY (dataTxId) REFERENCES network_transactions(id)
+);

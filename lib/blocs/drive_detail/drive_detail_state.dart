@@ -14,6 +14,9 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 
   final FolderWithContents currentFolder;
 
+  final DriveOrder contentOrderBy;
+  final OrderingMode contentOrderingMode;
+
   final String selectedItemId;
   final bool selectedItemIsFolder;
   final bool showSelectedItemDetails;
@@ -27,6 +30,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     this.currentDrive,
     this.hasWritePermissions,
     this.currentFolder,
+    this.contentOrderBy,
+    this.contentOrderingMode,
     this.selectedItemId,
     this.selectedItemIsFolder = false,
     this.showSelectedItemDetails = false,
@@ -37,6 +42,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     Drive currentDrive,
     bool hasWritePermissions,
     FolderWithContents currentFolder,
+    DriveOrder contentOrderBy,
+    OrderingMode contentOrderingMode,
     String selectedItemId,
     bool selectedItemIsFolder,
     bool showSelectedItemDetails,
@@ -46,6 +53,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         currentDrive: currentDrive ?? this.currentDrive,
         hasWritePermissions: hasWritePermissions ?? this.hasWritePermissions,
         currentFolder: currentFolder ?? this.currentFolder,
+        contentOrderBy: contentOrderBy ?? this.contentOrderBy,
+        contentOrderingMode: contentOrderingMode ?? this.contentOrderingMode,
         selectedItemId: selectedItemId ?? this.selectedItemId,
         selectedItemIsFolder: selectedItemIsFolder ?? this.selectedItemIsFolder,
         showSelectedItemDetails:
@@ -59,9 +68,15 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         currentDrive,
         hasWritePermissions,
         currentFolder,
+        contentOrderBy,
+        contentOrderingMode,
         selectedItemId,
         selectedItemIsFolder,
         showSelectedItemDetails,
         selectedFilePreviewUrl,
       ];
 }
+
+/// [DriveDetailLoadNotFound] means that the specified drive could not be found attached to
+/// the user's profile.
+class DriveDetailLoadNotFound extends DriveDetailState {}

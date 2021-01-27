@@ -41,7 +41,8 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
     _wallet = Wallet.fromJwk(json.decode(walletJson));
 
-    _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(_wallet.address);
+    _driveTxs =
+        await _arweave.getUniqueUserDriveEntityTxs(await _wallet.getAddress());
 
     if (_driveTxs.isEmpty) {
       emit(ProfileAddOnboardingNewUser());
@@ -80,41 +81,39 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     final previousState = state;
     emit(ProfileAddInProgress());
 
-    final String username = form.control('username').value;
+    final username = form.control('username').value.toString().trim();
     final String password = form.control('password').value;
 
-    try {
-      final privateDriveTxs = _driveTxs.where(
-          (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
+    final privateDriveTxs = _driveTxs.where(
+        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
 
-      // Try and decrypt one of the user's private drive entities to check if they are entering the
-      // right password.
-      if (privateDriveTxs.isNotEmpty) {
-        final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
+    // Try and decrypt one of the user's private drive entities to check if they are entering the
+    // right password.
+    if (privateDriveTxs.isNotEmpty) {
+      final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
 
-        final checkDriveKey = await deriveDriveKey(
-          _wallet,
-          checkDriveId,
-          password,
-        );
+      final checkDriveKey = await deriveDriveKey(
+        _wallet,
+        checkDriveId,
+        password,
+      );
 
-        await _arweave.tryGetFirstDriveEntityWithId(
-          checkDriveId,
-          checkDriveKey,
-        );
-      }
-    } catch (err) {
-      if (err is EntityTransactionParseException) {
+      final privateDrive = await _arweave.getLatestDriveEntityWithId(
+        checkDriveId,
+        checkDriveKey,
+      );
+
+      // If the private drive could not be decoded, the password is incorrect.
+      if (privateDrive == null) {
         form
             .control('password')
             .setErrors({AppValidationMessage.passwordIncorrect: true});
 
         // Reemit the previous state so form errors can be shown again.
         emit(previousState);
+
         return;
       }
-
-      rethrow;
     }
 
     await _profileDao.addProfile(username, password, _wallet);

@@ -3,30 +3,12 @@ import 'package:moor/moor.dart';
 
 import 'models.dart';
 
-@DataClassName('FolderRevision')
-class FolderRevisions extends Table {
-  /// The ID of revisions should always be the ID of its metadata transaction.
-  TextColumn get id => text()();
-
-  TextColumn get folderId => text()();
-  TextColumn get driveId => text()();
-
-  TextColumn get name => text().withLength(min: 1)();
-  TextColumn get parentFolderId => text().nullable()();
-
-  TextColumn get metadataTxId => text()();
-
-  /// The date on which this revision was created.
-  DateTimeColumn get dateCreated =>
-      dateTime().clientDefault(() => DateTime.now())();
-
-  TextColumn get action => text()();
-
-  @override
-  Set<Column> get primaryKey => {id};
+extension FolderRevisionWithTransactionExtensions
+    on FolderRevisionWithTransaction {
+  String get confirmationStatus => metadataTx.status;
 }
 
-extension FolderRevisionExtensions on FolderRevisionsCompanion {
+extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {
   /// Converts the revision to an instance of [FolderEntriesCompanion].
   ///
   /// This instance will lack a proper path and `dateCreated`.
@@ -38,9 +20,30 @@ extension FolderRevisionExtensions on FolderRevisionsCompanion {
         path: '',
         lastUpdated: dateCreated,
       );
+
+  /// Returns a [NetworkTransactionsCompanion] representing the metadata transaction
+  /// of this entity.
+  NetworkTransactionsCompanion getTransactionCompanion() =>
+      NetworkTransactionsCompanion.insert(
+          id: metadataTxId.value, dateCreated: dateCreated);
 }
 
 extension FolderEntityExtensions on FolderEntity {
+  /// Converts the entity to an instance of [FolderRevisionsCompanion].
+  ///
+  /// This requires a `performedAction` to be specified.
+  FolderRevisionsCompanion toRevisionCompanion(
+          {@required String performedAction}) =>
+      FolderRevisionsCompanion.insert(
+        folderId: id,
+        driveId: driveId,
+        name: name,
+        parentFolderId: Value(parentFolderId),
+        metadataTxId: txId,
+        dateCreated: Value(createdAt),
+        action: performedAction,
+      );
+
   /// Returns the action performed on the folder that lead to the new revision.
   String getPerformedRevisionAction(
       [FolderRevisionsCompanion previousRevision]) {

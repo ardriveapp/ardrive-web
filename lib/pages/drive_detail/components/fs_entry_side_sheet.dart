@@ -1,10 +1,4 @@
-import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/fs_entry_activity/fs_entry_activity_cubit.dart';
-import 'package:ardrive/models/models.dart';
-import 'package:filesize/filesize.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
+part of '../drive_detail_page.dart';
 
 class FsEntrySideSheet extends StatelessWidget {
   final String driveId;
@@ -54,22 +48,24 @@ class FsEntrySideSheet extends StatelessWidget {
                         Expanded(
                           child: TabBarView(
                             children: [
-                              _buildInfoTab(state),
-                              _buildActivityTab(state),
+                              _buildInfoTab(context, state),
+                              _buildActivityTab(context, state),
                             ],
                           ),
                         )
                       ],
                     )
-                  : Container(),
+                  : const SizedBox(),
             ),
           ),
         ),
       );
 
-  Widget _buildInfoTab(FsEntryInfoSuccess state) => DataTable(
+  Widget _buildInfoTab(BuildContext context, FsEntryInfoSuccess state) =>
+      DataTable(
         // Hide the data table header.
         headingRowHeight: 0,
+        dataTextStyle: Theme.of(context).textTheme.subtitle2,
         columns: const [
           DataColumn(label: Text('')),
           DataColumn(label: Text('')),
@@ -78,15 +74,44 @@ class FsEntrySideSheet extends StatelessWidget {
           if (state is FsEntryInfoSuccess<Drive>) ...{
             DataRow(cells: [
               DataCell(Text('Drive ID')),
-              DataCell(SelectableText(state.entry.id)),
+              DataCell(
+                CopyIconButton(
+                  tooltip: 'Copy Drive ID',
+                  value: state.entry.id,
+                ),
+              ),
             ]),
             DataRow(cells: [
               DataCell(Text('Privacy')),
-              DataCell(Text(state.entry.privacy))
+              // Capitalise the privacy enums of drives for display.
+              DataCell(
+                Text(
+                  state.entry.privacy == DrivePrivacy.private
+                      ? 'Private'
+                      : 'Public',
+                ),
+              )
             ]),
-          } else if (state is FsEntryInfoSuccess<FolderEntry>)
-            ...{}
-          else if (state is FsEntryInfoSuccess<FileEntry>) ...{
+          } else if (state is FsEntryInfoSuccess<FolderEntry>) ...{
+            DataRow(cells: [
+              DataCell(Text('Folder ID')),
+              DataCell(
+                CopyIconButton(
+                  tooltip: 'Copy Folder ID',
+                  value: state.entry.id,
+                ),
+              ),
+            ]),
+          } else if (state is FsEntryInfoSuccess<FileEntry>) ...{
+            DataRow(cells: [
+              DataCell(Text('File ID')),
+              DataCell(
+                CopyIconButton(
+                  tooltip: 'Copy File ID',
+                  value: state.entry.id,
+                ),
+              ),
+            ]),
             DataRow(cells: [
               DataCell(Text('Size')),
               DataCell(Text(filesize(state.entry.size)))
@@ -94,21 +119,22 @@ class FsEntrySideSheet extends StatelessWidget {
             DataRow(cells: [
               DataCell(Text('Last modified')),
               DataCell(
-                  Text(DateFormat.yMMMd().format(state.entry.lastModifiedDate)))
+                  Text(yMMdDateFormatter.format(state.entry.lastModifiedDate)))
             ]),
           },
           DataRow(cells: [
             DataCell(Text('Last updated')),
-            DataCell(Text(DateFormat.yMMMd().format(state.lastUpdated))),
+            DataCell(Text(yMMdDateFormatter.format(state.lastUpdated))),
           ]),
           DataRow(cells: [
             DataCell(Text('Date created')),
-            DataCell(Text(DateFormat.yMMMd().format(state.dateCreated))),
+            DataCell(Text(yMMdDateFormatter.format(state.dateCreated))),
           ]),
         ],
       );
 
-  Widget _buildActivityTab(FsEntryInfoSuccess state) => Padding(
+  Widget _buildActivityTab(BuildContext context, FsEntryInfoSuccess state) =>
+      Padding(
         padding: const EdgeInsets.only(top: 16),
         child: !_isShowingDriveDetails
             ? BlocProvider(
@@ -121,77 +147,126 @@ class FsEntrySideSheet extends StatelessWidget {
                 child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
                   builder: (context, state) {
                     if (state is FsEntryActivitySuccess) {
-                      return ListView.separated(
-                        itemBuilder: (BuildContext context, int index) {
-                          final revision = state.revisions[index];
+                      if (state.revisions.isNotEmpty) {
+                        return ListView.separated(
+                          itemBuilder: (BuildContext context, int index) {
+                            final revision = state.revisions[index];
 
-                          Widget content;
-                          Widget dateCreated;
+                            Widget content;
+                            Widget dateCreatedSubtitle;
+                            String revisionConfirmationStatus;
 
-                          if (revision is FolderRevision) {
-                            switch (revision.action) {
-                              case RevisionAction.create:
-                                content = Text(
-                                    'This folder was created with the name ${revision.name}.');
-                                break;
-                              case RevisionAction.rename:
-                                content = Text(
-                                    'This folder was renamed to ${revision.name}.');
-                                break;
-                              case RevisionAction.move:
-                                content = Text('This folder was moved.');
-                                break;
-                              default:
-                                content = Text('This folder was modified');
+                            if (revision is FolderRevisionWithTransaction) {
+                              switch (revision.action) {
+                                case RevisionAction.create:
+                                  content = Text(
+                                      'This folder was created with the name ${revision.name}.');
+                                  break;
+                                case RevisionAction.rename:
+                                  content = Text(
+                                      'This folder was renamed to ${revision.name}.');
+                                  break;
+                                case RevisionAction.move:
+                                  content = Text('This folder was moved.');
+                                  break;
+                                default:
+                                  content = Text('This folder was modified');
+                              }
+
+                              dateCreatedSubtitle = Text(yMMdDateFormatter
+                                  .format(revision.dateCreated));
+
+                              revisionConfirmationStatus =
+                                  revision.confirmationStatus;
+                            } else if (revision
+                                is FileRevisionWithTransactions) {
+                              switch (revision.action) {
+                                case RevisionAction.create:
+                                  content = Text(
+                                      'This file was created with the name ${revision.name}.');
+                                  break;
+                                case RevisionAction.rename:
+                                  content = Text(
+                                      'This file was renamed to ${revision.name}.');
+                                  break;
+                                case RevisionAction.move:
+                                  content = Text('This file was moved.');
+                                  break;
+                                case RevisionAction.uploadNewVersion:
+                                  content = Text(
+                                      'A new version of this file was uploaded.');
+                                  break;
+                                default:
+                                  content = Text('This file was modified');
+                              }
+
+                              dateCreatedSubtitle = Text(yMMdDateFormatter
+                                  .format(revision.dateCreated));
+
+                              revisionConfirmationStatus =
+                                  revision.confirmationStatus;
                             }
 
-                            dateCreated = Text(DateFormat.yMMMd()
-                                .format(revision.dateCreated));
-                          } else if (revision is FileRevision) {
-                            switch (revision.action) {
-                              case RevisionAction.create:
-                                content = Text(
-                                    'This file was created with the name ${revision.name}.');
-                                break;
-                              case RevisionAction.rename:
-                                content = Text(
-                                    'This file was renamed to ${revision.name}.');
-                                break;
-                              case RevisionAction.move:
-                                content = Text('This file was moved.');
-                                break;
-                              case RevisionAction.uploadNewVersion:
-                                content = Text(
-                                    'A new version of this file was uploaded.');
-                                break;
-                              default:
-                                content = Text('This file was modified');
+                            Widget statusIcon;
+                            if (revisionConfirmationStatus ==
+                                TransactionStatus.pending) {
+                              statusIcon = Tooltip(
+                                message: 'Pending',
+                                child: const Icon(Icons.pending),
+                              );
+                            } else if (revisionConfirmationStatus ==
+                                TransactionStatus.confirmed) {
+                              statusIcon = Tooltip(
+                                message: 'Confirmed',
+                                child: const Icon(Icons.check),
+                              );
+                            } else if (revisionConfirmationStatus ==
+                                TransactionStatus.failed) {
+                              statusIcon = Tooltip(
+                                message: 'Failed',
+                                child: const Icon(Icons.error_outline),
+                              );
                             }
 
-                            dateCreated = Text(DateFormat.yMMMd()
-                                .format(revision.dateCreated));
-                          }
-
-                          return ListTile(
-                            title: DefaultTextStyle(
-                              style: Theme.of(context).textTheme.subtitle2,
-                              child: content,
-                            ),
-                            subtitle: DefaultTextStyle(
-                              style: Theme.of(context).textTheme.caption,
-                              child: dateCreated,
-                            ),
-                          );
-                        },
-                        separatorBuilder: (context, index) => Divider(),
-                        itemCount: state.revisions.length,
-                      );
+                            return ListTile(
+                              title: DefaultTextStyle(
+                                style: Theme.of(context).textTheme.subtitle2,
+                                child: content,
+                              ),
+                              subtitle: DefaultTextStyle(
+                                style: Theme.of(context).textTheme.caption,
+                                child: dateCreatedSubtitle,
+                              ),
+                              trailing: statusIcon,
+                            );
+                          },
+                          separatorBuilder: (context, index) => Divider(),
+                          itemCount: state.revisions.length,
+                        );
+                      } else {
+                        return Center(
+                            child: Text('This item is being processed...'));
+                      }
                     } else {
-                      return Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     }
                   },
                 ),
               )
             : Center(child: Text('We\'re still working on this!')),
+      );
+}
+
+class CopyIconButton extends StatelessWidget {
+  final String value;
+  final String tooltip;
+
+  CopyIconButton({this.value, this.tooltip});
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+        icon: Icon(Icons.copy, color: Colors.black54),
+        tooltip: tooltip,
+        onPressed: () => Clipboard.setData(ClipboardData(text: value)),
       );
 }

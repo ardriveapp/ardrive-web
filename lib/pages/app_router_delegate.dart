@@ -1,7 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/components.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -9,12 +11,29 @@ import '../app_shell.dart';
 
 class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppRoutePath> {
+  bool signingIn = false;
+
   String driveId;
   String driveFolderId;
 
+  String sharedFileId;
+  SecretKey sharedFileKey;
+  String sharedRawFileKey;
+
+  bool canAnonymouslyShowDriveDetail(ProfileState profileState) =>
+      profileState is ProfileUnavailable && tryingToViewDrive;
+  bool get tryingToViewDrive => driveId != null;
+  bool get isViewingSharedFile => sharedFileId != null;
+
   @override
-  AppRoutePath get currentConfiguration =>
-      AppRoutePath(driveId: driveId, driveFolderId: driveFolderId);
+  AppRoutePath get currentConfiguration => AppRoutePath(
+        signingIn: signingIn,
+        driveId: driveId,
+        driveFolderId: driveFolderId,
+        sharedFileId: sharedFileId,
+        sharedFileKey: sharedFileKey,
+        sharedRawFileKey: sharedRawFileKey,
+      );
 
   @override
   final GlobalKey<NavigatorState> navigatorKey;
@@ -22,35 +41,66 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   AppRouterDelegate() : navigatorKey = GlobalKey<NavigatorState>();
 
   @override
-  Widget build(BuildContext context) => BlocBuilder<ProfileCubit, ProfileState>(
+  Widget build(BuildContext context) =>
+      BlocConsumer<ProfileCubit, ProfileState>(
+        listener: (context, state) {
+          final anonymouslyShowDriveDetail =
+              state is! ProfileLoggedIn && canAnonymouslyShowDriveDetail(state);
+
+          // If the user is not already signing in, not viewing a shared file and not anonymously viewing a drive,
+          // redirect them to sign in.
+          //
+          // Additionally, redirect the user to sign in if they are logging out.
+          final showingAnonymousRoute =
+              anonymouslyShowDriveDetail || isViewingSharedFile;
+
+          if (!signingIn &&
+              (!showingAnonymousRoute || state is ProfileLoggingOut)) {
+            signingIn = true;
+            notifyListeners();
+          }
+
+          // Redirect the user away from sign in if they are already signed in.
+          if (signingIn && state is ProfileLoggedIn) {
+            signingIn = false;
+            notifyListeners();
+          }
+        },
         builder: (context, state) {
           Widget shell;
-          if (state is! ProfileLoaded) {
+
+          final anonymouslyShowDriveDetail =
+              canAnonymouslyShowDriveDetail(state);
+
+          // Show an alert if the screen size is too small as the app is not fully responsive yet.
+          final screenSize = MediaQuery.of(context).size;
+          final screenNotSupported =
+              screenSize.width <= 576 || screenSize.height <= 576;
+          if (screenNotSupported) {
+            shell = ScreenNotSupportedPage();
+          } else if (signingIn) {
             shell = ProfileAuthPage();
-          } else {
+          } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
             shell = BlocConsumer<DrivesCubit, DrivesState>(
               listener: (context, state) {
                 if (state is DrivesLoadSuccess) {
-                  navigateToDriveDetailPage(state.selectedDriveId);
+                  final selectedDriveChanged = driveId != state.selectedDriveId;
+                  if (selectedDriveChanged) {
+                    driveFolderId = null;
+                  }
+
+                  driveId = state.selectedDriveId;
+                  notifyListeners();
                 }
               },
               builder: (context, state) {
                 Widget shellPage;
                 if (state is DrivesLoadSuccess) {
-                  if (state.hasNoDrives) {
-                    shellPage = Center(
-                      child: Text(
-                        'You have no personal or attached drives.\nClick the "new" button to add some!',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headline6,
-                      ),
-                    );
-                  } else {
-                    shellPage = DriveDetailPage(driveId: state.selectedDriveId);
-                  }
-                } else {
-                  shellPage = Container();
+                  shellPage =
+                      !state.hasNoDrives ? DriveDetailPage() : NoDrivesPage();
                 }
+
+                shellPage ??= const SizedBox();
 
                 return BlocProvider(
                   key: ValueKey(driveId),
@@ -61,11 +111,43 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     driveDao: context.read<DriveDao>(),
                     config: context.read<AppConfig>(),
                   ),
-                  child: AppShell(page: shellPage),
+                  child: BlocListener<DriveDetailCubit, DriveDetailState>(
+                    listener: (context, state) {
+                      if (state is DriveDetailLoadSuccess) {
+                        driveId = state.currentDrive.id;
+                        driveFolderId = state.currentFolder.folder.id;
+                        notifyListeners();
+                      } else if (state is DriveDetailLoadNotFound) {
+                        // Do not prompt the user to attach an unfound drive if they are logging out.
+                        final profileCubit = context.read<ProfileCubit>();
+                        if (profileCubit.state is ProfileLoggingOut) {
+                          return;
+                        }
+
+                        promptToAttachDrive(
+                            context: context, initialDriveId: driveId);
+                      }
+                    },
+                    child: FloatingHelpButtonPortalEntry(
+                      child: AppShell(page: shellPage),
+                    ),
+                  ),
                 );
               },
             );
+          } else if (isViewingSharedFile) {
+            shell = BlocProvider<SharedFileCubit>(
+              key: ValueKey(sharedFileId),
+              create: (_) => SharedFileCubit(
+                fileId: sharedFileId,
+                fileKey: sharedFileKey,
+                arweave: context.read<ArweaveService>(),
+              ),
+              child: SharedFilePage(),
+            );
           }
+
+          shell ??= const SizedBox();
 
           final navigator = Navigator(
             key: navigatorKey,
@@ -85,16 +167,13 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             },
           );
 
-          if (state is! ProfileLoaded) {
-            return navigator;
-          } else {
+          if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
             return MultiBlocProvider(
               providers: [
                 BlocProvider(
                   create: (context) => SyncCubit(
                     profileCubit: context.read<ProfileCubit>(),
                     arweave: context.read<ArweaveService>(),
-                    drivesDao: context.read<DrivesDao>(),
                     driveDao: context.read<DriveDao>(),
                     db: context.read<Database>(),
                   ),
@@ -103,7 +182,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   create: (context) => DrivesCubit(
                     initialSelectedDriveId: driveId,
                     profileCubit: context.read<ProfileCubit>(),
-                    drivesDao: context.read<DrivesDao>(),
+                    driveDao: context.read<DriveDao>(),
                   ),
                 ),
               ],
@@ -125,26 +204,20 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 child: navigator,
               ),
             );
+          } else {
+            return navigator;
           }
         },
       );
 
   @override
   Future<void> setNewRoutePath(AppRoutePath path) async {
+    signingIn = path.signingIn;
     driveId = path.driveId;
     driveFolderId = path.driveFolderId;
-  }
-
-  void navigateToDriveDetailPage(String driveId, [String driveFolderId]) {
-    // Only update the drive folder id to null if the drive id is changing.
-    if ((driveFolderId == null && this.driveId != driveId) ||
-        driveFolderId != null) {
-      this.driveFolderId = driveFolderId;
-    }
-
-    this.driveId = driveId;
-
-    notifyListeners();
+    sharedFileId = path.sharedFileId;
+    sharedFileKey = path.sharedFileKey;
+    sharedRawFileKey = path.sharedRawFileKey;
   }
 }
 

@@ -1,3 +1,4 @@
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 
@@ -19,14 +20,29 @@ class ProfileAuthShell extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Container(
-                color: kDarkSurfaceColor,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: illustration,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Container(
+                    color: kDarkSurfaceColor,
                   ),
-                ),
+                  FittedBox(
+                    fit: BoxFit.fitWidth,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(R.images.profile.permahillsBg),
+                        SizedBox(height: 128),
+                      ],
+                    ),
+                  ),
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: illustration,
+                    ),
+                  ),
+                ],
               ),
             ),
             Expanded(
@@ -42,7 +58,7 @@ class ProfileAuthShell extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Image.asset(
-                            'assets/images/brand/logo-vert-no-subtitle.png',
+                            R.images.brand.logoVerticalNoSubtitle,
                             height: 126,
                             fit: BoxFit.contain,
                           ),

@@ -114,7 +114,7 @@ void main() {
 
     test('watchFolder() returns correct folder contents', () async {
       var folderStream =
-          driveDao.watchFolderContentsAtPath(driveId, '').share();
+          driveDao.watchFolderContents(driveId, folderPath: '').share();
 
       await Future.wait([
         expectLater(folderStream.map((f) => f.folder.id), emits(rootFolderId)),
@@ -129,7 +129,8 @@ void main() {
       ]);
 
       folderStream = driveDao
-          .watchFolderContentsAtPath(driveId, '/$emptyNestedFolderIdPrefix' '0')
+          .watchFolderContents(driveId,
+              folderPath: '/$emptyNestedFolderIdPrefix' '0')
           .share();
 
       await Future.wait([

@@ -1,0 +1,18 @@
+query LatestDriveEntityWithId($driveId: String!, $owner: String!) {
+  transactions(
+    first: 1
+    sort: HEIGHT_DESC
+    owners: [$owner]
+    tags: [
+      { name: "ArFS", values: ["0.10", "0.11"] }
+      { name: "Entity-Type", values: ["drive"] }
+      { name: "Drive-Id", values: [$driveId] }
+    ]
+  ) {
+    edges {
+      node {
+        ...TransactionCommon
+      }
+    }
+  }
+}

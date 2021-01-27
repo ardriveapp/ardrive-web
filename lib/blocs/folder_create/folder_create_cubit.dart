@@ -1,21 +1,22 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/l11n/l11n.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
+import 'package:moor/moor.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'folder_create_state.dart';
 
 class FolderCreateCubit extends Cubit<FolderCreateState> {
-  final form = FormGroup({
-    'name': FormControl(validators: [Validators.required]),
-  });
+  FormGroup form;
 
-  final String targetDriveId;
-  final String targetFolderId;
+  final String driveId;
+  final String parentFolderId;
 
   final ProfileCubit _profileCubit;
 
@@ -23,15 +24,27 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
   final DriveDao _driveDao;
 
   FolderCreateCubit({
-    @required this.targetDriveId,
-    @required this.targetFolderId,
+    @required this.driveId,
+    @required this.parentFolderId,
     @required ProfileCubit profileCubit,
     @required ArweaveService arweave,
     @required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _driveDao = driveDao,
-        super(FolderCreateInitial());
+        super(FolderCreateInitial()) {
+    form = FormGroup({
+      'name': FormControl(
+        validators: [
+          Validators.required,
+          Validators.pattern(kFolderNameRegex),
+        ],
+        asyncValidators: [
+          _uniqueFolderName,
+        ],
+      ),
+    });
+  }
 
   Future<void> submit() async {
     form.markAllAsTouched();
@@ -43,13 +56,15 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     emit(FolderCreateInProgress());
 
     try {
-      final profile = _profileCubit.state as ProfileLoaded;
+      final profile = _profileCubit.state as ProfileLoggedIn;
       final String folderName = form.control('name').value;
 
       await _driveDao.transaction(() async {
-        final targetDrive = await _driveDao.getDriveById(targetDriveId);
-        final targetFolder =
-            await _driveDao.getFolderById(targetDriveId, targetFolderId);
+        final targetDrive =
+            await _driveDao.driveById(driveId: driveId).getSingle();
+        final targetFolder = await _driveDao
+            .folderById(driveId: driveId, folderId: parentFolderId)
+            .getSingle();
 
         final driveKey = targetDrive.isPrivate
             ? await _driveDao.getDriveKey(
@@ -63,24 +78,50 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           path: '${targetFolder.path}/${folderName}',
         );
 
+        final folderEntity = FolderEntity(
+          id: newFolderId,
+          driveId: targetFolder.driveId,
+          parentFolderId: targetFolder.id,
+          name: folderName,
+        );
+
         final folderTx = await _arweave.prepareEntityTx(
-          FolderEntity(
-            id: newFolderId,
-            driveId: targetFolder.driveId,
-            parentFolderId: targetFolder.id,
-            name: folderName,
-          ),
+          folderEntity,
           profile.wallet,
           driveKey,
         );
 
         await _arweave.postTx(folderTx);
+
+        folderEntity.txId = folderTx.id;
+
+        await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
+            performedAction: RevisionAction.create));
       });
     } catch (err) {
       addError(err);
     }
 
     emit(FolderCreateSuccess());
+  }
+
+  Future<Map<String, dynamic>> _uniqueFolderName(
+      AbstractControl<dynamic> control) async {
+    final String folderName = control.value;
+
+    // Check that the parent folder does not already have a folder with the input name.
+    final foldersWithName = await _driveDao
+        .foldersInFolderWithName(
+            driveId: driveId, parentFolderId: parentFolderId, name: folderName)
+        .get();
+    final nameAlreadyExists = foldersWithName.isNotEmpty;
+
+    if (nameAlreadyExists) {
+      control.markAsTouched();
+      return {AppValidationMessage.nameAlreadyPresent: true};
+    }
+
+    return null;
   }
 
   @override

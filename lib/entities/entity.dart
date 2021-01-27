@@ -15,9 +15,9 @@ abstract class Entity {
   @JsonKey(ignore: true)
   String ownerAddress;
 
-  /// The time this entity was commited ie. its `Unix-Time`.
+  /// The time this entity was created at ie. its `Unix-Time`.
   @JsonKey(ignore: true)
-  DateTime commitTime;
+  DateTime createdAt = DateTime.now();
 
   /// Returns a [Transaction] with the entity's data along with the appropriate tags.
   ///
@@ -54,12 +54,14 @@ abstract class Entity {
 class EntityTransactionParseException implements Exception {}
 
 extension TransactionUtils on TransactionBase {
-  /// Tags this transaction with the app name, version, and current time.
-  void addApplicationTags() {
+  /// Tags this transaction with the app name, version, and the specified unix time.
+  void addApplicationTags({DateTime unixTime}) {
     addTag(EntityTag.appName, 'ArDrive-Web');
     addTag(EntityTag.appVersion, '0.1.0');
-    addTag(EntityTag.unixTime,
-        (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString());
+    addTag(
+        EntityTag.unixTime,
+        ((unixTime ?? DateTime.now()).millisecondsSinceEpoch ~/ 1000)
+            .toString());
   }
 
   /// Tags this transaction with the ArFS version currently in use.

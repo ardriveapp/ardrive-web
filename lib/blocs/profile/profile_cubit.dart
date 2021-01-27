@@ -7,10 +7,13 @@ import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
+import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
 
 part 'profile_state.dart';
 
+/// [ProfileCubit] includes logic for managing the user's profile login status
+/// and wallet balance.
 class ProfileCubit extends Cubit<ProfileState> {
   final ArweaveService _arweave;
   final ProfileDao _profileDao;
@@ -23,51 +26,53 @@ class ProfileCubit extends Cubit<ProfileState> {
   })  : _arweave = arweave,
         _profileDao = profileDao,
         _db = db,
-        super(ProfileUnavailable()) {
+        super(ProfileCheckingAvailability()) {
     promptToAuthenticate();
   }
 
   Future<void> promptToAuthenticate() async {
-    final profile = await _profileDao.selectDefaultProfile().getSingle();
-    emit(profile != null ? ProfilePromptUnlock() : ProfilePromptAdd());
+    final profile = await _profileDao.defaultProfile().getSingleOrNull();
+    emit(profile != null ? ProfilePromptLogIn() : ProfilePromptAdd());
   }
 
   Future<void> unlockDefaultProfile(String password) async {
-    emit(ProfileLoading());
+    emit(ProfileLoggingIn());
 
     final profile = await _profileDao.loadDefaultProfile(password);
 
     if (profile != null) {
-      final walletBalance =
-          await _arweave.client.wallets.getBalance(profile.wallet.address);
+      final walletAddress = await profile.wallet.getAddress();
+      final walletBalance = await _arweave.getWalletBalance(walletAddress);
 
       emit(
-        ProfileLoaded(
+        ProfileLoggedIn(
           username: profile.details.username,
           password: password,
           wallet: profile.wallet,
+          walletAddress: walletAddress,
           walletBalance: walletBalance,
           cipherKey: profile.key,
         ),
       );
     } else {
-      emit(ProfileUnavailable());
+      emit(ProfilePromptAdd());
     }
   }
 
   Future<void> refreshBalance() async {
-    final state = this.state as ProfileLoaded;
-    final walletBalance =
-        await _arweave.client.wallets.getBalance(state.wallet.address);
+    final profile = state as ProfileLoggedIn;
 
-    emit(state.copyWith(walletBalance: walletBalance));
+    final walletAddress = await profile.wallet.getAddress();
+    final walletBalance = await _arweave.getWalletBalance(walletAddress);
+
+    emit(profile.copyWith(walletBalance: walletBalance));
   }
 
   /// Removes the user's existing profile and its associated data then prompts them to add another.
   ///
   /// Works even when the user is not authenticated.
   Future<void> logoutProfile() async {
-    emit(ProfileLogoutInProgress());
+    emit(ProfileLoggingOut());
 
     // Delete all table data.
     await _db.transaction(() async {

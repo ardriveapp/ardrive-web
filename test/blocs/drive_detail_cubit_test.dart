@@ -1,7 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:cryptography/helpers.dart';
 import 'package:mockito/mockito.dart';
+import 'package:moor/moor.dart';
 import 'package:test/test.dart';
 
 import '../utils/utils.dart';
@@ -22,11 +24,15 @@ void main() {
 
       profileCubit = MockProfileCubit();
 
+      final keyBytes = Uint8List(32);
+      fillBytesWithSecureRandom(keyBytes);
+
       when(profileCubit.state).thenReturn(
-        ProfileLoaded(
+        ProfileLoggedIn(
+          username: '',
           password: '123',
           wallet: getTestWallet(),
-          cipherKey: SecretKey.randomBytes(32),
+          cipherKey: SecretKey(keyBytes),
         ),
       );
 

@@ -1,4 +1,4 @@
-query InitialDriveEntity($driveId: String!) {
+query FirstDriveEntityWithIdOwner($driveId: String!) {
   transactions(
     first: 1
     sort: HEIGHT_ASC
@@ -10,7 +10,9 @@ query InitialDriveEntity($driveId: String!) {
   ) {
     edges {
       node {
-        ...transactionCommon
+        owner {
+          address
+        }
       }
     }
   }

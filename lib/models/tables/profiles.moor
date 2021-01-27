@@ -1,0 +1,8 @@
+CREATE TABLE profiles (
+    id TEXT NOT NULL PRIMARY KEY,
+
+    username TEXT NOT NULL,
+
+    encryptedWallet BLOB NOT NULL,
+    keySalt BLOB NOT NULL
+);

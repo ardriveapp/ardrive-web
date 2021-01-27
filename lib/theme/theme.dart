@@ -63,6 +63,12 @@ TextTheme _buildTextTheme(TextTheme base) => base
     .apply(
       bodyColor: kOnSurfaceBodyTextColor,
       displayColor: kPrimarySwatch,
+    )
+    .merge(
+      TextTheme(
+        headline5:
+            TextStyle(color: kPrimarySwatch, fontWeight: FontWeight.bold),
+      ),
     );
 
 IconThemeData _buildIconTheme(IconThemeData base) =>

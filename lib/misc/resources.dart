@@ -3,9 +3,19 @@ class R {
 }
 
 class Images {
-  Images();
+  const Images();
 
-  final profile = Profile();
+  final brand = const Brand();
+  final profile = const Profile();
+}
+
+class Brand {
+  const Brand();
+
+  final logoHorizontalNoSubtitle =
+      'assets/images/brand/logo-horiz-no-subtitle.png';
+  final logoVerticalNoSubtitle =
+      'assets/images/brand/logo-vert-no-subtitle.png';
 }
 
 class Profile {
@@ -15,6 +25,8 @@ class Profile {
   final profileOnboarding = 'assets/images/profile/profile_onboarding.png';
   final profileUnlock = 'assets/images/profile/profile_unlock.png';
   final profileWelcome = 'assets/images/profile/profile_welcome.png';
+
+  final permahillsBg = 'assets/images/profile/profile_permahills_bg.png';
 
   final newUserPermanent =
       'assets/images/profile/profile_new_user_permanent.png';

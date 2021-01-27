@@ -24,54 +24,65 @@ class AppDrawer extends StatelessWidget {
             child: Container(
               color: kDarkSurfaceColor,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildDriveActionsButton(context, state),
-                  if (state is DrivesLoadSuccess) ...{
-                    if (state.userDrives.isNotEmpty ||
-                        state.sharedDrives.isEmpty) ...{
-                      ListTile(
-                        dense: true,
-                        title: Text(
-                          'PERSONAL DRIVES',
-                          textAlign: TextAlign.start,
-                          style: Theme.of(context).textTheme.caption.copyWith(
-                              color: ListTileTheme.of(context).textColor),
-                        ),
-                        trailing: _buildSyncButton(),
-                      ),
-                      ...state.userDrives.map(
-                        (d) => DriveListTile(
-                          drive: d,
-                          selected: state.selectedDriveId == d.id,
-                          onPressed: () =>
-                              context.read<DrivesCubit>().selectDrive(d.id),
-                        ),
-                      ),
-                    },
-                    if (state.sharedDrives.isNotEmpty) ...{
-                      ListTile(
-                        dense: true,
-                        title: Text(
-                          'SHARED DRIVES',
-                          textAlign: TextAlign.start,
-                          style: Theme.of(context).textTheme.caption.copyWith(
-                              color: ListTileTheme.of(context).textColor),
-                        ),
-                        trailing: state.userDrives.isEmpty
-                            ? _buildSyncButton()
-                            : null,
-                      ),
-                      ...state.sharedDrives.map(
-                        (d) => DriveListTile(
-                          drive: d,
-                          selected: state.selectedDriveId == d.id,
-                          onPressed: () =>
-                              context.read<DrivesCubit>().selectDrive(d.id),
-                        ),
-                      ),
-                    }
-                  }
+                  if (state is DrivesLoadSuccess)
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (state.userDrives.isNotEmpty ||
+                            state.sharedDrives.isEmpty) ...{
+                          ListTile(
+                            dense: true,
+                            title: Text(
+                              'PERSONAL DRIVES',
+                              textAlign: TextAlign.start,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .caption
+                                  .copyWith(
+                                      color:
+                                          ListTileTheme.of(context).textColor),
+                            ),
+                            trailing: _buildSyncButton(),
+                          ),
+                          ...state.userDrives.map(
+                            (d) => DriveListTile(
+                              drive: d,
+                              selected: state.selectedDriveId == d.id,
+                              onPressed: () =>
+                                  context.read<DrivesCubit>().selectDrive(d.id),
+                            ),
+                          ),
+                        },
+                        if (state.sharedDrives.isNotEmpty) ...{
+                          ListTile(
+                            dense: true,
+                            title: Text(
+                              'SHARED DRIVES',
+                              textAlign: TextAlign.start,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .caption
+                                  .copyWith(
+                                      color:
+                                          ListTileTheme.of(context).textColor),
+                            ),
+                            trailing: state.userDrives.isEmpty
+                                ? _buildSyncButton()
+                                : null,
+                          ),
+                          ...state.sharedDrives.map(
+                            (d) => DriveListTile(
+                              drive: d,
+                              selected: state.selectedDriveId == d.id,
+                              onPressed: () =>
+                                  context.read<DrivesCubit>().selectDrive(d.id),
+                            ),
+                          ),
+                        }
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -107,8 +118,8 @@ class AppDrawer extends StatelessWidget {
                     enabled: state.hasWritePermissions,
                     value: (context) => promptToCreateFolder(
                       context,
-                      targetDriveId: state.currentDrive.id,
-                      targetFolderId: state.currentFolder.folder.id,
+                      driveId: state.currentDrive.id,
+                      parentFolderId: state.currentFolder.folder.id,
                     ),
                     child: ListTile(
                       enabled: state.hasWritePermissions,
@@ -141,7 +152,7 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   PopupMenuItem(
-                    value: (context) => promptToAttachDrive(context),
+                    value: (context) => promptToAttachDrive(context: context),
                     child: ListTile(
                       title: Text('Attach drive'),
                     ),
@@ -158,7 +169,7 @@ class AppDrawer extends StatelessWidget {
   Widget _buildSyncButton() => BlocBuilder<SyncCubit, SyncState>(
         builder: (context, syncState) => syncState is SyncInProgress
             ? IconButton(
-                icon: CircularProgressIndicator(
+                icon: const CircularProgressIndicator(
                   valueColor:
                       AlwaysStoppedAnimation<Color>(kOnDarkSurfaceHighEmphasis),
                 ),

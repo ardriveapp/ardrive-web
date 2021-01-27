@@ -18,14 +18,19 @@ class FsEntryMoveFolderLoadSuccess extends FsEntryMoveState {
   final bool viewingRootFolder;
   final FolderWithContents viewingFolder;
 
+  /// The id of the folder/file entry being moved.
+  final String movingEntryId;
+
   FsEntryMoveFolderLoadSuccess({
     @required this.viewingRootFolder,
     @required this.viewingFolder,
+    @required this.movingEntryId,
     @required bool isMovingFolder,
   }) : super(isMovingFolder: isMovingFolder);
 
   @override
-  List<Object> get props => [viewingRootFolder, viewingFolder, isMovingFolder];
+  List<Object> get props =>
+      [viewingRootFolder, viewingFolder, movingEntryId, isMovingFolder];
 }
 
 class FolderEntryMoveInProgress extends FsEntryMoveState {

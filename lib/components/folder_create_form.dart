@@ -11,68 +11,60 @@ import 'components.dart';
 
 Future<void> promptToCreateFolder(
   BuildContext context, {
-  @required String targetDriveId,
-  @required String targetFolderId,
+  @required String driveId,
+  @required String parentFolderId,
 }) =>
     showDialog(
       context: context,
-      builder: (_) => FolderCreateForm(
-        targetDriveId: targetDriveId,
-        targetFolderId: targetFolderId,
-      ),
-    );
-
-class FolderCreateForm extends StatelessWidget {
-  final String targetDriveId;
-  final String targetFolderId;
-
-  FolderCreateForm(
-      {@required this.targetDriveId, @required this.targetFolderId});
-
-  @override
-  Widget build(BuildContext context) => BlocProvider(
+      builder: (_) => BlocProvider(
         create: (context) => FolderCreateCubit(
-          targetDriveId: targetDriveId,
-          targetFolderId: targetFolderId,
+          driveId: driveId,
+          parentFolderId: parentFolderId,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
         ),
-        child: BlocConsumer<FolderCreateCubit, FolderCreateState>(
-          listener: (context, state) {
-            if (state is FolderCreateInProgress) {
-              showProgressDialog(context, 'CREATING FOLDER...');
-            } else if (state is FolderCreateSuccess) {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            }
-          },
-          builder: (context, state) => AppDialog(
-            title: 'CREATE FOLDER',
-            content: SizedBox(
-              width: kSmallDialogWidth,
-              child: ReactiveForm(
-                formGroup: context.watch<FolderCreateCubit>().form,
-                child: ReactiveTextField(
-                  formControlName: 'name',
-                  autofocus: true,
-                  decoration: const InputDecoration(labelText: 'Folder name'),
-                  showErrors: (control) => control.dirty && control.invalid,
-                  validationMessages: (_) => kValidationMessages,
-                ),
+        child: FolderCreateForm(),
+      ),
+    );
+
+class FolderCreateForm extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) =>
+      BlocConsumer<FolderCreateCubit, FolderCreateState>(
+        listener: (context, state) {
+          if (state is FolderCreateInProgress) {
+            showProgressDialog(context, 'CREATING FOLDER...');
+          } else if (state is FolderCreateSuccess) {
+            Navigator.pop(context);
+            Navigator.pop(context);
+          }
+        },
+        builder: (context, state) => AppDialog(
+          title: 'CREATE FOLDER',
+          content: SizedBox(
+            width: kMediumDialogWidth,
+            child: ReactiveForm(
+              formGroup: context.watch<FolderCreateCubit>().form,
+              child: ReactiveTextField(
+                formControlName: 'name',
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Folder name'),
+                showErrors: (control) => control.dirty && control.invalid,
+                validationMessages: (_) => kValidationMessages,
               ),
             ),
-            actions: [
-              TextButton(
-                child: Text('CANCEL'),
-                onPressed: () => Navigator.of(context).pop(null),
-              ),
-              ElevatedButton(
-                child: Text('CREATE'),
-                onPressed: () => context.read<FolderCreateCubit>().submit(),
-              ),
-            ],
           ),
+          actions: [
+            TextButton(
+              child: Text('CANCEL'),
+              onPressed: () => Navigator.of(context).pop(null),
+            ),
+            ElevatedButton(
+              child: Text('CREATE'),
+              onPressed: () => context.read<FolderCreateCubit>().submit(),
+            ),
+          ],
         ),
       );
 }
