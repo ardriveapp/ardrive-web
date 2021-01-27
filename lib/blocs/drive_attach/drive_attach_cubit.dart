@@ -67,7 +67,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
     try {
       final String driveId = form.control('driveId').value;
-      final String driveName = form.control('name').value;
+      final driveName = form.control('name').value.toString().trim();
 
       final driveEntity = await _arweave.getLatestDriveEntityWithId(driveId);
 

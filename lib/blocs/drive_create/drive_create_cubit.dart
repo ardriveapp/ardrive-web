@@ -48,7 +48,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     emit(DriveCreateInProgress());
 
     try {
-      final String driveName = form.control('name').value;
+      final driveName = form.control('name').value.toString().trim();
       final String drivePrivacy = form.control('privacy').value;
 
       final profile = _profileCubit.state as ProfileLoggedIn;

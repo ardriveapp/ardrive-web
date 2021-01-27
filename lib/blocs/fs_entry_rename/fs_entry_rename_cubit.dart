@@ -75,7 +75,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     }
 
     try {
-      final String newName = form.control('name').value;
+      final newName = form.control('name').value.toString().trim();
       final profile = _profileCubit.state as ProfileLoggedIn;
       final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
 

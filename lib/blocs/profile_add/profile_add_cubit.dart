@@ -81,7 +81,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     final previousState = state;
     emit(ProfileAddInProgress());
 
-    final String username = form.control('username').value;
+    final username = form.control('username').value.toString().trim();
     final String password = form.control('password').value;
 
     final privateDriveTxs = _driveTxs.where(
