@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -347,11 +348,21 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       (update(networkTransactions)..whereSamePrimaryKey(transaction))
           .write(transaction);
 
-  Future<void> insertFolderRevision(Insertable<FolderRevision> revision) =>
-      into(folderRevisions).insert(revision);
+  Future<void> insertFolderRevision(FolderRevisionsCompanion revision) async {
+    await db.transaction(() async {
+      await writeTransaction(revision.getTransactionCompanion());
+      await into(folderRevisions).insert(revision);
+    });
+  }
 
-  Future<void> insertFileRevision(Insertable<FileRevision> revision) =>
-      into(fileRevisions).insert(revision);
+  Future<void> insertFileRevision(FileRevisionsCompanion revision) async {
+    await db.transaction(() async {
+      await Future.wait(revision
+          .getTransactionCompanions()
+          .map((tx) => writeTransaction(tx)));
+      await await into(fileRevisions).insert(revision);
+    });
+  }
 
   Future<void> writeTransaction(Insertable<NetworkTransaction> transaction) =>
       into(networkTransactions).insertOnConflictUpdate(transaction);

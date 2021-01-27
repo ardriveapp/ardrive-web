@@ -92,10 +92,10 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await _arweave.postTx(driveTx);
       await _arweave.postTx(rootFolderTx);
 
-      await _driveDao
-          .writeTransaction(rootFolderEntity.toTransactionCompanion());
-      await _driveDao.insertFolderRevision(
-          rootFolderEntity.toRevisionCompanion(RevisionAction.create));
+      rootFolderEntity.txId = rootFolderTx.id;
+
+      await _driveDao.insertFolderRevision(rootFolderEntity.toRevisionCompanion(
+          performedAction: RevisionAction.create));
 
       _drivesCubit.selectDrive(drive.id);
     } catch (err) {

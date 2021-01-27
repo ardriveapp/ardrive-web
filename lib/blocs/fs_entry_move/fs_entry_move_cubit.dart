@@ -92,10 +92,10 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
 
-          await _driveDao
-              .writeTransaction(folderEntity.toTransactionCompanion());
-          await _driveDao.insertFolderRevision(
-              folderEntity.toRevisionCompanion(RevisionAction.move));
+          folderEntity.txId = folderTx.id;
+
+          await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
+              performedAction: RevisionAction.move));
         });
 
         emit(FolderEntryMoveSuccess());
@@ -122,11 +122,10 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
           await _arweave.postTx(fileTx);
           await _driveDao.writeToFile(file);
 
-          await Future.wait(fileEntity
-              .toTransactionCompanions()
-              .map((tx) => _driveDao.writeTransaction(tx)));
-          await _driveDao.insertFileRevision(
-              fileEntity.toRevisionCompanion(RevisionAction.move));
+          fileEntity.txId = fileTx.id;
+
+          await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
+              performedAction: RevisionAction.move));
         });
 
         emit(FileEntryMoveSuccess());

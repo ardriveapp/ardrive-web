@@ -20,13 +20,20 @@ extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {
         path: '',
         lastUpdated: dateCreated,
       );
+
+  /// Returns a [NetworkTransactionsCompanion] representing the metadata transaction
+  /// of this entity.
+  NetworkTransactionsCompanion getTransactionCompanion() =>
+      NetworkTransactionsCompanion.insert(
+          id: metadataTxId.value, dateCreated: dateCreated);
 }
 
 extension FolderEntityExtensions on FolderEntity {
   /// Converts the entity to an instance of [FolderRevisionsCompanion].
   ///
   /// This requires a `performedAction` to be specified.
-  FolderRevisionsCompanion toRevisionCompanion(String performedAction) =>
+  FolderRevisionsCompanion toRevisionCompanion(
+          {@required String performedAction}) =>
       FolderRevisionsCompanion.insert(
         folderId: id,
         driveId: driveId,
@@ -36,12 +43,6 @@ extension FolderEntityExtensions on FolderEntity {
         dateCreated: Value(createdAt),
         action: performedAction,
       );
-
-  /// Returns a [NetworkTransactionsCompanion] representing the metadata transaction
-  /// of this entity.
-  NetworkTransactionsCompanion toTransactionCompanion() =>
-      NetworkTransactionsCompanion.insert(
-          id: txId, dateCreated: Value(createdAt));
 
   /// Returns the action performed on the folder that lead to the new revision.
   String getPerformedRevisionAction(

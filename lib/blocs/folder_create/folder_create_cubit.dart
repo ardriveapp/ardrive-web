@@ -93,9 +93,10 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
 
         await _arweave.postTx(folderTx);
 
-        await _driveDao.writeTransaction(folderEntity.toTransactionCompanion());
-        await _driveDao.insertFolderRevision(
-            folderEntity.toRevisionCompanion(RevisionAction.create));
+        folderEntity.txId = folderTx.id;
+
+        await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
+            performedAction: RevisionAction.create));
       });
     } catch (err) {
       addError(err);
