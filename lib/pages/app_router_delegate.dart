@@ -76,7 +76,19 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           final screenSize = MediaQuery.of(context).size;
           final screenNotSupported =
               screenSize.width <= 576 || screenSize.height <= 576;
-          if (screenNotSupported) {
+
+          // Show the shared file screen even if the screen size is not supported in other parts of the app.
+          if (isViewingSharedFile) {
+            shell = BlocProvider<SharedFileCubit>(
+              key: ValueKey(sharedFileId),
+              create: (_) => SharedFileCubit(
+                fileId: sharedFileId,
+                fileKey: sharedFileKey,
+                arweave: context.read<ArweaveService>(),
+              ),
+              child: SharedFilePage(),
+            );
+          } else if (screenNotSupported) {
             shell = ScreenNotSupportedPage();
           } else if (signingIn) {
             shell = ProfileAuthPage();
@@ -134,16 +146,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   ),
                 );
               },
-            );
-          } else if (isViewingSharedFile) {
-            shell = BlocProvider<SharedFileCubit>(
-              key: ValueKey(sharedFileId),
-              create: (_) => SharedFileCubit(
-                fileId: sharedFileId,
-                fileKey: sharedFileKey,
-                arweave: context.read<ArweaveService>(),
-              ),
-              child: SharedFilePage(),
             );
           }
 
