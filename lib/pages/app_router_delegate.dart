@@ -72,13 +72,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           final anonymouslyShowDriveDetail =
               canAnonymouslyShowDriveDetail(state);
 
-          // Show an alert if the screen size is too small as the app is not fully responsive yet.
-          // final screenSize = MediaQuery.of(context).size;
-          // final screenNotSupported =
-          //     screenSize.width <= 576 || screenSize.height <= 576;
-          // if (screenNotSupported) {
-          //   shell = ScreenNotSupportedPage();
-          // } else
+
           if (signingIn) {
             shell = ProfileAuthPage();
           } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
@@ -135,16 +129,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   ),
                 );
               },
-            );
-          } else if (isViewingSharedFile) {
-            shell = BlocProvider<SharedFileCubit>(
-              key: ValueKey(sharedFileId),
-              create: (_) => SharedFileCubit(
-                fileId: sharedFileId,
-                fileKey: sharedFileKey,
-                arweave: context.read<ArweaveService>(),
-              ),
-              child: SharedFilePage(),
             );
           }
 
