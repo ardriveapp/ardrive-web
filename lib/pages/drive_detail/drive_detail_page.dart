@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:moor/moor.dart' show OrderingMode;
+import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 import 'package:url_launcher/link.dart';
 
@@ -26,64 +27,116 @@ class DriveDetailPage extends StatelessWidget {
             if (state is DriveDetailLoadInProgress) {
               return const Center(child: CircularProgressIndicator());
             } else if (state is DriveDetailLoadSuccess) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Scrollbar(
-                      child: SingleChildScrollView(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 32, horizontal: 24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    state.currentDrive.name,
-                                    style:
-                                        Theme.of(context).textTheme.headline5,
-                                  ),
-                                  DriveDetailActionRow(),
-                                ],
-                              ),
-                              DriveDetailBreadcrumbRow(
-                                  path: state.currentFolder.folder.path),
-                              if (state.currentFolder.subfolders.isNotEmpty ||
-                                  state.currentFolder.files.isNotEmpty)
+              return ScreenTypeLayout(
+                desktop: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Scrollbar(
+                        child: SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 32, horizontal: 24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Expanded(
-                                      child: _buildDataTable(context, state),
+                                    Text(
+                                      state.currentDrive.name,
+                                      style:
+                                          Theme.of(context).textTheme.headline5,
                                     ),
+                                    DriveDetailActionRow(),
                                   ],
-                                )
-                              else
-                                DriveDetailFolderEmptyCard(
-                                    promptToAddFiles:
-                                        state.hasWritePermissions),
-                            ],
+                                ),
+                                DriveDetailBreadcrumbRow(
+                                    path: state.currentFolder.folder.path),
+                                if (state.currentFolder.subfolders.isNotEmpty ||
+                                    state.currentFolder.files.isNotEmpty)
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildDataTable(context, state),
+                                      ),
+                                    ],
+                                  )
+                                else
+                                  DriveDetailFolderEmptyCard(
+                                      promptToAddFiles:
+                                          state.hasWritePermissions),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  if (state.showSelectedItemDetails) ...{
-                    VerticalDivider(width: 1),
-                    FsEntrySideSheet(
-                      driveId: state.currentDrive.id,
-                      folderId: state.selectedItemIsFolder
-                          ? state.selectedItemId
-                          : null,
-                      fileId: !state.selectedItemIsFolder
-                          ? state.selectedItemId
-                          : null,
-                    ),
-                  }
-                ],
+                    if (state.showSelectedItemDetails) ...{
+                      VerticalDivider(width: 1),
+                      FsEntrySideSheet(
+                        driveId: state.currentDrive.id,
+                        folderId: state.selectedItemIsFolder
+                            ? state.selectedItemId
+                            : null,
+                        fileId: !state.selectedItemIsFolder
+                            ? state.selectedItemId
+                            : null,
+                      ),
+                    }
+                  ],
+                ),
+                mobile: state.showSelectedItemDetails
+                    ? FsEntrySideSheet(
+                        driveId: state.currentDrive.id,
+                        folderId: state.selectedItemIsFolder
+                            ? state.selectedItemId
+                            : null,
+                        fileId: !state.selectedItemIsFolder
+                            ? state.selectedItemId
+                            : null,
+                      )
+                    : Scrollbar(
+                        child: SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 32, horizontal: 24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      state.currentDrive.name,
+                                      style:
+                                          Theme.of(context).textTheme.headline5,
+                                    ),
+                                    DriveDetailActionRow(),
+                                  ],
+                                ),
+                                DriveDetailBreadcrumbRow(
+                                    path: state.currentFolder.folder.path),
+                                if (state.currentFolder.subfolders.isNotEmpty ||
+                                    state.currentFolder.files.isNotEmpty)
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildDataTable(context, state),
+                                      ),
+                                    ],
+                                  )
+                                else
+                                  DriveDetailFolderEmptyCard(
+                                      promptToAddFiles:
+                                          state.hasWritePermissions),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
               );
             } else {
               return const SizedBox();

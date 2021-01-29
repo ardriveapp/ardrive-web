@@ -73,12 +73,13 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               canAnonymouslyShowDriveDetail(state);
 
           // Show an alert if the screen size is too small as the app is not fully responsive yet.
-          final screenSize = MediaQuery.of(context).size;
-          final screenNotSupported =
-              screenSize.width <= 576 || screenSize.height <= 576;
-          if (screenNotSupported) {
-            shell = ScreenNotSupportedPage();
-          } else if (signingIn) {
+          // final screenSize = MediaQuery.of(context).size;
+          // final screenNotSupported =
+          //     screenSize.width <= 576 || screenSize.height <= 576;
+          // if (screenNotSupported) {
+          //   shell = ScreenNotSupportedPage();
+          // } else
+          if (signingIn) {
             shell = ProfileAuthPage();
           } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
             shell = BlocConsumer<DrivesCubit, DrivesState>(
