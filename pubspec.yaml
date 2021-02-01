@@ -46,6 +46,7 @@ dependencies:
   timeago: ^2.0.28
   url_launcher: ^5.7.10
   uuid: ^2.2.0
+  responsive_builder: ^0.3.0
 
 dev_dependencies:
   flutter_test:

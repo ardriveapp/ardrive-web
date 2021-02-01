@@ -657,6 +657,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.1"
+  responsive_builder:
+    dependency: "direct main"
+    description:
+      name: responsive_builder
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.3.0"
   rxdart:
     dependency: "direct main"
     description:
@@ -930,4 +937,4 @@ packages:
     version: "2.2.1"
 sdks:
   dart: ">=2.12.0-29 <3.0.0"
-  flutter: ">=1.22.0"
+  flutter: ">=1.22.0 <2.0.0"
