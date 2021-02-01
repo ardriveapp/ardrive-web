@@ -97,7 +97,16 @@ DataRow _buildFileRow({
         DataCell(
           Padding(
             padding: const EdgeInsetsDirectional.only(start: 32),
-            child: Text(file.name),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                _buildFileIcon(file),
+                SizedBox(
+                  width: 16,
+                ),
+                Text(file.name),
+              ],
+            ),
           ),
         ),
         DataCell(Text(filesize(file.size))),
@@ -111,3 +120,16 @@ DataRow _buildFileRow({
         ),
       ],
     );
+
+Icon _buildFileIcon(FileEntry file) {
+  final extension = file.name.split('.').last;
+  switch (extension) {
+    case 'jpg':
+    case 'png':
+    case 'gif':
+      return Icon(Icons.image);
+      break;
+    default:
+      return Icon(Icons.insert_drive_file);
+  }
+}
