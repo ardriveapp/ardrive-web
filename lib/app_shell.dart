@@ -33,15 +33,10 @@ class _AppShellState extends State<AppShell> {
                 uri: Uri.parse(
                     'https://community.xyz/#-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ'),
                 target: LinkTarget.blank,
-                builder: (context, onPressed) => Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.people_alt),
-                      tooltip: 'CommunityXYZ',
-                      onPressed: onPressed,
-                    ),
-                  ],
+                builder: (context, onPressed) => IconButton(
+                  icon: const Icon(Icons.people_alt),
+                  tooltip: 'CommunityXYZ',
+                  onPressed: onPressed,
                 ),
               ),
               IconButton(

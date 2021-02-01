@@ -19,6 +19,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
+  final SyncCubit _syncCubit;
 
   StreamSubscription _folderSubscription;
 
@@ -31,9 +32,11 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
     @required ArweaveService arweave,
     @required DriveDao driveDao,
     @required ProfileCubit profileCubit,
+    @required SyncCubit syncCubit,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
+        _syncCubit = syncCubit,
         assert(folderId != null || fileId != null),
         super(
             FsEntryMoveFolderLoadInProgress(isMovingFolder: folderId != null)) {
@@ -96,6 +99,9 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
           await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
               performedAction: RevisionAction.move));
+
+          final folderMap = {folder.id: folder.toCompanion(false)};
+          await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
         });
 
         emit(FolderEntryMoveSuccess());

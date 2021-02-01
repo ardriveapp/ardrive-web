@@ -33,3 +33,8 @@ export async function getWeightedPstHolder(): Promise<String> {
   const contractState = await pstContractStateRead;
   return selectWeightedPstHolder(contractState.balances);
 }
+
+// Start loading the contract state early so the functions above can access the state faster.
+(async () => {
+  await pstContractStateRead;
+})();
