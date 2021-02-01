@@ -209,9 +209,11 @@ packages:
   cryptography:
     dependency: "direct main"
     description:
-      name: cryptography
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: cryptography
+      ref: aae4e736dae0a3620663a1870f241205931d8e7e
+      resolved-ref: aae4e736dae0a3620663a1870f241205931d8e7e
+      url: "https://github.com/CDDelta/cryptography.git"
+    source: git
     version: "2.0.0-nullsafety.2"
   dart_style:
     dependency: transitive
@@ -928,4 +930,4 @@ packages:
     version: "2.2.1"
 sdks:
   dart: ">=2.12.0-29 <3.0.0"
-  flutter: ">=1.22.0 <2.0.0"
+  flutter: ">=1.22.0"
