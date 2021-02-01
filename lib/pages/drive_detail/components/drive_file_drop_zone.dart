@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/upload_form.dart';
@@ -60,13 +62,12 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
     final fileName = await controller.getFilename(htmlFile);
     final fileMIME = await controller.getFileMIME(htmlFile);
     final fileLength = await controller.getFileSize(htmlFile);
-
-    final fileToUpload = XFile.fromData(
-      fileData,
+    final htmlUrl = await controller.createFileUrl(htmlFile);
+    final fileToUpload = XFile(
+      htmlUrl,
       name: fileName,
       mimeType: fileMIME,
       lastModified: DateTime.now(),
-      path: '/',
       length: fileLength,
     );
     final selectedFiles = <XFile>[fileToUpload];
@@ -91,5 +92,31 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
 
   void _onHover() => setState(() => isHovering = true);
   void _onLeave() => setState(() => isHovering = false);
-  Widget _builDropZoneOnHover() => Placeholder();
+  Widget _builDropZoneOnHover() => SizedBox.expand(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+          child: Center(
+            child: Container(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.upload_file,
+                    size: 64,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  SizedBox(
+                    width: 16,
+                  ),
+                  Text(
+                    'Upload File',
+                    style: Theme.of(context).textTheme.headline2,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
 }
