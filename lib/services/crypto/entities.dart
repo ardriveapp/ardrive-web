@@ -83,7 +83,7 @@ Future<DataItem> createEncryptedDataItem(
   Uint8List data,
   SecretKey key,
 ) async {
-  final encryptionRes = await aesGcm.encrypt(data, secretKey: key);
+  final encryptionRes = await aesGcm.encrypt(data.toList(), secretKey: key);
 
   return DataItem.withBlobData(
       // The encrypted data should be a concatenation of the cipher text and MAC.
