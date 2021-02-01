@@ -24,23 +24,21 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
         builder: (context, state) {
           Widget _buildAppBar() => AppBar(
-                title: Image.asset(
-                  R.images.brand.logoHorizontalNoSubtitle,
-                  height: 64,
-                  fit: BoxFit.contain,
+            title: Image.asset(
+              R.images.brand.logoHorizontalNoSubtitle,
+              height: 64,
+              fit: BoxFit.contain,
+
                 ),
                 actions: [
                   Link(
-                    uri: Uri.parse(
-                        'https://community.xyz/#-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ'),
-                    target: LinkTarget.blank,
-                    builder: (context, onPressed) => Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.people_alt),
-                          tooltip: 'CommunityXYZ',
-                          onPressed: onPressed,
+                uri: Uri.parse(
+                    'https://community.xyz/#-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ'),
+                target: LinkTarget.blank,
+                builder: (context, onPressed) => IconButton(
+                  icon: const Icon(Icons.people_alt),
+                  tooltip: 'CommunityXYZ',
+                  onPressed: onPressed,
                         ),
                       ],
                     ),
