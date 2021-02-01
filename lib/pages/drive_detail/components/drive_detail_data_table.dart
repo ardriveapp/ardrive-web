@@ -95,18 +95,14 @@ DataRow _buildFileRow({
       selected: selected,
       cells: [
         DataCell(
-          Padding(
-            padding: const EdgeInsetsDirectional.only(start: 32),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                _buildFileIcon(file),
-                SizedBox(
-                  width: 16,
-                ),
-                Text(file.name),
-              ],
-            ),
+          Row(
+            children: [
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 8.0),
+                child: _buildFileIcon(file),
+              ),
+              Text(file.name),
+            ],
           ),
         ),
         DataCell(Text(filesize(file.size))),
@@ -128,6 +124,17 @@ Icon _buildFileIcon(FileEntry file) {
     case 'png':
     case 'gif':
       return Icon(Icons.image);
+      break;
+    case 'mov':
+    case 'avi':
+    case 'mp4':
+      return Icon(Icons.ondemand_video);
+      break;
+    case 'mp3':
+    case 'ogg':
+    case 'mpeg':
+    case 'flac':
+      return Icon(Icons.music_note);
       break;
     default:
       return Icon(Icons.insert_drive_file);
