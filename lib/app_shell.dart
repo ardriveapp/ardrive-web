@@ -39,6 +39,7 @@ class _AppShellState extends State<AppShell> {
                   onPressed: onPressed,
                 ),
               ),
+              const SizedBox(width: 8),
               IconButton(
                 icon: PortalEntry(
                   visible: _showProfileOverlay,
