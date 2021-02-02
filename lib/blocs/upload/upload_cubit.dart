@@ -109,15 +109,16 @@ class UploadCubit extends Cubit<UploadState> {
         .map((f) => f.cost)
         .reduce((total, cost) => total + cost);
 
-    var pstFee = BigInt.zero;
+    final pstFee = await _pst
+        .getPstFeePercentage()
+        .then((feePercentage) =>
+            // Workaround [BigInt] percentage division problems
+            // by first multiplying by the percentage * 100 and then dividing by 100.
+            uploadCost * BigInt.from(feePercentage * 100) ~/ BigInt.from(100))
+        .catchError((_) => BigInt.zero,
+            test: (err) => err is UnimplementedError);
 
-    try {
-      // Workaround [BigInt] percentage division problems
-      // by first multiplying by the percentage * 100 and then dividing by 100.
-      pstFee = uploadCost *
-          BigInt.from((await _pst.getPstFeePercentage()) * 100) ~/
-          BigInt.from(100);
-
+    if (pstFee == BigInt.zero) {
       feeTx = await _arweave.client.transactions.prepare(
         Transaction(
           target: await _pst.getWeightedPstHolder(),
@@ -130,7 +131,7 @@ class UploadCubit extends Cubit<UploadState> {
         ..addTag(TipType.tagName, TipType.dataUpload);
 
       await feeTx.sign(profile.wallet);
-    } on UnimplementedError catch (_) {}
+    }
 
     final totalCost = uploadCost + pstFee;
 
