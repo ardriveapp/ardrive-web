@@ -163,6 +163,8 @@ class UploadCubit extends Cubit<UploadState> {
       }
     });
 
+    unawaited(_profileCubit.refreshBalance());
+
     emit(UploadComplete());
   }
 

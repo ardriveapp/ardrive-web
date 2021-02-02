@@ -63,7 +63,10 @@ class SyncCubit extends Cubit<SyncState> {
       final driveSyncProcesses = driveIds.map((driveId) => _syncDrive(driveId));
       await Future.wait(driveSyncProcesses);
 
-      await _updateTransactionStatuses();
+      await Future.wait([
+        _profileCubit.refreshBalance(),
+        _updateTransactionStatuses(),
+      ]);
     } catch (err) {
       addError(err);
     }
