@@ -118,7 +118,7 @@ class UploadCubit extends Cubit<UploadState> {
         .catchError((_) => BigInt.zero,
             test: (err) => err is UnimplementedError);
 
-    if (pstFee == BigInt.zero) {
+    if (pstFee > BigInt.zero) {
       feeTx = await _arweave.client.transactions.prepare(
         Transaction(
           target: await _pst.getWeightedPstHolder(),
