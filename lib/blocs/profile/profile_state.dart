@@ -62,7 +62,8 @@ class ProfileLoggedIn extends ProfileAvailable {
       );
 
   @override
-  List<Object> get props => [username, password, wallet, cipherKey];
+  List<Object> get props =>
+      [username, password, wallet, walletAddress, walletBalance, cipherKey];
 }
 
 class ProfilePromptAdd extends ProfileUnavailable {}
