@@ -36,6 +36,8 @@ class UploadReady extends UploadState {
   /// Whether or not the upload will be made public ie. without encryption.
   final bool uploadIsPublic;
 
+  final num usdCost;
+
   final List<FileUploadHandle> files;
 
   UploadReady({
@@ -45,6 +47,7 @@ class UploadReady extends UploadState {
     @required this.sufficientArBalance,
     @required this.uploadIsPublic,
     @required this.files,
+    @required this.usdCost,
   });
 
   @override

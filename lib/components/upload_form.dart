@@ -116,6 +116,8 @@ class UploadForm extends StatelessWidget {
               ],
             );
           } else if (state is UploadReady) {
+            var arCost = utils.winstonToAr(state.totalCost);
+            var usdCost = (double.parse(arCost) * state.usdCost).toString();
             return AppDialog(
               title: 'Upload ${state.files.length} file(s)',
               content: SizedBox(
@@ -143,7 +145,10 @@ class UploadForm extends StatelessWidget {
                     ),
                     Divider(),
                     const SizedBox(height: 16),
-                    Text('Cost: ${utils.winstonToAr(state.totalCost)} AR'),
+                    Text(
+                      'Cost: ${arCost} AR' +
+                          (state.usdCost != null ? '\n(${usdCost} USD)' : ''),
+                    ),
                     if (state.uploadIsPublic) ...{
                       const SizedBox(height: 8),
                       Text('These file(s) will be uploaded publicly.'),

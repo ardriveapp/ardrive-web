@@ -142,6 +142,7 @@ class UploadCubit extends Cubit<UploadState> {
         uploadIsPublic: _targetDrive.isPublic,
         sufficientArBalance: profile.walletBalance >= totalCost,
         files: _fileUploadHandles.values.toList(),
+        usdCost: await _arweave.getArUSDPrice(),
       ),
     );
   }

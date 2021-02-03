@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:ardrive/entities/entities.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:http/http.dart' as http;
 
 import '../services.dart';
 
@@ -354,6 +357,21 @@ class ArweaveService {
 
   Future<void> postTx(Transaction transaction) =>
       client.transactions.post(transaction);
+
+  Future getArUSDPrice() async {
+    var client = http.Client();
+
+    try {
+      var res = await client.get(
+          'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd');
+      var jsonBody = await json.decode(res.body);
+
+      return (jsonBody['arweave'])['usd'];
+    } catch (err) {
+      print(err);
+      return 0;
+    }
+  }
 }
 
 /// The entity history of a particular drive, chunked by block height.
