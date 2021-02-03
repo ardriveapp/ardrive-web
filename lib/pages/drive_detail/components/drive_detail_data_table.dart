@@ -118,22 +118,16 @@ DataRow _buildFileRow({
     );
 
 Icon _buildFileIcon(FileEntry file) {
-  final extension = file.name.split('.').last;
+  final extension = file.dataContentType?.split('/')?.first;
+  print(extension);
   switch (extension) {
-    case 'jpg':
-    case 'png':
-    case 'gif':
+    case 'image':
       return Icon(Icons.image);
       break;
-    case 'mov':
-    case 'avi':
-    case 'mp4':
+    case 'video':
       return Icon(Icons.ondemand_video);
       break;
-    case 'mp3':
-    case 'ogg':
-    case 'mpeg':
-    case 'flac':
+    case 'audio':
       return Icon(Icons.music_note);
       break;
     default:
