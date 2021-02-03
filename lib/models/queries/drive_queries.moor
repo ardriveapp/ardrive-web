@@ -13,9 +13,18 @@ driveById: SELECT * FROM drives WHERE id = :driveId;
 folderById:
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND id = :folderId;
-foldersInFolder:
+folderWithPath:
     SELECT * FROM folder_entries
-    WHERE driveId = :driveId AND parentFolderId = :parentFolderId;
+    WHERE driveId = :driveId AND path = :path;
+
+foldersInFolder ($order = ''):
+    SELECT * FROM folder_entries
+    WHERE driveId = :driveId AND parentFolderId = :parentFolderId
+    ORDER BY $order;
+foldersInFolderAtPath ($order = ''):
+    SELECT * FROM folder_entries
+    WHERE driveId = :driveId AND path LIKE :path || '/%' AND path NOT LIKE :path || '/%/%'
+    ORDER BY $order;
 foldersInFolderWithName:
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;
@@ -39,12 +48,22 @@ latestFolderRevisionsByFolderIdWithTransactions AS FolderRevisionWithTransaction
 fileById:
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND id = :fileId;
-filesInFolder:
+
+filesInFolder ($order = ''):
     SELECT * FROM file_entries
-    WHERE driveId = :driveId AND parentFolderId = :parentFolderId;
+    WHERE driveId = :driveId AND parentFolderId = :parentFolderId
+    ORDER BY $order;
 filesInFolderWithName:
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;
+filesInFolderAtPath ($order = ''):
+    SELECT * FROM file_entries
+    WHERE driveId = :driveId AND path LIKE :path || '/%' AND path NOT LIKE :path || '/%/%'
+    ORDER BY $order;
+
+filesInFolderWithRevisionAndTransactions:
+    SELECT * FROM file_entries
+    WHERE driveId = :driveId AND parentFolderId = :parentFolderId;
 
 oldestFileRevisionByFileId:
     SELECT * FROM file_revisions
