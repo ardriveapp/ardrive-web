@@ -63,7 +63,10 @@ class ProfileCubit extends Cubit<ProfileState> {
     final profile = state as ProfileLoggedIn;
 
     final walletAddress = await profile.wallet.getAddress();
-    final walletBalance = await _arweave.getWalletBalance(walletAddress);
+    final walletBalance = await Future.wait([
+      _arweave.getWalletBalance(walletAddress),
+      _arweave.getPendingTxFees(walletAddress),
+    ]).then((res) => res[0] - res[1]);
 
     emit(profile.copyWith(walletBalance: walletBalance));
   }

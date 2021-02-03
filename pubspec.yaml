@@ -35,6 +35,7 @@ dependencies:
   file_selector_macos: ^0.0.1
   filesize: ^1.0.4
   google_fonts: ^1.1.1
+  intersperse: ^1.1.1
   intl: ^0.16.1
   json_annotation: ^3.0.1
   mime: ^0.9.7
