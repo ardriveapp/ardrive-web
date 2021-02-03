@@ -202,9 +202,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     final filesOrder = enumToFileOrderByClause(fileEntries, orderBy);
     final filesQuery = folderId != null
-        ? filesInFolder(
+        ? filesInFolderWithRevisionTransactions(
             driveId: driveId, parentFolderId: folderId, order: filesOrder)
-        : filesInFolderAtPath(
+        : filesInFolderAtPathWithRevisionTransactions(
             driveId: driveId, path: folderPath, order: filesOrder);
 
     return Rx.combineLatest3(

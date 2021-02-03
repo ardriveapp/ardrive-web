@@ -5,17 +5,8 @@ import 'models.dart';
 
 extension FileRevisionWithTransactionsExtensions
     on FileRevisionWithTransactions {
-  String get confirmationStatus {
-    if (metadataTx.status == TransactionStatus.failed ||
-        dataTx.status == TransactionStatus.failed) {
-      return TransactionStatus.failed;
-    } else if (metadataTx.status == TransactionStatus.pending ||
-        dataTx.status == TransactionStatus.pending) {
-      return TransactionStatus.pending;
-    } else {
-      return TransactionStatus.confirmed;
-    }
-  }
+  String get confirmationStatus =>
+      fileStatusFromTransactions(metadataTx, dataTx);
 }
 
 extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {

@@ -86,7 +86,7 @@ DataRow _buildFolderRow({
 
 DataRow _buildFileRow({
   @required BuildContext context,
-  @required FileEntry file,
+  @required FileWithLatestRevisionTransactions file,
   bool selected = false,
   Function onPressed,
 }) =>
@@ -95,9 +95,33 @@ DataRow _buildFileRow({
       selected: selected,
       cells: [
         DataCell(
-          Padding(
-            padding: const EdgeInsetsDirectional.only(start: 32),
-            child: Text(file.name),
+          Row(
+            children: [
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 8.0),
+                child: Stack(
+                  children: [
+                    const Icon(Icons.image),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(1),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 12,
+                          minHeight: 12,
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+              Text(file.name),
+            ],
           ),
         ),
         DataCell(Text(filesize(file.size))),
