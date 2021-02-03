@@ -25,23 +25,26 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
     return BlocBuilder<DriveDetailCubit, DriveDetailState>(
       builder: (context, state) {
         if (state is DriveDetailLoadSuccess) {
-          return Stack(
-            children: [
-              if (isHovering) _builDropZoneOnHover(),
-              DropzoneView(
-                onCreated: (ctrl) => controller = ctrl,
-                operation: DragOperation.all,
-                onDrop: (htmlFile) => _onDrop(
-                  htmlFile,
-                  driveId: state.currentDrive.id,
-                  folderId: state.currentFolder.folder.id,
-                  context: context,
+          return IgnorePointer(
+            //ignoring: isHovering,
+            child: Stack(
+              children: [
+                if (isHovering) _builDropZoneOnHover(),
+                DropzoneView(
+                  onCreated: (ctrl) => controller = ctrl,
+                  operation: DragOperation.all,
+                  onDrop: (htmlFile) => _onDrop(
+                    htmlFile,
+                    driveId: state.currentDrive.id,
+                    folderId: state.currentFolder.folder.id,
+                    context: context,
+                  ),
+                  onHover: _onHover,
+                  onLeave: _onLeave,
+                  onError: (e) => _onLeave,
                 ),
-                onHover: _onHover,
-                onLeave: _onLeave,
-                onError: (e) => _onLeave,
-              ),
-            ],
+              ],
+            ),
           );
         }
 

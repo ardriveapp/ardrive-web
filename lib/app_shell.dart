@@ -39,9 +39,11 @@ class _AppShellState extends State<AppShell> {
                   icon: const Icon(Icons.people_alt),
                   tooltip: 'CommunityXYZ',
                   onPressed: onPressed,
+
                         ),
                       ],
                     ),
+
                   ),
                   IconButton(
                     icon: PortalEntry(

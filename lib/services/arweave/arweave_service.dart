@@ -13,9 +13,24 @@ class ArweaveService {
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
 
+  /// Returns the onchain balance of the specified address.
   Future<BigInt> getWalletBalance(String address) => client.api
       .get('wallet/$address/balance')
       .then((res) => BigInt.parse(res.body));
+
+  /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
+  Future<BigInt> getPendingTxFees(String address) async {
+    final query = await _gql.execute(PendingTxFeesQuery(
+        variables: PendingTxFeesArguments(walletAddress: address)));
+
+    return query.data.transactions.edges
+        .map((edge) => edge.node)
+        .where((node) => node.block == null)
+        .fold<BigInt>(
+          BigInt.zero,
+          (totalFees, node) => totalFees + BigInt.parse(node.fee.winston),
+        );
+  }
 
   Future<TransactionCommonMixin> getTransactionDetails(String txId) async {
     final query = await _gql.execute(TransactionDetailsQuery(

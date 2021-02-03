@@ -8,6 +8,7 @@ CREATE TABLE file_entries (
 
     size INTEGER NOT NULL,
     lastModifiedDate DATETIME NOT NULL,
+    dataContentType TEXT,
 
     dataTxId TEXT NOT NULL,
 
