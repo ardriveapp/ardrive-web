@@ -11,7 +11,9 @@ import 'package:url_launcher/link.dart';
 /// from a parent [SharedFileCubit].
 class SharedFilePage extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => Center(
+  Widget build(BuildContext context) {
+    try {
+      return Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(
             maxWidth: kMediumDialogWidth,
@@ -72,6 +74,13 @@ class SharedFilePage extends StatelessWidget {
           ),
         ),
       );
+    } catch (e) {
+      return Text(
+        e.toString(),
+        style: Theme.of(context).textTheme.headline6,
+      );
+    }
+  }
 
   Widget _buildReturnToAppLink() => Link(
         uri: Uri.parse('https://ardrive.io/'),

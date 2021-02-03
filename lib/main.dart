@@ -55,6 +55,7 @@ class _AppState extends State<App> {
           child: MaterialApp.router(
             title: 'ArDrive',
             theme: appTheme(),
+            debugShowCheckedModeBanner: false,
             routeInformationParser: _routeInformationParser,
             routerDelegate: _routerDelegate,
             builder: (context, child) => ListTileTheme(

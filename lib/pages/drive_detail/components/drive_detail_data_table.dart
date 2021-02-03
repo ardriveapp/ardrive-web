@@ -52,9 +52,24 @@ List<DataColumn> _buildTableColumns(BuildContext context) {
           );
 
   return [
-    DataColumn(label: Text('Name'), onSort: onSort),
-    DataColumn(label: Text('File size'), onSort: onSort),
-    DataColumn(label: Text('Last updated'), onSort: onSort),
+    DataColumn(
+        label: Text(
+          'Name',
+          overflow: TextOverflow.ellipsis,
+        ),
+        onSort: onSort),
+    DataColumn(
+        label: Text(
+          'File size',
+          overflow: TextOverflow.ellipsis,
+        ),
+        onSort: onSort),
+    DataColumn(
+        label: Text(
+          'Last updated',
+          overflow: TextOverflow.ellipsis,
+        ),
+        onSort: onSort),
   ];
 }
 
