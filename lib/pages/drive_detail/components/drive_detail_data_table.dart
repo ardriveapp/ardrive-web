@@ -52,9 +52,24 @@ List<DataColumn> _buildTableColumns(BuildContext context) {
           );
 
   return [
-    DataColumn(label: Text('Name'), onSort: onSort),
-    DataColumn(label: Text('File size'), onSort: onSort),
-    DataColumn(label: Text('Last updated'), onSort: onSort),
+    DataColumn(
+        label: Text(
+          'Name',
+          overflow: TextOverflow.ellipsis,
+        ),
+        onSort: onSort),
+    DataColumn(
+        label: Text(
+          'File size',
+          overflow: TextOverflow.ellipsis,
+        ),
+        onSort: onSort),
+    DataColumn(
+        label: Text(
+          'Last updated',
+          overflow: TextOverflow.ellipsis,
+        ),
+        onSort: onSort),
   ];
 }
 
@@ -95,9 +110,14 @@ DataRow _buildFileRow({
       selected: selected,
       cells: [
         DataCell(
-          Padding(
-            padding: const EdgeInsetsDirectional.only(start: 32),
-            child: Text(file.name),
+          Row(
+            children: [
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 8.0),
+                child: _buildFileIcon(file),
+              ),
+              Text(file.name),
+            ],
           ),
         ),
         DataCell(Text(filesize(file.size))),
@@ -111,3 +131,21 @@ DataRow _buildFileRow({
         ),
       ],
     );
+
+Icon _buildFileIcon(FileEntry file) {
+  final extension = file.dataContentType?.split('/')?.first;
+  print(extension);
+  switch (extension) {
+    case 'image':
+      return Icon(Icons.image);
+      break;
+    case 'video':
+      return Icon(Icons.ondemand_video);
+      break;
+    case 'audio':
+      return Icon(Icons.music_note);
+      break;
+    default:
+      return Icon(Icons.insert_drive_file);
+  }
+}
