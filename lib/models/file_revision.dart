@@ -32,6 +32,7 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         path: '',
         lastUpdated: dateCreated,
         lastModifiedDate: lastModifiedDate.value,
+        dataContentType: dataContentType,
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions
@@ -60,6 +61,7 @@ extension FileEntityExtensions on FileEntity {
         metadataTxId: txId,
         dataTxId: dataTxId,
         dateCreated: Value(createdAt),
+        dataContentType: Value(dataContentType),
         action: performedAction,
       );
 
