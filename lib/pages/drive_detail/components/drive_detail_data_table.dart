@@ -134,7 +134,6 @@ DataRow _buildFileRow({
 
 Icon _buildFileIcon(FileEntry file) {
   final extension = file.dataContentType?.split('/')?.first;
-  print(extension);
   switch (extension) {
     case 'image':
       return Icon(Icons.image);
