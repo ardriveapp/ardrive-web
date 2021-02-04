@@ -64,7 +64,7 @@ class SyncCubit extends Cubit<SyncState> {
       await Future.wait(driveSyncProcesses);
 
       await Future.wait([
-        _profileCubit.refreshBalance(),
+        if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
         _updateTransactionStatuses(),
       ]);
     } catch (err) {
