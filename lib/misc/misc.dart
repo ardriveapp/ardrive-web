@@ -1,5 +1,6 @@
 export 'resources.dart';
 
 const kDriveNameRegex = kFolderNameRegex;
-const kFolderNameRegex = r'^[^\/\\\<\>\:\"\?]+(?<!\.)$';
-const kFileNameRegex = r'^[^\/\\]+(?<!\.)$';
+const kFolderNameRegex = r'^[^\/\\\<\>\:\"\?]+$';
+const kFileNameRegex = r'^[^\/\\]+$';
+const kTrimTrailingRegex = r'[^\s \.]+$';
