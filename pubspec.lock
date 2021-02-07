@@ -965,4 +965,4 @@ packages:
     version: "2.2.1"
 sdks:
   dart: ">=2.12.0-29 <3.0.0"
-  flutter: ">=1.22.0"
+  flutter: ">=1.22.0 <2.0.0"

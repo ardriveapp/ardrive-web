@@ -52,9 +52,24 @@ List<DataColumn> _buildTableColumns(BuildContext context) {
           );
 
   return [
-    DataColumn(label: Text('Name'), onSort: onSort),
-    DataColumn(label: Text('File size'), onSort: onSort),
-    DataColumn(label: Text('Last updated'), onSort: onSort),
+    DataColumn(
+        label: Text(
+          'Name',
+          overflow: TextOverflow.ellipsis,
+        ),
+        onSort: onSort),
+    DataColumn(
+        label: Text(
+          'File size',
+          overflow: TextOverflow.ellipsis,
+        ),
+        onSort: onSort),
+    DataColumn(
+        label: Text(
+          'Last updated',
+          overflow: TextOverflow.ellipsis,
+        ),
+        onSort: onSort),
   ];
 }
 
@@ -90,9 +105,10 @@ DataRow _buildFileRow({
   bool selected = false,
   Function onPressed,
 }) {
-  Widget _buildFileIcon(String status) {
+  Widget _buildFileIcon(String status, String dataContentType) {
     String tooltipMessage;
     Color indicatorColor;
+    Widget icon;
 
     switch (status) {
       case TransactionStatus.pending:
@@ -111,11 +127,26 @@ DataRow _buildFileRow({
         throw ArgumentError();
     }
 
+    final fileType = dataContentType?.split('/')?.first;
+    switch (fileType) {
+      case 'image':
+        icon = const Icon(Icons.image);
+        break;
+      case 'video':
+        icon = const Icon(Icons.ondemand_video);
+        break;
+      case 'audio':
+        icon = const Icon(Icons.music_note);
+        break;
+      default:
+        icon = const Icon(Icons.insert_drive_file);
+    }
+
     return Tooltip(
       message: tooltipMessage,
       child: Stack(
         children: [
-          const Icon(Icons.image),
+          icon,
           Positioned(
             right: 0,
             bottom: 0,
@@ -147,6 +178,7 @@ DataRow _buildFileRow({
               padding: const EdgeInsetsDirectional.only(end: 8.0),
               child: _buildFileIcon(
                 fileStatusFromTransactions(file.metadataTx, file.dataTx),
+                file.dataContentType,
               ),
             ),
             Text(file.name),
