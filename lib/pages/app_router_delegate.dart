@@ -14,6 +14,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   bool signingIn = false;
 
   String driveId;
+  String driveName;
   String driveFolderId;
 
   String sharedFileId;
@@ -29,6 +30,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   AppRoutePath get currentConfiguration => AppRoutePath(
         signingIn: signingIn,
         driveId: driveId,
+        driveName: driveName,
         driveFolderId: driveFolderId,
         sharedFileId: sharedFileId,
         sharedFileKey: sharedFileKey,
@@ -72,7 +74,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           final anonymouslyShowDriveDetail =
               canAnonymouslyShowDriveDetail(state);
 
-
           if (signingIn) {
             shell = ProfileAuthPage();
           } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
@@ -111,6 +112,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       if (state is DriveDetailLoadSuccess) {
                         driveId = state.currentDrive.id;
                         driveFolderId = state.currentFolder.folder.id;
+                        driveName = state.currentDrive.name;
                         notifyListeners();
                       } else if (state is DriveDetailLoadNotFound) {
                         // Do not prompt the user to attach an unfound drive if they are logging out.
@@ -120,7 +122,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         }
 
                         promptToAttachDrive(
-                            context: context, initialDriveId: driveId);
+                          context: context,
+                          initialDriveId: driveId,
+                        );
                       }
                     },
                     child: FloatingHelpButtonPortalEntry(

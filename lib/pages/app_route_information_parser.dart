@@ -23,10 +23,10 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
       case 'drives':
         if (uri.pathSegments.length > 1) {
           final driveId = uri.pathSegments[1];
-
+          final name = uri.queryParameters['name'];
           if (uri.pathSegments.length == 2) {
             // Handle '/drives/:driveId'
-            return AppRoutePath.driveDetail(driveId: driveId);
+            return AppRoutePath.driveDetail(driveId: driveId, driveName: name);
           } else if (uri.pathSegments.length == 4 &&
               uri.pathSegments[2] == 'folders') {
             //  Handle /drives/:driveId/folders/:folderId
