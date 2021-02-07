@@ -4,6 +4,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:file_selector/file_selector.dart';
@@ -135,15 +136,21 @@ class UploadCubit extends Cubit<UploadState> {
 
     final totalCost = uploadCost + pstFee;
 
+    final arUploadCost = winstonToAr(totalCost);
+    final usdUploadCost = await _arweave
+        .getArUsdConversionRate()
+        .then((conversionRate) => double.parse(arUploadCost) * conversionRate)
+        .catchError(() => null);
+
     emit(
       UploadReady(
-        uploadCost: uploadCost,
+        arUploadCost: arUploadCost,
+        usdUploadCost: usdUploadCost,
         pstFee: pstFee,
         totalCost: totalCost,
         uploadIsPublic: _targetDrive.isPublic,
         sufficientArBalance: profile.walletBalance >= totalCost,
         files: _fileUploadHandles.values.toList(),
-        usdCost: await _arweave.getArUSDPrice(),
       ),
     );
   }
