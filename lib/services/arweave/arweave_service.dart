@@ -373,19 +373,14 @@ class ArweaveService {
   Future<void> postTx(Transaction transaction) =>
       client.transactions.post(transaction);
 
-  Future getArUSDPrice() async {
-    var client = http.Client();
+  Future<double> getArUsdConversionRate() async {
+    final client = http.Client();
 
-    try {
-      var res = await client.get(
-          'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd');
-      var jsonBody = await json.decode(res.body);
-
-      return (jsonBody['arweave'])['usd'];
-    } catch (err) {
-      print(err);
-      return 0;
-    }
+    return await client
+        .get(
+            'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd')
+        .then((res) => json.decode(res.body))
+        .then((res) => res['arweave']['usd']);
   }
 }
 
