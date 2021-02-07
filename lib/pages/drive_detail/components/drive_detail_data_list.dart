@@ -59,7 +59,7 @@ ListTile _buildFolderListTile({
 
 ListTile _buildFileListTile({
   @required BuildContext context,
-  @required FileEntry file,
+  @required FileWithLatestRevisionTransactions file,
   bool selected = false,
   Function onPressed,
 }) =>
@@ -68,7 +68,10 @@ ListTile _buildFileListTile({
       selected: selected,
       leading: Padding(
         padding: const EdgeInsetsDirectional.only(end: 8.0),
-        child: _buildFileIcon(file),
+        child: _buildFileIcon(
+          fileStatusFromTransactions(file.metadataTx, file.dataTx),
+          file.dataContentType,
+        ),
       ),
       title: Text(file.name),
       subtitle: Text(

@@ -4,6 +4,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:file_selector/file_selector.dart';
@@ -135,15 +136,21 @@ class UploadCubit extends Cubit<UploadState> {
 
     final totalCost = uploadCost + pstFee;
 
+    final arUploadCost = winstonToAr(totalCost);
+    final usdUploadCost = await _arweave
+        .getArUsdConversionRate()
+        .then((conversionRate) => double.parse(arUploadCost) * conversionRate)
+        .catchError(() => null);
+
     emit(
       UploadReady(
-        uploadCost: uploadCost,
+        arUploadCost: arUploadCost,
+        usdUploadCost: usdUploadCost,
         pstFee: pstFee,
         totalCost: totalCost,
         uploadIsPublic: _targetDrive.isPublic,
         sufficientArBalance: profile.walletBalance >= totalCost,
         files: _fileUploadHandles.values.toList(),
-        usdCost: await _arweave.getArUSDPrice(),
       ),
     );
   }
@@ -157,7 +164,18 @@ class UploadCubit extends Cubit<UploadState> {
 
     await _driveDao.transaction(() async {
       for (final uploadHandle in _fileUploadHandles.values) {
-        await _driveDao.writeFileEntity(uploadHandle.entity, uploadHandle.path);
+        final fileEntity = uploadHandle.entity;
+
+        fileEntity.txId = uploadHandle.entityTx.id;
+
+        await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
+        await _driveDao.insertFileRevision(
+          fileEntity.toRevisionCompanion(
+            performedAction: !conflictingFiles.containsKey(fileEntity.name)
+                ? RevisionAction.create
+                : RevisionAction.uploadNewVersion,
+          ),
+        );
 
         await for (final _ in uploadHandle.upload(_arweave)) {
           emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
