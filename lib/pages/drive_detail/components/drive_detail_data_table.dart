@@ -101,51 +101,99 @@ DataRow _buildFolderRow({
 
 DataRow _buildFileRow({
   @required BuildContext context,
-  @required FileEntry file,
+  @required FileWithLatestRevisionTransactions file,
   bool selected = false,
   Function onPressed,
-}) =>
-    DataRow(
-      onSelectChanged: (_) => onPressed(),
-      selected: selected,
-      cells: [
-        DataCell(
-          Row(
-            children: [
-              Padding(
-                padding: const EdgeInsetsDirectional.only(end: 8.0),
-                child: _buildFileIcon(file),
-              ),
-              Text(file.name),
-            ],
-          ),
-        ),
-        DataCell(Text(filesize(file.size))),
-        DataCell(
-          Text(
-            // Show a relative timestamp if the file was updated at most 3 days ago.
-            file.lastUpdated.difference(DateTime.now()).inDays > 3
-                ? format(file.lastUpdated)
-                : yMMdDateFormatter.format(file.lastUpdated),
-          ),
-        ),
-      ],
-    );
+}) {
+  Widget _buildFileIcon(String status, String dataContentType) {
+    String tooltipMessage;
+    Color indicatorColor;
+    Widget icon;
 
-Icon _buildFileIcon(FileEntry file) {
-  final extension = file.dataContentType?.split('/')?.first;
-  print(extension);
-  switch (extension) {
-    case 'image':
-      return Icon(Icons.image);
-      break;
-    case 'video':
-      return Icon(Icons.ondemand_video);
-      break;
-    case 'audio':
-      return Icon(Icons.music_note);
-      break;
-    default:
-      return Icon(Icons.insert_drive_file);
+    switch (status) {
+      case TransactionStatus.pending:
+        tooltipMessage = 'Pending';
+        indicatorColor = Colors.orange;
+        break;
+      case TransactionStatus.confirmed:
+        tooltipMessage = 'Confirmed';
+        indicatorColor = Colors.green;
+        break;
+      case TransactionStatus.failed:
+        tooltipMessage = 'Failed';
+        indicatorColor = Colors.red;
+        break;
+      default:
+        throw ArgumentError();
+    }
+
+    final fileType = dataContentType?.split('/')?.first;
+    switch (fileType) {
+      case 'image':
+        icon = const Icon(Icons.image);
+        break;
+      case 'video':
+        icon = const Icon(Icons.ondemand_video);
+        break;
+      case 'audio':
+        icon = const Icon(Icons.music_note);
+        break;
+      default:
+        icon = const Icon(Icons.insert_drive_file);
+    }
+
+    return Tooltip(
+      message: tooltipMessage,
+      child: Stack(
+        children: [
+          icon,
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.all(1),
+              decoration: BoxDecoration(
+                color: indicatorColor,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              constraints: const BoxConstraints(
+                minWidth: 8,
+                minHeight: 8,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
+
+  return DataRow(
+    onSelectChanged: (_) => onPressed(),
+    selected: selected,
+    cells: [
+      DataCell(
+        Row(
+          children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 8.0),
+              child: _buildFileIcon(
+                fileStatusFromTransactions(file.metadataTx, file.dataTx),
+                file.dataContentType,
+              ),
+            ),
+            Text(file.name),
+          ],
+        ),
+      ),
+      DataCell(Text(filesize(file.size))),
+      DataCell(
+        Text(
+          // Show a relative timestamp if the file was updated at most 3 days ago.
+          file.lastUpdated.difference(DateTime.now()).inDays > 3
+              ? format(file.lastUpdated)
+              : yMMdDateFormatter.format(file.lastUpdated),
+        ),
+      ),
+    ],
+  );
 }
