@@ -26,7 +26,7 @@ class ProfileOverlay extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              SelectableText(
                                 state.walletAddress,
                                 style: Theme.of(context).textTheme.bodyText2,
                               ),
