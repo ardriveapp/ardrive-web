@@ -156,7 +156,18 @@ class UploadCubit extends Cubit<UploadState> {
 
     await _driveDao.transaction(() async {
       for (final uploadHandle in _fileUploadHandles.values) {
-        await _driveDao.writeFileEntity(uploadHandle.entity, uploadHandle.path);
+        final fileEntity = uploadHandle.entity;
+
+        fileEntity.txId = uploadHandle.entityTx.id;
+
+        await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
+        await _driveDao.insertFileRevision(
+          fileEntity.toRevisionCompanion(
+            performedAction: !conflictingFiles.containsKey(fileEntity.name)
+                ? RevisionAction.create
+                : RevisionAction.uploadNewVersion,
+          ),
+        );
 
         await for (final _ in uploadHandle.upload(_arweave)) {
           emit(UploadInProgress(files: _fileUploadHandles.values.toList()));

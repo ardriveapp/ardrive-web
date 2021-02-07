@@ -89,49 +89,79 @@ DataRow _buildFileRow({
   @required FileWithLatestRevisionTransactions file,
   bool selected = false,
   Function onPressed,
-}) =>
-    DataRow(
-      onSelectChanged: (_) => onPressed(),
-      selected: selected,
-      cells: [
-        DataCell(
-          Row(
-            children: [
-              Padding(
-                padding: const EdgeInsetsDirectional.only(end: 8.0),
-                child: Stack(
-                  children: [
-                    const Icon(Icons.image),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(1),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 12,
-                          minHeight: 12,
-                        ),
-                      ),
-                    )
-                  ],
-                ),
+}) {
+  Widget _buildFileIcon(String status) {
+    String tooltipMessage;
+    Color indicatorColor;
+
+    switch (status) {
+      case TransactionStatus.pending:
+        tooltipMessage = 'Pending';
+        indicatorColor = Colors.orange;
+        break;
+      case TransactionStatus.confirmed:
+        tooltipMessage = 'Confirmed';
+        indicatorColor = Colors.green;
+        break;
+      case TransactionStatus.failed:
+        tooltipMessage = 'Failed';
+        indicatorColor = Colors.red;
+        break;
+      default:
+        throw ArgumentError();
+    }
+
+    return Tooltip(
+      message: tooltipMessage,
+      child: Stack(
+        children: [
+          const Icon(Icons.image),
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.all(1),
+              decoration: BoxDecoration(
+                color: indicatorColor,
+                borderRadius: BorderRadius.circular(6),
               ),
-              Text(file.name),
-            ],
+              constraints: const BoxConstraints(
+                minWidth: 8,
+                minHeight: 8,
+              ),
+            ),
           ),
-        ),
-        DataCell(Text(filesize(file.size))),
-        DataCell(
-          Text(
-            // Show a relative timestamp if the file was updated at most 3 days ago.
-            file.lastUpdated.difference(DateTime.now()).inDays > 3
-                ? format(file.lastUpdated)
-                : yMMdDateFormatter.format(file.lastUpdated),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  return DataRow(
+    onSelectChanged: (_) => onPressed(),
+    selected: selected,
+    cells: [
+      DataCell(
+        Row(
+          children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 8.0),
+              child: _buildFileIcon(
+                fileStatusFromTransactions(file.metadataTx, file.dataTx),
+              ),
+            ),
+            Text(file.name),
+          ],
+        ),
+      ),
+      DataCell(Text(filesize(file.size))),
+      DataCell(
+        Text(
+          // Show a relative timestamp if the file was updated at most 3 days ago.
+          file.lastUpdated.difference(DateTime.now()).inDays > 3
+              ? format(file.lastUpdated)
+              : yMMdDateFormatter.format(file.lastUpdated),
+        ),
+      ),
+    ],
+  );
+}

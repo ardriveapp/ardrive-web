@@ -62,29 +62,29 @@ filesInFolderAtPath ($order = ''):
     ORDER BY $order;
 
 filesInFolderWithRevisionTransactions ($order = '') AS FileWithLatestRevisionTransactions:
-    SELECT file.*, metadataTx.**, dataTx.** FROM file_entries AS file
+    SELECT file_entries.*, metadataTx.**, dataTx.** FROM file_entries
     JOIN network_transactions AS metadataTx ON metadataTx.id = (
         SELECT metadataTxId FROM file_revisions AS rev
-        WHERE driveId = :driveId AND fileId = file.id
+        WHERE driveId = :driveId AND fileId = file_entries.id
         ORDER BY rev.dateCreated DESC
         LIMIT 1)
     JOIN network_transactions AS dataTx ON dataTx.id = (
         SELECT dataTxId FROM file_revisions AS rev
-        WHERE driveId = :driveId AND fileId = file.id
+        WHERE driveId = :driveId AND fileId = file_entries.id
         ORDER BY rev.dateCreated DESC
         LIMIT 1)
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId
     ORDER BY $order;
 filesInFolderAtPathWithRevisionTransactions ($order = '') AS FileWithLatestRevisionTransactions:
-    SELECT file.*, metadataTx.**, dataTx.** FROM file_entries AS file
+    SELECT file_entries.*, metadataTx.**, dataTx.** FROM file_entries
     JOIN network_transactions AS metadataTx ON metadataTx.id = (
         SELECT metadataTxId FROM file_revisions AS rev
-        WHERE driveId = :driveId AND fileId = file.id
+        WHERE driveId = :driveId AND fileId = file_entries.id
         ORDER BY rev.dateCreated DESC
         LIMIT 1)
     JOIN network_transactions AS dataTx ON dataTx.id = (
         SELECT dataTxId FROM file_revisions AS rev
-        WHERE driveId = :driveId AND fileId = file.id
+        WHERE driveId = :driveId AND fileId = file_entries.id
         ORDER BY rev.dateCreated DESC
         LIMIT 1)
     WHERE driveId = :driveId AND path LIKE :path || '/%' AND path NOT LIKE :path || '/%/%'

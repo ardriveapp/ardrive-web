@@ -320,6 +320,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     });
   }
 
+  /// Inserts the specified file revision and its associated metadata and data transactions.
   Future<void> insertFileRevision(FileRevisionsCompanion revision) async {
     await db.transaction(() async {
       await Future.wait(revision

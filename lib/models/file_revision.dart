@@ -3,12 +3,6 @@ import 'package:moor/moor.dart';
 
 import 'models.dart';
 
-extension FileRevisionWithTransactionsExtensions
-    on FileRevisionWithTransactions {
-  String get confirmationStatus =>
-      fileStatusFromTransactions(metadataTx, dataTx);
-}
-
 extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
   /// Converts the revision to an instance of [FileEntriesCompanion].
   ///

@@ -11,12 +11,6 @@ class FolderWithContents extends Equatable {
   List<Object> get props => [folder, subfolders, files];
 }
 
-extension FilesInFolderWithRevisionTransactionsExtensions
-    on FileWithLatestRevisionTransactions {
-  String get confirmationStatus =>
-      fileStatusFromTransactions(metadataTx, dataTx);
-}
-
 String fileStatusFromTransactions(
     NetworkTransaction metadataTx, NetworkTransaction dataTx) {
   if (metadataTx.status == TransactionStatus.failed ||

@@ -204,7 +204,8 @@ class FsEntrySideSheet extends StatelessWidget {
                                   .format(revision.dateCreated));
 
                               revisionConfirmationStatus =
-                                  revision.confirmationStatus;
+                                  fileStatusFromTransactions(
+                                      revision.metadataTx, revision.dataTx);
                             }
 
                             Widget statusIcon;
