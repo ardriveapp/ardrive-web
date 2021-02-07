@@ -4,6 +4,7 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
+import 'package:url_launcher/link.dart';
 
 import 'profile_auth_shell.dart';
 
@@ -75,6 +76,25 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           },
                         ),
                       },
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ReactiveCheckbox(formControlName: 'agreementConsent'),
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: Link(
+                              uri: Uri.parse(
+                                  'https://ardrive.io/privacy-policy/'),
+                              builder: (context, onPressed) => GestureDetector(
+                                onTap: onPressed,
+                                child: Text(
+                                    'I agree to the app privacy policy and terms and conditions.'),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 32),
                       SizedBox(
                         width: double.infinity,
