@@ -2,8 +2,6 @@ part of '../drive_detail_page.dart';
 
 Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
     ListView(
-      // sortColumnIndex: DriveOrder.values.indexOf(state.contentOrderBy),
-      // sortAscending: state.contentOrderingMode == OrderingMode.asc,
       children: [
         ...state.currentFolder.subfolders.map(
           (folder) => _buildFolderListTile(
@@ -41,43 +39,53 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
       ],
     );
 
-ListTile _buildFolderListTile({
+Widget _buildFolderListTile({
   @required BuildContext context,
   @required FolderEntry folder,
   bool selected = false,
   Function onPressed,
 }) =>
-    ListTile(
-      onTap: () => onPressed(),
-      selected: selected,
-      leading: Padding(
-        padding: const EdgeInsetsDirectional.only(end: 8.0),
-        child: const Icon(Icons.folder),
-      ),
-      title: Text(folder.name),
+    Column(
+      children: [
+        ListTile(
+          onTap: () => onPressed(),
+          selected: selected,
+          leading: Padding(
+            padding: const EdgeInsetsDirectional.only(end: 8.0),
+            child: const Icon(Icons.folder),
+          ),
+          title: Text(folder.name),
+        ),
+        Divider(),
+      ],
     );
 
-ListTile _buildFileListTile({
+Widget _buildFileListTile({
   @required BuildContext context,
   @required FileWithLatestRevisionTransactions file,
   bool selected = false,
   Function onPressed,
 }) =>
-    ListTile(
-      onTap: () => onPressed(),
-      selected: selected,
-      leading: Padding(
-        padding: const EdgeInsetsDirectional.only(end: 8.0),
-        child: _buildFileIcon(
-          fileStatusFromTransactions(file.metadataTx, file.dataTx),
-          file.dataContentType,
+    Column(
+      children: [
+        ListTile(
+          onTap: () => onPressed(),
+          selected: selected,
+          leading: Padding(
+            padding: const EdgeInsetsDirectional.only(end: 8.0),
+            child: _buildFileIcon(
+              fileStatusFromTransactions(file.metadataTx, file.dataTx),
+              file.dataContentType,
+            ),
+          ),
+          title: Text(file.name),
+          subtitle: Text(
+            'Last Modified ' +
+                (file.lastUpdated.difference(DateTime.now()).inDays > 3
+                    ? format(file.lastUpdated)
+                    : yMMdDateFormatter.format(file.lastUpdated)),
+          ),
         ),
-      ),
-      title: Text(file.name),
-      subtitle: Text(
-        'Last Modified ' +
-            (file.lastUpdated.difference(DateTime.now()).inDays > 3
-                ? format(file.lastUpdated)
-                : yMMdDateFormatter.format(file.lastUpdated)),
-      ),
+        Divider()
+      ],
     );

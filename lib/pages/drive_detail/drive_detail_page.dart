@@ -122,10 +122,7 @@ class DriveDetailPage extends StatelessWidget {
                                     SizedBox(
                                       height: 16,
                                     ),
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: DriveDetailActionRow(),
-                                    )
+                                    DriveDetailActionRow()
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
