@@ -26,6 +26,44 @@ Future<void> promptToAttachDrive(
       ),
     );
 
+Future<void> autoAttachAttachDrive(
+        {@required BuildContext context,
+        String initialDriveId,
+        String driveName}) =>
+    showDialog(
+      context: context,
+      builder: (BuildContext context) => BlocProvider<DriveAttachCubit>(
+        create: (context) => DriveAttachCubit(
+          initialDriveId: initialDriveId,
+          arweave: context.read<ArweaveService>(),
+          driveDao: context.read<DriveDao>(),
+          syncBloc: context.read<SyncCubit>(),
+          drivesBloc: context.read<DrivesCubit>(),
+        ),
+        child: BlocConsumer<DriveAttachCubit, DriveAttachState>(
+          listener: (context, state) {
+            if (state is DriveAttachInProgress) {
+              showProgressDialog(context, 'ATTACHING DRIVE...');
+            } else if (state is DriveAttachFailure) {
+              // Close the progress dialog if the drive attachment fails.
+              Navigator.pop(context);
+            } else if (state is DriveAttachSuccess) {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            }
+          },
+          builder: (context, state) {
+            context.read<DriveAttachCubit>().form.control('driveId').value =
+                initialDriveId;
+            context.read<DriveAttachCubit>().form.control('name').value =
+                driveName;
+            context.read<DriveAttachCubit>().submit();
+            return AppDialog();
+          },
+        ),
+      ),
+    );
+
 /// Depends on a provided [DriveAttachCubit] for business logic.
 class DriveAttachForm extends StatelessWidget {
   @override

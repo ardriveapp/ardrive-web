@@ -120,11 +120,18 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         if (profileCubit.state is ProfileLoggingOut) {
                           return;
                         }
-
-                        promptToAttachDrive(
-                          context: context,
-                          initialDriveId: driveId,
-                        );
+                        if (driveName != null && driveName.isNotEmpty) {
+                          autoAttachAttachDrive(
+                            context: context,
+                            initialDriveId: driveId,
+                            driveName: driveName,
+                          );
+                        } else {
+                          promptToAttachDrive(
+                            context: context,
+                            initialDriveId: driveId,
+                          );
+                        }
                       }
                     },
                     child: FloatingHelpButtonPortalEntry(

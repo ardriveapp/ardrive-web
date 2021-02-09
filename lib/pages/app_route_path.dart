@@ -35,7 +35,7 @@ class AppRoutePath {
   /// Creates a route that points to a particular drive.
   factory AppRoutePath.driveDetail(
           {@required String driveId, String driveName}) =>
-      AppRoutePath(driveId: driveId);
+      AppRoutePath(driveId: driveId, driveName: driveName);
 
   /// Creates a route that points to a folder in a particular drive.
   factory AppRoutePath.folderDetail({
