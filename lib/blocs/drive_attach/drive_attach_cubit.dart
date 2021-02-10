@@ -56,27 +56,31 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     });
   }
 
-  void submit() async {
-    form.markAllAsTouched();
+  void submit({String autoDriveId, String autoDriveName}) async {
+    if ((autoDriveId == null) && (autoDriveName == null)) {
+      form.markAllAsTouched();
 
-    if (form.invalid) {
-      return;
+      if (form.invalid) {
+        return;
+      }
     }
 
     emit(DriveAttachInProgress());
 
     try {
-      final String driveId = form.control('driveId').value;
-      final driveName = form.control('name').value.toString().trim();
+      final String driveId = autoDriveId ?? form.control('driveId').value;
+      final driveName =
+          autoDriveName ?? form.control('name').value.toString().trim();
 
       final driveEntity = await _arweave.getLatestDriveEntityWithId(driveId);
-
-      if (driveEntity == null) {
-        form
-            .control('driveId')
-            .setErrors({AppValidationMessage.driveNotFound: true});
-        emit(DriveAttachFailure());
-        return;
+      if ((autoDriveId == null) && (autoDriveName == null)) {
+        if (driveEntity == null) {
+          form
+              .control('driveId')
+              .setErrors({AppValidationMessage.driveNotFound: true});
+          emit(DriveAttachFailure());
+          return;
+        }
       }
 
       await _driveDao.writeDriveEntity(name: driveName, entity: driveEntity);
@@ -111,6 +115,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   @override
   void onError(Object error, StackTrace stackTrace) {
     emit(DriveAttachFailure());
+    print(stackTrace);
     super.onError(error, stackTrace);
   }
 }

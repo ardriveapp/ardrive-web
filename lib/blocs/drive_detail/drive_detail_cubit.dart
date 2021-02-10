@@ -53,47 +53,51 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       {@required String path,
       DriveOrder contentOrderBy = DriveOrder.name,
       OrderingMode contentOrderingMode = OrderingMode.asc}) {
-    emit(DriveDetailLoadInProgress());
+    try {
+      emit(DriveDetailLoadInProgress());
 
-    unawaited(_folderSubscription?.cancel());
+      unawaited(_folderSubscription?.cancel());
 
-    _folderSubscription =
-        Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
-      _driveDao.driveById(driveId: driveId).watchSingleOrNull(),
-      _driveDao.watchFolderContents(driveId,
-          folderPath: path,
-          orderBy: contentOrderBy,
-          orderingMode: contentOrderingMode),
-      _profileCubit.startWith(null),
-      (drive, folderContents, _) async {
-        if (drive == null) {
-          emit(DriveDetailLoadNotFound());
-          return;
-        }
+      _folderSubscription =
+          Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
+        _driveDao.driveById(driveId: driveId).watchSingleOrNull(),
+        _driveDao.watchFolderContents(driveId,
+            folderPath: path,
+            orderBy: contentOrderBy,
+            orderingMode: contentOrderingMode),
+        _profileCubit.startWith(null),
+        (drive, folderContents, _) async {
+          if (drive == null) {
+            emit(DriveDetailLoadNotFound());
+            return;
+          }
 
-        if (folderContents?.folder == null) {
-          // Emit the loading state as it can be a while between the drive being not found, then added,
-          // and then the folders being loaded.
-          emit(DriveDetailLoadInProgress());
-        } else {
-          final state = this.state is DriveDetailLoadSuccess
-              ? this.state as DriveDetailLoadSuccess
-              : DriveDetailLoadSuccess();
-          final profile = _profileCubit.state;
+          if (folderContents?.folder == null) {
+            // Emit the loading state as it can be a while between the drive being not found, then added,
+            // and then the folders being loaded.
+            emit(DriveDetailLoadInProgress());
+          } else {
+            final state = this.state is DriveDetailLoadSuccess
+                ? this.state as DriveDetailLoadSuccess
+                : DriveDetailLoadSuccess();
+            final profile = _profileCubit.state;
 
-          emit(
-            state.copyWith(
-              currentDrive: drive,
-              hasWritePermissions: profile is ProfileLoggedIn &&
-                  drive.ownerAddress == await profile.wallet.getAddress(),
-              currentFolder: folderContents,
-              contentOrderBy: contentOrderBy,
-              contentOrderingMode: contentOrderingMode,
-            ),
-          );
-        }
-      },
-    ).listen((_) {});
+            emit(
+              state.copyWith(
+                currentDrive: drive,
+                hasWritePermissions: profile is ProfileLoggedIn &&
+                    drive.ownerAddress == await profile.wallet.getAddress(),
+                currentFolder: folderContents,
+                contentOrderBy: contentOrderBy,
+                contentOrderingMode: contentOrderingMode,
+              ),
+            );
+          }
+        },
+      ).listen((_) {});
+    } catch (e, stackTrace) {
+      super.onError(e, stackTrace);
+    }
   }
 
   Future<void> selectItem(String itemId, {bool isFolder = false}) async {

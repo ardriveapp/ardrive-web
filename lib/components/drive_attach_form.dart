@@ -43,7 +43,10 @@ Future<void> autoAttachAttachDrive(
         child: BlocConsumer<DriveAttachCubit, DriveAttachState>(
           listener: (context, state) {
             if (state is DriveAttachInProgress) {
-              showProgressDialog(context, 'ATTACHING DRIVE...');
+              //showProgressDialog(context, 'ATTACHING DRIVE...');
+              //Commented out since attach is instantaneous. Also seems to go
+              //back to this state once drive is successfully attached.
+
             } else if (state is DriveAttachFailure) {
               // Close the progress dialog if the drive attachment fails.
               Navigator.pop(context);
@@ -53,12 +56,11 @@ Future<void> autoAttachAttachDrive(
             }
           },
           builder: (context, state) {
-            context.read<DriveAttachCubit>().form.control('driveId').value =
-                initialDriveId;
-            context.read<DriveAttachCubit>().form.control('name').value =
-                driveName;
-            context.read<DriveAttachCubit>().submit();
-            return AppDialog();
+            context.read<DriveAttachCubit>().submit(
+                  autoDriveId: initialDriveId,
+                  autoDriveName: driveName,
+                );
+            return Container();
           },
         ),
       ),
