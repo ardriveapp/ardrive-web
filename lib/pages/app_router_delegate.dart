@@ -209,6 +209,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   Future<void> setNewRoutePath(AppRoutePath path) async {
     signingIn = path.signingIn;
     driveId = path.driveId;
+    driveName = path.driveName;
     driveFolderId = path.driveFolderId;
     sharedFileId = path.sharedFileId;
     sharedFileKey = path.sharedFileKey;
