@@ -18,6 +18,7 @@ import 'package:url_launcher/link.dart';
 
 part 'components/drive_detail_actions_row.dart';
 part 'components/drive_detail_breadcrumb_row.dart';
+part 'components/drive_detail_data_list.dart';
 part 'components/drive_detail_data_table.dart';
 part 'components/drive_detail_folder_empty_card.dart';
 part 'components/fs_entry_side_sheet.dart';
@@ -30,59 +31,119 @@ class DriveDetailPage extends StatelessWidget {
             if (state is DriveDetailLoadInProgress) {
               return const Center(child: CircularProgressIndicator());
             } else if (state is DriveDetailLoadSuccess) {
-              return Stack(
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Scrollbar(
-                          child: SingleChildScrollView(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 32, horizontal: 24),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        state.currentDrive.name,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .headline5,
-                                      ),
-                                      DriveDetailActionRow(),
-                                    ],
-                                  ),
-                                  DriveDetailBreadcrumbRow(
-                                      path: state.currentFolder.folder.path),
-                                  if (state.currentFolder.subfolders
-                                          .isNotEmpty ||
-                                      state.currentFolder.files.isNotEmpty)
+              return ScreenTypeLayout(
+                desktop: Stack(
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Scrollbar(
+                            child: SingleChildScrollView(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 32, horizontal: 24),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Expanded(
-                                          child:
-                                              _buildDataTable(context, state),
+                                        Text(
+                                          state.currentDrive.name,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headline5,
                                         ),
+                                        DriveDetailActionRow(),
                                       ],
-                                    )
-                                  else
-                                    DriveDetailFolderEmptyCard(
-                                        promptToAddFiles:
-                                            state.hasWritePermissions),
-                                ],
+                                    ),
+                                    DriveDetailBreadcrumbRow(
+                                        path: state.currentFolder.folder.path),
+                                    if (state.currentFolder.subfolders
+                                            .isNotEmpty ||
+                                        state.currentFolder.files.isNotEmpty)
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child:
+                                                _buildDataTable(context, state),
+                                          ),
+                                        ],
+                                      )
+                                    else
+                                      DriveDetailFolderEmptyCard(
+                                          promptToAddFiles:
+                                              state.hasWritePermissions),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
+                        if (state.showSelectedItemDetails) ...{
+                          VerticalDivider(width: 1),
+                          FsEntrySideSheet(
+                            driveId: state.currentDrive.id,
+                            folderId: state.selectedItemIsFolder
+                                ? state.selectedItemId
+                                : null,
+                            fileId: !state.selectedItemIsFolder
+                                ? state.selectedItemId
+                                : null,
+                          ),
+                        }
+                      ],
+                    ),
+                    if (kIsWeb) DriveFileDropZone(),
+                  ],
+                ),
+                mobile: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!state.showSelectedItemDetails)
+                      Expanded(
+                        child: Scrollbar(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 16, horizontal: 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      state.currentDrive.name,
+                                      style:
+                                          Theme.of(context).textTheme.headline5,
+                                    ),
+                                    SizedBox(
+                                      height: 16,
+                                    ),
+                                    DriveDetailActionRow()
+                                  ],
+                                ),
+                                DriveDetailBreadcrumbRow(
+                                    path: state.currentFolder.folder.path),
+                                if (state.currentFolder.subfolders.isNotEmpty ||
+                                    state.currentFolder.files.isNotEmpty)
+                                  Expanded(
+                                    child: _buildDataList(context, state),
+                                  )
+                                else
+                                  DriveDetailFolderEmptyCard(
+                                      promptToAddFiles:
+                                          state.hasWritePermissions),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                      if (state.showSelectedItemDetails) ...{
-                        VerticalDivider(width: 1),
-                        FsEntrySideSheet(
+                    if (state.showSelectedItemDetails)
+                      Expanded(
+                        child: FsEntrySideSheet(
                           driveId: state.currentDrive.id,
                           folderId: state.selectedItemIsFolder
                               ? state.selectedItemId
@@ -91,11 +152,9 @@ class DriveDetailPage extends StatelessWidget {
                               ? state.selectedItemId
                               : null,
                         ),
-                      }
-                    ],
-                  ),
-                  if (kIsWeb) DriveFileDropZone(),
-                ],
+                      )
+                  ],
+                ),
               );
             } else {
               return const SizedBox();

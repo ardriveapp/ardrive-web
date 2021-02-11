@@ -37,7 +37,8 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
       'name': FormControl(
         validators: [
           Validators.required,
-          Validators.pattern(kFolderNameRegex),
+          Validators.pattern(kFileNameRegex),
+          Validators.pattern(kTrimTrailingRegex),
         ],
         asyncValidators: [
           _uniqueFolderName,

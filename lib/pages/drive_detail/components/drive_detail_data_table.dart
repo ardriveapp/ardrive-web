@@ -105,68 +105,6 @@ DataRow _buildFileRow({
   bool selected = false,
   Function onPressed,
 }) {
-  Widget _buildFileIcon(String status, String dataContentType) {
-    String tooltipMessage;
-    Color indicatorColor;
-    Widget icon;
-
-    switch (status) {
-      case TransactionStatus.pending:
-        tooltipMessage = 'Pending';
-        indicatorColor = Colors.orange;
-        break;
-      case TransactionStatus.confirmed:
-        tooltipMessage = 'Confirmed';
-        indicatorColor = Colors.green;
-        break;
-      case TransactionStatus.failed:
-        tooltipMessage = 'Failed';
-        indicatorColor = Colors.red;
-        break;
-      default:
-        throw ArgumentError();
-    }
-
-    final fileType = dataContentType?.split('/')?.first;
-    switch (fileType) {
-      case 'image':
-        icon = const Icon(Icons.image);
-        break;
-      case 'video':
-        icon = const Icon(Icons.ondemand_video);
-        break;
-      case 'audio':
-        icon = const Icon(Icons.music_note);
-        break;
-      default:
-        icon = const Icon(Icons.insert_drive_file);
-    }
-
-    return Tooltip(
-      message: tooltipMessage,
-      child: Stack(
-        children: [
-          icon,
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.all(1),
-              decoration: BoxDecoration(
-                color: indicatorColor,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              constraints: const BoxConstraints(
-                minWidth: 8,
-                minHeight: 8,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   return DataRow(
     onSelectChanged: (_) => onPressed(),
     selected: selected,
@@ -195,5 +133,67 @@ DataRow _buildFileRow({
         ),
       ),
     ],
+  );
+}
+
+Widget _buildFileIcon(String status, String dataContentType) {
+  String tooltipMessage;
+  Color indicatorColor;
+  Widget icon;
+
+  switch (status) {
+    case TransactionStatus.pending:
+      tooltipMessage = 'Pending';
+      indicatorColor = Colors.orange;
+      break;
+    case TransactionStatus.confirmed:
+      tooltipMessage = 'Confirmed';
+      indicatorColor = Colors.green;
+      break;
+    case TransactionStatus.failed:
+      tooltipMessage = 'Failed';
+      indicatorColor = Colors.red;
+      break;
+    default:
+      throw ArgumentError();
+  }
+
+  final fileType = dataContentType?.split('/')?.first;
+  switch (fileType) {
+    case 'image':
+      icon = const Icon(Icons.image);
+      break;
+    case 'video':
+      icon = const Icon(Icons.ondemand_video);
+      break;
+    case 'audio':
+      icon = const Icon(Icons.music_note);
+      break;
+    default:
+      icon = const Icon(Icons.insert_drive_file);
+  }
+
+  return Tooltip(
+    message: tooltipMessage,
+    child: Stack(
+      children: [
+        icon,
+        Positioned(
+          right: 0,
+          bottom: 0,
+          child: Container(
+            padding: const EdgeInsets.all(1),
+            decoration: BoxDecoration(
+              color: indicatorColor,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            constraints: const BoxConstraints(
+              minWidth: 8,
+              minHeight: 8,
+            ),
+          ),
+        ),
+      ],
+    ),
   );
 }

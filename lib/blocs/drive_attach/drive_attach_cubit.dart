@@ -43,6 +43,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
           validators: [
             Validators.required,
             Validators.pattern(kDriveNameRegex),
+            Validators.pattern(kTrimTrailingRegex),
           ],
         ),
       },

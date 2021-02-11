@@ -45,6 +45,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           Validators.required,
           Validators.pattern(
               folderId != null ? kFolderNameRegex : kFileNameRegex),
+          Validators.pattern(kTrimTrailingRegex),
         ],
         asyncValidators: [
           folderId != null ? _uniqueFolderName : _uniqueFileName,

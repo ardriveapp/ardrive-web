@@ -49,9 +49,12 @@ class _AppShellState extends State<AppShell> {
                       ),
                       child: PortalEntry(
                         visible: _showProfileOverlay,
-                        portal: ProfileOverlay(),
+                        portal: Padding(
+                          padding: const EdgeInsets.only(top: 56),
+                          child: ProfileOverlay(),
+                        ),
                         portalAnchor: Alignment.topRight,
-                        childAnchor: Alignment.centerLeft,
+                        childAnchor: Alignment.topRight,
                         child: const Icon(Icons.account_circle),
                       ),
                     ),
