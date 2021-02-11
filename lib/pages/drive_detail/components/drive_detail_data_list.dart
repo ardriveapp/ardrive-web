@@ -36,7 +36,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
             },
           ),
         )
-      ].intersperseOuter(Divider()).toList(),
+      ].intersperse(Divider()).toList(),
     );
 
 Widget _buildFolderListTile({
