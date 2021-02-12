@@ -85,11 +85,25 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           Flexible(
                             child: Link(
                               uri: Uri.parse(
-                                  'https://ardrive.io/privacy-policy/'),
+                                  'https://ardrive.io/tos-and-privacy/'),
+                              target: LinkTarget.blank,
                               builder: (context, onPressed) => GestureDetector(
                                 onTap: onPressed,
-                                child: Text(
-                                    'I agree to the app privacy policy and terms and conditions.'),
+                                child: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      TextSpan(text: 'I agree to the '),
+                                      TextSpan(
+                                        text:
+                                            'ArDrive terms of service and privacy policy',
+                                        style: TextStyle(
+                                          decoration: TextDecoration.underline,
+                                        ),
+                                      ),
+                                      TextSpan(text: '.'),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
                           ),
