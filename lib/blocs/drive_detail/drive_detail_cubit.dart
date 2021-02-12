@@ -96,7 +96,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         },
       ).listen((_) {});
     } catch (e, stackTrace) {
-      super.onError(e, stackTrace);
+      onError(e, stackTrace);
     }
   }
 
@@ -140,5 +140,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   Future<void> close() {
     _folderSubscription?.cancel();
     return super.close();
+  }
+
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    emit(DriveDetailLoadNotFound());
+    super.onError(error, stackTrace);
   }
 }

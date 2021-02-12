@@ -10,23 +10,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
 
-Future<void> promptToAttachDrive(
-        {@required BuildContext context, String initialDriveId}) =>
-    showDialog(
-      context: context,
-      builder: (BuildContext context) => BlocProvider<DriveAttachCubit>(
-        create: (context) => DriveAttachCubit(
-          initialDriveId: initialDriveId,
-          arweave: context.read<ArweaveService>(),
-          driveDao: context.read<DriveDao>(),
-          syncBloc: context.read<SyncCubit>(),
-          drivesBloc: context.read<DrivesCubit>(),
-        ),
-        child: DriveAttachForm(),
-      ),
-    );
-
-Future<void> autoAttachAttachDrive(
+Future<void> attachDrive(
         {@required BuildContext context,
         String initialDriveId,
         String driveName}) =>
@@ -35,18 +19,16 @@ Future<void> autoAttachAttachDrive(
       builder: (BuildContext context) => BlocProvider<DriveAttachCubit>(
         create: (context) => DriveAttachCubit(
           initialDriveId: initialDriveId,
+          driveName: driveName,
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
           syncBloc: context.read<SyncCubit>(),
           drivesBloc: context.read<DrivesCubit>(),
         ),
-        child: BlocConsumer<DriveAttachCubit, DriveAttachState>(
+        child: BlocListener<DriveAttachCubit, DriveAttachState>(
           listener: (context, state) {
             if (state is DriveAttachInProgress) {
-              //showProgressDialog(context, 'ATTACHING DRIVE...');
-              //Commented out since attach is instantaneous. Also seems to go
-              //back to this state once drive is successfully attached.
-
+              showProgressDialog(context, 'ATTACHING DRIVE...');
             } else if (state is DriveAttachFailure) {
               // Close the progress dialog if the drive attachment fails.
               Navigator.pop(context);
@@ -55,13 +37,11 @@ Future<void> autoAttachAttachDrive(
               Navigator.pop(context);
             }
           },
-          builder: (context, state) {
-            context.read<DriveAttachCubit>().submit(
-                  autoDriveId: initialDriveId,
-                  autoDriveName: driveName,
-                );
-            return Container();
-          },
+          child: driveName != null
+              ? ProgressDialog(
+                  title: 'ATTACHING DRIVE...',
+                )
+              : DriveAttachForm(),
         ),
       ),
     );
@@ -70,18 +50,7 @@ Future<void> autoAttachAttachDrive(
 class DriveAttachForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
-      BlocConsumer<DriveAttachCubit, DriveAttachState>(
-        listener: (context, state) {
-          if (state is DriveAttachInProgress) {
-            showProgressDialog(context, 'ATTACHING DRIVE...');
-          } else if (state is DriveAttachFailure) {
-            // Close the progress dialog if the drive attachment fails.
-            Navigator.pop(context);
-          } else if (state is DriveAttachSuccess) {
-            Navigator.pop(context);
-            Navigator.pop(context);
-          }
-        },
+      BlocBuilder<DriveAttachCubit, DriveAttachState>(
         builder: (context, state) => AppDialog(
           title: 'ATTACH DRIVE',
           content: SizedBox(
