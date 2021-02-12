@@ -30,6 +30,8 @@ class UploadCubit extends Cubit<UploadState> {
   final ArweaveService _arweave;
   final PstService _pst;
 
+  final BigInt _minimumpstTip = BigInt.from(10000000);
+
   Drive _targetDrive;
   FolderEntry _targetFolder;
 
@@ -110,7 +112,7 @@ class UploadCubit extends Cubit<UploadState> {
         .map((f) => f.cost)
         .reduce((total, cost) => total + cost);
 
-    final pstFee = await _pst
+    var pstFee = await _pst
         .getPstFeePercentage()
         .then((feePercentage) =>
             // Workaround [BigInt] percentage division problems
@@ -118,7 +120,9 @@ class UploadCubit extends Cubit<UploadState> {
             uploadCost * BigInt.from(feePercentage * 100) ~/ BigInt.from(100))
         .catchError((_) => BigInt.zero,
             test: (err) => err is UnimplementedError);
-
+    if (pstFee < _minimumpstTip) {
+      pstFee = _minimumpstTip;
+    }
     if (pstFee > BigInt.zero) {
       feeTx = await _arweave.client.transactions.prepare(
         Transaction(
@@ -137,6 +141,7 @@ class UploadCubit extends Cubit<UploadState> {
     final totalCost = uploadCost + pstFee;
 
     final arUploadCost = winstonToAr(totalCost);
+    final pstCost = winstonToAr(pstFee);
     final usdUploadCost = await _arweave
         .getArUsdConversionRate()
         .then((conversionRate) => double.parse(arUploadCost) * conversionRate)
@@ -147,6 +152,7 @@ class UploadCubit extends Cubit<UploadState> {
         arUploadCost: arUploadCost,
         usdUploadCost: usdUploadCost,
         pstFee: pstFee,
+        pstCost: pstCost,
         totalCost: totalCost,
         uploadIsPublic: _targetDrive.isPublic,
         sufficientArBalance: profile.walletBalance >= totalCost,

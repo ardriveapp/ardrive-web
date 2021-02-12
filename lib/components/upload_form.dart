@@ -155,6 +155,14 @@ class UploadForm extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodyText1,
                       ),
                     ),
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(text: 'PST Tip: ${state.pstCost} AR'),
+                        ],
+                        style: Theme.of(context).textTheme.bodyText1,
+                      ),
+                    ),
                     if (state.uploadIsPublic) ...{
                       const SizedBox(height: 8),
                       Text('These file(s) will be uploaded publicly.'),
