@@ -37,8 +37,8 @@ dependencies:
   google_fonts: ^1.1.1
   intersperse: ^1.1.1
   intl: ^0.16.1
-  json_annotation: ^3.0.1
-  mime: ^0.9.7
+  json_annotation: ^4.0.0
+  mime: ^1.0.0
   moor: ^4.0.0-nullsafety.1
   path_provider: ^1.6.11
   pedantic: ^1.9.2
@@ -46,7 +46,7 @@ dependencies:
   rxdart: ^0.25.0
   timeago: ^2.0.28
   url_launcher: ^5.7.10
-  uuid: ^2.2.0
+  uuid: ^3.0.0-nullsafety.0
   flutter_dropzone: ^1.0.0
   responsive_builder: ^0.3.0
 
@@ -59,17 +59,15 @@ dev_dependencies:
   mockito: ^5.0.0-nullsafety.2
   build_runner: ^1.10.0
   moor_generator: ^4.0.0-dev
-  json_serializable: ^3.5.1
+  json_serializable: ^4.0.0
 
 dependency_overrides:
-  crypto: ^3.0.0-nullsafety.0
   cryptography:
     git:
       url: https://github.com/CDDelta/cryptography.git
       path: cryptography
       ref: aae4e736dae0a3620663a1870f241205931d8e7e
-  ffi: ^0.2.0-nullsafety.1
-  json_annotation: ^3.0.1
+  json_annotation: ^4.0.0
   mockito: ^5.0.0-nullsafety.2
 
 flutter:
