@@ -43,3 +43,5 @@ const kDarkSurfaceColor = Color(0xFF333333);
 const kOnDarkSurfaceHighEmphasis = Colors.white;
 const kOnDarkSurfaceMediumEmphasis = Colors.white60;
 final onDarkSurfaceSelectedColor = kPrimarySwatch.shade300.withOpacity(0.12);
+
+final errorColor = kPrimarySwatch.shade300;

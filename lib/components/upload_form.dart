@@ -142,8 +142,8 @@ class UploadForm extends StatelessWidget {
                     ),
                     Divider(),
                     const SizedBox(height: 16),
-                    RichText(
-                      text: TextSpan(
+                    Text.rich(
+                      TextSpan(
                         children: [
                           TextSpan(text: 'Cost: ${state.arUploadCost} AR'),
                           if (state.usdUploadCost != null)

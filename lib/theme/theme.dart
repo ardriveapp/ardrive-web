@@ -13,7 +13,7 @@ ThemeData appTheme() {
     primaryColor: kPrimarySwatch,
     primaryColorLight: kPrimarySwatch,
     accentColor: kSecondarySwatch.shade900,
-    errorColor: kPrimarySwatch.shade300,
+    errorColor: errorColor,
     textTheme: textTheme,
     textSelectionTheme: _buildTextSelectionTheme(base.textSelectionTheme),
     iconTheme: _buildIconTheme(base.iconTheme),
@@ -27,6 +27,7 @@ ThemeData appTheme() {
     inputDecorationTheme: _buildInputDecorationTheme(base.inputDecorationTheme),
     tabBarTheme: _buildTabBarTheme(base.tabBarTheme),
     dataTableTheme: _buildDataTableTheme(base.dataTableTheme),
+    checkboxTheme: _buildCheckboxTheme(base.checkboxTheme),
     snackBarTheme: _buildSnackBarTheme(base.snackBarTheme),
     tooltipTheme: _buildToolTipTheme(base.tooltipTheme, textTheme),
   );
@@ -150,3 +151,14 @@ TooltipThemeData _buildToolTipTheme(
         fontSize: 12,
       ),
     );
+
+CheckboxThemeData _buildCheckboxTheme(CheckboxThemeData base) =>
+    base.copyWith(fillColor: MaterialStateColor.resolveWith(
+      (states) {
+        if (states.contains(MaterialState.error)) {
+          return errorColor;
+        }
+
+        return kPrimarySwatch;
+      },
+    ));
