@@ -1,0 +1,14 @@
+query PendingTxFees($walletAddress: String!) {
+  transactions(owners: [$walletAddress], sort: HEIGHT_DESC, first: 100) {
+    edges {
+      node {
+        fee {
+          winston
+        }
+        block {
+          id
+        }
+      }
+    }
+  }
+}

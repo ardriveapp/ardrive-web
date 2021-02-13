@@ -188,65 +188,29 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       String folderPath,
       DriveOrder orderBy = DriveOrder.name,
       OrderingMode orderingMode = OrderingMode.asc}) {
-    final folderStream = (select(folderEntries)
-          ..where((f) =>
-              f.driveId.equals(driveId) &
-              (folderId != null
-                  ? f.id.equals(folderId)
-                  : f.path.equals(folderPath))))
+    final folderStream = (folderId != null
+            ? folderById(driveId: driveId, folderId: folderId)
+            : folderWithPath(driveId: driveId, path: folderPath))
         .watchSingleOrNull();
 
-    final subfoldersStream = (select(folderEntries)
-          ..where((f) =>
-              f.driveId.equals(driveId) &
-              (folderId != null
-                  ? f.parentFolderId.equals(folderId)
-                  : f.path.like('$folderPath/%') &
-                      f.path.like('$folderPath/%/%').not()))
-          ..orderBy([
-            (f) {
-              switch (orderBy) {
-                // Folders have no size or proper last updated time to be sorted by
-                // so we just sort them ascendingly by name.
-                case DriveOrder.lastUpdated:
-                case DriveOrder.size:
-                  return OrderingTerm(
-                      expression: f.name, mode: OrderingMode.asc);
-                case DriveOrder.name:
-                default:
-                  return OrderingTerm(expression: f.name, mode: orderingMode);
-              }
-            }
-          ]))
-        .watch();
+    final subfolderOrder = enumToFolderOrderByClause(folderEntries, orderBy);
+    final subfolderQuery = (folderId != null
+        ? foldersInFolder(
+            driveId: driveId, parentFolderId: folderId, order: subfolderOrder)
+        : foldersInFolderAtPath(
+            driveId: driveId, path: folderPath, order: subfolderOrder));
 
-    final filesStream = (select(fileEntries)
-          ..where((f) =>
-              f.driveId.equals(driveId) &
-              (folderId != null
-                  ? f.parentFolderId.equals(folderId)
-                  : f.path.like('$folderPath/%') &
-                      f.path.like('$folderPath/%/%').not()))
-          ..orderBy([
-            (f) {
-              switch (orderBy) {
-                case DriveOrder.lastUpdated:
-                  return OrderingTerm(
-                      expression: f.lastUpdated, mode: orderingMode);
-                case DriveOrder.size:
-                  return OrderingTerm(expression: f.size, mode: orderingMode);
-                case DriveOrder.name:
-                default:
-                  return OrderingTerm(expression: f.name, mode: orderingMode);
-              }
-            }
-          ]))
-        .watch();
+    final filesOrder = enumToFileOrderByClause(fileEntries, orderBy);
+    final filesQuery = folderId != null
+        ? filesInFolderWithRevisionTransactions(
+            driveId: driveId, parentFolderId: folderId, order: filesOrder)
+        : filesInFolderAtPathWithRevisionTransactions(
+            driveId: driveId, path: folderPath, order: filesOrder);
 
     return Rx.combineLatest3(
       folderStream,
-      subfoldersStream,
-      filesStream,
+      subfolderQuery.watch(),
+      filesQuery.watch(),
       (folder, subfolders, files) => FolderWithContents(
         folder: folder,
         subfolders: subfolders,
@@ -336,6 +300,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       dataTxId: entity.dataTxId,
       size: entity.size,
       lastModifiedDate: entity.lastModifiedDate,
+      dataContentType: Value(entity.dataContentType),
     );
 
     return into(fileEntries).insert(
@@ -355,6 +320,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     });
   }
 
+  /// Inserts the specified file revision and its associated metadata and data transactions.
   Future<void> insertFileRevision(FileRevisionsCompanion revision) async {
     await db.transaction(() async {
       await Future.wait(revision

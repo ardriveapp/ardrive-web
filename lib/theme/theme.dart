@@ -6,27 +6,32 @@ part 'constants.dart';
 
 final base = ThemeData.light();
 
-ThemeData appTheme() => base.copyWith(
-      primaryColor: kPrimarySwatch,
-      primaryColorLight: kPrimarySwatch,
-      accentColor: kSecondarySwatch.shade900,
-      errorColor: kPrimarySwatch.shade300,
-      textTheme: _buildTextTheme(base.textTheme),
-      textSelectionTheme: _buildTextSelectionTheme(base.textSelectionTheme),
-      iconTheme: _buildIconTheme(base.iconTheme),
-      visualDensity: VisualDensity.adaptivePlatformDensity,
-      appBarTheme: _buildAppBarTheme(base.appBarTheme),
-      textButtonTheme: _buildTextButtonTheme(base.textButtonTheme),
-      elevatedButtonTheme: _buildElevatedButtonTheme(base.elevatedButtonTheme),
-      floatingActionButtonTheme:
-          _buildFloatingActionButtonTheme(base.floatingActionButtonTheme),
-      cardTheme: _buildCardTheme(base.cardTheme),
-      inputDecorationTheme:
-          _buildInputDecorationTheme(base.inputDecorationTheme),
-      tabBarTheme: _buildTabBarTheme(base.tabBarTheme),
-      dataTableTheme: _buildDataTableTheme(base.dataTableTheme),
-      snackBarTheme: _buildSnackBarTheme(base.snackBarTheme),
-    );
+ThemeData appTheme() {
+  final textTheme = _buildTextTheme(base.textTheme);
+
+  return base.copyWith(
+    primaryColor: kPrimarySwatch,
+    primaryColorLight: kPrimarySwatch,
+    accentColor: kSecondarySwatch.shade900,
+    errorColor: errorColor,
+    textTheme: textTheme,
+    textSelectionTheme: _buildTextSelectionTheme(base.textSelectionTheme),
+    iconTheme: _buildIconTheme(base.iconTheme),
+    visualDensity: VisualDensity.adaptivePlatformDensity,
+    appBarTheme: _buildAppBarTheme(base.appBarTheme),
+    textButtonTheme: _buildTextButtonTheme(base.textButtonTheme),
+    elevatedButtonTheme: _buildElevatedButtonTheme(base.elevatedButtonTheme),
+    floatingActionButtonTheme:
+        _buildFloatingActionButtonTheme(base.floatingActionButtonTheme),
+    cardTheme: _buildCardTheme(base.cardTheme),
+    inputDecorationTheme: _buildInputDecorationTheme(base.inputDecorationTheme),
+    tabBarTheme: _buildTabBarTheme(base.tabBarTheme),
+    dataTableTheme: _buildDataTableTheme(base.dataTableTheme),
+    checkboxTheme: _buildCheckboxTheme(base.checkboxTheme),
+    snackBarTheme: _buildSnackBarTheme(base.snackBarTheme),
+    tooltipTheme: _buildToolTipTheme(base.tooltipTheme, textTheme),
+  );
+}
 
 TextTheme _buildTextTheme(TextTheme base) => base
     .copyWith(
@@ -137,3 +142,23 @@ SnackBarThemeData _buildSnackBarTheme(SnackBarThemeData base) => base.copyWith(
       behavior: SnackBarBehavior.floating,
       actionTextColor: kOnDarkSurfaceHighEmphasis,
     );
+
+TooltipThemeData _buildToolTipTheme(
+        TooltipThemeData base, TextTheme textTheme) =>
+    base.copyWith(
+      textStyle: textTheme.bodyText2.copyWith(
+        color: Colors.white,
+        fontSize: 12,
+      ),
+    );
+
+CheckboxThemeData _buildCheckboxTheme(CheckboxThemeData base) =>
+    base.copyWith(fillColor: MaterialStateColor.resolveWith(
+      (states) {
+        if (states.contains(MaterialState.error)) {
+          return errorColor;
+        }
+
+        return kPrimarySwatch;
+      },
+    ));

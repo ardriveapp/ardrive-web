@@ -1,16 +1,10 @@
 name: deploy
+
 on:
   push:
-    branches:
-      - master
-  workflow_dispatch:
-    inputs:
-      logLevel:
-        description: 'Log level'     
-        required: true
-        default: 'warning'
-      tags:
-        description: 'Test scenario tags'  
+    tags:
+      - 'v*'
+
 jobs:
   deploy:
     runs-on: ubuntu-latest

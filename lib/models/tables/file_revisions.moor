@@ -6,8 +6,10 @@ CREATE TABLE file_revisions (
 
     name TEXT NOT NULL,
     parentFolderId TEXT NOT NULL,
+
     size INTEGER NOT NULL,
     lastModifiedDate DATETIME NOT NULL,
+    dataContentType TEXT,
 
     metadataTxId TEXT NOT NULL,
     dataTxId TEXT NOT NULL,

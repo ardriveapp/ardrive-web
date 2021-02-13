@@ -2,7 +2,6 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
-import 'package:arweave/utils.dart' as utils;
 import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
@@ -143,7 +142,19 @@ class UploadForm extends StatelessWidget {
                     ),
                     Divider(),
                     const SizedBox(height: 16),
-                    Text('Cost: ${utils.winstonToAr(state.totalCost)} AR'),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(text: 'Cost: ${state.arUploadCost} AR'),
+                          if (state.usdUploadCost != null)
+                            TextSpan(
+                                text: state.usdUploadCost >= 0.01
+                                    ? ' (~${state.usdUploadCost.toStringAsFixed(2)} USD)'
+                                    : ' (< 0.01 USD)'),
+                        ],
+                        style: Theme.of(context).textTheme.bodyText1,
+                      ),
+                    ),
                     if (state.uploadIsPublic) ...{
                       const SizedBox(height: 8),
                       Text('These file(s) will be uploaded publicly.'),

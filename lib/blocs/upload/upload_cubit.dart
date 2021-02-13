@@ -4,6 +4,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:file_selector/file_selector.dart';
@@ -109,15 +110,16 @@ class UploadCubit extends Cubit<UploadState> {
         .map((f) => f.cost)
         .reduce((total, cost) => total + cost);
 
-    var pstFee = BigInt.zero;
+    final pstFee = await _pst
+        .getPstFeePercentage()
+        .then((feePercentage) =>
+            // Workaround [BigInt] percentage division problems
+            // by first multiplying by the percentage * 100 and then dividing by 100.
+            uploadCost * BigInt.from(feePercentage * 100) ~/ BigInt.from(100))
+        .catchError((_) => BigInt.zero,
+            test: (err) => err is UnimplementedError);
 
-    try {
-      // Workaround [BigInt] percentage division problems
-      // by first multiplying by the percentage * 100 and then dividing by 100.
-      pstFee = uploadCost *
-          BigInt.from((await _pst.getPstFeePercentage()) * 100) ~/
-          BigInt.from(100);
-
+    if (pstFee > BigInt.zero) {
       feeTx = await _arweave.client.transactions.prepare(
         Transaction(
           target: await _pst.getWeightedPstHolder(),
@@ -130,13 +132,20 @@ class UploadCubit extends Cubit<UploadState> {
         ..addTag(TipType.tagName, TipType.dataUpload);
 
       await feeTx.sign(profile.wallet);
-    } on UnimplementedError catch (_) {}
+    }
 
     final totalCost = uploadCost + pstFee;
 
+    final arUploadCost = winstonToAr(totalCost);
+    final usdUploadCost = await _arweave
+        .getArUsdConversionRate()
+        .then((conversionRate) => double.parse(arUploadCost) * conversionRate)
+        .catchError(() => null);
+
     emit(
       UploadReady(
-        uploadCost: uploadCost,
+        arUploadCost: arUploadCost,
+        usdUploadCost: usdUploadCost,
         pstFee: pstFee,
         totalCost: totalCost,
         uploadIsPublic: _targetDrive.isPublic,
@@ -155,13 +164,26 @@ class UploadCubit extends Cubit<UploadState> {
 
     await _driveDao.transaction(() async {
       for (final uploadHandle in _fileUploadHandles.values) {
-        await _driveDao.writeFileEntity(uploadHandle.entity, uploadHandle.path);
+        final fileEntity = uploadHandle.entity;
+
+        fileEntity.txId = uploadHandle.entityTx.id;
+
+        await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
+        await _driveDao.insertFileRevision(
+          fileEntity.toRevisionCompanion(
+            performedAction: !conflictingFiles.containsKey(fileEntity.name)
+                ? RevisionAction.create
+                : RevisionAction.uploadNewVersion,
+          ),
+        );
 
         await for (final _ in uploadHandle.upload(_arweave)) {
           emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
         }
       }
     });
+
+    unawaited(_profileCubit.refreshBalance());
 
     emit(UploadComplete());
   }

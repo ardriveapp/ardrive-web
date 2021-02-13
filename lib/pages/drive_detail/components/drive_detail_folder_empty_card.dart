@@ -17,9 +17,11 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                   const Icon(Icons.folder_open),
                   const SizedBox(width: 16),
                   if (promptToAddFiles)
-                    Text(
-                      'There\'s nothing to see here. Click "new" to add some files.',
-                      style: Theme.of(context).textTheme.headline6,
+                    Expanded(
+                      child: Text(
+                        'There\'s nothing to see here. Click "new" to add some files.',
+                        style: Theme.of(context).textTheme.headline6,
+                      ),
                     )
                   else
                     Text(

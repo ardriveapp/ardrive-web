@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:ardrive/entities/entities.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:http/http.dart' as http;
 
 import '../services.dart';
 
@@ -13,9 +16,24 @@ class ArweaveService {
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
 
+  /// Returns the onchain balance of the specified address.
   Future<BigInt> getWalletBalance(String address) => client.api
       .get('wallet/$address/balance')
       .then((res) => BigInt.parse(res.body));
+
+  /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
+  Future<BigInt> getPendingTxFees(String address) async {
+    final query = await _gql.execute(PendingTxFeesQuery(
+        variables: PendingTxFeesArguments(walletAddress: address)));
+
+    return query.data.transactions.edges
+        .map((edge) => edge.node)
+        .where((node) => node.block == null)
+        .fold<BigInt>(
+          BigInt.zero,
+          (totalFees, node) => totalFees + BigInt.parse(node.fee.winston),
+        );
+  }
 
   Future<TransactionCommonMixin> getTransactionDetails(String txId) async {
     final query = await _gql.execute(TransactionDetailsQuery(
@@ -354,6 +372,16 @@ class ArweaveService {
 
   Future<void> postTx(Transaction transaction) =>
       client.transactions.post(transaction);
+
+  Future<double> getArUsdConversionRate() async {
+    final client = http.Client();
+
+    return await client
+        .get(
+            'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd')
+        .then((res) => json.decode(res.body))
+        .then((res) => res['arweave']['usd']);
+  }
 }
 
 /// The entity history of a particular drive, chunked by block height.

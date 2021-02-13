@@ -84,6 +84,7 @@ void main() {
                   dataTxId: '',
                   size: 500,
                   lastModifiedDate: DateTime.now(),
+                  dataContentType: Value(''),
                 );
               },
             )..shuffle(),
@@ -100,6 +101,7 @@ void main() {
                   dataTxId: '',
                   size: 500,
                   lastModifiedDate: DateTime.now(),
+                  dataContentType: Value(''),
                 );
               },
             )..shuffle(),

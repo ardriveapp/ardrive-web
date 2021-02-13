@@ -20,3 +20,11 @@ To start a development instance for web, run:
 ```shell
 flutter run -d Chrome
 ```
+
+All changes made to `dev` will be continuously deployed to [staging.ardrive.io](https://staging.ardrive.io). All PRs from this repo merging into `dev` will trigger a preview build that can be shared freely.
+
+## Release
+
+To create a release to [app.ardrive.io](https://app.ardrive.io), first merge any changes from `dev` into `master` that are required, and publish a new release through the GitHub UI with the tag name matching the pattern `v*` eg. `v1.0.1`.
+
+This will trigger a GitHub Action that will deploy `master` to production.

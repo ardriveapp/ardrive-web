@@ -16,7 +16,7 @@ class ProfileOverlay extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 448),
+                constraints: const BoxConstraints(maxWidth: kMediumDialogWidth),
                 child: BlocBuilder<ProfileCubit, ProfileState>(
                   builder: (context, state) => state is ProfileLoggedIn
                       ? ListTile(
@@ -26,7 +26,7 @@ class ProfileOverlay extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              SelectableText(
                                 state.walletAddress,
                                 style: Theme.of(context).textTheme.bodyText2,
                               ),

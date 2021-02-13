@@ -89,7 +89,7 @@ class DriveDetailActionRow extends StatelessWidget {
 
           return Row(
             children: [
-              ...fsActions,
+              ...fsActions.intersperseOuter(const SizedBox(width: 8)),
               if (fsActions.isNotEmpty)
                 const SizedBox(height: 32, child: VerticalDivider()),
               if (!state.hasWritePermissions)
@@ -109,6 +109,7 @@ class DriveDetailActionRow extends StatelessWidget {
                       onPressed: () => bloc.toggleSelectedItemDetails(),
                       tooltip: 'Public',
                     ),
+              const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.info),
                 onPressed: () => bloc.toggleSelectedItemDetails(),

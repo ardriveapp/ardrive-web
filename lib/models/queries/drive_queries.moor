@@ -13,9 +13,18 @@ driveById: SELECT * FROM drives WHERE id = :driveId;
 folderById:
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND id = :folderId;
-foldersInFolder:
+folderWithPath:
     SELECT * FROM folder_entries
-    WHERE driveId = :driveId AND parentFolderId = :parentFolderId;
+    WHERE driveId = :driveId AND path = :path;
+
+foldersInFolder ($order = ''):
+    SELECT * FROM folder_entries
+    WHERE driveId = :driveId AND parentFolderId = :parentFolderId
+    ORDER BY $order;
+foldersInFolderAtPath ($order = ''):
+    SELECT * FROM folder_entries
+    WHERE driveId = :driveId AND path LIKE :path || '/%' AND path NOT LIKE :path || '/%/%'
+    ORDER BY $order;
 foldersInFolderWithName:
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;
@@ -39,12 +48,47 @@ latestFolderRevisionsByFolderIdWithTransactions AS FolderRevisionWithTransaction
 fileById:
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND id = :fileId;
-filesInFolder:
+
+filesInFolder ($order = ''):
     SELECT * FROM file_entries
-    WHERE driveId = :driveId AND parentFolderId = :parentFolderId;
+    WHERE driveId = :driveId AND parentFolderId = :parentFolderId
+    ORDER BY $order;
 filesInFolderWithName:
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;
+filesInFolderAtPath ($order = ''):
+    SELECT * FROM file_entries
+    WHERE driveId = :driveId AND path LIKE :path || '/%' AND path NOT LIKE :path || '/%/%'
+    ORDER BY $order;
+
+filesInFolderWithRevisionTransactions ($order = '') AS FileWithLatestRevisionTransactions:
+    SELECT file_entries.*, metadataTx.**, dataTx.** FROM file_entries
+    JOIN network_transactions AS metadataTx ON metadataTx.id = (
+        SELECT metadataTxId FROM file_revisions AS rev
+        WHERE driveId = :driveId AND fileId = file_entries.id
+        ORDER BY rev.dateCreated DESC
+        LIMIT 1)
+    JOIN network_transactions AS dataTx ON dataTx.id = (
+        SELECT dataTxId FROM file_revisions AS rev
+        WHERE driveId = :driveId AND fileId = file_entries.id
+        ORDER BY rev.dateCreated DESC
+        LIMIT 1)
+    WHERE driveId = :driveId AND parentFolderId = :parentFolderId
+    ORDER BY $order;
+filesInFolderAtPathWithRevisionTransactions ($order = '') AS FileWithLatestRevisionTransactions:
+    SELECT file_entries.*, metadataTx.**, dataTx.** FROM file_entries
+    JOIN network_transactions AS metadataTx ON metadataTx.id = (
+        SELECT metadataTxId FROM file_revisions AS rev
+        WHERE driveId = :driveId AND fileId = file_entries.id
+        ORDER BY rev.dateCreated DESC
+        LIMIT 1)
+    JOIN network_transactions AS dataTx ON dataTx.id = (
+        SELECT dataTxId FROM file_revisions AS rev
+        WHERE driveId = :driveId AND fileId = file_entries.id
+        ORDER BY rev.dateCreated DESC
+        LIMIT 1)
+    WHERE driveId = :driveId AND path LIKE :path || '/%' AND path NOT LIKE :path || '/%/%'
+    ORDER BY $order;
 
 oldestFileRevisionByFileId:
     SELECT * FROM file_revisions
@@ -57,9 +101,9 @@ latestFileRevisionByFileId:
     ORDER BY dateCreated DESC
     LIMIT 1;
 latestFileRevisionsByFileIdWithTransactions AS FileRevisionWithTransactions:
-    SELECT rev.*, metadataTx.**, dataTx.** FROM file_revisions rev
-    INNER JOIN network_transactions metadataTx ON metadataTx.id = rev.metadataTxId
-    INNER JOIN network_transactions dataTx ON dataTx.id = rev.dataTxId
+    SELECT rev.*, metadataTx.**, dataTx.** FROM file_revisions AS rev
+    JOIN network_transactions AS metadataTx ON metadataTx.id = rev.metadataTxId
+    JOIN network_transactions AS dataTx ON dataTx.id = rev.dataTxId
     WHERE driveId = :driveId AND fileId = :fileId
     ORDER BY rev.dateCreated DESC;
 
