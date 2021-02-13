@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
@@ -29,8 +30,6 @@ class UploadCubit extends Cubit<UploadState> {
   final DriveDao _driveDao;
   final ArweaveService _arweave;
   final PstService _pst;
-
-  final BigInt _minimumpstTip = BigInt.from(10000000);
 
   Drive _targetDrive;
   FolderEntry _targetFolder;
@@ -120,9 +119,10 @@ class UploadCubit extends Cubit<UploadState> {
             uploadCost * BigInt.from(feePercentage * 100) ~/ BigInt.from(100))
         .catchError((_) => BigInt.zero,
             test: (err) => err is UnimplementedError);
-    if (pstFee < _minimumpstTip) {
-      pstFee = _minimumpstTip;
-    }
+
+    final _minimumpstTip = BigInt.from(10000000);
+    pstFee = max(pstFee, _minimumpstTip);
+
     if (pstFee > BigInt.zero) {
       feeTx = await _arweave.client.transactions.prepare(
         Transaction(
@@ -152,7 +152,7 @@ class UploadCubit extends Cubit<UploadState> {
         arUploadCost: arUploadCost,
         usdUploadCost: usdUploadCost,
         pstFee: pstFee,
-        pstCost: pstCost,
+        arPstCost: pstCost,
         totalCost: totalCost,
         uploadIsPublic: _targetDrive.isPublic,
         sufficientArBalance: profile.walletBalance >= totalCost,

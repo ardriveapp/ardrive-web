@@ -32,8 +32,8 @@ class UploadReady extends UploadState {
   /// The fee amount provided to PST holders.
   final BigInt pstFee;
 
-  final String pstCost;
-  // Amount to PST holders in USD
+  /// Amount to PST holders in USD
+  final String arPstCost;
 
   /// The sum of the upload cost and fees.
   final BigInt totalCost;
@@ -49,7 +49,7 @@ class UploadReady extends UploadState {
   UploadReady({
     @required this.arUploadCost,
     @required this.pstFee,
-    @required this.pstCost,
+    @required this.arPstCost,
     @required this.totalCost,
     @required this.sufficientArBalance,
     @required this.uploadIsPublic,
