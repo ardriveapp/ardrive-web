@@ -32,7 +32,7 @@ class UploadReady extends UploadState {
   /// The fee amount provided to PST holders.
   final BigInt pstFee;
 
-  /// Amount to PST holders in USD
+  /// The PST tip paid in AR
   final String arPstCost;
 
   /// The sum of the upload cost and fees.

@@ -120,8 +120,8 @@ class UploadCubit extends Cubit<UploadState> {
         .catchError((_) => BigInt.zero,
             test: (err) => err is UnimplementedError);
 
-    final _minimumpstTip = BigInt.from(10000000);
-    pstFee = max(pstFee, _minimumpstTip);
+    final minimumPstTip = BigInt.from(10000000);
+    pstFee = max(pstFee, minimumPstTip);
 
     if (pstFee > BigInt.zero) {
       feeTx = await _arweave.client.transactions.prepare(
