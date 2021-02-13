@@ -29,15 +29,14 @@ class DriveShareCubit extends Cubit<DriveShareState> {
     // Elsewhere, link to app.ardrive.io.
     final linkOrigin = kIsWeb ? Uri.base.origin : 'https://app.ardrive.io';
     final driveName = drive.name.replaceAll(' ', '+').replaceAll('.', '');
-    final driveShareLink = Uri(
-      path: '$linkOrigin/#/drives/${drive.id}',
-      queryParameters: {'name': driveName},
-    );
+
+    final driveShareLink = '$linkOrigin/#/drives/${drive.id}?name=' +
+        Uri.encodeQueryComponent(driveName);
 
     emit(
       DriveShareLoadSuccess(
         driveName: drive.name,
-        driveShareLink: driveShareLink,
+        driveShareLink: Uri.parse(driveShareLink),
       ),
     );
   }
