@@ -10,19 +10,36 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
 
-Future<void> promptToAttachDrive(
-        {@required BuildContext context, String initialDriveId}) =>
+Future<void> attachDrive(
+        {@required BuildContext context,
+        String initialDriveId,
+        String driveName}) =>
     showDialog(
       context: context,
       builder: (BuildContext context) => BlocProvider<DriveAttachCubit>(
         create: (context) => DriveAttachCubit(
           initialDriveId: initialDriveId,
+          driveName: driveName,
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
           syncBloc: context.read<SyncCubit>(),
           drivesBloc: context.read<DrivesCubit>(),
         ),
-        child: DriveAttachForm(),
+        child: BlocListener<DriveAttachCubit, DriveAttachState>(
+          listener: (context, state) {
+            if (state is DriveAttachFailure) {
+              // Close the progress dialog if the drive attachment fails.
+              Navigator.pop(context);
+            } else if (state is DriveAttachSuccess) {
+              Navigator.pop(context);
+            }
+          },
+          child: driveName != null
+              ? ProgressDialog(
+                  title: 'ATTACHING DRIVE...',
+                )
+              : DriveAttachForm(),
+        ),
       ),
     );
 
@@ -30,18 +47,7 @@ Future<void> promptToAttachDrive(
 class DriveAttachForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
-      BlocConsumer<DriveAttachCubit, DriveAttachState>(
-        listener: (context, state) {
-          if (state is DriveAttachInProgress) {
-            showProgressDialog(context, 'ATTACHING DRIVE...');
-          } else if (state is DriveAttachFailure) {
-            // Close the progress dialog if the drive attachment fails.
-            Navigator.pop(context);
-          } else if (state is DriveAttachSuccess) {
-            Navigator.pop(context);
-            Navigator.pop(context);
-          }
-        },
+      BlocBuilder<DriveAttachCubit, DriveAttachState>(
         builder: (context, state) => AppDialog(
           title: 'ATTACH DRIVE',
           content: SizedBox(
