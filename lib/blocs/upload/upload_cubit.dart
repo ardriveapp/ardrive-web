@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
@@ -121,7 +120,7 @@ class UploadCubit extends Cubit<UploadState> {
             test: (err) => err is UnimplementedError);
 
     final minimumPstTip = BigInt.from(10000000);
-    pstFee = max(pstFee, minimumPstTip);
+    pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
 
     if (pstFee > BigInt.zero) {
       feeTx = await _arweave.client.transactions.prepare(
