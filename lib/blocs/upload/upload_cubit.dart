@@ -112,9 +112,14 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
 
-    for (final file in files) {
-      final uploadHandle = await prepareFileUpload(file);
-      _fileUploadHandles[uploadHandle.entity.id] = uploadHandle;
+    try {
+      for (final file in files) {
+        final uploadHandle = await prepareFileUpload(file);
+        _fileUploadHandles[uploadHandle.entity.id] = uploadHandle;
+      }
+    } catch (err) {
+      addError(err);
+      return;
     }
 
     final uploadCost = _fileUploadHandles.values
@@ -282,5 +287,11 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     return uploadHandle;
+  }
+
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    emit(UploadFailure());
+    super.onError(error, stackTrace);
   }
 }
