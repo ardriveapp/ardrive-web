@@ -83,6 +83,31 @@ class UploadForm extends StatelessWidget {
                 ),
               ],
             );
+          } else if (state is UploadFileTooLarge) {
+            return AppDialog(
+              title: '${state.tooLargeFileNames.length} file(s) too large',
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        'ArDrive on web currently only supports file uploads smaller than 1.25 GB.'),
+                    const SizedBox(height: 16),
+                    Text('Too large for upload:'),
+                    const SizedBox(height: 8),
+                    Text(state.tooLargeFileNames.join(', ')),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: Text('OK'),
+                  onPressed: () => Navigator.of(context).pop(false),
+                ),
+              ],
+            );
           } else if (state is UploadPreparationInProgress) {
             return AppDialog(
               title: 'Preparing upload...',

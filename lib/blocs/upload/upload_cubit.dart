@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
@@ -100,6 +101,16 @@ class UploadCubit extends Cubit<UploadState> {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
     emit(UploadPreparationInProgress());
+
+    final tooLargeFiles = [
+      for (final file in files)
+        if (await file.length() > 1.25 * math.pow(10, 9)) file.name
+    ];
+
+    if (tooLargeFiles.isNotEmpty) {
+      emit(UploadFileTooLarge(tooLargeFileNames: tooLargeFiles));
+      return;
+    }
 
     for (final file in files) {
       final uploadHandle = await prepareFileUpload(file);
