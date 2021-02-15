@@ -1,4 +1,5 @@
 import '../tables/drives.moor';
+import '../tables/drive_revisions.moor';
 import '../tables/folder_entries.moor';
 import '../tables/folder_revisions.moor';
 import '../tables/file_entries.moor';
@@ -9,6 +10,12 @@ allDrives ($order = ''):
     SELECT * FROM drives
     ORDER BY $order;
 driveById: SELECT * FROM drives WHERE id = :driveId;
+
+latestDriveRevisionsByDriveIdWithTransactions AS DriveRevisionWithTransaction:
+    SELECT rev.*, metadataTx.** FROM drive_revisions rev
+    INNER JOIN network_transactions metadataTx ON metadataTx.id = rev.metadataTxId
+    WHERE driveId = :driveId
+    ORDER BY rev.dateCreated DESC;
 
 folderById:
     SELECT * FROM folder_entries
