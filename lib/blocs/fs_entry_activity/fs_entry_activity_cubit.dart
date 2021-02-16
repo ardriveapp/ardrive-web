@@ -39,6 +39,14 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
           .listen((r) => emit(
               FsEntryActivitySuccess<FileRevisionWithTransactions>(
                   revisions: r)));
+    } else if (driveId != null) {
+      _entrySubscription = _driveDao
+          .latestDriveRevisionsByDriveIdWithTransactions(driveId: driveId)
+          .watch()
+          .listen(
+            (r) => emit(FsEntryActivitySuccess<DriveRevisionWithTransaction>(
+                revisions: r)),
+          );
     }
   }
 

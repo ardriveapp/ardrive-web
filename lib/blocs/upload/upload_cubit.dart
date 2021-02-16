@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
@@ -101,16 +102,31 @@ class UploadCubit extends Cubit<UploadState> {
 
     emit(UploadPreparationInProgress());
 
-    for (final file in files) {
-      final uploadHandle = await prepareFileUpload(file);
-      _fileUploadHandles[uploadHandle.entity.id] = uploadHandle;
+    final tooLargeFiles = [
+      for (final file in files)
+        if (await file.length() > 1.25 * math.pow(10, 9)) file.name
+    ];
+
+    if (tooLargeFiles.isNotEmpty) {
+      emit(UploadFileTooLarge(tooLargeFileNames: tooLargeFiles));
+      return;
+    }
+
+    try {
+      for (final file in files) {
+        final uploadHandle = await prepareFileUpload(file);
+        _fileUploadHandles[uploadHandle.entity.id] = uploadHandle;
+      }
+    } catch (err) {
+      addError(err);
+      return;
     }
 
     final uploadCost = _fileUploadHandles.values
         .map((f) => f.cost)
         .reduce((total, cost) => total + cost);
 
-    final pstFee = await _pst
+    var pstFee = await _pst
         .getPstFeePercentage()
         .then((feePercentage) =>
             // Workaround [BigInt] percentage division problems
@@ -118,6 +134,9 @@ class UploadCubit extends Cubit<UploadState> {
             uploadCost * BigInt.from(feePercentage * 100) ~/ BigInt.from(100))
         .catchError((_) => BigInt.zero,
             test: (err) => err is UnimplementedError);
+
+    final minimumPstTip = BigInt.from(10000000);
+    pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
 
     if (pstFee > BigInt.zero) {
       feeTx = await _arweave.client.transactions.prepare(
@@ -271,5 +290,11 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     return uploadHandle;
+  }
+
+  @override
+  void onError(Object error, StackTrace stackTrace) {
+    emit(UploadFailure());
+    super.onError(error, stackTrace);
   }
 }
