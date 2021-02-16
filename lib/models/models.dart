@@ -1,6 +1,7 @@
 export 'daos/daos.dart';
 export 'database/database.dart';
 export 'drive.dart';
+export 'drive_revision.dart';
 export 'enums.dart';
 export 'file_entry.dart';
 export 'file_revision.dart';
