@@ -11,14 +11,17 @@ extension DriveRevisionWithTransactionExtensions
 extension DriveRevisionCompanionExtensions on DriveRevisionsCompanion {
   /// Converts the revision to an instance of [DriveEntriesCompanion].
   ///
-  /// This instance will lack a proper path and `dateCreated`.
+  /// This instance will not overwrite the encryption keys on private drives.
   DrivesCompanion toEntryCompanion() => DrivesCompanion.insert(
-      id: driveId.value,
-      rootFolderId: rootFolderId.value,
-      ownerAddress: ownerAddress.value,
-      name: name.value,
-      lastUpdated: dateCreated,
-      privacy: privacy.value);
+        id: driveId.value,
+        rootFolderId: rootFolderId.value,
+        ownerAddress: ownerAddress.value,
+        name: name.value,
+        lastUpdated: dateCreated,
+        privacy: privacy.value,
+        encryptedKey: null,
+        keyEncryptionIv: null,
+      );
 
   /// Returns a [NetworkTransactionsCompanion] representing the metadata transaction
   /// of this entity.

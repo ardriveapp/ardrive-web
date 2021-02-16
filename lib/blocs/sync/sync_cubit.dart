@@ -52,6 +52,11 @@ class SyncCubit extends Cubit<SyncState> {
 
       // Only sync in drives owned by the user if they're logged in.
       if (profile is ProfileLoggedIn) {
+        // This syncs in the latest info on drives owned by the user and will be overwritten
+        // below when the full sync process is ran.
+        //
+        // It also adds the encryption keys onto the drive models which isn't touched by the
+        // later system.
         final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
             profile.wallet, profile.password);
 
@@ -102,16 +107,24 @@ class SyncCubit extends Cubit<SyncState> {
         .expand((entities) => entities);
 
     await _db.transaction(() async {
-      final folderRevisions = await _addNewFolderEntityRevisions(
+      final latestDriveRevision = await _addNewDriveEntityRevisions(
+          newEntities.whereType<DriveEntity>());
+      final latestFolderRevisions = await _addNewFolderEntityRevisions(
           driveId, newEntities.whereType<FolderEntity>());
-      final fileRevisions = await _addNewFileEntityRevisions(
+      final latestFileRevisions = await _addNewFileEntityRevisions(
           driveId, newEntities.whereType<FileEntity>());
 
+      final updatedDrive =
+          await _computeRefreshedDriveFromRevision(latestDriveRevision);
       final updatedFoldersById =
           await _computeRefreshedFolderEntriesFromRevisions(
-              driveId, folderRevisions);
+              driveId, latestFolderRevisions);
       final updatedFilesById = await _computeRefreshedFileEntriesFromRevisions(
-          driveId, fileRevisions);
+          driveId, latestFileRevisions);
+
+      // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
+      await (_db.update(_db.drives)..whereSamePrimaryKey(updatedDrive))
+          .write(updatedDrive);
 
       // Update the folder and file entries before generating their new paths.
       await _db.batch((b) {
@@ -128,8 +141,51 @@ class SyncCubit extends Cubit<SyncState> {
     });
   }
 
-  /// Computes the new folder revisions from the provided entities, inserts them into the database
-  /// , and returns only the latest revisions.
+  /// Computes the new drive revisions from the provided entities, inserts them into the database,
+  /// and returns the latest revision.
+  Future<DriveRevisionsCompanion> _addNewDriveEntityRevisions(
+      Iterable<DriveEntity> newEntities) async {
+    DriveRevisionsCompanion latestRevision;
+
+    final newRevisions = <DriveRevisionsCompanion>[];
+    for (final entity in newEntities) {
+      latestRevision ??= await _driveDao
+          .latestDriveRevisionByDriveId(driveId: entity.id)
+          .getSingleOrNull()
+          .then((r) => r?.toCompanion(true));
+
+      final revisionPerformedAction =
+          entity.getPerformedRevisionAction(latestRevision);
+      final revision =
+          entity.toRevisionCompanion(performedAction: revisionPerformedAction);
+
+      if (revision.action.value == null) {
+        continue;
+      }
+
+      newRevisions.add(revision);
+      latestRevision = revision;
+    }
+
+    await _db.batch((b) {
+      b.insertAllOnConflictUpdate(_db.driveRevisions, newRevisions);
+      b.insertAllOnConflictUpdate(
+          _db.networkTransactions,
+          newRevisions
+              .map(
+                (rev) => NetworkTransactionsCompanion.insert(
+                  id: rev.metadataTxId.value,
+                  status: Value(TransactionStatus.confirmed),
+                ),
+              )
+              .toList());
+    });
+
+    return latestRevision;
+  }
+
+  /// Computes the new folder revisions from the provided entities, inserts them into the database,
+  /// and returns only the latest revisions.
   Future<List<FolderRevisionsCompanion>> _addNewFolderEntityRevisions(
       String driveId, Iterable<FolderEntity> newEntities) async {
     // The latest folder revisions, keyed by their entity ids.
@@ -227,6 +283,18 @@ class SyncCubit extends Cubit<SyncState> {
     });
 
     return latestRevisions.values.toList();
+  }
+
+  /// Computes the refreshed drive entries from the provided revisions and returns them as a map keyed by their ids.
+  Future<DrivesCompanion> _computeRefreshedDriveFromRevision(
+      DriveRevisionsCompanion latestRevision) async {
+    final oldestRevision = await _driveDao
+        .oldestDriveRevisionByDriveId(driveId: latestRevision.driveId.value)
+        .getSingleOrNull();
+
+    return latestRevision.toEntryCompanion().copyWith(
+        dateCreated:
+            Value(oldestRevision?.dateCreated ?? latestRevision.dateCreated));
   }
 
   /// Computes the refreshed folder entries from the provided revisions and returns them as a map keyed by their ids.
