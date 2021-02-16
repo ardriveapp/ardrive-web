@@ -140,7 +140,6 @@ class UploadCubit extends Cubit<UploadState> {
     final totalCost = uploadCost + pstFee;
 
     final arUploadCost = winstonToAr(totalCost);
-    final pstCost = winstonToAr(pstFee);
     final usdUploadCost = await _arweave
         .getArUsdConversionRate()
         .then((conversionRate) => double.parse(arUploadCost) * conversionRate)
