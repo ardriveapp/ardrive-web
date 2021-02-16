@@ -40,6 +40,14 @@ class DriveDetailActionRow extends StatelessWidget {
                       tooltip: 'Preview',
                     ),
                   ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: () {
+                    promptToRenameDrive(context,
+                        driveId: state.currentDrive.id);
+                  },
+                  tooltip: 'Rename Drive',
+                ),
               },
               if (state.hasWritePermissions) ...{
                 IconButton(
