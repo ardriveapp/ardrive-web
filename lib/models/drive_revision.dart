@@ -19,8 +19,6 @@ extension DriveRevisionCompanionExtensions on DriveRevisionsCompanion {
         name: name.value,
         lastUpdated: dateCreated,
         privacy: privacy.value,
-        encryptedKey: null,
-        keyEncryptionIv: null,
       );
 
   /// Returns a [NetworkTransactionsCompanion] representing the metadata transaction
@@ -41,6 +39,7 @@ extension DriveEntityExtensions on DriveEntity {
         ownerAddress: ownerAddress,
         rootFolderId: rootFolderId,
         name: name,
+        privacy: privacy,
         metadataTxId: txId,
         dateCreated: Value(createdAt),
         action: performedAction,
