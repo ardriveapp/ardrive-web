@@ -136,139 +136,125 @@ class FsEntrySideSheet extends StatelessWidget {
   Widget _buildActivityTab(BuildContext context, FsEntryInfoSuccess state) =>
       Padding(
         padding: const EdgeInsets.only(top: 16),
-        child: BlocProvider(
-          create: (context) => FsEntryActivityCubit(
-            driveId: driveId,
-            folderId: folderId,
-            fileId: fileId,
-            driveDao: context.read<DriveDao>(),
-          ),
-          child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
-            builder: (context, state) {
-              if (state is FsEntryActivitySuccess) {
-                if (state.revisions.isNotEmpty) {
-                  return ListView.separated(
-                    itemBuilder: (BuildContext context, int index) {
-                      final revision = state.revisions[index];
+        child: !_isShowingDriveDetails
+            ? BlocProvider(
+                create: (context) => FsEntryActivityCubit(
+                  driveId: driveId,
+                  folderId: folderId,
+                  fileId: fileId,
+                  driveDao: context.read<DriveDao>(),
+                ),
+                child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
+                  builder: (context, state) {
+                    if (state is FsEntryActivitySuccess) {
+                      if (state.revisions.isNotEmpty) {
+                        return ListView.separated(
+                          itemBuilder: (BuildContext context, int index) {
+                            final revision = state.revisions[index];
 
-                      Widget content;
-                      Widget dateCreatedSubtitle;
-                      String revisionConfirmationStatus;
+                            Widget content;
+                            Widget dateCreatedSubtitle;
+                            String revisionConfirmationStatus;
 
-                      if (revision is DriveRevisionWithTransaction) {
-                        switch (revision.action) {
-                          case RevisionAction.create:
-                            content = Text(
-                                'This drive was created with the name ${revision.name}.');
-                            break;
-                          case RevisionAction.rename:
-                            content = Text(
-                                'This drive was renamed to ${revision.name}.');
-                            break;
-                          default:
-                            content = Text('This drive was modified');
-                        }
+                            if (revision is FolderRevisionWithTransaction) {
+                              switch (revision.action) {
+                                case RevisionAction.create:
+                                  content = Text(
+                                      'This folder was created with the name ${revision.name}.');
+                                  break;
+                                case RevisionAction.rename:
+                                  content = Text(
+                                      'This folder was renamed to ${revision.name}.');
+                                  break;
+                                case RevisionAction.move:
+                                  content = Text('This folder was moved.');
+                                  break;
+                                default:
+                                  content = Text('This folder was modified');
+                              }
 
-                        dateCreatedSubtitle = Text(
-                            yMMdDateFormatter.format(revision.dateCreated));
+                              dateCreatedSubtitle = Text(yMMdDateFormatter
+                                  .format(revision.dateCreated));
 
-                        revisionConfirmationStatus =
-                            revision.confirmationStatus;
-                      } else if (revision is FolderRevisionWithTransaction) {
-                        switch (revision.action) {
-                          case RevisionAction.create:
-                            content = Text(
-                                'This folder was created with the name ${revision.name}.');
-                            break;
-                          case RevisionAction.rename:
-                            content = Text(
-                                'This folder was renamed to ${revision.name}.');
-                            break;
-                          case RevisionAction.move:
-                            content = Text('This folder was moved.');
-                            break;
-                          default:
-                            content = Text('This folder was modified');
-                        }
+                              revisionConfirmationStatus =
+                                  revision.confirmationStatus;
+                            } else if (revision
+                                is FileRevisionWithTransactions) {
+                              switch (revision.action) {
+                                case RevisionAction.create:
+                                  content = Text(
+                                      'This file was created with the name ${revision.name}.');
+                                  break;
+                                case RevisionAction.rename:
+                                  content = Text(
+                                      'This file was renamed to ${revision.name}.');
+                                  break;
+                                case RevisionAction.move:
+                                  content = Text('This file was moved.');
+                                  break;
+                                case RevisionAction.uploadNewVersion:
+                                  content = Text(
+                                      'A new version of this file was uploaded.');
+                                  break;
+                                default:
+                                  content = Text('This file was modified');
+                              }
 
-                        dateCreatedSubtitle = Text(
-                            yMMdDateFormatter.format(revision.dateCreated));
+                              dateCreatedSubtitle = Text(yMMdDateFormatter
+                                  .format(revision.dateCreated));
 
-                        revisionConfirmationStatus =
-                            revision.confirmationStatus;
-                      } else if (revision is FileRevisionWithTransactions) {
-                        switch (revision.action) {
-                          case RevisionAction.create:
-                            content = Text(
-                                'This file was created with the name ${revision.name}.');
-                            break;
-                          case RevisionAction.rename:
-                            content = Text(
-                                'This file was renamed to ${revision.name}.');
-                            break;
-                          case RevisionAction.move:
-                            content = Text('This file was moved.');
-                            break;
-                          case RevisionAction.uploadNewVersion:
-                            content = Text(
-                                'A new version of this file was uploaded.');
-                            break;
-                          default:
-                            content = Text('This file was modified');
-                        }
+                              revisionConfirmationStatus =
+                                  fileStatusFromTransactions(
+                                      revision.metadataTx, revision.dataTx);
+                            }
 
-                        dateCreatedSubtitle = Text(
-                            yMMdDateFormatter.format(revision.dateCreated));
+                            Widget statusIcon;
+                            if (revisionConfirmationStatus ==
+                                TransactionStatus.pending) {
+                              statusIcon = Tooltip(
+                                message: 'Pending',
+                                child: const Icon(Icons.pending),
+                              );
+                            } else if (revisionConfirmationStatus ==
+                                TransactionStatus.confirmed) {
+                              statusIcon = Tooltip(
+                                message: 'Confirmed',
+                                child: const Icon(Icons.check),
+                              );
+                            } else if (revisionConfirmationStatus ==
+                                TransactionStatus.failed) {
+                              statusIcon = Tooltip(
+                                message: 'Failed',
+                                child: const Icon(Icons.error_outline),
+                              );
+                            }
 
-                        revisionConfirmationStatus = fileStatusFromTransactions(
-                            revision.metadataTx, revision.dataTx);
+                            return ListTile(
+                              title: DefaultTextStyle(
+                                style: Theme.of(context).textTheme.subtitle2,
+                                child: content,
+                              ),
+                              subtitle: DefaultTextStyle(
+                                style: Theme.of(context).textTheme.caption,
+                                child: dateCreatedSubtitle,
+                              ),
+                              trailing: statusIcon,
+                            );
+                          },
+                          separatorBuilder: (context, index) => Divider(),
+                          itemCount: state.revisions.length,
+                        );
+                      } else {
+                        return Center(
+                            child: Text('This item is being processed...'));
                       }
-
-                      Widget statusIcon;
-                      if (revisionConfirmationStatus ==
-                          TransactionStatus.pending) {
-                        statusIcon = Tooltip(
-                          message: 'Pending',
-                          child: const Icon(Icons.pending),
-                        );
-                      } else if (revisionConfirmationStatus ==
-                          TransactionStatus.confirmed) {
-                        statusIcon = Tooltip(
-                          message: 'Confirmed',
-                          child: const Icon(Icons.check),
-                        );
-                      } else if (revisionConfirmationStatus ==
-                          TransactionStatus.failed) {
-                        statusIcon = Tooltip(
-                          message: 'Failed',
-                          child: const Icon(Icons.error_outline),
-                        );
-                      }
-
-                      return ListTile(
-                        title: DefaultTextStyle(
-                          style: Theme.of(context).textTheme.subtitle2,
-                          child: content,
-                        ),
-                        subtitle: DefaultTextStyle(
-                          style: Theme.of(context).textTheme.caption,
-                          child: dateCreatedSubtitle,
-                        ),
-                        trailing: statusIcon,
-                      );
-                    },
-                    separatorBuilder: (context, index) => Divider(),
-                    itemCount: state.revisions.length,
-                  );
-                } else {
-                  return Center(child: Text('This item is being processed...'));
-                }
-              } else {
-                return const Center(child: CircularProgressIndicator());
-              }
-            },
-          ),
-        ),
+                    } else {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                  },
+                ),
+              )
+            : Center(child: Text('We\'re still working on this!')),
       );
 }
 
