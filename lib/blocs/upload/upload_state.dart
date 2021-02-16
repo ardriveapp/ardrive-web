@@ -19,6 +19,15 @@ class UploadFileConflict extends UploadState {
   List<Object> get props => [conflictingFileNames];
 }
 
+class UploadFileTooLarge extends UploadState {
+  final List<String> tooLargeFileNames;
+
+  UploadFileTooLarge({@required this.tooLargeFileNames});
+
+  @override
+  List<Object> get props => [tooLargeFileNames];
+}
+
 /// [UploadReady] means that the upload is ready to be performed and is awaiting confirmation from the user.
 class UploadReady extends UploadState {
   /// The cost to upload the data, in AR.
