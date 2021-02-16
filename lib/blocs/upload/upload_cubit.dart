@@ -151,7 +151,6 @@ class UploadCubit extends Cubit<UploadState> {
         arUploadCost: arUploadCost,
         usdUploadCost: usdUploadCost,
         pstFee: pstFee,
-        arPstCost: pstCost,
         totalCost: totalCost,
         uploadIsPublic: _targetDrive.isPublic,
         sufficientArBalance: profile.walletBalance >= totalCost,
