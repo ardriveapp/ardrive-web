@@ -73,8 +73,17 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
           final anonymouslyShowDriveDetail =
               canAnonymouslyShowDriveDetail(state);
-
-          if (signingIn) {
+          if (isViewingSharedFile) {
+            shell = BlocProvider<SharedFileCubit>(
+              key: ValueKey(sharedFileId),
+              create: (_) => SharedFileCubit(
+                fileId: sharedFileId,
+                fileKey: sharedFileKey,
+                arweave: context.read<ArweaveService>(),
+              ),
+              child: SharedFilePage(),
+            );
+          } else if (signingIn) {
             shell = ProfileAuthPage();
           } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
             shell = BlocConsumer<DrivesCubit, DrivesState>(
