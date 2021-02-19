@@ -1,12 +1,11 @@
-import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/blocs/sync/sync_cubit.dart';
-import 'package:ardrive/l11n/l11n.dart';
+import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/misc/misc.dart';
-import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
-import 'package:ardrive/models/enums.dart';
-import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
@@ -84,7 +83,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
 
         driveEntity.txId = driveTx.id;
 
-        await _driveDao.insertFolderRevision(driveEntity.toRevisionCompanion(
+        await _driveDao.insertDriveRevision(driveEntity.toRevisionCompanion(
             performedAction: RevisionAction.rename));
       });
 
