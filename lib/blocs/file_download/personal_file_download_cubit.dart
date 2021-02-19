@@ -72,5 +72,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   void onError(Object error, StackTrace stackTrace) {
     emit(FileDownloadFailure());
     super.onError(error, stackTrace);
+
+    print('Failed to download personal file: $error $stackTrace');
   }
 }

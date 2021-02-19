@@ -293,5 +293,7 @@ class UploadCubit extends Cubit<UploadState> {
   void onError(Object error, StackTrace stackTrace) {
     emit(UploadFailure());
     super.onError(error, stackTrace);
+
+    print('Failed to upload file: $error $stackTrace');
   }
 }
