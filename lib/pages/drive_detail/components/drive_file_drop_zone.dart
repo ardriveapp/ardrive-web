@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/upload_form.dart';
@@ -21,29 +19,35 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
   var isHovering = false;
   @override
   Widget build(BuildContext context) {
-    final driveDetailBloc = context.watch<DriveDetailCubit>();
     return BlocBuilder<DriveDetailCubit, DriveDetailState>(
       builder: (context, state) {
         if (state is DriveDetailLoadSuccess) {
-          return IgnorePointer(
-            //ignoring: isHovering,
-            child: Stack(
-              children: [
-                if (isHovering) _builDropZoneOnHover(),
-                DropzoneView(
-                  onCreated: (ctrl) => controller = ctrl,
-                  operation: DragOperation.all,
-                  onDrop: (htmlFile) => _onDrop(
-                    htmlFile,
-                    driveId: state.currentDrive.id,
-                    folderId: state.currentFolder.folder.id,
-                    context: context,
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 128, horizontal: 128),
+            /* 
+            Added padding here so that the drop zone doesn't overlap with the
+            Link widget.
+            */
+            child: IgnorePointer(
+              //ignoring: isHovering,
+              child: Stack(
+                children: [
+                  if (isHovering) _buildDropZoneOnHover(),
+                  DropzoneView(
+                    onCreated: (ctrl) => controller = ctrl,
+                    operation: DragOperation.all,
+                    onDrop: (htmlFile) => _onDrop(
+                      htmlFile,
+                      driveId: state.currentDrive.id,
+                      folderId: state.currentFolder.folder.id,
+                      context: context,
+                    ),
+                    onHover: _onHover,
+                    onLeave: _onLeave,
+                    onError: (e) => _onLeave,
                   ),
-                  onHover: _onHover,
-                  onLeave: _onLeave,
-                  onError: (e) => _onLeave,
-                ),
-              ],
+                ],
+              ),
             ),
           );
         }
@@ -61,7 +65,6 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
   }) async {
     _onLeave();
 
-    final fileData = await controller.getFileData(htmlFile);
     final fileName = await controller.getFilename(htmlFile);
     final fileMIME = await controller.getFileMIME(htmlFile);
     final fileLength = await controller.getFileSize(htmlFile);
@@ -95,30 +98,36 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
 
   void _onHover() => setState(() => isHovering = true);
   void _onLeave() => setState(() => isHovering = false);
-  Widget _builDropZoneOnHover() => SizedBox.expand(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
-          child: Center(
-            child: Container(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.upload_file,
-                    size: 64,
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  SizedBox(
-                    width: 16,
-                  ),
-                  Text(
-                    'Upload File',
-                    style: Theme.of(context).textTheme.headline2,
-                  ),
-                ],
-              ),
+  Widget _buildDropZoneOnHover() => Center(
+        child: Container(
+          margin: EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
+          width: MediaQuery.of(context).size.width / 2,
+          height: MediaQuery.of(context).size.width / 4,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).primaryColor,
             ),
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.upload_file,
+                size: 64,
+                color: Theme.of(context).primaryColor,
+              ),
+              SizedBox(
+                width: 16,
+              ),
+              Text(
+                'Upload File',
+                style: Theme.of(context).textTheme.headline2,
+              ),
+            ],
           ),
         ),
       );
