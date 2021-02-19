@@ -1,4 +1,5 @@
 import 'drives.moor';
+import 'drive_revisions.moor';
 import 'file_entries.moor';
 import 'file_revisions.moor';
 import 'folder_entries.moor';

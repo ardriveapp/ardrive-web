@@ -14,6 +14,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   bool signingIn = false;
 
   String driveId;
+  String driveName;
   String driveFolderId;
 
   String sharedFileId;
@@ -29,6 +30,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   AppRoutePath get currentConfiguration => AppRoutePath(
         signingIn: signingIn,
         driveId: driveId,
+        driveName: driveName,
         driveFolderId: driveFolderId,
         sharedFileId: sharedFileId,
         sharedFileKey: sharedFileKey,
@@ -71,8 +73,17 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
           final anonymouslyShowDriveDetail =
               canAnonymouslyShowDriveDetail(state);
-
-          if (signingIn) {
+          if (isViewingSharedFile) {
+            shell = BlocProvider<SharedFileCubit>(
+              key: ValueKey(sharedFileId),
+              create: (_) => SharedFileCubit(
+                fileId: sharedFileId,
+                fileKey: sharedFileKey,
+                arweave: context.read<ArweaveService>(),
+              ),
+              child: SharedFilePage(),
+            );
+          } else if (signingIn) {
             shell = ProfileAuthPage();
           } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
             shell = BlocConsumer<DrivesCubit, DrivesState>(
@@ -118,8 +129,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                           return;
                         }
 
-                        promptToAttachDrive(
-                            context: context, initialDriveId: driveId);
+                        attachDrive(
+                          context: context,
+                          initialDriveId: driveId,
+                          driveName: driveName,
+                        );
                       }
                     },
                     child: FloatingHelpButtonPortalEntry(
@@ -198,6 +212,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   Future<void> setNewRoutePath(AppRoutePath path) async {
     signingIn = path.signingIn;
     driveId = path.driveId;
+    driveName = path.driveName;
     driveFolderId = path.driveFolderId;
     sharedFileId = path.sharedFileId;
     sharedFileKey = path.sharedFileKey;

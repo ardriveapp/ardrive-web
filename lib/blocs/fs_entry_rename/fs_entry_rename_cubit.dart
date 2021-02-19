@@ -200,8 +200,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   void onError(Object error, StackTrace stackTrace) {
     if (_isRenamingFolder) {
       emit(FolderEntryRenameFailure());
+      print('Failed to rename folder: $error $stackTrace');
     } else {
       emit(FileEntryRenameFailure());
+      print('Failed to rename file: $error $stackTrace');
     }
 
     super.onError(error, stackTrace);

@@ -313,6 +313,13 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       (update(networkTransactions)..whereSamePrimaryKey(transaction))
           .write(transaction);
 
+  Future<void> insertDriveRevision(DriveRevisionsCompanion revision) async {
+    await db.transaction(() async {
+      await writeTransaction(revision.getTransactionCompanion());
+      await into(driveRevisions).insert(revision);
+    });
+  }
+
   Future<void> insertFolderRevision(FolderRevisionsCompanion revision) async {
     await db.transaction(() async {
       await writeTransaction(revision.getTransactionCompanion());

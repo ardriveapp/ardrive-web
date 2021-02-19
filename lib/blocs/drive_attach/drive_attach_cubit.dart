@@ -22,6 +22,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
   DriveAttachCubit({
     String initialDriveId,
+    String driveName,
     @required ArweaveService arweave,
     @required DriveDao driveDao,
     @required SyncCubit syncBloc,
@@ -55,6 +56,11 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         form.control('driveId').updateValue(initialDriveId);
       }
     });
+    if (driveName != null && driveName.isNotEmpty) {
+      form.control('driveId').value = initialDriveId;
+      form.control('name').value = driveName;
+      submit();
+    }
   }
 
   void submit() async {
@@ -113,5 +119,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   void onError(Object error, StackTrace stackTrace) {
     emit(DriveAttachFailure());
     super.onError(error, stackTrace);
+
+    print('Failed to attach drive: $error $stackTrace');
   }
 }
