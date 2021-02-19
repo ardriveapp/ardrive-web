@@ -151,8 +151,10 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
   void onError(Object error, StackTrace stackTrace) {
     if (_isMovingFolder) {
       emit(FolderEntryMoveFailure());
+      print('Failed to move folder: $error $stackTrace');
     } else {
       emit(FileEntryMoveFailure());
+      print('Failed to move file: $error $stackTrace');
     }
 
     super.onError(error, stackTrace);

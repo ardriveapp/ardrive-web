@@ -481,6 +481,8 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncFailure());
     super.onError(error, stackTrace);
     emit(SyncIdle());
+
+    print('Failed to sync: $error $stackTrace');
   }
 
   @override
