@@ -19,17 +19,20 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
   var isHovering = false;
   @override
   Widget build(BuildContext context) {
-    final driveDetailBloc = context.watch<DriveDetailCubit>();
     return BlocBuilder<DriveDetailCubit, DriveDetailState>(
       builder: (context, state) {
         if (state is DriveDetailLoadSuccess) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 128, horizontal: 128),
+            /* 
+            Added padding here so that the drop zone doesn't overlap with the
+            Link widget.
+            */
             child: IgnorePointer(
               //ignoring: isHovering,
               child: Stack(
                 children: [
-                  if (isHovering) _builDropZoneOnHover(),
+                  if (isHovering) _buildDropZoneOnHover(),
                   DropzoneView(
                     onCreated: (ctrl) => controller = ctrl,
                     operation: DragOperation.all,
@@ -62,7 +65,6 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
   }) async {
     _onLeave();
 
-    final fileData = await controller.getFileData(htmlFile);
     final fileName = await controller.getFilename(htmlFile);
     final fileMIME = await controller.getFileMIME(htmlFile);
     final fileLength = await controller.getFileSize(htmlFile);
@@ -96,7 +98,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
 
   void _onHover() => setState(() => isHovering = true);
   void _onLeave() => setState(() => isHovering = false);
-  Widget _builDropZoneOnHover() => Center(
+  Widget _buildDropZoneOnHover() => Center(
         child: Container(
           margin: EdgeInsets.all(16),
           padding: EdgeInsets.all(16),
