@@ -9,7 +9,14 @@ class DriveDetailActionRow extends StatelessWidget {
       builder: (context, state) {
         if (state is DriveDetailLoadSuccess) {
           final fsActions = <Widget>[
-            // A folder/file is selected.
+            if (state.hasWritePermissions)
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () {
+                  promptToRenameDrive(context, driveId: state.currentDrive.id);
+                },
+                tooltip: 'Rename Drive',
+              ), // A folder/file is selected.
             if (state.selectedItemId != null) ...{
               if (!state.selectedItemIsFolder) ...{
                 IconButton(
@@ -74,13 +81,6 @@ class DriveDetailActionRow extends StatelessWidget {
                 ),
               },
               // Nothing is selected.
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () {
-                  promptToRenameDrive(context, driveId: state.currentDrive.id);
-                },
-                tooltip: 'Rename Drive',
-              ),
             } else ...{
               if (state.currentDrive.isPublic)
                 IconButton(

@@ -33,12 +33,9 @@ class DriveRenameForm extends StatelessWidget {
   Widget build(BuildContext context) =>
       BlocConsumer<DriveRenameCubit, DriveRenameState>(
         listener: (context, state) {
-          if (state is FolderEntryRenameInProgress) {
-            showProgressDialog(context, 'RENAMING FOLDER...');
-          } else if (state is FileEntryRenameInProgress) {
-            showProgressDialog(context, 'RENAMING FILE...');
-          } else if (state is FolderEntryRenameSuccess ||
-              state is FileEntryRenameSuccess) {
+          if (state is DriveRenameInProgress) {
+            showProgressDialog(context, 'RENAMING DRIVE...');
+          } else if (state is DriveRenameSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
           }
