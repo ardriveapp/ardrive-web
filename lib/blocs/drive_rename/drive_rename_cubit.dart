@@ -110,7 +110,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
 
     if (nameAlreadyExists) {
       control.markAsTouched();
-      return {AppValidationMessage.nameAlreadyPresent: true};
+      return {AppValidationMessage.driveNameAlreadyPresent: true};
     }
 
     return null;

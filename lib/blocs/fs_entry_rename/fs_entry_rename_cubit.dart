@@ -163,7 +163,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
     if (nameAlreadyExists) {
       control.markAsTouched();
-      return {AppValidationMessage.nameAlreadyPresent: true};
+      return {AppValidationMessage.fsEntryNameAlreadyPresent: true};
     }
 
     return null;
@@ -190,7 +190,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
     if (nameAlreadyExists) {
       control.markAsTouched();
-      return {AppValidationMessage.nameAlreadyPresent: true};
+      return {AppValidationMessage.fsEntryNameAlreadyPresent: true};
     }
 
     return null;
