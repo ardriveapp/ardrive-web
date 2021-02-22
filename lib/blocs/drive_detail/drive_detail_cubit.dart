@@ -137,9 +137,4 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _folderSubscription?.cancel();
     return super.close();
   }
-
-  @override
-  void onError(Object error, StackTrace stackTrace) {
-    super.onError(error, stackTrace);
-  }
 }
