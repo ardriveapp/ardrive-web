@@ -289,7 +289,7 @@ class SyncCubit extends Cubit<SyncState> {
   Future<DrivesCompanion> _computeRefreshedDriveFromRevision(
       DriveRevisionsCompanion latestRevision) async {
     final oldestRevision = await _driveDao
-        .oldestDriveRevisionByDriveId(driveId: latestRevision.driveId.value)
+        .oldestDriveRevisionByDriveId(driveId: latestRevision?.driveId?.value)
         .getSingleOrNull();
 
     return latestRevision.toEntryCompanion().copyWith(
@@ -478,7 +478,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(SyncFailure());
+    emit(SyncFailure(error: error, stackTrace: stackTrace));
     super.onError(error, stackTrace);
     emit(SyncIdle());
 

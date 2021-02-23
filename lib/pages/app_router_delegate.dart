@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/components/error_dialog.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
@@ -189,7 +190,19 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   if (state is SyncFailure) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Failed to sync drive contents.'),
+                        content: ListTile(
+                          title: Text(
+                            'Failed to sync drive contents.',
+                          ),
+                          trailing: TextButton(
+                            onPressed: () => showErrorDialog(
+                              context: context,
+                              error: state.error,
+                              stackTrace: state.stackTrace,
+                            ),
+                            child: Text('More Infor'),
+                          ),
+                        ),
                         action: SnackBarAction(
                           label: 'TRY AGAIN',
                           onPressed: () =>
