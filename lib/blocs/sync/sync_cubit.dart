@@ -105,7 +105,10 @@ class SyncCubit extends Cubit<SyncState> {
     final newEntities = entityHistory.blockHistory
         .map((b) => b.entities)
         .expand((entities) => entities);
-
+    if (newEntities == null || newEntities.isEmpty) {
+      emit(SyncEmpty());
+      return;
+    }
     await _db.transaction(() async {
       final latestDriveRevision = await _addNewDriveEntityRevisions(
           newEntities.whereType<DriveEntity>());
@@ -289,7 +292,7 @@ class SyncCubit extends Cubit<SyncState> {
   Future<DrivesCompanion> _computeRefreshedDriveFromRevision(
       DriveRevisionsCompanion latestRevision) async {
     final oldestRevision = await _driveDao
-        .oldestDriveRevisionByDriveId(driveId: latestRevision?.driveId?.value)
+        .oldestDriveRevisionByDriveId(driveId: latestRevision.driveId.value)
         .getSingleOrNull();
 
     return latestRevision.toEntryCompanion().copyWith(

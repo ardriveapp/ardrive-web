@@ -16,3 +16,5 @@ class SyncFailure extends SyncState {
 
   SyncFailure({this.error, this.stackTrace});
 }
+
+class SyncEmpty extends SyncState {}
