@@ -81,9 +81,11 @@ class ProfileAuthShell extends StatelessWidget {
         ),
       ),
       mobile: Material(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: _buildContent(),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: _buildContent(),
+          ),
         ),
       ),
     );
