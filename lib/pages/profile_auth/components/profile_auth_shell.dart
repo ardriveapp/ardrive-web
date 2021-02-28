@@ -1,6 +1,7 @@
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_parallax/flutter_parallax.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ProfileAuthShell extends StatelessWidget {
@@ -40,30 +41,38 @@ class ProfileAuthShell extends StatelessWidget {
             if (contentFooter != null) contentFooter,
           ],
         );
-    Widget _buildIllustration() => Stack(
-          fit: StackFit.expand,
-          children: [
-            Container(
-              color: kDarkSurfaceColor,
+    Widget _buildIllustration() {
+      final controller = PageController();
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          Container(
+            color: kDarkSurfaceColor,
+          ),
+          Parallax.outside(
+            child: Image.asset(
+              R.images.profile.permahillsBg,
+              fit: BoxFit.contain,
             ),
-            FittedBox(
-              fit: BoxFit.fitWidth,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(R.images.profile.permahillsBg),
-                  SizedBox(height: 128),
-                ],
-              ),
-            ),
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: illustration,
-              ),
-            ),
-          ],
-        );
+            controller: controller,
+          ),
+          PageView(
+            children: [
+              for (var i = 0; i < 2; i++)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: illustration,
+                  ),
+                ),
+            ],
+            controller: controller,
+            scrollDirection: Axis.horizontal,
+          ),
+        ],
+      );
+    }
+
     return ScreenTypeLayout(
       desktop: Material(
         child: Row(
