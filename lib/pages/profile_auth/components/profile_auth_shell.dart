@@ -6,16 +6,19 @@ import 'package:responsive_builder/responsive_builder.dart';
 
 class ProfileAuthShell extends StatelessWidget {
   final Widget illustration;
+  final PageController controller;
 
   final double contentWidthFactor;
   final Widget content;
   final Widget contentFooter;
 
-  ProfileAuthShell(
-      {this.illustration,
-      this.contentWidthFactor,
-      this.content,
-      this.contentFooter});
+  ProfileAuthShell({
+    this.illustration,
+    this.contentWidthFactor,
+    this.content,
+    this.contentFooter,
+    this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -41,37 +44,38 @@ class ProfileAuthShell extends StatelessWidget {
             if (contentFooter != null) contentFooter,
           ],
         );
-    Widget _buildIllustration() {
-      final controller = PageController();
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          Container(
-            color: kDarkSurfaceColor,
-          ),
-          Parallax.outside(
-            child: Image.asset(
-              R.images.profile.permahillsBg,
-              fit: BoxFit.contain,
+    Widget _buildIllustration() => Stack(
+          fit: StackFit.expand,
+          children: [
+            Container(
+              color: kDarkSurfaceColor,
             ),
-            controller: controller,
-          ),
-          PageView(
-            children: [
-              for (var i = 0; i < 2; i++)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: illustration,
+            controller != null
+                ? Parallax.outside(
+                    child: Image.asset(
+                      R.images.profile.permahillsBg,
+                      fit: BoxFit.contain,
+                    ),
+                    controller: controller,
+                  )
+                : FittedBox(
+                    fit: BoxFit.fitWidth,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(R.images.profile.permahillsBg),
+                        SizedBox(height: 128),
+                      ],
+                    ),
                   ),
-                ),
-            ],
-            controller: controller,
-            scrollDirection: Axis.horizontal,
-          ),
-        ],
-      );
-    }
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: illustration,
+              ),
+            ),
+          ],
+        );
 
     return ScreenTypeLayout(
       desktop: Material(
