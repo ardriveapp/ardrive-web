@@ -117,8 +117,9 @@ class SyncCubit extends Cubit<SyncState> {
       final latestFileRevisions = await _addNewFileEntityRevisions(
           driveId, newEntities.whereType<FileEntity>());
 
-      final updatedDrive =
-          await _computeRefreshedDriveFromRevision(latestDriveRevision);
+      final updatedDrive = latestDriveRevision != null
+          ? await _computeRefreshedDriveFromRevision(latestDriveRevision)
+          : null;
       final updatedFoldersById =
           await _computeRefreshedFolderEntriesFromRevisions(
               driveId, latestFolderRevisions);
@@ -126,9 +127,10 @@ class SyncCubit extends Cubit<SyncState> {
           driveId, latestFileRevisions);
 
       // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
-      await (_db.update(_db.drives)..whereSamePrimaryKey(updatedDrive))
-          .write(updatedDrive);
-
+      if (updatedDrive != null) {
+        await (_db.update(_db.drives)..whereSamePrimaryKey(updatedDrive))
+            .write(updatedDrive);
+      }
       // Update the folder and file entries before generating their new paths.
       await _db.batch((b) {
         b.insertAllOnConflictUpdate(
