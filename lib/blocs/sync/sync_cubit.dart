@@ -131,6 +131,7 @@ class SyncCubit extends Cubit<SyncState> {
         await (_db.update(_db.drives)..whereSamePrimaryKey(updatedDrive))
             .write(updatedDrive);
       }
+
       // Update the folder and file entries before generating their new paths.
       await _db.batch((b) {
         b.insertAllOnConflictUpdate(
@@ -144,6 +145,9 @@ class SyncCubit extends Cubit<SyncState> {
       await _driveDao.writeToDrive(DrivesCompanion(
           id: Value(drive.id), syncCursor: Value(entityHistory.cursor)));
     });
+    if (entityHistory.cursor != null) {
+      await _syncDrive(driveId);
+    }
   }
 
   /// Computes the new drive revisions from the provided entities, inserts them into the database,
