@@ -119,7 +119,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
 
     if (nameAlreadyExists) {
       control.markAsTouched();
-      return {AppValidationMessage.nameAlreadyPresent: true};
+      return {AppValidationMessage.fsEntryNameAlreadyPresent: true};
     }
 
     return null;
