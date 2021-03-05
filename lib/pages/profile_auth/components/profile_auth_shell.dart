@@ -1,20 +1,24 @@
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_parallax/flutter_parallax.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ProfileAuthShell extends StatelessWidget {
   final Widget illustration;
+  final PageController controller;
 
   final double contentWidthFactor;
   final Widget content;
   final Widget contentFooter;
 
-  ProfileAuthShell(
-      {this.illustration,
-      this.contentWidthFactor,
-      this.content,
-      this.contentFooter});
+  ProfileAuthShell({
+    this.illustration,
+    this.contentWidthFactor,
+    this.content,
+    this.contentFooter,
+    this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -46,16 +50,24 @@ class ProfileAuthShell extends StatelessWidget {
             Container(
               color: kDarkSurfaceColor,
             ),
-            FittedBox(
-              fit: BoxFit.fitWidth,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(R.images.profile.permahillsBg),
-                  SizedBox(height: 128),
-                ],
-              ),
-            ),
+            controller != null
+                ? Parallax.outside(
+                    child: Image.asset(
+                      R.images.profile.permahillsBg,
+                      fit: BoxFit.contain,
+                    ),
+                    controller: controller,
+                  )
+                : FittedBox(
+                    fit: BoxFit.fitWidth,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(R.images.profile.permahillsBg),
+                        SizedBox(height: 128),
+                      ],
+                    ),
+                  ),
             Center(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -64,6 +76,7 @@ class ProfileAuthShell extends StatelessWidget {
             ),
           ],
         );
+
     return ScreenTypeLayout(
       desktop: Material(
         child: Row(

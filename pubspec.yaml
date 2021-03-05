@@ -49,6 +49,7 @@ dependencies:
   uuid: ^2.2.0
   flutter_dropzone: ^1.0.0
   responsive_builder: ^0.3.0
+  flutter_parallax: ^0.1.2
 
 dev_dependencies:
   flutter_test:
