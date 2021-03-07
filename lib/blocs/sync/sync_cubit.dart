@@ -105,7 +105,10 @@ class SyncCubit extends Cubit<SyncState> {
     final newEntities = entityHistory.blockHistory
         .map((b) => b.entities)
         .expand((entities) => entities);
-
+    if (newEntities == null || newEntities.isEmpty) {
+      emit(SyncEmpty());
+      return;
+    }
     await _db.transaction(() async {
       final latestDriveRevision = await _addNewDriveEntityRevisions(
           newEntities.whereType<DriveEntity>());
@@ -114,8 +117,9 @@ class SyncCubit extends Cubit<SyncState> {
       final latestFileRevisions = await _addNewFileEntityRevisions(
           driveId, newEntities.whereType<FileEntity>());
 
-      final updatedDrive =
-          await _computeRefreshedDriveFromRevision(latestDriveRevision);
+      final updatedDrive = latestDriveRevision != null
+          ? await _computeRefreshedDriveFromRevision(latestDriveRevision)
+          : null;
       final updatedFoldersById =
           await _computeRefreshedFolderEntriesFromRevisions(
               driveId, latestFolderRevisions);
@@ -123,8 +127,10 @@ class SyncCubit extends Cubit<SyncState> {
           driveId, latestFileRevisions);
 
       // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
-      await (_db.update(_db.drives)..whereSamePrimaryKey(updatedDrive))
-          .write(updatedDrive);
+      if (updatedDrive != null) {
+        await (_db.update(_db.drives)..whereSamePrimaryKey(updatedDrive))
+            .write(updatedDrive);
+      }
 
       // Update the folder and file entries before generating their new paths.
       await _db.batch((b) {
@@ -139,6 +145,9 @@ class SyncCubit extends Cubit<SyncState> {
       await _driveDao.writeToDrive(DrivesCompanion(
           id: Value(drive.id), syncCursor: Value(entityHistory.cursor)));
     });
+    if (entityHistory.cursor != null) {
+      await _syncDrive(driveId);
+    }
   }
 
   /// Computes the new drive revisions from the provided entities, inserts them into the database,
@@ -478,7 +487,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(SyncFailure());
+    emit(SyncFailure(error: error, stackTrace: stackTrace));
     super.onError(error, stackTrace);
     emit(SyncIdle());
 
