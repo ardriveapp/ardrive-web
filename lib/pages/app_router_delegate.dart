@@ -189,7 +189,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   if (state is SyncFailure) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Failed to sync drive contents.'),
+                        content: Text(
+                          'Failed to sync drive contents.',
+                        ),
                         action: SnackBarAction(
                           label: 'TRY AGAIN',
                           onPressed: () =>

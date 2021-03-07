@@ -1,4 +1,5 @@
 import 'package:ardrive/misc/misc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_portal/flutter_portal.dart';
@@ -63,28 +64,50 @@ class _AppShellState extends State<AppShell> {
                   ),
                 ],
               );
-
+          Widget _buildPage(scaffold) => BlocBuilder<SyncCubit, SyncState>(
+                builder: (context, syncState) => syncState is SyncInProgress
+                    ? Stack(
+                        children: [
+                          AbsorbPointer(
+                            child: scaffold,
+                          ),
+                          SizedBox.expand(
+                            child: Container(
+                              color: Colors.black.withOpacity(0.5),
+                            ),
+                          ),
+                          ProgressDialog(
+                            title: 'Syncing, please wait',
+                          ),
+                        ],
+                      )
+                    : scaffold,
+              );
           return ScreenTypeLayout(
-            desktop: Scaffold(
-              appBar: _buildAppBar(),
-              body: Row(
-                children: [
-                  AppDrawer(),
-                  Expanded(
-                    child: widget.page,
-                  ),
-                ],
+            desktop: _buildPage(
+              Scaffold(
+                appBar: _buildAppBar(),
+                body: Row(
+                  children: [
+                    AppDrawer(),
+                    Expanded(
+                      child: widget.page,
+                    ),
+                  ],
+                ),
               ),
             ),
-            mobile: Scaffold(
-              appBar: _buildAppBar(),
-              drawer: AppDrawer(),
-              body: Row(
-                children: [
-                  Expanded(
-                    child: widget.page,
-                  ),
-                ],
+            mobile: _buildPage(
+              Scaffold(
+                appBar: _buildAppBar(),
+                drawer: AppDrawer(),
+                body: Row(
+                  children: [
+                    Expanded(
+                      child: widget.page,
+                    ),
+                  ],
+                ),
               ),
             ),
           );
