@@ -90,7 +90,12 @@ DataRow _buildFolderRow({
                 padding: const EdgeInsetsDirectional.only(end: 8.0),
                 child: const Icon(Icons.folder),
               ),
-              Text(folder.name),
+              SizedBox(
+                  width: 1024,
+                  child: Text(
+                    folder.name,
+                    overflow: TextOverflow.ellipsis,
+                  )),
             ],
           ),
         ),
