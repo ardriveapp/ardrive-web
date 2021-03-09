@@ -49,7 +49,7 @@ dependencies:
   uuid: ^2.2.0
   flutter_dropzone: ^1.0.0
   responsive_builder: ^0.3.0
-  package_info:
+  package_info_plus: 0.6.4
 
 dev_dependencies:
   flutter_test:

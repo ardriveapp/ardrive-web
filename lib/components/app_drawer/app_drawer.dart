@@ -2,21 +2,16 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:package_info/package_info.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../components.dart';
 import 'drive_list_tile.dart';
 
-class AppDrawer extends StatefulWidget {
+class AppDrawer extends StatelessWidget {
   const AppDrawer({
     Key key,
   }) : super(key: key);
 
-  @override
-  _AppDrawerState createState() => _AppDrawerState();
-}
-
-class _AppDrawerState extends State<AppDrawer> {
   @override
   Widget build(BuildContext context) => ListTileTheme(
         style: ListTileStyle.drawer,
@@ -102,12 +97,15 @@ class _AppDrawerState extends State<AppDrawer> {
                     builder: (BuildContext context,
                         AsyncSnapshot<PackageInfo> snapshot) {
                       if (snapshot.hasData) {
-                        return Text(
-                          'Version ${snapshot.data.version}+${snapshot.data.buildNumber}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .caption
-                              .copyWith(color: Colors.white),
+                        return Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            'Version ${snapshot.data.version}+${snapshot.data.buildNumber}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .caption
+                                .copyWith(color: Colors.grey),
+                          ),
                         );
                       } else {
                         return Container();
