@@ -176,10 +176,15 @@ Clients that want to provide users with a quick view of a single folder can simp
 
 ## Future Work
 
+### GraphQL
+
+GraphQL currently has a limit of 100 items returned per query.
+
+GraphQL is not optimized for ArDrive specific queries for drive, folder and file entity data.
+
 ### Multi-User Dynamic Permissioned Drives
 
 A drive can have a dynamic set of users that are able to write to it. This will take advantage of the entity timeline for filtering of malicious/invalid entities.
 
-This is achievable relatively easily for public drives but is much more complicated for private drives due to the need to share keys asynchronously. An implementation can draw inspiration from the Signal protocol on how to achieve this.
-
+ArweaveFS does not store folder or file paths along with entities as these paths will need to be
 [kdf]: https://en.wikipedia.org/wiki/Key_derivation_function
