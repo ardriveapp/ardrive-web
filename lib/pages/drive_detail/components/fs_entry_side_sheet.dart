@@ -48,7 +48,13 @@ class FsEntrySideSheet extends StatelessWidget {
                         Expanded(
                           child: TabBarView(
                             children: [
-                              _buildInfoTab(context, state),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _buildInfoTable(context, state),
+                                  _buildTxTable(context, state),
+                                ],
+                              ),
                               _buildActivityTab(context, state),
                             ],
                           ),
@@ -61,7 +67,7 @@ class FsEntrySideSheet extends StatelessWidget {
         ),
       );
 
-  Widget _buildInfoTab(BuildContext context, FsEntryInfoSuccess state) =>
+  Widget _buildInfoTable(BuildContext context, FsEntryInfoSuccess state) =>
       DataTable(
         // Hide the data table header.
         headingRowHeight: 0,
@@ -131,6 +137,81 @@ class FsEntrySideSheet extends StatelessWidget {
             DataCell(Text(yMMdDateFormatter.format(state.dateCreated))),
           ]),
         ],
+      );
+  Widget _buildTxTable(BuildContext context, FsEntryInfoSuccess infoState) =>
+      BlocProvider(
+        create: (context) => FsEntryActivityCubit(
+          driveId: driveId,
+          folderId: folderId,
+          fileId: fileId,
+          driveDao: context.read<DriveDao>(),
+        ),
+        child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
+          builder: (context, state) {
+            if (state is FsEntryActivitySuccess) {
+              if (state.revisions.isNotEmpty) {
+                final revision = state.revisions.last;
+                return DataTable(
+                  // Hide the data table header.
+
+                  headingRowHeight: 0,
+                  dataTextStyle: Theme.of(context).textTheme.subtitle2,
+                  columns: const [
+                    DataColumn(label: Text('')),
+                    DataColumn(label: Text('')),
+                  ],
+                  rows: [
+                    if (infoState is FsEntryInfoSuccess<Drive>) ...{
+                      DataRow(cells: [
+                        DataCell(Text('Metadata Tx ID')),
+                        DataCell(
+                          CopyIconButton(
+                            tooltip: 'Copy Metadata Tx ID',
+                            value: revision.metadataTx.id,
+                          ),
+                        ),
+                      ]),
+                    } else if (infoState
+                        is FsEntryInfoSuccess<FolderEntry>) ...{
+                      DataRow(cells: [
+                        DataCell(Text('Metadata Tx ID')),
+                        DataCell(
+                          CopyIconButton(
+                            tooltip: 'Copy Metadata Tx ID',
+                            value: revision.metadataTx.id,
+                          ),
+                        ),
+                      ]),
+                    } else if (infoState is FsEntryInfoSuccess<FileEntry>) ...{
+                      DataRow(cells: [
+                        DataCell(Text('Metadata Tx ID')),
+                        DataCell(
+                          CopyIconButton(
+                            tooltip: 'Copy Metadata Tx ID',
+                            value: revision.metadataTx.id,
+                          ),
+                        ),
+                      ]),
+                      DataRow(cells: [
+                        DataCell(Text('Data Tx ID')),
+                        DataCell(
+                          CopyIconButton(
+                            tooltip: 'Copy Data Tx ID',
+                            value: revision.dataTx.id,
+                          ),
+                        ),
+                      ]),
+                    },
+                  ],
+                );
+              } else {
+                return Center(child: Text('This item is being processed...'));
+              }
+            } else {
+              return const Center(child: CircularProgressIndicator());
+            }
+          },
+        ),
       );
 
   Widget _buildActivityTab(BuildContext context, FsEntryInfoSuccess state) =>
