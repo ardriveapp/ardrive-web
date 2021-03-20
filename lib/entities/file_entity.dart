@@ -29,6 +29,9 @@ class FileEntity extends Entity {
   @JsonKey(fromJson: _msToDateTime, toJson: _dateTimeToMs)
   DateTime lastModifiedDate;
 
+  @JsonKey(fromJson: _msToDateTime, toJson: _dateTimeToMs)
+  DateTime createdOnDate;
+
   String dataTxId;
   String dataContentType;
 
@@ -39,14 +42,17 @@ class FileEntity extends Entity {
     this.name,
     this.size,
     this.lastModifiedDate,
+    this.createdOnDate,
     this.dataTxId,
     this.dataContentType,
   });
 
-  FileEntity.withUserProvidedDetails(
-      {@required this.name,
-      @required this.size,
-      @required this.lastModifiedDate});
+  FileEntity.withUserProvidedDetails({
+    @required this.name,
+    @required this.size,
+    @required this.lastModifiedDate,
+    @required this.createdOnDate,
+  });
 
   static Future<FileEntity> fromTransaction(
     TransactionCommonMixin transaction,
@@ -76,6 +82,7 @@ class FileEntity extends Entity {
         ..driveId = transaction.getTag(EntityTag.driveId)
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
         ..lastModifiedDate ??= commitTime
+        ..createdOnDate ??= commitTime
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..createdAt = commitTime;

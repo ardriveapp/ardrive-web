@@ -74,12 +74,12 @@ class UploadForm extends StatelessWidget {
               ),
               actions: <Widget>[
                 TextButton(
-                  child: Text('CANCEL'),
                   onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('CANCEL'),
                 ),
                 ElevatedButton(
-                  child: Text('CONTINUE'),
                   onPressed: () => context.read<UploadCubit>().prepareUpload(),
+                  child: Text('CONTINUE'),
                 ),
               ],
             );
@@ -103,8 +103,8 @@ class UploadForm extends StatelessWidget {
               ),
               actions: <Widget>[
                 TextButton(
-                  child: Text('OK'),
                   onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('OK'),
                 ),
               ],
             );
@@ -134,8 +134,8 @@ class UploadForm extends StatelessWidget {
               ),
               actions: <Widget>[
                 TextButton(
-                  child: Text('CLOSE'),
                   onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('CLOSE'),
                 ),
               ],
             );
@@ -198,14 +198,14 @@ class UploadForm extends StatelessWidget {
               ),
               actions: <Widget>[
                 TextButton(
-                  child: Text('CANCEL'),
                   onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('CANCEL'),
                 ),
                 ElevatedButton(
-                  child: Text('UPLOAD'),
                   onPressed: state.sufficientArBalance
                       ? () => context.read<UploadCubit>().startUpload()
                       : null,
+                  child: Text('UPLOAD'),
                 ),
               ],
             );
