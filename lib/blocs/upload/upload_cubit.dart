@@ -104,7 +104,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     final tooLargeFiles = [
       for (final file in files)
-        if (await file.length() > 1.25 * math.pow(10, 9)) file.name
+        if (await file.length() > 1.25 * math.pow(10, 7)) file.name
     ];
 
     if (tooLargeFiles.isNotEmpty) {
