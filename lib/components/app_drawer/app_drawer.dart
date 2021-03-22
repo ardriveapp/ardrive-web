@@ -25,6 +25,7 @@ class AppDrawer extends StatelessWidget {
             child: Container(
               color: kDarkSurfaceColor,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(
