@@ -93,7 +93,7 @@ class UploadForm extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                        'ArDrive on web currently only supports file uploads smaller than 1.25 GB.'),
+                        'ArDrive on web currently only supports file uploads smaller than 100 MB.'),
                     const SizedBox(height: 16),
                     Text('Too large for upload:'),
                     const SizedBox(height: 8),
