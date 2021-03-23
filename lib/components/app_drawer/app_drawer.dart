@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../components.dart';
 import 'drive_list_tile.dart';
@@ -24,65 +25,94 @@ class AppDrawer extends StatelessWidget {
             child: Container(
               color: kDarkSurfaceColor,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildDriveActionsButton(context, state),
-                  if (state is DrivesLoadSuccess)
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
+                  Expanded(
+                    child: Column(
                       children: [
-                        if (state.userDrives.isNotEmpty ||
-                            state.sharedDrives.isEmpty) ...{
-                          ListTile(
-                            dense: true,
-                            title: Text(
-                              'PERSONAL DRIVES',
-                              textAlign: TextAlign.start,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .caption
-                                  .copyWith(
-                                      color:
-                                          ListTileTheme.of(context).textColor),
-                            ),
-                            trailing: _buildSyncButton(),
+                        _buildDriveActionsButton(context, state),
+                        if (state is DrivesLoadSuccess)
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (state.userDrives.isNotEmpty ||
+                                  state.sharedDrives.isEmpty) ...{
+                                ListTile(
+                                  dense: true,
+                                  title: Text(
+                                    'PERSONAL DRIVES',
+                                    textAlign: TextAlign.start,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .caption
+                                        .copyWith(
+                                            color: ListTileTheme.of(context)
+                                                .textColor),
+                                  ),
+                                  trailing: _buildSyncButton(),
+                                ),
+                                ...state.userDrives.map(
+                                  (d) => DriveListTile(
+                                    drive: d,
+                                    selected: state.selectedDriveId == d.id,
+                                    onPressed: () => context
+                                        .read<DrivesCubit>()
+                                        .selectDrive(d.id),
+                                  ),
+                                ),
+                              },
+                              if (state.sharedDrives.isNotEmpty) ...{
+                                ListTile(
+                                  dense: true,
+                                  title: Text(
+                                    'SHARED DRIVES',
+                                    textAlign: TextAlign.start,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .caption
+                                        .copyWith(
+                                            color: ListTileTheme.of(context)
+                                                .textColor),
+                                  ),
+                                  trailing: state.userDrives.isEmpty
+                                      ? _buildSyncButton()
+                                      : null,
+                                ),
+                                ...state.sharedDrives.map(
+                                  (d) => DriveListTile(
+                                    drive: d,
+                                    selected: state.selectedDriveId == d.id,
+                                    onPressed: () => context
+                                        .read<DrivesCubit>()
+                                        .selectDrive(d.id),
+                                  ),
+                                ),
+                              }
+                            ],
                           ),
-                          ...state.userDrives.map(
-                            (d) => DriveListTile(
-                              drive: d,
-                              selected: state.selectedDriveId == d.id,
-                              onPressed: () =>
-                                  context.read<DrivesCubit>().selectDrive(d.id),
-                            ),
-                          ),
-                        },
-                        if (state.sharedDrives.isNotEmpty) ...{
-                          ListTile(
-                            dense: true,
-                            title: Text(
-                              'SHARED DRIVES',
-                              textAlign: TextAlign.start,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .caption
-                                  .copyWith(
-                                      color:
-                                          ListTileTheme.of(context).textColor),
-                            ),
-                            trailing: state.userDrives.isEmpty
-                                ? _buildSyncButton()
-                                : null,
-                          ),
-                          ...state.sharedDrives.map(
-                            (d) => DriveListTile(
-                              drive: d,
-                              selected: state.selectedDriveId == d.id,
-                              onPressed: () =>
-                                  context.read<DrivesCubit>().selectDrive(d.id),
-                            ),
-                          ),
-                        }
                       ],
                     ),
+                  ),
+                  FutureBuilder(
+                    future: PackageInfo.fromPlatform(),
+                    builder: (BuildContext context,
+                        AsyncSnapshot<PackageInfo> snapshot) {
+                      if (snapshot.hasData) {
+                        return Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            'Version ${snapshot.data.version}+${snapshot.data.buildNumber}',
+                            style: Theme.of(context)
+                                .textTheme
+                                .caption
+                                .copyWith(color: Colors.grey),
+                          ),
+                        );
+                      } else {
+                        return Container();
+                      }
+                    },
+                  ),
                 ],
               ),
             ),
