@@ -15,8 +15,15 @@ class SharedFileLoadInProgress extends SharedFileState {}
 class SharedFileLoadSuccess extends SharedFileState {
   final FileEntity file;
   final SecretKey fileKey;
+  final String dataTxId;
+  final String metadataTxId;
 
-  const SharedFileLoadSuccess({@required this.file, this.fileKey});
+  const SharedFileLoadSuccess({
+    @required this.file,
+    this.fileKey,
+    this.dataTxId,
+    this.metadataTxId,
+  });
 
   @override
   List<Object> get props => [file, fileKey];
