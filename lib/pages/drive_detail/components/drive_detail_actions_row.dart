@@ -9,7 +9,7 @@ class DriveDetailActionRow extends StatelessWidget {
       builder: (context, state) {
         if (state is DriveDetailLoadSuccess) {
           final fsActions = <Widget>[
-            if (state.hasWritePermissions)
+            if (state.hasWritePermissions && state.selectedItemId == null)
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () {

@@ -105,10 +105,13 @@ class SyncCubit extends Cubit<SyncState> {
     final newEntities = entityHistory.blockHistory
         .map((b) => b.entities)
         .expand((entities) => entities);
+
+    //Handle newEntities being empty, i.e; There's nothing more to sync
     if (newEntities == null || newEntities.isEmpty) {
       emit(SyncEmpty());
       return;
     }
+
     await _db.transaction(() async {
       final latestDriveRevision = await _addNewDriveEntityRevisions(
           newEntities.whereType<DriveEntity>());
@@ -117,9 +120,11 @@ class SyncCubit extends Cubit<SyncState> {
       final latestFileRevisions = await _addNewFileEntityRevisions(
           driveId, newEntities.whereType<FileEntity>());
 
+      //Check and handle cases where there's no more revisions
       final updatedDrive = latestDriveRevision != null
           ? await _computeRefreshedDriveFromRevision(latestDriveRevision)
           : null;
+
       final updatedFoldersById =
           await _computeRefreshedFolderEntriesFromRevisions(
               driveId, latestFolderRevisions);
@@ -145,6 +150,9 @@ class SyncCubit extends Cubit<SyncState> {
       await _driveDao.writeToDrive(DrivesCompanion(
           id: Value(drive.id), syncCursor: Value(entityHistory.cursor)));
     });
+
+    //In case of very large drives, instead of waiting 2 minutes for the next sync,
+    //check if there's more to sync and start syncing here itself
     if (entityHistory.cursor != null) {
       await _syncDrive(driveId);
     }
