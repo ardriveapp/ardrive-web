@@ -119,7 +119,13 @@ DataRow _buildFileRow({
                 file.dataContentType,
               ),
             ),
-            Text(file.name),
+            Expanded(child: Text(file.name)),
+            if (fileStatusFromTransactions(file.metadataTx, file.dataTx) ==
+                TransactionStatus.failed)
+              IconButton(
+                icon: Icon(Icons.refresh),
+                onPressed: () {},
+              )
           ],
         ),
       ),
