@@ -47,7 +47,8 @@ class RetryUploadForm extends StatelessWidget {
         builder: (context, state) {
           if (state is RetryUploadFileConflict) {
             return AppDialog(
-              title: 'Conflicting file(s) found',
+              title:
+                  'The file name does not match the previously uploaded file',
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -56,8 +57,6 @@ class RetryUploadForm extends StatelessWidget {
                   children: [
                     Text('Incorrect File Selected'),
                     const SizedBox(height: 16),
-                    Text('Conflicting files:'),
-                    const SizedBox(height: 8),
                   ],
                 ),
               ),
@@ -65,11 +64,6 @@ class RetryUploadForm extends StatelessWidget {
                 TextButton(
                   child: Text('CANCEL'),
                   onPressed: () => Navigator.of(context).pop(false),
-                ),
-                ElevatedButton(
-                  child: Text('CONTINUE'),
-                  onPressed: () =>
-                      context.read<RetryUploadCubit>().prepareUpload(),
                 ),
               ],
             );

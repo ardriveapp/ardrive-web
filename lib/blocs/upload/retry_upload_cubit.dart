@@ -79,7 +79,10 @@ class RetryUploadCubit extends Cubit<RetryUploadState> {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
     emit(RetryUploadPreparationInProgress());
-
+    if (_uploadedFile.name != fileToUpload.name) {
+      emit(RetryUploadFileConflict(conflictingFileNames: [fileToUpload.name]));
+      return;
+    }
     if (await fileToUpload.length() > 1.25 * math.pow(10, 9)) {
       emit(RetryUploadFileTooLarge(tooLargeFileNames: [fileToUpload.name]));
       return;
