@@ -120,12 +120,17 @@ DataRow _buildFileRow({
               ),
             ),
             Expanded(child: Text(file.name)),
-            if (fileStatusFromTransactions(file.metadataTx, file.dataTx) ==
-                TransactionStatus.failed)
-              IconButton(
-                icon: Icon(Icons.refresh),
-                onPressed: () {},
-              )
+            // if (fileStatusFromTransactions(file.metadataTx, file.dataTx) ==
+            //     TransactionStatus.failed)
+            IconButton(
+              icon: Icon(Icons.refresh),
+              onPressed: () => promptToReuploadFile(
+                context,
+                driveId: file.driveId,
+                folderId: file.parentFolderId,
+                file: file,
+              ),
+            )
           ],
         ),
       ),

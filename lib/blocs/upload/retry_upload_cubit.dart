@@ -18,12 +18,12 @@ import 'package:uuid/uuid.dart';
 import '../blocs.dart';
 import 'file_upload_handle.dart';
 
-part 'upload_state.dart';
+part 'retry_upload_state.dart';
 
-class UploadCubit extends Cubit<UploadState> {
+class RetryUploadCubit extends Cubit<RetryUploadState> {
   final String driveId;
   final String folderId;
-  final List<XFile> files;
+  final XFile fileToUpload;
 
   final _uuid = Uuid();
   final ProfileCubit _profileCubit;
@@ -45,10 +45,10 @@ class UploadCubit extends Cubit<UploadState> {
   /// The [Transaction] that pays `pstFee` to a random PST holder.
   Transaction feeTx;
 
-  UploadCubit({
+  RetryUploadCubit({
     @required this.driveId,
     @required this.folderId,
-    @required this.files,
+    @required this.fileToUpload,
     @required ProfileCubit profileCubit,
     @required DriveDao driveDao,
     @required ArweaveService arweave,
@@ -59,14 +59,14 @@ class UploadCubit extends Cubit<UploadState> {
         _arweave = arweave,
         _pst = pst,
         _uploadedFile = uploadedFile,
-        super(UploadPreparationInProgress()) {
+        super(RetryUploadPreparationInProgress()) {
     () async {
       _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
       _targetFolder = await _driveDao
           .folderById(driveId: driveId, folderId: folderId)
           .getSingle();
 
-      unawaited(checkConflictingFiles());
+      unawaited(prepareUpload());
     }();
   }
 
@@ -74,53 +74,20 @@ class UploadCubit extends Cubit<UploadState> {
   ///
   /// If there's one, prompt the user to upload the file as a version of the existing one.
   /// If there isn't one, prepare to upload the file.
-  Future<void> checkConflictingFiles() async {
-    emit(UploadPreparationInProgress());
-
-    for (final file in files) {
-      final fileName = file.name;
-      final existingFileId = await _driveDao
-          .filesInFolderWithName(
-            driveId: _targetDrive.id,
-            parentFolderId: _targetFolder.id,
-            name: fileName,
-          )
-          .map((f) => f.id)
-          .getSingleOrNull();
-
-      if (existingFileId != null) {
-        conflictingFiles[fileName] = existingFileId;
-      }
-    }
-
-    if (conflictingFiles.isNotEmpty) {
-      emit(UploadFileConflict(
-          conflictingFileNames: conflictingFiles.keys.toList()));
-    } else {
-      unawaited(prepareUpload());
-    }
-  }
 
   Future<void> prepareUpload() async {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
-    emit(UploadPreparationInProgress());
+    emit(RetryUploadPreparationInProgress());
 
-    final tooLargeFiles = [
-      for (final file in files)
-        if (await file.length() > 1.25 * math.pow(10, 9)) file.name
-    ];
-
-    if (tooLargeFiles.isNotEmpty) {
-      emit(UploadFileTooLarge(tooLargeFileNames: tooLargeFiles));
+    if (await fileToUpload.length() > 1.25 * math.pow(10, 9)) {
+      emit(RetryUploadFileTooLarge(tooLargeFileNames: [fileToUpload.name]));
       return;
     }
 
     try {
-      for (final file in files) {
-        final uploadHandle = await prepareFileUpload(file);
-        _fileUploadHandles[uploadHandle.entity.id] = uploadHandle;
-      }
+      final uploadHandle = await prepareFileUpload(fileToUpload);
+      _fileUploadHandles[uploadHandle.entity.id] = uploadHandle;
     } catch (err) {
       addError(err);
       return;
@@ -166,7 +133,7 @@ class UploadCubit extends Cubit<UploadState> {
         .catchError(() => null);
 
     emit(
-      UploadReady(
+      RetryUploadReady(
         arUploadCost: arUploadCost,
         usdUploadCost: usdUploadCost,
         pstFee: pstFee,
@@ -179,7 +146,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> startUpload() async {
-    emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
+    emit(RetryUploadInProgress(files: _fileUploadHandles.values.toList()));
 
     if (feeTx != null) {
       await _arweave.postTx(feeTx);
@@ -201,14 +168,15 @@ class UploadCubit extends Cubit<UploadState> {
         );
 
         await for (final _ in uploadHandle.upload(_arweave)) {
-          emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
+          emit(
+              RetryUploadInProgress(files: _fileUploadHandles.values.toList()));
         }
       }
     });
 
     unawaited(_profileCubit.refreshBalance());
 
-    emit(UploadComplete());
+    emit(RetryUploadComplete());
   }
 
   Future<FileUploadHandle> prepareFileUpload(XFile file) async {
@@ -226,7 +194,7 @@ class UploadCubit extends Cubit<UploadState> {
     );
 
     // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
-    fileEntity.id = conflictingFiles[fileName] ?? _uuid.v4();
+    fileEntity.id = _uploadedFile.id ?? _uuid.v4();
 
     final private = _targetDrive.isPrivate;
     final driveKey = private
@@ -298,7 +266,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(UploadFailure());
+    emit(RetryUploadFailure());
     super.onError(error, stackTrace);
 
     print('Failed to upload file: $error $stackTrace');

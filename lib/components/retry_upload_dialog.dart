@@ -2,7 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
-import 'package:file_selector/file_selector.dart';
+import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,54 +13,51 @@ Future<void> promptToReuploadFile(
   BuildContext context, {
   @required String driveId,
   @required String folderId,
-  @required XFile file,
+  @required FileWithLatestRevisionTransactions file,
 }) async {
+  final selectedFiles = [await file_selector.openFile()];
   await showDialog(
     context: context,
-    builder: (_) => BlocProvider<UploadCubit>(
-      create: (context) => UploadCubit(
+    builder: (_) => BlocProvider<RetryUploadCubit>(
+      create: (context) => RetryUploadCubit(
         driveId: driveId,
         folderId: folderId,
-        files: [file],
+        fileToUpload: selectedFiles.first,
+        uploadedFile: file,
         arweave: context.read<ArweaveService>(),
         pst: context.read<PstService>(),
         profileCubit: context.read<ProfileCubit>(),
         driveDao: context.read<DriveDao>(),
       ),
-      child: UploadForm(),
+      child: RetryUploadForm(),
     ),
     barrierDismissible: false,
   );
 }
 
-class UploadForm extends StatelessWidget {
+class RetryUploadForm extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => BlocConsumer<UploadCubit, UploadState>(
+  Widget build(BuildContext context) =>
+      BlocConsumer<RetryUploadCubit, RetryUploadState>(
         listener: (context, state) async {
           if (state is UploadComplete) {
             Navigator.pop(context);
           }
         },
         builder: (context, state) {
-          if (state is UploadFileConflict) {
+          if (state is RetryUploadFileConflict) {
             return AppDialog(
-              title:
-                  '${state.conflictingFileNames.length} conflicting file(s) found',
+              title: 'Conflicting file(s) found',
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      state.conflictingFileNames.length == 1
-                          ? 'A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?'
-                          : '${state.conflictingFileNames.length} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?',
-                    ),
+                    Text('Incorrect File Selected'),
                     const SizedBox(height: 16),
                     Text('Conflicting files:'),
                     const SizedBox(height: 8),
-                    Text(state.conflictingFileNames.join(', ')),
                   ],
                 ),
               ),
@@ -71,11 +68,12 @@ class UploadForm extends StatelessWidget {
                 ),
                 ElevatedButton(
                   child: Text('CONTINUE'),
-                  onPressed: () => context.read<UploadCubit>().prepareUpload(),
+                  onPressed: () =>
+                      context.read<RetryUploadCubit>().prepareUpload(),
                 ),
               ],
             );
-          } else if (state is UploadFileTooLarge) {
+          } else if (state is RetryUploadFileTooLarge) {
             return AppDialog(
               title: '${state.tooLargeFileNames.length} file(s) too large',
               content: SizedBox(
@@ -100,7 +98,7 @@ class UploadForm extends StatelessWidget {
                 ),
               ],
             );
-          } else if (state is UploadPreparationInProgress) {
+          } else if (state is RetryUploadPreparationInProgress) {
             return AppDialog(
               title: 'Preparing upload...',
               content: SizedBox(
@@ -115,7 +113,7 @@ class UploadForm extends StatelessWidget {
                 ),
               ),
             );
-          } else if (state is UploadPreparationFailure) {
+          } else if (state is RetryUploadPreparationFailure) {
             return AppDialog(
               title: 'Failed to prepare file upload',
               content: SizedBox(
@@ -131,7 +129,7 @@ class UploadForm extends StatelessWidget {
                 ),
               ],
             );
-          } else if (state is UploadReady) {
+          } else if (state is RetryUploadReady) {
             return AppDialog(
               title: 'Upload ${state.files.length} file(s)',
               content: SizedBox(
@@ -196,12 +194,12 @@ class UploadForm extends StatelessWidget {
                 ElevatedButton(
                   child: Text('UPLOAD'),
                   onPressed: state.sufficientArBalance
-                      ? () => context.read<UploadCubit>().startUpload()
+                      ? () => context.read<RetryUploadCubit>().startUpload()
                       : null,
                 ),
               ],
             );
-          } else if (state is UploadInProgress) {
+          } else if (state is RetryUploadInProgress) {
             return AppDialog(
               dismissable: false,
               title: 'Uploading ${state.files.length} file(s)...',
