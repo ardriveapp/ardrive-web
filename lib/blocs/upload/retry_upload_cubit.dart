@@ -5,7 +5,6 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
-import 'package:arweave/utils.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:file_selector/file_selector.dart';
@@ -87,97 +86,17 @@ class RetryUploadCubit extends Cubit<RetryUploadState> {
       emit(RetryUploadFileTooLarge(tooLargeFileNames: [fileToUpload.name]));
       return;
     }
-
-    try {
-      final uploadHandle = await prepareFileUpload(fileToUpload);
-      _fileUploadHandles[uploadHandle.entity.id] = uploadHandle;
-    } catch (err) {
-      addError(err);
-      return;
-    }
-
-    final uploadCost = _fileUploadHandles.values
-        .map((f) => f.cost)
-        .reduce((total, cost) => total + cost);
-
-    var pstFee = await _pst
-        .getPstFeePercentage()
-        .then((feePercentage) =>
-            // Workaround [BigInt] percentage division problems
-            // by first multiplying by the percentage * 100 and then dividing by 100.
-            uploadCost * BigInt.from(feePercentage * 100) ~/ BigInt.from(100))
-        .catchError((_) => BigInt.zero,
-            test: (err) => err is UnimplementedError);
-
-    final minimumPstTip = BigInt.from(10000000);
-    pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
-
-    if (pstFee > BigInt.zero) {
-      feeTx = await _arweave.client.transactions.prepare(
-        Transaction(
-          target: await _pst.getWeightedPstHolder(),
-          quantity: pstFee,
-        ),
-        profile.wallet,
-      )
-        ..addApplicationTags()
-        ..addTag('Type', 'fee')
-        ..addTag(TipType.tagName, TipType.dataUpload);
-
-      await feeTx.sign(profile.wallet);
-    }
-
-    final totalCost = uploadCost + pstFee;
-
-    final arUploadCost = winstonToAr(totalCost);
-    final usdUploadCost = await _arweave
-        .getArUsdConversionRate()
-        .then((conversionRate) => double.parse(arUploadCost) * conversionRate)
-        .catchError(() => null);
-
-    emit(
-      RetryUploadReady(
-        arUploadCost: arUploadCost,
-        usdUploadCost: usdUploadCost,
-        pstFee: pstFee,
-        totalCost: totalCost,
-        uploadIsPublic: _targetDrive.isPublic,
-        sufficientArBalance: profile.walletBalance >= totalCost,
-        files: _fileUploadHandles.values.toList(),
-      ),
-    );
   }
 
   Future<void> startUpload() async {
     emit(RetryUploadInProgress(files: _fileUploadHandles.values.toList()));
 
-    if (feeTx != null) {
-      await _arweave.postTx(feeTx);
-    }
-
-    await _driveDao.transaction(() async {
-      for (final uploadHandle in _fileUploadHandles.values) {
-        final fileEntity = uploadHandle.entity;
-
-        fileEntity.txId = uploadHandle.entityTx.id;
-
-        await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
-        await _driveDao.insertFileRevision(
-          fileEntity.toRevisionCompanion(
-            performedAction: !conflictingFiles.containsKey(fileEntity.name)
-                ? RevisionAction.create
-                : RevisionAction.uploadNewVersion,
-          ),
-        );
-
-        await for (final _ in uploadHandle.upload(_arweave)) {
-          emit(
-              RetryUploadInProgress(files: _fileUploadHandles.values.toList()));
-        }
+    if (_uploadedFile.dataTx != null) {
+      final uploader = await _arweave.getUploader(_uploadedFile.dataTxId);
+      while (uploader.uploadedChunks != uploader.totalChunks) {
+        await uploader.uploadChunk();
       }
-    });
-
-    unawaited(_profileCubit.refreshBalance());
+    }
 
     emit(RetryUploadComplete());
   }
