@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:js' as js;
 
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -32,6 +33,12 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   Future<void> promptToAuthenticate() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
+    try {
+      js.context.callMethod('loadWallet', []);
+
+      final state = js.JsObject.fromBrowserObject(js.context['state']);
+      print(state['wallet']);
+    } finally {}
     emit(profile != null ? ProfilePromptLogIn() : ProfilePromptAdd());
   }
 
