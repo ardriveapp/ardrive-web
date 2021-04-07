@@ -23,7 +23,7 @@ void main() async {
 
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl)));
-  Future.delayed(Duration(minutes: 2), () {
+  Future.delayed(Duration(hours: 12), () {
     window.location.reload();
   });
   runApp(App());
