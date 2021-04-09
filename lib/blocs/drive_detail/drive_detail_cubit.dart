@@ -108,9 +108,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       final file = await _driveDao
           .fileById(driveId: driveId, fileId: state.selectedItemId)
           .getSingle();
+      final fileWithRevisions = await _driveDao.latestFileRevisionByFileId(
+          driveId: driveId, fileId: state.selectedItemId);
+      final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
       state = state.copyWith(
-          selectedFilePreviewUrl: Uri.parse(
-              '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}'));
+          selectedFilePreviewUrl:
+              Uri.parse('${_config.defaultArweaveGatewayUrl}/${dataTxId}'));
     }
 
     emit(state);
