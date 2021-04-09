@@ -105,9 +105,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
 
     if (state.currentDrive.isPublic && !isFolder) {
-      final file = await _driveDao
-          .fileById(driveId: driveId, fileId: state.selectedItemId)
-          .getSingle();
       final fileWithRevisions = await _driveDao.latestFileRevisionByFileId(
           driveId: driveId, fileId: state.selectedItemId);
       final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
