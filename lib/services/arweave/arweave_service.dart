@@ -4,7 +4,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 import '../services.dart';
 
@@ -374,12 +374,12 @@ class ArweaveService {
       client.transactions.post(transaction);
 
   Future<double> getArUsdConversionRate() async {
-    final client = http.Client();
+    final client = Dio();
 
     return await client
         .get(
             'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd')
-        .then((res) => json.decode(res.body))
+        .then((res) => json.decode(res.data))
         .then((res) => res['arweave']['usd']);
   }
 }

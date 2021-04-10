@@ -44,7 +44,7 @@ void main() {
       'emits [] when submitted without valid form',
       build: () => profileUnlockCubit,
       act: (bloc) => bloc.submit(),
-      expect: [],
+      expect: () => [],
     );
 
     blocTest<ProfileUnlockCubit, ProfileUnlockState>(

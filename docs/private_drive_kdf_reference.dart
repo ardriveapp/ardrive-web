@@ -7,8 +7,6 @@ import 'package:cryptography/cryptography.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
-  final uuid = Uuid();
-
   final keyByteLength = 256 ~/ 8;
   final kdf = Hkdf(hmac: Hmac(Sha256()), outputLength: keyByteLength);
 
@@ -25,7 +23,7 @@ void main() async {
   //
   // There's no need to salt here since the drive id will ensure that no two drives have
   // the same key even if the user reuses a password.
-  final driveIdBytes = uuid.parse('<drive uuid>');
+  final driveIdBytes = Uuid.parse('<drive uuid>');
   final walletSignature = await wallet
       .sign(Uint8List.fromList(utf8.encode('drive') + driveIdBytes));
   final password = '<password provided by user>';
@@ -39,7 +37,7 @@ void main() async {
   // Derive a file key from the user's drive key and the file id.
   // We don't salt here since the file id is already random enough but
   // we can salt in the future in cases where the user might want to revoke a file key they shared.
-  final fileIdBytes = Uint8List.fromList(uuid.parse('<file uuid>'));
+  final fileIdBytes = Uint8List.fromList(Uuid.parse('<file uuid>'));
 
   final fileKey = await kdf.deriveKey(
     secretKey: driveKey,

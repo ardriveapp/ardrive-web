@@ -33,7 +33,7 @@ void main() {
       'create public drive',
       build: () => drivesCubit,
       act: (bloc) async {},
-      expect: [
+      expect: () => [
         DrivesLoadInProgress(),
         DrivesLoadSuccess(),
       ],

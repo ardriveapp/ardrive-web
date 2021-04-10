@@ -134,14 +134,6 @@ class AppDrawer extends StatelessWidget {
           child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
             builder: (context, state) => PopupMenuButton<Function>(
               onSelected: (callback) => callback(context),
-              child: SizedBox(
-                width: 128,
-                child: FloatingActionButton.extended(
-                  onPressed: null,
-                  icon: const Icon(Icons.add),
-                  label: Text('NEW'),
-                ),
-              ),
               itemBuilder: (context) => [
                 if (state is DriveDetailLoadSuccess) ...{
                   PopupMenuItem(
@@ -189,6 +181,14 @@ class AppDrawer extends StatelessWidget {
                   ),
                 }
               ],
+              child: SizedBox(
+                width: 128,
+                child: FloatingActionButton.extended(
+                  onPressed: null,
+                  icon: const Icon(Icons.add),
+                  label: Text('NEW'),
+                ),
+              ),
             ),
           ),
         ),
