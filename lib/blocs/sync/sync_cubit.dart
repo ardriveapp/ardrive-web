@@ -8,6 +8,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../blocs.dart';
 
@@ -36,7 +37,11 @@ class SyncCubit extends Cubit<SyncState> {
         _db = db,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
-    _syncSub = interval(const Duration(minutes: 2))
+    // The previous implementation didnt use Stream.periodic
+    // but used interval. But now I'm unable to
+    // call interval without a stream
+    // _syncSub = interval(const Duration(minutes: 2))
+    _syncSub = Stream.periodic(const Duration(minutes: 2))
         .startWith(null)
         // Do not start another sync until the previous sync has completed.
         .exhaustMap((value) => Stream.fromFuture(startSync()))
