@@ -8,7 +8,6 @@ import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
-import 'package:rxdart/rxdart.dart';
 
 import '../blocs.dart';
 

@@ -34,20 +34,20 @@ dependencies:
   file_selector_macos: ^0.0.1
   filesize: ^1.0.4
   google_fonts: ^2.0.0
-  intersperse: ^1.1.1
-  intl: ^0.16.1
+  intersperse: ^2.0.0
+  intl: ^0.17.0
   json_annotation: ^4.0.1
-  mime: ^0.9.7
+  mime: ^1.0.0
   moor: ^4.0.0-nullsafety.1
   path_provider: ^2.0.1
   pedantic: ^1.9.2
-  reactive_forms: ^8.0.1
-  rxdart: ^0.25.0
-  timeago: ^2.0.28
+  reactive_forms: ^10.0.3
+  rxdart: ^0.26.0
+  timeago: ^3.0.2
   url_launcher: ^6.0.3
   uuid: ^3.0.4
   flutter_dropzone: ^2.0.1
-  responsive_builder: ^0.3.0
+  responsive_builder: ^0.4.1
   package_info_plus: ^1.0.0
   dio: ^4.0.0
 
