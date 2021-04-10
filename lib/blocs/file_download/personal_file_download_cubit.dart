@@ -10,6 +10,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   final DriveDao _driveDao;
   final ArweaveService _arweave;
 
+  Dio _dioClient;
+
   ProfileFileDownloadCubit({
     @required this.driveId,
     @required this.fileId,
@@ -19,6 +21,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
+        _dioClient = Dio(),
         super(FileDownloadStarting()) {
     download();
   }
@@ -32,14 +35,14 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
       emit(FileDownloadInProgress(
           fileName: file.name, totalByteCount: file.size));
-
-      final dataRes = await http
+      _dioClient = Dio();
+      final dataRes = await _dioClient
           .get(_arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}');
 
       Uint8List dataBytes;
 
       if (drive.isPublic) {
-        dataBytes = dataRes.bodyBytes;
+        dataBytes = dataRes.data;
       } else if (drive.isPrivate) {
         final profile = _profileCubit.state as ProfileLoggedIn;
 
@@ -48,8 +51,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         final fileKey =
             await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
 
-        dataBytes =
-            await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey);
+        dataBytes = await decryptTransactionData(dataTx, dataRes.data, fileKey);
       }
 
       emit(
@@ -66,6 +68,12 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     } catch (err) {
       addError(err);
     }
+  }
+
+  @override
+  void abortDownload() {
+    _dioClient.close(force: true);
+    emit(FileDownloadFailure());
   }
 
   @override

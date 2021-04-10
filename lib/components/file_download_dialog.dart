@@ -97,7 +97,10 @@ class FileDownloadDialog extends StatelessWidget {
               actions: [
                 ElevatedButton(
                   child: Text('Cancel'),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    context.read<FileDownloadCubit>().abortDownload();
+                    Navigator.pop(context);
+                  },
                 ),
               ],
             );
