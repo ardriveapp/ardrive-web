@@ -38,7 +38,7 @@ void main() {
       'does nothing when submitted without valid form',
       build: () => folderCreateCubit,
       act: (bloc) => bloc.submit(),
-      expect: [],
+      expect: () => [],
     );
   });
 }

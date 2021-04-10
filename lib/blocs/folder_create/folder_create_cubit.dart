@@ -76,7 +76,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           driveId: targetFolder.driveId,
           parentFolderId: targetFolder.id,
           folderName: folderName,
-          path: '${targetFolder.path}/${folderName}',
+          path: '${targetFolder.path}/$folderName',
         );
 
         final folderEntity = FolderEntity(

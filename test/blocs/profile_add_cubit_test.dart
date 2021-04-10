@@ -52,7 +52,7 @@ void main() {
         bloc.form.value = {'username': 'Bobby', 'password': fakePassword};
         await bloc.submit();
       },
-      expect: [
+      expect: () => [
         ProfileAddPromptDetails(isExistingUser: false),
       ],
       verify: (_) => verify(profileCubit.unlockDefaultProfile(fakePassword)),
@@ -65,7 +65,7 @@ void main() {
         bloc.form.value = {'password': ''};
         bloc.submit();
       },
-      expect: [],
+      expect: () => [],
     );
   });
 }

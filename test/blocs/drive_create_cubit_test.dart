@@ -71,7 +71,7 @@ void main() {
         };
         await bloc.submit();
       },
-      expect: [
+      expect: () => [
         DriveCreateInProgress(),
         DriveCreateSuccess(),
       ],
@@ -88,7 +88,7 @@ void main() {
         };
         await bloc.submit();
       },
-      expect: [
+      expect: () => [
         DriveCreateInProgress(),
         DriveCreateSuccess(),
       ],
@@ -99,7 +99,7 @@ void main() {
       'does nothing when submitted without valid form',
       build: () => driveCreateCubit,
       act: (bloc) => bloc.submit(),
-      expect: [],
+      expect: () => [],
     );
   });
 }

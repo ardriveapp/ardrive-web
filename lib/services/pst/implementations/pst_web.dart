@@ -12,11 +12,11 @@ external Object getPstFeePercentagePromise();
 external Object getWeightedPstHolderPromise();
 
 Future<double> getPstFeePercentage() {
-  var promise = getPstFeePercentagePromise();
+  final promise = getPstFeePercentagePromise();
   return promiseToFuture(promise);
 }
 
 Future<String> getWeightedPstHolder() {
-  var promise = getWeightedPstHolderPromise();
+  final promise = getWeightedPstHolderPromise();
   return promiseToFuture(promise);
 }

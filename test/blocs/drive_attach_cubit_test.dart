@@ -52,7 +52,7 @@ void main() {
         };
         bloc.submit();
       },
-      expect: [
+      expect: () => [
         DriveAttachInProgress(),
         DriveAttachSuccess(),
       ],
@@ -72,7 +72,7 @@ void main() {
         };
         bloc.submit();
       },
-      expect: [
+      expect: () => [
         DriveAttachInProgress(),
         DriveAttachInitial(),
       ],
@@ -82,7 +82,7 @@ void main() {
       'does nothing when submitted without valid form',
       build: () => driveAttachCubit,
       act: (bloc) => bloc.submit(),
-      expect: [],
+      expect: () => [],
       verify: (_) {
         verifyZeroInteractions(arweave);
         verifyZeroInteractions(driveDao);

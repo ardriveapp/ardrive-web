@@ -8,7 +8,6 @@ import 'package:uuid/uuid.dart';
 import 'crypto.dart';
 
 const keyByteLength = 256 ~/ 8;
-final _uuid = Uuid();
 
 final pbkdf2 = Pbkdf2(
   macAlgorithm: Hmac(sha256),
@@ -35,7 +34,7 @@ Future<SecretKey> deriveDriveKey(
   String password,
 ) async {
   final walletSignature = await wallet
-      .sign(Uint8List.fromList(utf8.encode('drive') + _uuid.parse(driveId)));
+      .sign(Uint8List.fromList(utf8.encode('drive') + Uuid.parse(driveId)));
 
   return hkdf.deriveKey(
     secretKey: SecretKey(walletSignature),
@@ -45,7 +44,7 @@ Future<SecretKey> deriveDriveKey(
 }
 
 Future<SecretKey> deriveFileKey(SecretKey driveKey, String fileId) async {
-  final fileIdBytes = Uint8List.fromList(_uuid.parse(fileId));
+  final fileIdBytes = Uint8List.fromList(Uuid.parse(fileId));
 
   return hkdf.deriveKey(
     secretKey: driveKey,

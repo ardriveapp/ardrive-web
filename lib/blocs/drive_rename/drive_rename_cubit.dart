@@ -19,7 +19,6 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
-  final SyncCubit _syncCubit;
 
   DriveRenameCubit({
     @required this.driveId,
@@ -30,7 +29,6 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
-        _syncCubit = syncCubit,
         super(DriveRenameInitial()) {
     form = FormGroup({
       'name': FormControl<String>(

@@ -13,13 +13,14 @@ class MockProfileDao extends Mock implements ProfileDao {}
 
 class MockDriveDao extends Mock implements DriveDao {}
 
-class MockSyncBloc extends MockBloc<SyncState> implements SyncCubit {}
+class MockSyncBloc extends MockCubit<SyncState> implements SyncCubit {}
 
-class MockDrivesCubit extends MockBloc<DrivesState> implements DrivesCubit {}
+class MockDrivesCubit extends MockCubit<DrivesState> implements DrivesCubit {}
 
-class MockDriveDetailCubit extends MockBloc<DrivesState>
+class MockDriveDetailCubit extends MockCubit<DriveDetailState>
     implements DriveDetailCubit {}
 
-class MockProfileCubit extends MockBloc<ProfileState> implements ProfileCubit {}
+class MockProfileCubit extends MockCubit<ProfileState> implements ProfileCubit {
+}
 
-class MockUploadBloc extends MockBloc<UploadState> implements UploadCubit {}
+class MockUploadBloc extends MockCubit<UploadState> implements UploadCubit {}

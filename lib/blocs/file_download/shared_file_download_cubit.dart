@@ -8,11 +8,14 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   final ArweaveService _arweave;
 
+  final Dio dioClient;
+
   SharedFileDownloadCubit({
     @required this.fileId,
     this.fileKey,
     @required ArweaveService arweave,
   })  : _arweave = arweave,
+        dioClient = Dio(),
         super(FileDownloadStarting()) {
     download();
   }
@@ -24,17 +27,16 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       emit(FileDownloadInProgress(
           fileName: file.name, totalByteCount: file.size));
 
-      final dataRes = await http
+      final dataRes = await dioClient
           .get(_arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}');
 
       Uint8List dataBytes;
 
       if (fileKey == null) {
-        dataBytes = dataRes.bodyBytes;
+        dataBytes = dataRes.data;
       } else {
         final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
-        dataBytes =
-            await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey);
+        dataBytes = await decryptTransactionData(dataTx, dataRes.data, fileKey);
       }
 
       emit(
