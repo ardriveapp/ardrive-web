@@ -52,6 +52,19 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     }
   }
 
+  Future<void> pickWalletFromArconnect(String walletAddress) async {
+    emit(ProfileAddUserStateLoadInProgress());
+
+    _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(walletAddress);
+
+    if (_driveTxs.isEmpty) {
+      emit(ProfileAddOnboardingNewUser());
+    } else {
+      emit(ProfileAddPromptDetails(isExistingUser: true));
+      setupForm(withPasswordConfirmation: false);
+    }
+  }
+
   Future<void> completeOnboarding() async {
     emit(ProfileAddPromptDetails(isExistingUser: false));
     setupForm(withPasswordConfirmation: true);
@@ -93,6 +106,8 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     // right password.
     if (privateDriveTxs.isNotEmpty) {
       final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
+
+      //TODO getDriveKey from arconnect if wallet is null
 
       final checkDriveKey = await deriveDriveKey(
         _wallet,

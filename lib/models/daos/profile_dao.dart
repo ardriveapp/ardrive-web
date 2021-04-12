@@ -74,6 +74,23 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
 
     return profileKdRes.key;
   }
+
+  Future<SecretKey> addProfileArconnect(
+      String username, String password, String walletAddress) async {
+    final profileKdRes = await deriveProfileKey(password);
+    final profileSalt = profileKdRes.salt;
+
+    //TODO Make profile wallet agnostic
+    await into(profiles).insert(
+      ProfilesCompanion.insert(
+        id: walletAddress,
+        username: username,
+        keySalt: profileSalt,
+      ),
+    );
+
+    return profileKdRes.key;
+  }
 }
 
 class ProfileLoadDetails {

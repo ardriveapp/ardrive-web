@@ -44,6 +44,21 @@ Future<SecretKey> deriveDriveKey(
   );
 }
 
+Future<SecretKey> deriveDriveKeyArConnect(
+  Wallet wallet,
+  String driveId,
+  String password,
+) async {
+  Uint8List walletSignature;
+  //TODO Derive wallet signature from arconnect
+
+  return hkdf.deriveKey(
+    secretKey: SecretKey(walletSignature),
+    info: utf8.encode(password),
+    nonce: Uint8List(0),
+  );
+}
+
 Future<SecretKey> deriveFileKey(SecretKey driveKey, String fileId) async {
   final fileIdBytes = Uint8List.fromList(_uuid.parse(fileId));
 
