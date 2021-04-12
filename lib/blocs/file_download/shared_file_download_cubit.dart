@@ -59,7 +59,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   @override
   void abortDownload() {
     _dioClient.close(force: true);
-    emit(FileDownloadFailure());
+    emit(FileDownloadAborted());
   }
 
   @override
