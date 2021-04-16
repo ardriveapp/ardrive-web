@@ -1,3 +1,4 @@
+import 'package:ardrive/services/shared_prefs/shared_prefs.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,10 +16,10 @@ ArweaveService arweave;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  await SharedPrefsService().loadPrefs();
   configService = ConfigService();
   config = await configService.getConfig();
-
+  print(config.defaultArweaveGatewayUrl);
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl)));
 
