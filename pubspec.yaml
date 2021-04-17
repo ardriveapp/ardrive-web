@@ -58,7 +58,7 @@ dev_dependencies:
 
   test: ^1.15.4
   bloc_test: ^7.1.0
-  mockito: 4.1.2
+  mockito: ^5.0.0-nullsafety.2
   build_runner: ^1.10.0
   moor_generator: ^4.0.0-dev
   json_serializable: ^3.5.1
@@ -73,7 +73,7 @@ dependency_overrides:
   ffi: ^0.2.0-nullsafety.1
   json_annotation: ^3.0.1
   mockito: ^5.0.0-nullsafety.2
-
+  
 flutter:
   uses-material-design: true
   assets:
