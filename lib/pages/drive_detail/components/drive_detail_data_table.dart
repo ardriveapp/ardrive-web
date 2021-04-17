@@ -50,7 +50,6 @@ List<DataColumn> _buildTableColumns(BuildContext context) {
             contentOrderingMode:
                 sortAscending ? OrderingMode.asc : OrderingMode.desc,
           );
-
   return [
     DataColumn(
         label: Text(
