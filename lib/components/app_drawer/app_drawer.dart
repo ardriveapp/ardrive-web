@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/services/shared_prefs/shared_prefs.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -100,12 +101,24 @@ class AppDrawer extends StatelessWidget {
                       if (snapshot.hasData) {
                         return Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Version ${snapshot.data.version}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .caption
-                                .copyWith(color: Colors.grey),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              if (snapshot.data.buildNumber == 'staging')
+                                SwitchListTile(
+                                  title: Text('Toggle TestNet'),
+                                  value: SharedPrefsService().testnetEnabled,
+                                  onChanged: (value) =>
+                                      SharedPrefsService().toggleTestNet(value),
+                                ),
+                              Text(
+                                'Version ${snapshot.data.version}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .caption
+                                    .copyWith(color: Colors.grey),
+                              ),
+                            ],
                           ),
                         );
                       } else {

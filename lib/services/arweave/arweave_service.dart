@@ -341,6 +341,15 @@ class ArweaveService {
     return tx;
   }
 
+  Future<TransactionUploader> getUploader(
+    String transactionId,
+  ) async {
+    final tx = await client.transactions.get(transactionId);
+    final uploader = await client.transactions.getUploader(tx);
+
+    return uploader;
+  }
+
   /// Creates and signs a [DataItem] representing the provided entity.
   ///
   /// Optionally provide a [SecretKey] to encrypt the entity data.

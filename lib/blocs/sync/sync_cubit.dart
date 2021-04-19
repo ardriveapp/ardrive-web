@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/services/shared_prefs/shared_prefs.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -468,6 +469,7 @@ class SyncCubit extends Cubit<SyncState> {
         var txStatus;
 
         if (txConfirmed) {
+          SharedPrefsService().setSyncStatus(txId, SyncStatus.Confirmed);
           txStatus = TransactionStatus.confirmed;
         } else if (txNotFound) {
           // Only mark transactions as failed if they are unconfirmed for over 45 minutes

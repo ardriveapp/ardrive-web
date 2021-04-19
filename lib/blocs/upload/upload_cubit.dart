@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/services/shared_prefs/shared_prefs.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:bloc/bloc.dart';
@@ -31,6 +32,8 @@ class UploadCubit extends Cubit<UploadState> {
   final ArweaveService _arweave;
   final PstService _pst;
 
+  final FileWithLatestRevisionTransactions _uploadedFile;
+
   Drive _targetDrive;
   FolderEntry _targetFolder;
 
@@ -51,10 +54,12 @@ class UploadCubit extends Cubit<UploadState> {
     @required DriveDao driveDao,
     @required ArweaveService arweave,
     @required PstService pst,
+    FileWithLatestRevisionTransactions uploadedFile,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
         _pst = pst,
+        _uploadedFile = uploadedFile,
         super(UploadPreparationInProgress()) {
     () async {
       _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
@@ -199,8 +204,15 @@ class UploadCubit extends Cubit<UploadState> {
                 : RevisionAction.uploadNewVersion,
           ),
         );
-
+        SharedPrefsService()
+            .setSyncStatus(uploadHandle.dataTx.id, SyncStatus.New);
         await for (final _ in uploadHandle.upload(_arweave)) {
+          for (var handle in _fileUploadHandles.values) {
+            if (handle.uploadProgress == 1) {
+              SharedPrefsService()
+                  .setSyncStatus(uploadHandle.dataTx.id, SyncStatus.Uploaded);
+            }
+          }
           emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
         }
       }

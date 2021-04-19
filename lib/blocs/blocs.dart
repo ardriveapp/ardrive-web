@@ -15,4 +15,5 @@ export 'profile_add/profile_add_cubit.dart';
 export 'profile_unlock/profile_unlock_cubit.dart';
 export 'shared_file/shared_file_cubit.dart';
 export 'sync/sync_cubit.dart';
+export 'upload/retry_upload_cubit.dart';
 export 'upload/upload_cubit.dart';
