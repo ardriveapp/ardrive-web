@@ -27,4 +27,20 @@ class SharedPrefsService {
     testnetEnabled = value;
     window.location.reload();
   }
+
+  //Save sync status of file, matching what's done in the desktop version.
+
+  void setSyncStatus(String id, SyncStatus syncStatus) {
+    preferences.setInt(id, syncStatus.index);
+  }
+
+  SyncStatus getSyncStatus(String id) {
+    return SyncStatus.values[preferences.getInt(id)];
+  }
+}
+
+enum SyncStatus {
+  New,
+  Uploaded,
+  Confirmed,
 }
