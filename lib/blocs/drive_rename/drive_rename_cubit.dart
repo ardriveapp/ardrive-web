@@ -74,7 +74,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
         drive = drive.copyWith(name: newName, lastUpdated: DateTime.now());
 
         final driveEntity = drive.asEntity();
-
+        // TODO: Wallet passed on prepareEntityTx
         final driveTx = await _arweave.prepareEntityTx(
             driveEntity, profile.wallet, driveKey);
 

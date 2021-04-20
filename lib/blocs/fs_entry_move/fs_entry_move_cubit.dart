@@ -88,7 +88,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
               lastUpdated: DateTime.now());
 
           final folderEntity = folder.asEntity();
-
+          // TODO: Wallet passed on prepareEntityTx
           final folderTx = await _arweave.prepareEntityTx(
               folderEntity, profile.wallet, driveKey);
 
@@ -121,7 +121,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
               driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
 
           final fileEntity = file.asEntity();
-
+          // TODO: Wallet passed on prepareEntityTx
           final fileTx = await _arweave.prepareEntityTx(
               fileEntity, profile.wallet, fileKey);
 

@@ -85,7 +85,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           parentFolderId: targetFolder.id,
           name: folderName,
         );
-
+        // TODO: Wallet passed on prepareEntityTx
         final folderTx = await _arweave.prepareEntityTx(
           folderEntity,
           profile.wallet,

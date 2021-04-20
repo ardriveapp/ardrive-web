@@ -55,6 +55,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       final profile = _profileCubit.state as ProfileLoggedIn;
       final wallet = profile.wallet;
 
+      //TODO Wallet passed on createDrive
       final createRes = await _driveDao.createDrive(
         name: driveName,
         ownerAddress: await wallet.getAddress(),
@@ -75,6 +76,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       );
 
       // TODO: Revert back to using data bundles when the api is stable again.
+      // TODO: Wallet passed on prepareEntityTx
       final driveTx =
           await _arweave.prepareEntityTx(drive, wallet, createRes.driveKey);
 
@@ -83,7 +85,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         driveId: drive.id,
         name: driveName,
       );
-
+      // TODO: Wallet passed on prepareEntityTx
       final rootFolderTx = await _arweave.prepareEntityTx(
         rootFolderEntity,
         wallet,

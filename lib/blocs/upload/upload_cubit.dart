@@ -143,6 +143,7 @@ class UploadCubit extends Cubit<UploadState> {
     pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
 
     if (pstFee > BigInt.zero) {
+      // TODO: Wallet passed on transactions.prepare
       feeTx = await _arweave.client.transactions.prepare(
         Transaction(
           target: await _pst.getWeightedPstHolder(),
@@ -153,7 +154,7 @@ class UploadCubit extends Cubit<UploadState> {
         ..addApplicationTags()
         ..addTag('Type', 'fee')
         ..addTag(TipType.tagName, TipType.dataUpload);
-
+      // TODO: Wallet used to sign upload
       await feeTx.sign(profile.wallet);
     }
 
@@ -251,6 +252,7 @@ class UploadCubit extends Cubit<UploadState> {
       uploadHandle.dataTx = private
           ? await createEncryptedDataItem(fileData, fileKey)
           : DataItem.withBlobData(data: fileData);
+      // TODO: Wallet used to get Owner
       uploadHandle.dataTx.setOwner(await profile.wallet.getOwner());
     } else {
       uploadHandle.dataTx = await _arweave.client.transactions.prepare(
@@ -270,15 +272,17 @@ class UploadCubit extends Cubit<UploadState> {
         fileEntity.dataContentType,
       );
     }
-
+    // TODO: Wallet used to sign upload handle
     await uploadHandle.dataTx.sign(profile.wallet);
 
     fileEntity.dataTxId = uploadHandle.dataTx.id;
 
     if (fileSizeWithinBundleLimits) {
+      // TODO: Wallet passed on prepareEntityDataItem
       uploadHandle.entityTx = await _arweave.prepareEntityDataItem(
           fileEntity, profile.wallet, fileKey);
 
+      // TODO: Wallet passed on prepareDataBundleTx
       uploadHandle.bundleTx = await _arweave.prepareDataBundleTx(
         DataBundle(
           items: [
@@ -289,6 +293,8 @@ class UploadCubit extends Cubit<UploadState> {
         profile.wallet,
       );
     } else {
+      // TODO: Wallet passed on prepareEntityTx
+
       uploadHandle.entityTx =
           await _arweave.prepareEntityTx(fileEntity, profile.wallet, fileKey);
     }
