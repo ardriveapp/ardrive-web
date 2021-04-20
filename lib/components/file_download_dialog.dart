@@ -70,6 +70,12 @@ class FileDownloadDialog extends StatelessWidget {
                   const Center(child: CircularProgressIndicator()),
                 ],
               ),
+              actions: [
+                ElevatedButton(
+                  child: Text('Cancel'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
             );
           } else if (state is FileDownloadInProgress) {
             return AppDialog(
@@ -88,6 +94,15 @@ class FileDownloadDialog extends StatelessWidget {
                   trailing: const CircularProgressIndicator(),
                 ),
               ),
+              actions: [
+                ElevatedButton(
+                  child: Text('Cancel'),
+                  onPressed: () {
+                    context.read<FileDownloadCubit>().abortDownload();
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
             );
           } else if (state is FileDownloadFailure) {
             return AppDialog(
