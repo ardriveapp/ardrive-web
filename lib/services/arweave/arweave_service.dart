@@ -5,6 +5,7 @@ import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart' as http;
+import 'package:moor/moor.dart';
 
 import '../services.dart';
 
@@ -341,6 +342,22 @@ class ArweaveService {
     return tx;
   }
 
+  Future<Transaction> prepareEntityTxWithSignature(
+    Entity entity,
+    Uint8List rawSignature,
+    String owner, [
+    SecretKey key,
+  ]) async {
+    final tx = await client.transactions.prepareWithSignature(
+      await entity.asTransaction(key),
+      owner,
+    );
+
+    await tx.signWithRawSignature(rawSignature);
+
+    return tx;
+  }
+
   /// Creates and signs a [DataItem] representing the provided entity.
   ///
   /// Optionally provide a [SecretKey] to encrypt the entity data.
@@ -357,6 +374,20 @@ class ArweaveService {
     return item;
   }
 
+  Future<DataItem> prepareEntityDataItemWithSignature(
+    Entity entity,
+    String owner,
+    Uint8List rawSignature, [
+    SecretKey key,
+  ]) async {
+    final item = await entity.asDataItem(key);
+    item.setOwner(owner);
+
+    await item.signWithRawSignature(rawSignature);
+
+    return item;
+  }
+
   /// Creates and signs a [Transaction] representing the provided [DataBundle].
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
@@ -366,6 +397,18 @@ class ArweaveService {
     );
 
     await bundleTx.sign(wallet);
+
+    return bundleTx;
+  }
+
+  Future<Transaction> prepareDataBundleTxWithSignature(
+      DataBundle bundle, String owner, Uint8List rawSignature) async {
+    final bundleTx = await client.transactions.prepareWithSignature(
+      Transaction.withDataBundle(bundle: bundle)..addApplicationTags(),
+      owner,
+    );
+
+    await bundleTx.signWithRawSignature(rawSignature);
 
     return bundleTx;
   }

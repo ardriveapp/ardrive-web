@@ -35,6 +35,8 @@ class ProfileLoggedIn extends ProfileAvailable {
 
   final SecretKey cipherKey;
 
+  final bool isArconnectLogin;
+
   ProfileLoggedIn({
     @required this.username,
     @required this.password,
@@ -42,6 +44,7 @@ class ProfileLoggedIn extends ProfileAvailable {
     @required this.walletAddress,
     @required this.walletBalance,
     @required this.cipherKey,
+    this.isArconnectLogin = false,
   });
 
   ProfileLoggedIn copyWith({
@@ -51,6 +54,7 @@ class ProfileLoggedIn extends ProfileAvailable {
     String walletAddress,
     BigInt walletBalance,
     SecretKey cipherKey,
+    bool isArconnectLogin,
   }) =>
       ProfileLoggedIn(
         username: username ?? this.username,
@@ -59,11 +63,31 @@ class ProfileLoggedIn extends ProfileAvailable {
         walletAddress: walletAddress ?? this.walletAddress,
         walletBalance: walletBalance ?? this.walletBalance,
         cipherKey: cipherKey ?? this.cipherKey,
+        isArconnectLogin: isArconnectLogin ?? this.isArconnectLogin,
       );
 
   @override
-  List<Object> get props =>
-      [username, password, wallet, walletAddress, walletBalance, cipherKey];
+  List<Object> get props => [
+        username,
+        password,
+        wallet,
+        walletAddress,
+        walletBalance,
+        cipherKey,
+        isArconnectLogin
+      ];
+
+  Future<Uint8List> getRawWalletSignature() {
+    return null;
+  }
+
+  Future<String> getWalletOwner() {
+    return null;
+  }
+
+  Future<String> getWalletAddress() {
+    return wallet.getAddress();
+  }
 }
 
 class ProfilePromptAdd extends ProfileUnavailable {}

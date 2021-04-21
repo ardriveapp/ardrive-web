@@ -45,7 +45,6 @@ Future<SecretKey> deriveDriveKey(
 }
 
 Future<SecretKey> deriveDriveKeyArConnect(
-  Wallet wallet,
   String driveId,
   String password,
 ) async {
