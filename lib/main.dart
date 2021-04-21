@@ -1,3 +1,5 @@
+import 'dart:html';
+
 import 'package:ardrive/services/shared_prefs/shared_prefs.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +24,9 @@ void main() async {
   print(config.defaultArweaveGatewayUrl);
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl)));
-
+  Future.delayed(Duration(hours: 12), () {
+    window.location.reload();
+  });
   runApp(App());
 }
 
