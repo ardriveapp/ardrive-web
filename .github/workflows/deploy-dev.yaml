@@ -29,7 +29,7 @@ jobs:
           flutter build web --profile
       - uses: JamesIves/github-pages-deploy-action@4.1.1
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           branch: gh-pages
           folder: build/web
           clean: true
