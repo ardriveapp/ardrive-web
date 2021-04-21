@@ -192,15 +192,18 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             ? folderById(driveId: driveId, folderId: folderId)
             : folderWithPath(driveId: driveId, path: folderPath))
         .watchSingleOrNull();
+    final subfolderOrder =
+        enumToFolderOrderByClause(folderEntries, orderBy, orderingMode);
 
-    final subfolderOrder = enumToFolderOrderByClause(folderEntries, orderBy);
     final subfolderQuery = (folderId != null
         ? foldersInFolder(
             driveId: driveId, parentFolderId: folderId, order: subfolderOrder)
         : foldersInFolderAtPath(
             driveId: driveId, path: folderPath, order: subfolderOrder));
 
-    final filesOrder = enumToFileOrderByClause(fileEntries, orderBy);
+    final filesOrder =
+        enumToFileOrderByClause(fileEntries, orderBy, orderingMode);
+
     final filesQuery = folderId != null
         ? filesInFolderWithRevisionTransactions(
             driveId: driveId, parentFolderId: folderId, order: filesOrder)

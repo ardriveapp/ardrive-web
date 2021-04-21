@@ -34,3 +34,5 @@ class FileDownloadSuccess extends FileDownloadState {
 }
 
 class FileDownloadFailure extends FileDownloadState {}
+
+class FileDownloadAborted extends FileDownloadState {}
