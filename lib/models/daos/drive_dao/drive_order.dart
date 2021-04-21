@@ -13,12 +13,13 @@ OrderBy enumToFolderOrderByClause(FolderEntries table, DriveOrder orderBy,
     // so we just sort them ascendingly by name.
     case DriveOrder.lastUpdated:
     case DriveOrder.size:
-      return OrderBy(
-          [OrderingTerm(expression: table.name, mode: OrderingMode.asc)]);
+      return OrderBy([
+        OrderingTerm(expression: table.name.lower(), mode: OrderingMode.asc)
+      ]);
     case DriveOrder.name:
     default:
       return OrderBy(
-          [OrderingTerm(expression: table.name, mode: orderingMode)]);
+          [OrderingTerm(expression: table.name.lower(), mode: orderingMode)]);
   }
 }
 
@@ -34,6 +35,6 @@ OrderBy enumToFileOrderByClause(FileEntries table, DriveOrder orderBy,
     case DriveOrder.name:
     default:
       return OrderBy(
-          [OrderingTerm(expression: table.name, mode: orderingMode)]);
+          [OrderingTerm(expression: table.name.lower(), mode: orderingMode)]);
   }
 }
