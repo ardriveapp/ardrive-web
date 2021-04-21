@@ -20,7 +20,7 @@ jobs:
           persist-credentials: false
       - uses: subosito/flutter-action@v1
         with:
-          channel: 'dev'
+          channel: 'stable'
       - name: Build app
         run: |
           flutter pub get
@@ -29,7 +29,7 @@ jobs:
           flutter build web --profile
       - uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages
           FOLDER: build/web
           CLEAN: true
