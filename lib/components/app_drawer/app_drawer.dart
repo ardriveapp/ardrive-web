@@ -35,6 +35,7 @@ class AppDrawer extends StatelessWidget {
                           Expanded(
                             child: Scrollbar(
                               child: ListView(
+                                key: PageStorageKey<String>('driveScrollView'),
                                 children: [
                                   if (state.userDrives.isNotEmpty ||
                                       state.sharedDrives.isEmpty) ...{
