@@ -32,63 +32,64 @@ class AppDrawer extends StatelessWidget {
                       children: [
                         _buildDriveActionsButton(context, state),
                         if (state is DrivesLoadSuccess)
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (state.userDrives.isNotEmpty ||
-                                  state.sharedDrives.isEmpty) ...{
-                                ListTile(
-                                  dense: true,
-                                  title: Text(
-                                    'PERSONAL DRIVES',
-                                    textAlign: TextAlign.start,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .caption
-                                        .copyWith(
-                                            color: ListTileTheme.of(context)
-                                                .textColor),
+                          Expanded(
+                            child: ListView(
+                              children: [
+                                if (state.userDrives.isNotEmpty ||
+                                    state.sharedDrives.isEmpty) ...{
+                                  ListTile(
+                                    dense: true,
+                                    title: Text(
+                                      'PERSONAL DRIVES',
+                                      textAlign: TextAlign.start,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .caption
+                                          .copyWith(
+                                              color: ListTileTheme.of(context)
+                                                  .textColor),
+                                    ),
+                                    trailing: _buildSyncButton(),
                                   ),
-                                  trailing: _buildSyncButton(),
-                                ),
-                                ...state.userDrives.map(
-                                  (d) => DriveListTile(
-                                    drive: d,
-                                    selected: state.selectedDriveId == d.id,
-                                    onPressed: () => context
-                                        .read<DrivesCubit>()
-                                        .selectDrive(d.id),
+                                  ...state.userDrives.map(
+                                    (d) => DriveListTile(
+                                      drive: d,
+                                      selected: state.selectedDriveId == d.id,
+                                      onPressed: () => context
+                                          .read<DrivesCubit>()
+                                          .selectDrive(d.id),
+                                    ),
                                   ),
-                                ),
-                              },
-                              if (state.sharedDrives.isNotEmpty) ...{
-                                ListTile(
-                                  dense: true,
-                                  title: Text(
-                                    'SHARED DRIVES',
-                                    textAlign: TextAlign.start,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .caption
-                                        .copyWith(
-                                            color: ListTileTheme.of(context)
-                                                .textColor),
+                                },
+                                if (state.sharedDrives.isNotEmpty) ...{
+                                  ListTile(
+                                    dense: true,
+                                    title: Text(
+                                      'SHARED DRIVES',
+                                      textAlign: TextAlign.start,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .caption
+                                          .copyWith(
+                                              color: ListTileTheme.of(context)
+                                                  .textColor),
+                                    ),
+                                    trailing: state.userDrives.isEmpty
+                                        ? _buildSyncButton()
+                                        : null,
                                   ),
-                                  trailing: state.userDrives.isEmpty
-                                      ? _buildSyncButton()
-                                      : null,
-                                ),
-                                ...state.sharedDrives.map(
-                                  (d) => DriveListTile(
-                                    drive: d,
-                                    selected: state.selectedDriveId == d.id,
-                                    onPressed: () => context
-                                        .read<DrivesCubit>()
-                                        .selectDrive(d.id),
+                                  ...state.sharedDrives.map(
+                                    (d) => DriveListTile(
+                                      drive: d,
+                                      selected: state.selectedDriveId == d.id,
+                                      onPressed: () => context
+                                          .read<DrivesCubit>()
+                                          .selectDrive(d.id),
+                                    ),
                                   ),
-                                ),
-                              }
-                            ],
+                                }
+                              ],
+                            ),
                           ),
                       ],
                     ),

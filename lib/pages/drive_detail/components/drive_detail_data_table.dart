@@ -1,46 +1,52 @@
 part of '../drive_detail_page.dart';
 
 Widget _buildDataTable(BuildContext context, DriveDetailLoadSuccess state) =>
-    DataTable(
-      showCheckboxColumn: false,
-      columns: _buildTableColumns(context),
-      sortColumnIndex: DriveOrder.values.indexOf(state.contentOrderBy),
-      sortAscending: state.contentOrderingMode == OrderingMode.asc,
-      rows: [
-        ...state.currentFolder.subfolders.map(
-          (folder) => _buildFolderRow(
-            context: context,
-            folder: folder,
-            selected: folder.id == state.selectedItemId,
-            onPressed: () {
-              final bloc = context.read<DriveDetailCubit>();
-              if (folder.id == state.selectedItemId) {
-                bloc.openFolder(path: folder.path);
-              } else {
-                bloc.selectItem(
-                  folder.id,
-                  isFolder: true,
-                );
-              }
-            },
+    Scrollbar(
+      child: ListView(
+        children: [
+          DataTable(
+            showCheckboxColumn: false,
+            columns: _buildTableColumns(context),
+            sortColumnIndex: DriveOrder.values.indexOf(state.contentOrderBy),
+            sortAscending: state.contentOrderingMode == OrderingMode.asc,
+            rows: [
+              ...state.currentFolder.subfolders.map(
+                (folder) => _buildFolderRow(
+                  context: context,
+                  folder: folder,
+                  selected: folder.id == state.selectedItemId,
+                  onPressed: () {
+                    final bloc = context.read<DriveDetailCubit>();
+                    if (folder.id == state.selectedItemId) {
+                      bloc.openFolder(path: folder.path);
+                    } else {
+                      bloc.selectItem(
+                        folder.id,
+                        isFolder: true,
+                      );
+                    }
+                  },
+                ),
+              ),
+              ...state.currentFolder.files.map(
+                (file) => _buildFileRow(
+                  context: context,
+                  file: file,
+                  selected: file.id == state.selectedItemId,
+                  onPressed: () async {
+                    final bloc = context.read<DriveDetailCubit>();
+                    if (file.id == state.selectedItemId) {
+                      bloc.toggleSelectedItemDetails();
+                    } else {
+                      await bloc.selectItem(file.id);
+                    }
+                  },
+                ),
+              ),
+            ],
           ),
-        ),
-        ...state.currentFolder.files.map(
-          (file) => _buildFileRow(
-            context: context,
-            file: file,
-            selected: file.id == state.selectedItemId,
-            onPressed: () async {
-              final bloc = context.read<DriveDetailCubit>();
-              if (file.id == state.selectedItemId) {
-                bloc.toggleSelectedItemDetails();
-              } else {
-                await bloc.selectItem(file.id);
-              }
-            },
-          ),
-        ),
-      ],
+        ],
+      ),
     );
 
 List<DataColumn> _buildTableColumns(BuildContext context) {
