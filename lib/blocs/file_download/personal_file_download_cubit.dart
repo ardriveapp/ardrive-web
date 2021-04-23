@@ -36,13 +36,13 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       emit(FileDownloadInProgress(
           fileName: file.name, totalByteCount: file.size));
       _dioClient = Dio();
-      final dataRes = await _dioClient
+      final dataRes = await http
           .get(_arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}');
 
       Uint8List dataBytes;
 
       if (drive.isPublic) {
-        dataBytes = dataRes.data;
+        dataBytes = dataRes.bodyBytes;
       } else if (drive.isPrivate) {
         final profile = _profileCubit.state as ProfileLoggedIn;
 
@@ -51,7 +51,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         final fileKey =
             await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
 
-        dataBytes = await decryptTransactionData(dataTx, dataRes.data, fileKey);
+        dataBytes =
+            await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey);
       }
 
       emit(

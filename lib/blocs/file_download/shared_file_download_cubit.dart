@@ -28,16 +28,17 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
           fileName: file.name, totalByteCount: file.size));
       //Reinitialize here in case connection is closed with abort
       _dioClient = Dio();
-      final dataRes = await _dioClient
+      final dataRes = await http
           .get(_arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}');
 
       Uint8List dataBytes;
 
       if (fileKey == null) {
-        dataBytes = dataRes.data;
+        dataBytes = dataRes.bodyBytes;
       } else {
         final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
-        dataBytes = await decryptTransactionData(dataTx, dataRes.data, fileKey);
+        dataBytes =
+            await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey);
       }
 
       emit(
