@@ -327,88 +327,64 @@ class ArweaveService {
   /// Creates and signs a [Transaction] representing the provided entity.
   ///
   /// Optionally provide a [SecretKey] to encrypt the entity data.
+
   Future<Transaction> prepareEntityTx(
-    Entity entity,
-    Wallet wallet, [
-    SecretKey key,
-  ]) async {
-    final tx = await client.transactions.prepare(
-      await entity.asTransaction(key),
-      wallet,
-    );
-
-    await tx.sign(wallet);
-
-    return tx;
-  }
-
-  Future<Transaction> prepareEntityTxWithSignature(
     Entity entity,
     Uint8List rawSignature,
     String owner, [
     SecretKey key,
   ]) async {
-    final tx = await client.transactions.prepareWithSignature(
+    final tx = await client.transactions.prepare(
       await entity.asTransaction(key),
       owner,
     );
 
-    await tx.signWithRawSignature(rawSignature);
+    await tx.sign(rawSignature);
 
     return tx;
+  }
+
+  Future<Uint8List> getSignatureData(
+    Entity entity,
+    String owner, [
+    SecretKey key,
+  ]) async {
+    final tx = await client.transactions.prepare(
+      await entity.asTransaction(key),
+      owner,
+    );
+
+    return await tx.getSignatureData();
   }
 
   /// Creates and signs a [DataItem] representing the provided entity.
   ///
   /// Optionally provide a [SecretKey] to encrypt the entity data.
+
   Future<DataItem> prepareEntityDataItem(
     Entity entity,
-    Wallet wallet, [
-    SecretKey key,
-  ]) async {
-    final item = await entity.asDataItem(key);
-    item.setOwner(await wallet.getOwner());
-
-    await item.sign(wallet);
-
-    return item;
-  }
-
-  Future<DataItem> prepareEntityDataItemWithSignature(
-    Entity entity,
-    String owner,
-    Uint8List rawSignature, [
+    Uint8List rawSignature,
+    String owner, [
     SecretKey key,
   ]) async {
     final item = await entity.asDataItem(key);
     item.setOwner(owner);
 
-    await item.signWithRawSignature(rawSignature);
+    await item.sign(rawSignature);
 
     return item;
   }
 
   /// Creates and signs a [Transaction] representing the provided [DataBundle].
+
   Future<Transaction> prepareDataBundleTx(
-      DataBundle bundle, Wallet wallet) async {
+      DataBundle bundle, Uint8List rawSignature, String owner) async {
     final bundleTx = await client.transactions.prepare(
-      Transaction.withDataBundle(bundle: bundle)..addApplicationTags(),
-      wallet,
-    );
-
-    await bundleTx.sign(wallet);
-
-    return bundleTx;
-  }
-
-  Future<Transaction> prepareDataBundleTxWithSignature(
-      DataBundle bundle, String owner, Uint8List rawSignature) async {
-    final bundleTx = await client.transactions.prepareWithSignature(
       Transaction.withDataBundle(bundle: bundle)..addApplicationTags(),
       owner,
     );
 
-    await bundleTx.signWithRawSignature(rawSignature);
+    await bundleTx.sign(rawSignature);
 
     return bundleTx;
   }

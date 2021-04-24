@@ -76,19 +76,22 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       );
 
       // TODO: Revert back to using data bundles when the api is stable again.
-      // TODO: Wallet passed on prepareEntityTx
-      final driveTx =
-          await _arweave.prepareEntityTx(drive, wallet, createRes.driveKey);
+      final owner = await profile.getWalletOwner();
+      final signatureData =
+          await _arweave.getSignatureData(drive, owner, createRes.driveKey);
+      final rawSignature = await profile.getRawWalletSignature(signatureData);
+      final driveTx = await _arweave.prepareEntityTx(
+          drive, rawSignature, owner, createRes.driveKey);
 
       final rootFolderEntity = FolderEntity(
         id: drive.rootFolderId,
         driveId: drive.id,
         name: driveName,
       );
-      // TODO: Wallet passed on prepareEntityTx
       final rootFolderTx = await _arweave.prepareEntityTx(
         rootFolderEntity,
-        wallet,
+        rawSignature,
+        owner,
         createRes.driveKey,
       );
 

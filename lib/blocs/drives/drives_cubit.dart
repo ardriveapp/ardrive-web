@@ -47,7 +47,7 @@ class DrivesCubit extends Cubit<DrivesState> {
       final profile = _profileCubit.state;
       //TODO: Again why is wallet.getAddress() used instead of walletAddress
       final walletAddress =
-          profile is ProfileLoggedIn ? await profile.wallet.getAddress() : '';
+          profile is ProfileLoggedIn ? await profile.walletAddress : '';
       //TODO: Some way to tell if the owner of the wallet is logged in?
       emit(
         DrivesLoadSuccess(

@@ -77,12 +77,12 @@ class ProfileLoggedIn extends ProfileAvailable {
         isArconnectLogin
       ];
 
-  Future<Uint8List> getRawWalletSignature() {
-    return null;
+  Future<Uint8List> getRawWalletSignature(Uint8List signatureData) {
+    return wallet.sign(signatureData);
   }
 
   Future<String> getWalletOwner() {
-    return null;
+    return wallet.getOwner();
   }
 
   Future<String> getWalletAddress() {
