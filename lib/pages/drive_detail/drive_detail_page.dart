@@ -39,47 +39,43 @@ class DriveDetailPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: Scrollbar(
-                            child: SingleChildScrollView(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 32, horizontal: 24),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 32, horizontal: 24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          state.currentDrive.name,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headline5,
-                                        ),
-                                        DriveDetailActionRow(),
-                                      ],
+                                    Text(
+                                      state.currentDrive.name,
+                                      style:
+                                          Theme.of(context).textTheme.headline5,
                                     ),
-                                    DriveDetailBreadcrumbRow(
-                                        path: state.currentFolder.folder.path),
-                                    if (state.currentFolder.subfolders
-                                            .isNotEmpty ||
-                                        state.currentFolder.files.isNotEmpty)
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child:
-                                                _buildDataTable(context, state),
-                                          ),
-                                        ],
-                                      )
-                                    else
-                                      DriveDetailFolderEmptyCard(
-                                          promptToAddFiles:
-                                              state.hasWritePermissions),
+                                    DriveDetailActionRow(),
                                   ],
                                 ),
-                              ),
+                                DriveDetailBreadcrumbRow(
+                                    path: state.currentFolder.folder.path),
+                                if (state.currentFolder.subfolders.isNotEmpty ||
+                                    state.currentFolder.files.isNotEmpty)
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child:
+                                              _buildDataTable(context, state),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                else
+                                  DriveDetailFolderEmptyCard(
+                                      promptToAddFiles:
+                                          state.hasWritePermissions),
+                              ],
                             ),
                           ),
                         ),
