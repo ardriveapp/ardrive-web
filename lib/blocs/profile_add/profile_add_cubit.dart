@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
@@ -22,7 +23,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   final ProfileCubit _profileCubit;
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
-
   ProfileAddCubit({
     @required ProfileCubit profileCubit,
     @required ProfileDao profileDao,
@@ -30,7 +30,12 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
         _arweave = arweave,
-        super(ProfileAddPromptWallet());
+        super(ProfileAddPromptWallet()) {
+    if (arconnect.isExtensionPresent()) {
+      print(arconnect.isExtensionPresent());
+      pickWalletFromArconnect();
+    }
+  }
 
   Future<void> promptForWallet() async {
     emit(ProfileAddPromptWallet());
@@ -52,9 +57,12 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     }
   }
 
-  Future<void> pickWalletFromArconnect(String walletAddress) async {
+  Future<void> pickWalletFromArconnect() async {
     emit(ProfileAddUserStateLoadInProgress());
+    await arconnect.connect();
+    final walletAddress = await arconnect.getWalletAddress();
 
+    print(walletAddress);
     _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(walletAddress);
 
     if (_driveTxs.isEmpty) {
@@ -108,9 +116,9 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
 
       //TODO getDriveKey from arconnect if wallet is null
-
+      print(_wallet);
       final checkDriveKey = await deriveDriveKey(
-        _wallet,
+        _wallet != null ? _wallet.sign : arconnect.getSignature,
         checkDriveId,
         password,
       );

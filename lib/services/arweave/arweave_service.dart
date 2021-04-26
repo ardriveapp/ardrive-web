@@ -140,13 +140,13 @@ class ArweaveService {
 
   /// Gets the unique drive entities for a particular user.
   Future<Map<DriveEntity, SecretKey>> getUniqueUserDriveEntities(
-    Wallet wallet,
+    Future<Uint8List> Function(Uint8List message) getWalletSignature,
+    String walletAddress,
     String password,
   ) async {
     final userDriveEntitiesQuery = await _gql.execute(
       UserDriveEntitiesQuery(
-          variables:
-              UserDriveEntitiesArguments(owner: await wallet.getAddress())),
+          variables: UserDriveEntitiesArguments(owner: walletAddress)),
     );
 
     final driveTxs = userDriveEntitiesQuery.data.transactions.edges
@@ -169,7 +169,7 @@ class ArweaveService {
       final driveKey =
           driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private
               ? await deriveDriveKey(
-                  wallet,
+                  getWalletSignature,
                   driveTx.getTag(EntityTag.driveId),
                   password,
                 )

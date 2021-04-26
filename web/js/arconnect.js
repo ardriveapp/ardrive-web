@@ -9,27 +9,22 @@ const permissions = [
 ];
 
 
-
-async function loadWallet() {
-    var walletAddress;
-    var walletName;
-    var signature;
-    //Have to use this because the window.arweaveWalletLoaded listener does not work for some reason
-    if (typeof window.arweaveWallet != 'undefined') {
-        await window.arweaveWallet.connect(permissions);
-        walletAddress = await window.arweaveWallet.getActiveAddress();
-        walletName = await window.arweaveWallet.getWalletNames([walletAddress]);
-        
-        console.log('Arweave wallet loaded.')
-        console.log(walletAddress);
-        console.log(walletName);
-        return { 'walletAddress': walletAddress, 'walletName': walletName };
-    }
-
-    return {};
-
-
-
+function isExtensionPresent() {
+    return window.arweaveWallet != null && window.arweaveWallet != 'undefined';
 }
+
+async function connect() {
+    return await window.arweaveWallet.connect(permissions);
+}
+
+async function getWalletAddress() {
+    return await window.arweaveWallet.getActiveAddress();
+}
+
+async function getSignature( message) {
+    return await window.arweaveWallet.signature(message);
+}
+
+
 
 

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:uuid/uuid.dart';
 
@@ -30,27 +29,13 @@ Future<ProfileKeyDerivationResult> deriveProfileKey(String password,
 }
 
 Future<SecretKey> deriveDriveKey(
-  Wallet wallet,
+  Future<Uint8List> Function(Uint8List message) getWalletSignature,
   String driveId,
   String password,
 ) async {
-  final walletSignature = await wallet
-      .sign(Uint8List.fromList(utf8.encode('drive') + _uuid.parse(driveId)));
-
-  return hkdf.deriveKey(
-    secretKey: SecretKey(walletSignature),
-    info: utf8.encode(password),
-    nonce: Uint8List(0),
-  );
-}
-
-Future<SecretKey> deriveDriveKeyArConnect(
-  String driveId,
-  String password,
-) async {
-  Uint8List walletSignature;
-  //TODO Derive wallet signature from arconnect
-
+  final message =
+      Uint8List.fromList(utf8.encode('drive') + _uuid.parse(driveId));
+  final walletSignature = await getWalletSignature(message);
   return hkdf.deriveKey(
     secretKey: SecretKey(walletSignature),
     info: utf8.encode(password),

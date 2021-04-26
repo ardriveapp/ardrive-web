@@ -60,7 +60,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         name: driveName,
         ownerAddress: await wallet.getAddress(),
         privacy: drivePrivacy,
-        wallet: wallet,
+        getWalletSignature: profile.getRawWalletSignature,
         password: profile.password,
         profileKey: profile.cipherKey,
       );

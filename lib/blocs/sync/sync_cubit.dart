@@ -60,7 +60,9 @@ class SyncCubit extends Cubit<SyncState> {
         //
         // TODO: Wallet passed on getUniqueUserDriveEntities
         final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
-            profile.wallet, profile.password);
+            profile.getRawWalletSignature,
+            await profile.getWalletAddress(),
+            profile.password);
 
         await _driveDao.updateUserDrives(userDriveEntities, profile.cipherKey);
       }
