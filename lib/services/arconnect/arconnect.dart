@@ -15,7 +15,7 @@ external dynamic _connect();
 external String _getWalletAddress();
 
 @JS('getSignature')
-external Uint8List _getSignature(Uint8List message);
+external Uint8List _getSignature(Object message);
 
 Future<void> connect() {
   return promiseToFuture(_connect());
@@ -27,5 +27,6 @@ Future<String> getWalletAddress() {
 
 Future<Uint8List> getSignature(Uint8List message) {
   print(message);
-  return promiseToFuture(_getSignature(message));
+  final promise = _getSignature(message);
+  return promiseToFuture(promise);
 }

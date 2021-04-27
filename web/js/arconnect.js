@@ -1,4 +1,3 @@
-
 const permissions = [
     "ACCESS_ADDRESS",
     "ACCESS_ALL_ADDRESSES",
@@ -21,9 +20,20 @@ async function getWalletAddress() {
     return await window.arweaveWallet.getActiveAddress();
 }
 
-async function getSignature( message) {
-    return await window.arweaveWallet.signature(message);
+async function getSignature(message) {
+    return await window.arweaveWallet.signature(
+        {
+            data: message,
+            options: {
+                algorithm: "sha256",
+                signing: { padding: 6, saltLength: 0 }
+            }
+        }
+    );
+
+
 }
+
 
 
 
