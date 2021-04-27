@@ -8,14 +8,11 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   final ArweaveService _arweave;
 
-  http.BrowserClient _httpClient;
-
   SharedFileDownloadCubit({
     @required this.fileId,
     this.fileKey,
     @required ArweaveService arweave,
   })  : _arweave = arweave,
-        _httpClient = http.BrowserClient(),
         super(FileDownloadStarting()) {
     download();
   }
@@ -27,23 +24,18 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       emit(FileDownloadInProgress(
           fileName: file.name, totalByteCount: file.size));
       //Reinitialize here in case connection is closed with abort
-      _httpClient = http.BrowserClient();
 
-      final dataRes = await _httpClient.send(
-        http.Request(
-          'GET',
-          _arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}',
-        ),
-      );
+      final dataRes = await http
+          .get(_arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}');
 
       Uint8List dataBytes;
 
       if (fileKey == null) {
-        dataBytes = await dataRes.readAsBytes();
+        dataBytes = await dataRes.bodyBytes;
       } else {
         final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
         dataBytes = await decryptTransactionData(
-            dataTx, await dataRes.readAsBytes(), fileKey);
+            dataTx, await dataRes.bodyBytes, fileKey);
       }
 
       emit(
@@ -64,7 +56,6 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   @override
   void abortDownload() {
-    _httpClient.close(force: true);
     emit(FileDownloadAborted());
   }
 
