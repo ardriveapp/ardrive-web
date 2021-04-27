@@ -20,4 +20,6 @@ part 'shared_file_download_cubit.dart';
 /// logic for download user files.
 abstract class FileDownloadCubit extends Cubit<FileDownloadState> {
   FileDownloadCubit(FileDownloadState state) : super(state);
+
+  void abortDownload() {}
 }
