@@ -21,16 +21,16 @@ async function getWalletAddress() {
 }
 
 async function getSignature(message) {
-    return await window.arweaveWallet.signature(
-        {
-            data: message,
-            options: {
-                algorithm: "sha256",
-                signing: { padding: 6, saltLength: 0 }
+    var response =
+        await window.arweaveWallet.signature(
+            message,
+            {
+                name: "RSA-PSS",
+                saltLength: 32,
             }
-        }
-    );
-
+        );
+    console.log(response);
+    return response;
 
 }
 

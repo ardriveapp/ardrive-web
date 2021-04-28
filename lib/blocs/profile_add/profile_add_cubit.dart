@@ -32,7 +32,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         _arweave = arweave,
         super(ProfileAddPromptWallet()) {
     if (arconnect.isExtensionPresent()) {
-      print(arconnect.isExtensionPresent());
       pickWalletFromArconnect();
     }
   }
@@ -62,7 +61,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     await arconnect.connect();
     final walletAddress = await arconnect.getWalletAddress();
 
-    print(walletAddress);
     _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(walletAddress);
 
     if (_driveTxs.isEmpty) {
@@ -116,7 +114,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
 
       //TODO getDriveKey from arconnect if wallet is null
-      print(_wallet);
       final checkDriveKey = await deriveDriveKey(
         _wallet != null ? _wallet.sign : arconnect.getSignature,
         checkDriveId,
