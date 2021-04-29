@@ -51,6 +51,6 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
       return;
     }
 
-    await _profileCubit.unlockDefaultProfile(password);
+    await _profileCubit.unlockDefaultProfile(password, false);
   }
 }

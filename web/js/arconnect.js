@@ -20,17 +20,18 @@ async function getWalletAddress() {
     return await window.arweaveWallet.getActiveAddress();
 }
 
-async function getSignature(message) {
+async function getSignature(message) {    
+    var input = new Uint8Array(message);
     var response =
         await window.arweaveWallet.signature(
-            message,
+            input,
             {
                 name: "RSA-PSS",
-                saltLength: 32,
+                saltLength: 0,
             }
         );
-    console.log(response);
-    return response;
+    var array = Uint8Array.from(Object.values(response))
+    return array;
 
 }
 

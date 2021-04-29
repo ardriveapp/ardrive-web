@@ -55,7 +55,8 @@ void main() {
       expect: [
         ProfileAddPromptDetails(isExistingUser: false),
       ],
-      verify: (_) => verify(profileCubit.unlockDefaultProfile(fakePassword)),
+      verify: (_) =>
+          verify(profileCubit.unlockDefaultProfile(fakePassword, false)),
     );
 
     blocTest<ProfileAddCubit, ProfileAddState>(

@@ -18,6 +18,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   FormGroup form;
 
   Wallet _wallet;
+  bool isArconnect;
   List<TransactionCommonMixin> _driveTxs;
 
   final ProfileCubit _profileCubit;
@@ -32,6 +33,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         _arweave = arweave,
         super(ProfileAddPromptWallet()) {
     if (arconnect.isExtensionPresent()) {
+      isArconnect = true;
       pickWalletFromArconnect();
     }
   }
@@ -44,7 +46,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     emit(ProfileAddUserStateLoadInProgress());
 
     _wallet = Wallet.fromJwk(json.decode(walletJson));
-
     _driveTxs =
         await _arweave.getUniqueUserDriveEntityTxs(await _wallet.getAddress());
 
@@ -60,7 +61,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     emit(ProfileAddUserStateLoadInProgress());
     await arconnect.connect();
     final walletAddress = await arconnect.getWalletAddress();
-
+    print(walletAddress);
     _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(walletAddress);
 
     if (_driveTxs.isEmpty) {
@@ -113,7 +114,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     if (privateDriveTxs.isNotEmpty) {
       final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
 
-      //TODO getDriveKey from arconnect if wallet is null
       final checkDriveKey = await deriveDriveKey(
         _wallet != null ? _wallet.sign : arconnect.getSignature,
         checkDriveId,
@@ -140,7 +140,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
     await _profileDao.addProfile(username, password, _wallet);
 
-    await _profileCubit.unlockDefaultProfile(password);
+    await _profileCubit.unlockDefaultProfile(password, isArconnect);
   }
 
   ValidatorFunction _mustMatch(String controlName, String matchingControlName) {

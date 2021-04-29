@@ -25,6 +25,7 @@ Future<String> getWalletAddress() {
   return promiseToFuture(_getWalletAddress());
 }
 
-Future<Uint8List> getSignature(Uint8List message) {
-  return promiseToFuture<Uint8List>(_getSignature(message));
+Future<Uint8List> getSignature(Uint8List message) async {
+  final result = promiseToFuture<Uint8List>(_getSignature(message));
+  return result;
 }

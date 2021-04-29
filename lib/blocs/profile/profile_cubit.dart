@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
@@ -36,21 +37,24 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(profile != null ? ProfilePromptLogIn() : ProfilePromptAdd());
   }
 
-  Future<void> unlockDefaultProfile(String password) async {
+  Future<void> unlockDefaultProfile(String password, bool isArconnect) async {
     emit(ProfileLoggingIn());
 
     final profile = await _profileDao.loadDefaultProfile(password);
 
     if (profile != null) {
       //TODO: Get walletAddress from Arconnect
-      final walletAddress = await profile.wallet.getAddress();
+      final walletAddress = await (isArconnect
+          ? arconnect.getWalletAddress()
+          : profile.wallet.getAddress());
       final walletBalance = await _arweave.getWalletBalance(walletAddress);
 
       emit(
         ProfileLoggedIn(
           username: profile.details.username,
           password: password,
-          wallet: profile.wallet,
+          wallet: isArconnect ? null : profile.wallet,
+          isArconnectLogin: isArconnect,
           walletAddress: walletAddress,
           walletBalance: walletBalance,
           cipherKey: profile.key,
