@@ -25,8 +25,8 @@ dependencies:
   artemis: ^6.17.1
   arweave:
     git:
-      url: https://github.com/CDDelta/arweave-dart.git
-      ref: d8ecfc9a61eaaf69464824f4dbc1f2b8060dbd41
+      url: https://github.com/ardriveapp/arweave-dart
+      ref: d6365b4897d3400a86b57948e0ba2a2dc90f2e29
   cryptography: ^2.0.0-nullsafety.2
   flutter_bloc: ^6.1.0
   flutter_portal: ^0.3.0
