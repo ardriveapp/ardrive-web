@@ -64,12 +64,7 @@ dev_dependencies:
   json_serializable: ^3.5.1
 
 dependency_overrides:
-  crypto: ^3.0.0-nullsafety.0
-  cryptography:
-    git:
-      url: https://github.com/CDDelta/cryptography.git
-      path: cryptography
-      ref: aae4e736dae0a3620663a1870f241205931d8e7e
+  crypto: 3.0.1
   ffi: ^0.2.0-nullsafety.1
   json_annotation: ^3.0.1
   mockito: ^5.0.0-nullsafety.2
