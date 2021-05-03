@@ -16,7 +16,8 @@ class DriveFileDropZone extends StatefulWidget {
 
 class _DriveFileDropZoneState extends State<DriveFileDropZone> {
   DropzoneViewController controller;
-  var isHovering = false;
+  bool isHovering = false;
+  bool isCurrentlyShown = false;
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DriveDetailCubit, DriveDetailState>(
@@ -34,6 +35,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
                 children: [
                   if (isHovering) _buildDropZoneOnHover(),
                   DropzoneView(
+                    key: Key('dropZone'),
                     onCreated: (ctrl) => controller = ctrl,
                     operation: DragOperation.all,
                     onDrop: (htmlFile) => _onDrop(
@@ -63,37 +65,40 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
     @required String driveId,
     @required String folderId,
   }) async {
-    _onLeave();
+    if (!isCurrentlyShown) {
+      isCurrentlyShown = true;
+      _onLeave();
 
-    final fileName = await controller.getFilename(htmlFile);
-    final fileMIME = await controller.getFileMIME(htmlFile);
-    final fileLength = await controller.getFileSize(htmlFile);
-    final htmlUrl = await controller.createFileUrl(htmlFile);
-    final fileToUpload = XFile(
-      htmlUrl,
-      name: fileName,
-      mimeType: fileMIME,
-      lastModified: DateTime.now(),
-      length: fileLength,
-    );
-    final selectedFiles = <XFile>[fileToUpload];
+      final fileName = await controller.getFilename(htmlFile);
+      final fileMIME = await controller.getFileMIME(htmlFile);
+      final fileLength = await controller.getFileSize(htmlFile);
+      final htmlUrl = await controller.createFileUrl(htmlFile);
+      final fileToUpload = XFile(
+        htmlUrl,
+        name: fileName,
+        mimeType: fileMIME,
+        lastModified: DateTime.now(),
+        length: fileLength,
+      );
+      final selectedFiles = <XFile>[fileToUpload];
 
-    await showDialog(
-      context: context,
-      builder: (_) => BlocProvider<UploadCubit>(
-        create: (context) => UploadCubit(
-          driveId: driveId,
-          folderId: folderId,
-          files: selectedFiles,
-          arweave: context.read<ArweaveService>(),
-          pst: context.read<PstService>(),
-          profileCubit: context.read<ProfileCubit>(),
-          driveDao: context.read<DriveDao>(),
+      await showDialog(
+        context: context,
+        builder: (_) => BlocProvider<UploadCubit>(
+          create: (context) => UploadCubit(
+            driveId: driveId,
+            folderId: folderId,
+            files: selectedFiles,
+            arweave: context.read<ArweaveService>(),
+            pst: context.read<PstService>(),
+            profileCubit: context.read<ProfileCubit>(),
+            driveDao: context.read<DriveDao>(),
+          ),
+          child: UploadForm(),
         ),
-        child: UploadForm(),
-      ),
-      barrierDismissible: false,
-    );
+        barrierDismissible: false,
+      ).then((value) => isCurrentlyShown = false);
+    }
   }
 
   void _onHover() => setState(() => isHovering = true);

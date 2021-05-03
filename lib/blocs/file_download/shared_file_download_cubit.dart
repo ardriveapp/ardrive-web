@@ -8,14 +8,11 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   final ArweaveService _arweave;
 
-  Dio _dioClient;
-
   SharedFileDownloadCubit({
     @required this.fileId,
     this.fileKey,
     @required ArweaveService arweave,
   })  : _arweave = arweave,
-        _dioClient = Dio(),
         super(FileDownloadStarting()) {
     download();
   }
@@ -27,17 +24,18 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       emit(FileDownloadInProgress(
           fileName: file.name, totalByteCount: file.size));
       //Reinitialize here in case connection is closed with abort
-      _dioClient = Dio();
-      final dataRes = await _dioClient
+
+      final dataRes = await http
           .get(_arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}');
 
       Uint8List dataBytes;
 
       if (fileKey == null) {
-        dataBytes = dataRes.data;
+        dataBytes = await dataRes.bodyBytes;
       } else {
         final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
-        dataBytes = await decryptTransactionData(dataTx, dataRes.data, fileKey);
+        dataBytes = await decryptTransactionData(
+            dataTx, await dataRes.bodyBytes, fileKey);
       }
 
       emit(
@@ -58,7 +56,6 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   @override
   void abortDownload() {
-    _dioClient.close(force: true);
     emit(FileDownloadAborted());
   }
 
