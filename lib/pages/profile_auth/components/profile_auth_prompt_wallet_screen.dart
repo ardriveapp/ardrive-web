@@ -1,8 +1,10 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/services/shared_prefs/shared_prefs.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/link.dart';
 
 import 'profile_auth_shell.dart';
@@ -45,6 +47,31 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
               ),
+            ),
+            FutureBuilder(
+              future: PackageInfo.fromPlatform(),
+              builder:
+                  (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
+                if (snapshot.hasData) {
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        if (snapshot.data.buildNumber == 'staging')
+                          SwitchListTile(
+                            title: Text('Toggle TestNet'),
+                            value: SharedPrefsService().testnetEnabled,
+                            onChanged: (value) =>
+                                SharedPrefsService().toggleTestNet(value),
+                          ),
+                      ],
+                    ),
+                  );
+                } else {
+                  return Container();
+                }
+              },
             ),
           ],
         ),

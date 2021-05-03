@@ -104,12 +104,17 @@ class AppDrawer extends StatelessWidget {
                       if (snapshot.hasData) {
                         return Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Version ${snapshot.data.version}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .caption
-                                .copyWith(color: Colors.grey),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Version ${snapshot.data.version}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .caption
+                                    .copyWith(color: Colors.grey),
+                              ),
+                            ],
                           ),
                         );
                       } else {
