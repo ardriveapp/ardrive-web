@@ -44,7 +44,7 @@ class ProfileCubit extends Cubit<ProfileState> {
 
     if (profile != null) {
       //TODO: Get walletAddress from Arconnect
-      final walletAddress = await (isArconnect
+      final walletAddress = await (profile.wallet == null
           ? arconnect.getWalletAddress()
           : profile.wallet.getAddress());
       final walletBalance = await _arweave.getWalletBalance(walletAddress);
@@ -54,7 +54,6 @@ class ProfileCubit extends Cubit<ProfileState> {
           username: profile.details.username,
           password: password,
           wallet: isArconnect ? null : profile.wallet,
-          isArconnectLogin: isArconnect,
           walletAddress: walletAddress,
           walletBalance: walletBalance,
           cipherKey: profile.key,
@@ -68,7 +67,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> refreshBalance() async {
     final profile = state as ProfileLoggedIn;
 
-    final walletAddress = await profile.wallet.getAddress();
+    final walletAddress = await profile.getWalletAddress();
     final walletBalance = await Future.wait([
       _arweave.getWalletBalance(walletAddress),
       _arweave.getPendingTxFees(walletAddress),

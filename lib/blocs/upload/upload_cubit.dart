@@ -254,8 +254,7 @@ class UploadCubit extends Cubit<UploadState> {
       uploadHandle.dataTx = private
           ? await createEncryptedDataItem(fileData, fileKey)
           : DataItem.withBlobData(data: fileData);
-      // TODO: Wallet used to get Owner
-      uploadHandle.dataTx.setOwner(await profile.wallet.getOwner());
+      uploadHandle.dataTx.setOwner(await profile.getWalletOwner());
     } else {
       final owner = await profile.getWalletOwner();
       uploadHandle.dataTx = await _arweave.client.transactions.prepare(

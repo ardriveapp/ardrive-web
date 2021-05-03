@@ -53,12 +53,10 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       final String drivePrivacy = form.control('privacy').value;
 
       final profile = _profileCubit.state as ProfileLoggedIn;
-      final wallet = profile.wallet;
-
-      //TODO Wallet passed on createDrive
+      final walletAddress = await profile.getWalletAddress();
       final createRes = await _driveDao.createDrive(
         name: driveName,
-        ownerAddress: await wallet.getAddress(),
+        ownerAddress: walletAddress,
         privacy: drivePrivacy,
         getWalletSignature: profile.getRawWalletSignature,
         password: profile.password,
@@ -97,9 +95,9 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
       await _arweave.postTx(driveTx);
       await _arweave.postTx(rootFolderTx);
-
+      print(driveTx.id);
+      print(rootFolderTx.id);
       rootFolderEntity.txId = rootFolderTx.id;
-
       await _driveDao.insertFolderRevision(rootFolderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create));
 

@@ -5,6 +5,7 @@ const permissions = [
     "ENCRYPT",
     "DECRYPT",
     "SIGNATURE",
+    "ACCESS_PUBLIC_KEY",
 ];
 
 
@@ -20,8 +21,16 @@ async function getWalletAddress() {
     return await window.arweaveWallet.getActiveAddress();
 }
 
-async function getSignature(message) {    
+async function getPublicKey() {
+    return await window.arweaveWallet.getActivePublicKey();
+}
+
+async function getSignature(message) {
+    console.log(message.toString());    
     var input = new Uint8Array(message);
+    console.log(input);
+    console.dir(input);
+    console.log(input.toString())
     var response =
         await window.arweaveWallet.signature(
             input,

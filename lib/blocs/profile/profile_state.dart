@@ -35,8 +35,6 @@ class ProfileLoggedIn extends ProfileAvailable {
 
   final SecretKey cipherKey;
 
-  final bool isArconnectLogin;
-
   ProfileLoggedIn({
     @required this.username,
     @required this.password,
@@ -44,7 +42,6 @@ class ProfileLoggedIn extends ProfileAvailable {
     @required this.walletAddress,
     @required this.walletBalance,
     @required this.cipherKey,
-    this.isArconnectLogin = false,
   });
 
   ProfileLoggedIn copyWith({
@@ -54,7 +51,6 @@ class ProfileLoggedIn extends ProfileAvailable {
     String walletAddress,
     BigInt walletBalance,
     SecretKey cipherKey,
-    bool isArconnectLogin,
   }) =>
       ProfileLoggedIn(
         username: username ?? this.username,
@@ -63,7 +59,6 @@ class ProfileLoggedIn extends ProfileAvailable {
         walletAddress: walletAddress ?? this.walletAddress,
         walletBalance: walletBalance ?? this.walletBalance,
         cipherKey: cipherKey ?? this.cipherKey,
-        isArconnectLogin: isArconnectLogin ?? this.isArconnectLogin,
       );
 
   @override
@@ -74,19 +69,20 @@ class ProfileLoggedIn extends ProfileAvailable {
         walletAddress,
         walletBalance,
         cipherKey,
-        isArconnectLogin
       ];
 
   Future<Uint8List> getRawWalletSignature(Uint8List signatureData) {
-    return wallet.sign(signatureData);
+    return wallet == null
+        ? arconnect.getSignature(signatureData)
+        : wallet.sign(signatureData);
   }
 
   Future<String> getWalletOwner() {
-    return wallet.getOwner();
+    return wallet == null ? arconnect.getPublicKey() : wallet.getOwner();
   }
 
   Future<String> getWalletAddress() {
-    return wallet.getAddress();
+    return wallet == null ? arconnect.getWalletAddress() : wallet.getAddress();
   }
 }
 

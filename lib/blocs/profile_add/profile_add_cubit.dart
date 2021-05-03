@@ -61,7 +61,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     emit(ProfileAddUserStateLoadInProgress());
     await arconnect.connect();
     final walletAddress = await arconnect.getWalletAddress();
-    print(walletAddress);
     _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(walletAddress);
 
     if (_driveTxs.isEmpty) {
@@ -113,9 +112,10 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     // right password.
     if (privateDriveTxs.isNotEmpty) {
       final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
+      final signature = _wallet != null ? _wallet.sign : arconnect.getSignature;
 
       final checkDriveKey = await deriveDriveKey(
-        _wallet != null ? _wallet.sign : arconnect.getSignature,
+        signature,
         checkDriveId,
         password,
       );
@@ -137,9 +137,16 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         return;
       }
     }
-
-    await _profileDao.addProfile(username, password, _wallet);
-
+    if (_wallet != null) {
+      await _profileDao.addProfile(username, password, _wallet);
+    } else {
+      final walletAddress = await arconnect.getWalletAddress();
+      await _profileDao.addProfileArconnect(
+        username,
+        password,
+        walletAddress,
+      );
+    }
     await _profileCubit.unlockDefaultProfile(password, isArconnect);
   }
 

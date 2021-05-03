@@ -14,6 +14,9 @@ external dynamic _connect();
 @JS('getWalletAddress')
 external String _getWalletAddress();
 
+@JS('getPublicKey')
+external String _getPublicKey();
+
 @JS('getSignature')
 external Uint8List _getSignature(Uint8List message);
 
@@ -25,7 +28,13 @@ Future<String> getWalletAddress() {
   return promiseToFuture(_getWalletAddress());
 }
 
+Future<String> getPublicKey() async {
+  return await promiseToFuture(_getPublicKey());
+}
+
 Future<Uint8List> getSignature(Uint8List message) async {
+  print(message);
   final result = promiseToFuture<Uint8List>(_getSignature(message));
+  print(await result);
   return result;
 }
