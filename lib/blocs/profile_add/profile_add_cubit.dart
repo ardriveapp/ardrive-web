@@ -31,11 +31,10 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
         _arweave = arweave,
-        super(ProfileAddPromptWallet()) {
-    if (arconnect.isExtensionPresent()) {
-      isArconnect = true;
-      pickWalletFromArconnect();
-    }
+        super(ProfileAddPromptWallet());
+
+  bool isArconnectInstalled() {
+    return arconnect.isExtensionPresent();
   }
 
   Future<void> promptForWallet() async {
@@ -59,6 +58,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
   Future<void> pickWalletFromArconnect() async {
     emit(ProfileAddUserStateLoadInProgress());
+    isArconnect = true;
     await arconnect.connect();
     final walletAddress = await arconnect.getWalletAddress();
     _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(walletAddress);
