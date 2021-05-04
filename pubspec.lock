@@ -40,9 +40,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: d8ecfc9a61eaaf69464824f4dbc1f2b8060dbd41
-      resolved-ref: d8ecfc9a61eaaf69464824f4dbc1f2b8060dbd41
-      url: "https://github.com/CDDelta/arweave-dart.git"
+      ref: d6365b4897d3400a86b57948e0ba2a2dc90f2e29
+      resolved-ref: d6365b4897d3400a86b57948e0ba2a2dc90f2e29
+      url: "https://github.com/ardriveapp/arweave-dart"
     source: git
     version: "0.1.0"
   async:
@@ -212,16 +212,14 @@ packages:
       name: crypto
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.0-nullsafety.0"
+    version: "3.0.1"
   cryptography:
     dependency: "direct main"
     description:
-      path: cryptography
-      ref: aae4e736dae0a3620663a1870f241205931d8e7e
-      resolved-ref: aae4e736dae0a3620663a1870f241205931d8e7e
-      url: "https://github.com/CDDelta/cryptography.git"
-    source: git
-    version: "2.0.0-nullsafety.2"
+      name: cryptography
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.1"
   dart_style:
     dependency: transitive
     description:
@@ -305,7 +303,7 @@ packages:
       name: fixnum
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.0-nullsafety.0"
+    version: "1.0.0"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -495,7 +493,7 @@ packages:
       name: jwk
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.0-nullsafety.1"
+    version: "0.1.0"
   logging:
     dependency: transitive
     description:
@@ -698,7 +696,7 @@ packages:
       name: pointycastle
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.1"
+    version: "3.0.1"
   pool:
     dependency: transitive
     description:
