@@ -9,12 +9,21 @@ class DriveListTile extends StatelessWidget {
   const DriveListTile({this.drive, this.selected = false, this.onPressed});
 
   @override
-  Widget build(BuildContext context) => ListTile(
-        leading: drive.isPrivate
-            ? const Icon(Icons.folder)
-            : const Icon(Icons.folder_shared),
-        title: Text(drive.name),
-        selected: selected,
-        onTap: onPressed,
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: ListTile(
+          trailing: drive.isPrivate
+              ? const Icon(
+                  Icons.lock_outline,
+                  size: 12,
+                )
+              : null,
+          title: Text(
+            drive.name,
+            style: TextStyle(fontSize: 12),
+          ),
+          selected: selected,
+          onTap: onPressed,
+        ),
       );
 }
