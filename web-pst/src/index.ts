@@ -36,7 +36,7 @@ export async function getWeightedPstHolder(): Promise<string | undefined> {
   const state = await pstContractStateRead;
   const balances = state.balances;
   const vault = state.vault;
-
+  console.dir(state);
   let total = 0;
   for (const addr of Object.keys(balances)) {
     total += balances[addr];
