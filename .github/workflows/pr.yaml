@@ -2,7 +2,7 @@ name: pr check
 on:
   pull_request:
     branches:
-      - dev
+      - stable
 
 jobs:
   # test:
