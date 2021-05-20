@@ -28,7 +28,7 @@ class ProfileAuthShell extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Image.asset(
-                    R.images.brand.logoVerticalNoSubtitle,
+                    R.images.brand.logoHorizontalNoSubtitleLight,
                     height: 126,
                     fit: BoxFit.contain,
                   ),

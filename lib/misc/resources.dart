@@ -14,6 +14,10 @@ class Brand {
 
   final logoHorizontalNoSubtitle =
       'assets/images/brand/logo-horiz-no-subtitle.png';
+  final logoHorizontalNoSubtitleDark =
+      'assets/images/brand/logo-horiz-no-subtitle-dark.png';
+  final logoHorizontalNoSubtitleLight =
+      'assets/images/brand/logo-horiz-no-subtitle-light.png';
   final logoVerticalNoSubtitle =
       'assets/images/brand/logo-vert-no-subtitle.png';
 }
