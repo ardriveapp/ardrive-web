@@ -1,4 +1,3 @@
-import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,11 +24,13 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
         builder: (context, state) {
           Widget _buildAppBar() => AppBar(
-                title: Image.asset(
-                  R.images.brand.logoHorizontalNoSubtitle,
-                  height: 64,
-                  fit: BoxFit.contain,
-                ),
+                // title: Image.asset(
+                //   R.images.brand.logoHorizontalNoSubtitle,
+                //   height: 64,
+                //   fit: BoxFit.contain,
+                // ),
+                elevation: 0.0,
+                backgroundColor: Colors.transparent,
                 actions: [
                   Link(
                     uri: Uri.parse(
@@ -85,16 +86,16 @@ class _AppShellState extends State<AppShell> {
               );
           return ScreenTypeLayout(
             desktop: _buildPage(
-              Scaffold(
-                appBar: _buildAppBar(),
-                body: Row(
-                  children: [
-                    AppDrawer(),
-                    Expanded(
-                      child: widget.page,
+              Row(
+                children: [
+                  AppDrawer(),
+                  Expanded(
+                    child: Scaffold(
+                      appBar: _buildAppBar(),
+                      body: widget.page,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             mobile: _buildPage(

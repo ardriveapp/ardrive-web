@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -25,16 +26,24 @@ class AppDrawer extends StatelessWidget {
             child: Container(
               color: kDarkSurfaceColor,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     child: Column(
                       children: [
+                        SizedBox(
+                          height: 32,
+                        ),
+                        _buildLogo(),
+                        SizedBox(
+                          height: 32,
+                        ),
                         _buildDriveActionsButton(context, state),
                         if (state is DrivesLoadSuccess)
                           Expanded(
                             child: Scrollbar(
                               child: ListView(
+                                padding: EdgeInsets.all(21),
                                 key: PageStorageKey<String>('driveScrollView'),
                                 children: [
                                   if (state.userDrives.isNotEmpty ||
@@ -123,6 +132,16 @@ class AppDrawer extends StatelessWidget {
           ),
         ),
       );
+  Widget _buildLogo() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Image.asset(
+        R.images.brand.logoHorizontalNoSubtitleDark,
+        height: 32,
+        fit: BoxFit.contain,
+      ),
+    );
+  }
 
   Widget _buildDriveActionsButton(
       BuildContext context, DrivesState drivesState) {
@@ -132,18 +151,25 @@ class AppDrawer extends StatelessWidget {
       textColor: theme.textTheme.bodyText1.color,
       iconColor: theme.iconTheme.color,
       child: Align(
-        alignment: Alignment.centerLeft,
+        alignment: Alignment.center,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
           child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
             builder: (context, state) => PopupMenuButton<Function>(
               onSelected: (callback) => callback(context),
               child: SizedBox(
-                width: 128,
+                width: 164,
+                height: 36,
                 child: FloatingActionButton.extended(
                   onPressed: null,
-                  icon: const Icon(Icons.add),
-                  label: Text('NEW'),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  label: Text(
+                    'NEW',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               itemBuilder: (context) => [

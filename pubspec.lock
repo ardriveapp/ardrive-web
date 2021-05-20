@@ -42,6 +42,7 @@ packages:
       path: "."
       ref: f8a0b9e6ce17d19782388e933557b46c8bd11cec
       resolved-ref: f8a0b9e6ce17d19782388e933557b46c8bd11cec
+
       url: "https://github.com/ardriveapp/arweave-dart"
     source: git
     version: "0.1.0"
@@ -212,16 +213,14 @@ packages:
       name: crypto
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.0-nullsafety.0"
+    version: "3.0.1"
   cryptography:
     dependency: "direct main"
     description:
-      path: cryptography
-      ref: aae4e736dae0a3620663a1870f241205931d8e7e
-      resolved-ref: aae4e736dae0a3620663a1870f241205931d8e7e
-      url: "https://github.com/CDDelta/cryptography.git"
-    source: git
-    version: "2.0.0-nullsafety.2"
+      name: cryptography
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.1"
   dart_style:
     dependency: transitive
     description:
@@ -305,7 +304,7 @@ packages:
       name: fixnum
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.0-nullsafety.0"
+    version: "1.0.0"
   flutter:
     dependency: "direct main"
     description: flutter
