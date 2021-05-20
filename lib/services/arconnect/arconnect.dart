@@ -33,8 +33,6 @@ Future<String> getPublicKey() async {
 }
 
 Future<Uint8List> getSignature(Uint8List message) async {
-  print(message);
   final result = promiseToFuture<Uint8List>(_getSignature(message));
-  print(await result);
   return result;
 }
