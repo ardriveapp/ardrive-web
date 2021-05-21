@@ -5,8 +5,6 @@ class FsEntrySideSheet extends StatelessWidget {
   final String folderId;
   final String fileId;
 
-  bool get _isShowingDriveDetails => folderId == null && fileId == null;
-
   FsEntrySideSheet({@required this.driveId, this.folderId, this.fileId});
 
   @override

@@ -34,6 +34,13 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
               child: Text('SELECT WALLET'),
               onPressed: () => _pickWallet(context),
             ),
+            if (context.read<ProfileAddCubit>().isArconnectInstalled()) ...[
+              const SizedBox(height: 32),
+              ElevatedButton(
+                child: Text('USE ARCONNECT'),
+                onPressed: () => _pickWalletArconnect(context),
+              ),
+            ],
             const SizedBox(height: 16),
             Link(
               uri: Uri.parse('https://tokens.arweave.org'),
@@ -62,5 +69,9 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
     await context
         .read<ProfileAddCubit>()
         .pickWallet(await walletFile.readAsString());
+  }
+
+  void _pickWalletArconnect(BuildContext context) async {
+    await context.read<ProfileAddCubit>().pickWalletFromArconnect();
   }
 }

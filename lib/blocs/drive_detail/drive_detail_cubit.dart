@@ -80,12 +80,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               ? this.state as DriveDetailLoadSuccess
               : DriveDetailLoadSuccess();
           final profile = _profileCubit.state;
-
+          //TODO: Why use wallet.getAddress() here instead of profile.walletAddress?
           emit(
             state.copyWith(
               currentDrive: drive,
               hasWritePermissions: profile is ProfileLoggedIn &&
-                  drive.ownerAddress == await profile.wallet.getAddress(),
+                  drive.ownerAddress == profile.walletAddress,
               currentFolder: folderContents,
               contentOrderBy: contentOrderBy,
               contentOrderingMode: contentOrderingMode,

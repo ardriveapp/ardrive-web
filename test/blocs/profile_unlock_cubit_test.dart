@@ -37,7 +37,7 @@ void main() {
         bloc.submit();
       },
       verify: (bloc) =>
-          verify(profileCubit.unlockDefaultProfile(rightPassword)),
+          verify(profileCubit.unlockDefaultProfile(rightPassword, false)),
     );
 
     blocTest<ProfileUnlockCubit, ProfileUnlockState>(

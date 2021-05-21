@@ -89,8 +89,14 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
           final folderEntity = folder.asEntity();
 
+          final owner = await profile.getWalletOwner();
+          final signatureData =
+              await _arweave.getSignatureData(folderEntity, owner, driveKey);
+          final rawSignature =
+              await profile.getRawWalletSignature(signatureData);
+
           final folderTx = await _arweave.prepareEntityTx(
-              folderEntity, profile.wallet, driveKey);
+              folderEntity, rawSignature, owner, driveKey);
 
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
@@ -122,8 +128,14 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
           final fileEntity = file.asEntity();
 
+          final owner = await profile.getWalletOwner();
+          final signatureData =
+              await _arweave.getSignatureData(fileEntity, owner, fileKey);
+          final rawSignature =
+              await profile.getRawWalletSignature(signatureData);
+
           final fileTx = await _arweave.prepareEntityTx(
-              fileEntity, profile.wallet, fileKey);
+              fileEntity, rawSignature, owner, fileKey);
 
           await _arweave.postTx(fileTx);
           await _driveDao.writeToFile(file);

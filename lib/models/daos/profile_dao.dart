@@ -25,23 +25,27 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
 
     final profileSalt = profile.keySalt;
     final profileKdRes = await deriveProfileKey(password, profileSalt);
-
+    var walletJwk;
     try {
-      final walletJwk = json.decode(
-        utf8.decode(
-          await aesGcm.decrypt(
-            secretBoxFromDataWithMacConcatenation(
-              profile.encryptedWallet,
-              nonce: profileSalt,
+      if (profile.encryptedWallet.isNotEmpty) {
+        walletJwk = json.decode(
+          utf8.decode(
+            await aesGcm.decrypt(
+              secretBoxFromDataWithMacConcatenation(
+                profile.encryptedWallet,
+                nonce: profileSalt,
+              ),
+              secretKey: profileKdRes.key,
             ),
-            secretKey: profileKdRes.key,
           ),
-        ),
-      );
+        );
+      }
 
       return ProfileLoadDetails(
         details: profile,
-        wallet: Wallet.fromJwk(walletJwk),
+        wallet: profile.encryptedWallet.isNotEmpty
+            ? Wallet.fromJwk(walletJwk)
+            : null,
         key: profileKdRes.key,
       );
     } on SecretBoxAuthenticationError catch (_) {
@@ -68,6 +72,23 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         id: await wallet.getAddress(),
         username: username,
         encryptedWallet: encryptedWallet.concatenation(nonce: false),
+        keySalt: profileSalt,
+      ),
+    );
+
+    return profileKdRes.key;
+  }
+
+  Future<SecretKey> addProfileArconnect(
+      String username, String password, String walletAddress) async {
+    final profileKdRes = await deriveProfileKey(password);
+    final profileSalt = profileKdRes.salt;
+
+    await into(profiles).insert(
+      ProfilesCompanion.insert(
+        id: walletAddress,
+        username: username,
+        encryptedWallet: Uint8List(0),
         keySalt: profileSalt,
       ),
     );
