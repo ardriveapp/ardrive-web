@@ -54,8 +54,6 @@ dependencies:
   js: ^0.6.3
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
 
   test: ^1.15.4
   bloc_test: ^7.1.0
