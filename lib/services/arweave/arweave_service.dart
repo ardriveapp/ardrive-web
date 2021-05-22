@@ -330,7 +330,7 @@ class ArweaveService {
 
   Future<Transaction> prepareEntityTx(
     Entity entity,
-    Uint8List rawSignature,
+    Future<Uint8List> Function(Uint8List) getRawSignature,
     String owner, [
     SecretKey key,
   ]) async {
@@ -338,7 +338,7 @@ class ArweaveService {
       await entity.asTransaction(key),
       owner,
     );
-
+    final rawSignature = await getRawSignature(await tx.getSignatureData());
     await tx.sign(rawSignature);
 
     return tx;
