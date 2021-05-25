@@ -1,9 +1,6 @@
 const permissions = [
   'ACCESS_ADDRESS',
-  'ACCESS_ALL_ADDRESSES',
   'SIGN_TRANSACTION',
-  'ENCRYPT',
-  'DECRYPT',
   'SIGNATURE',
   'ACCESS_PUBLIC_KEY',
 ];
