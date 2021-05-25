@@ -305,12 +305,9 @@ class UploadCubit extends Cubit<UploadState> {
       );
     } else {
       final owner = await profile.getWalletOwner();
-      final signatureData =
-          await _arweave.getSignatureData(fileEntity, owner, fileKey);
-      final rawSignature = await profile.getRawWalletSignature(signatureData);
 
       uploadHandle.entityTx = await _arweave.prepareEntityTx(
-          fileEntity, rawSignature, owner, fileKey);
+          fileEntity, profile.getRawWalletSignature, owner, fileKey);
     }
 
     return uploadHandle;

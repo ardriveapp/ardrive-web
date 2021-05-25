@@ -92,12 +92,8 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
           final folderEntity = folder.asEntity();
           final owner = await profile.getWalletOwner();
-          final signatureData =
-              await _arweave.getSignatureData(folderEntity, owner, driveKey);
-          final rawSignature =
-              await profile.getRawWalletSignature(signatureData);
           final folderTx = await _arweave.prepareEntityTx(
-              folderEntity, rawSignature, owner, driveKey);
+              folderEntity, profile.getRawWalletSignature, owner, driveKey);
 
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
@@ -126,12 +122,8 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
           final fileEntity = file.asEntity();
           final owner = await profile.getWalletOwner();
-          final signatureData =
-              await _arweave.getSignatureData(fileEntity, owner, fileKey);
-          final rawSignature =
-              await profile.getRawWalletSignature(signatureData);
           final fileTx = await _arweave.prepareEntityTx(
-              fileEntity, rawSignature, owner, fileKey);
+              fileEntity, profile.getRawWalletSignature, owner, fileKey);
 
           await _arweave.postTx(fileTx);
           await _driveDao.writeToFile(file);
