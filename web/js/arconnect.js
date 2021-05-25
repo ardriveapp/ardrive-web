@@ -16,6 +16,12 @@ async function connect() {
   return await window.arweaveWallet.connect(permissions);
 }
 
+async function disconnect() {
+  return await window.arweaveWallet.disconnect();
+}
+
+
+
 async function getWalletAddress() {
   return await window.arweaveWallet.getActiveAddress();
 }
