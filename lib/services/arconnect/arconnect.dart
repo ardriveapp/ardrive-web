@@ -11,6 +11,9 @@ external bool isExtensionPresent();
 @JS('connect')
 external dynamic _connect();
 
+@JS('connect')
+external dynamic _disconnect();
+
 @JS('getWalletAddress')
 external String _getWalletAddress();
 
@@ -22,6 +25,10 @@ external Uint8List _getSignature(Uint8List message);
 
 Future<void> connect() {
   return promiseToFuture(_connect());
+}
+
+Future<void> disconnect() {
+  return promiseToFuture(_disconnect());
 }
 
 Future<String> getWalletAddress() {
