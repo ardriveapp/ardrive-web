@@ -17,7 +17,11 @@ async function disconnect() {
   return await window.arweaveWallet.disconnect();
 }
 
-
+async function listenForWalletSwitch() {
+  window.addEventListener('walletSwitch', () => {
+    window.parent.postMessage('walletSwitch', '*');
+  });
+}
 
 async function getWalletAddress() {
   return await window.arweaveWallet.getActiveAddress();

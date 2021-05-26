@@ -14,6 +14,9 @@ external dynamic _connect();
 @JS('disconnect')
 external dynamic _disconnect();
 
+@JS('listenForWalletSwitch')
+external void _listenForWalletSwitch();
+
 @JS('getWalletAddress')
 external String _getWalletAddress();
 
@@ -29,6 +32,10 @@ Future<void> connect() {
 
 Future<void> disconnect() {
   return promiseToFuture(_disconnect());
+}
+
+void listenForWalletSwitch() {
+  _listenForWalletSwitch();
 }
 
 Future<String> getWalletAddress() {

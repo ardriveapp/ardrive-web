@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:html';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -62,7 +63,10 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     await arconnect.connect();
     final walletAddress = await arconnect.getWalletAddress();
     _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(walletAddress);
-
+    window.addEventListener('walletSwitch', (event) {
+      final MessageEvent messageEvent = event;
+      print(messageEvent.data);
+    });
     if (_driveTxs.isEmpty) {
       emit(ProfileAddOnboardingNewUser());
     } else {
