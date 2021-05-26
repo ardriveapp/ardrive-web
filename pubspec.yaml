@@ -53,8 +53,6 @@ dependencies:
   package_info_plus: 0.6.4
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
 
   test: ^1.15.4
   bloc_test: ^7.1.0
