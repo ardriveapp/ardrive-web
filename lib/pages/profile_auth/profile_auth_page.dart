@@ -20,6 +20,7 @@ class ProfileAuthPage extends StatelessWidget {
                 profileCubit: context.read<ProfileCubit>(),
                 profileDao: context.read<ProfileDao>(),
                 arweave: context.read<ArweaveService>(),
+                context: context,
               ),
               child: BlocBuilder<ProfileAddCubit, ProfileAddState>(
                   builder: (context, state) {

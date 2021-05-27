@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:html';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/wallet_switch_dialog.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
@@ -10,6 +11,8 @@ import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
@@ -25,13 +28,16 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   final ProfileCubit _profileCubit;
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
+  final BuildContext _context;
   ProfileAddCubit({
     @required ProfileCubit profileCubit,
     @required ProfileDao profileDao,
     @required ArweaveService arweave,
+    @required BuildContext context,
   })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
         _arweave = arweave,
+        _context = context,
         super(ProfileAddPromptWallet());
 
   bool isArconnectInstalled() {
@@ -64,8 +70,12 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     final walletAddress = await arconnect.getWalletAddress();
     _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(walletAddress);
     window.addEventListener('walletSwitch', (event) {
-      final MessageEvent messageEvent = event;
-      print(messageEvent.data);
+      if (state is ProfileLoggedIn) {
+        showDialog(
+          context: _context,
+          builder: (context) => WalletSwitchDialog(),
+        );
+      }
     });
     if (_driveTxs.isEmpty) {
       emit(ProfileAddOnboardingNewUser());

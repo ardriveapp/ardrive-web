@@ -3,6 +3,7 @@ const permissions = [
   'SIGN_TRANSACTION',
   'SIGNATURE',
   'ACCESS_PUBLIC_KEY',
+  'ACCESS_ALL_ADDRESSES',
 ];
 
 function isExtensionPresent() {
