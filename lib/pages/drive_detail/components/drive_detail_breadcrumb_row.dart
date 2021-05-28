@@ -51,7 +51,10 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
                               .openFolder(
                                   path:
                                       '/${_pathSegments.sublist(0, s.key + 1).join('/')}'),
-                          child: Text(s.value),
+                          child: Text(
+                            s.value,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                     ];
@@ -105,7 +108,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
                   onPressed: () => context.read<DriveDetailCubit>().openFolder(
                       path:
                           '/${_pathSegments.sublist(0, s.key + 1).join('/')}'),
-                  child: Text(s.value),
+                  child: Text(s.value, overflow: TextOverflow.ellipsis),
                 ),
                 if (!isLastSegment)
                   Padding(
@@ -128,9 +131,12 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
               padding: segmentButtonPadding),
         ),
       ),
-      child: ScreenTypeLayout(
-          desktop: _buildBreadcrumbs(desktopBreadcrumbCount),
-          mobile: _buildBreadcrumbs(mobileBreadcrumbCount)),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ScreenTypeLayout(
+            desktop: _buildBreadcrumbs(desktopBreadcrumbCount),
+            mobile: _buildBreadcrumbs(mobileBreadcrumbCount)),
+      ),
     );
   }
 }
