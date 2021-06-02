@@ -28,8 +28,10 @@ class WalletSwitchDialog extends StatelessWidget {
                   builder: (context, state) => state is ProfileLoggedIn
                       ? TextButton(
                           child: Text('Logout'),
-                          onPressed: () =>
-                              context.read<ProfileCubit>().logoutProfile(),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            context.read<ProfileCubit>().logoutProfile();
+                          },
                         )
                       : ListTile(
                           contentPadding: EdgeInsets.zero,

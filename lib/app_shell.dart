@@ -1,3 +1,5 @@
+import 'dart:html';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +9,7 @@ import 'package:url_launcher/link.dart';
 
 import 'blocs/blocs.dart';
 import 'components/components.dart';
+import 'components/wallet_switch_dialog.dart';
 
 class AppShell extends StatefulWidget {
   final Widget page;
@@ -23,6 +26,15 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
         builder: (context, state) {
+          //TODO: Quick and dirty way to show the dialog for walletSwitches
+          window.addEventListener('walletSwitch', (event) {
+            //if (state is ProfileLoggedIn) {
+            showDialog(
+              context: context,
+              builder: (context) => WalletSwitchDialog(),
+            );
+            //}
+          });
           Widget _buildAppBar() => AppBar(
                 // title: Image.asset(
                 //   R.images.brand.logoHorizontalNoSubtitle,
