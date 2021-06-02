@@ -43,7 +43,6 @@ class ProfileCubit extends Cubit<ProfileState> {
     final profile = await _profileDao.loadDefaultProfile(password);
 
     if (profile != null) {
-      //TODO: Get walletAddress from Arconnect
       final walletAddress = await (profile.wallet == null
           ? arconnect.getWalletAddress()
           : profile.wallet.getAddress());
