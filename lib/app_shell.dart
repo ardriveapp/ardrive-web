@@ -22,18 +22,19 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   bool _showProfileOverlay = false;
-
+  bool _showWalletSwitchDialog = true;
   @override
   Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
         builder: (context, state) {
           //TODO: Quick and dirty way to show the dialog for walletSwitches
           window.addEventListener('walletSwitch', (event) {
-            //if (state is ProfileLoggedIn) {
-            showDialog(
-              context: context,
-              builder: (context) => WalletSwitchDialog(),
-            );
-            //}
+            if (_showWalletSwitchDialog) {
+              showDialog(
+                context: context,
+                builder: (context) => WalletSwitchDialog(),
+              );
+            }
+            _showWalletSwitchDialog = false;
           });
           Widget _buildAppBar() => AppBar(
                 // title: Image.asset(
