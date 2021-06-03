@@ -1,4 +1,7 @@
+import 'dart:html';
+
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/wallet_switch_dialog.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +13,26 @@ import 'components/profile_auth_onboarding_screen.dart';
 import 'components/profile_auth_prompt_wallet_screen.dart';
 import 'components/profile_auth_unlock_screen.dart';
 
-class ProfileAuthPage extends StatelessWidget {
+class ProfileAuthPage extends StatefulWidget {
+  @override
+  _ProfileAuthPageState createState() => _ProfileAuthPageState();
+}
+
+class _ProfileAuthPageState extends State<ProfileAuthPage> {
+  bool _showWalletSwitchDialog = true;
+  void listenForWalletSwitch() {
+    //TODO: Quick and dirty way to show the dialog for walletSwitches
+    window.addEventListener('walletSwitch', (event) {
+      if (_showWalletSwitchDialog) {
+        showDialog(
+          context: context,
+          builder: (context) => WalletSwitchDialog(),
+        );
+      }
+      _showWalletSwitchDialog = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) => BlocBuilder<ProfileCubit, ProfileState>(
         builder: (context, state) {
@@ -39,6 +61,7 @@ class ProfileAuthPage extends StatelessWidget {
               }),
             );
           } else if (state is ProfilePromptLogIn) {
+            listenForWalletSwitch();
             return ProfileAuthUnlockScreen();
           } else {
             return ProfileAuthLoadingScreen();
