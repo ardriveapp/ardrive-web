@@ -79,10 +79,12 @@ class ProfileCubit extends Cubit<ProfileState> {
   ///
   /// Works even when the user is not authenticated.
   Future<void> logoutProfile() async {
-    final profile = state as ProfileLoggedIn;
-    if (profile.wallet == null) {
+    try {
       await arconnect.disconnect();
+    } catch (e) {
+      print(e);
     }
+
     emit(ProfileLoggingOut());
 
     // Delete all table data.
