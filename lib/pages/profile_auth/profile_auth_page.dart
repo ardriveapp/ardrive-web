@@ -49,8 +49,10 @@ class _ProfileAuthPageState extends State<ProfileAuthPage> {
                 if (state is ProfileAddPromptWallet) {
                   return ProfileAuthPromptWalletScreen();
                 } else if (state is ProfileAddOnboardingNewUser) {
+                  listenForWalletSwitch();
                   return ProfileAuthOnboarding();
                 } else if (state is ProfileAddPromptDetails) {
+                  listenForWalletSwitch();
                   return ProfileAuthAddScreen();
                 } else if (state is ProfileAddUserStateLoadInProgress ||
                     state is ProfileAddInProgress) {
