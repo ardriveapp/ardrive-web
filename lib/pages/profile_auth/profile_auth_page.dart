@@ -26,7 +26,9 @@ class _ProfileAuthPageState extends State<ProfileAuthPage> {
       if (_showWalletSwitchDialog) {
         showDialog(
           context: context,
-          builder: (context) => WalletSwitchDialog(),
+          builder: (context) => WalletSwitchDialog(
+            fromAuthPage: true,
+          ),
         );
       }
       _showWalletSwitchDialog = false;

@@ -26,7 +26,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   final ProfileCubit _profileCubit;
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
-  final BuildContext _context;
   ProfileAddCubit({
     @required ProfileCubit profileCubit,
     @required ProfileDao profileDao,
@@ -35,7 +34,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
         _arweave = arweave,
-        _context = context,
         super(ProfileAddPromptWallet());
 
   bool isArconnectInstalled() {
