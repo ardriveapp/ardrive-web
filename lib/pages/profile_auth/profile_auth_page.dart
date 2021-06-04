@@ -46,7 +46,8 @@ class _ProfileAuthPageState extends State<ProfileAuthPage> {
               ),
               child: BlocBuilder<ProfileAddCubit, ProfileAddState>(
                   builder: (context, state) {
-                if (state is ProfileAddPromptWallet) {
+                if (state is ProfileAddPromptWallet ||
+                    state is ProfileLoggingOut) {
                   return ProfileAuthPromptWalletScreen();
                 } else if (state is ProfileAddOnboardingNewUser) {
                   listenForWalletSwitch();
