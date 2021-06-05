@@ -47,8 +47,8 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     }
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
-
-    if (profile.walletBalance <= BigInt.zero) {
+    final minimumWalletBalance = BigInt.from(10000000);
+    if (profile.walletBalance <= minimumWalletBalance) {
       emit(DriveCreateZeroBalance());
       return;
     }
