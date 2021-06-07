@@ -63,17 +63,26 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   }
 
   Future<void> pickWalletFromArconnect() async {
-    emit(ProfileAddUserStateLoadInProgress());
-    isArconnect = true;
-    await arconnect.connect();
-    final walletAddress = await arconnect.getWalletAddress();
-    _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(walletAddress);
+    try {
+      emit(ProfileAddUserStateLoadInProgress());
+      isArconnect = true;
+      await arconnect.connect();
+      if (!await arconnect.checkPermissions()) {
+        emit(ProfileAddFailiure());
+        return;
+      }
 
-    if (_driveTxs.isEmpty) {
-      emit(ProfileAddOnboardingNewUser());
-    } else {
-      emit(ProfileAddPromptDetails(isExistingUser: true));
-      setupForm(withPasswordConfirmation: false);
+      final walletAddress = await arconnect.getWalletAddress();
+      _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(walletAddress);
+
+      if (_driveTxs.isEmpty) {
+        emit(ProfileAddOnboardingNewUser());
+      } else {
+        emit(ProfileAddPromptDetails(isExistingUser: true));
+        setupForm(withPasswordConfirmation: false);
+      }
+    } catch (e) {
+      emit(ProfileAddFailiure());
     }
   }
 

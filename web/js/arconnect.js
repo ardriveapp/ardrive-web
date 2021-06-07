@@ -14,6 +14,11 @@ async function connect() {
   return await window.arweaveWallet.connect(permissions);
 }
 
+async function checkPermissions() {
+  var acceptedPermissions = await window.arweaveWallet.getPermissions();
+  return permissions.every(i => acceptedPermissions.includes(i));
+}
+
 async function disconnect() {
   return await window.arweaveWallet.disconnect();
 }

@@ -11,6 +11,9 @@ external bool isExtensionPresent();
 @JS('connect')
 external dynamic _connect();
 
+@JS('checkPermissions')
+external bool _checkPermissions();
+
 @JS('disconnect')
 external dynamic _disconnect();
 
@@ -28,6 +31,10 @@ external Uint8List _getSignature(Uint8List message);
 
 Future<void> connect() {
   return promiseToFuture(_connect());
+}
+
+Future<bool> checkPermissions() {
+  return promiseToFuture(_checkPermissions());
 }
 
 Future<void> disconnect() {

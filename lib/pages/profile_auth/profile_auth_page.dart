@@ -3,6 +3,7 @@ import 'dart:html';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/wallet_switch_dialog.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/profile_auth/components/profile_auth_fail_screen.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -60,6 +61,8 @@ class _ProfileAuthPageState extends State<ProfileAuthPage> {
                 } else if (state is ProfileAddUserStateLoadInProgress ||
                     state is ProfileAddInProgress) {
                   return ProfileAuthLoadingScreen();
+                } else if (state is ProfileAddFailiure) {
+                  return ProfileAuthFailScreen();
                 }
 
                 return const SizedBox();
