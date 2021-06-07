@@ -4,6 +4,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/link.dart';
 
 import '../components.dart';
 import 'drive_list_tile.dart';
@@ -38,7 +39,11 @@ class AppDrawer extends StatelessWidget {
                         SizedBox(
                           height: 32,
                         ),
-                        _buildDriveActionsButton(context, state),
+                        BlocBuilder<ProfileCubit, ProfileState>(
+                            builder: (context, profileState) {
+                          return _buildDriveActionsButton(
+                              context, state, profileState);
+                        }),
                         if (state is DrivesLoadSuccess)
                           Expanded(
                             child: Scrollbar(
@@ -143,9 +148,11 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildDriveActionsButton(
-      BuildContext context, DrivesState drivesState) {
+  Widget _buildDriveActionsButton(BuildContext context, DrivesState drivesState,
+      ProfileState profileState) {
     final theme = Theme.of(context);
+    final profile = profileState as ProfileLoggedIn;
+    final minimumWalletBalance = BigInt.from(10000000);
 
     return ListTileTheme(
       textColor: theme.textTheme.bodyText1.color,
@@ -155,71 +162,119 @@ class AppDrawer extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
           child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
-            builder: (context, state) => PopupMenuButton<Function>(
-              onSelected: (callback) => callback(context),
-              child: SizedBox(
-                width: 164,
-                height: 36,
-                child: FloatingActionButton.extended(
-                  onPressed: null,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  label: Text(
-                    'NEW',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              itemBuilder: (context) => [
-                if (state is DriveDetailLoadSuccess) ...{
-                  PopupMenuItem(
-                    enabled: state.hasWritePermissions,
-                    value: (context) => promptToCreateFolder(
-                      context,
-                      driveId: state.currentDrive.id,
-                      parentFolderId: state.currentFolder.folder.id,
-                    ),
-                    child: ListTile(
-                      enabled: state.hasWritePermissions,
-                      title: Text('New folder'),
-                    ),
-                  ),
-                  PopupMenuDivider(),
-                  PopupMenuItem(
-                    enabled: state.hasWritePermissions,
-                    value: (context) => promptToUploadFile(
-                      context,
-                      driveId: state.currentDrive.id,
-                      folderId: state.currentFolder.folder.id,
-                      allowSelectMultiple: true,
-                    ),
-                    child: ListTile(
-                      enabled: state.hasWritePermissions,
-                      title: Text('Upload file(s)'),
-                    ),
-                  ),
-                  PopupMenuDivider(),
-                },
-                if (drivesState is DrivesLoadSuccess) ...{
-                  PopupMenuItem(
-                    enabled: drivesState.canCreateNewDrive,
-                    value: (context) => promptToCreateDrive(context),
-                    child: ListTile(
-                      enabled: drivesState.canCreateNewDrive,
-                      title: Text('New drive'),
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: (context) => attachDrive(context: context),
-                    child: ListTile(
-                      title: Text('Attach drive'),
-                    ),
-                  ),
-                }
-              ],
-            ),
+            builder: (context, state) =>
+                profile.walletBalance >= minimumWalletBalance
+                    ? PopupMenuButton<Function>(
+                        onSelected: (callback) => callback(context),
+                        child: SizedBox(
+                          width: 164,
+                          height: 36,
+                          child: FloatingActionButton.extended(
+                            onPressed: null,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                            label: Text(
+                              'NEW',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        itemBuilder: (context) => [
+                          if (state is DriveDetailLoadSuccess) ...{
+                            PopupMenuItem(
+                              enabled: state.hasWritePermissions,
+                              value: (context) => promptToCreateFolder(
+                                context,
+                                driveId: state.currentDrive.id,
+                                parentFolderId: state.currentFolder.folder.id,
+                              ),
+                              child: ListTile(
+                                enabled: state.hasWritePermissions,
+                                title: Text('New folder'),
+                              ),
+                            ),
+                            PopupMenuDivider(),
+                            PopupMenuItem(
+                              enabled: state.hasWritePermissions,
+                              value: (context) => promptToUploadFile(
+                                context,
+                                driveId: state.currentDrive.id,
+                                folderId: state.currentFolder.folder.id,
+                                allowSelectMultiple: true,
+                              ),
+                              child: ListTile(
+                                enabled: state.hasWritePermissions,
+                                title: Text('Upload file(s)'),
+                              ),
+                            ),
+                            PopupMenuDivider(),
+                          },
+                          if (drivesState is DrivesLoadSuccess) ...{
+                            PopupMenuItem(
+                              enabled: drivesState.canCreateNewDrive,
+                              value: (context) => promptToCreateDrive(context),
+                              child: ListTile(
+                                enabled: drivesState.canCreateNewDrive,
+                                title: Text('New drive'),
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: (context) => attachDrive(context: context),
+                              child: ListTile(
+                                title: Text('Attach drive'),
+                              ),
+                            ),
+                          }
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 164,
+                            height: 36,
+                            child: FloatingActionButton.extended(
+                              onPressed: null,
+                              backgroundColor: Colors.grey,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                              label: Text(
+                                'NEW',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              R.insufficientARWarning,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .caption
+                                  .copyWith(color: Colors.grey),
+                            ),
+                          ),
+                          Link(
+                            uri: Uri.parse(R.arHelpLink),
+                            target: LinkTarget.blank,
+                            builder: (context, onPressed) => TextButton(
+                              onPressed: onPressed,
+                              child: Text(
+                                'How do I get AR?',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
           ),
         ),
       ),
