@@ -4,7 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 part 'colors.dart';
 part 'constants.dart';
 
-final base = ThemeData.light();
+final ThemeData theme = ThemeData.light();
+final base = theme.copyWith(
+  colorScheme: theme.colorScheme.copyWith(primary: kPrimarySwatch.shade900),
+);
 
 ThemeData appTheme() {
   final textTheme = _buildTextTheme(base.textTheme);
