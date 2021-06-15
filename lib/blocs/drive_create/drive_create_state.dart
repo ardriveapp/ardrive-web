@@ -8,6 +8,8 @@ abstract class DriveCreateState extends Equatable {
 
 class DriveCreateInitial extends DriveCreateState {}
 
+class DriveCreateZeroBalance extends DriveCreateState {}
+
 class DriveCreateInProgress extends DriveCreateState {}
 
 class DriveCreateSuccess extends DriveCreateState {}
