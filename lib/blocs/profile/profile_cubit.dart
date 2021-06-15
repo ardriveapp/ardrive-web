@@ -34,7 +34,6 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> promptToAuthenticate() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
 
-    // emit(profile != null ? ProfilePromptLogIn() : ProfilePromptAdd());
     if (profile != null) {
       if (profile.encryptedWallet.isEmpty) {
         //Clear database in case of arconnect refresh

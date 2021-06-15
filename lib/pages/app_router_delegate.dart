@@ -45,7 +45,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<ProfileCubit, ProfileState>(
-        listener: (context, state) async {
+        listener: (context, state) {
           final anonymouslyShowDriveDetail =
               state is! ProfileLoggedIn && canAnonymouslyShowDriveDetail(state);
 
