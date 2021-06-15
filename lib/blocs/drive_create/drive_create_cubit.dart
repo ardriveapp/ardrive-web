@@ -45,7 +45,13 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     if (form.invalid) {
       return;
     }
-
+    final profile = _profileCubit.state as ProfileLoggedIn;
+    final wallet = profile.wallet;
+    final minimumWalletBalance = BigInt.from(10000000);
+    if (profile.walletBalance <= minimumWalletBalance) {
+      emit(DriveCreateZeroBalance());
+      return;
+    }
     emit(DriveCreateInProgress());
 
     try {
@@ -54,6 +60,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
       final profile = _profileCubit.state as ProfileLoggedIn;
       final walletAddress = await profile.getWalletAddress();
+
       final createRes = await _driveDao.createDrive(
         name: driveName,
         ownerAddress: walletAddress,
