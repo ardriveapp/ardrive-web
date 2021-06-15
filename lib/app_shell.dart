@@ -26,7 +26,6 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
         builder: (context, state) {
-          //TODO: Quick and dirty way to show the dialog for walletSwitches
           window.addEventListener('walletSwitch', (event) {
             if (_showWalletSwitchDialog) {
               showDialog(

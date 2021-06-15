@@ -34,7 +34,26 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> promptToAuthenticate() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
 
-    emit(profile != null ? ProfilePromptLogIn() : ProfilePromptAdd());
+    // emit(profile != null ? ProfilePromptLogIn() : ProfilePromptAdd());
+    if (profile != null) {
+      if (profile.encryptedWallet.isEmpty) {
+        //Clear database in case of arconnect refresh
+        if (arconnect.isExtensionPresent() &&
+            !await arconnect.checkPermissions()) {
+          await _db.transaction(() async {
+            for (final table in _db.allTables) {
+              await _db.delete(table).go();
+            }
+          });
+          emit(ProfilePromptAdd());
+          return;
+        }
+      } else {
+        emit(ProfilePromptLogIn());
+        return;
+      }
+    }
+    emit(ProfilePromptAdd());
   }
 
   Future<void> unlockDefaultProfile(String password, bool isArconnect) async {

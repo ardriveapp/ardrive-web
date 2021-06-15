@@ -22,7 +22,6 @@ class ProfileAuthPage extends StatefulWidget {
 class _ProfileAuthPageState extends State<ProfileAuthPage> {
   bool _showWalletSwitchDialog = true;
   void listenForWalletSwitch() {
-    //TODO: Quick and dirty way to show the dialog for walletSwitches
     window.addEventListener('walletSwitch', (event) {
       if (_showWalletSwitchDialog) {
         showDialog(
@@ -70,6 +69,7 @@ class _ProfileAuthPageState extends State<ProfileAuthPage> {
             );
           } else if (state is ProfilePromptLogIn) {
             listenForWalletSwitch();
+
             return ProfileAuthUnlockScreen();
           } else {
             return ProfileAuthLoadingScreen();

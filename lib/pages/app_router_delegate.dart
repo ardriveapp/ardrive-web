@@ -45,7 +45,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<ProfileCubit, ProfileState>(
-        listener: (context, state) {
+        listener: (context, state) async {
           final anonymouslyShowDriveDetail =
               state is! ProfileLoggedIn && canAnonymouslyShowDriveDetail(state);
 
@@ -65,6 +65,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           // Redirect the user away from sign in if they are already signed in.
           if (signingIn && state is ProfileLoggedIn) {
             signingIn = false;
+            notifyListeners();
+          }
+
+          if (state is ProfilePromptAdd) {
+            signingIn = true;
             notifyListeners();
           }
         },
