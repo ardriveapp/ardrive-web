@@ -13,11 +13,11 @@ Future<void> promptToCreateDrive(BuildContext context) => showDialog(
       context: context,
       builder: (BuildContext context) => BlocProvider(
         create: (_) => DriveCreateCubit(
-          arweave: context.read<ArweaveService>(),
-          driveDao: context.read<DriveDao>(),
-          profileCubit: context.read<ProfileCubit>(),
-          drivesCubit: context.read<DrivesCubit>(),
-        ),
+            arweave: context.read<ArweaveService>(),
+            driveDao: context.read<DriveDao>(),
+            profileCubit: context.read<ProfileCubit>(),
+            drivesCubit: context.read<DrivesCubit>(),
+            db: context.read<Database>()),
         child: DriveCreateForm(),
       ),
     );

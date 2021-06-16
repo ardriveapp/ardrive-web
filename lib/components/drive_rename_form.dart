@@ -23,6 +23,7 @@ Future<void> promptToRenameDrive(
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),
           syncCubit: context.read<SyncCubit>(),
+          db: context.read<Database>(),
         ),
         child: DriveRenameForm(),
       ),

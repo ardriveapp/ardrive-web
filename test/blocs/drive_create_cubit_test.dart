@@ -54,6 +54,7 @@ void main() {
         driveDao: driveDao,
         drivesCubit: drivesCubit,
         profileCubit: profileCubit,
+        db: db,
       );
     });
 

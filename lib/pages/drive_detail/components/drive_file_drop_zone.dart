@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -93,6 +94,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
             pst: context.read<PstService>(),
             profileCubit: context.read<ProfileCubit>(),
             driveDao: context.read<DriveDao>(),
+            db: context.read<Database>(),
           ),
           child: UploadForm(),
         ),

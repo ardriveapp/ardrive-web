@@ -27,6 +27,7 @@ void main() {
         arweave: arweave,
         driveDao: driveDao,
         profileCubit: profileCubit,
+        db: db,
       );
     });
 

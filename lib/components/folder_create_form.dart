@@ -23,6 +23,7 @@ Future<void> promptToCreateFolder(
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
+          db: context.read<Database>(),
         ),
         child: FolderCreateForm(),
       ),
