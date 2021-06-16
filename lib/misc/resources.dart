@@ -1,5 +1,8 @@
 class R {
   static final images = Images();
+  static final insufficientARWarning = 'Insufficient Funds';
+  static final arHelpLink =
+      'https://ardrive.io/questions/where-do-i-get-additional-arweave-tokens/';
 }
 
 class Images {
