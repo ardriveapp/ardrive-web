@@ -19,16 +19,18 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
-
+  final Database _db;
   DriveRenameCubit({
     @required this.driveId,
     @required ArweaveService arweave,
     @required DriveDao driveDao,
     @required ProfileCubit profileCubit,
     @required SyncCubit syncCubit,
+    @required Database db,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
+        _db = db,
         super(DriveRenameInitial()) {
     form = FormGroup({
       'name': FormControl<String>(
@@ -67,6 +69,16 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
 
       emit(DriveRenameInProgress());
 
+      if (profile.isArConnect()) {
+        final currentPublicKey = await profile.getWalletOwner();
+        final savedPublicKey =
+            (await _db.profileDao.defaultProfile().getSingleOrNull())
+                .walletPublicKey;
+        if (currentPublicKey != savedPublicKey) {
+          emit(DriveRenameWalletMismatch());
+          return;
+        }
+      }
       await _driveDao.transaction(() async {
         var drive = await _driveDao.driveById(driveId: driveId).getSingle();
         drive = drive.copyWith(name: newName, lastUpdated: DateTime.now());

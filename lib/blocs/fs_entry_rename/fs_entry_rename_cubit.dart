@@ -22,7 +22,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
-
+  final Database _db;
   bool get _isRenamingFolder => folderId != null;
 
   FsEntryRenameCubit({
@@ -33,10 +33,12 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     @required DriveDao driveDao,
     @required ProfileCubit profileCubit,
     @required SyncCubit syncCubit,
+    @required Database db,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
+        _db = db,
         assert(folderId != null || fileId != null),
         super(FsEntryRenameInitializing(isRenamingFolder: folderId != null)) {
     form = FormGroup({
@@ -80,7 +82,20 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
       final newName = form.control('name').value.toString().trim();
       final profile = _profileCubit.state as ProfileLoggedIn;
       final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
-
+      if (profile.isArConnect()) {
+        final currentPublicKey = await profile.getWalletOwner();
+        final savedPublicKey =
+            (await _db.profileDao.defaultProfile().getSingleOrNull())
+                .walletPublicKey;
+        if (currentPublicKey != savedPublicKey) {
+          emit(
+            _isRenamingFolder
+                ? FolderEntryRenameWalletMismatch()
+                : FileEntryRenameWalletMismatch(),
+          );
+          return;
+        }
+      }
       if (_isRenamingFolder) {
         emit(FolderEntryRenameInProgress());
 

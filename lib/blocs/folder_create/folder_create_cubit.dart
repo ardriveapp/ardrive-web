@@ -22,16 +22,18 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
-
+  final Database _db;
   FolderCreateCubit({
     @required this.driveId,
     @required this.parentFolderId,
     @required ProfileCubit profileCubit,
     @required ArweaveService arweave,
     @required DriveDao driveDao,
+    @required Database db,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _driveDao = driveDao,
+        _db = db,
         super(FolderCreateInitial()) {
     form = FormGroup({
       'name': FormControl(
@@ -58,6 +60,18 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
 
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
+
+      if (profile.isArConnect()) {
+        final currentPublicKey = await profile.getWalletOwner();
+        final savedPublicKey =
+            (await _db.profileDao.defaultProfile().getSingleOrNull())
+                .walletPublicKey;
+        if (currentPublicKey != savedPublicKey) {
+          emit(FolderCreateWalletMismatch());
+          return;
+        }
+      }
+
       final String folderName = form.control('name').value;
 
       await _driveDao.transaction(() async {

@@ -59,6 +59,18 @@ class SyncCubit extends Cubit<SyncState> {
         // later system.
         //
         // TODO: Wallet passed on getUniqueUserDriveEntities
+
+        if (profile.isArConnect()) {
+          final currentPublicKey = await profile.getWalletOwner();
+          final savedPublicKey =
+              (await _db.profileDao.defaultProfile().getSingleOrNull())
+                  .walletPublicKey;
+          if (currentPublicKey != savedPublicKey) {
+            emit(SyncWalletMismatch());
+            return;
+          }
+        }
+
         final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
             profile.getRawWalletSignature,
             await profile.getWalletAddress(),

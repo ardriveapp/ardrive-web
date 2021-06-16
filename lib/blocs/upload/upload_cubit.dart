@@ -30,7 +30,7 @@ class UploadCubit extends Cubit<UploadState> {
   final DriveDao _driveDao;
   final ArweaveService _arweave;
   final PstService _pst;
-
+  final Database _db;
   Drive _targetDrive;
   FolderEntry _targetFolder;
 
@@ -51,10 +51,12 @@ class UploadCubit extends Cubit<UploadState> {
     @required DriveDao driveDao,
     @required ArweaveService arweave,
     @required PstService pst,
+    @required Database db,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
         _pst = pst,
+        _db = db,
         super(UploadPreparationInProgress()) {
     () async {
       _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
@@ -99,6 +101,17 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> prepareUpload() async {
     final profile = _profileCubit.state as ProfileLoggedIn;
+
+    if (profile.isArConnect()) {
+      final currentPublicKey = await profile.getWalletOwner();
+      final savedPublicKey =
+          (await _db.profileDao.defaultProfile().getSingleOrNull())
+              .walletPublicKey;
+      if (currentPublicKey != savedPublicKey) {
+        emit(UploadWalletMismatch());
+        return;
+      }
+    }
 
     emit(UploadPreparationInProgress());
     final sizeLimit =

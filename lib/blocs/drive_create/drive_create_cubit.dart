@@ -6,6 +6,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
+import 'package:moor/moor.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'drive_create_state.dart';
@@ -27,16 +28,19 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final DrivesCubit _drivesCubit;
+  final Database _db;
 
   DriveCreateCubit({
     @required ArweaveService arweave,
     @required DriveDao driveDao,
     @required ProfileCubit profileCubit,
     @required DrivesCubit drivesCubit,
+    @required Database db,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _drivesCubit = drivesCubit,
+        _db = db,
         super(DriveCreateInitial());
 
   Future<void> submit() async {
@@ -46,8 +50,18 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       return;
     }
     final profile = _profileCubit.state as ProfileLoggedIn;
-    final wallet = profile.wallet;
     final minimumWalletBalance = BigInt.from(10000000);
+
+    if (profile.isArConnect()) {
+      final currentPublicKey = await profile.getWalletOwner();
+      final savedPublicKey =
+          (await _db.profileDao.defaultProfile().getSingleOrNull())
+              .walletPublicKey;
+      if (currentPublicKey != savedPublicKey) {
+        emit(DriveCreateWalletMismatch());
+        return;
+      }
+    }
     if (profile.walletBalance <= minimumWalletBalance) {
       emit(DriveCreateZeroBalance());
       return;

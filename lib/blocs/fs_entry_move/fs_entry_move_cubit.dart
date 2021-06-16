@@ -20,6 +20,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
+  final Database _db;
 
   StreamSubscription _folderSubscription;
 
@@ -33,10 +34,12 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
     @required DriveDao driveDao,
     @required ProfileCubit profileCubit,
     @required SyncCubit syncCubit,
+    @required Database db,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
+        _db = db,
         assert(folderId != null || fileId != null),
         super(
             FsEntryMoveFolderLoadInProgress(isMovingFolder: folderId != null)) {
@@ -74,6 +77,21 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
       final parentFolder = state.viewingFolder.folder;
       final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
+
+      if (profile.isArConnect()) {
+        final currentPublicKey = await profile.getWalletOwner();
+        final savedPublicKey =
+            (await _db.profileDao.defaultProfile().getSingleOrNull())
+                .walletPublicKey;
+        if (currentPublicKey != savedPublicKey) {
+          emit(
+            _isMovingFolder
+                ? FolderEntryMoveWalletMismatch()
+                : FileEntryMoveWalletMismatch(),
+          );
+          return;
+        }
+      }
 
       if (_isMovingFolder) {
         emit(FolderEntryMoveInProgress());
