@@ -35,17 +35,22 @@ class ProfileCubit extends Cubit<ProfileState> {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
 
     if (profile != null) {
-      if (profile.encryptedWallet.isEmpty) {
+      if (profile.isArConnect == 1) {
         //Clear database in case of arconnect refresh
-        if (arconnect.isExtensionPresent() &&
-            !await arconnect.checkPermissions()) {
-          await _db.transaction(() async {
-            for (final table in _db.allTables) {
-              await _db.delete(table).go();
-            }
-          });
-          emit(ProfilePromptAdd());
-          return;
+        if (arconnect.isExtensionPresent()) {
+          if (!await arconnect.checkPermissions() ||
+              profile.walletPublicKey != await arconnect.getPublicKey()) {
+            await _db.transaction(() async {
+              for (final table in _db.allTables) {
+                await _db.delete(table).go();
+              }
+            });
+            emit(ProfilePromptAdd());
+            return;
+          } else {
+            emit(ProfilePromptLogIn());
+            return;
+          }
         }
       } else {
         emit(ProfilePromptLogIn());

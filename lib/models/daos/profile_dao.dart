@@ -56,7 +56,10 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   /// Adds the specified profile and returns a profile key that was used to encrypt the user's wallet
   /// and can be used to encrypt the user's drive keys.
   Future<SecretKey> addProfile(
-      String username, String password, Wallet wallet) async {
+    String username,
+    String password,
+    Wallet wallet,
+  ) async {
     final profileKdRes = await deriveProfileKey(password);
     final profileSalt = profileKdRes.salt;
 
@@ -66,13 +69,14 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       secretKey: profileKdRes.key,
       nonce: profileSalt,
     );
-
     await into(profiles).insert(
       ProfilesCompanion.insert(
         id: await wallet.getAddress(),
         username: username,
         encryptedWallet: encryptedWallet.concatenation(nonce: false),
         keySalt: profileSalt,
+        isArConnect: 0,
+        walletPublicKey: await wallet.getOwner(),
       ),
     );
 
@@ -80,7 +84,11 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   }
 
   Future<SecretKey> addProfileArconnect(
-      String username, String password, String walletAddress) async {
+    String username,
+    String password,
+    String walletAddress,
+    String walletPublicKey,
+  ) async {
     final profileKdRes = await deriveProfileKey(password);
     final profileSalt = profileKdRes.salt;
 
@@ -90,6 +98,8 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         username: username,
         encryptedWallet: Uint8List(0),
         keySalt: profileSalt,
+        isArConnect: 1,
+        walletPublicKey: walletPublicKey,
       ),
     );
 

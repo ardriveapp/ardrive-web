@@ -4,5 +4,7 @@ CREATE TABLE profiles (
     username TEXT NOT NULL,
 
     encryptedWallet BLOB NOT NULL,
-    keySalt BLOB NOT NULL
+    keySalt BLOB NOT NULL,
+    walletPublicKey TEXT NOT NULL,
+    isArConnect INTEGER NOT NULL
 );

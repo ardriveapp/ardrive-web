@@ -156,10 +156,12 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       await _profileDao.addProfile(username, password, _wallet);
     } else {
       final walletAddress = await arconnect.getWalletAddress();
+      final walletPublicKey = await arconnect.getPublicKey();
       await _profileDao.addProfileArconnect(
         username,
         password,
         walletAddress,
+        walletPublicKey,
       );
     }
     await _profileCubit.unlockDefaultProfile(password, isArconnect);
