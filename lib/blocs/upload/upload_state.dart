@@ -87,4 +87,6 @@ class UploadInProgress extends UploadState {
 
 class UploadFailure extends UploadState {}
 
+class UploadWalletMismatch extends UploadState {}
+
 class UploadComplete extends UploadState {}

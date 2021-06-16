@@ -70,6 +70,7 @@ class ProfileLoggedIn extends ProfileAvailable {
         walletBalance,
         cipherKey,
       ];
+  bool isArConnect() => wallet == null;
 
   Future<Uint8List> getRawWalletSignature(Uint8List signatureData) {
     return wallet == null
