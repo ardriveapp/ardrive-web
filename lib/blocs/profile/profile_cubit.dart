@@ -69,7 +69,8 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(ProfilePromptAdd());
   }
 
-  Future<void> unlockDefaultProfile(String password, bool isArconnect) async {
+  Future<void> unlockDefaultProfile(
+      String password, ProfileType profileType) async {
     emit(ProfileLoggingIn());
 
     final profile = await _profileDao.loadDefaultProfile(password);
@@ -84,7 +85,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         ProfileLoggedIn(
           username: profile.details.username,
           password: password,
-          wallet: isArconnect ? null : profile.wallet,
+          wallet: profileType == ProfileType.ArConnect ? null : profile.wallet,
           walletAddress: walletAddress,
           walletBalance: walletBalance,
           cipherKey: profile.key,

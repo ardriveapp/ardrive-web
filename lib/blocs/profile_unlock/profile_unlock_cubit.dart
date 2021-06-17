@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
@@ -51,6 +52,6 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
       return;
     }
 
-    await _profileCubit.unlockDefaultProfile(password, false);
+    await _profileCubit.unlockDefaultProfile(password, ProfileType.JSON);
   }
 }
