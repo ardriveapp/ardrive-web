@@ -62,7 +62,10 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   Future<void> checkForWalletMismatch() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
-
+    if (!(await arconnect.checkPermissions())) {
+      await logoutProfile();
+      return;
+    }
     if (profile.isArConnect == 1) {
       final currentPublicKey = await arconnect.getPublicKey();
       final savedPublicKey =
