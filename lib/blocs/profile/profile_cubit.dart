@@ -34,29 +34,37 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> promptToAuthenticate() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
 
-    if (profile != null) {
-      if (profile.isArConnect == 1) {
-        //Clear database in case of arconnect refresh
-        if (arconnect.isExtensionPresent()) {
-          if (!await arconnect.checkPermissions() ||
-              profile.walletPublicKey != await arconnect.getPublicKey()) {
-            await _db.transaction(() async {
-              for (final table in _db.allTables) {
-                await _db.delete(table).go();
-              }
-            });
-            emit(ProfilePromptAdd());
-            return;
-          } else {
-            emit(ProfilePromptLogIn());
-            return;
-          }
-        }
-      } else {
-        emit(ProfilePromptLogIn());
-        return;
-      }
+    // Profile unavailable - route to new profile screen
+    if (profile == null) {
+      emit(ProfilePromptAdd());
+      return;
     }
+
+    // json wallet present - route to login screen
+    if (profile.isArConnect != 1) {
+      emit(ProfilePromptLogIn());
+      return;
+    }
+
+    // ArConnect extension missing - route to profile screen
+    if (!(await arconnect.isExtensionPresent())) {
+      emit(ProfilePromptAdd());
+      return;
+    }
+
+    // ArConnect connected to expected wallet - route to login screen
+    if (await arconnect.checkPermissions() &&
+        profile.walletPublicKey == await arconnect.getPublicKey()) {
+      emit(ProfilePromptLogIn());
+      return;
+    }
+
+    // Unexpected ArConnect state - clean up and route to profile screen
+    await _db.transaction(() async {
+      for (final table in _db.allTables) {
+        await _db.delete(table).go();
+      }
+    });
     emit(ProfilePromptAdd());
   }
 
