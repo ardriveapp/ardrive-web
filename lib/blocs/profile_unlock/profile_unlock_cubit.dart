@@ -1,6 +1,10 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
+import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/crypto/keys.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
@@ -16,14 +20,19 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     ),
   });
 
+  List<TransactionCommonMixin> _driveTxs;
+
   final ProfileCubit _profileCubit;
   final ProfileDao _profileDao;
+  final ArweaveService _arweave;
 
   ProfileUnlockCubit({
     @required ProfileCubit profileCubit,
     @required ProfileDao profileDao,
+    @required ArweaveService arweave,
   })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
+        _arweave = arweave,
         super(ProfileUnlockInitializing()) {
     () async {
       final existingUsername =
@@ -42,6 +51,41 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     final String password = form.control('password').value;
 
     try {
+      final profile = await _profileDao.defaultProfile().getSingle();
+      if (profile.isArConnect == 1) {
+        _driveTxs =
+            await _arweave.getUniqueUserDriveEntityTxs(await profile.id);
+        final privateDriveTxs = _driveTxs.where(
+            (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
+        if (privateDriveTxs.isNotEmpty) {
+          final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
+          final signature = arconnect.getSignature;
+
+          final checkDriveKey = await deriveDriveKey(
+            signature,
+            checkDriveId,
+            password,
+          );
+
+          final privateDrive = await _arweave.getLatestDriveEntityWithId(
+            checkDriveId,
+            checkDriveKey,
+          );
+
+          // If the private drive could not be decoded, the password is incorrect.
+          if (privateDrive == null) {
+            form
+                .control('password')
+                .setErrors({AppValidationMessage.passwordIncorrect: true});
+
+            form
+                .control('password')
+                .setErrors({AppValidationMessage.passwordIncorrect: true});
+
+            return;
+          }
+        }
+      }
       await _profileDao.loadDefaultProfile(password);
     } on ProfilePasswordIncorrectException catch (_) {
       form
