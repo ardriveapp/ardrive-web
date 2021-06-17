@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
 import 'package:ardrive/services/services.dart';
@@ -41,7 +42,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     // json wallet present - route to login screen
-    if (profile.isArConnect != 1) {
+    if (profile.profileType != ProfileType.ArConnect.index) {
       emit(ProfilePromptLogIn());
       return;
     }
