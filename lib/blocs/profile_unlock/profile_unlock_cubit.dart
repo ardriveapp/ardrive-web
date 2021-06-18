@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
@@ -52,7 +53,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
 
     try {
       final profile = await _profileDao.defaultProfile().getSingle();
-      if (profile.isArConnect == 1) {
+      if (profile.profileType == ProfileType.ArConnect.index) {
         _driveTxs =
             await _arweave.getUniqueUserDriveEntityTxs(await profile.id);
         final privateDriveTxs = _driveTxs.where(
@@ -95,6 +96,6 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
       return;
     }
 
-    await _profileCubit.unlockDefaultProfile(password, false);
+    await _profileCubit.unlockDefaultProfile(password, ProfileType.JSON);
   }
 }

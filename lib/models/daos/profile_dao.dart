@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -62,25 +63,31 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   ) async {
     final profileKdRes = await deriveProfileKey(password);
     final profileSalt = profileKdRes.salt;
-
-    final walletJson = utf8.encode(json.encode(wallet.toJwk()));
-    final encryptedWallet = await aesGcm.encrypt(
-      walletJson,
-      secretKey: profileKdRes.key,
-      nonce: profileSalt,
-    );
+    final encryptedWallet = await encryptWallet(wallet, profileKdRes);
     await into(profiles).insert(
       ProfilesCompanion.insert(
         id: await wallet.getAddress(),
         username: username,
         encryptedWallet: encryptedWallet.concatenation(nonce: false),
         keySalt: profileSalt,
-        isArConnect: 0,
+        profileType: ProfileType.JSON.index,
         walletPublicKey: await wallet.getOwner(),
       ),
     );
 
     return profileKdRes.key;
+  }
+
+  Future<SecretBox> encryptWallet(
+    Wallet wallet,
+    ProfileKeyDerivationResult profileKdRes,
+  ) async {
+    final walletJson = utf8.encode(json.encode(wallet.toJwk()));
+    return (await aesGcm.encrypt(
+      walletJson,
+      secretKey: profileKdRes.key,
+      nonce: profileKdRes.salt,
+    ));
   }
 
   Future<SecretKey> addProfileArconnect(
@@ -98,7 +105,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         username: username,
         encryptedWallet: Uint8List(0),
         keySalt: profileSalt,
-        isArConnect: 1,
+        profileType: ProfileType.ArConnect.index,
         walletPublicKey: walletPublicKey,
       ),
     );
