@@ -6,7 +6,6 @@ import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
-import 'package:pedantic/pedantic.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'drive_create_state.dart';
@@ -47,7 +46,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       return;
     }
 
-    unawaited(_profileCubit.checkForWalletMismatch());
+    await _profileCubit.checkForWalletMismatch();
 
     final profile = _profileCubit.state as ProfileLoggedIn;
 
