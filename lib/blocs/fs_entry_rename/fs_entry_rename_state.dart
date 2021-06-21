@@ -32,7 +32,7 @@ class FolderEntryRenameFailure extends FsEntryRenameState {
 }
 
 class FolderEntryRenameWalletMismatch extends FsEntryRenameState {
-  FolderEntryRenameWalletMismatch() : super(isRenamingFolder: true);
+  FolderEntryRenameWalletMismatch() : super(isRenamingFolder: false);
 }
 
 class FileEntryRenameInProgress extends FsEntryRenameState {

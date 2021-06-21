@@ -69,8 +69,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(ProfilePromptAdd());
   }
 
-  /// Returns true if there has been a wallet change, or permissions change on another tab.
-  Future<bool> logoutIfWalletMismatch() async {
+  Future<bool> checkForWalletMismatch() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
     var isMismatch = false;
 

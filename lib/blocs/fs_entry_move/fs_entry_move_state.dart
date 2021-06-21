@@ -46,7 +46,7 @@ class FolderEntryMoveFailure extends FsEntryMoveState {
 }
 
 class FolderEntryMoveWalletMismatch extends FsEntryMoveState {
-  FolderEntryMoveWalletMismatch() : super(isMovingFolder: true);
+  FolderEntryMoveWalletMismatch() : super(isMovingFolder: false);
 }
 
 class FileEntryMoveInProgress extends FsEntryMoveState {
