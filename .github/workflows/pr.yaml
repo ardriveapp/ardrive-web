@@ -1,9 +1,9 @@
 name: pr check
 on:
   pull_request:
-    branches:
-      - dev
-
+    branches-ignore:
+      - gh-pages
+      - master
 jobs:
   # test:
   #  runs-on: ubuntu-latest
