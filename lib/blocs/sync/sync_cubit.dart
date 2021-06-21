@@ -45,7 +45,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> startSync() async {
-    if (await _profileCubit.checkForWalletMismatch()) {
+    if (await _profileCubit.logoutIfWalletMismatch()) {
       emit(SyncWalletMismatch());
       return;
     }
