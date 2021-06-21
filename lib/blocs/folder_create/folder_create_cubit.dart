@@ -59,7 +59,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
       final String folderName = form.control('name').value;
-      if (await _profileCubit.checkForWalletMismatch()) {
+      if (await _profileCubit.logoutIfWalletMismatch()) {
         emit(FolderCreateWalletMismatch());
         return;
       }
