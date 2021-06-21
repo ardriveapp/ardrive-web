@@ -1,9 +1,8 @@
 name: deploy dev
 on:
   push:
-    branches-ignore:
-      - gh-pages
-      - master
+    branches:
+      - dev
   workflow_dispatch:
     inputs:
       logLevel:
