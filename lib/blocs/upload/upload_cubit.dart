@@ -100,8 +100,9 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> prepareUpload() async {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
-    await _profileCubit.checkForWalletMismatch();
-
+    if (await _profileCubit.checkForWalletMismatch()) {
+      return;
+    }
     emit(UploadPreparationInProgress());
     final sizeLimit =
         _targetDrive.isPrivate ? math.pow(10, 8) : 1.25 * math.pow(10, 9);
