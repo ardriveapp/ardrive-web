@@ -60,6 +60,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
       final profile = _profileCubit.state as ProfileLoggedIn;
       final String folderName = form.control('name').value;
       if (await _profileCubit.checkForWalletMismatch()) {
+        emit(FolderCreateWalletMismatch());
         return;
       }
       await _driveDao.transaction(() async {

@@ -65,6 +65,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
       final profile = _profileCubit.state as ProfileLoggedIn;
       final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
       if (await _profileCubit.checkForWalletMismatch()) {
+        emit(DriveRenameWalletMismatch());
         return;
       }
       emit(DriveRenameInProgress());

@@ -101,6 +101,7 @@ class UploadCubit extends Cubit<UploadState> {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
     if (await _profileCubit.checkForWalletMismatch()) {
+      emit(UploadWalletMismatch());
       return;
     }
     emit(UploadPreparationInProgress());

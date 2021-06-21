@@ -15,3 +15,5 @@ class DriveCreateInProgress extends DriveCreateState {}
 class DriveCreateSuccess extends DriveCreateState {}
 
 class DriveCreateFailure extends DriveCreateState {}
+
+class DriveCreateWalletMismatch extends DriveCreateState {}
