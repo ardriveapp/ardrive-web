@@ -27,6 +27,9 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
 
+  ProfileType profileType;
+  String walletAddressOnLoad;
+
   ProfileUnlockCubit({
     @required ProfileCubit profileCubit,
     @required ProfileDao profileDao,
@@ -36,9 +39,12 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
         _arweave = arweave,
         super(ProfileUnlockInitializing()) {
     () async {
-      final existingUsername =
-          await _profileDao.defaultProfile().map((p) => p.username).getSingle();
-      emit(ProfileUnlockInitial(username: existingUsername));
+      final profile = await _profileDao.defaultProfile().getSingle();
+      walletAddressOnLoad = profile.id;
+      profileType = profile.profileType == ProfileType.ArConnect.index
+          ? ProfileType.ArConnect
+          : ProfileType.JSON;
+      emit(ProfileUnlockInitial(username: profile.username));
     }();
   }
 
@@ -48,7 +54,12 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     if (form.invalid) {
       return;
     }
-
+    if (profileType == ProfileType.ArConnect &&
+        walletAddressOnLoad != await arconnect.getWalletAddress()) {
+      //Wallet was switched or deleted before login from another tab
+      emit(ProfileUnlockFailure());
+      return;
+    }
     final String password = form.control('password').value;
 
     try {
