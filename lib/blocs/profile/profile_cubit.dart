@@ -85,7 +85,9 @@ class ProfileCubit extends Cubit<ProfileState> {
             (await _db.profileDao.defaultProfile().getSingleOrNull())
                 .walletPublicKey;
         if (currentPublicKey != savedPublicKey) {
+          isMismatch = true;
           await logoutProfile();
+          return isMismatch;
         }
       }
     }
