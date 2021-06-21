@@ -75,6 +75,9 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
       final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
 
       if (await _profileCubit.checkForWalletMismatch()) {
+        emit(_isMovingFolder
+            ? FolderEntryMoveWalletMismatch()
+            : FileEntryMoveWalletMismatch());
         return;
       }
       if (_isMovingFolder) {

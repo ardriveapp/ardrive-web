@@ -45,7 +45,7 @@ class UploadForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BlocConsumer<UploadCubit, UploadState>(
         listener: (context, state) async {
-          if (state is UploadComplete) {
+          if (state is UploadComplete || state is UploadWalletMismatch) {
             Navigator.pop(context);
           }
         },

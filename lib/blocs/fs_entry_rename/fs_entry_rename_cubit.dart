@@ -82,6 +82,9 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
       final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
 
       if (await _profileCubit.checkForWalletMismatch()) {
+        emit(_isRenamingFolder
+            ? FolderEntryRenameWalletMismatch()
+            : FileEntryRenameWalletMismatch());
         return;
       }
       if (_isRenamingFolder) {

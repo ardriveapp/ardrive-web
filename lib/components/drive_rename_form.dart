@@ -38,6 +38,8 @@ class DriveRenameForm extends StatelessWidget {
           } else if (state is DriveRenameSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
+          } else if (state is DriveRenameWalletMismatch) {
+            Navigator.pop(context);
           }
         },
         builder: (context, state) => AppDialog(

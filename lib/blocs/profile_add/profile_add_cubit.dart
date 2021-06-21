@@ -119,6 +119,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       return;
     }
     if (await _profileCubit.checkForWalletMismatch()) {
+      emit(ProfileAddWalletMismatch());
       return;
     }
     if (profileType == ProfileType.ArConnect &&
