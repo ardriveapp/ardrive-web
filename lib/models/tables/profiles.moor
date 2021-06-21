@@ -6,5 +6,5 @@ CREATE TABLE profiles (
     encryptedWallet BLOB NOT NULL,
     keySalt BLOB NOT NULL,
     walletPublicKey TEXT NOT NULL,
-    isArConnect INTEGER NOT NULL
+    profileType INTEGER NOT NULL
 );

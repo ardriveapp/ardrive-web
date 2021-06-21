@@ -16,3 +16,5 @@ class ProfileUnlockInitial extends ProfileUnlockState {
   @override
   List<Object> get props => [username];
 }
+
+class ProfileUnlockFailure extends ProfileUnlockState {}

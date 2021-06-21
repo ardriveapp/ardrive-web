@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
@@ -55,8 +56,8 @@ void main() {
       expect: [
         ProfileAddPromptDetails(isExistingUser: false),
       ],
-      verify: (_) =>
-          verify(profileCubit.unlockDefaultProfile(fakePassword, false)),
+      verify: (_) => verify(
+          profileCubit.unlockDefaultProfile(fakePassword, ProfileType.JSON)),
     );
 
     blocTest<ProfileAddCubit, ProfileAddState>(

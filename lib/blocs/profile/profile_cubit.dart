@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
 import 'package:ardrive/services/services.dart';
@@ -34,29 +35,37 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> promptToAuthenticate() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
 
-    if (profile != null) {
-      if (profile.isArConnect == 1) {
-        //Clear database in case of arconnect refresh
-        if (arconnect.isExtensionPresent()) {
-          if (!await arconnect.checkPermissions() ||
-              profile.walletPublicKey != await arconnect.getPublicKey()) {
-            await _db.transaction(() async {
-              for (final table in _db.allTables) {
-                await _db.delete(table).go();
-              }
-            });
-            emit(ProfilePromptAdd());
-            return;
-          } else {
-            emit(ProfilePromptLogIn());
-            return;
-          }
-        }
-      } else {
-        emit(ProfilePromptLogIn());
-        return;
-      }
+    // Profile unavailable - route to new profile screen
+    if (profile == null) {
+      emit(ProfilePromptAdd());
+      return;
     }
+
+    // json wallet present - route to login screen
+    if (profile.profileType != ProfileType.ArConnect.index) {
+      emit(ProfilePromptLogIn());
+      return;
+    }
+
+    // ArConnect extension missing - route to profile screen
+    if (!(await arconnect.isExtensionPresent())) {
+      emit(ProfilePromptAdd());
+      return;
+    }
+
+    // ArConnect connected to expected wallet - route to login screen
+    if (await arconnect.checkPermissions() &&
+        profile.walletPublicKey == await arconnect.getPublicKey()) {
+      emit(ProfilePromptLogIn());
+      return;
+    }
+
+    // Unexpected ArConnect state - clean up and route to profile screen
+    await _db.transaction(() async {
+      for (final table in _db.allTables) {
+        await _db.delete(table).go();
+      }
+    });
     emit(ProfilePromptAdd());
   }
 
@@ -66,18 +75,22 @@ class ProfileCubit extends Cubit<ProfileState> {
       await logoutProfile();
       return;
     }
-    if (profile.isArConnect == 1) {
-      final currentPublicKey = await arconnect.getPublicKey();
-      final savedPublicKey =
-          (await _db.profileDao.defaultProfile().getSingleOrNull())
-              .walletPublicKey;
-      if (currentPublicKey != savedPublicKey) {
-        await logoutProfile();
+    if (profile.profileType == ProfileType.ArConnect.index) {
+      if (profile != null &&
+          profile.profileType == ProfileType.ArConnect.index) {
+        final currentPublicKey = await arconnect.getPublicKey();
+        final savedPublicKey =
+            (await _db.profileDao.defaultProfile().getSingleOrNull())
+                .walletPublicKey;
+        if (currentPublicKey != savedPublicKey) {
+          await logoutProfile();
+        }
       }
     }
   }
 
-  Future<void> unlockDefaultProfile(String password, bool isArconnect) async {
+  Future<void> unlockDefaultProfile(
+      String password, ProfileType profileType) async {
     emit(ProfileLoggingIn());
 
     final profile = await _profileDao.loadDefaultProfile(password);
@@ -92,7 +105,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         ProfileLoggedIn(
           username: profile.details.username,
           password: password,
-          wallet: isArconnect ? null : profile.wallet,
+          wallet: profileType == ProfileType.ArConnect ? null : profile.wallet,
           walletAddress: walletAddress,
           walletBalance: walletBalance,
           cipherKey: profile.key,

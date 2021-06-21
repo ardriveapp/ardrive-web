@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
@@ -20,7 +21,8 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   FormGroup form;
 
   Wallet _wallet;
-  bool isArconnect;
+  ProfileType profileType;
+  String walletAddressOnLoad;
   List<TransactionCommonMixin> _driveTxs;
 
   final ProfileCubit _profileCubit;
@@ -65,15 +67,18 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   Future<void> pickWalletFromArconnect() async {
     try {
       emit(ProfileAddUserStateLoadInProgress());
-      isArconnect = true;
+      profileType = ProfileType.ArConnect;
+
       await arconnect.connect();
       if (!await arconnect.checkPermissions()) {
         emit(ProfileAddFailiure());
         return;
       }
 
-      final walletAddress = await arconnect.getWalletAddress();
-      _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(walletAddress);
+      walletAddressOnLoad = await arconnect.getWalletAddress();
+
+      _driveTxs =
+          await _arweave.getUniqueUserDriveEntityTxs(walletAddressOnLoad);
 
       if (_driveTxs.isEmpty) {
         emit(ProfileAddOnboardingNewUser());
@@ -114,6 +119,12 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       return;
     }
     await _profileCubit.checkForWalletMismatch();
+    if (profileType == ProfileType.ArConnect &&
+        walletAddressOnLoad != await arconnect.getWalletAddress()) {
+      //Wallet was switched or deleted before login from another tab
+      emit(ProfileAddFailiure());
+      return;
+    }
     final previousState = state;
     emit(ProfileAddInProgress());
 
@@ -164,7 +175,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         walletPublicKey,
       );
     }
-    await _profileCubit.unlockDefaultProfile(password, isArconnect);
+    await _profileCubit.unlockDefaultProfile(password, profileType);
   }
 
   ValidatorFunction _mustMatch(String controlName, String matchingControlName) {

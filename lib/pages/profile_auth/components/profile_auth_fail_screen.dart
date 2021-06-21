@@ -25,7 +25,7 @@ class ProfileAuthFailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             Text(
-              'Please check arconnect permissions and try again',
+              'Sorry, login failed. Please try again.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headline6,
             ),
