@@ -118,7 +118,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     if (form.invalid) {
       return;
     }
-    if (await _profileCubit.checkForWalletMismatch()) {
+    if (await _profileCubit.logoutIfWalletMismatch()) {
       emit(ProfileAddWalletMismatch());
       return;
     }
