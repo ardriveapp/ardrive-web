@@ -53,6 +53,9 @@ dependencies:
   package_info_plus: 0.6.4
 
 dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
   test: ^1.15.4
   bloc_test: ^7.1.0
   mockito: ^5.0.0-nullsafety.2
@@ -65,6 +68,7 @@ dependency_overrides:
   ffi: ^0.2.0-nullsafety.1
   json_annotation: ^3.0.1
   mockito: ^5.0.0-nullsafety.2
+  test_api: ^0.2.19-nullsafety
 
 flutter:
   uses-material-design: true
