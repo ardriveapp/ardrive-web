@@ -46,7 +46,9 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       return;
     }
 
-    await _profileCubit.checkForWalletMismatch();
+    if (await _profileCubit.checkForWalletMismatch()) {
+      return;
+    }
 
     final profile = _profileCubit.state as ProfileLoggedIn;
 
