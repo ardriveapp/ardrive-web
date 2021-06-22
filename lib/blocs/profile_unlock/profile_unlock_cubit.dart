@@ -65,20 +65,25 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     try {
       final profile = await _profileDao.defaultProfile().getSingle();
       if (profile.profileType == ProfileType.ArConnect.index) {
+        //Loads all drive transactions
         _driveTxs =
             await _arweave.getUniqueUserDriveEntityTxs(await profile.id);
+        //Filters private drives from drive transactions
         final privateDriveTxs = _driveTxs.where(
             (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
         if (privateDriveTxs.isNotEmpty) {
+          //Get a single drive id to test decryption
           final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
+          //Gets a signature with an empty message
           final signature = arconnect.getSignature;
-
+          //Derive drive devryption key from signature, drive id and password
           final checkDriveKey = await deriveDriveKey(
             signature,
             checkDriveId,
             password,
           );
 
+          //Load and decrypt the drive
           final privateDrive = await _arweave.getLatestDriveEntityWithId(
             checkDriveId,
             checkDriveKey,
@@ -98,6 +103,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
           }
         }
       }
+      //Store profile key so other private entities can be created and loaded
       await _profileDao.loadDefaultProfile(password);
     } on ProfilePasswordIncorrectException catch (_) {
       form
