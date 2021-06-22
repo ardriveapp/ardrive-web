@@ -47,6 +47,33 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
       emit(ProfileUnlockInitial(username: profile.username));
     }();
   }
+  // Validate the user's password by loading and decrypting a private drive.
+  Future<void> verifyPasswordArconnect(String password) async {
+    final profile = await _profileDao.defaultProfile().getSingle();
+    if (profile.profileType == ProfileType.ArConnect.index) {
+      _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(await profile.id);
+      final privateDriveTxs = _driveTxs.where(
+          (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
+      if (privateDriveTxs.isNotEmpty) {
+        final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
+        final signature = arconnect.getSignature;
+        final checkDriveKey = await deriveDriveKey(
+          signature,
+          checkDriveId,
+          password,
+        );
+
+        final privateDrive = await _arweave.getLatestDriveEntityWithId(
+          checkDriveId,
+          checkDriveKey,
+        );
+
+        if (privateDrive == null) {
+          throw ProfilePasswordIncorrectException();
+        }
+      }
+    }
+  }
 
   Future<void> submit() async {
     form.markAllAsTouched();
@@ -63,44 +90,12 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     final String password = form.control('password').value;
 
     try {
-      final profile = await _profileDao.defaultProfile().getSingle();
-      if (profile.profileType == ProfileType.ArConnect.index) {
-        //Loads all drive transactions
-        _driveTxs =
-            await _arweave.getUniqueUserDriveEntityTxs(await profile.id);
-        //Filters private drives from drive transactions
-        final privateDriveTxs = _driveTxs.where(
-            (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
-        if (privateDriveTxs.isNotEmpty) {
-          //Get a single drive id to test decryption
-          final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
-          //Gets a signature with an empty message
-          final signature = arconnect.getSignature;
-          //Derive drive devryption key from signature, drive id and password
-          final checkDriveKey = await deriveDriveKey(
-            signature,
-            checkDriveId,
-            password,
-          );
-
-          //Load and decrypt the drive
-          final privateDrive = await _arweave.getLatestDriveEntityWithId(
-            checkDriveId,
-            checkDriveKey,
-          );
-
-          // If the private drive could not be decoded, the password is incorrect.
-          if (privateDrive == null) {
-            form
-                .control('password')
-                .setErrors({AppValidationMessage.passwordIncorrect: true});
-
-            return;
-          }
-        }
+      if (profileType == ProfileType.ArConnect) {
+        await verifyPasswordArconnect(password);
       }
       //Store profile key so other private entities can be created and loaded
       await _profileDao.loadDefaultProfile(password);
+      await _profileCubit.unlockDefaultProfile(password, ProfileType.JSON);
     } on ProfilePasswordIncorrectException catch (_) {
       form
           .control('password')
@@ -108,7 +103,5 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
 
       return;
     }
-
-    await _profileCubit.unlockDefaultProfile(password, ProfileType.JSON);
   }
 }
