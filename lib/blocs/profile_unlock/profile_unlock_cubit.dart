@@ -95,10 +95,6 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
                 .control('password')
                 .setErrors({AppValidationMessage.passwordIncorrect: true});
 
-            form
-                .control('password')
-                .setErrors({AppValidationMessage.passwordIncorrect: true});
-
             return;
           }
         }
