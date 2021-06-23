@@ -70,7 +70,9 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   Future<void> unlockDefaultProfile(
-      String password, ProfileType profileType) async {
+    String password,
+    ProfileType profileType,
+  ) async {
     emit(ProfileLoggingIn());
 
     final profile = await _profileDao.loadDefaultProfile(password);

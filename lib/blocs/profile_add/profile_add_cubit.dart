@@ -21,8 +21,8 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   FormGroup form;
 
   Wallet _wallet;
-  ProfileType profileType;
-  String walletAddressOnLoad;
+  ProfileType _profileType;
+  String _lastKnownWalletAddress;
   List<TransactionCommonMixin> _driveTxs;
 
   final ProfileCubit _profileCubit;
@@ -67,7 +67,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   Future<void> pickWalletFromArconnect() async {
     try {
       emit(ProfileAddUserStateLoadInProgress());
-      profileType = ProfileType.ArConnect;
+      _profileType = ProfileType.ArConnect;
 
       await arconnect.connect();
       if (!await arconnect.checkPermissions()) {
@@ -75,10 +75,10 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         return;
       }
 
-      walletAddressOnLoad = await arconnect.getWalletAddress();
+      _lastKnownWalletAddress = await arconnect.getWalletAddress();
 
       _driveTxs =
-          await _arweave.getUniqueUserDriveEntityTxs(walletAddressOnLoad);
+          await _arweave.getUniqueUserDriveEntityTxs(_lastKnownWalletAddress);
 
       if (_driveTxs.isEmpty) {
         emit(ProfileAddOnboardingNewUser());
@@ -118,8 +118,8 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     if (form.invalid) {
       return;
     }
-    if (profileType == ProfileType.ArConnect &&
-        walletAddressOnLoad != await arconnect.getWalletAddress()) {
+    if (_profileType == ProfileType.ArConnect &&
+        _lastKnownWalletAddress != await arconnect.getWalletAddress()) {
       //Wallet was switched or deleted before login from another tab
       emit(ProfileAddFailiure());
       return;
@@ -174,7 +174,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         walletPublicKey,
       );
     }
-    await _profileCubit.unlockDefaultProfile(password, profileType);
+    await _profileCubit.unlockDefaultProfile(password, _profileType);
   }
 
   ValidatorFunction _mustMatch(String controlName, String matchingControlName) {
