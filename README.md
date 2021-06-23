@@ -29,7 +29,7 @@ Then, generate the package imports with:
 flutter pub get
 ```
 
-Next, run a build to resolve conflicts:
+Next, run a build to resolve conflicts. You may also need to run this command to resolve conflicts whenever switching branches:
 
 ```shell
 flutter pub run build_runner build --delete-conflicting-outputs
