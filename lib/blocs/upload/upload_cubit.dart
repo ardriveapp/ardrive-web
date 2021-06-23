@@ -186,6 +186,11 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> startUpload() async {
+    //Check if the same wallet it being used before starting upload.
+    if (await _profileCubit.logoutIfWalletMismatch()) {
+      emit(UploadWalletMismatch());
+      return;
+    }
     emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
 
     if (feeTx != null) {
