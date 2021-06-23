@@ -1,11 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
 import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive/services/crypto/keys.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
@@ -20,8 +18,6 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
       validators: [Validators.required],
     ),
   });
-
-  List<TransactionCommonMixin> _driveTxs;
 
   final ProfileCubit _profileCubit;
   final ProfileDao _profileDao;
@@ -50,28 +46,16 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
   // Validate the user's password by loading and decrypting a private drive.
   Future<void> verifyPasswordArconnect(String password) async {
     final profile = await _profileDao.defaultProfile().getSingle();
-    if (profile.profileType == ProfileType.ArConnect.index) {
-      _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(await profile.id);
-      final privateDriveTxs = _driveTxs.where(
-          (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
-      if (privateDriveTxs.isNotEmpty) {
-        final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
-        final signature = arconnect.getSignature;
-        final checkDriveKey = await deriveDriveKey(
-          signature,
-          checkDriveId,
-          password,
-        );
 
-        final privateDrive = await _arweave.getLatestDriveEntityWithId(
-          checkDriveId,
-          checkDriveKey,
-        );
+    // Nothing to do if the wallet is not ArConnect
+    if (profile.profileType != ProfileType.ArConnect.index) {
+      return;
+    }
 
-        if (privateDrive == null) {
-          throw ProfilePasswordIncorrectException();
-        }
-      }
+    final signature = arconnect.getSignature;
+    final privateDrive = await _arweave.getAnyPrivateDriveEntity(await profile.id, password, signature);
+    if (privateDrive == null) {
+      throw ProfilePasswordIncorrectException();
     }
   }
 
@@ -81,6 +65,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     if (form.invalid) {
       return;
     }
+
     if (profileType == ProfileType.ArConnect &&
         walletAddressOnLoad != await arconnect.getWalletAddress()) {
       //Wallet was switched or deleted before login from another tab

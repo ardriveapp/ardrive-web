@@ -81,7 +81,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         isMismatch = true;
         await logoutProfile();
       }
-    } else {
+    } else if (profile == null) {
       isMismatch = true;
       await logoutProfile();
     }

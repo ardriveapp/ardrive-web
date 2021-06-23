@@ -233,6 +233,29 @@ class ArweaveService {
     }
   }
 
+  /// Gets any created private drive belonging to [profileId], as long as its unlockable with [password] when used with the [getSignatureFn]
+  Future<DriveEntity> getAnyPrivateDriveEntity(String profileId, String password, Future<Uint8List> Function(Uint8List message) getSignatureFn) async {
+    final driveTxs = await getUniqueUserDriveEntityTxs(profileId);
+    final privateDriveTxs = driveTxs.where(
+        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
+
+    if (privateDriveTxs.isEmpty) {
+      return null;
+    }
+
+    final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
+    final checkDriveKey = await deriveDriveKey(
+      getSignatureFn,
+      checkDriveId,
+      password,
+    );  
+
+    return await getLatestDriveEntityWithId(
+      checkDriveId,
+      checkDriveKey,
+    );
+  }
+
   /// Gets the latest file entity with the provided id.
   ///
   /// This function first checks for the owner of the first instance of the [FileEntity]
