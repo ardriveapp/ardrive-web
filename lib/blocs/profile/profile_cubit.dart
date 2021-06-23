@@ -78,6 +78,10 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     if (profile.profileType == ProfileType.ArConnect.index) {
+      if (!(await arconnect.checkPermissions())) {
+        await logoutProfile();
+        return true;
+      }
       final currentPublicKey = await arconnect.getPublicKey();
       final savedPublicKey = profile.walletPublicKey;
       if (currentPublicKey != savedPublicKey) {
