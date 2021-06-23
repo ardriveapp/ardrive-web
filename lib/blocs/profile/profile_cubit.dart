@@ -72,20 +72,21 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// Returns true if a logout flow is initiated as a result of a detected wallet or permissions change
   Future<bool> logoutIfWalletMismatch() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
-    var isMismatch = false;
+    if (profile == null) {
+      await logoutProfile();
+      return true;
+    }
 
-    if (profile != null && profile.profileType == ProfileType.ArConnect.index) {
+    if (profile.profileType == ProfileType.ArConnect.index) {
       final currentPublicKey = await arconnect.getPublicKey();
       final savedPublicKey = profile.walletPublicKey;
       if (currentPublicKey != savedPublicKey) {
-        isMismatch = true;
         await logoutProfile();
+        return true;
       }
-    } else if (profile == null) {
-      isMismatch = true;
-      await logoutProfile();
     }
-    return isMismatch;
+
+    return false;
   }
 
   Future<void> unlockDefaultProfile(
