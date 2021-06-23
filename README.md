@@ -9,13 +9,7 @@ Have any questions? Join the ArDrive Discord channel for support, news and updat
 
 ## Setting up the Development Environment
 
-First clone the repo to your local environment:
-
-```shell
-git clone https://github.com/ardriveapp/ardrive-web.git && cd ardrive-web
-```
-
-If your environment is using homebrew, install the Flutter SDK with it's cask as shown below. Alternatively, visit the [Flutter Installation Instructions][flutter-sdk-install] to get the Flutter SDK up and running for your OS / local setup.
+If your environment is using homebrew, install the Flutter SDK with its cask as shown below. Alternatively, visit the [Flutter Installation Instructions][https://flutter.dev/docs/get-started/install] to get the Flutter SDK up and running for your OS / local setup.
 
 ```shell
 # with homebrew
@@ -29,7 +23,7 @@ Then, generate the package imports with:
 flutter pub get
 ```
 
-Next, run a build to resolve conflicts. You may also need to run this command to resolve conflicts whenever switching branches:
+Whenever changing branches or initially setting up, compile the codebase to resolve errors:
 
 ```shell
 flutter pub run build_runner build --delete-conflicting-outputs
@@ -48,8 +42,6 @@ flutter run -d Chrome
 ```
 
 All changes made to `dev` will be continuously deployed to [staging.ardrive.io](https://staging.ardrive.io). All PRs from this repo merging into `dev` will trigger a preview build that can be shared freely.
-
-[flutter-sdk-install]: https://flutter.dev/docs/get-started/install
 
 ## Release
 
