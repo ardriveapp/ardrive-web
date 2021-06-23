@@ -53,7 +53,8 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     }
 
     final signature = arconnect.getSignature;
-    final privateDrive = await _arweave.getAnyPrivateDriveEntity(await profile.id, password, signature);
+    final privateDrive = await _arweave.getAnyPrivateDriveEntity(
+        await profile.id, password, signature);
     if (privateDrive == null) {
       throw ProfilePasswordIncorrectException();
     }
@@ -75,7 +76,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     final String password = form.control('password').value;
 
     try {
-      if (profileType == ProfileType.ArConnect) {
+      if (_profileType == ProfileType.ArConnect) {
         await verifyPasswordArconnect(password);
       }
       //Store profile key so other private entities can be created and loaded
