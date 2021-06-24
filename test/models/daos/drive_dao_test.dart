@@ -33,7 +33,7 @@ void main() {
             id: driveId,
             rootFolderId: rootFolderId,
             ownerAddress: 'owner-address',
-            name: 'drive-name',
+            driveName: 'drive-name',
             privacy: DrivePrivacy.public,
           ),
         );

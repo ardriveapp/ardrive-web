@@ -39,7 +39,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     var insertDriveOp = DrivesCompanion.insert(
       id: driveId,
-      name: name,
+      driveName: name,
       ownerAddress: ownerAddress,
       rootFolderId: rootFolderId,
       privacy: privacy,
@@ -82,7 +82,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
           var driveCompanion = DrivesCompanion.insert(
             id: entity.id,
-            name: entity.name,
+            driveName: entity.name,
             ownerAddress: entity.ownerAddress,
             rootFolderId: entity.rootFolderId,
             privacy: entity.privacy,
@@ -112,7 +112,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     final companion = DrivesCompanion.insert(
       id: entity.id,
-      name: name,
+      driveName: name,
       ownerAddress: entity.ownerAddress,
       rootFolderId: entity.rootFolderId,
       privacy: entity.privacy,

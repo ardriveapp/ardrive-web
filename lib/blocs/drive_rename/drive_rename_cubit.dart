@@ -46,7 +46,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
     () async {
       final name = await _driveDao
           .driveById(driveId: driveId)
-          .map((f) => f.name)
+          .map((f) => f.driveName)
           .getSingle();
       form.control('name').value = name;
       emit(DriveRenameInitial());
@@ -72,7 +72,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
 
       await _driveDao.transaction(() async {
         var drive = await _driveDao.driveById(driveId: driveId).getSingle();
-        drive = drive.copyWith(name: newName, lastUpdated: DateTime.now());
+        drive = drive.copyWith(driveName: newName, lastUpdated: DateTime.now());
 
         final driveEntity = drive.asEntity();
 
@@ -101,13 +101,13 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
     final String newDriveName = control.value;
 
-    if (newDriveName == drive.name) {
+    if (newDriveName == drive.driveName) {
       return null;
     }
 
     // Check that the current drive does not already have a drive with the target file name.
     final drivesWithName = (await _driveDao.allDrives().get())
-        .where((element) => element.name == newDriveName);
+        .where((element) => element.driveName == newDriveName);
     final nameAlreadyExists = drivesWithName.isNotEmpty;
 
     if (nameAlreadyExists) {

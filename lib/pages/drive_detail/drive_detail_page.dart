@@ -50,7 +50,7 @@ class DriveDetailPage extends StatelessWidget {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      state.currentDrive.name,
+                                      state.currentDrive.driveName,
                                       style:
                                           Theme.of(context).textTheme.headline5,
                                     ),
@@ -112,7 +112,7 @@ class DriveDetailPage extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      state.currentDrive.name,
+                                      state.currentDrive.driveName,
                                       style:
                                           Theme.of(context).textTheme.headline5,
                                     ),

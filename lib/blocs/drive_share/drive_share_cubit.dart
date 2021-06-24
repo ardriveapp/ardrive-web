@@ -28,14 +28,14 @@ class DriveShareCubit extends Cubit<DriveShareState> {
     // On web, link to the current origin the user is on.
     // Elsewhere, link to app.ardrive.io.
     final linkOrigin = kIsWeb ? Uri.base.origin : 'https://app.ardrive.io';
-    final driveName = drive.name;
+    final driveName = drive.driveName;
 
     final driveShareLink = '$linkOrigin/#/drives/${drive.id}?name=' +
         Uri.encodeQueryComponent(driveName);
 
     emit(
       DriveShareLoadSuccess(
-        driveName: drive.name,
+        driveName: drive.driveName,
         driveShareLink: Uri.parse(driveShareLink),
       ),
     );

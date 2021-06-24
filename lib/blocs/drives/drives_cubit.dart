@@ -29,7 +29,8 @@ class DrivesCubit extends Cubit<DrivesState> {
         super(DrivesLoadInProgress()) {
     _drivesSubscription = Rx.combineLatest2<List<Drive>, void, List<Drive>>(
       _driveDao
-          .allDrives(order: OrderBy([OrderingTerm.asc(_driveDao.drives.name)]))
+          .allDrives(
+              order: OrderBy([OrderingTerm.asc(_driveDao.drives.driveName)]))
           .watch(),
       _profileCubit.startWith(null),
       (drives, _) => drives,

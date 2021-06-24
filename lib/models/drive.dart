@@ -8,7 +8,7 @@ extension DriveExtensions on Drive {
 
   DriveEntity asEntity() => DriveEntity(
         id: id,
-        name: name,
+        name: driveName,
         rootFolderId: rootFolderId,
         privacy: privacy,
         authMode:

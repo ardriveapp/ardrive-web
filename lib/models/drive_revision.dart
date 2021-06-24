@@ -16,7 +16,7 @@ extension DriveRevisionCompanionExtensions on DriveRevisionsCompanion {
         id: driveId.value,
         rootFolderId: rootFolderId.value,
         ownerAddress: ownerAddress.value,
-        name: name.value,
+        driveName: name.value,
         lastUpdated: dateCreated,
         privacy: privacy.value,
       );

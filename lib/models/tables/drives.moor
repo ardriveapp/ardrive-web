@@ -4,7 +4,7 @@ CREATE TABLE drives (
 
     ownerAddress TEXT NOT NULL,
 
-    name TEXT NOT NULL,
+    driveName TEXT NOT NULL,
 
     syncCursor TEXT,
 

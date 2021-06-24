@@ -57,7 +57,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
           _driveDao.driveById(driveId: driveId).watchSingle().listen(
                 (d) => emit(
                   FsEntryInfoSuccess<Drive>(
-                    name: d.name,
+                    name: d.driveName,
                     lastUpdated: d.lastUpdated,
                     dateCreated: d.dateCreated,
                     entry: d,
