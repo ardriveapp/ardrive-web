@@ -47,11 +47,6 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
   Future<void> verifyPasswordArconnect(String password) async {
     final profile = await _profileDao.defaultProfile().getSingle();
 
-    // Nothing to do if the wallet is not ArConnect
-    if (profile.profileType != ProfileType.ArConnect.index) {
-      return;
-    }
-
     final signature = arconnect.getSignature;
     final privateDrive = await _arweave.getAnyPrivateDriveEntity(
         await profile.id, password, signature);

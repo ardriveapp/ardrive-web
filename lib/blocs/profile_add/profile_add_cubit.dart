@@ -118,10 +118,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     if (form.invalid) {
       return;
     }
-    if (await _profileCubit.logoutIfWalletMismatch()) {
-      emit(ProfileAddWalletMismatch());
-      return;
-    }
 
     if (_profileType == ProfileType.ArConnect &&
         _lastKnownWalletAddress != await arconnect.getWalletAddress()) {
