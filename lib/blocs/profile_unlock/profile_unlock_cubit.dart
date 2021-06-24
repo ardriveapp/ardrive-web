@@ -36,7 +36,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
         super(ProfileUnlockInitializing()) {
     () async {
       final profile = await _profileDao.defaultProfile().getSingle();
-      _lastKnownWalletAddress = profile.id;
+      _lastKnownWalletAddress = profile.walletAddress;
       _profileType = profile.profileType == ProfileType.ArConnect.index
           ? ProfileType.ArConnect
           : ProfileType.JSON;
@@ -49,7 +49,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
 
     final signature = arconnect.getSignature;
     final privateDrive = await _arweave.getAnyPrivateDriveEntity(
-        await profile.id, password, signature);
+        await profile.walletAddress, password, signature);
     if (privateDrive == null) {
       throw ProfilePasswordIncorrectException();
     }

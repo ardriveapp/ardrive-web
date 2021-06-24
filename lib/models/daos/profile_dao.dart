@@ -66,7 +66,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     final encryptedWallet = await encryptWallet(wallet, profileKdRes);
     await into(profiles).insert(
       ProfilesCompanion.insert(
-        id: await wallet.getAddress(),
+        walletAddress: await wallet.getAddress(),
         username: username,
         encryptedWallet: encryptedWallet.concatenation(nonce: false),
         keySalt: profileSalt,
@@ -101,7 +101,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
 
     await into(profiles).insert(
       ProfilesCompanion.insert(
-        id: walletAddress,
+        walletAddress: walletAddress,
         username: username,
         encryptedWallet: Uint8List(0),
         keySalt: profileSalt,
