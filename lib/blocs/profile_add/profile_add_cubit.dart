@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
@@ -20,7 +21,8 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   FormGroup form;
 
   Wallet _wallet;
-  bool isArconnect;
+  ProfileType _profileType;
+  String _lastKnownWalletAddress;
   List<TransactionCommonMixin> _driveTxs;
 
   final ProfileCubit _profileCubit;
@@ -65,15 +67,18 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   Future<void> pickWalletFromArconnect() async {
     try {
       emit(ProfileAddUserStateLoadInProgress());
-      isArconnect = true;
+      _profileType = ProfileType.ArConnect;
+
       await arconnect.connect();
       if (!await arconnect.checkPermissions()) {
         emit(ProfileAddFailiure());
         return;
       }
 
-      final walletAddress = await arconnect.getWalletAddress();
-      _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(walletAddress);
+      _lastKnownWalletAddress = await arconnect.getWalletAddress();
+
+      _driveTxs =
+          await _arweave.getUniqueUserDriveEntityTxs(_lastKnownWalletAddress);
 
       if (_driveTxs.isEmpty) {
         emit(ProfileAddOnboardingNewUser());
@@ -113,7 +118,12 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     if (form.invalid) {
       return;
     }
-
+    if (_profileType == ProfileType.ArConnect &&
+        _lastKnownWalletAddress != await arconnect.getWalletAddress()) {
+      //Wallet was switched or deleted before login from another tab
+      emit(ProfileAddFailiure());
+      return;
+    }
     final previousState = state;
     emit(ProfileAddInProgress());
 
@@ -156,13 +166,15 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       await _profileDao.addProfile(username, password, _wallet);
     } else {
       final walletAddress = await arconnect.getWalletAddress();
+      final walletPublicKey = await arconnect.getPublicKey();
       await _profileDao.addProfileArconnect(
         username,
         password,
         walletAddress,
+        walletPublicKey,
       );
     }
-    await _profileCubit.unlockDefaultProfile(password, isArconnect);
+    await _profileCubit.unlockDefaultProfile(password, _profileType);
   }
 
   ValidatorFunction _mustMatch(String controlName, String matchingControlName) {
