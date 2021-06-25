@@ -118,7 +118,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     if (form.invalid) {
       return;
     }
-
     if (_profileType == ProfileType.ArConnect &&
         _lastKnownWalletAddress != await arconnect.getWalletAddress()) {
       //Wallet was switched or deleted before login from another tab

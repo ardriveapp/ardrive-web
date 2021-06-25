@@ -61,7 +61,6 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     if (form.invalid) {
       return;
     }
-
     if (_profileType == ProfileType.ArConnect &&
         _lastKnownWalletAddress != await arconnect.getWalletAddress()) {
       //Wallet was switched or deleted before login from another tab
@@ -84,5 +83,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
 
       return;
     }
+
+    await _profileCubit.unlockDefaultProfile(password, ProfileType.JSON);
   }
 }
