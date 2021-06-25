@@ -7,15 +7,35 @@ The ArDrive Web App allows a user to log in to securely view, upload and manage 
 
 Have any questions? Join the ArDrive Discord channel for support, news and updates. https://discord.gg/ya4hf2H
 
-## Development
+## Setting up the Development Environment
 
-To start code generation, run:
+If your environment is using homebrew, install the Flutter SDK with its cask as shown below. Alternatively, visit the [Flutter Installation Instructions][https://flutter.dev/docs/get-started/install] to get the Flutter SDK up and running for your OS / local setup.
+
+```shell
+# with homebrew
+
+brew install --cask flutter
+```
+
+Then, generate the package imports with:
+
+```shell
+flutter pub get
+```
+
+Whenever changing branches or initially setting up, compile the codebase to resolve errors:
+
+```shell
+flutter pub run build_runner build --delete-conflicting-outputs
+```
+
+Then, to begin code generation and watch for changes, run:
 
 ```shell
 flutter packages pub run build_runner watch
 ```
 
-To start a development instance for web, run:
+Finally, to start a development instance for web, run:
 
 ```shell
 flutter run -d Chrome
