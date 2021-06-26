@@ -70,7 +70,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       _profileType = ProfileType.ArConnect;
 
       await arconnect.connect();
-      if (!await arconnect.checkPermissions()) {
+      if (!(await arconnect.checkPermissions())) {
         emit(ProfileAddFailiure());
         return;
       }
@@ -119,8 +119,10 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       return;
     }
     if (_profileType == ProfileType.ArConnect &&
-        _lastKnownWalletAddress != await arconnect.getWalletAddress()) {
+        (_lastKnownWalletAddress != await arconnect.getWalletAddress() ||
+            !(await arconnect.checkPermissions()))) {
       //Wallet was switched or deleted before login from another tab
+
       emit(ProfileAddFailiure());
       return;
     }
