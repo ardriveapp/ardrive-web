@@ -77,25 +77,26 @@ class ProfileCubit extends Cubit<ProfileState> {
 
     final profile = await _profileDao.loadDefaultProfile(password);
 
-    if (profile != null) {
-      final walletAddress = await (profile.wallet == null
-          ? arconnect.getWalletAddress()
-          : profile.wallet.getAddress());
-      final walletBalance = await _arweave.getWalletBalance(walletAddress);
-
-      emit(
-        ProfileLoggedIn(
-          username: profile.details.username,
-          password: password,
-          wallet: profileType == ProfileType.ArConnect ? null : profile.wallet,
-          walletAddress: walletAddress,
-          walletBalance: walletBalance,
-          cipherKey: profile.key,
-        ),
-      );
-    } else {
+    if (profile == null) {
       emit(ProfilePromptAdd());
+      return;
     }
+
+    final walletAddress = await (profile.wallet == null
+        ? arconnect.getWalletAddress()
+        : profile.wallet.getAddress());
+    final walletBalance = await _arweave.getWalletBalance(walletAddress);
+
+    emit(
+      ProfileLoggedIn(
+        username: profile.details.username,
+        password: password,
+        wallet: profileType == ProfileType.ArConnect ? null : profile.wallet,
+        walletAddress: walletAddress,
+        walletBalance: walletBalance,
+        cipherKey: profile.key,
+      ),
+    );
   }
 
   Future<void> refreshBalance() async {
