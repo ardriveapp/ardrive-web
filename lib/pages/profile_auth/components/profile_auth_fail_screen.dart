@@ -31,7 +31,7 @@ class ProfileAuthFailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             TextButton(
-              child: Text('Login'),
+              child: Text('Log In'),
               onPressed: () {
                 context.read<ProfileCubit>().logoutProfile();
                 window.location.reload();

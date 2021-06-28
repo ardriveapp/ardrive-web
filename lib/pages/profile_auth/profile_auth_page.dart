@@ -31,6 +31,7 @@ class _ProfileAuthPageState extends State<ProfileAuthPage> {
           ),
         );
       }
+      //Used to prevent dialog from being shown multiple times
       _showWalletSwitchDialog = false;
     });
   }

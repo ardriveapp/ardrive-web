@@ -27,7 +27,6 @@ class WalletSwitchDialog extends StatelessWidget {
               Navigator.pop(context);
               context.read<ProfileCubit>().logoutProfile();
               if (fromAuthPage ?? false) {
-                print(fromAuthPage);
                 window.location.reload();
                 context.read<ProfileAddCubit>().promptForWallet();
               }

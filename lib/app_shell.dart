@@ -33,6 +33,7 @@ class _AppShellState extends State<AppShell> {
                 builder: (context) => WalletSwitchDialog(),
               );
             }
+            //Used to prevent the dialog being shown multiple times.
             _showWalletSwitchDialog = false;
           });
           Widget _buildAppBar() => AppBar(
