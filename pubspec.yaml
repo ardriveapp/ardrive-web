@@ -54,7 +54,6 @@ dependencies:
   js: ^0.6.3
 
 dev_dependencies:
-
   test: ^1.15.4
   bloc_test: ^7.1.0
   mockito: ^5.0.0-nullsafety.2

@@ -1,11 +1,9 @@
 const permissions = [
   'ACCESS_ADDRESS',
-  'ACCESS_ALL_ADDRESSES',
   'SIGN_TRANSACTION',
-  'ENCRYPT',
-  'DECRYPT',
   'SIGNATURE',
   'ACCESS_PUBLIC_KEY',
+  'ACCESS_ALL_ADDRESSES',
 ];
 
 function isExtensionPresent() {
@@ -14,6 +12,21 @@ function isExtensionPresent() {
 
 async function connect() {
   return await window.arweaveWallet.connect(permissions);
+}
+
+async function checkPermissions() {
+  var acceptedPermissions = await window.arweaveWallet.getPermissions();
+  return permissions.every(i => acceptedPermissions.includes(i));
+}
+
+async function disconnect() {
+  return await window.arweaveWallet.disconnect();
+}
+
+async function listenForWalletSwitch() {
+  window.addEventListener('walletSwitch', () => {
+    window.parent.postMessage('walletSwitch', '*');
+  });
 }
 
 async function getWalletAddress() {

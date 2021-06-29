@@ -1,3 +1,5 @@
+import 'dart:html';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +9,7 @@ import 'package:url_launcher/link.dart';
 
 import 'blocs/blocs.dart';
 import 'components/components.dart';
+import 'components/wallet_switch_dialog.dart';
 
 class AppShell extends StatefulWidget {
   final Widget page;
@@ -19,10 +22,20 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   bool _showProfileOverlay = false;
-
+  bool _showWalletSwitchDialog = true;
   @override
   Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
         builder: (context, state) {
+          window.addEventListener('walletSwitch', (event) {
+            if (_showWalletSwitchDialog) {
+              showDialog(
+                context: context,
+                builder: (context) => WalletSwitchDialog(),
+              );
+            }
+            //Used to prevent the dialog being shown multiple times.
+            _showWalletSwitchDialog = false;
+          });
           Widget _buildAppBar() => AppBar(
                 // title: Image.asset(
                 //   R.images.brand.logoHorizontalNoSubtitle,
