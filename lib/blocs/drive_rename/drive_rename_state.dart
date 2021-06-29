@@ -14,3 +14,5 @@ class DriveRenameInProgress extends DriveRenameState {}
 class DriveRenameSuccess extends DriveRenameState {}
 
 class DriveRenameFailure extends DriveRenameState {}
+
+class DriveRenameWalletMismatch extends DriveRenameState {}

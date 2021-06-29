@@ -45,8 +45,14 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     if (form.invalid) {
       return;
     }
+
+    if (await _profileCubit.logoutIfWalletMismatch()) {
+      emit(DriveCreateWalletMismatch());
+      return;
+    }
+
     final profile = _profileCubit.state as ProfileLoggedIn;
-    final wallet = profile.wallet;
+
     final minimumWalletBalance = BigInt.from(10000000);
     if (profile.walletBalance <= minimumWalletBalance) {
       emit(DriveCreateZeroBalance());

@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -21,6 +22,7 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
         create: (context) => ProfileUnlockCubit(
           profileCubit: context.read<ProfileCubit>(),
           profileDao: context.read<ProfileDao>(),
+          arweave: context.read<ArweaveService>(),
         ),
         child: BlocBuilder<ProfileUnlockCubit, ProfileUnlockState>(
           builder: (context, state) {
