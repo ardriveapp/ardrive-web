@@ -100,7 +100,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> prepareUpload() async {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
-    if (await _profileCubit.logoutIfWalletMismatch()) {
+    if (await _profileCubit.checkIfWalletMismatch()) {
       emit(UploadWalletMismatch());
       return;
     }
@@ -171,7 +171,10 @@ class UploadCubit extends Cubit<UploadState> {
         .getArUsdConversionRate()
         .then((conversionRate) => double.parse(arUploadCost) * conversionRate)
         .catchError(() => null);
-
+    if (await _profileCubit.checkIfWalletMismatch()) {
+      emit(UploadWalletMismatch());
+      return;
+    }
     emit(
       UploadReady(
         arUploadCost: arUploadCost,
@@ -187,7 +190,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> startUpload() async {
     //Check if the same wallet it being used before starting upload.
-    if (await _profileCubit.logoutIfWalletMismatch()) {
+    if (await _profileCubit.checkIfWalletMismatch()) {
       emit(UploadWalletMismatch());
       return;
     }

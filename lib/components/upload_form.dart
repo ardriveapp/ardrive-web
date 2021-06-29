@@ -48,6 +48,10 @@ class UploadForm extends StatelessWidget {
           if (state is UploadComplete || state is UploadWalletMismatch) {
             Navigator.pop(context);
           }
+          if (state is UploadWalletMismatch) {
+            Navigator.pop(context);
+            await context.read<ProfileCubit>().logoutProfile();
+          }
         },
         builder: (context, state) {
           if (state is UploadFileConflict) {
