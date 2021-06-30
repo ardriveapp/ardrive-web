@@ -62,7 +62,6 @@ class SyncCubit extends Cubit<SyncState> {
         // It also adds the encryption keys onto the drive models which isn't touched by the
         // later system.
         //
-        // TODO: Wallet passed on getUniqueUserDriveEntities
         final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
             profile.getRawWalletSignature,
             await profile.getWalletAddress(),
