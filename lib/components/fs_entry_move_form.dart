@@ -60,6 +60,9 @@ class FsEntryMoveForm extends StatelessWidget {
               state is FileEntryMoveSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
+          } else if (state is FolderEntryMoveWalletMismatch ||
+              state is FileEntryMoveWalletMismatch) {
+            Navigator.pop(context);
           }
         },
         builder: (context, state) {

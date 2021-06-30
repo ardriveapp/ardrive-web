@@ -32,6 +32,8 @@ class DriveCreateForm extends StatelessWidget {
           } else if (state is DriveCreateSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
+          } else if (state is DriveCreateWalletMismatch) {
+            Navigator.pop(context);
           }
         },
         builder: (context, state) {
