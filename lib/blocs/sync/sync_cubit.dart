@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:html';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
@@ -45,6 +46,9 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> startSync() async {
+    if (window.document.hidden) {
+      return;
+    }
     if (await _profileCubit.logoutIfWalletMismatch()) {
       emit(SyncWalletMismatch());
       return;
