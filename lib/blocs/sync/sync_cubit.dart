@@ -26,7 +26,7 @@ class SyncCubit extends Cubit<SyncState> {
   final Database _db;
 
   StreamSubscription _syncSub;
-
+  bool _firstSync = true;
   SyncCubit({
     @required ProfileCubit profileCubit,
     @required ArweaveService arweave,
@@ -46,7 +46,8 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> startSync() async {
-    if (window.document.hidden) {
+    if (!_firstSync && window.document.hidden) {
+      _firstSync == false;
       return;
     }
     if (await _profileCubit.logoutIfWalletMismatch()) {
