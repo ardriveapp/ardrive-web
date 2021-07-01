@@ -49,6 +49,7 @@ class SyncCubit extends Cubit<SyncState> {
     if (window.document.hidden) {
       return;
     }
+
     if (await _profileCubit.logoutIfWalletMismatch()) {
       emit(SyncWalletMismatch());
       return;
