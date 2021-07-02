@@ -40,8 +40,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: d6365b4897d3400a86b57948e0ba2a2dc90f2e29
-      resolved-ref: d6365b4897d3400a86b57948e0ba2a2dc90f2e29
+      ref: f8a0b9e6ce17d19782388e933557b46c8bd11cec
+      resolved-ref: f8a0b9e6ce17d19782388e933557b46c8bd11cec
       url: "https://github.com/ardriveapp/arweave-dart"
     source: git
     version: "0.1.0"
@@ -460,7 +460,7 @@ packages:
     source: hosted
     version: "0.3.4"
   js:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: js
       url: "https://pub.dartlang.org"

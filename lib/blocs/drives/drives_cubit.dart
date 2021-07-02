@@ -46,8 +46,7 @@ class DrivesCubit extends Cubit<DrivesState> {
 
       final profile = _profileCubit.state;
       final walletAddress =
-          profile is ProfileLoggedIn ? await profile.wallet.getAddress() : '';
-
+          profile is ProfileLoggedIn ? await profile.walletAddress : '';
       emit(
         DrivesLoadSuccess(
           selectedDriveId: selectedDriveId,

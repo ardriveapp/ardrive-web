@@ -125,7 +125,11 @@ class ProfileAuthAddScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       TextButton(
-                        child: Text('Change wallet'),
+                        child: context
+                                .read<ProfileAddCubit>()
+                                .isArconnectInstalled()
+                            ? Text('LOG OUT')
+                            : Text('Change wallet'),
                         onPressed: () =>
                             context.read<ProfileAddCubit>().promptForWallet(),
                       ),

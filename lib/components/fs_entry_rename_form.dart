@@ -61,6 +61,9 @@ class FsEntryRenameForm extends StatelessWidget {
               state is FileEntryRenameSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
+          } else if (state is FolderEntryRenameWalletMismatch ||
+              state is FileEntryRenameWalletMismatch) {
+            Navigator.pop(context);
           }
         },
         builder: (context, state) => AppDialog(

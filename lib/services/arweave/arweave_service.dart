@@ -5,6 +5,7 @@ import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart' as http;
+import 'package:moor/moor.dart';
 
 import '../services.dart';
 
@@ -139,13 +140,13 @@ class ArweaveService {
 
   /// Gets the unique drive entities for a particular user.
   Future<Map<DriveEntity, SecretKey>> getUniqueUserDriveEntities(
-    Wallet wallet,
+    Future<Uint8List> Function(Uint8List message) getWalletSignature,
+    String walletAddress,
     String password,
   ) async {
     final userDriveEntitiesQuery = await _gql.execute(
       UserDriveEntitiesQuery(
-          variables:
-              UserDriveEntitiesArguments(owner: await wallet.getAddress())),
+          variables: UserDriveEntitiesArguments(owner: walletAddress)),
     );
 
     final driveTxs = userDriveEntitiesQuery.data.transactions.edges
@@ -168,7 +169,7 @@ class ArweaveService {
       final driveKey =
           driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private
               ? await deriveDriveKey(
-                  wallet,
+                  getWalletSignature,
                   driveTx.getTag(EntityTag.driveId),
                   password,
                 )
@@ -230,6 +231,29 @@ class ArweaveService {
     } on EntityTransactionParseException catch (_) {
       return null;
     }
+  }
+
+  /// Gets any created private drive belonging to [profileId], as long as its unlockable with [password] when used with the [getSignatureFn]
+  Future<DriveEntity> getAnyPrivateDriveEntity(String profileId, String password, Future<Uint8List> Function(Uint8List message) getSignatureFn) async {
+    final driveTxs = await getUniqueUserDriveEntityTxs(profileId);
+    final privateDriveTxs = driveTxs.where(
+        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
+
+    if (privateDriveTxs.isEmpty) {
+      return null;
+    }
+
+    final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
+    final checkDriveKey = await deriveDriveKey(
+      getSignatureFn,
+      checkDriveId,
+      password,
+    );  
+
+    return await getLatestDriveEntityWithId(
+      checkDriveId,
+      checkDriveKey,
+    );
   }
 
   /// Gets the latest file entity with the provided id.
@@ -326,46 +350,64 @@ class ArweaveService {
   /// Creates and signs a [Transaction] representing the provided entity.
   ///
   /// Optionally provide a [SecretKey] to encrypt the entity data.
+
   Future<Transaction> prepareEntityTx(
     Entity entity,
-    Wallet wallet, [
+    Future<Uint8List> Function(Uint8List) getRawSignature,
+    String owner, [
     SecretKey key,
   ]) async {
     final tx = await client.transactions.prepare(
       await entity.asTransaction(key),
-      wallet,
+      owner,
     );
-
-    await tx.sign(wallet);
+    final rawSignature = await getRawSignature(await tx.getSignatureData());
+    await tx.sign(rawSignature);
 
     return tx;
+  }
+
+  Future<Uint8List> getSignatureData(
+    Entity entity,
+    String owner, [
+    SecretKey key,
+  ]) async {
+    final tx = await client.transactions.prepare(
+      await entity.asTransaction(key),
+      owner,
+    );
+
+    return await tx.getSignatureData();
   }
 
   /// Creates and signs a [DataItem] representing the provided entity.
   ///
   /// Optionally provide a [SecretKey] to encrypt the entity data.
+
   Future<DataItem> prepareEntityDataItem(
     Entity entity,
-    Wallet wallet, [
+    Uint8List rawSignature,
+    String owner, [
     SecretKey key,
   ]) async {
     final item = await entity.asDataItem(key);
-    item.setOwner(await wallet.getOwner());
+    item.setOwner(owner);
 
-    await item.sign(wallet);
+    await item.sign(rawSignature);
 
     return item;
   }
 
   /// Creates and signs a [Transaction] representing the provided [DataBundle].
+
   Future<Transaction> prepareDataBundleTx(
-      DataBundle bundle, Wallet wallet) async {
+      DataBundle bundle, Uint8List rawSignature, String owner) async {
     final bundleTx = await client.transactions.prepare(
       Transaction.withDataBundle(bundle: bundle)..addApplicationTags(),
-      wallet,
+      owner,
     );
 
-    await bundleTx.sign(wallet);
+    await bundleTx.sign(rawSignature);
 
     return bundleTx;
   }

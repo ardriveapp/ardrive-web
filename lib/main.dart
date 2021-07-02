@@ -16,7 +16,6 @@ import 'theme/theme.dart';
 ConfigService configService;
 AppConfig config;
 ArweaveService arweave;
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
