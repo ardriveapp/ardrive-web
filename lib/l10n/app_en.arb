@@ -10,12 +10,12 @@
   "copyLink": "Copy Link",
   "done": "Done",
   "ok": "OK",
-  "new": "New",
+  "newString": "New",
   "close": "Close",
   "upload": "Upload",
   "moveHere": "Move Here",
   "createFolder": "Create Folder",
-  "continue": "Continue",
+  "continueString": "Continue",
   "insufficientAR": "You do not have sufficient AR to create a drive.",
   "notLoggedIn": "You're not logged in",
   "logInToExperience": "Log in to experience all of ArDrive's features!",
@@ -83,5 +83,5 @@
   "fileSize": "File Size",
   "nothingToSeeHere": "There's nothing to see here.",
   "nothingToSeeHereClickToAdd": "There's nothing to see here. Click \"new\" to add some files."
-  
+
 }
