@@ -32,6 +32,11 @@ class ProfileCubit extends Cubit<ProfileState> {
     promptToAuthenticate();
   }
 
+  Future<bool> isCurrentProfileArConnect() async {
+    return (await _profileDao.defaultProfile().getSingleOrNull()).profileType ==
+        ProfileType.ArConnect.index;
+  }
+
   Future<void> promptToAuthenticate() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
 
