@@ -105,7 +105,7 @@ class _AppShellState extends State<AppShell> {
                                     );
                                   } else {
                                     return ProgressDialog(
-                                      title: 'Syncing, please wait',
+                                      title: 'Syncing... Please wait.',
                                     );
                                   }
                                 },

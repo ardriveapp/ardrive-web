@@ -22,7 +22,7 @@ class ProfileAuthLoadingScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: const Text(
-                  'Loading, please remain on this tab.',
+                  'Loading... Please remain on this tab.',
                 ),
               ),
             const Center(child: CircularProgressIndicator()),
