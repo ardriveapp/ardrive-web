@@ -90,8 +90,27 @@ class _AppShellState extends State<AppShell> {
                               color: Colors.black.withOpacity(0.5),
                             ),
                           ),
-                          ProgressDialog(
-                            title: 'Syncing, please wait',
+                          BlocBuilder<ProfileCubit, ProfileState>(
+                            builder: (context, state) {
+                              return FutureBuilder(
+                                future: context
+                                    .read<ProfileCubit>()
+                                    .isCurrentProfileArConnect(),
+                                builder: (BuildContext context,
+                                    AsyncSnapshot snapshot) {
+                                  if (snapshot.data ?? false) {
+                                    return ProgressDialog(
+                                      title:
+                                          'Syncing... Please remain on this tab.',
+                                    );
+                                  } else {
+                                    return ProgressDialog(
+                                      title: 'Syncing... Please wait.',
+                                    );
+                                  }
+                                },
+                              );
+                            },
                           ),
                         ],
                       )
