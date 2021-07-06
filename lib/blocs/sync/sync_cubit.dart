@@ -50,6 +50,7 @@ class SyncCubit extends Cubit<SyncState> {
       emit(SyncIdle());
       return;
     }
+    print('syncing...');
     if (await _profileCubit.logoutIfWalletMismatch()) {
       emit(SyncWalletMismatch());
       return;
