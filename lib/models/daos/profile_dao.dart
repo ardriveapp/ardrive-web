@@ -64,6 +64,8 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     final profileKdRes = await deriveProfileKey(password);
     final profileSalt = profileKdRes.salt;
     final encryptedWallet = await encryptWallet(wallet, profileKdRes);
+    final publicKey = await wallet.getOwner();
+    final encryptedPublicKey = await encryptPublicKey(publicKey, profileKdRes);
     await into(profiles).insert(
       ProfilesCompanion.insert(
         id: await wallet.getAddress(),
@@ -71,23 +73,12 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         encryptedWallet: encryptedWallet.concatenation(nonce: false),
         keySalt: profileSalt,
         profileType: ProfileType.JSON.index,
-        walletPublicKey: await wallet.getOwner(),
+        walletPublicKey: publicKey,
+        encryptedPublicKey: encryptedPublicKey.concatenation(nonce: false),
       ),
     );
 
     return profileKdRes.key;
-  }
-
-  Future<SecretBox> encryptWallet(
-    Wallet wallet,
-    ProfileKeyDerivationResult profileKdRes,
-  ) async {
-    final walletJson = utf8.encode(json.encode(wallet.toJwk()));
-    return (await aesGcm.encrypt(
-      walletJson,
-      secretKey: profileKdRes.key,
-      nonce: profileKdRes.salt,
-    ));
   }
 
   Future<SecretKey> addProfileArconnect(
@@ -98,6 +89,8 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   ) async {
     final profileKdRes = await deriveProfileKey(password);
     final profileSalt = profileKdRes.salt;
+    final encryptedPublicKey =
+        await encryptPublicKey(walletPublicKey, profileKdRes);
 
     await into(profiles).insert(
       ProfilesCompanion.insert(
@@ -107,11 +100,36 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         keySalt: profileSalt,
         profileType: ProfileType.ArConnect.index,
         walletPublicKey: walletPublicKey,
+        encryptedPublicKey: encryptedPublicKey.concatenation(nonce: false),
       ),
     );
 
     return profileKdRes.key;
   }
+}
+
+Future<SecretBox> encryptWallet(
+  Wallet wallet,
+  ProfileKeyDerivationResult profileKdRes,
+) async {
+  final walletJson = utf8.encode(json.encode(wallet.toJwk()));
+  return (await aesGcm.encrypt(
+    walletJson,
+    secretKey: profileKdRes.key,
+    nonce: profileKdRes.salt,
+  ));
+}
+
+Future<SecretBox> encryptPublicKey(
+  String walletPublicKey,
+  ProfileKeyDerivationResult profileKdRes,
+) async {
+  final publicKey = utf8.encode(walletPublicKey);
+  return (await aesGcm.encrypt(
+    publicKey,
+    secretKey: profileKdRes.key,
+    nonce: profileKdRes.salt,
+  ));
 }
 
 class ProfileLoadDetails {
