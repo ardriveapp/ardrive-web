@@ -21,7 +21,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  flutter_localizations:
+    sdk: flutter
   artemis: ^6.17.1
   arweave:
     git:
@@ -66,9 +67,11 @@ dependency_overrides:
   ffi: ^0.2.0-nullsafety.1
   json_annotation: ^3.0.1
   mockito: ^5.0.0-nullsafety.2
+  intl: ^0.17.0-nullsafety.2
 
 flutter:
   uses-material-design: true
+  generate: true 
   assets:
     - assets/config/
     - assets/fonts/
