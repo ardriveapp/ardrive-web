@@ -28,6 +28,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     final profileKdRes = await deriveProfileKey(password, profileSalt);
     var walletJwk;
     try {
+      //Will only decrypt wallet if it's a JSON Profile
       if (profile.encryptedWallet.isNotEmpty) {
         walletJwk = json.decode(
           utf8.decode(
@@ -41,13 +42,25 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
           ),
         );
       }
+      //Checks password for both JSON and ArConnect by decrypting stored public key
+      final publicKey = utf8.decode(
+        await aesGcm.decrypt(
+          secretBoxFromDataWithMacConcatenation(
+            profile.encryptedPublicKey,
+            nonce: profileSalt,
+          ),
+          secretKey: profileKdRes.key,
+        ),
+      );
 
+      //Returning this class doesn't do anything, but it could be useful for debugging
       return ProfileLoadDetails(
         details: profile,
         wallet: profile.encryptedWallet.isNotEmpty
             ? Wallet.fromJwk(walletJwk)
             : null,
         key: profileKdRes.key,
+        walletPublicKey: publicKey,
       );
     } on SecretBoxAuthenticationError catch (_) {
       throw ProfilePasswordIncorrectException();
@@ -136,6 +149,11 @@ class ProfileLoadDetails {
   final Profile details;
   final Wallet wallet;
   final SecretKey key;
-
-  ProfileLoadDetails({this.details, this.wallet, this.key});
+  final String walletPublicKey;
+  ProfileLoadDetails({
+    this.details,
+    this.wallet,
+    this.key,
+    this.walletPublicKey,
+  });
 }

@@ -70,12 +70,8 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     final String password = form.control('password').value;
 
     try {
-      if (_profileType == ProfileType.ArConnect) {
-        await verifyPasswordArconnect(password);
-      }
       //Store profile key so other private entities can be created and loaded
       await _profileDao.loadDefaultProfile(password);
-      await _profileCubit.unlockDefaultProfile(password, ProfileType.JSON);
     } on ProfilePasswordIncorrectException catch (_) {
       form
           .control('password')
@@ -84,6 +80,6 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
       return;
     }
 
-    await _profileCubit.unlockDefaultProfile(password, ProfileType.JSON);
+    await _profileCubit.unlockDefaultProfile(password, _profileType);
   }
 }
