@@ -6,9 +6,11 @@ import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
+import 'package:ardrive/services/pendo/pendo.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
+import 'package:crypto/crypto.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -166,10 +168,13 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         return;
       }
     }
+
+    var walletAddress;
     if (_wallet != null) {
+      walletAddress = _wallet.getAddress();
       await _profileDao.addProfile(username, password, _wallet);
     } else {
-      final walletAddress = await arconnect.getWalletAddress();
+      walletAddress = await arconnect.getWalletAddress();
       final walletPublicKey = await arconnect.getPublicKey();
       await _profileDao.addProfileArconnect(
         username,
@@ -178,6 +183,20 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         walletPublicKey,
       );
     }
+
+    // Initialize Pendo
+    final publicKeyMD5Hash = md5.convert(utf8.encode(walletAddress)).toString();
+    initializePendo({
+        'visitor': {
+            'id':              publicKeyMD5Hash // Required if user is logged in
+            // email:        // Recommended if using Pendo Feedback, or NPS Email
+            // full_name:    // Recommended if using Pendo Feedback
+            // role:         // Optional
+    
+            // You can add any additional visitor level key-values here,
+            // as long as it's not one of the above reserved names.
+        }
+    });
     await _profileCubit.unlockDefaultProfile(password, _profileType);
   }
 

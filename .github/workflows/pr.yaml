@@ -29,6 +29,9 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
+      - name: Prepare Pendo
+        run: |
+          sed -i 's/%%%PENDO_API_KEY%%%/${{ secrets.PENDO_API_KEY }}/g' ./web/index.html
       - name: Build app
         run: |
           flutter pub get
