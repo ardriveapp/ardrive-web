@@ -68,10 +68,10 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
   Future<void> pickWalletFromArconnect() async {
     try {
+      await arconnect.connect();
       emit(ProfileAddUserStateLoadInProgress());
       _profileType = ProfileType.ArConnect;
 
-      await arconnect.connect();
       if (!(await arconnect.checkPermissions())) {
         emit(ProfileAddFailiure());
         return;
