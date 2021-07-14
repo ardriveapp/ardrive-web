@@ -186,17 +186,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
     // Initialize Pendo
     final publicKeyMD5Hash = md5.convert(utf8.encode(walletAddress)).toString();
-    initializePendo({
-        'visitor': {
-            'id':              publicKeyMD5Hash // Required if user is logged in
-            // email:        // Recommended if using Pendo Feedback, or NPS Email
-            // full_name:    // Recommended if using Pendo Feedback
-            // role:         // Optional
-    
-            // You can add any additional visitor level key-values here,
-            // as long as it's not one of the above reserved names.
-        }
-    });
+    initializePendo(publicKeyMD5Hash);
     await _profileCubit.unlockDefaultProfile(password, _profileType);
   }
 

@@ -4,4 +4,4 @@ library arconnect;
 import 'package:js/js.dart';
 
 @JS('initializePendo')
-external void initializePendo(Map initializationOptions);
+external void initializePendo(String md5OfWalletAddress);

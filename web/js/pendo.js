@@ -1,5 +1,5 @@
 
-function initializePendo(initializationOptions) {
+function initializePendo(publicKeyMD5Hash) {
     /* example options
     const exampleOpts = {
         visitor: {
@@ -26,7 +26,17 @@ function initializePendo(initializationOptions) {
         }
     };*/
     try {
-        pendo.initialize(initializationOptions);
+        pendo.initialize({
+            'visitor': {
+                'id':              publicKeyMD5Hash // Required if user is logged in
+                // email:        // Recommended if using Pendo Feedback, or NPS Email
+                // full_name:    // Recommended if using Pendo Feedback
+                // role:         // Optional
+        
+                // You can add any additional visitor level key-values here,
+                // as long as it's not one of the above reserved names.
+            }
+        });
     } catch(err) {
         console.log("PENDO ERROR: " + err);
     }
