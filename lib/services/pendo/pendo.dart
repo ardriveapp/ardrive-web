@@ -1,5 +1,5 @@
 @JS()
-library arconnect;
+library pendo;
 
 import 'package:js/js.dart';
 
