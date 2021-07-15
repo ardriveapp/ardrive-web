@@ -23,6 +23,19 @@
   <script defer src='https://static.cloudflareinsights.com/beacon.min.js'
     data-cf-beacon='{"token": "590dc3369856495eadb700ec1975c29d"}'></script>
   <!-- End Cloudflare Web Analytics -->
+  <!-- Pendo import -->
+  <script defer>
+    (function (apiKey) {
+      (function (p, e, n, d, o) {
+        var v, w, x, y, z; o = p[d] = p[d] || {}; o._q = o._q || [];
+        v = ['initialize', 'identify', 'updateOptions', 'pageLoad', 'track']; for (w = 0, x = v.length; w < x; ++w)(function (m) {
+          o[m] = o[m] || function () { o._q[m === v[0] ? 'unshift' : 'push']([m].concat([].slice.call(arguments, 0))); };
+        })(v[w]);
+        y = e.createElement(n); y.async = !0; y.src = 'https://cdn.pendo.io/agent/static/' + apiKey + '/pendo.js';
+        z = e.getElementsByTagName(n)[0]; z.parentNode.insertBefore(y, z);
+      })(window, document, 'script', 'pendo');
+    })('%%%PENDO_API_KEY%%%');
+  </script>
 </head>
 
 <body>
@@ -33,20 +46,11 @@
       });
     }
   </script>
-  <!-- Pendo import -->
-  <script defer>
-    (function(apiKey){
-        (function(p,e,n,d,o){var v,w,x,y,z;o=p[d]=p[d]||{};o._q=o._q||[];
-        v=['initialize','identify','updateOptions','pageLoad','track'];for(w=0,x=v.length;w<x;++w)(function(m){
-            o[m]=o[m]||function(){o._q[m===v[0]?'unshift':'push']([m].concat([].slice.call(arguments,0)));};})(v[w]);
-            y=e.createElement(n);y.async=!0;y.src='https://cdn.pendo.io/agent/static/'+apiKey+'/pendo.js';
-            z=e.getElementsByTagName(n)[0];z.parentNode.insertBefore(y,z);})(window,document,'script','pendo');
-    })('%%%PENDO_API_KEY%%%');
-  </script>
+
   <script src="pst.min.js"></script>
   <script defer src="sql-wasm.js"></script>
   <script src="main.dart.js?version=10" type="application/javascript"></script>
-  
+
 </body>
 
 </html>
