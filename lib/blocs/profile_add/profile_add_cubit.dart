@@ -171,7 +171,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
     var walletAddress;
     if (_wallet != null) {
-      walletAddress = _wallet.getAddress();
+      walletAddress = await _wallet.getAddress();
       await _profileDao.addProfile(username, password, _wallet);
     } else {
       walletAddress = await arconnect.getWalletAddress();
