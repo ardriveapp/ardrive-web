@@ -1,5 +1,5 @@
 
-function initializePendo(publicKeyMD5Hash) {
+function initializePendo(md5OfWalletAddress) {
     /* example options
     const exampleOpts = {
         visitor: {
@@ -28,7 +28,7 @@ function initializePendo(publicKeyMD5Hash) {
     try {
         pendo.initialize({
             'visitor': {
-                'id':              publicKeyMD5Hash // Required if user is logged in
+                'id':              md5OfWalletAddress // Required if user is logged in
                 // email:        // Recommended if using Pendo Feedback, or NPS Email
                 // full_name:    // Recommended if using Pendo Feedback
                 // role:         // Optional

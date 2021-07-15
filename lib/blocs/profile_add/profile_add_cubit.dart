@@ -6,7 +6,7 @@ import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
-import 'package:ardrive/services/pendo/pendo.dart';
+import 'package:ardrive/services/pendo/pendo.dart' as pendo;
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
@@ -186,7 +186,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
     // Initialize Pendo
     final publicKeyMD5Hash = md5.convert(utf8.encode(walletAddress)).toString();
-    initializePendo(publicKeyMD5Hash);
+    pendo.initializePendo(publicKeyMD5Hash);
     await _profileCubit.unlockDefaultProfile(password, _profileType);
   }
 
