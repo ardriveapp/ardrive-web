@@ -117,7 +117,7 @@ class ProfileCubit extends Cubit<ProfileState> {
       return;
     }
 
-    final walletAddress = await (profile.wallet == null
+    final walletAddress = await (profileType == ProfileType.ArConnect
         ? arconnect.getWalletAddress()
         : profile.wallet.getAddress());
     final walletBalance = await _arweave.getWalletBalance(walletAddress);
