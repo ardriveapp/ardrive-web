@@ -6,9 +6,11 @@ import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
+import 'package:ardrive/services/pendo/pendo.dart' as pendo;
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
+import 'package:crypto/crypto.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -168,10 +170,12 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
           return;
         }
       }
+      var walletAddress;
       if (_wallet != null) {
+        walletAddress = await _wallet.getAddress();
         await _profileDao.addProfile(username, password, _wallet);
       } else {
-        final walletAddress = await arconnect.getWalletAddress();
+        walletAddress = await arconnect.getWalletAddress();
         final walletPublicKey = await arconnect.getPublicKey();
         await _profileDao.addProfileArconnect(
           username,
@@ -180,6 +184,12 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
           walletPublicKey,
         );
       }
+
+      // Initialize Pendo
+      final publicKeyMD5Hash =
+          md5.convert(utf8.encode(walletAddress)).toString();
+      pendo.initializePendo(publicKeyMD5Hash);
+      await _profileCubit.unlockDefaultProfile(password, _profileType);
       await _profileCubit.unlockDefaultProfile(password, _profileType);
     } catch (e) {
       await _profileCubit.logoutProfile();
