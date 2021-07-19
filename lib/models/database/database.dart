@@ -17,14 +17,13 @@ class Database extends _$Database {
   @override
   int get schemaVersion => 9;
 
-
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
           return m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          print('schema changed from $from to $to ');
+          print('database schema changed from $from to $to ');
           if (from >= 1 && from <= 8) {
             // Reset the database.
             for (final table in allTables) {
