@@ -15,7 +15,7 @@ class Database extends _$Database {
   Database([QueryExecutor e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -23,7 +23,7 @@ class Database extends _$Database {
           return m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          if (from >= 1 && from <= 6) {
+          if (from >= 1 && from <= 7) {
             // Reset the database.
             for (final table in allTables) {
               await m.deleteTable(table.actualTableName);
