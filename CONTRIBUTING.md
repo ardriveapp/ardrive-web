@@ -5,7 +5,7 @@
 Each commit to the `dev` and `master` branches should be prefixed with one of the following categories when applicable:
 
 - feat: Changes that add a new feature.
-- fix: Changes that fix a bug.
+- fix: Changes that fix a Bug. 
 - perf: Changes that improve app performance.
 - ui: Changes that improve app UI and design.
 - ux: Changes that improve app UX.
