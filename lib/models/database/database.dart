@@ -23,7 +23,7 @@ class Database extends _$Database {
           return m.createAll();
         },
         onUpgrade: (Migrator m, int from, int to) async {
-          print('database schema changed from $from to $to ');
+          print('Database schema changed from $from to $to ');
           if (from >= 1 && from <= 8) {
             // Reset the database.
             for (final table in allTables) {
