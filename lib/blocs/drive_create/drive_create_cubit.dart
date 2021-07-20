@@ -46,6 +46,18 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       return;
     }
 
+    if (await _profileCubit.logoutIfWalletMismatch()) {
+      emit(DriveCreateWalletMismatch());
+      return;
+    }
+
+    final profile = _profileCubit.state as ProfileLoggedIn;
+
+    final minimumWalletBalance = BigInt.from(10000000);
+    if (profile.walletBalance <= minimumWalletBalance) {
+      emit(DriveCreateZeroBalance());
+      return;
+    }
     emit(DriveCreateInProgress());
 
     try {
@@ -53,13 +65,12 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       final String drivePrivacy = form.control('privacy').value;
 
       final profile = _profileCubit.state as ProfileLoggedIn;
-      final wallet = profile.wallet;
-
+      final walletAddress = await profile.getWalletAddress();
       final createRes = await _driveDao.createDrive(
         name: driveName,
-        ownerAddress: await wallet.getAddress(),
+        ownerAddress: walletAddress,
         privacy: drivePrivacy,
-        wallet: wallet,
+        getWalletSignature: profile.getRawWalletSignature,
         password: profile.password,
         profileKey: profile.cipherKey,
       );
@@ -75,8 +86,9 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       );
 
       // TODO: Revert back to using data bundles when the api is stable again.
-      final driveTx =
-          await _arweave.prepareEntityTx(drive, wallet, createRes.driveKey);
+      final owner = await profile.getWalletOwner();
+      final driveTx = await _arweave.prepareEntityTx(
+          drive, profile.getRawWalletSignature, owner, createRes.driveKey);
 
       final rootFolderEntity = FolderEntity(
         id: drive.rootFolderId,
@@ -86,15 +98,14 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
       final rootFolderTx = await _arweave.prepareEntityTx(
         rootFolderEntity,
-        wallet,
+        profile.getRawWalletSignature,
+        owner,
         createRes.driveKey,
       );
 
       await _arweave.postTx(driveTx);
       await _arweave.postTx(rootFolderTx);
-
       rootFolderEntity.txId = rootFolderTx.id;
-
       await _driveDao.insertFolderRevision(rootFolderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create));
 

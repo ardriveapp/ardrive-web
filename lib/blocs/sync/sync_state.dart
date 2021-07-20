@@ -18,3 +18,5 @@ class SyncFailure extends SyncState {
 }
 
 class SyncEmpty extends SyncState {}
+
+class SyncWalletMismatch extends SyncState {}

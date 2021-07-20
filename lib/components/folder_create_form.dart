@@ -38,6 +38,8 @@ class FolderCreateForm extends StatelessWidget {
           } else if (state is FolderCreateSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
+          } else if (state is FolderCreateWalletMismatch) {
+            Navigator.pop(context);
           }
         },
         builder: (context, state) => AppDialog(

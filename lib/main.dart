@@ -3,6 +3,8 @@ import 'dart:html';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 
 import 'blocs/blocs.dart';
@@ -14,7 +16,6 @@ import 'theme/theme.dart';
 ConfigService configService;
 AppConfig config;
 ArweaveService arweave;
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -62,6 +63,15 @@ class _AppState extends State<App> {
             debugShowCheckedModeBanner: false,
             routeInformationParser: _routeInformationParser,
             routerDelegate: _routerDelegate,
+            localizationsDelegates: [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+            ],
+            supportedLocales: [
+              const Locale('en', ''), // English, no country code
+              //const Locale('es', ''), // Spanish, no country code
+            ],
             builder: (context, child) => ListTileTheme(
               textColor: kOnSurfaceBodyTextColor,
               iconColor: kOnSurfaceBodyTextColor,

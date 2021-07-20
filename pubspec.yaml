@@ -13,7 +13,7 @@ publish_to: 'none'
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.0.6
+version: 1.1.1
 
 environment:
   sdk: '>=2.7.0 <3.0.0'
@@ -21,12 +21,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  flutter_localizations:
+    sdk: flutter
   artemis: ^6.17.1
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart
-      ref: d6365b4897d3400a86b57948e0ba2a2dc90f2e29
+      ref: f8a0b9e6ce17d19782388e933557b46c8bd11cec
   cryptography: ^2.0.0-nullsafety.2
   flutter_bloc: ^6.1.0
   flutter_portal: ^0.3.0
@@ -51,11 +52,9 @@ dependencies:
   flutter_dropzone: ^1.0.0
   responsive_builder: ^0.3.0
   package_info_plus: 0.6.4
+  js: ^0.6.3
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
-
   test: ^1.15.4
   bloc_test: ^7.1.0
   mockito: ^5.0.0-nullsafety.2
@@ -68,9 +67,11 @@ dependency_overrides:
   ffi: ^0.2.0-nullsafety.1
   json_annotation: ^3.0.1
   mockito: ^5.0.0-nullsafety.2
+  intl: ^0.17.0-nullsafety.2
 
 flutter:
   uses-material-design: true
+  generate: true 
   assets:
     - assets/config/
     - assets/fonts/

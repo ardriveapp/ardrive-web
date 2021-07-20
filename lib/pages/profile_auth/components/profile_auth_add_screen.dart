@@ -3,6 +3,7 @@ import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:url_launcher/link.dart';
 
@@ -26,8 +27,12 @@ class ProfileAuthAddScreen extends StatelessWidget {
                     children: [
                       Text(
                         state.isExistingUser
-                            ? 'WELCOME BACK'
-                            : 'LET\'S GET STARTED',
+                            ? AppLocalizations.of(context)
+                                .welcomeBack
+                                .toUpperCase()
+                            : AppLocalizations.of(context)
+                                .letsGetStarted
+                                .toUpperCase(),
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headline5,
                       ),
@@ -120,7 +125,11 @@ class ProfileAuthAddScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       TextButton(
-                        child: Text('Change wallet'),
+                        child: context
+                                .read<ProfileAddCubit>()
+                                .isArconnectInstalled()
+                            ? Text('LOG OUT')
+                            : Text('Change wallet'),
                         onPressed: () =>
                             context.read<ProfileAddCubit>().promptForWallet(),
                       ),

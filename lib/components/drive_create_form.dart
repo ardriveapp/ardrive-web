@@ -32,56 +32,78 @@ class DriveCreateForm extends StatelessWidget {
           } else if (state is DriveCreateSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
+          } else if (state is DriveCreateWalletMismatch) {
+            Navigator.pop(context);
           }
         },
-        builder: (context, state) => AppDialog(
-          title: 'CREATE DRIVE',
-          content: SizedBox(
-            width: kMediumDialogWidth,
-            child: ReactiveForm(
-              formGroup: context.watch<DriveCreateCubit>().form,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ReactiveTextField(
-                    formControlName: 'name',
-                    autofocus: true,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(labelText: 'Name'),
-                    showErrors: (control) => control.dirty && control.invalid,
-                    validationMessages: (_) => kValidationMessages,
-                  ),
-                  const SizedBox(height: 16),
-                  ReactiveDropdownField(
-                    formControlName: 'privacy',
-                    decoration: const InputDecoration(labelText: 'Privacy'),
-                    showErrors: (control) => control.dirty && control.invalid,
-                    validationMessages: (_) => kValidationMessages,
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'public',
-                        child: Text('Public'),
+        builder: (context, state) {
+          if (state is DriveCreateZeroBalance) {
+            return AppDialog(
+              title: 'CREATE DRIVE',
+              content: SizedBox(
+                  width: kMediumDialogWidth,
+                  child:
+                      Text('You do not have sufficient AR to create a drive.')),
+              actions: [
+                TextButton(
+                  child: Text('CANCEL'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            );
+          } else {
+            return AppDialog(
+              title: 'CREATE DRIVE',
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: ReactiveForm(
+                  formGroup: context.watch<DriveCreateCubit>().form,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ReactiveTextField(
+                        formControlName: 'name',
+                        autofocus: true,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(labelText: 'Name'),
+                        showErrors: (control) =>
+                            control.dirty && control.invalid,
+                        validationMessages: (_) => kValidationMessages,
                       ),
-                      DropdownMenuItem(
-                        value: 'private',
-                        child: Text('Private'),
-                      )
+                      const SizedBox(height: 16),
+                      ReactiveDropdownField(
+                        formControlName: 'privacy',
+                        decoration: const InputDecoration(labelText: 'Privacy'),
+                        showErrors: (control) =>
+                            control.dirty && control.invalid,
+                        validationMessages: (_) => kValidationMessages,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'public',
+                            child: Text('Public'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'private',
+                            child: Text('Private'),
+                          )
+                        ],
+                      ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: Text('CANCEL'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            ElevatedButton(
-              child: Text('CREATE'),
-              onPressed: () => context.read<DriveCreateCubit>().submit(),
-            ),
-          ],
-        ),
+              actions: [
+                TextButton(
+                  child: Text('CANCEL'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                ElevatedButton(
+                  child: Text('CREATE'),
+                  onPressed: () => context.read<DriveCreateCubit>().submit(),
+                ),
+              ],
+            );
+          }
+        },
       );
 }

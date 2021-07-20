@@ -2,12 +2,16 @@ import 'dart:convert';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
@@ -17,22 +21,33 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   FormGroup form;
 
   Wallet _wallet;
+  ProfileType _profileType;
+  String _lastKnownWalletAddress;
   List<TransactionCommonMixin> _driveTxs;
 
   final ProfileCubit _profileCubit;
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
-
   ProfileAddCubit({
     @required ProfileCubit profileCubit,
     @required ProfileDao profileDao,
     @required ArweaveService arweave,
+    @required BuildContext context,
   })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
         _arweave = arweave,
         super(ProfileAddPromptWallet());
 
+  bool isArconnectInstalled() {
+    return arconnect.isExtensionPresent();
+  }
+
+  ProfileType getProfileType() => _profileType;
+
   Future<void> promptForWallet() async {
+    if (isArconnectInstalled()) {
+      await arconnect.disconnect();
+    }
     emit(ProfileAddPromptWallet());
   }
 
@@ -40,7 +55,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     emit(ProfileAddUserStateLoadInProgress());
 
     _wallet = Wallet.fromJwk(json.decode(walletJson));
-
     _driveTxs =
         await _arweave.getUniqueUserDriveEntityTxs(await _wallet.getAddress());
 
@@ -49,6 +63,33 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     } else {
       emit(ProfileAddPromptDetails(isExistingUser: true));
       setupForm(withPasswordConfirmation: false);
+    }
+  }
+
+  Future<void> pickWalletFromArconnect() async {
+    try {
+      await arconnect.connect();
+      emit(ProfileAddUserStateLoadInProgress());
+      _profileType = ProfileType.ArConnect;
+
+      if (!(await arconnect.checkPermissions())) {
+        emit(ProfileAddFailiure());
+        return;
+      }
+
+      _lastKnownWalletAddress = await arconnect.getWalletAddress();
+
+      _driveTxs =
+          await _arweave.getUniqueUserDriveEntityTxs(_lastKnownWalletAddress);
+
+      if (_driveTxs.isEmpty) {
+        emit(ProfileAddOnboardingNewUser());
+      } else {
+        emit(ProfileAddPromptDetails(isExistingUser: true));
+        setupForm(withPasswordConfirmation: false);
+      }
+    } catch (e) {
+      emit(ProfileAddFailiure());
     }
   }
 
@@ -74,53 +115,75 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   }
 
   Future<void> submit() async {
-    form.markAllAsTouched();
+    try {
+      form.markAllAsTouched();
 
-    if (form.invalid) {
-      return;
-    }
-
-    final previousState = state;
-    emit(ProfileAddInProgress());
-
-    final username = form.control('username').value.toString().trim();
-    final String password = form.control('password').value;
-
-    final privateDriveTxs = _driveTxs.where(
-        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
-
-    // Try and decrypt one of the user's private drive entities to check if they are entering the
-    // right password.
-    if (privateDriveTxs.isNotEmpty) {
-      final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
-
-      final checkDriveKey = await deriveDriveKey(
-        _wallet,
-        checkDriveId,
-        password,
-      );
-
-      final privateDrive = await _arweave.getLatestDriveEntityWithId(
-        checkDriveId,
-        checkDriveKey,
-      );
-
-      // If the private drive could not be decoded, the password is incorrect.
-      if (privateDrive == null) {
-        form
-            .control('password')
-            .setErrors({AppValidationMessage.passwordIncorrect: true});
-
-        // Reemit the previous state so form errors can be shown again.
-        emit(previousState);
-
+      if (form.invalid) {
         return;
       }
+      if (_profileType == ProfileType.ArConnect &&
+          (_lastKnownWalletAddress != await arconnect.getWalletAddress() ||
+              !(await arconnect.checkPermissions()))) {
+        //Wallet was switched or deleted before login from another tab
+
+        emit(ProfileAddFailiure());
+        return;
+      }
+      final previousState = state;
+      emit(ProfileAddInProgress());
+
+      final username = form.control('username').value.toString().trim();
+      final String password = form.control('password').value;
+
+      final privateDriveTxs = _driveTxs.where(
+          (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
+
+      // Try and decrypt one of the user's private drive entities to check if they are entering the
+      // right password.
+      if (privateDriveTxs.isNotEmpty) {
+        final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
+        final signature =
+            _wallet != null ? _wallet.sign : arconnect.getSignature;
+
+        final checkDriveKey = await deriveDriveKey(
+          signature,
+          checkDriveId,
+          password,
+        );
+
+        final privateDrive = await _arweave.getLatestDriveEntityWithId(
+          checkDriveId,
+          checkDriveKey,
+        );
+
+        // If the private drive could not be decoded, the password is incorrect.
+        if (privateDrive == null) {
+          form
+              .control('password')
+              .setErrors({AppValidationMessage.passwordIncorrect: true});
+
+          // Reemit the previous state so form errors can be shown again.
+          emit(previousState);
+
+          return;
+        }
+      }
+      if (_wallet != null) {
+        await _profileDao.addProfile(username, password, _wallet);
+      } else {
+        final walletAddress = await arconnect.getWalletAddress();
+        final walletPublicKey = await arconnect.getPublicKey();
+        await _profileDao.addProfileArconnect(
+          username,
+          password,
+          walletAddress,
+          walletPublicKey,
+        );
+      }
+      await _profileCubit.unlockDefaultProfile(password, _profileType);
+    } catch (e) {
+      await _profileCubit.logoutProfile();
     }
-
-    await _profileDao.addProfile(username, password, _wallet);
-
-    await _profileCubit.unlockDefaultProfile(password);
   }
 
   ValidatorFunction _mustMatch(String controlName, String matchingControlName) {

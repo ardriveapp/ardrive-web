@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:html';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
@@ -45,6 +46,15 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> startSync() async {
+    if (window.document.hidden) {
+      emit(SyncIdle());
+      return;
+    }
+    print('syncing...');
+    if (await _profileCubit.logoutIfWalletMismatch()) {
+      emit(SyncWalletMismatch());
+      return;
+    }
     emit(SyncInProgress());
 
     try {
@@ -57,8 +67,11 @@ class SyncCubit extends Cubit<SyncState> {
         //
         // It also adds the encryption keys onto the drive models which isn't touched by the
         // later system.
+        //
         final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
-            profile.wallet, profile.password);
+            profile.getRawWalletSignature,
+            await profile.getWalletAddress(),
+            profile.password);
 
         await _driveDao.updateUserDrives(userDriveEntities, profile.cipherKey);
       }

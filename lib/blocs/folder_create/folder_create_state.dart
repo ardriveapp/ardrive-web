@@ -13,3 +13,5 @@ class FolderCreateInProgress extends FolderCreateState {}
 class FolderCreateSuccess extends FolderCreateState {}
 
 class FolderCreateFailure extends FolderCreateState {}
+
+class FolderCreateWalletMismatch extends FolderCreateState {}

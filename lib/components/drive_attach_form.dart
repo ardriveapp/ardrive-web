@@ -5,6 +5,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:meta/meta.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
@@ -104,11 +105,11 @@ class DriveAttachForm extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              child: Text('CANCEL'),
+              child: Text(AppLocalizations.of(context).cancel.toUpperCase()),
               onPressed: () => Navigator.of(context).pop(null),
             ),
             ElevatedButton(
-              child: Text('ATTACH'),
+              child: Text(AppLocalizations.of(context).attach.toUpperCase()),
               onPressed: () => context.read<DriveAttachCubit>().submit(),
             ),
           ],
