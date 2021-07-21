@@ -150,10 +150,13 @@ class ProfileCubit extends Cubit<ProfileState> {
   ///
   /// Works even when the user is not authenticated.
   Future<void> logoutProfile() async {
-    try {
-      await arconnect.disconnect();
-    } catch (e) {
-      print(e);
+    final profile = await _profileDao.defaultProfile().getSingleOrNull();
+    if (profile != null && profile.profileType == ProfileType.ArConnect.index) {
+      try {
+        await arconnect.disconnect();
+      } catch (e) {
+        print(e);
+      }
     }
 
     emit(ProfileLoggingOut());
