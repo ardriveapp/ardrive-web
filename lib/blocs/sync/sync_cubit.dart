@@ -46,18 +46,18 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> startSync() async {
-    if (window.document.hidden) {
-      emit(SyncIdle());
-      return;
-    }
-    print('syncing...');
-    if (await _profileCubit.logoutIfWalletMismatch()) {
-      emit(SyncWalletMismatch());
-      return;
-    }
-    emit(SyncInProgress());
-
     try {
+      if (window.document.visibilityState != 'visible') {
+        print('Tab hidden, skipping sync...');
+        emit(SyncIdle());
+        return;
+      }
+      print('Syncing...');
+      if (await _profileCubit.logoutIfWalletMismatch()) {
+        emit(SyncWalletMismatch());
+        return;
+      }
+      emit(SyncInProgress());
       final profile = _profileCubit.state;
 
       // Only sync in drives owned by the user if they're logged in.
@@ -86,6 +86,7 @@ class SyncCubit extends Cubit<SyncState> {
         _updateTransactionStatuses(),
       ]);
     } catch (err) {
+      print(err);
       addError(err);
     }
 
