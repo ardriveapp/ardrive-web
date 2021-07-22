@@ -48,11 +48,11 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> startSync() async {
     try {
       if (window.document.visibilityState != 'visible') {
-        print('tab hidded, skipping sync...');
+        print('Tab hidden, skipping sync...');
         emit(SyncIdle());
         return;
       }
-      print('syncing...');
+      print('Syncing...');
       if (await _profileCubit.logoutIfWalletMismatch()) {
         emit(SyncWalletMismatch());
         return;
