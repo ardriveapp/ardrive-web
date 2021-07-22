@@ -45,7 +45,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   ProfileType getProfileType() => _profileType;
 
   Future<void> promptForWallet() async {
-    if (isArconnectInstalled()) {
+    if (_profileType == ProfileType.ArConnect) {
       await arconnect.disconnect();
     }
     emit(ProfileAddPromptWallet());
@@ -53,7 +53,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
   Future<void> pickWallet(String walletJson) async {
     emit(ProfileAddUserStateLoadInProgress());
-
+    _profileType = ProfileType.JSON;
     _wallet = Wallet.fromJwk(json.decode(walletJson));
     _driveTxs =
         await _arweave.getUniqueUserDriveEntityTxs(await _wallet.getAddress());
