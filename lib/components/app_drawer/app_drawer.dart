@@ -281,7 +281,43 @@ class AppDrawer extends StatelessWidget {
         ),
       );
     } else {
-      return Container();
+      return ListTileTheme(
+        textColor: theme.textTheme.bodyText1.color,
+        iconColor: theme.iconTheme.color,
+        child: Align(
+          alignment: Alignment.center,
+          child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+              child: PopupMenuButton<Function>(
+                onSelected: (callback) => callback(context),
+                child: SizedBox(
+                  width: 164,
+                  height: 36,
+                  child: FloatingActionButton.extended(
+                    onPressed: null,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    label: Text(
+                      'NEW',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                itemBuilder: (context) => [
+                  if (drivesState is DrivesLoadSuccess) ...{
+                    PopupMenuItem(
+                      value: (context) => attachDrive(context: context),
+                      child: ListTile(
+                        title: Text('Attach drive'),
+                      ),
+                    ),
+                  }
+                ],
+              )),
+        ),
+      );
     }
   }
 
