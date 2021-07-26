@@ -44,7 +44,7 @@ class ArweaveService {
 
   /// Gets the entity history for a particular drive starting from the specified block height.
   Future<DriveEntityHistory> getNewEntitiesForDrive(String driveId,
-      {String after, SecretKey driveKey}) async {
+      {String after, int lastBlockHeight, SecretKey driveKey}) async {
     final driveEntityHistoryQuery = await _gql.execute(
       DriveEntityHistoryQuery(
         variables: DriveEntityHistoryArguments(
@@ -110,6 +110,7 @@ class ArweaveService {
 
     return DriveEntityHistory(
       queryEdges.isNotEmpty ? queryEdges.last.cursor : null,
+      blockHistory.isNotEmpty ? blockHistory.last.blockHeight : lastBlockHeight,
       blockHistory,
     );
   }
@@ -234,7 +235,10 @@ class ArweaveService {
   }
 
   /// Gets any created private drive belonging to [profileId], as long as its unlockable with [password] when used with the [getSignatureFn]
-  Future<DriveEntity> getAnyPrivateDriveEntity(String profileId, String password, Future<Uint8List> Function(Uint8List message) getSignatureFn) async {
+  Future<DriveEntity> getAnyPrivateDriveEntity(
+      String profileId,
+      String password,
+      Future<Uint8List> Function(Uint8List message) getSignatureFn) async {
     final driveTxs = await getUniqueUserDriveEntityTxs(profileId);
     final privateDriveTxs = driveTxs.where(
         (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
@@ -248,7 +252,7 @@ class ArweaveService {
       getSignatureFn,
       checkDriveId,
       password,
-    );  
+    );
 
     return await getLatestDriveEntityWithId(
       checkDriveId,
@@ -430,11 +434,12 @@ class ArweaveService {
 class DriveEntityHistory {
   /// A cursor for continuing through this drive's history.
   final String cursor;
+  final int lastBlockHeight;
 
   /// A list of block entities, ordered by ascending block height.
   final List<BlockEntities> blockHistory;
 
-  DriveEntityHistory(this.cursor, this.blockHistory);
+  DriveEntityHistory(this.cursor, this.lastBlockHeight, this.blockHistory);
 }
 
 /// The entities present in a particular block.
