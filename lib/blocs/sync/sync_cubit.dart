@@ -38,11 +38,23 @@ class SyncCubit extends Cubit<SyncState> {
         _db = db,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
+    createSyncStream();
+    restartSyncOnFocus();
+  }
+
+  void createSyncStream() {
+    _syncSub?.cancel();
     _syncSub = interval(const Duration(minutes: 2))
         .startWith(null)
         // Do not start another sync until the previous sync has completed.
         .exhaustMap((value) => Stream.fromFuture(startSync()))
         .listen((_) {});
+  }
+
+  void restartSyncOnFocus() {
+    document.addEventListener('visibilitychange', (event) {
+      if (document.visibilityState != 'hidden') createSyncStream();
+    });
   }
 
   Future<void> startSync() async {
