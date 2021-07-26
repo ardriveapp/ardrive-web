@@ -47,7 +47,9 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> startSync() async {
     try {
-      if (window.document.visibilityState != 'visible') {
+      final isArConnect = await _profileCubit.isCurrentProfileArConnect();
+
+      if (isArConnect && window.document.visibilityState != 'visible') {
         print('Tab hidden, skipping sync...');
         emit(SyncIdle());
         return;
