@@ -53,7 +53,10 @@ class SyncCubit extends Cubit<SyncState> {
 
   void restartSyncOnFocus() {
     document.addEventListener('visibilitychange', (event) {
-      if (document.visibilityState != 'hidden') createSyncStream();
+      if (document.visibilityState != 'hidden') {
+        Future.delayed(Duration(seconds: 2))
+            .then((value) => createSyncStream());
+      }
     });
   }
 
