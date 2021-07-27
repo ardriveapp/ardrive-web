@@ -125,6 +125,10 @@ class SyncCubit extends Cubit<SyncState> {
 
     //Handle newEntities being empty, i.e; There's nothing more to sync
     if (newEntities == null || newEntities.isEmpty) {
+      await _driveDao.writeToDrive(DrivesCompanion(
+          id: Value(drive.id),
+          lastBlockHeight: Value(entityHistory.lastBlockHeight),
+          syncCursor: Value(null)));
       emit(SyncEmpty());
       return;
     }

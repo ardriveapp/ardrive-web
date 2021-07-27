@@ -49,6 +49,7 @@ class ArweaveService {
       DriveEntityHistoryQuery(
         variables: DriveEntityHistoryArguments(
           driveId: driveId,
+          lastBlockHeight: lastBlockHeight,
           after: after,
         ),
       ),
