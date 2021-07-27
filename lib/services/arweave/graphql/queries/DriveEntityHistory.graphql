@@ -7,7 +7,7 @@ query DriveEntityHistory($driveId: String!, $after: String, $lastBlockHeight: In
       { name: "Drive-Id", values: [$driveId] }
     ]
     after: $after,
-    block: {min: ${lastBlockHeight}}
+    block: {min: $lastBlockHeight}
   ) {
     edges {
       node {
