@@ -163,7 +163,6 @@ class SyncCubit extends Cubit<SyncState> {
       });
 
       await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
-      print(entityHistory.lastBlockHeight);
       await _driveDao.writeToDrive(DrivesCompanion(
           id: Value(drive.id),
           lastBlockHeight: Value(entityHistory.lastBlockHeight),
