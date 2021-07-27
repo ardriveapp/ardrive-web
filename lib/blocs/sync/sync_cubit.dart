@@ -111,7 +111,9 @@ class SyncCubit extends Cubit<SyncState> {
     final entityHistory = await _arweave.getNewEntitiesForDrive(
       drive.id,
       // We should start syncing from the block after the latest one we already synced from.
-      lastBlockHeight: drive.lastBlockHeight + 1,
+      lastBlockHeight: drive.lastBlockHeight > 5
+          ? drive.lastBlockHeight - 5
+          : drive.lastBlockHeight,
       after: drive.syncCursor,
       driveKey: driveKey,
     );
@@ -161,7 +163,7 @@ class SyncCubit extends Cubit<SyncState> {
       });
 
       await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
-
+      print(entityHistory.lastBlockHeight);
       await _driveDao.writeToDrive(DrivesCompanion(
           id: Value(drive.id),
           lastBlockHeight: Value(entityHistory.lastBlockHeight),
