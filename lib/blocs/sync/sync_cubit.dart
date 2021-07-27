@@ -38,6 +38,12 @@ class SyncCubit extends Cubit<SyncState> {
         _db = db,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
+    createSyncStream();
+    restartSyncOnFocus();
+  }
+
+  void createSyncStream() {
+    _syncSub?.cancel();
     _syncSub = interval(const Duration(minutes: 2))
         .startWith(null)
         // Do not start another sync until the previous sync has completed.
@@ -45,9 +51,20 @@ class SyncCubit extends Cubit<SyncState> {
         .listen((_) {});
   }
 
+  void restartSyncOnFocus() {
+    document.addEventListener('visibilitychange', (event) {
+      if (document.visibilityState != 'hidden') {
+        Future.delayed(Duration(seconds: 2))
+            .then((value) => createSyncStream());
+      }
+    });
+  }
+
   Future<void> startSync() async {
     try {
-      if (window.document.visibilityState != 'visible') {
+      final isArConnect = await _profileCubit.isCurrentProfileArConnect();
+
+      if (isArConnect && window.document.visibilityState != 'visible') {
         print('Tab hidden, skipping sync...');
         emit(SyncIdle());
         return;
