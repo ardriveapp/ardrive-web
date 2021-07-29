@@ -78,7 +78,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<bool> checkIfWalletMismatch() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
     if (profile == null) {
-      return true;
+      return false;
     }
 
     if (profile.profileType == ProfileType.ArConnect.index) {
