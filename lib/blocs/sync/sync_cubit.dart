@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:html';
+import 'dart:math';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
@@ -38,6 +39,12 @@ class SyncCubit extends Cubit<SyncState> {
         _db = db,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
+    createSyncStream();
+    restartSyncOnFocus();
+  }
+
+  void createSyncStream() {
+    _syncSub?.cancel();
     _syncSub = interval(const Duration(minutes: 2))
         .startWith(null)
         // Do not start another sync until the previous sync has completed.
@@ -45,19 +52,30 @@ class SyncCubit extends Cubit<SyncState> {
         .listen((_) {});
   }
 
-  Future<void> startSync() async {
-    if (window.document.hidden) {
-      emit(SyncIdle());
-      return;
-    }
-    print('syncing...');
-    if (await _profileCubit.logoutIfWalletMismatch()) {
-      emit(SyncWalletMismatch());
-      return;
-    }
-    emit(SyncInProgress());
+  void restartSyncOnFocus() {
+    document.addEventListener('visibilitychange', (event) {
+      if (document.visibilityState != 'hidden') {
+        Future.delayed(Duration(seconds: 2))
+            .then((value) => createSyncStream());
+      }
+    });
+  }
 
+  Future<void> startSync() async {
     try {
+      final isArConnect = await _profileCubit.isCurrentProfileArConnect();
+
+      if (isArConnect && window.document.visibilityState != 'visible') {
+        print('Tab hidden, skipping sync...');
+        emit(SyncIdle());
+        return;
+      }
+      print('Syncing...');
+      if (await _profileCubit.logoutIfWalletMismatch()) {
+        emit(SyncWalletMismatch());
+        return;
+      }
+      emit(SyncInProgress());
       final profile = _profileCubit.state;
 
       // Only sync in drives owned by the user if they're logged in.
@@ -86,6 +104,7 @@ class SyncCubit extends Cubit<SyncState> {
         _updateTransactionStatuses(),
       ]);
     } catch (err) {
+      print(err);
       addError(err);
     }
 
@@ -109,7 +128,12 @@ class SyncCubit extends Cubit<SyncState> {
 
     final entityHistory = await _arweave.getNewEntitiesForDrive(
       drive.id,
-      // We should start syncing from the block after the latest one we already synced from.
+      // Syncs from lastBlockHeight - 5 and paginates through them using the syncCursor
+      // Starts syncing from lastBlock - 5. 5 is an arbitrary position,
+      // we are just starting 5 blocks before the lastBlockHeight to make sure it
+      // picks up all files. 'after' indicates the cursor where it should start
+      // syncing from. For first sync 'after' should be null or an empty string.
+      lastBlockHeight: max(drive.lastBlockHeight - 5, drive.lastBlockHeight),
       after: drive.syncCursor,
       driveKey: driveKey,
     );
@@ -121,6 +145,12 @@ class SyncCubit extends Cubit<SyncState> {
 
     //Handle newEntities being empty, i.e; There's nothing more to sync
     if (newEntities == null || newEntities.isEmpty) {
+      //Reset the sync cursor after every sync to pick up files from other instances of the app.
+      //(Different tab, different window, mobile, desktop etc)
+      await _driveDao.writeToDrive(DrivesCompanion(
+          id: Value(drive.id),
+          lastBlockHeight: Value(entityHistory.lastBlockHeight),
+          syncCursor: Value(null)));
       emit(SyncEmpty());
       return;
     }
@@ -159,9 +189,12 @@ class SyncCubit extends Cubit<SyncState> {
       });
 
       await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
-
+      //Saves lastBlockHeight to query from for next sync. syncCursor is used to
+      //paginate through results.
       await _driveDao.writeToDrive(DrivesCompanion(
-          id: Value(drive.id), syncCursor: Value(entityHistory.cursor)));
+          id: Value(drive.id),
+          lastBlockHeight: Value(entityHistory.lastBlockHeight),
+          syncCursor: Value(entityHistory.cursor)));
     });
 
     //In case of very large drives, instead of waiting 2 minutes for the next sync,
