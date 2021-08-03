@@ -63,23 +63,25 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> startSync() async {
     try {
-      final isArConnect = await _profileCubit.isCurrentProfileArConnect();
-
-      if (isArConnect && window.document.visibilityState != 'visible') {
-        print('Tab hidden, skipping sync...');
-        emit(SyncIdle());
-        return;
-      }
-      print('Syncing...');
-      if (await _profileCubit.logoutIfWalletMismatch()) {
-        emit(SyncWalletMismatch());
-        return;
-      }
-      emit(SyncInProgress());
       final profile = _profileCubit.state;
-
+      print('Syncing...');
+      emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
       if (profile is ProfileLoggedIn) {
+        
+        //Check if profile is ArConnect to skip sync while tab is hidden
+        final isArConnect = await _profileCubit.isCurrentProfileArConnect();
+
+        if (isArConnect && window.document.visibilityState != 'visible') {
+          print('Tab hidden, skipping sync...');
+          emit(SyncIdle());
+          return;
+        }
+
+        if (await _profileCubit.logoutIfWalletMismatch()) {
+          emit(SyncWalletMismatch());
+          return;
+        }
         // This syncs in the latest info on drives owned by the user and will be overwritten
         // below when the full sync process is ran.
         //
