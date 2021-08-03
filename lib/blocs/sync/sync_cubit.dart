@@ -68,12 +68,8 @@ class SyncCubit extends Cubit<SyncState> {
       emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
       if (profile is ProfileLoggedIn) {
-        // This syncs in the latest info on drives owned by the user and will be overwritten
-        // below when the full sync process is ran.
-        //
-        // It also adds the encryption keys onto the drive models which isn't touched by the
-        // later system.
-        //
+        
+        //Check if profile is ArConnect to skip sync while tab is hidden
         final isArConnect = await _profileCubit.isCurrentProfileArConnect();
 
         if (isArConnect && window.document.visibilityState != 'visible') {
@@ -86,7 +82,12 @@ class SyncCubit extends Cubit<SyncState> {
           emit(SyncWalletMismatch());
           return;
         }
-
+        // This syncs in the latest info on drives owned by the user and will be overwritten
+        // below when the full sync process is ran.
+        //
+        // It also adds the encryption keys onto the drive models which isn't touched by the
+        // later system.
+        //
         final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
             profile.getRawWalletSignature,
             await profile.getWalletAddress(),
