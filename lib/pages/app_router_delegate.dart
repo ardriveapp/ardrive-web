@@ -67,11 +67,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             signingIn = false;
             notifyListeners();
           }
-
-          if (state is ProfilePromptAdd) {
-            signingIn = true;
-            notifyListeners();
-          }
         },
         builder: (context, state) {
           Widget shell;
