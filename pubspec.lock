@@ -93,7 +93,7 @@ packages:
       name: build_config
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.3"
+    version: "0.4.5"
   build_daemon:
     dependency: transitive
     description:
@@ -367,7 +367,7 @@ packages:
       name: gql
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.12.3"
+    version: "0.12.4"
   gql_code_gen:
     dependency: transitive
     description:
