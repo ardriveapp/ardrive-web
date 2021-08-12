@@ -424,8 +424,8 @@ class ArweaveService {
     final client = http.Client();
 
     return await client
-        .get(
-            'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd')
+        .get(Uri.parse(
+            'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd'))
         .then((res) => json.decode(res.body))
         .then((res) => res['arweave']['usd']);
   }

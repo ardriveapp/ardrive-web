@@ -64,7 +64,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           folderPath: path,
           orderBy: contentOrderBy,
           orderingMode: contentOrderingMode),
-      _profileCubit.startWith(null),
+      _profileCubit.stream.startWith(ProfileCheckingAvailability()),
       (drive, folderContents, _) async {
         if (drive == null) {
           emit(DriveDetailLoadNotFound());

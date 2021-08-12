@@ -31,7 +31,7 @@ class DrivesCubit extends Cubit<DrivesState> {
       _driveDao
           .allDrives(order: OrderBy([OrderingTerm.asc(_driveDao.drives.name)]))
           .watch(),
-      _profileCubit.startWith(null),
+      _profileCubit.stream.startWith(ProfileCheckingAvailability()),
       (drives, _) => drives,
     ).listen((drives) async {
       final state = this.state;

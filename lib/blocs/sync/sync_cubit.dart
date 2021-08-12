@@ -45,7 +45,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   void createSyncStream() {
     _syncSub?.cancel();
-    _syncSub = interval(const Duration(minutes: 2))
+    _syncSub = Stream.periodic(const Duration(minutes: 2))
         .startWith(null)
         // Do not start another sync until the previous sync has completed.
         .exhaustMap((value) => Stream.fromFuture(startSync()))
@@ -68,7 +68,6 @@ class SyncCubit extends Cubit<SyncState> {
       emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
       if (profile is ProfileLoggedIn) {
-        
         //Check if profile is ArConnect to skip sync while tab is hidden
         final isArConnect = await _profileCubit.isCurrentProfileArConnect();
 
