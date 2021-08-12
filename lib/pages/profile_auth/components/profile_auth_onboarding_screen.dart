@@ -26,7 +26,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
           ),
           contentWidthFactor: 0.75,
           content: DefaultTextStyle(
-            style: Theme.of(context).textTheme.headline6,
+            style: Theme.of(context).textTheme.headline6!,
             textAlign: TextAlign.center,
             child: Builder(
               builder: (context) => Column(
@@ -58,7 +58,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
           ),
           contentWidthFactor: 0.75,
           content: DefaultTextStyle(
-            style: Theme.of(context).textTheme.headline6,
+            style: Theme.of(context).textTheme.headline6!,
             textAlign: TextAlign.center,
             child: Builder(
               builder: (context) => Column(
@@ -88,7 +88,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
           ),
           contentWidthFactor: 0.75,
           content: DefaultTextStyle(
-            style: Theme.of(context).textTheme.headline6,
+            style: Theme.of(context).textTheme.headline6!,
             textAlign: TextAlign.center,
             child: Builder(
               builder: (context) => Column(
@@ -119,7 +119,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
           ),
           contentWidthFactor: 0.75,
           content: DefaultTextStyle(
-            style: Theme.of(context).textTheme.headline6,
+            style: Theme.of(context).textTheme.headline6!,
             textAlign: TextAlign.center,
             child: Builder(
               builder: (context) => Column(
@@ -149,7 +149,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
           ),
           contentWidthFactor: 0.75,
           content: DefaultTextStyle(
-            style: Theme.of(context).textTheme.headline6,
+            style: Theme.of(context).textTheme.headline6!,
             textAlign: TextAlign.center,
             child: Builder(
               builder: (context) => Column(

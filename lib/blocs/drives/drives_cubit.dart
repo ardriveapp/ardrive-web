@@ -18,12 +18,12 @@ class DrivesCubit extends Cubit<DrivesState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
 
-  StreamSubscription _drivesSubscription;
+  late StreamSubscription _drivesSubscription;
 
   DrivesCubit({
-    String initialSelectedDriveId,
-    @required ProfileCubit profileCubit,
-    @required DriveDao driveDao,
+    String? initialSelectedDriveId,
+    required ProfileCubit profileCubit,
+    required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         super(DrivesLoadInProgress()) {
@@ -34,9 +34,9 @@ class DrivesCubit extends Cubit<DrivesState> {
       _profileCubit.stream.startWith(ProfileCheckingAvailability()),
       (drives, _) => drives,
     ).listen((drives) async {
-      final state = this.state;
+      final DrivesState state = this.state;
 
-      String selectedDriveId;
+      String? selectedDriveId;
       if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
         selectedDriveId = state.selectedDriveId;
       } else {
@@ -44,7 +44,7 @@ class DrivesCubit extends Cubit<DrivesState> {
             (drives.isNotEmpty ? drives.first.id : null);
       }
 
-      final profile = _profileCubit.state;
+      final ProfileState profile = _profileCubit.state;
       final walletAddress =
           profile is ProfileLoggedIn ? await profile.walletAddress : '';
       emit(
@@ -67,7 +67,7 @@ class DrivesCubit extends Cubit<DrivesState> {
     });
   }
 
-  void selectDrive(String driveId) {
+  void selectDrive(String? driveId) {
     final state = this.state as DrivesLoadSuccess;
     emit(state.copyWith(selectedDriveId: driveId));
   }

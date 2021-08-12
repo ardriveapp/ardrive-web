@@ -4,9 +4,9 @@ import 'package:meta/meta.dart';
 import 'components.dart';
 
 Future<void> showErrorDialog({
-  @required BuildContext context,
-  Object error,
-  StackTrace stackTrace,
+  required BuildContext context,
+  Object? error,
+  StackTrace? stackTrace,
 }) =>
     showDialog(
       context: context,

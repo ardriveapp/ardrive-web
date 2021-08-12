@@ -11,8 +11,8 @@ import 'components.dart';
 
 Future<void> promptToRenameFolder(
   BuildContext context, {
-  @required String driveId,
-  @required String folderId,
+  required String? driveId,
+  required String? folderId,
 }) =>
     showDialog(
       context: context,
@@ -31,8 +31,8 @@ Future<void> promptToRenameFolder(
 
 Future<void> promptToRenameFile(
   BuildContext context, {
-  @required String driveId,
-  @required String fileId,
+  required String? driveId,
+  required String? fileId,
 }) =>
     showDialog(
       context: context,

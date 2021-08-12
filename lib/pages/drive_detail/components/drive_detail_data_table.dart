@@ -7,10 +7,10 @@ Widget _buildDataTable(BuildContext context, DriveDetailLoadSuccess state) =>
           DataTable(
             showCheckboxColumn: false,
             columns: _buildTableColumns(context),
-            sortColumnIndex: DriveOrder.values.indexOf(state.contentOrderBy),
+            sortColumnIndex: DriveOrder.values.indexOf(state.contentOrderBy!),
             sortAscending: state.contentOrderingMode == OrderingMode.asc,
             rows: [
-              ...state.currentFolder.subfolders.map(
+              ...state.currentFolder!.subfolders!.map(
                 (folder) => _buildFolderRow(
                   context: context,
                   folder: folder,
@@ -28,7 +28,7 @@ Widget _buildDataTable(BuildContext context, DriveDetailLoadSuccess state) =>
                   },
                 ),
               ),
-              ...state.currentFolder.files.map(
+              ...state.currentFolder!.files!.map(
                 (file) => _buildFileRow(
                   context: context,
                   file: file,
@@ -79,13 +79,13 @@ List<DataColumn> _buildTableColumns(BuildContext context) {
 }
 
 DataRow _buildFolderRow({
-  @required BuildContext context,
-  @required FolderEntry folder,
+  required BuildContext context,
+  required FolderEntry folder,
   bool selected = false,
-  Function onPressed,
+  Function? onPressed,
 }) =>
     DataRow(
-      onSelectChanged: (_) => onPressed(),
+      onSelectChanged: (_) => onPressed!(),
       selected: selected,
       cells: [
         DataCell(
@@ -95,7 +95,7 @@ DataRow _buildFolderRow({
                 padding: const EdgeInsetsDirectional.only(end: 8.0),
                 child: const Icon(Icons.folder),
               ),
-              Text(folder.name),
+              Text(folder.name!),
             ],
           ),
         ),
@@ -105,13 +105,13 @@ DataRow _buildFolderRow({
     );
 
 DataRow _buildFileRow({
-  @required BuildContext context,
-  @required FileWithLatestRevisionTransactions file,
+  required BuildContext context,
+  required FileWithLatestRevisionTransactions file,
   bool selected = false,
-  Function onPressed,
+  Function? onPressed,
 }) {
   return DataRow(
-    onSelectChanged: (_) => onPressed(),
+    onSelectChanged: (_) => onPressed!(),
     selected: selected,
     cells: [
       DataCell(
@@ -141,7 +141,7 @@ DataRow _buildFileRow({
   );
 }
 
-Widget _buildFileIcon(String status, String dataContentType) {
+Widget _buildFileIcon(String status, String? dataContentType) {
   String tooltipMessage;
   Color indicatorColor;
   Widget icon;
@@ -163,7 +163,7 @@ Widget _buildFileIcon(String status, String dataContentType) {
       throw ArgumentError();
   }
 
-  final fileType = dataContentType?.split('/')?.first;
+  final fileType = dataContentType?.split('/').first;
   switch (fileType) {
     case 'image':
       icon = const Icon(Icons.image);

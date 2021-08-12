@@ -5,8 +5,8 @@ import 'package:url_launcher/link.dart';
 /// A link help button which floats over the provided child widget.
 class FloatingHelpButtonPortalEntry extends StatelessWidget {
   const FloatingHelpButtonPortalEntry({
-    Key key,
-    @required this.child,
+    Key? key,
+    required this.child,
   }) : super(key: key);
 
   final Widget child;

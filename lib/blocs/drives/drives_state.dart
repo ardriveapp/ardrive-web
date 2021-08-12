@@ -2,7 +2,7 @@ part of 'drives_cubit.dart';
 
 abstract class DrivesState extends Equatable {
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class DrivesLoadInProgress extends DrivesState {}
@@ -11,14 +11,14 @@ class DrivesLoadSuccess extends DrivesState {
   /// The id of the user's selected drive.
   ///
   /// Only null when the user has no drives.
-  final String selectedDriveId;
+  final String? selectedDriveId;
 
-  final List<Drive> userDrives;
-  final List<Drive> sharedDrives;
+  final List<Drive>? userDrives;
+  final List<Drive>? sharedDrives;
 
-  final bool canCreateNewDrive;
+  final bool? canCreateNewDrive;
 
-  bool get hasNoDrives => userDrives.isEmpty && sharedDrives.isEmpty;
+  bool get hasNoDrives => userDrives!.isEmpty && sharedDrives!.isEmpty;
 
   DrivesLoadSuccess({
     this.selectedDriveId,
@@ -28,10 +28,10 @@ class DrivesLoadSuccess extends DrivesState {
   });
 
   DrivesLoadSuccess copyWith({
-    String selectedDriveId,
-    List<Drive> userDrives,
-    List<Drive> sharedDrives,
-    bool canCreateNewDrive,
+    String? selectedDriveId,
+    List<Drive>? userDrives,
+    List<Drive>? sharedDrives,
+    bool? canCreateNewDrive,
   }) =>
       DrivesLoadSuccess(
         selectedDriveId: selectedDriveId ?? this.selectedDriveId,
@@ -41,6 +41,6 @@ class DrivesLoadSuccess extends DrivesState {
       );
 
   @override
-  List<Object> get props =>
+  List<Object?> get props =>
       [selectedDriveId, userDrives, sharedDrives, canCreateNewDrive];
 }

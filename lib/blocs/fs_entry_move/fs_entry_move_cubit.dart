@@ -12,27 +12,27 @@ import 'package:pedantic/pedantic.dart';
 part 'fs_entry_move_state.dart';
 
 class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
-  final String driveId;
-  final String folderId;
-  final String fileId;
+  final String? driveId;
+  final String? folderId;
+  final String? fileId;
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
 
-  StreamSubscription _folderSubscription;
+  StreamSubscription? _folderSubscription;
 
   bool get _isMovingFolder => folderId != null;
 
   FsEntryMoveCubit({
-    @required this.driveId,
+    required this.driveId,
     this.folderId,
     this.fileId,
-    @required ArweaveService arweave,
-    @required DriveDao driveDao,
-    @required ProfileCubit profileCubit,
-    @required SyncCubit syncCubit,
+    required ArweaveService arweave,
+    required DriveDao driveDao,
+    required ProfileCubit profileCubit,
+    required SyncCubit syncCubit,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
@@ -48,17 +48,17 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
   Future<void> loadParentFolder() {
     final state = this.state as FsEntryMoveFolderLoadSuccess;
-    return loadFolder(state.viewingFolder.folder.parentFolderId);
+    return loadFolder(state.viewingFolder.folder!.parentFolderId);
   }
 
-  Future<void> loadFolder(String folderId) async {
+  Future<void> loadFolder(String? folderId) async {
     unawaited(_folderSubscription?.cancel());
 
     _folderSubscription =
         _driveDao.watchFolderContents(driveId, folderId: folderId).listen(
               (f) => emit(
                 FsEntryMoveFolderLoadSuccess(
-                  viewingRootFolder: f.folder.parentFolderId == null,
+                  viewingRootFolder: f.folder!.parentFolderId == null,
                   viewingFolder: f,
                   isMovingFolder: _isMovingFolder,
                   movingEntryId: this.folderId ?? fileId,
@@ -88,7 +88,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
               .folderById(driveId: driveId, folderId: folderId)
               .getSingle();
           folder = folder.copyWith(
-              parentFolderId: parentFolder.id,
+              parentFolderId: parentFolder!.id,
               path: '${parentFolder.path}/${folder.name}',
               lastUpdated: DateTime.now());
 
@@ -120,12 +120,12 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
               .fileById(driveId: driveId, fileId: fileId)
               .getSingle();
           file = file.copyWith(
-              parentFolderId: parentFolder.id,
+              parentFolderId: parentFolder!.id,
               path: '${parentFolder.path}/${file.name}',
               lastUpdated: DateTime.now());
 
           final fileKey =
-              driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
+              driveKey != null ? await deriveFileKey(driveKey, file.id!) : null;
 
           final fileEntity = file.asEntity();
 

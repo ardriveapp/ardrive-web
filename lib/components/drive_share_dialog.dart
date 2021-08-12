@@ -8,8 +8,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'components.dart';
 
 Future<void> promptToShareDrive({
-  @required BuildContext context,
-  @required String driveId,
+  required BuildContext context,
+  required String? driveId,
 }) =>
     showDialog(
       context: context,
@@ -51,7 +51,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                   const Center(child: CircularProgressIndicator())
                 else if (state is DriveShareLoadSuccess) ...{
                   ListTile(
-                    title: Text(state.driveName),
+                    title: Text(state.driveName!),
                     contentPadding: EdgeInsets.zero,
                   ),
                   Row(

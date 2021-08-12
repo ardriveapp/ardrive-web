@@ -5,7 +5,7 @@ import 'models.dart';
 
 extension FolderRevisionWithTransactionExtensions
     on FolderRevisionWithTransaction {
-  String get confirmationStatus => metadataTx.status;
+  String? get confirmationStatus => metadataTx.status;
 }
 
 extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {
@@ -33,7 +33,7 @@ extension FolderEntityExtensions on FolderEntity {
   ///
   /// This requires a `performedAction` to be specified.
   FolderRevisionsCompanion toRevisionCompanion(
-          {@required String performedAction}) =>
+          {required String? performedAction}) =>
       FolderRevisionsCompanion.insert(
         folderId: id,
         driveId: driveId,
@@ -45,8 +45,8 @@ extension FolderEntityExtensions on FolderEntity {
       );
 
   /// Returns the action performed on the folder that lead to the new revision.
-  String getPerformedRevisionAction(
-      [FolderRevisionsCompanion previousRevision]) {
+  String? getPerformedRevisionAction(
+      [FolderRevisionsCompanion? previousRevision]) {
     if (previousRevision == null) {
       return RevisionAction.create;
     } else if (name != previousRevision.name.value) {

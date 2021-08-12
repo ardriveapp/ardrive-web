@@ -7,17 +7,17 @@ class AppRoutePath {
   /// Whether or not the user is trying to sign in.
   final bool signingIn;
 
-  final String driveId;
-  final String driveName;
-  final String driveFolderId;
+  final String? driveId;
+  final String? driveName;
+  final String? driveFolderId;
 
-  final String sharedFileId;
+  final String? sharedFileId;
 
   /// The private key of the corresponding shared file.
-  final SecretKey sharedFileKey;
+  final SecretKey? sharedFileKey;
 
   /// The private key of the corresponding shared file, encoded as Base64.
-  final String sharedRawFileKey;
+  final String? sharedRawFileKey;
 
   AppRoutePath({
     this.signingIn = false,
@@ -34,21 +34,21 @@ class AppRoutePath {
 
   /// Creates a route that points to a particular drive.
   factory AppRoutePath.driveDetail(
-          {@required String driveId, String driveName}) =>
+          {required String driveId, String? driveName}) =>
       AppRoutePath(driveId: driveId, driveName: driveName);
 
   /// Creates a route that points to a folder in a particular drive.
   factory AppRoutePath.folderDetail({
-    @required String driveId,
-    @required String driveFolderId,
+    required String driveId,
+    required String driveFolderId,
   }) =>
       AppRoutePath(driveId: driveId, driveFolderId: driveFolderId);
 
   /// Creates a route that points to a particular shared file.
   factory AppRoutePath.sharedFile({
-    @required String sharedFileId,
-    SecretKey sharedFilePk,
-    String sharedRawFileKey,
+    required String sharedFileId,
+    SecretKey? sharedFilePk,
+    String? sharedRawFileKey,
   }) =>
       AppRoutePath(
         sharedFileId: sharedFileId,

@@ -5,7 +5,7 @@ import 'models.dart';
 
 extension DriveRevisionWithTransactionExtensions
     on DriveRevisionWithTransaction {
-  String get confirmationStatus => metadataTx.status;
+  String? get confirmationStatus => metadataTx.status;
 }
 
 extension DriveRevisionCompanionExtensions on DriveRevisionsCompanion {
@@ -33,7 +33,7 @@ extension DriveEntityExtensions on DriveEntity {
   ///
   /// This requires a `performedAction` to be specified.
   DriveRevisionsCompanion toRevisionCompanion(
-          {@required String performedAction}) =>
+          {required String? performedAction}) =>
       DriveRevisionsCompanion.insert(
         driveId: id,
         ownerAddress: ownerAddress,
@@ -46,8 +46,8 @@ extension DriveEntityExtensions on DriveEntity {
       );
 
   /// Returns the action performed on the Drive that lead to the new revision.
-  String getPerformedRevisionAction(
-      [DriveRevisionsCompanion previousRevision]) {
+  String? getPerformedRevisionAction(
+      [DriveRevisionsCompanion? previousRevision]) {
     if (previousRevision == null) {
       return RevisionAction.create;
     } else if (name != previousRevision.name.value) {

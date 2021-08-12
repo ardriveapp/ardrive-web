@@ -26,18 +26,18 @@ class ProfileAuthAddScreen extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        state.isExistingUser
-                            ? AppLocalizations.of(context)
+                        state.isExistingUser!
+                            ? AppLocalizations.of(context)!
                                 .welcomeBack
                                 .toUpperCase()
-                            : AppLocalizations.of(context)
+                            : AppLocalizations.of(context)!
                                 .letsGetStarted
                                 .toUpperCase(),
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headline5,
                       ),
                       const SizedBox(height: 32),
-                      if (state.isExistingUser)
+                      if (state.isExistingUser!)
                         Text(
                             'Please provide the same password as the one you used before.',
                             textAlign: TextAlign.center)
@@ -65,7 +65,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                         ),
                         validationMessages: (_) => kValidationMessages,
                       ),
-                      if (!state.isExistingUser) ...{
+                      if (!state.isExistingUser!) ...{
                         const SizedBox(height: 16),
                         ReactiveTextField(
                           formControlName: 'passwordConfirmation',

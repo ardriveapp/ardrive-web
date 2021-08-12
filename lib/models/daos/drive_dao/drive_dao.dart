@@ -27,12 +27,12 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   /// Creates a drive with its accompanying root folder.
   Future<CreateDriveResult> createDrive({
-    @required String name,
-    @required String ownerAddress,
-    @required String privacy,
-    Future<Uint8List> Function(Uint8List message) getWalletSignature,
-    String password,
-    SecretKey profileKey,
+    required String name,
+    required String ownerAddress,
+    required String? privacy,
+    Future<Uint8List> Function(Uint8List message)? getWalletSignature,
+    String? password,
+    SecretKey? profileKey,
   }) async {
     final driveId = _uuid.v4();
     final rootFolderId = _uuid.v4();
@@ -45,11 +45,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       privacy: privacy,
     );
 
-    SecretKey driveKey;
+    SecretKey? driveKey;
     if (privacy == DrivePrivacy.private) {
-      driveKey = await deriveDriveKey(getWalletSignature, driveId, password);
+      driveKey = await deriveDriveKey(getWalletSignature!, driveId, password!);
       insertDriveOp = await _addDriveKeyToDriveCompanion(
-          insertDriveOp, profileKey, driveKey);
+          insertDriveOp, profileKey!, driveKey);
     }
 
     await batch((batch) {
@@ -75,7 +75,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   /// Adds or updates the user's drives with the provided drive entities.
   Future<void> updateUserDrives(
-          Map<DriveEntity, SecretKey> driveEntities, SecretKey profileKey) =>
+          Map<DriveEntity, SecretKey?> driveEntities, SecretKey? profileKey) =>
       db.batch((b) async {
         for (final entry in driveEntities.entries) {
           final entity = entry.key;
@@ -92,21 +92,21 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
           if (entity.privacy == DrivePrivacy.private) {
             driveCompanion = await _addDriveKeyToDriveCompanion(
-                driveCompanion, profileKey, entry.value);
+                driveCompanion, profileKey!, entry.value!);
           }
 
           b.insert(
             drives,
             driveCompanion,
             onConflict:
-                DoUpdate((_) => driveCompanion.copyWith(dateCreated: null)),
+                DoUpdate((dynamic _) => driveCompanion.copyWith(dateCreated: null)),
           );
         }
       });
 
   Future<void> writeDriveEntity({
-    String name,
-    DriveEntity entity,
+    String? name,
+    required DriveEntity entity,
   }) {
     assert(entity.privacy == DrivePrivacy.public);
 
@@ -138,14 +138,14 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     return drive.copyWith(
       encryptedKey: Value(encryptionRes.concatenation(nonce: false)),
-      keyEncryptionIv: Value(encryptionRes.nonce),
+      keyEncryptionIv: Value(encryptionRes.nonce as Uint8List),
     );
   }
 
   /// Returns the encryption key for the specified drive.
   ///
   /// `null` if the drive is public and unencrypted.
-  Future<SecretKey> getDriveKey(String driveId, SecretKey profileKey) async {
+  Future<SecretKey?> getDriveKey(String? driveId, SecretKey? profileKey) async {
     final drive = await driveById(driveId: driveId).getSingle();
 
     if (drive.encryptedKey == null) {
@@ -154,10 +154,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     final driveKeyData = await aesGcm.decrypt(
       secretBoxFromDataWithMacConcatenation(
-        drive.encryptedKey,
-        nonce: drive.keyEncryptionIv,
+        drive.encryptedKey!,
+        nonce: drive.keyEncryptionIv!,
       ),
-      secretKey: profileKey,
+      secretKey: profileKey!,
     );
 
     return SecretKey(driveKeyData);
@@ -166,14 +166,14 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   /// Returns the encryption key for the specified file.
   ///
   /// `null` if the file is public and unencrypted.
-  Future<SecretKey> getFileKey(
-    String driveId,
-    String fileId,
-    SecretKey profileKey,
+  Future<SecretKey?> getFileKey(
+    String? driveId,
+    String? fileId,
+    SecretKey? profileKey,
   ) async {
     final driveKey = await getDriveKey(driveId, profileKey);
     if (driveKey != null) {
-      return deriveFileKey(driveKey, fileId);
+      return deriveFileKey(driveKey, fileId!);
     } else {
       return null;
     }
@@ -182,9 +182,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeToDrive(Insertable<Drive> drive) =>
       (update(drives)..whereSamePrimaryKey(drive)).write(drive);
 
-  Stream<FolderWithContents> watchFolderContents(String driveId,
-      {String folderId,
-      String folderPath,
+  Stream<FolderWithContents> watchFolderContents(String? driveId,
+      {String? folderId,
+      String? folderPath,
       DriveOrder orderBy = DriveOrder.name,
       OrderingMode orderingMode = OrderingMode.asc}) {
     final folderStream = (folderId != null
@@ -213,7 +213,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       folderStream,
       subfolderQuery.watch(),
       filesQuery.watch(),
-      (folder, subfolders, files) => FolderWithContents(
+      (dynamic folder, dynamic subfolders, dynamic files) => FolderWithContents(
         folder: folder,
         subfolders: subfolders,
         files: files,
@@ -224,10 +224,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   /// Create a new folder entry.
   /// Returns the id of the created folder.
   Future<String> createFolder({
-    String driveId,
-    String parentFolderId,
-    String folderName,
-    String path,
+    String? driveId,
+    String? parentFolderId,
+    String? folderName,
+    String? path,
   }) async {
     final id = _uuid.v4();
 
@@ -245,7 +245,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   }
 
   UpdateStatement<FolderEntries, FolderEntry> updateFolderById(
-          String driveId, String folderId) =>
+          String? driveId, String? folderId) =>
       update(folderEntries)
         ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId));
 
@@ -253,7 +253,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       (update(folderEntries)..whereSamePrimaryKey(folder)).write(folder);
 
   /// Constructs a tree of folders and files that are children of the specified folder.
-  Future<FolderNode> getFolderTree(String driveId, String rootFolderId) async {
+  Future<FolderNode> getFolderTree(String? driveId, String? rootFolderId) async {
     final rootFolder =
         await folderById(driveId: driveId, folderId: rootFolderId).getSingle();
 
@@ -282,7 +282,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   }
 
   UpdateStatement<FileEntries, FileEntry> updateFileById(
-          String driveId, String fileId) =>
+          String? driveId, String? fileId) =>
       update(fileEntries)
         ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId));
 

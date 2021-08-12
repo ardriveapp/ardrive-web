@@ -13,13 +13,13 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppRoutePath> {
   bool signingIn = false;
 
-  String driveId;
-  String driveName;
-  String driveFolderId;
+  String? driveId;
+  String? driveName;
+  String? driveFolderId;
 
-  String sharedFileId;
-  SecretKey sharedFileKey;
-  String sharedRawFileKey;
+  String? sharedFileId;
+  SecretKey? sharedFileKey;
+  String? sharedRawFileKey;
 
   bool canAnonymouslyShowDriveDetail(ProfileState profileState) =>
       profileState is ProfileUnavailable && tryingToViewDrive;
@@ -69,7 +69,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           }
         },
         builder: (context, state) {
-          Widget shell;
+          Widget? shell;
 
           final anonymouslyShowDriveDetail =
               canAnonymouslyShowDriveDetail(state);
@@ -99,7 +99,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 }
               },
               builder: (context, state) {
-                Widget shellPage;
+                Widget? shellPage;
                 if (state is DrivesLoadSuccess) {
                   shellPage =
                       !state.hasNoDrives ? DriveDetailPage() : NoDrivesPage();
@@ -119,8 +119,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   child: BlocListener<DriveDetailCubit, DriveDetailState>(
                     listener: (context, state) {
                       if (state is DriveDetailLoadSuccess) {
-                        driveId = state.currentDrive.id;
-                        driveFolderId = state.currentFolder.folder.id;
+                        driveId = state.currentDrive!.id;
+                        driveFolderId = state.currentFolder!.folder!.id;
                         notifyListeners();
                       } else if (state is DriveDetailLoadNotFound) {
                         // Do not prompt the user to attach an unfound drive if they are logging out.

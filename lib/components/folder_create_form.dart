@@ -11,8 +11,8 @@ import 'components.dart';
 
 Future<void> promptToCreateFolder(
   BuildContext context, {
-  @required String driveId,
-  @required String parentFolderId,
+  required String? driveId,
+  required String? parentFolderId,
 }) =>
     showDialog(
       context: context,

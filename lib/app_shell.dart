@@ -12,9 +12,9 @@ import 'components/components.dart';
 import 'components/wallet_switch_dialog.dart';
 
 class AppShell extends StatefulWidget {
-  final Widget page;
+  final Widget? page;
 
-  AppShell({Key key, this.page}) : super(key: key);
+  AppShell({Key? key, this.page}) : super(key: key);
 
   @override
   _AppShellState createState() => _AppShellState();
@@ -123,7 +123,7 @@ class _AppShellState extends State<AppShell> {
                   AppDrawer(),
                   Expanded(
                     child: Scaffold(
-                      appBar: _buildAppBar(),
+                      appBar: _buildAppBar() as PreferredSizeWidget?,
                       body: widget.page,
                     ),
                   ),
@@ -132,12 +132,12 @@ class _AppShellState extends State<AppShell> {
             ),
             mobile: _buildPage(
               Scaffold(
-                appBar: _buildAppBar(),
+                appBar: _buildAppBar() as PreferredSizeWidget?,
                 drawer: AppDrawer(),
                 body: Row(
                   children: [
                     Expanded(
-                      child: widget.page,
+                      child: widget.page!,
                     ),
                   ],
                 ),

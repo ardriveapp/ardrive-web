@@ -42,7 +42,7 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'WELCOME BACK, ${state.username.toUpperCase()}',
+                              'WELCOME BACK, ${state.username!.toUpperCase()}',
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.headline5,
                             ),

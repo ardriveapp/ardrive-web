@@ -2,10 +2,10 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 
 class AppDialog extends StatelessWidget {
-  final String title;
+  final String? title;
   final EdgeInsetsGeometry contentPadding;
-  final Widget content;
-  final List<Widget> actions;
+  final Widget? content;
+  final List<Widget>? actions;
 
   final bool dismissable;
 
@@ -32,10 +32,10 @@ class AppDialog extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      title,
+                      title!,
                       style: Theme.of(context)
                           .textTheme
-                          .headline6
+                          .headline6!
                           .copyWith(color: kOnDarkSurfaceHighEmphasis),
                     ),
                   ],

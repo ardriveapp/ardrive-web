@@ -35,7 +35,7 @@ extension FileEntityExtensions on FileEntity {
   ///
   /// This requires a `performedAction` to be specified.
   FileRevisionsCompanion toRevisionCompanion(
-          {@required String performedAction}) =>
+          {required String? performedAction}) =>
       FileRevisionsCompanion.insert(
         fileId: id,
         driveId: driveId,
@@ -51,7 +51,7 @@ extension FileEntityExtensions on FileEntity {
       );
 
   /// Returns the action performed on the file that lead to the new revision.
-  String getPerformedRevisionAction([FileRevisionsCompanion previousRevision]) {
+  String? getPerformedRevisionAction([FileRevisionsCompanion? previousRevision]) {
     if (previousRevision == null) {
       return RevisionAction.create;
     } else if (name != previousRevision.name.value) {

@@ -9,19 +9,19 @@ import 'package:moor/moor.dart';
 part 'fs_entry_info_state.dart';
 
 class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
-  final String driveId;
-  final String folderId;
-  final String fileId;
+  final String? driveId;
+  final String? folderId;
+  final String? fileId;
 
   final DriveDao _driveDao;
 
-  StreamSubscription _entrySubscription;
+  StreamSubscription? _entrySubscription;
 
   FsEntryInfoCubit(
-      {@required this.driveId,
+      {required this.driveId,
       this.folderId,
       this.fileId,
-      @required DriveDao driveDao})
+      required DriveDao driveDao})
       : _driveDao = driveDao,
         super(FsEntryInfoInitial()) {
     if (folderId != null) {

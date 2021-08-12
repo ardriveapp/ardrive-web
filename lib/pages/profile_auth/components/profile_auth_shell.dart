@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ProfileAuthShell extends StatelessWidget {
-  final Widget illustration;
+  final Widget? illustration;
 
-  final double contentWidthFactor;
-  final Widget content;
-  final Widget contentFooter;
+  final double? contentWidthFactor;
+  final Widget? content;
+  final Widget? contentFooter;
 
   ProfileAuthShell(
       {this.illustration,
@@ -33,11 +33,11 @@ class ProfileAuthShell extends StatelessWidget {
                     fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 32),
-                  content,
+                  content!,
                 ],
               ),
             ),
-            if (contentFooter != null) contentFooter,
+            if (contentFooter != null) contentFooter!,
           ],
         );
     Widget _buildIllustration() => Stack(

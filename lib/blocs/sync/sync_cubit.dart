@@ -26,13 +26,13 @@ class SyncCubit extends Cubit<SyncState> {
   final DriveDao _driveDao;
   final Database _db;
 
-  StreamSubscription _syncSub;
+  StreamSubscription? _syncSub;
 
   SyncCubit({
-    @required ProfileCubit profileCubit,
-    @required ArweaveService arweave,
-    @required DriveDao driveDao,
-    @required Database db,
+    required ProfileCubit profileCubit,
+    required ArweaveService arweave,
+    required DriveDao driveDao,
+    required Database db,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _driveDao = driveDao,
@@ -63,7 +63,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> startSync() async {
     try {
-      final profile = _profileCubit.state;
+      final ProfileState profile = _profileCubit.state;
       print('Syncing...');
       emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
@@ -112,12 +112,12 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncIdle());
   }
 
-  Future<void> _syncDrive(String driveId) async {
+  Future<void> _syncDrive(String? driveId) async {
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
 
-    SecretKey driveKey;
+    SecretKey? driveKey;
     if (drive.isPrivate) {
-      final profile = _profileCubit.state;
+      final ProfileState profile = _profileCubit.state;
 
       // Only sync private drives when the user is logged in.
       if (profile is ProfileLoggedIn) {
@@ -128,13 +128,13 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     final entityHistory = await _arweave.getNewEntitiesForDrive(
-      drive.id,
+      drive.id!,
       // Syncs from lastBlockHeight - 5 and paginates through them using the syncCursor
       // Starts syncing from lastBlock - 5. 5 is an arbitrary position,
       // we are just starting 5 blocks before the lastBlockHeight to make sure it
       // picks up all files. 'after' indicates the cursor where it should start
       // syncing from. For first sync 'after' should be null or an empty string.
-      lastBlockHeight: max(drive.lastBlockHeight - 5, drive.lastBlockHeight),
+      lastBlockHeight: max(drive.lastBlockHeight! - 5, drive.lastBlockHeight!),
       after: drive.syncCursor,
       driveKey: driveKey,
     );
@@ -207,9 +207,9 @@ class SyncCubit extends Cubit<SyncState> {
 
   /// Computes the new drive revisions from the provided entities, inserts them into the database,
   /// and returns the latest revision.
-  Future<DriveRevisionsCompanion> _addNewDriveEntityRevisions(
+  Future<DriveRevisionsCompanion?> _addNewDriveEntityRevisions(
       Iterable<DriveEntity> newEntities) async {
-    DriveRevisionsCompanion latestRevision;
+    DriveRevisionsCompanion? latestRevision;
 
     final newRevisions = <DriveRevisionsCompanion>[];
     for (final entity in newEntities) {
@@ -251,9 +251,9 @@ class SyncCubit extends Cubit<SyncState> {
   /// Computes the new folder revisions from the provided entities, inserts them into the database,
   /// and returns only the latest revisions.
   Future<List<FolderRevisionsCompanion>> _addNewFolderEntityRevisions(
-      String driveId, Iterable<FolderEntity> newEntities) async {
+      String? driveId, Iterable<FolderEntity> newEntities) async {
     // The latest folder revisions, keyed by their entity ids.
-    final latestRevisions = <String, FolderRevisionsCompanion>{};
+    final latestRevisions = <String?, FolderRevisionsCompanion>{};
 
     final newRevisions = <FolderRevisionsCompanion>[];
     for (final entity in newEntities) {
@@ -298,9 +298,9 @@ class SyncCubit extends Cubit<SyncState> {
   /// Computes the new file revisions from the provided entities, inserts them into the database,
   /// and returns only the latest revisions.
   Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions(
-      String driveId, Iterable<FileEntity> newEntities) async {
+      String? driveId, Iterable<FileEntity> newEntities) async {
     // The latest file revisions, keyed by their entity ids.
-    final latestRevisions = <String, FileRevisionsCompanion>{};
+    final latestRevisions = <String?, FileRevisionsCompanion>{};
 
     final newRevisions = <FileRevisionsCompanion>[];
     for (final entity in newEntities) {
@@ -358,12 +358,12 @@ class SyncCubit extends Cubit<SyncState> {
 
     return latestRevision.toEntryCompanion().copyWith(
         dateCreated:
-            Value(oldestRevision?.dateCreated ?? latestRevision.dateCreated));
+            Value(oldestRevision?.dateCreated ?? latestRevision.dateCreated as DateTime));
   }
 
   /// Computes the refreshed folder entries from the provided revisions and returns them as a map keyed by their ids.
-  Future<Map<String, FolderEntriesCompanion>>
-      _computeRefreshedFolderEntriesFromRevisions(String driveId,
+  Future<Map<String?, FolderEntriesCompanion>>
+      _computeRefreshedFolderEntriesFromRevisions(String? driveId,
           List<FolderRevisionsCompanion> revisionsByFolderId) async {
     final updatedFoldersById = {
       for (final revision in revisionsByFolderId)
@@ -375,17 +375,17 @@ class SyncCubit extends Cubit<SyncState> {
           .oldestFolderRevisionByFolderId(driveId: driveId, folderId: folderId)
           .getSingleOrNull();
 
-      updatedFoldersById[folderId] = updatedFoldersById[folderId].copyWith(
+      updatedFoldersById[folderId] = updatedFoldersById[folderId]!.copyWith(
           dateCreated: Value(oldestRevision?.dateCreated ??
-              updatedFoldersById[folderId].dateCreated));
+              updatedFoldersById[folderId]!.dateCreated as DateTime));
     }
 
     return updatedFoldersById;
   }
 
   /// Computes the refreshed file entries from the provided revisions and returns them as a map keyed by their ids.
-  Future<Map<String, FileEntriesCompanion>>
-      _computeRefreshedFileEntriesFromRevisions(String driveId,
+  Future<Map<String?, FileEntriesCompanion>>
+      _computeRefreshedFileEntriesFromRevisions(String? driveId,
           List<FileRevisionsCompanion> revisionsByFileId) async {
     final updatedFilesById = {
       for (final revision in revisionsByFileId)
@@ -397,9 +397,9 @@ class SyncCubit extends Cubit<SyncState> {
           .oldestFileRevisionByFileId(driveId: driveId, fileId: fileId)
           .getSingleOrNull();
 
-      updatedFilesById[fileId] = updatedFilesById[fileId].copyWith(
+      updatedFilesById[fileId] = updatedFilesById[fileId]!.copyWith(
           dateCreated: Value(oldestRevision?.dateCreated ??
-              updatedFilesById[fileId].dateCreated));
+              updatedFilesById[fileId]!.dateCreated as DateTime));
     }
 
     return updatedFilesById;
@@ -407,9 +407,9 @@ class SyncCubit extends Cubit<SyncState> {
 
   /// Generates paths for the folders (and their subchildren) and files provided.
   Future<void> generateFsEntryPaths(
-    String driveId,
-    Map<String, FolderEntriesCompanion> foldersByIdMap,
-    Map<String, FileEntriesCompanion> filesByIdMap,
+    String? driveId,
+    Map<String?, FolderEntriesCompanion> foldersByIdMap,
+    Map<String?, FileEntriesCompanion> filesByIdMap,
   ) async {
     final staleFolderTree = <FolderNode>[];
     for (final folder in foldersByIdMap.values) {
@@ -420,9 +420,9 @@ class SyncCubit extends Cubit<SyncState> {
       var newTreeIsSubsetOfExisting = false;
       var newTreeIsSupersetOfExisting = false;
       for (final existingTree in staleFolderTree) {
-        if (existingTree.searchForFolder(tree.folder.id) != null) {
+        if (existingTree.searchForFolder(tree.folder!.id) != null) {
           newTreeIsSubsetOfExisting = true;
-        } else if (tree.searchForFolder(existingTree.folder.id) != null) {
+        } else if (tree.searchForFolder(existingTree.folder!.id) != null) {
           staleFolderTree.remove(existingTree);
           staleFolderTree.add(tree);
           newTreeIsSupersetOfExisting = true;
@@ -434,39 +434,39 @@ class SyncCubit extends Cubit<SyncState> {
       }
     }
 
-    Future<void> updateFolderTree(FolderNode node, String parentPath) async {
-      final folderId = node.folder.id;
+    Future<void> updateFolderTree(FolderNode node, String? parentPath) async {
+      final folderId = node.folder!.id;
       // If this is the root folder, we should not include its name as part of the path.
-      final folderPath = node.folder.parentFolderId != null
-          ? parentPath + '/' + node.folder.name
+      final folderPath = node.folder!.parentFolderId != null
+          ? parentPath! + '/' + node.folder!.name!
           : '';
 
       await _driveDao
           .updateFolderById(driveId, folderId)
           .write(FolderEntriesCompanion(path: Value(folderPath)));
 
-      for (final staleFileId in node.files.keys) {
-        final filePath = folderPath + '/' + node.files[staleFileId];
+      for (final staleFileId in node.files!.keys) {
+        final filePath = folderPath + '/' + node.files![staleFileId]!;
 
         await _driveDao
             .updateFileById(driveId, staleFileId)
             .write(FileEntriesCompanion(path: Value(filePath)));
       }
 
-      for (final staleFolder in node.subfolders) {
+      for (final staleFolder in node.subfolders!) {
         await updateFolderTree(staleFolder, folderPath);
       }
     }
 
     for (final treeRoot in staleFolderTree) {
       // Get the path of this folder's parent.
-      String parentPath;
-      if (treeRoot.folder.parentFolderId == null) {
+      String? parentPath;
+      if (treeRoot.folder!.parentFolderId == null) {
         parentPath = '';
       } else {
         parentPath = await _driveDao
             .folderById(
-                driveId: driveId, folderId: treeRoot.folder.parentFolderId)
+                driveId: driveId, folderId: treeRoot.folder!.parentFolderId)
             .map((f) => f.path)
             .getSingle();
       }
@@ -485,7 +485,7 @@ class SyncCubit extends Cubit<SyncState> {
           .getSingleOrNull();
 
       if (parentPath != null) {
-        final filePath = parentPath + '/' + staleOrphanFile.name.value;
+        final filePath = parentPath + '/' + staleOrphanFile.name.value!;
 
         await _driveDao.writeToFile(FileEntriesCompanion(
             id: staleOrphanFile.id,
@@ -509,8 +509,8 @@ class SyncCubit extends Cubit<SyncState> {
     await _driveDao.transaction(() async {
       for (final txId in pendingTxMap.keys) {
         final txConfirmed =
-            txConfirmations[txId] >= kRequiredTxConfirmationCount;
-        final txNotFound = txConfirmations[txId] < 0;
+            txConfirmations[txId]! >= kRequiredTxConfirmationCount;
+        final txNotFound = txConfirmations[txId]! < 0;
 
         var txStatus;
 
@@ -520,7 +520,7 @@ class SyncCubit extends Cubit<SyncState> {
           // Only mark transactions as failed if they are unconfirmed for over 45 minutes
           // as the transaction might not be queryable for right after it was created.
           final abovePendingThreshold = DateTime.now()
-                  .difference(pendingTxMap[txId].dateCreated)
+                  .difference(pendingTxMap[txId]!.dateCreated!)
                   .inMinutes >
               45;
           if (abovePendingThreshold) {

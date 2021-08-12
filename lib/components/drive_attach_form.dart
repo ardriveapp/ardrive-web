@@ -12,9 +12,9 @@ import 'package:reactive_forms/reactive_forms.dart';
 import 'components.dart';
 
 Future<void> attachDrive(
-        {@required BuildContext context,
-        String initialDriveId,
-        String driveName}) =>
+        {required BuildContext context,
+        String? initialDriveId,
+        String? driveName}) =>
     showDialog(
       context: context,
       builder: (BuildContext context) => BlocProvider<DriveAttachCubit>(
@@ -105,11 +105,11 @@ class DriveAttachForm extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              child: Text(AppLocalizations.of(context).cancel.toUpperCase()),
+              child: Text(AppLocalizations.of(context)!.cancel.toUpperCase()),
               onPressed: () => Navigator.of(context).pop(null),
             ),
             ElevatedButton(
-              child: Text(AppLocalizations.of(context).attach.toUpperCase()),
+              child: Text(AppLocalizations.of(context)!.attach.toUpperCase()),
               onPressed: () => context.read<DriveAttachCubit>().submit(),
             ),
           ],

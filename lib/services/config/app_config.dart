@@ -4,7 +4,7 @@ part 'app_config.g.dart';
 
 @JsonSerializable()
 class AppConfig {
-  final String defaultArweaveGatewayUrl;
+  final String? defaultArweaveGatewayUrl;
 
   AppConfig({this.defaultArweaveGatewayUrl});
 

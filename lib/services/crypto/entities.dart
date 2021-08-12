@@ -13,10 +13,10 @@ final aesGcm = AesGcm.with256bits();
 /// Decrypts the provided transaction details and data into JSON using the provided key.
 ///
 /// Throws a [TransactionDecryptionException] if decryption fails.
-Future<Map<String, dynamic>> decryptEntityJson(
+Future<Map<String, dynamic>?> decryptEntityJson(
   TransactionCommonMixin transaction,
   Uint8List data,
-  SecretKey key,
+  SecretKey? key,
 ) async {
   final decryptedData = await decryptTransactionData(transaction, data, key);
   return json.decode(utf8.decode(decryptedData));
@@ -28,19 +28,19 @@ Future<Map<String, dynamic>> decryptEntityJson(
 Future<Uint8List> decryptTransactionData(
   TransactionCommonMixin transaction,
   Uint8List data,
-  SecretKey key,
+  SecretKey? key,
 ) async {
   final cipher = transaction.getTag(EntityTag.cipher);
 
   try {
     if (cipher == Cipher.aes256) {
       final cipherIv =
-          utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv));
+          utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv)!);
 
       return aesGcm
           .decrypt(
             secretBoxFromDataWithMacConcatenation(data, nonce: cipherIv),
-            secretKey: key,
+            secretKey: key!,
           )
           .then((res) => Uint8List.fromList(res));
     }
@@ -54,11 +54,11 @@ Future<Uint8List> decryptTransactionData(
 /// Creates a transaction with the provided entity's JSON data encrypted along with the appropriate cipher tags.
 Future<Transaction> createEncryptedEntityTransaction(
         Entity entity, SecretKey key) =>
-    createEncryptedTransaction(utf8.encode(json.encode(entity)), key);
+    createEncryptedTransaction(utf8.encode(json.encode(entity)) as Uint8List, key);
 
 /// Creates a data item with the provided entity's JSON data encrypted along with the appropriate cipher tags.
 Future<DataItem> createEncryptedEntityDataItem(Entity entity, SecretKey key) =>
-    createEncryptedDataItem(utf8.encode(json.encode(entity)), key);
+    createEncryptedDataItem(utf8.encode(json.encode(entity)) as Uint8List, key);
 
 /// Creates a [Transaction] with the provided data encrypted along with the appropriate cipher tags.
 Future<Transaction> createEncryptedTransaction(

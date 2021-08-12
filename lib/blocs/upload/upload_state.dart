@@ -3,7 +3,7 @@ part of 'upload_cubit.dart';
 @immutable
 abstract class UploadState extends Equatable {
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class UploadPreparationInProgress extends UploadState {}
@@ -13,7 +13,7 @@ class UploadPreparationFailure extends UploadState {}
 class UploadFileConflict extends UploadState {
   final List<String> conflictingFileNames;
 
-  UploadFileConflict({@required this.conflictingFileNames});
+  UploadFileConflict({required this.conflictingFileNames});
 
   @override
   List<Object> get props => [conflictingFileNames];
@@ -23,7 +23,7 @@ class UploadFileTooLarge extends UploadState {
   final List<String> tooLargeFileNames;
   final bool isPrivate;
   UploadFileTooLarge(
-      {@required this.tooLargeFileNames, @required this.isPrivate});
+      {required this.tooLargeFileNames, required this.isPrivate});
 
   @override
   List<Object> get props => [tooLargeFileNames];
@@ -37,7 +37,7 @@ class UploadReady extends UploadState {
   /// The cost to upload the data, in USD.
   ///
   /// Null if conversion rate could not be retrieved.
-  final double usdUploadCost;
+  final double? usdUploadCost;
 
   /// The fee amount provided to PST holders.
   final BigInt pstFee;
@@ -54,17 +54,17 @@ class UploadReady extends UploadState {
   final List<FileUploadHandle> files;
 
   UploadReady({
-    @required this.arUploadCost,
-    @required this.pstFee,
-    @required this.totalCost,
-    @required this.sufficientArBalance,
-    @required this.uploadIsPublic,
-    @required this.files,
+    required this.arUploadCost,
+    required this.pstFee,
+    required this.totalCost,
+    required this.sufficientArBalance,
+    required this.uploadIsPublic,
+    required this.files,
     this.usdUploadCost,
   });
 
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
         arUploadCost,
         usdUploadCost,
         pstFee,
@@ -75,14 +75,14 @@ class UploadReady extends UploadState {
 }
 
 class UploadInProgress extends UploadState {
-  final List<FileUploadHandle> files;
+  final List<FileUploadHandle>? files;
 
   final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
 
   UploadInProgress({this.files});
 
   @override
-  List<Object> get props => [files, _equatableBust];
+  List<Object?> get props => [files, _equatableBust];
 }
 
 class UploadFailure extends UploadState {}

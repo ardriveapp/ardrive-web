@@ -29,10 +29,10 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
   final DrivesCubit _drivesCubit;
 
   DriveCreateCubit({
-    @required ArweaveService arweave,
-    @required DriveDao driveDao,
-    @required ProfileCubit profileCubit,
-    @required DrivesCubit drivesCubit,
+    required ArweaveService arweave,
+    required DriveDao driveDao,
+    required ProfileCubit profileCubit,
+    required DrivesCubit drivesCubit,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
@@ -62,7 +62,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
     try {
       final driveName = form.control('name').value.toString().trim();
-      final String drivePrivacy = form.control('privacy').value;
+      final String? drivePrivacy = form.control('privacy').value;
 
       final profile = _profileCubit.state as ProfileLoggedIn;
       final walletAddress = await profile.getWalletAddress();

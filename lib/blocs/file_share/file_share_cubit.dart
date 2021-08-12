@@ -11,17 +11,17 @@ part 'file_share_state.dart';
 
 /// [FileShareCubit] includes logic for the user to retrieve a link to share a public/private file with.
 class FileShareCubit extends Cubit<FileShareState> {
-  final String driveId;
-  final String fileId;
+  final String? driveId;
+  final String? fileId;
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
 
   FileShareCubit({
-    @required this.driveId,
-    @required this.fileId,
-    @required ProfileCubit profileCubit,
-    @required DriveDao driveDao,
+    required this.driveId,
+    required this.fileId,
+    required ProfileCubit profileCubit,
+    required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         super(FileShareLoadInProgress()) {
@@ -45,7 +45,7 @@ class FileShareCubit extends Cubit<FileShareState> {
       final profile = _profileCubit.state as ProfileLoggedIn;
 
       final fileKey =
-          await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
+          await (_driveDao.getFileKey(driveId, fileId, profile.cipherKey) as FutureOr<SecretKey>);
       final fileKeyBase64 =
           utils.encodeBytesToBase64(await fileKey.extractBytes());
 

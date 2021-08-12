@@ -23,13 +23,13 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
 
-  ProfileType _profileType;
-  String _lastKnownWalletAddress;
+  ProfileType? _profileType;
+  String? _lastKnownWalletAddress;
 
   ProfileUnlockCubit({
-    @required ProfileCubit profileCubit,
-    @required ProfileDao profileDao,
-    @required ArweaveService arweave,
+    required ProfileCubit profileCubit,
+    required ProfileDao profileDao,
+    required ArweaveService arweave,
   })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
         _arweave = arweave,
@@ -49,7 +49,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
 
     final signature = arconnect.getSignature;
     final privateDrive = await _arweave.getAnyPrivateDriveEntity(
-        await profile.id, password, signature);
+        await profile.id!, password, signature);
     if (privateDrive == null) {
       throw ProfilePasswordIncorrectException();
     }

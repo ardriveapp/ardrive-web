@@ -15,10 +15,10 @@ class ArweaveService {
   final ArtemisClient _gql;
 
   ArweaveService(this.client)
-      : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
+      : _gql = ArtemisClient('${client.api!.gatewayUrl.origin}/graphql');
 
   /// Returns the onchain balance of the specified address.
-  Future<BigInt> getWalletBalance(String address) => client.api
+  Future<BigInt> getWalletBalance(String address) => client.api!
       .get('wallet/$address/balance')
       .then((res) => BigInt.parse(res.body));
 
@@ -27,7 +27,7 @@ class ArweaveService {
     final query = await _gql.execute(PendingTxFeesQuery(
         variables: PendingTxFeesArguments(walletAddress: address)));
 
-    return query.data.transactions.edges
+    return query.data!.transactions.edges
         .map((edge) => edge.node)
         .where((node) => node.block == null)
         .fold<BigInt>(
@@ -36,15 +36,15 @@ class ArweaveService {
         );
   }
 
-  Future<TransactionCommonMixin> getTransactionDetails(String txId) async {
+  Future<TransactionCommonMixin?> getTransactionDetails(String txId) async {
     final query = await _gql.execute(TransactionDetailsQuery(
         variables: TransactionDetailsArguments(txId: txId)));
-    return query.data.transaction;
+    return query.data!.transaction;
   }
 
   /// Gets the entity history for a particular drive starting from the specified block height.
   Future<DriveEntityHistory> getNewEntitiesForDrive(String driveId,
-      {String after, int lastBlockHeight, SecretKey driveKey}) async {
+      {String? after, int? lastBlockHeight, SecretKey? driveKey}) async {
     final driveEntityHistoryQuery = await _gql.execute(
       DriveEntityHistoryQuery(
         variables: DriveEntityHistoryArguments(
@@ -54,10 +54,10 @@ class ArweaveService {
         ),
       ),
     );
-    final queryEdges = driveEntityHistoryQuery.data.transactions.edges;
+    final queryEdges = driveEntityHistoryQuery.data!.transactions.edges;
     final entityTxs = queryEdges.map((e) => e.node).toList();
     final rawEntityData =
-        await Future.wait(entityTxs.map((e) => client.api.get(e.id)))
+        await Future.wait(entityTxs.map((e) => client.api!.get(e.id)))
             .then((rs) => rs.map((r) => r.bodyBytes).toList());
 
     final blockHistory = <BlockEntities>[];
@@ -71,14 +71,14 @@ class ArweaveService {
       }
 
       if (blockHistory.isEmpty ||
-          transaction.block.height != blockHistory.last.blockHeight) {
-        blockHistory.add(BlockEntities(transaction.block.height));
+          transaction.block!.height != blockHistory.last.blockHeight) {
+        blockHistory.add(BlockEntities(transaction.block!.height));
       }
 
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
 
-        Entity entity;
+        Entity? entity;
         if (entityType == EntityType.drive) {
           entity = await DriveEntity.fromTransaction(
               transaction, rawEntityData[i], driveKey);
@@ -94,8 +94,8 @@ class ArweaveService {
         }
 
         if (blockHistory.isEmpty ||
-            transaction.block.height != blockHistory.last.blockHeight) {
-          blockHistory.add(BlockEntities(transaction.block.height));
+            transaction.block!.height != blockHistory.last.blockHeight) {
+          blockHistory.add(BlockEntities(transaction.block!.height));
         }
 
         blockHistory.last.entities.add(entity);
@@ -106,7 +106,7 @@ class ArweaveService {
 
     // Sort the entities in each block by ascending commit time.
     for (final block in blockHistory) {
-      block.entities.sort((e1, e2) => e1.createdAt.compareTo(e2.createdAt));
+      block.entities.sort((e1, e2) => e1!.createdAt.compareTo(e2!.createdAt));
     }
 
     return DriveEntityHistory(
@@ -124,9 +124,9 @@ class ArweaveService {
           variables: UserDriveEntitiesArguments(owner: userAddress)),
     );
 
-    return userDriveEntitiesQuery.data.transactions.edges
+    return userDriveEntitiesQuery.data!.transactions.edges
         .map((e) => e.node)
-        .fold<Map<String, TransactionCommonMixin>>(
+        .fold<Map<String?, TransactionCommonMixin>>(
           {},
           (map, tx) {
             final driveId = tx.getTag('Drive-Id');
@@ -141,7 +141,7 @@ class ArweaveService {
   }
 
   /// Gets the unique drive entities for a particular user.
-  Future<Map<DriveEntity, SecretKey>> getUniqueUserDriveEntities(
+  Future<Map<DriveEntity, SecretKey?>> getUniqueUserDriveEntities(
     Future<Uint8List> Function(Uint8List message) getWalletSignature,
     String walletAddress,
     String password,
@@ -151,15 +151,15 @@ class ArweaveService {
           variables: UserDriveEntitiesArguments(owner: walletAddress)),
     );
 
-    final driveTxs = userDriveEntitiesQuery.data.transactions.edges
+    final driveTxs = userDriveEntitiesQuery.data!.transactions.edges
         .map((e) => e.node)
         .toList();
 
     final driveResponses =
-        await Future.wait(driveTxs.map((e) => client.api.get(e.id)));
+        await Future.wait(driveTxs.map((e) => client.api!.get(e.id)));
 
-    final drivesById = <String, DriveEntity>{};
-    final drivesWithKey = <DriveEntity, SecretKey>{};
+    final drivesById = <String?, DriveEntity>{};
+    final drivesWithKey = <DriveEntity, SecretKey?>{};
     for (var i = 0; i < driveTxs.length; i++) {
       final driveTx = driveTxs[i];
 
@@ -172,7 +172,7 @@ class ArweaveService {
           driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private
               ? await deriveDriveKey(
                   getWalletSignature,
-                  driveTx.getTag(EntityTag.driveId),
+                  driveTx.getTag(EntityTag.driveId)!,
                   password,
                 )
               : null;
@@ -201,31 +201,31 @@ class ArweaveService {
   /// by that owner.
   ///
   /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
-  Future<DriveEntity> getLatestDriveEntityWithId(
+  Future<DriveEntity?> getLatestDriveEntityWithId(
     String driveId, [
-    SecretKey driveKey,
+    SecretKey? driveKey,
   ]) async {
     final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
         variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
 
-    if (firstOwnerQuery.data.transactions.edges.isEmpty) {
+    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
       return null;
     }
 
     final driveOwner =
-        firstOwnerQuery.data.transactions.edges.first.node.owner.address;
+        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
     final latestDriveQuery = await _gql.execute(LatestDriveEntityWithIdQuery(
         variables: LatestDriveEntityWithIdArguments(
             driveId: driveId, owner: driveOwner)));
 
-    final queryEdges = latestDriveQuery.data.transactions.edges;
+    final queryEdges = latestDriveQuery.data!.transactions.edges;
     if (queryEdges.isEmpty) {
       return null;
     }
 
     final fileTx = queryEdges.first.node;
-    final fileDataRes = await client.api.get(fileTx.id);
+    final fileDataRes = await client.api!.get(fileTx.id);
 
     try {
       return await DriveEntity.fromTransaction(
@@ -236,7 +236,7 @@ class ArweaveService {
   }
 
   /// Gets any created private drive belonging to [profileId], as long as its unlockable with [password] when used with the [getSignatureFn]
-  Future<DriveEntity> getAnyPrivateDriveEntity(
+  Future<DriveEntity?> getAnyPrivateDriveEntity(
       String profileId,
       String password,
       Future<Uint8List> Function(Uint8List message) getSignatureFn) async {
@@ -248,7 +248,7 @@ class ArweaveService {
       return null;
     }
 
-    final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
+    final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
     final checkDriveKey = await deriveDriveKey(
       getSignatureFn,
       checkDriveId,
@@ -268,29 +268,29 @@ class ArweaveService {
   /// by that owner.
   ///
   /// Returns `null` if no valid file is found or the provided `fileKey` is incorrect.
-  Future<FileEntity> getLatestFileEntityWithId(String fileId,
-      [SecretKey fileKey]) async {
+  Future<FileEntity?> getLatestFileEntityWithId(String fileId,
+      [SecretKey? fileKey]) async {
     final firstOwnerQuery = await _gql.execute(FirstFileEntityWithIdOwnerQuery(
         variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
 
-    if (firstOwnerQuery.data.transactions.edges.isEmpty) {
+    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
       return null;
     }
 
     final fileOwner =
-        firstOwnerQuery.data.transactions.edges.first.node.owner.address;
+        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
     final latestFileQuery = await _gql.execute(LatestFileEntityWithIdQuery(
         variables:
             LatestFileEntityWithIdArguments(fileId: fileId, owner: fileOwner)));
 
-    final queryEdges = latestFileQuery.data.transactions.edges;
+    final queryEdges = latestFileQuery.data!.transactions.edges;
     if (queryEdges.isEmpty) {
       return null;
     }
 
     final fileTx = queryEdges.first.node;
-    final fileDataRes = await client.api.get(fileTx.id);
+    final fileDataRes = await client.api!.get(fileTx.id);
 
     try {
       return await FileEntity.fromTransaction(
@@ -308,8 +308,8 @@ class ArweaveService {
   ///
   /// When the number of confirmations is 0, the transaction has yet to be mined. When
   /// it is -1, the transaction could not be found.
-  Future<Map<String, int>> getTransactionConfirmations(
-      List<String> transactionIds) async {
+  Future<Map<String?, int>> getTransactionConfirmations(
+      List<String?> transactionIds) async {
     final transactionConfirmations = {
       for (final transactionId in transactionIds) transactionId: -1
     };
@@ -329,20 +329,20 @@ class ArweaveService {
         final query = await _gql.execute(
           TransactionStatusesQuery(
               variables: TransactionStatusesArguments(
-                  transactionIds: transactionIds.sublist(i, chunkEnd))),
+                  transactionIds: transactionIds.sublist(i, chunkEnd) as List<String>?)),
         );
 
-        final currentBlockHeight = query.data.blocks.edges.first.node.height;
+        final currentBlockHeight = query.data!.blocks.edges.first.node.height;
 
         for (final transaction
-            in query.data.transactions.edges.map((e) => e.node)) {
+            in query.data!.transactions.edges.map((e) => e.node)) {
           if (transaction.block == null) {
             transactionConfirmations[transaction.id] = 0;
             continue;
           }
 
           transactionConfirmations[transaction.id] =
-              currentBlockHeight - transaction.block.height + 1;
+              currentBlockHeight - transaction.block!.height + 1;
         }
       }());
     }
@@ -360,9 +360,9 @@ class ArweaveService {
     Entity entity,
     Future<Uint8List> Function(Uint8List) getRawSignature,
     String owner, [
-    SecretKey key,
+    SecretKey? key,
   ]) async {
-    final tx = await client.transactions.prepare(
+    final tx = await client.transactions!.prepare(
       await entity.asTransaction(key),
       owner,
     );
@@ -375,9 +375,9 @@ class ArweaveService {
   Future<Uint8List> getSignatureData(
     Entity entity,
     String owner, [
-    SecretKey key,
+    SecretKey? key,
   ]) async {
-    final tx = await client.transactions.prepare(
+    final tx = await client.transactions!.prepare(
       await entity.asTransaction(key),
       owner,
     );
@@ -393,7 +393,7 @@ class ArweaveService {
     Entity entity,
     Uint8List rawSignature,
     String owner, [
-    SecretKey key,
+    SecretKey? key,
   ]) async {
     final item = await entity.asDataItem(key);
     item.setOwner(owner);
@@ -407,7 +407,7 @@ class ArweaveService {
 
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Uint8List rawSignature, String owner) async {
-    final bundleTx = await client.transactions.prepare(
+    final bundleTx = await client.transactions!.prepare(
       Transaction.withDataBundle(bundle: bundle)..addApplicationTags(),
       owner,
     );
@@ -418,7 +418,7 @@ class ArweaveService {
   }
 
   Future<void> postTx(Transaction transaction) =>
-      client.transactions.post(transaction);
+      client.transactions!.post(transaction);
 
   Future<double> getArUsdConversionRate() async {
     final client = http.Client();
@@ -434,8 +434,8 @@ class ArweaveService {
 /// The entity history of a particular drive, chunked by block height.
 class DriveEntityHistory {
   /// A cursor for continuing through this drive's history.
-  final String cursor;
-  final int lastBlockHeight;
+  final String? cursor;
+  final int? lastBlockHeight;
 
   /// A list of block entities, ordered by ascending block height.
   final List<BlockEntities> blockHistory;
@@ -448,7 +448,7 @@ class BlockEntities {
   final int blockHeight;
 
   /// A list of entities present in this block, ordered by ascending timestamp.
-  List<Entity> entities = <Entity>[];
+  List<Entity?> entities = <Entity?>[];
 
   BlockEntities(this.blockHeight);
 }

@@ -3,7 +3,7 @@ part of '../drive_detail_page.dart';
 class DriveDetailBreadcrumbRow extends StatelessWidget {
   final List<String> _pathSegments;
 
-  DriveDetailBreadcrumbRow({String path})
+  DriveDetailBreadcrumbRow({required String path})
       : _pathSegments = path.split('/').where((s) => s != '').toList();
 
   @override

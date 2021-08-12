@@ -22,9 +22,9 @@ class ProfileCubit extends Cubit<ProfileState> {
   final Database _db;
 
   ProfileCubit({
-    @required ArweaveService arweave,
-    @required ProfileDao profileDao,
-    @required Database db,
+    required ArweaveService arweave,
+    required ProfileDao profileDao,
+    required Database db,
   })  : _arweave = arweave,
         _profileDao = profileDao,
         _db = db,
@@ -33,7 +33,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   Future<bool> isCurrentProfileArConnect() async {
-    return (await _profileDao.defaultProfile().getSingleOrNull()).profileType ==
+    return (await _profileDao.defaultProfile().getSingleOrNull())!.profileType ==
         ProfileType.ArConnect.index;
   }
 
@@ -106,7 +106,7 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   Future<void> unlockDefaultProfile(
     String password,
-    ProfileType profileType,
+    ProfileType? profileType,
   ) async {
     emit(ProfileLoggingIn());
 
@@ -119,12 +119,12 @@ class ProfileCubit extends Cubit<ProfileState> {
 
     final walletAddress = await (profileType == ProfileType.ArConnect
         ? arconnect.getWalletAddress()
-        : profile.wallet.getAddress());
+        : profile.wallet!.getAddress());
     final walletBalance = await _arweave.getWalletBalance(walletAddress);
 
     emit(
       ProfileLoggedIn(
-        username: profile.details.username,
+        username: profile.details!.username,
         password: password,
         wallet: profileType == ProfileType.ArConnect ? null : profile.wallet,
         walletAddress: walletAddress,

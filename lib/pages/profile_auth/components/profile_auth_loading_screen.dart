@@ -6,7 +6,7 @@ import 'profile_auth_shell.dart';
 class ProfileAuthLoadingScreen extends StatelessWidget {
   final bool isArConnect;
 
-  const ProfileAuthLoadingScreen({Key key, this.isArConnect = false})
+  const ProfileAuthLoadingScreen({Key? key, this.isArConnect = false})
       : super(key: key);
   @override
   Widget build(BuildContext context) => ProfileAuthShell(

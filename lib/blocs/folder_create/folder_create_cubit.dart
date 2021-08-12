@@ -13,10 +13,10 @@ import 'package:reactive_forms/reactive_forms.dart';
 part 'folder_create_state.dart';
 
 class FolderCreateCubit extends Cubit<FolderCreateState> {
-  FormGroup form;
+  late FormGroup form;
 
-  final String driveId;
-  final String parentFolderId;
+  final String? driveId;
+  final String? parentFolderId;
 
   final ProfileCubit _profileCubit;
 
@@ -24,11 +24,11 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
   final DriveDao _driveDao;
 
   FolderCreateCubit({
-    @required this.driveId,
-    @required this.parentFolderId,
-    @required ProfileCubit profileCubit,
-    @required ArweaveService arweave,
-    @required DriveDao driveDao,
+    required this.driveId,
+    required this.parentFolderId,
+    required ProfileCubit profileCubit,
+    required ArweaveService arweave,
+    required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _driveDao = driveDao,
@@ -56,7 +56,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
 
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
-      final String folderName = form.control('name').value;
+      final String? folderName = form.control('name').value;
       if (await _profileCubit.logoutIfWalletMismatch()) {
         emit(FolderCreateWalletMismatch());
         return;
@@ -112,9 +112,9 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     emit(FolderCreateSuccess());
   }
 
-  Future<Map<String, dynamic>> _uniqueFolderName(
+  Future<Map<String, dynamic>?> _uniqueFolderName(
       AbstractControl<dynamic> control) async {
-    final String folderName = control.value;
+    final String? folderName = control.value;
 
     // Check that the parent folder does not already have a folder with the input name.
     final foldersWithName = await _driveDao

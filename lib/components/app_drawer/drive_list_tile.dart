@@ -2,9 +2,9 @@ import 'package:ardrive/models/models.dart';
 import 'package:flutter/material.dart';
 
 class DriveListTile extends StatelessWidget {
-  final Drive drive;
+  final Drive? drive;
   final bool selected;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   const DriveListTile({this.drive, this.selected = false, this.onPressed});
 
@@ -12,14 +12,14 @@ class DriveListTile extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: ListTile(
-          trailing: drive.isPrivate
+          trailing: drive!.isPrivate
               ? const Icon(
                   Icons.lock_outline,
                   size: 12,
                 )
               : null,
           title: Text(
-            drive.name,
+            drive!.name!,
             style: TextStyle(fontSize: 12),
           ),
           selected: selected,

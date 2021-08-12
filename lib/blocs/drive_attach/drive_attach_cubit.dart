@@ -13,7 +13,7 @@ part 'drive_attach_state.dart';
 
 /// [DriveAttachCubit] includes logic for attaching drives to the user's profile.
 class DriveAttachCubit extends Cubit<DriveAttachState> {
-  FormGroup form;
+  late FormGroup form;
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
@@ -21,12 +21,12 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   final DrivesCubit _drivesBloc;
 
   DriveAttachCubit({
-    String initialDriveId,
-    String driveName,
-    @required ArweaveService arweave,
-    @required DriveDao driveDao,
-    @required SyncCubit syncBloc,
-    @required DrivesCubit drivesBloc,
+    String? initialDriveId,
+    String? driveName,
+    required ArweaveService arweave,
+    required DriveDao driveDao,
+    required SyncCubit syncBloc,
+    required DrivesCubit drivesBloc,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _syncBloc = syncBloc,
@@ -97,13 +97,13 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     emit(DriveAttachSuccess());
   }
 
-  Future<Map<String, dynamic>> _driveNameLoader(
+  Future<Map<String, dynamic>?> _driveNameLoader(
       AbstractControl<dynamic> driveIdControl) async {
-    if ((driveIdControl as AbstractControl<String>).isNullOrEmpty) {
+    if ((driveIdControl as AbstractControl<String?>).isNullOrEmpty) {
       return null;
     }
 
-    final String driveId = driveIdControl.value;
+    final String driveId = driveIdControl.value!;
     final drive = await _arweave.getLatestDriveEntityWithId(driveId);
 
     if (drive == null) {

@@ -8,19 +8,19 @@ import 'package:meta/meta.dart';
 part 'fs_entry_activity_state.dart';
 
 class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
-  final String driveId;
-  final String folderId;
-  final String fileId;
+  final String? driveId;
+  final String? folderId;
+  final String? fileId;
 
   final DriveDao _driveDao;
 
-  StreamSubscription _entrySubscription;
+  StreamSubscription? _entrySubscription;
 
   FsEntryActivityCubit({
-    @required this.driveId,
+    required this.driveId,
     this.folderId,
     this.fileId,
-    @required DriveDao driveDao,
+    required DriveDao driveDao,
   })  : _driveDao = driveDao,
         super(FsEntryActivityInitial()) {
     if (folderId != null) {

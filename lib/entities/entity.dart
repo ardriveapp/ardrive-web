@@ -9,11 +9,11 @@ import 'entities.dart';
 abstract class Entity {
   /// The id of the transaction that represents this entity.
   @JsonKey(ignore: true)
-  String txId;
+  String? txId;
 
   /// The address of the owner of this entity.
   @JsonKey(ignore: true)
-  String ownerAddress;
+  String? ownerAddress;
 
   /// The time this entity was created at ie. its `Unix-Time`.
   @JsonKey(ignore: true)
@@ -22,7 +22,7 @@ abstract class Entity {
   /// Returns a [Transaction] with the entity's data along with the appropriate tags.
   ///
   /// If a key is provided, the transaction data is encrypted.
-  Future<Transaction> asTransaction([SecretKey key]) async {
+  Future<Transaction> asTransaction([SecretKey? key]) async {
     final tx = key == null
         ? Transaction.withJsonData(data: this)
         : await createEncryptedEntityTransaction(this, key);
@@ -37,7 +37,7 @@ abstract class Entity {
   /// The `owner` on this [DataItem] will be unset.
   ///
   /// If a key is provided, the data item data is encrypted.
-  Future<DataItem> asDataItem([SecretKey key]) async {
+  Future<DataItem> asDataItem([SecretKey? key]) async {
     final item = key == null
         ? DataItem.withJsonData(data: this)
         : await createEncryptedEntityDataItem(this, key);
@@ -55,7 +55,7 @@ class EntityTransactionParseException implements Exception {}
 
 extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the app name, version, and the specified unix time.
-  void addApplicationTags({DateTime unixTime}) {
+  void addApplicationTags({DateTime? unixTime}) {
     addTag(EntityTag.appName, 'ArDrive-Web');
     addTag(EntityTag.appVersion, '0.1.0');
     addTag(

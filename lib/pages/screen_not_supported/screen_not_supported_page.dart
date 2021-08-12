@@ -6,7 +6,7 @@ class ScreenNotSupportedPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
         child: DefaultTextStyle(
-          style: Theme.of(context).textTheme.bodyText2,
+          style: Theme.of(context).textTheme.bodyText2!,
           textAlign: TextAlign.center,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),

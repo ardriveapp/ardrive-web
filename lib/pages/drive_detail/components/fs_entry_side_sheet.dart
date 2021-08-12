@@ -1,18 +1,18 @@
 part of '../drive_detail_page.dart';
 
 class FsEntrySideSheet extends StatelessWidget {
-  final String driveId;
-  final String folderId;
-  final String fileId;
+  final String? driveId;
+  final String? folderId;
+  final String? fileId;
 
-  FsEntrySideSheet({@required this.driveId, this.folderId, this.fileId});
+  FsEntrySideSheet({required this.driveId, this.folderId, this.fileId});
 
   @override
   Widget build(BuildContext context) => Drawer(
         elevation: 1,
         child: BlocProvider<FsEntryInfoCubit>(
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
-          key: ValueKey(driveId + (folderId ?? fileId ?? '')),
+          key: ValueKey(driveId! + (folderId ?? fileId ?? '')),
           create: (context) => FsEntryInfoCubit(
             driveId: driveId,
             folderId: folderId,
@@ -29,7 +29,7 @@ class FsEntrySideSheet extends StatelessWidget {
                       children: [
                         const SizedBox(height: 8),
                         ListTile(
-                          title: Text(state.name),
+                          title: Text(state.name!),
                           trailing: IconButton(
                             icon: const Icon(Icons.close),
                             onPressed: () => context
@@ -81,7 +81,7 @@ class FsEntrySideSheet extends StatelessWidget {
               DataCell(
                 CopyIconButton(
                   tooltip: 'Copy Drive ID',
-                  value: state.entry.id,
+                  value: state.entry!.id,
                 ),
               ),
             ]),
@@ -90,7 +90,7 @@ class FsEntrySideSheet extends StatelessWidget {
               // Capitalise the privacy enums of drives for display.
               DataCell(
                 Text(
-                  state.entry.privacy == DrivePrivacy.private
+                  state.entry!.privacy == DrivePrivacy.private
                       ? 'Private'
                       : 'Public',
                 ),
@@ -102,7 +102,7 @@ class FsEntrySideSheet extends StatelessWidget {
               DataCell(
                 CopyIconButton(
                   tooltip: 'Copy Folder ID',
-                  value: state.entry.id,
+                  value: state.entry!.id,
                 ),
               ),
             ]),
@@ -112,27 +112,27 @@ class FsEntrySideSheet extends StatelessWidget {
               DataCell(
                 CopyIconButton(
                   tooltip: 'Copy File ID',
-                  value: state.entry.id,
+                  value: state.entry!.id,
                 ),
               ),
             ]),
             DataRow(cells: [
               DataCell(Text('Size')),
-              DataCell(Text(filesize(state.entry.size)))
+              DataCell(Text(filesize(state.entry!.size)))
             ]),
             DataRow(cells: [
               DataCell(Text('Last modified')),
               DataCell(
-                  Text(yMMdDateFormatter.format(state.entry.lastModifiedDate)))
+                  Text(yMMdDateFormatter.format(state.entry!.lastModifiedDate!)))
             ]),
           },
           DataRow(cells: [
             DataCell(Text('Last updated')),
-            DataCell(Text(yMMdDateFormatter.format(state.lastUpdated))),
+            DataCell(Text(yMMdDateFormatter.format(state.lastUpdated!))),
           ]),
           DataRow(cells: [
             DataCell(Text('Date created')),
-            DataCell(Text(yMMdDateFormatter.format(state.dateCreated))),
+            DataCell(Text(yMMdDateFormatter.format(state.dateCreated!))),
           ]),
         ],
       );
@@ -147,8 +147,8 @@ class FsEntrySideSheet extends StatelessWidget {
         child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
           builder: (context, state) {
             if (state is FsEntryActivitySuccess) {
-              if (state.revisions.isNotEmpty) {
-                final revision = state.revisions.last;
+              if (state.revisions!.isNotEmpty) {
+                final revision = state.revisions!.last;
                 return DataTable(
                   // Hide the data table header.
 
@@ -225,14 +225,14 @@ class FsEntrySideSheet extends StatelessWidget {
           child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
             builder: (context, state) {
               if (state is FsEntryActivitySuccess) {
-                if (state.revisions.isNotEmpty) {
+                if (state.revisions!.isNotEmpty) {
                   return ListView.separated(
                     itemBuilder: (BuildContext context, int index) {
-                      final revision = state.revisions[index];
+                      final revision = state.revisions![index];
 
-                      Widget content;
-                      Widget dateCreatedSubtitle;
-                      String revisionConfirmationStatus;
+                      late Widget content;
+                      late Widget dateCreatedSubtitle;
+                      String? revisionConfirmationStatus;
 
                       if (revision is DriveRevisionWithTransaction) {
                         switch (revision.action) {
@@ -303,7 +303,7 @@ class FsEntrySideSheet extends StatelessWidget {
                             revision.metadataTx, revision.dataTx);
                       }
 
-                      Widget statusIcon;
+                      Widget? statusIcon;
                       if (revisionConfirmationStatus ==
                           TransactionStatus.pending) {
                         statusIcon = Tooltip(
@@ -326,18 +326,18 @@ class FsEntrySideSheet extends StatelessWidget {
 
                       return ListTile(
                         title: DefaultTextStyle(
-                          style: Theme.of(context).textTheme.subtitle2,
+                          style: Theme.of(context).textTheme.subtitle2!,
                           child: content,
                         ),
                         subtitle: DefaultTextStyle(
-                          style: Theme.of(context).textTheme.caption,
+                          style: Theme.of(context).textTheme.caption!,
                           child: dateCreatedSubtitle,
                         ),
                         trailing: statusIcon,
                       );
                     },
                     separatorBuilder: (context, index) => Divider(),
-                    itemCount: state.revisions.length,
+                    itemCount: state.revisions!.length,
                   );
                 } else {
                   return Center(child: Text('This item is being processed...'));
@@ -352,8 +352,8 @@ class FsEntrySideSheet extends StatelessWidget {
 }
 
 class CopyIconButton extends StatelessWidget {
-  final String value;
-  final String tooltip;
+  final String? value;
+  final String? tooltip;
 
   CopyIconButton({this.value, this.tooltip});
 

@@ -9,13 +9,13 @@ part 'drive_share_state.dart';
 
 /// [DriveShareCubit] includes logic for the user to retrieve a link to share a public drive with.
 class DriveShareCubit extends Cubit<DriveShareState> {
-  final String driveId;
+  final String? driveId;
 
   final DriveDao _driveDao;
 
   DriveShareCubit({
-    @required this.driveId,
-    @required DriveDao driveDao,
+    required this.driveId,
+    required DriveDao driveDao,
   })  : _driveDao = driveDao,
         super(DriveShareLoadInProgress()) {
     loadDriveShareDetails();
@@ -28,7 +28,7 @@ class DriveShareCubit extends Cubit<DriveShareState> {
     // On web, link to the current origin the user is on.
     // Elsewhere, link to app.ardrive.io.
     final linkOrigin = kIsWeb ? Uri.base.origin : 'https://app.ardrive.io';
-    final driveName = drive.name;
+    final driveName = drive.name!;
 
     final driveShareLink = '$linkOrigin/#/drives/${drive.id}?name=' +
         Uri.encodeQueryComponent(driveName);

@@ -11,7 +11,7 @@ import 'drive_list_tile.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({
-    Key key,
+    Key? key,
   }) : super(key: key);
 
   @override
@@ -51,8 +51,8 @@ class AppDrawer extends StatelessWidget {
                                 padding: EdgeInsets.all(21),
                                 key: PageStorageKey<String>('driveScrollView'),
                                 children: [
-                                  if (state.userDrives.isNotEmpty ||
-                                      state.sharedDrives.isEmpty) ...{
+                                  if (state.userDrives!.isNotEmpty ||
+                                      state.sharedDrives!.isEmpty) ...{
                                     ListTile(
                                       dense: true,
                                       title: Text(
@@ -60,14 +60,14 @@ class AppDrawer extends StatelessWidget {
                                         textAlign: TextAlign.start,
                                         style: Theme.of(context)
                                             .textTheme
-                                            .caption
+                                            .caption!
                                             .copyWith(
                                                 color: ListTileTheme.of(context)
                                                     .textColor),
                                       ),
                                       trailing: _buildSyncButton(),
                                     ),
-                                    ...state.userDrives.map(
+                                    ...state.userDrives!.map(
                                       (d) => DriveListTile(
                                         drive: d,
                                         selected: state.selectedDriveId == d.id,
@@ -77,7 +77,7 @@ class AppDrawer extends StatelessWidget {
                                       ),
                                     ),
                                   },
-                                  if (state.sharedDrives.isNotEmpty) ...{
+                                  if (state.sharedDrives!.isNotEmpty) ...{
                                     ListTile(
                                       dense: true,
                                       title: Text(
@@ -85,16 +85,16 @@ class AppDrawer extends StatelessWidget {
                                         textAlign: TextAlign.start,
                                         style: Theme.of(context)
                                             .textTheme
-                                            .caption
+                                            .caption!
                                             .copyWith(
                                                 color: ListTileTheme.of(context)
                                                     .textColor),
                                       ),
-                                      trailing: state.userDrives.isEmpty
+                                      trailing: state.userDrives!.isEmpty
                                           ? _buildSyncButton()
                                           : null,
                                     ),
-                                    ...state.sharedDrives.map(
+                                    ...state.sharedDrives!.map(
                                       (d) => DriveListTile(
                                         drive: d,
                                         selected: state.selectedDriveId == d.id,
@@ -119,10 +119,10 @@ class AppDrawer extends StatelessWidget {
                         return Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
-                            'Version ${snapshot.data.version}',
+                            'Version ${snapshot.data!.version}',
                             style: Theme.of(context)
                                 .textTheme
-                                .caption
+                                .caption!
                                 .copyWith(color: Colors.grey),
                           ),
                         );
@@ -156,7 +156,7 @@ class AppDrawer extends StatelessWidget {
     if (profileState.runtimeType == ProfileLoggedIn) {
       final profile = profileState as ProfileLoggedIn;
       return ListTileTheme(
-        textColor: theme.textTheme.bodyText1.color,
+        textColor: theme.textTheme.bodyText1!.color,
         iconColor: theme.iconTheme.color,
         child: Align(
           alignment: Alignment.center,
@@ -185,28 +185,28 @@ class AppDrawer extends StatelessWidget {
                       itemBuilder: (context) => [
                         if (state is DriveDetailLoadSuccess) ...{
                           PopupMenuItem(
-                            enabled: state.hasWritePermissions,
+                            enabled: state.hasWritePermissions!,
                             value: (context) => promptToCreateFolder(
                               context,
-                              driveId: state.currentDrive.id,
-                              parentFolderId: state.currentFolder.folder.id,
+                              driveId: state.currentDrive!.id,
+                              parentFolderId: state.currentFolder!.folder!.id,
                             ),
                             child: ListTile(
-                              enabled: state.hasWritePermissions,
+                              enabled: state.hasWritePermissions!,
                               title: Text('New folder'),
                             ),
                           ),
                           PopupMenuDivider(),
                           PopupMenuItem(
-                            enabled: state.hasWritePermissions,
+                            enabled: state.hasWritePermissions!,
                             value: (context) => promptToUploadFile(
                               context,
-                              driveId: state.currentDrive.id,
-                              folderId: state.currentFolder.folder.id,
+                              driveId: state.currentDrive!.id,
+                              folderId: state.currentFolder!.folder!.id,
                               allowSelectMultiple: true,
                             ),
                             child: ListTile(
-                              enabled: state.hasWritePermissions,
+                              enabled: state.hasWritePermissions!,
                               title: Text('Upload file(s)'),
                             ),
                           ),
@@ -214,10 +214,10 @@ class AppDrawer extends StatelessWidget {
                         },
                         if (drivesState is DrivesLoadSuccess) ...{
                           PopupMenuItem(
-                            enabled: drivesState.canCreateNewDrive,
+                            enabled: drivesState.canCreateNewDrive!,
                             value: (context) => promptToCreateDrive(context),
                             child: ListTile(
-                              enabled: drivesState.canCreateNewDrive,
+                              enabled: drivesState.canCreateNewDrive!,
                               title: Text('New drive'),
                             ),
                           ),
@@ -256,7 +256,7 @@ class AppDrawer extends StatelessWidget {
                             R.insufficientARWarning,
                             style: Theme.of(context)
                                 .textTheme
-                                .caption
+                                .caption!
                                 .copyWith(color: Colors.grey),
                           ),
                         ),
@@ -282,7 +282,7 @@ class AppDrawer extends StatelessWidget {
       );
     } else {
       return ListTileTheme(
-        textColor: theme.textTheme.bodyText1.color,
+        textColor: theme.textTheme.bodyText1!.color,
         iconColor: theme.iconTheme.color,
         child: Align(
           alignment: Alignment.center,

@@ -3,7 +3,7 @@ part of 'profile_cubit.dart';
 @immutable
 abstract class ProfileState extends Equatable {
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 /// [ProfileCheckingAvailability] indicates that whether or not the user
@@ -23,34 +23,34 @@ class ProfilePromptLogIn extends ProfileAvailable {}
 class ProfileLoggingIn extends ProfileAvailable {}
 
 class ProfileLoggedIn extends ProfileAvailable {
-  final String username;
+  final String? username;
   final String password;
 
-  final Wallet wallet;
+  final Wallet? wallet;
 
   final String walletAddress;
 
   /// The user's wallet balance in winston.
   final BigInt walletBalance;
 
-  final SecretKey cipherKey;
+  final SecretKey? cipherKey;
 
   ProfileLoggedIn({
-    @required this.username,
-    @required this.password,
-    @required this.wallet,
-    @required this.walletAddress,
-    @required this.walletBalance,
-    @required this.cipherKey,
+    required this.username,
+    required this.password,
+    required this.wallet,
+    required this.walletAddress,
+    required this.walletBalance,
+    required this.cipherKey,
   });
 
   ProfileLoggedIn copyWith({
-    String username,
-    String password,
-    Wallet wallet,
-    String walletAddress,
-    BigInt walletBalance,
-    SecretKey cipherKey,
+    String? username,
+    String? password,
+    Wallet? wallet,
+    String? walletAddress,
+    BigInt? walletBalance,
+    SecretKey? cipherKey,
   }) =>
       ProfileLoggedIn(
         username: username ?? this.username,
@@ -62,7 +62,7 @@ class ProfileLoggedIn extends ProfileAvailable {
       );
 
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
         username,
         password,
         wallet,
@@ -74,15 +74,15 @@ class ProfileLoggedIn extends ProfileAvailable {
   Future<Uint8List> getRawWalletSignature(Uint8List signatureData) {
     return wallet == null
         ? arconnect.getSignature(signatureData)
-        : wallet.sign(signatureData);
+        : wallet!.sign(signatureData);
   }
 
   Future<String> getWalletOwner() {
-    return wallet == null ? arconnect.getPublicKey() : wallet.getOwner();
+    return wallet == null ? arconnect.getPublicKey() : wallet!.getOwner();
   }
 
   Future<String> getWalletAddress() {
-    return wallet == null ? arconnect.getWalletAddress() : wallet.getAddress();
+    return wallet == null ? arconnect.getWalletAddress() : wallet!.getAddress();
   }
 }
 
