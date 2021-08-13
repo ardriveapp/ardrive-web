@@ -1,18 +1,23 @@
 part of '../drive_detail_page.dart';
 
 class FsEntrySideSheet extends StatelessWidget {
-  final String? driveId;
-  final String? folderId;
-  final String? fileId;
+  final String driveId;
+  final String folderId;
+  final String fileId;
 
-  FsEntrySideSheet({required this.driveId, this.folderId, this.fileId});
+  FsEntrySideSheet(
+      {required this.driveId, this.folderId = '', this.fileId = ''});
 
   @override
   Widget build(BuildContext context) => Drawer(
         elevation: 1,
         child: BlocProvider<FsEntryInfoCubit>(
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
-          key: ValueKey(driveId! + (folderId ?? fileId ?? '')),
+          key: ValueKey(driveId +
+              ([folderId, fileId].firstWhere(
+                (e) => e.isNotEmpty,
+                orElse: () => '',
+              ))),
           create: (context) => FsEntryInfoCubit(
             driveId: driveId,
             folderId: folderId,
@@ -123,7 +128,7 @@ class FsEntrySideSheet extends StatelessWidget {
             DataRow(cells: [
               DataCell(Text('Last modified')),
               DataCell(
-                  Text(yMMdDateFormatter.format(state.entry!.lastModifiedDate!)))
+                  Text(yMMdDateFormatter.format(state.entry!.lastModifiedDate)))
             ]),
           },
           DataRow(cells: [

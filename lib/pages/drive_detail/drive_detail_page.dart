@@ -59,7 +59,8 @@ class DriveDetailPage extends StatelessWidget {
                                 ),
                                 DriveDetailBreadcrumbRow(
                                     path: state.currentFolder!.folder!.path!),
-                                if (state.currentFolder!.subfolders!.isNotEmpty ||
+                                if (state.currentFolder!.subfolders!
+                                        .isNotEmpty ||
                                     state.currentFolder!.files!.isNotEmpty)
                                   Expanded(
                                     child: Row(
@@ -84,11 +85,11 @@ class DriveDetailPage extends StatelessWidget {
                           FsEntrySideSheet(
                             driveId: state.currentDrive!.id,
                             folderId: state.selectedItemIsFolder
-                                ? state.selectedItemId
-                                : null,
+                                ? state.selectedItemId ?? ''
+                                : '',
                             fileId: !state.selectedItemIsFolder
-                                ? state.selectedItemId
-                                : null,
+                                ? state.selectedItemId ?? ''
+                                : '',
                           ),
                         }
                       ],
@@ -124,7 +125,8 @@ class DriveDetailPage extends StatelessWidget {
                                 ),
                                 DriveDetailBreadcrumbRow(
                                     path: state.currentFolder!.folder!.path!),
-                                if (state.currentFolder!.subfolders!.isNotEmpty ||
+                                if (state.currentFolder!.subfolders!
+                                        .isNotEmpty ||
                                     state.currentFolder!.files!.isNotEmpty)
                                   Expanded(
                                     child: _buildDataList(context, state),
@@ -143,11 +145,11 @@ class DriveDetailPage extends StatelessWidget {
                         child: FsEntrySideSheet(
                           driveId: state.currentDrive!.id,
                           folderId: state.selectedItemIsFolder
-                              ? state.selectedItemId
-                              : null,
+                              ? state.selectedItemId ?? ''
+                              : '',
                           fileId: !state.selectedItemIsFolder
-                              ? state.selectedItemId
-                              : null,
+                              ? state.selectedItemId ?? ''
+                              : '',
                         ),
                       )
                   ],

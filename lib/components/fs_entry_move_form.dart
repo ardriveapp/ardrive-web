@@ -10,8 +10,8 @@ import 'components.dart';
 
 Future<void> promptToMoveFolder(
   BuildContext context, {
-  required String? driveId,
-  required String? folderId,
+  required String driveId,
+  required String folderId,
 }) =>
     showDialog(
       context: context,
@@ -30,8 +30,8 @@ Future<void> promptToMoveFolder(
 
 Future<void> promptToMoveFile(
   BuildContext context, {
-  required String? driveId,
-  required String? fileId,
+  required String driveId,
+  required String fileId,
 }) =>
     showDialog(
       context: context,
@@ -42,6 +42,7 @@ Future<void> promptToMoveFile(
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),
+          syncCubit: context.read<SyncCubit>(),
         ),
         child: FsEntryMoveForm(),
       ),
@@ -133,7 +134,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                       key: ValueKey(f.id),
                                       dense: true,
                                       leading: const Icon(Icons.folder),
-                                      title: Text(f.name!),
+                                      title: Text(f.name),
                                       onTap: () => context
                                           .read<FsEntryMoveCubit>()
                                           .loadFolder(f.id),

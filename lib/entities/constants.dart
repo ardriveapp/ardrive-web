@@ -41,4 +41,5 @@ class DrivePrivacy {
 
 class DriveAuthMode {
   static const password = 'password';
+  static const none = 'none';
 }

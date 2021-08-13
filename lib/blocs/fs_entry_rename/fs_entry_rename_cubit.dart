@@ -5,8 +5,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'fs_entry_rename_state.dart';
@@ -14,21 +12,21 @@ part 'fs_entry_rename_state.dart';
 class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   late FormGroup form;
 
-  final String? driveId;
-  final String? folderId;
-  final String? fileId;
+  final String driveId;
+  final String folderId;
+  final String fileId;
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
 
-  bool get _isRenamingFolder => folderId != null;
+  bool get _isRenamingFolder => folderId.isNotEmpty;
 
   FsEntryRenameCubit({
     required this.driveId,
-    this.folderId,
-    this.fileId,
+    this.folderId = '',
+    this.fileId = '',
     required ArweaveService arweave,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
@@ -37,18 +35,19 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
-        assert(folderId != null || fileId != null),
-        super(FsEntryRenameInitializing(isRenamingFolder: folderId != null)) {
+        assert(folderId.isNotEmpty || fileId.isNotEmpty),
+        super(
+            FsEntryRenameInitializing(isRenamingFolder: folderId.isNotEmpty)) {
     form = FormGroup({
       'name': FormControl<String>(
         validators: [
           Validators.required,
           Validators.pattern(
-              folderId != null ? kFolderNameRegex : kFileNameRegex),
+              folderId.isNotEmpty ? kFolderNameRegex : kFileNameRegex),
           Validators.pattern(kTrimTrailingRegex),
         ],
         asyncValidators: [
-          folderId != null ? _uniqueFolderName : _uniqueFileName,
+          folderId.isNotEmpty ? _uniqueFolderName : _uniqueFileName,
         ],
       ),
     });
@@ -104,7 +103,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
 
-          folderEntity.txId = folderTx.id;
+          folderEntity.txId = folderTx.id ?? '';
 
           await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
               performedAction: RevisionAction.rename));
@@ -124,7 +123,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           file = file.copyWith(name: newName, lastUpdated: DateTime.now());
 
           final fileKey =
-              driveKey != null ? await deriveFileKey(driveKey, file.id!) : null;
+              driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
 
           final fileEntity = file.asEntity();
           final owner = await profile.getWalletOwner();
@@ -134,7 +133,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           await _arweave.postTx(fileTx);
           await _driveDao.writeToFile(file);
 
-          fileEntity.txId = fileTx.id;
+          fileEntity.txId = fileTx.id ?? '';
 
           await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
               performedAction: RevisionAction.rename));
@@ -152,7 +151,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     final folder = await _driveDao
         .folderById(driveId: driveId, folderId: folderId)
         .getSingle();
-    final String? newFolderName = control.value;
+    final String newFolderName = control.value;
 
     if (newFolderName == folder.name) {
       return null;
@@ -179,7 +178,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
       AbstractControl<dynamic> control) async {
     final file =
         await _driveDao.fileById(driveId: driveId, fileId: fileId).getSingle();
-    final String? newFileName = control.value;
+    final String newFileName = control.value;
 
     if (newFileName == file.name) {
       return null;

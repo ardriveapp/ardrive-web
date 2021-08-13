@@ -11,7 +11,6 @@ import 'package:equatable/equatable.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
-import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:uuid/uuid.dart';
 
@@ -21,9 +20,9 @@ import 'file_upload_handle.dart';
 part 'upload_state.dart';
 
 class UploadCubit extends Cubit<UploadState> {
-  final String? driveId;
-  final String? folderId;
-  final List<XFile?> files;
+  final String driveId;
+  final String folderId;
+  final List<XFile> files;
 
   final _uuid = Uuid();
   final ProfileCubit _profileCubit;
@@ -74,7 +73,7 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadPreparationInProgress());
 
     for (final file in files) {
-      final fileName = file!.name;
+      final fileName = file.name;
       final existingFileId = await _driveDao
           .filesInFolderWithName(
             driveId: _targetDrive.id,
@@ -109,7 +108,7 @@ class UploadCubit extends Cubit<UploadState> {
         _targetDrive.isPrivate ? math.pow(10, 8) : 1.25 * math.pow(10, 9);
     final tooLargeFiles = [
       for (final file in files)
-        if (await file!.length() > sizeLimit) file.name
+        if (await file.length() > sizeLimit) file.name
     ];
 
     if (tooLargeFiles.isNotEmpty) {
@@ -122,7 +121,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     try {
       for (final file in files) {
-        final uploadHandle = await prepareFileUpload(file!);
+        final uploadHandle = await prepareFileUpload(file);
         _fileUploadHandles[uploadHandle.entity.id] = uploadHandle;
       }
     } catch (err) {
@@ -204,7 +203,7 @@ class UploadCubit extends Cubit<UploadState> {
       for (final uploadHandle in _fileUploadHandles.values) {
         final fileEntity = uploadHandle.entity;
 
-        fileEntity.txId = uploadHandle.entityTx!.id;
+        fileEntity.txId = uploadHandle.entityTx!.id ?? '';
 
         await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
         await _driveDao.insertFileRevision(
@@ -283,14 +282,14 @@ class UploadCubit extends Cubit<UploadState> {
     if (!private) {
       uploadHandle.dataTx!.addTag(
         EntityTag.contentType,
-        fileEntity.dataContentType!,
+        fileEntity.dataContentType,
       );
     }
     final uploadHandleDataRawSignature = await profile
         .getRawWalletSignature(await uploadHandle.dataTx!.getSignatureData());
     await uploadHandle.dataTx!.sign(uploadHandleDataRawSignature);
 
-    fileEntity.dataTxId = uploadHandle.dataTx!.id;
+    fileEntity.dataTxId = uploadHandle.dataTx!.id ?? '';
 
     if (fileSizeWithinBundleLimits) {
       final owner = await profile.getWalletOwner();

@@ -13,17 +13,21 @@ part 'drive_entity.g.dart';
 @JsonSerializable()
 class DriveEntity extends Entity {
   @JsonKey(ignore: true)
-  String? id;
+  String id;
   @JsonKey(ignore: true)
-  String? privacy;
+  String privacy;
   @JsonKey(ignore: true)
-  String? authMode;
+  String authMode;
 
-  String? name;
-  String? rootFolderId;
+  String name;
+  String rootFolderId;
 
   DriveEntity(
-      {this.id, this.name, this.rootFolderId, this.privacy, this.authMode});
+      {this.id = '',
+      this.name = '',
+      this.rootFolderId = '',
+      this.privacy = '',
+      this.authMode = ''});
 
   static Future<DriveEntity> fromTransaction(
     TransactionCommonMixin transaction,
@@ -31,8 +35,9 @@ class DriveEntity extends Entity {
     SecretKey? driveKey,
   ]) async {
     try {
-      final drivePrivacy =
-          transaction.getTag(EntityTag.drivePrivacy) ?? DrivePrivacy.public;
+      final drivePrivacy = transaction.getTag(EntityTag.drivePrivacy).isEmpty
+          ? DrivePrivacy.public
+          : transaction.getTag(EntityTag.drivePrivacy);
 
       Map<String, dynamic>? entityJson;
       if (drivePrivacy == DrivePrivacy.public) {
@@ -55,17 +60,17 @@ class DriveEntity extends Entity {
 
   @override
   void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
-    assert(id != null && rootFolderId != null);
+    assert(id.isNotEmpty && rootFolderId.isNotEmpty);
 
     tx
       ..addApplicationTags(unixTime: createdAt)
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.drive)
-      ..addTag(EntityTag.driveId, id!)
-      ..addTag(EntityTag.drivePrivacy, privacy!);
+      ..addTag(EntityTag.driveId, id)
+      ..addTag(EntityTag.drivePrivacy, privacy);
 
     if (privacy == DrivePrivacy.private) {
-      tx.addTag(EntityTag.driveAuthMode, authMode!);
+      tx.addTag(EntityTag.driveAuthMode, authMode);
     }
   }
 

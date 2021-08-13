@@ -33,7 +33,7 @@ extension DriveEntityExtensions on DriveEntity {
   ///
   /// This requires a `performedAction` to be specified.
   DriveRevisionsCompanion toRevisionCompanion(
-          {required String? performedAction}) =>
+          {required String performedAction}) =>
       DriveRevisionsCompanion.insert(
         driveId: id,
         ownerAddress: ownerAddress,

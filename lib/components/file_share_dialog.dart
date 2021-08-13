@@ -9,8 +9,8 @@ import 'components.dart';
 
 Future<void> promptToShareFile({
   required BuildContext context,
-  required String? driveId,
-  required String? fileId,
+  required String driveId,
+  required String fileId,
 }) =>
     showDialog(
       context: context,

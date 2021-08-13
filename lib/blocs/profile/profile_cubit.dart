@@ -33,7 +33,8 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   Future<bool> isCurrentProfileArConnect() async {
-    return (await _profileDao.defaultProfile().getSingleOrNull())!.profileType ==
+    return (await _profileDao.defaultProfile().getSingleOrNull())!
+            .profileType ==
         ProfileType.ArConnect.index;
   }
 
@@ -129,7 +130,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         wallet: profileType == ProfileType.ArConnect ? null : profile.wallet,
         walletAddress: walletAddress,
         walletBalance: walletBalance,
-        cipherKey: profile.key,
+        cipherKey: profile.key as SecretKey,
       ),
     );
   }

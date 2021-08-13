@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -13,8 +15,8 @@ import 'components.dart';
 
 Future<void> promptToDownloadProfileFile({
   required BuildContext context,
-  required String? driveId,
-  required String? fileId,
+  required String driveId,
+  required String fileId,
 }) =>
     showDialog(
       context: context,

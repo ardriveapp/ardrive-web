@@ -3,15 +3,13 @@ import 'dart:async';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
 
 part 'fs_entry_info_state.dart';
 
 class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
-  final String? driveId;
-  final String? folderId;
-  final String? fileId;
+  final String driveId;
+  final String folderId;
+  final String fileId;
 
   final DriveDao _driveDao;
 
@@ -19,12 +17,12 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
 
   FsEntryInfoCubit(
       {required this.driveId,
-      this.folderId,
-      this.fileId,
+      this.folderId = '',
+      this.fileId = '',
       required DriveDao driveDao})
       : _driveDao = driveDao,
         super(FsEntryInfoInitial()) {
-    if (folderId != null) {
+    if (folderId.isNotEmpty) {
       _entrySubscription = _driveDao
           .folderById(driveId: driveId, folderId: folderId)
           .watchSingle()
@@ -38,7 +36,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               ),
             ),
           );
-    } else if (fileId != null) {
+    } else if (fileId.isNotEmpty) {
       _entrySubscription = _driveDao
           .fileById(driveId: driveId, fileId: fileId)
           .watchSingle()

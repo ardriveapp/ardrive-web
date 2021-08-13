@@ -41,7 +41,7 @@ extension FolderEntityExtensions on FolderEntity {
         parentFolderId: Value(parentFolderId),
         metadataTxId: txId,
         dateCreated: Value(createdAt),
-        action: performedAction,
+        action: performedAction ?? '',
       );
 
   /// Returns the action performed on the folder that lead to the new revision.

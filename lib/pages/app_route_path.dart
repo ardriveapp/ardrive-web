@@ -1,6 +1,5 @@
 import 'package:cryptography/cryptography.dart';
 import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
 
 @immutable
 class AppRoutePath {
@@ -53,7 +52,7 @@ class AppRoutePath {
       AppRoutePath(
         sharedFileId: sharedFileId,
         sharedFileKey: sharedFilePk,
-        sharedRawFileKey: sharedRawFileKey,
+        sharedRawFileKey: sharedRawFileKey ?? '',
       );
 
   factory AppRoutePath.unknown() => AppRoutePath();

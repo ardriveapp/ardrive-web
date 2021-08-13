@@ -3,14 +3,13 @@ import 'dart:async';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
 
 part 'fs_entry_activity_state.dart';
 
 class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
-  final String? driveId;
-  final String? folderId;
-  final String? fileId;
+  final String driveId;
+  final String folderId;
+  final String fileId;
 
   final DriveDao _driveDao;
 
@@ -18,12 +17,12 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
 
   FsEntryActivityCubit({
     required this.driveId,
-    this.folderId,
-    this.fileId,
+    this.folderId = '',
+    this.fileId = '',
     required DriveDao driveDao,
   })  : _driveDao = driveDao,
         super(FsEntryActivityInitial()) {
-    if (folderId != null) {
+    if (folderId.isNotEmpty) {
       _entrySubscription = _driveDao
           .latestFolderRevisionsByFolderIdWithTransactions(
               driveId: driveId, folderId: folderId)
@@ -31,7 +30,7 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
           .listen((r) => emit(
               FsEntryActivitySuccess<FolderRevisionWithTransaction>(
                   revisions: r)));
-    } else if (fileId != null) {
+    } else if (fileId.isNotEmpty) {
       _entrySubscription = _driveDao
           .latestFileRevisionsByFileIdWithTransactions(
               driveId: driveId, fileId: fileId)
@@ -39,7 +38,7 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
           .listen((r) => emit(
               FsEntryActivitySuccess<FileRevisionWithTransactions>(
                   revisions: r)));
-    } else if (driveId != null) {
+    } else if (driveId.isNotEmpty) {
       _entrySubscription = _driveDao
           .latestDriveRevisionsByDriveIdWithTransactions(driveId: driveId)
           .watch()

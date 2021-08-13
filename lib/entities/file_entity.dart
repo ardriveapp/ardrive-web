@@ -5,7 +5,6 @@ import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:meta/meta.dart';
 
 import 'entities.dart';
 
@@ -13,40 +12,38 @@ part 'file_entity.g.dart';
 
 DateTime? _msToDateTime(int? v) =>
     v != null ? DateTime.fromMillisecondsSinceEpoch(v) : null;
-int _dateTimeToMs(DateTime v) => v.millisecondsSinceEpoch;
+int _dateTimeToMs(DateTime? v) => v!.millisecondsSinceEpoch;
 
 @JsonSerializable()
 class FileEntity extends Entity {
   @JsonKey(ignore: true)
-  String? id;
+  String id = '';
   @JsonKey(ignore: true)
-  String? driveId;
+  String driveId = '';
   @JsonKey(ignore: true)
-  String? parentFolderId;
+  String parentFolderId = '';
 
-  String? name;
-  int? size;
+  String name = '';
+  int size = 0;
   @JsonKey(fromJson: _msToDateTime, toJson: _dateTimeToMs)
   DateTime? lastModifiedDate;
 
-  String? dataTxId;
-  String? dataContentType;
+  String dataTxId = '';
+  String dataContentType = '';
 
   FileEntity({
-    this.id,
-    this.driveId,
-    this.parentFolderId,
-    this.name,
-    this.size,
+    this.id = '',
+    this.driveId = '',
+    this.parentFolderId = '',
+    this.name = '',
+    this.size = 0,
     this.lastModifiedDate,
-    this.dataTxId,
-    this.dataContentType,
+    this.dataTxId = '',
+    this.dataContentType = '',
   });
 
   FileEntity.withUserProvidedDetails(
-      {required this.name,
-      required this.size,
-      required this.lastModifiedDate});
+      {required this.name, required this.size, required this.lastModifiedDate});
 
   static Future<FileEntity> fromTransaction(
     TransactionCommonMixin transaction,
@@ -59,8 +56,8 @@ class FileEntity extends Entity {
       if (driveKey == null && fileKey == null) {
         entityJson = json.decode(utf8.decode(data));
       } else {
-        fileKey ??=
-            await deriveFileKey(driveKey!, transaction.getTag(EntityTag.fileId)!);
+        fileKey ??= await deriveFileKey(
+            driveKey!, transaction.getTag(EntityTag.fileId));
 
         entityJson = await decryptEntityJson(
           transaction,
@@ -86,19 +83,19 @@ class FileEntity extends Entity {
 
   @override
   void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
-    assert(id != null &&
-        driveId != null &&
-        parentFolderId != null &&
-        name != null &&
-        size != null);
+    assert(id.isNotEmpty &&
+        driveId.isNotEmpty &&
+        parentFolderId.isNotEmpty &&
+        name.isNotEmpty &&
+        size > 0);
 
     tx
       ..addApplicationTags(unixTime: createdAt)
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.file)
-      ..addTag(EntityTag.driveId, driveId!)
-      ..addTag(EntityTag.parentFolderId, parentFolderId!)
-      ..addTag(EntityTag.fileId, id!);
+      ..addTag(EntityTag.driveId, driveId)
+      ..addTag(EntityTag.parentFolderId, parentFolderId)
+      ..addTag(EntityTag.fileId, id);
   }
 
   factory FileEntity.fromJson(Map<String, dynamic> json) =>

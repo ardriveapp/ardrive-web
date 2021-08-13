@@ -42,16 +42,17 @@ extension FileEntityExtensions on FileEntity {
         name: name,
         parentFolderId: parentFolderId,
         size: size,
-        lastModifiedDate: lastModifiedDate,
+        lastModifiedDate: lastModifiedDate ?? DateTime.now(),
         metadataTxId: txId,
         dataTxId: dataTxId,
         dateCreated: Value(createdAt),
         dataContentType: Value(dataContentType),
-        action: performedAction,
+        action: performedAction ?? '',
       );
 
   /// Returns the action performed on the file that lead to the new revision.
-  String? getPerformedRevisionAction([FileRevisionsCompanion? previousRevision]) {
+  String? getPerformedRevisionAction(
+      [FileRevisionsCompanion? previousRevision]) {
     if (previousRevision == null) {
       return RevisionAction.create;
     } else if (name != previousRevision.name.value) {

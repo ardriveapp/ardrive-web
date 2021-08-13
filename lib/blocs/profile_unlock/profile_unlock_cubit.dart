@@ -7,7 +7,6 @@ import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'profile_unlock_state.dart';
@@ -49,7 +48,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
 
     final signature = arconnect.getSignature;
     final privateDrive = await _arweave.getAnyPrivateDriveEntity(
-        await profile.id!, password, signature);
+        profile.id, password, signature);
     if (privateDrive == null) {
       throw ProfilePasswordIncorrectException();
     }

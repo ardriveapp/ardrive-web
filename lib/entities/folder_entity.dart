@@ -13,15 +13,20 @@ part 'folder_entity.g.dart';
 @JsonSerializable()
 class FolderEntity extends Entity {
   @JsonKey(ignore: true)
-  String? id;
+  String id = '';
   @JsonKey(ignore: true)
-  String? driveId;
+  String driveId = '';
   @JsonKey(ignore: true)
-  String? parentFolderId;
+  String parentFolderId = '';
 
-  String? name;
+  String name = '';
 
-  FolderEntity({this.id, this.driveId, this.parentFolderId, this.name});
+  FolderEntity({
+    this.id = '',
+    this.driveId = '',
+    this.parentFolderId = '',
+    this.name = '',
+  });
 
   static Future<FolderEntity> fromTransaction(
     TransactionCommonMixin transaction,
@@ -50,17 +55,17 @@ class FolderEntity extends Entity {
 
   @override
   void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
-    assert(id != null && driveId != null && name != null);
+    assert(id.isNotEmpty && driveId.isNotEmpty && name.isNotEmpty);
 
     tx
       ..addApplicationTags(unixTime: createdAt)
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.folder)
-      ..addTag(EntityTag.driveId, driveId!)
-      ..addTag(EntityTag.folderId, id!);
+      ..addTag(EntityTag.driveId, driveId)
+      ..addTag(EntityTag.folderId, id);
 
-    if (parentFolderId != null) {
-      tx.addTag(EntityTag.parentFolderId, parentFolderId!);
+    if (parentFolderId.isNotEmpty) {
+      tx.addTag(EntityTag.parentFolderId, parentFolderId);
     }
   }
 

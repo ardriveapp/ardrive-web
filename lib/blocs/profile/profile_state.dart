@@ -33,7 +33,7 @@ class ProfileLoggedIn extends ProfileAvailable {
   /// The user's wallet balance in winston.
   final BigInt walletBalance;
 
-  final SecretKey? cipherKey;
+  final SecretKey cipherKey;
 
   ProfileLoggedIn({
     required this.username,

@@ -14,7 +14,7 @@ import '../blocs.dart';
 part 'drive_detail_state.dart';
 
 class DriveDetailCubit extends Cubit<DriveDetailState> {
-  final String? driveId;
+  final String driveId;
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final AppConfig _config;
@@ -31,7 +31,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         _driveDao = driveDao,
         _config = config,
         super(DriveDetailLoadInProgress()) {
-    if (driveId == null) {
+    if (driveId.isEmpty) {
       return;
     }
 
@@ -50,7 +50,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   void openFolder(
-      {required String? path,
+      {required String path,
       DriveOrder contentOrderBy = DriveOrder.name,
       OrderingMode contentOrderingMode = OrderingMode.asc}) {
     emit(DriveDetailLoadInProgress());
@@ -71,7 +71,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           return;
         }
 
-        if (folderContents?.folder == null) {
+        if (folderContents.folder == null) {
           // Emit the loading state as it can be a while between the drive being not found, then added,
           // and then the folders being loaded.
           emit(DriveDetailLoadInProgress());
@@ -105,7 +105,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     if (state.currentDrive!.isPublic && !isFolder) {
       final fileWithRevisions = await _driveDao.latestFileRevisionByFileId(
-          driveId: driveId, fileId: state.selectedItemId);
+          driveId: driveId, fileId: state.selectedItemId ?? '');
       final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
       state = state.copyWith(
           selectedFilePreviewUrl:

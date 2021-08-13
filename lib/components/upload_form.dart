@@ -11,15 +11,15 @@ import 'components.dart';
 
 Future<void> promptToUploadFile(
   BuildContext context, {
-  required String? driveId,
-  required String? folderId,
+  required String driveId,
+  required String folderId,
   bool allowSelectMultiple = false,
 }) async {
   final selectedFiles = allowSelectMultiple
       ? await file_selector.openFiles()
-      : [await file_selector.openFile()];
+      : [await file_selector.openFile()].where((file) => file != null) as List<file_selector.XFile>;
 
-  if (selectedFiles.isEmpty || selectedFiles.first == null) {
+  if (selectedFiles.isEmpty) {
     return;
   }
 
@@ -78,12 +78,12 @@ class UploadForm extends StatelessWidget {
               ),
               actions: <Widget>[
                 TextButton(
-                  child: Text('CANCEL'),
                   onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('CANCEL'),
                 ),
                 ElevatedButton(
-                  child: Text('CONTINUE'),
                   onPressed: () => context.read<UploadCubit>().prepareUpload(),
+                  child: Text('CONTINUE'),
                 ),
               ],
             );
@@ -163,7 +163,7 @@ class UploadForm extends StatelessWidget {
                             for (final file in state.files) ...{
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
-                                title: Text(file.entity.name!),
+                                title: Text(file.entity.name),
                                 subtitle: Text(filesize(file.size)),
                               ),
                             },
@@ -230,7 +230,7 @@ class UploadForm extends StatelessWidget {
                         for (final file in state.files!) ...{
                           ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: Text(file.entity.name!),
+                            title: Text(file.entity.name),
                             subtitle: Text(
                                 '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
                             trailing: CircularProgressIndicator(

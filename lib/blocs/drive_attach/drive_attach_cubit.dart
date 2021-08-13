@@ -99,7 +99,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
   Future<Map<String, dynamic>?> _driveNameLoader(
       AbstractControl<dynamic> driveIdControl) async {
-    if ((driveIdControl as AbstractControl<String?>).isNullOrEmpty) {
+    if ((driveIdControl as AbstractControl<String?>).isNull) {
       return null;
     }
 

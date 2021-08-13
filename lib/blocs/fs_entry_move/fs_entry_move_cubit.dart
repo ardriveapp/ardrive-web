@@ -5,16 +5,14 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
 
 part 'fs_entry_move_state.dart';
 
 class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
-  final String? driveId;
-  final String? folderId;
-  final String? fileId;
+  final String driveId;
+  final String folderId;
+  final String fileId;
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
@@ -23,12 +21,12 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
   StreamSubscription? _folderSubscription;
 
-  bool get _isMovingFolder => folderId != null;
+  bool get _isMovingFolder => folderId.isNotEmpty;
 
   FsEntryMoveCubit({
     required this.driveId,
-    this.folderId,
-    this.fileId,
+    this.folderId = '',
+    this.fileId = '',
     required ArweaveService arweave,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
@@ -37,9 +35,9 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
-        assert(folderId != null || fileId != null),
-        super(
-            FsEntryMoveFolderLoadInProgress(isMovingFolder: folderId != null)) {
+        assert(folderId.isNotEmpty || fileId.isNotEmpty),
+        super(FsEntryMoveFolderLoadInProgress(
+            isMovingFolder: folderId.isNotEmpty)) {
     _driveDao
         .driveById(driveId: driveId)
         .getSingle()
@@ -48,7 +46,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
   Future<void> loadParentFolder() {
     final state = this.state as FsEntryMoveFolderLoadSuccess;
-    return loadFolder(state.viewingFolder.folder!.parentFolderId);
+    return loadFolder(state.viewingFolder.folder.parentFolderId);
   }
 
   Future<void> loadFolder(String? folderId) async {
@@ -61,7 +59,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
                   viewingRootFolder: f.folder!.parentFolderId == null,
                   viewingFolder: f,
                   isMovingFolder: _isMovingFolder,
-                  movingEntryId: this.folderId ?? fileId,
+                  movingEntryId: this.folderId.isEmpty ? fileId : this.folderId,
                 ),
               ),
             );
@@ -102,7 +100,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
 
-          folderEntity.txId = folderTx.id;
+          folderEntity.txId = folderTx.id ?? '';
 
           await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
               performedAction: RevisionAction.move));
@@ -125,7 +123,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
               lastUpdated: DateTime.now());
 
           final fileKey =
-              driveKey != null ? await deriveFileKey(driveKey, file.id!) : null;
+              driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
 
           final fileEntity = file.asEntity();
 
@@ -137,7 +135,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
           await _arweave.postTx(fileTx);
           await _driveDao.writeToFile(file);
 
-          fileEntity.txId = fileTx.id;
+          fileEntity.txId = fileTx.id ?? '';
 
           await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
               performedAction: RevisionAction.move));

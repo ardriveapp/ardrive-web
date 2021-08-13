@@ -3,8 +3,8 @@ part of 'file_download_cubit.dart';
 /// [ProfileFileDownloadCubit] includes logic to allow a user to download files
 /// that they have attached to their profile.
 class ProfileFileDownloadCubit extends FileDownloadCubit {
-  final String? driveId;
-  final String? fileId;
+  final String driveId;
+  final String fileId;
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
@@ -37,18 +37,18 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       late Uint8List dataBytes;
 
       if (drive.isPublic) {
-        dataBytes = await dataRes.bodyBytes;
+        dataBytes = dataRes.bodyBytes;
       } else if (drive.isPrivate) {
         final profile = _profileCubit.state as ProfileLoggedIn;
 
-        final dataTx = await (_arweave.getTransactionDetails(file.dataTxId!)
+        final dataTx = await (_arweave.getTransactionDetails(file.dataTxId)
             as FutureOr<TransactionCommonMixin>);
 
         final fileKey =
             await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
 
-        dataBytes = await decryptTransactionData(
-            dataTx, await dataRes.bodyBytes, fileKey);
+        dataBytes =
+            await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey);
       }
 
       emit(
@@ -56,7 +56,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
           file: XFile.fromData(
             dataBytes,
             name: file.name,
-            mimeType: lookupMimeType(file.name!),
+            mimeType: lookupMimeType(file.name),
             length: dataBytes.lengthInBytes,
             lastModified: file.lastModifiedDate,
           ),

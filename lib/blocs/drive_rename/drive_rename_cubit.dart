@@ -5,8 +5,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'drive_rename_state.dart';
@@ -14,7 +12,7 @@ part 'drive_rename_state.dart';
 class DriveRenameCubit extends Cubit<DriveRenameState> {
   late FormGroup form;
 
-  final String? driveId;
+  final String driveId;
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
@@ -84,7 +82,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
         await _driveDao.writeToDrive(drive);
 
         driveEntity.ownerAddress = profile.walletAddress;
-        driveEntity.txId = driveTx.id;
+        driveEntity.txId = driveTx.id ?? '';
 
         await _driveDao.insertDriveRevision(driveEntity.toRevisionCompanion(
             performedAction: RevisionAction.rename));

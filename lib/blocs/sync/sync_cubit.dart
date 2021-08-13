@@ -112,7 +112,7 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncIdle());
   }
 
-  Future<void> _syncDrive(String? driveId) async {
+  Future<void> _syncDrive(String driveId) async {
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
 
     SecretKey? driveKey;
@@ -220,8 +220,8 @@ class SyncCubit extends Cubit<SyncState> {
 
       final revisionPerformedAction =
           entity.getPerformedRevisionAction(latestRevision);
-      final revision =
-          entity.toRevisionCompanion(performedAction: revisionPerformedAction);
+      final revision = entity.toRevisionCompanion(
+          performedAction: revisionPerformedAction ?? '');
 
       if (revision.action.value == null) {
         continue;
@@ -251,18 +251,18 @@ class SyncCubit extends Cubit<SyncState> {
   /// Computes the new folder revisions from the provided entities, inserts them into the database,
   /// and returns only the latest revisions.
   Future<List<FolderRevisionsCompanion>> _addNewFolderEntityRevisions(
-      String? driveId, Iterable<FolderEntity> newEntities) async {
+      String driveId, Iterable<FolderEntity> newEntities) async {
     // The latest folder revisions, keyed by their entity ids.
-    final latestRevisions = <String?, FolderRevisionsCompanion>{};
+    final latestRevisions = <String, FolderRevisionsCompanion>{};
 
     final newRevisions = <FolderRevisionsCompanion>[];
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
-        latestRevisions[entity.id] = await _driveDao
-            .latestFolderRevisionByFolderId(
-                driveId: driveId, folderId: entity.id)
-            .getSingleOrNull()
-            .then((r) => r?.toCompanion(true));
+        latestRevisions[entity.id] = (await _driveDao
+                .latestFolderRevisionByFolderId(
+                    driveId: driveId, folderId: entity.id)
+                .getSingle())
+            .toCompanion(true);
       }
 
       final revisionPerformedAction =
@@ -270,7 +270,7 @@ class SyncCubit extends Cubit<SyncState> {
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
-      if (revision.action.value == null) {
+      if (revision.action.value.isNotEmpty) {
         continue;
       }
 
@@ -298,17 +298,17 @@ class SyncCubit extends Cubit<SyncState> {
   /// Computes the new file revisions from the provided entities, inserts them into the database,
   /// and returns only the latest revisions.
   Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions(
-      String? driveId, Iterable<FileEntity> newEntities) async {
+      String driveId, Iterable<FileEntity> newEntities) async {
     // The latest file revisions, keyed by their entity ids.
     final latestRevisions = <String?, FileRevisionsCompanion>{};
 
     final newRevisions = <FileRevisionsCompanion>[];
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
-        latestRevisions[entity.id] = await _driveDao
-            .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id)
-            .getSingleOrNull()
-            .then((r) => r?.toCompanion(true));
+        latestRevisions[entity.id] = (await _driveDao
+                .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id)
+                .getSingle())
+            .toCompanion(true);
       }
 
       final revisionPerformedAction =
@@ -357,13 +357,13 @@ class SyncCubit extends Cubit<SyncState> {
         .getSingleOrNull();
 
     return latestRevision.toEntryCompanion().copyWith(
-        dateCreated:
-            Value(oldestRevision?.dateCreated ?? latestRevision.dateCreated as DateTime));
+        dateCreated: Value(oldestRevision?.dateCreated ??
+            latestRevision.dateCreated as DateTime));
   }
 
   /// Computes the refreshed folder entries from the provided revisions and returns them as a map keyed by their ids.
   Future<Map<String?, FolderEntriesCompanion>>
-      _computeRefreshedFolderEntriesFromRevisions(String? driveId,
+      _computeRefreshedFolderEntriesFromRevisions(String driveId,
           List<FolderRevisionsCompanion> revisionsByFolderId) async {
     final updatedFoldersById = {
       for (final revision in revisionsByFolderId)
@@ -385,7 +385,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   /// Computes the refreshed file entries from the provided revisions and returns them as a map keyed by their ids.
   Future<Map<String?, FileEntriesCompanion>>
-      _computeRefreshedFileEntriesFromRevisions(String? driveId,
+      _computeRefreshedFileEntriesFromRevisions(String driveId,
           List<FileRevisionsCompanion> revisionsByFileId) async {
     final updatedFilesById = {
       for (final revision in revisionsByFileId)
@@ -407,7 +407,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   /// Generates paths for the folders (and their subchildren) and files provided.
   Future<void> generateFsEntryPaths(
-    String? driveId,
+    String driveId,
     Map<String?, FolderEntriesCompanion> foldersByIdMap,
     Map<String?, FileEntriesCompanion> filesByIdMap,
   ) async {
@@ -466,7 +466,8 @@ class SyncCubit extends Cubit<SyncState> {
       } else {
         parentPath = await _driveDao
             .folderById(
-                driveId: driveId, folderId: treeRoot.folder!.parentFolderId)
+                driveId: driveId,
+                folderId: treeRoot.folder.parentFolderId ?? '')
             .map((f) => f.path)
             .getSingle();
       }

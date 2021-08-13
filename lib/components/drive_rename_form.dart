@@ -12,7 +12,7 @@ import 'components.dart';
 
 Future<void> promptToRenameDrive(
   BuildContext context, {
-  required String? driveId,
+  required String driveId,
 }) =>
     showDialog(
       context: context,

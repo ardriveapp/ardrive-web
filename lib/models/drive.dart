@@ -11,7 +11,8 @@ extension DriveExtensions on Drive {
         name: name,
         rootFolderId: rootFolderId,
         privacy: privacy,
-        authMode:
-            privacy == DrivePrivacy.private ? DriveAuthMode.password : null,
+        authMode: privacy == DrivePrivacy.private
+            ? DriveAuthMode.password
+            : DriveAuthMode.none,
       );
 }

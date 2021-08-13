@@ -19,21 +19,23 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   Future<void> download() async {
     try {
-      final file = await (_arweave.getLatestFileEntityWithId(fileId!, fileKey) as FutureOr<FileEntity>);
+      final file = await (_arweave.getLatestFileEntityWithId(fileId!, fileKey)
+          as FutureOr<FileEntity>);
 
       emit(FileDownloadInProgress(
           fileName: file.name, totalByteCount: file.size));
       //Reinitialize here in case connection is closed with abort
 
       final dataRes = await http.get(Uri.parse(
-          _arweave.client.api!!.gatewayUrl.origin + '/${file.dataTxId}'));
+          _arweave.client.api?.gatewayUrl.origin ?? '' '/${file.dataTxId}'));
 
       Uint8List dataBytes;
 
       if (fileKey == null) {
         dataBytes = await dataRes.bodyBytes;
       } else {
-        final dataTx = await (_arweave.getTransactionDetails(file.dataTxId!) as FutureOr<TransactionCommonMixin>);
+        final dataTx = await (_arweave.getTransactionDetails(file.dataTxId!)
+            as FutureOr<TransactionCommonMixin>);
         dataBytes = await decryptTransactionData(
             dataTx, await dataRes.bodyBytes, fileKey);
       }
