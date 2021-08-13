@@ -52,7 +52,7 @@ Widget _buildFolderListTile({
         padding: const EdgeInsetsDirectional.only(end: 8.0),
         child: const Icon(Icons.folder),
       ),
-      title: Text(folder.name!),
+      title: Text(folder.name),
     );
 
 Widget _buildFileListTile({

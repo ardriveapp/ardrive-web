@@ -63,7 +63,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> startSync() async {
     try {
-      final ProfileState profile = _profileCubit.state;
+      final profile = _profileCubit.state;
       print('Syncing...');
       emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
@@ -117,7 +117,7 @@ class SyncCubit extends Cubit<SyncState> {
 
     SecretKey? driveKey;
     if (drive.isPrivate) {
-      final ProfileState profile = _profileCubit.state;
+      final profile = _profileCubit.state;
 
       // Only sync private drives when the user is logged in.
       if (profile is ProfileLoggedIn) {
@@ -128,7 +128,7 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     final entityHistory = await _arweave.getNewEntitiesForDrive(
-      drive.id!,
+      drive.id,
       // Syncs from lastBlockHeight - 5 and paginates through them using the syncCursor
       // Starts syncing from lastBlock - 5. 5 is an arbitrary position,
       // we are just starting 5 blocks before the lastBlockHeight to make sure it
@@ -420,9 +420,9 @@ class SyncCubit extends Cubit<SyncState> {
       var newTreeIsSubsetOfExisting = false;
       var newTreeIsSupersetOfExisting = false;
       for (final existingTree in staleFolderTree) {
-        if (existingTree.searchForFolder(tree.folder!.id) != null) {
+        if (existingTree.searchForFolder(tree.folder.id) != null) {
           newTreeIsSubsetOfExisting = true;
-        } else if (tree.searchForFolder(existingTree.folder!.id) != null) {
+        } else if (tree.searchForFolder(existingTree.folder.id) != null) {
           staleFolderTree.remove(existingTree);
           staleFolderTree.add(tree);
           newTreeIsSupersetOfExisting = true;
@@ -435,11 +435,10 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     Future<void> updateFolderTree(FolderNode node, String? parentPath) async {
-      final folderId = node.folder!.id;
+      final folderId = node.folder.id;
       // If this is the root folder, we should not include its name as part of the path.
-      final folderPath = node.folder!.parentFolderId != null
-          ? parentPath! + '/' + node.folder!.name!
-          : '';
+      final folderPath = node.folder.parentFolderId != null
+          ? parentPath! + '/' + node.folder.name: '';
 
       await _driveDao
           .updateFolderById(driveId, folderId)
@@ -461,7 +460,7 @@ class SyncCubit extends Cubit<SyncState> {
     for (final treeRoot in staleFolderTree) {
       // Get the path of this folder's parent.
       String? parentPath;
-      if (treeRoot.folder!.parentFolderId == null) {
+      if (treeRoot.folder.parentFolderId == null) {
         parentPath = '';
       } else {
         parentPath = await _driveDao
@@ -486,7 +485,7 @@ class SyncCubit extends Cubit<SyncState> {
           .getSingleOrNull();
 
       if (parentPath != null) {
-        final filePath = parentPath + '/' + staleOrphanFile.name.value!;
+        final filePath = parentPath + '/' + staleOrphanFile.name.value;
 
         await _driveDao.writeToFile(FileEntriesCompanion(
             id: staleOrphanFile.id,
@@ -521,7 +520,7 @@ class SyncCubit extends Cubit<SyncState> {
           // Only mark transactions as failed if they are unconfirmed for over 45 minutes
           // as the transaction might not be queryable for right after it was created.
           final abovePendingThreshold = DateTime.now()
-                  .difference(pendingTxMap[txId]!.dateCreated!)
+                  .difference(pendingTxMap[txId]!.dateCreated)
                   .inMinutes >
               45;
           if (abovePendingThreshold) {

@@ -79,7 +79,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           final state = this.state is DriveDetailLoadSuccess
               ? this.state as DriveDetailLoadSuccess
               : DriveDetailLoadSuccess();
-          final ProfileState profile = _profileCubit.state;
+          final profile = _profileCubit.state;
           emit(
             state.copyWith(
               currentDrive: drive,
@@ -104,12 +104,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
 
     if (state.currentDrive!.isPublic && !isFolder) {
-      final fileWithRevisions = await _driveDao.latestFileRevisionByFileId(
+      final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
           driveId: driveId, fileId: state.selectedItemId ?? '');
       final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
       state = state.copyWith(
           selectedFilePreviewUrl:
-              Uri.parse('${_config.defaultArweaveGatewayUrl}/${dataTxId}'));
+              Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'));
     }
 
     emit(state);
@@ -120,7 +120,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       OrderingMode contentOrderingMode = OrderingMode.asc}) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
-        path: state.currentFolder!.folder!.path,
+        path: state.currentFolder!.folder.path,
         contentOrderBy: contentOrderBy,
         contentOrderingMode: contentOrderingMode);
   }

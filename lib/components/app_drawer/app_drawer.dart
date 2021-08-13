@@ -167,21 +167,6 @@ class AppDrawer extends StatelessWidget {
                       minimumWalletBalance
                   ? PopupMenuButton<Function>(
                       onSelected: (callback) => callback(context),
-                      child: SizedBox(
-                        width: 164,
-                        height: 36,
-                        child: FloatingActionButton.extended(
-                          onPressed: null,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                          label: Text(
-                            'NEW',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
                       itemBuilder: (context) => [
                         if (state is DriveDetailLoadSuccess) ...{
                           PopupMenuItem(
@@ -189,7 +174,7 @@ class AppDrawer extends StatelessWidget {
                             value: (context) => promptToCreateFolder(
                               context,
                               driveId: state.currentDrive!.id,
-                              parentFolderId: state.currentFolder!.folder!.id,
+                              parentFolderId: state.currentFolder!.folder.id,
                             ),
                             child: ListTile(
                               enabled: state.hasWritePermissions!,
@@ -202,7 +187,7 @@ class AppDrawer extends StatelessWidget {
                             value: (context) => promptToUploadFile(
                               context,
                               driveId: state.currentDrive!.id,
-                              folderId: state.currentFolder!.folder!.id,
+                              folderId: state.currentFolder!.folder.id,
                               allowSelectMultiple: true,
                             ),
                             child: ListTile(
@@ -229,6 +214,21 @@ class AppDrawer extends StatelessWidget {
                           ),
                         }
                       ],
+                      child: SizedBox(
+                        width: 164,
+                        height: 36,
+                        child: FloatingActionButton.extended(
+                          onPressed: null,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                          label: Text(
+                            'NEW',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
                     )
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -290,6 +290,16 @@ class AppDrawer extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
               child: PopupMenuButton<Function>(
                 onSelected: (callback) => callback(context),
+                itemBuilder: (context) => [
+                  if (drivesState is DrivesLoadSuccess) ...{
+                    PopupMenuItem(
+                      value: (context) => attachDrive(context: context),
+                      child: ListTile(
+                        title: Text('Attach drive'),
+                      ),
+                    ),
+                  }
+                ],
                 child: SizedBox(
                   width: 164,
                   height: 36,
@@ -305,16 +315,6 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                 ),
-                itemBuilder: (context) => [
-                  if (drivesState is DrivesLoadSuccess) ...{
-                    PopupMenuItem(
-                      value: (context) => attachDrive(context: context),
-                      child: ListTile(
-                        title: Text('Attach drive'),
-                      ),
-                    ),
-                  }
-                ],
               )),
         ),
       );

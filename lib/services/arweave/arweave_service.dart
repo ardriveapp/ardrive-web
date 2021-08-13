@@ -172,7 +172,7 @@ class ArweaveService {
           driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private
               ? await deriveDriveKey(
                   getWalletSignature,
-                  driveTx.getTag(EntityTag.driveId)!,
+                  driveTx.getTag(EntityTag.driveId),
                   password,
                 )
               : null;
@@ -248,7 +248,7 @@ class ArweaveService {
       return null;
     }
 
-    final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
+    final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
     final checkDriveKey = await deriveDriveKey(
       getSignatureFn,
       checkDriveId,

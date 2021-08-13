@@ -50,7 +50,7 @@ class DriveDetailPage extends StatelessWidget {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      state.currentDrive!.name!,
+                                      state.currentDrive!.name,
                                       style:
                                           Theme.of(context).textTheme.headline5,
                                     ),
@@ -58,7 +58,7 @@ class DriveDetailPage extends StatelessWidget {
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
-                                    path: state.currentFolder!.folder!.path!),
+                                    path: state.currentFolder!.folder.path),
                                 if (state.currentFolder!.subfolders!
                                         .isNotEmpty ||
                                     state.currentFolder!.files!.isNotEmpty)
@@ -113,7 +113,7 @@ class DriveDetailPage extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      state.currentDrive!.name!,
+                                      state.currentDrive!.name,
                                       style:
                                           Theme.of(context).textTheme.headline5,
                                     ),
@@ -124,7 +124,7 @@ class DriveDetailPage extends StatelessWidget {
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
-                                    path: state.currentFolder!.folder!.path!),
+                                    path: state.currentFolder!.folder.path),
                                 if (state.currentFolder!.subfolders!
                                         .isNotEmpty ||
                                     state.currentFolder!.files!.isNotEmpty)

@@ -229,7 +229,7 @@ class UploadCubit extends Cubit<UploadState> {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
     final fileName = file.name;
-    final filePath = '${_targetFolder.path}/${fileName}';
+    final filePath = '${_targetFolder.path}/$fileName';
     final fileEntity = FileEntity(
       driveId: _targetDrive.id,
       name: fileName,
@@ -247,7 +247,7 @@ class UploadCubit extends Cubit<UploadState> {
         ? await _driveDao.getDriveKey(_targetDrive.id, profile.cipherKey)
         : null;
     final fileKey =
-        private ? await deriveFileKey(driveKey!, fileEntity.id!) : null;
+        private ? await deriveFileKey(driveKey!, fileEntity.id) : null;
 
     final fileData = await file.readAsBytes();
 

@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
-import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -34,7 +32,7 @@ class DrivesCubit extends Cubit<DrivesState> {
       _profileCubit.stream.startWith(ProfileCheckingAvailability()),
       (drives, _) => drives,
     ).listen((drives) async {
-      final DrivesState state = this.state;
+      final state = this.state;
 
       String? selectedDriveId;
       if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
@@ -44,9 +42,9 @@ class DrivesCubit extends Cubit<DrivesState> {
             (drives.isNotEmpty ? drives.first.id : null);
       }
 
-      final ProfileState profile = _profileCubit.state;
+      final profile = _profileCubit.state;
       final walletAddress =
-          profile is ProfileLoggedIn ? await profile.walletAddress : '';
+          profile is ProfileLoggedIn ? profile.walletAddress : '';
       emit(
         DrivesLoadSuccess(
           selectedDriveId: selectedDriveId,

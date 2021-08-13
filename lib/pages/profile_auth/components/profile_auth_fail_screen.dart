@@ -31,12 +31,12 @@ class ProfileAuthFailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             TextButton(
-              child: Text('Log In'),
               onPressed: () {
                 context.read<ProfileCubit>().logoutProfile();
                 window.location.reload();
                 context.read<ProfileAddCubit>().promptForWallet();
               },
+              child: Text('Log In'),
             ),
           ],
         ),

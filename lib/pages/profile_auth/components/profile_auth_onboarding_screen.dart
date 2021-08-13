@@ -228,6 +228,13 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
             },
           ),
           TextButton(
+            onPressed: () {
+              if (_onboardingStepIndex < 4) {
+                setState(() => _onboardingStepIndex++);
+              } else {
+                context.read<ProfileAddCubit>().completeOnboarding();
+              }
+            },
             child: Row(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
@@ -237,13 +244,6 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
                 const Icon(Icons.chevron_right),
               ],
             ),
-            onPressed: () {
-              if (_onboardingStepIndex < 4) {
-                setState(() => _onboardingStepIndex++);
-              } else {
-                context.read<ProfileAddCubit>().completeOnboarding();
-              }
-            },
           )
         ],
       );

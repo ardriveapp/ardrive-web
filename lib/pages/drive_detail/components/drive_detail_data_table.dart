@@ -95,7 +95,7 @@ DataRow _buildFolderRow({
                 padding: const EdgeInsetsDirectional.only(end: 8.0),
                 child: const Icon(Icons.folder),
               ),
-              Text(folder.name!),
+              Text(folder.name),
             ],
           ),
         ),

@@ -32,12 +32,12 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       Uint8List dataBytes;
 
       if (fileKey == null) {
-        dataBytes = await dataRes.bodyBytes;
+        dataBytes = dataRes.bodyBytes;
       } else {
-        final dataTx = await (_arweave.getTransactionDetails(file.dataTxId!)
+        final dataTx = await (_arweave.getTransactionDetails(file.dataTxId)
             as FutureOr<TransactionCommonMixin>);
         dataBytes = await decryptTransactionData(
-            dataTx, await dataRes.bodyBytes, fileKey);
+            dataTx, dataRes.bodyBytes, fileKey);
       }
 
       emit(
@@ -45,7 +45,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
           file: XFile.fromData(
             dataBytes,
             name: file.name,
-            mimeType: lookupMimeType(file.name!),
+            mimeType: lookupMimeType(file.name),
             length: dataBytes.lengthInBytes,
             lastModified: file.lastModifiedDate,
           ),

@@ -335,7 +335,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       await Future.wait(revision
           .getTransactionCompanions()
           .map((tx) => writeTransaction(tx)));
-      await await into(fileRevisions).insert(revision);
+      await into(fileRevisions).insert(revision);
     });
   }
 

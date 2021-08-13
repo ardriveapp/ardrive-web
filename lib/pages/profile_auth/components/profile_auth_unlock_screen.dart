@@ -61,19 +61,19 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                child: Text('UNLOCK'),
                                 onPressed: () =>
                                     context.read<ProfileUnlockCubit>().submit(),
+                                child: Text('UNLOCK'),
                               ),
                             ),
                             const SizedBox(height: 16),
                             TextButton(
+                              onPressed: () =>
+                                  context.read<ProfileCubit>().logoutProfile(),
                               child: Text(
                                 'Forget wallet and change profile',
                                 textAlign: TextAlign.center,
                               ),
-                              onPressed: () =>
-                                  context.read<ProfileCubit>().logoutProfile(),
                             ),
                           ],
                         ),

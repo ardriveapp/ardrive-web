@@ -42,7 +42,7 @@ class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) => MultiRepositoryProvider(
         providers: [
-          RepositoryProvider<ArweaveService?>(create: (_) => arweave),
+          RepositoryProvider<ArweaveService>(create: (_) => arweave as ArweaveService),
           RepositoryProvider<PstService>(create: (_) => PstService()),
           RepositoryProvider<AppConfig?>(create: (_) => config),
           RepositoryProvider<Database>(create: (_) => Database()),

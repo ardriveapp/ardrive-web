@@ -85,7 +85,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           id: newFolderId,
           driveId: targetFolder.driveId,
           parentFolderId: targetFolder.id,
-          name: folderName ?? '',
+          name: folderName,
         );
 
         final owner = await profile.getWalletOwner();

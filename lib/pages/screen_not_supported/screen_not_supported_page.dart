@@ -32,8 +32,8 @@ class ScreenNotSupportedPage extends StatelessWidget {
                 Link(
                   uri: Uri.parse('https://ardrive.io/about/newsletter/'),
                   builder: (context, onPressed) => ElevatedButton(
-                    child: Text('SUBSCRIBE'),
                     onPressed: onPressed,
+                    child: Text('SUBSCRIBE'),
                   ),
                 ),
               ],

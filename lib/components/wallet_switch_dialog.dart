@@ -22,7 +22,6 @@ class WalletSwitchDialog extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            child: Text('Logout'),
             onPressed: () {
               Navigator.pop(context);
               context.read<ProfileCubit>().logoutProfile();
@@ -31,6 +30,7 @@ class WalletSwitchDialog extends StatelessWidget {
                 context.read<ProfileAddCubit>().promptForWallet();
               }
             },
+            child: Text('Logout'),
           )
         ],
       );

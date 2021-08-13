@@ -54,7 +54,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     // ArConnect extension missing - route to profile screen
-    if (!(await arconnect.isExtensionPresent())) {
+    if (!(arconnect.isExtensionPresent())) {
       emit(ProfilePromptAdd());
       return;
     }

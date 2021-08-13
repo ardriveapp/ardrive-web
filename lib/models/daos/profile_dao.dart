@@ -24,17 +24,17 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   Future<ProfileLoadDetails> loadDefaultProfile(String password) async {
     final profile = await defaultProfile().getSingle();
 
-    final profileSalt = profile.keySalt!;
+    final profileSalt = profile.keySalt;
     final profileKdRes = await deriveProfileKey(password, profileSalt);
     var walletJwk;
     try {
       //Will only decrypt wallet if it's a JSON Profile
-      if (profile.encryptedWallet!.isNotEmpty) {
+      if (profile.encryptedWallet.isNotEmpty) {
         walletJwk = json.decode(
           utf8.decode(
             await aesGcm.decrypt(
               secretBoxFromDataWithMacConcatenation(
-                profile.encryptedWallet!,
+                profile.encryptedWallet,
                 nonce: profileSalt,
               ),
               secretKey: profileKdRes.key,
@@ -46,7 +46,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       final publicKey = utf8.decode(
         await aesGcm.decrypt(
           secretBoxFromDataWithMacConcatenation(
-            profile.encryptedPublicKey!,
+            profile.encryptedPublicKey,
             nonce: profileSalt,
           ),
           secretKey: profileKdRes.key,
@@ -56,7 +56,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       //Returning this class doesn't do anything, but it could be useful for debugging
       return ProfileLoadDetails(
         details: profile,
-        wallet: profile.encryptedWallet!.isNotEmpty
+        wallet: profile.encryptedWallet.isNotEmpty
             ? Wallet.fromJwk(walletJwk)
             : null,
         key: profileKdRes.key,
