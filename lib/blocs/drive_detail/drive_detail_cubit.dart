@@ -120,7 +120,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       OrderingMode contentOrderingMode = OrderingMode.asc}) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
-        path: state.currentFolder!.folder.path,
+        path: state.currentFolder!.folder!.path,
         contentOrderBy: contentOrderBy,
         contentOrderingMode: contentOrderingMode);
   }

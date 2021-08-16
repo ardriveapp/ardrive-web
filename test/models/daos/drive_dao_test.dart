@@ -119,7 +119,7 @@ void main() {
           driveDao.watchFolderContents(driveId, folderPath: '').share();
 
       await Future.wait([
-        expectLater(folderStream.map((f) => f.folder.id), emits(rootFolderId)),
+        expectLater(folderStream.map((f) => f.folder!.id), emits(rootFolderId)),
         expectLater(
           folderStream.map((f) => f.subfolders!.map((f) => f.name)),
           emits(allOf(hasLength(emptyNestedFolderCount), Sorted())),
@@ -136,7 +136,7 @@ void main() {
           .share();
 
       await Future.wait([
-        expectLater(folderStream.map((f) => f.folder.id),
+        expectLater(folderStream.map((f) => f.folder!.id),
             emits(emptyNestedFolderIdPrefix + '0')),
         expectLater(
           folderStream.map((f) => f.subfolders!.map((f) => f.id)),

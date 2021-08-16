@@ -44,7 +44,7 @@ class _AppState extends State<App> {
         providers: [
           RepositoryProvider<ArweaveService>(create: (_) => arweave as ArweaveService),
           RepositoryProvider<PstService>(create: (_) => PstService()),
-          RepositoryProvider<AppConfig?>(create: (_) => config),
+          RepositoryProvider<AppConfig>(create: (_) => config as AppConfig),
           RepositoryProvider<Database>(create: (_) => Database()),
           RepositoryProvider<ProfileDao>(
               create: (context) => context.read<Database>().profileDao),

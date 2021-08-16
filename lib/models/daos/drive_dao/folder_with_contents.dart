@@ -1,7 +1,7 @@
 part of 'drive_dao.dart';
 
 class FolderWithContents extends Equatable {
-  final FolderEntry folder;
+  final FolderEntry? folder;
   final List<FolderEntry>? subfolders;
   final List<FileWithLatestRevisionTransactions>? files;
 

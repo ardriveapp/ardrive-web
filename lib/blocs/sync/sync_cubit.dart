@@ -10,7 +10,6 @@ import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
-import 'package:rxdart/rxdart.dart';
 
 import '../blocs.dart';
 
@@ -44,12 +43,12 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void createSyncStream() {
-    _syncSub?.cancel();
-    _syncSub = Stream.periodic(const Duration(minutes: 2))
-        .startWith(null)
-        // Do not start another sync until the previous sync has completed.
-        .exhaustMap((value) => Stream.fromFuture(startSync()))
-        .listen((_) {});
+    // _syncSub?.cancel();
+    // _syncSub = Stream.periodic(const Duration(minutes: 2))
+    //     .startWith(null)
+    //     // Do not start another sync until the previous sync has completed.
+    //     .exhaustMap((value) => Stream.fromFuture(startSync()))
+    //     .listen((_) {});
   }
 
   void restartSyncOnFocus() {

@@ -150,11 +150,10 @@ class ArweaveService {
       UserDriveEntitiesQuery(
           variables: UserDriveEntitiesArguments(owner: walletAddress)),
     );
-
     final driveTxs = userDriveEntitiesQuery.data!.transactions.edges
         .map((e) => e.node)
         .toList();
-
+    
     final driveResponses =
         await Future.wait(driveTxs.map((e) => client.api!.get(e.id)));
 
@@ -162,7 +161,7 @@ class ArweaveService {
     final drivesWithKey = <DriveEntity, SecretKey?>{};
     for (var i = 0; i < driveTxs.length; i++) {
       final driveTx = driveTxs[i];
-
+      
       // Ignore drive entity transactions which we already have newer entities for.
       if (drivesById.containsKey(driveTx.getTag(EntityTag.driveId))) {
         continue;

@@ -40,7 +40,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
                     onDrop: (htmlFile) => _onDrop(
                       htmlFile,
                       driveId: state.currentDrive!.id,
-                      folderId: state.currentFolder!.folder.id,
+                      folderId: state.currentFolder!.folder!.id,
                       context: context,
                     ),
                     onHover: _onHover,

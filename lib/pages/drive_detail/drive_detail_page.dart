@@ -58,7 +58,7 @@ class DriveDetailPage extends StatelessWidget {
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
-                                    path: state.currentFolder!.folder.path),
+                                    path: state.currentFolder!.folder!.path),
                                 if (state.currentFolder!.subfolders!
                                         .isNotEmpty ||
                                     state.currentFolder!.files!.isNotEmpty)
@@ -124,7 +124,7 @@ class DriveDetailPage extends StatelessWidget {
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
-                                    path: state.currentFolder!.folder.path),
+                                    path: state.currentFolder!.folder!.path),
                                 if (state.currentFolder!.subfolders!
                                         .isNotEmpty ||
                                     state.currentFolder!.files!.isNotEmpty)
