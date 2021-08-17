@@ -466,20 +466,16 @@ class SyncCubit extends Cubit<SyncState> {
       if (treeRoot.folder.parentFolderId == null) {
         parentPath = '';
       } else {
-        final path = (await _driveDao
-            .folderById(
-                driveId: driveId,
-                folderId: treeRoot.folder.parentFolderId ?? '')
-            .map((f) => f.path)
-            .getSingleOrNull());
-        if (path != null) {
-          parentPath = path;
-          await updateFolderTree(treeRoot, parentPath);
-        } else {
-          print('Missing parent folder: ' +
-              (treeRoot.folder.parentFolderId ?? ''));
-        }
+        parentPath = (await _driveDao
+                .folderById(
+                    driveId: driveId,
+                    folderId: treeRoot.folder.parentFolderId ?? '')
+                .map((f) => f.path)
+                .getSingleOrNull()) ??
+            '';
       }
+
+      await updateFolderTree(treeRoot, parentPath);
     }
 
     // Update paths of files whose parent folders were not updated.
