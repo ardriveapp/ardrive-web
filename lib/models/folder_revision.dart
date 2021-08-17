@@ -35,9 +35,9 @@ extension FolderEntityExtensions on FolderEntity {
   FolderRevisionsCompanion toRevisionCompanion(
           {required String? performedAction}) =>
       FolderRevisionsCompanion.insert(
-        folderId: id,
-        driveId: driveId,
-        name: name,
+        folderId: id!,
+        driveId: driveId!,
+        name: name!,
         parentFolderId: Value(parentFolderId),
         metadataTxId: txId,
         dateCreated: Value(createdAt),

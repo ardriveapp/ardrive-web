@@ -81,11 +81,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           final entity = entry.key;
 
           var driveCompanion = DrivesCompanion.insert(
-            id: entity.id,
-            name: entity.name,
+            id: entity.id!,
+            name: entity.name!,
             ownerAddress: entity.ownerAddress,
-            rootFolderId: entity.rootFolderId,
-            privacy: entity.privacy,
+            rootFolderId: entity.rootFolderId!,
+            privacy: entity.privacy!,
             dateCreated: Value(entity.createdAt),
             lastUpdated: Value(entity.createdAt),
           );
@@ -111,11 +111,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     assert(entity.privacy == DrivePrivacy.public);
 
     final companion = DrivesCompanion.insert(
-      id: entity.id,
+      id: entity.id!,
       name: name,
       ownerAddress: entity.ownerAddress,
-      rootFolderId: entity.rootFolderId,
-      privacy: entity.privacy,
+      rootFolderId: entity.rootFolderId!,
+      privacy: entity.privacy!,
       dateCreated: Value(entity.createdAt),
       lastUpdated: Value(entity.createdAt),
     );
@@ -294,13 +294,13 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     String path,
   ) {
     final companion = FileEntriesCompanion.insert(
-      id: entity.id,
-      driveId: entity.driveId,
-      parentFolderId: entity.parentFolderId,
-      name: entity.name,
+      id: entity.id!,
+      driveId: entity.driveId!,
+      parentFolderId: entity.parentFolderId!,
+      name: entity.name!,
       path: path,
-      dataTxId: entity.dataTxId,
-      size: entity.size,
+      dataTxId: entity.dataTxId!,
+      size: entity.size!,
       lastModifiedDate: entity.lastModifiedDate ?? DateTime.now(),
       dataContentType: Value(entity.dataContentType),
     );

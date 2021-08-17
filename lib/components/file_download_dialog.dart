@@ -55,8 +55,10 @@ class FileDownloadDialog extends StatelessWidget {
       BlocConsumer<FileDownloadCubit, FileDownloadState>(
         listener: (context, state) async {
           if (state is FileDownloadSuccess) {
-            final savePath = await (getSavePath() as FutureOr<String>);
-            unawaited(state.file.saveTo(savePath));
+            final savePath = await getSavePath();
+            if (savePath != null) {
+              unawaited(state.file.saveTo(savePath));
+            }
 
             Navigator.pop(context);
           }

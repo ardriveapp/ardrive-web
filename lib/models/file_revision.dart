@@ -37,14 +37,14 @@ extension FileEntityExtensions on FileEntity {
   FileRevisionsCompanion toRevisionCompanion(
           {required String? performedAction}) =>
       FileRevisionsCompanion.insert(
-        fileId: id,
-        driveId: driveId,
-        name: name,
-        parentFolderId: parentFolderId,
-        size: size,
+        fileId: id!,
+        driveId: driveId!,
+        name: name!,
+        parentFolderId: parentFolderId!,
+        size: size!,
         lastModifiedDate: lastModifiedDate ?? DateTime.now(),
         metadataTxId: txId,
-        dataTxId: dataTxId,
+        dataTxId: dataTxId!,
         dateCreated: Value(createdAt),
         dataContentType: Value(dataContentType),
         action: performedAction ?? '',

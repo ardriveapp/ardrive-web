@@ -41,7 +41,7 @@ class SharedFilePage extends StatelessWidget {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.text_snippet),
-                      title: Text(state.file.name),
+                      title: Text(state.file.name!),
                       subtitle: Text(filesize(state.file.size)),
                     ),
                     const SizedBox(height: 24),

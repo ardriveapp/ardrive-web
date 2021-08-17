@@ -35,7 +35,7 @@ Future<Uint8List> decryptTransactionData(
   try {
     if (cipher == Cipher.aes256) {
       final cipherIv =
-          utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv));
+          utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv)!);
 
       return aesGcm
           .decrypt(

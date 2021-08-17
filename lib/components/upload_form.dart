@@ -163,7 +163,7 @@ class UploadForm extends StatelessWidget {
                             for (final file in state.files) ...{
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
-                                title: Text(file.entity.name),
+                                title: Text(file.entity.name!),
                                 subtitle: Text(filesize(file.size)),
                               ),
                             },
@@ -230,7 +230,7 @@ class UploadForm extends StatelessWidget {
                         for (final file in state.files!) ...{
                           ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: Text(file.entity.name),
+                            title: Text(file.entity.name!),
                             subtitle: Text(
                                 '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
                             trailing: CircularProgressIndicator(

@@ -17,28 +17,28 @@ int _dateTimeToMs(DateTime? v) => v!.millisecondsSinceEpoch;
 @JsonSerializable()
 class FileEntity extends Entity {
   @JsonKey(ignore: true)
-  String id = '';
+  String? id;
   @JsonKey(ignore: true)
-  String driveId = '';
+  String? driveId;
   @JsonKey(ignore: true)
-  String parentFolderId = '';
+  String? parentFolderId;
 
-  String name = '';
-  int size = 0;
+  String? name;
+  int? size;
   @JsonKey(fromJson: _msToDateTime, toJson: _dateTimeToMs)
   DateTime? lastModifiedDate;
 
-  String dataTxId = '';
+  String? dataTxId;
   String? dataContentType;
 
   FileEntity({
-    this.id = '',
-    this.driveId = '',
-    this.parentFolderId = '',
-    this.name = '',
-    this.size = 0,
+    this.id,
+    this.driveId,
+    this.parentFolderId,
+    this.name,
+    this.size,
     this.lastModifiedDate,
-    this.dataTxId = '',
+    this.dataTxId,
     this.dataContentType,
   });
 
@@ -57,7 +57,7 @@ class FileEntity extends Entity {
         entityJson = json.decode(utf8.decode(data));
       } else {
         fileKey ??= await deriveFileKey(
-            driveKey!, transaction.getTag(EntityTag.fileId));
+            driveKey!, transaction.getTag(EntityTag.fileId)!);
 
         entityJson = await decryptEntityJson(
           transaction,
@@ -83,19 +83,19 @@ class FileEntity extends Entity {
 
   @override
   void addEntityTagsToTransaction<T extends TransactionBase>(T tx) {
-    assert(id.isNotEmpty &&
-        driveId.isNotEmpty &&
-        parentFolderId.isNotEmpty &&
-        name.isNotEmpty &&
-        size > 0);
+    assert(id != null &&
+        driveId != null &&
+        parentFolderId != null &&
+        name != null &&
+        size != null);
 
     tx
       ..addApplicationTags(unixTime: createdAt)
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.file)
-      ..addTag(EntityTag.driveId, driveId)
-      ..addTag(EntityTag.parentFolderId, parentFolderId)
-      ..addTag(EntityTag.fileId, id);
+      ..addTag(EntityTag.driveId, driveId!)
+      ..addTag(EntityTag.parentFolderId, parentFolderId!)
+      ..addTag(EntityTag.fileId, id!);
   }
 
   factory FileEntity.fromJson(Map<String, dynamic> json) =>

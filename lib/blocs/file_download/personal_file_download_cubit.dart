@@ -41,14 +41,14 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       } else if (drive.isPrivate) {
         final profile = _profileCubit.state as ProfileLoggedIn;
 
-        final dataTx = await (_arweave.getTransactionDetails(file.dataTxId)
-            as FutureOr<TransactionCommonMixin>);
+        final dataTx = await (_arweave.getTransactionDetails(file.dataTxId));
 
         final fileKey =
             await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
-
-        dataBytes =
-            await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey);
+        if (dataTx != null) {
+          dataBytes =
+              await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey);
+        }
       }
 
       emit(

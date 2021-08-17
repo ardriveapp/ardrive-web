@@ -141,7 +141,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       // Try and decrypt one of the user's private drive entities to check if they are entering the
       // right password.
       if (privateDriveTxs.isNotEmpty) {
-        final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
+        final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
         final signature =
             _wallet != null ? _wallet!.sign : arconnect.getSignature;
 

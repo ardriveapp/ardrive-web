@@ -43,12 +43,12 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void createSyncStream() {
-    // _syncSub?.cancel();
-    // _syncSub = Stream.periodic(const Duration(minutes: 2))
-    //     .startWith(null)
-    //     // Do not start another sync until the previous sync has completed.
-    //     .exhaustMap((value) => Stream.fromFuture(startSync()))
-    //     .listen((_) {});
+    _syncSub?.cancel();
+    _syncSub = Stream.periodic(const Duration(minutes: 2))
+        // Do not start another sync until the previous sync has completed.
+        .map((value) => Stream.fromFuture(startSync()))
+        .listen((_) {});
+    startSync();
   }
 
   void restartSyncOnFocus() {
@@ -104,7 +104,6 @@ class SyncCubit extends Cubit<SyncState> {
         _updateTransactionStatuses(),
       ]);
     } catch (err) {
-      print(err);
       addError(err);
     }
 
@@ -213,7 +212,7 @@ class SyncCubit extends Cubit<SyncState> {
     final newRevisions = <DriveRevisionsCompanion>[];
     for (final entity in newEntities) {
       latestRevision ??= await _driveDao
-          .latestDriveRevisionByDriveId(driveId: entity.id)
+          .latestDriveRevisionByDriveId(driveId: entity.id!)
           .getSingleOrNull()
           .then((r) => r?.toCompanion(true));
 
@@ -222,7 +221,7 @@ class SyncCubit extends Cubit<SyncState> {
       final revision = entity.toRevisionCompanion(
           performedAction: revisionPerformedAction ?? '');
 
-      if (revision.action.value == null) {
+      if (revision.action.value.isEmpty) {
         continue;
       }
 
@@ -257,11 +256,13 @@ class SyncCubit extends Cubit<SyncState> {
     final newRevisions = <FolderRevisionsCompanion>[];
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
-        latestRevisions[entity.id] = (await _driveDao
-                .latestFolderRevisionByFolderId(
-                    driveId: driveId, folderId: entity.id)
-                .getSingle())
-            .toCompanion(true);
+        final revisions = (await _driveDao
+            .latestFolderRevisionByFolderId(
+                driveId: driveId, folderId: entity.id!)
+            .getSingleOrNull());
+        if (revisions != null) {
+          latestRevisions[entity.id!] = revisions.toCompanion(true);
+        }
       }
 
       final revisionPerformedAction =
@@ -269,12 +270,12 @@ class SyncCubit extends Cubit<SyncState> {
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
-      if (revision.action.value.isNotEmpty) {
+      if (revision.action.value.isEmpty) {
         continue;
       }
 
       newRevisions.add(revision);
-      latestRevisions[entity.id] = revision;
+      latestRevisions[entity.id!] = revision;
     }
 
     await _db.batch((b) {
@@ -304,10 +305,12 @@ class SyncCubit extends Cubit<SyncState> {
     final newRevisions = <FileRevisionsCompanion>[];
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
-        latestRevisions[entity.id] = (await _driveDao
-                .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id)
-                .getSingle())
-            .toCompanion(true);
+        final revisions = await _driveDao
+            .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id!)
+            .getSingleOrNull();
+        if (revisions != null) {
+          latestRevisions[entity.id] = revisions.toCompanion(true);
+        }
       }
 
       final revisionPerformedAction =
@@ -315,7 +318,7 @@ class SyncCubit extends Cubit<SyncState> {
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
-      if (revision.action.value == null) {
+      if (revision.action.value.isEmpty) {
         continue;
       }
 
@@ -433,11 +436,12 @@ class SyncCubit extends Cubit<SyncState> {
       }
     }
 
-    Future<void> updateFolderTree(FolderNode node, String? parentPath) async {
+    Future<void> updateFolderTree(FolderNode node, String parentPath) async {
       final folderId = node.folder.id;
       // If this is the root folder, we should not include its name as part of the path.
       final folderPath = node.folder.parentFolderId != null
-          ? parentPath! + '/' + node.folder.name: '';
+          ? parentPath + '/' + node.folder.name
+          : '';
 
       await _driveDao
           .updateFolderById(driveId, folderId)
@@ -458,16 +462,17 @@ class SyncCubit extends Cubit<SyncState> {
 
     for (final treeRoot in staleFolderTree) {
       // Get the path of this folder's parent.
-      String? parentPath;
+      String parentPath;
       if (treeRoot.folder.parentFolderId == null) {
         parentPath = '';
       } else {
-        parentPath = await _driveDao
-            .folderById(
-                driveId: driveId,
-                folderId: treeRoot.folder.parentFolderId ?? '')
-            .map((f) => f.path)
-            .getSingle();
+        parentPath = (await _driveDao
+                .folderById(
+                    driveId: driveId,
+                    folderId: treeRoot.folder.parentFolderId ?? '')
+                .map((f) => f.path)
+                .getSingleOrNull()) ??
+            '';
       }
 
       await updateFolderTree(treeRoot, parentPath);

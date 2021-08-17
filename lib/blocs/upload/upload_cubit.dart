@@ -247,7 +247,7 @@ class UploadCubit extends Cubit<UploadState> {
         ? await _driveDao.getDriveKey(_targetDrive.id, profile.cipherKey)
         : null;
     final fileKey =
-        private ? await deriveFileKey(driveKey!, fileEntity.id) : null;
+        private ? await deriveFileKey(driveKey!, fileEntity.id!) : null;
 
     final fileData = await file.readAsBytes();
 

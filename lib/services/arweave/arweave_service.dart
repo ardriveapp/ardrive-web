@@ -39,7 +39,7 @@ class ArweaveService {
   Future<TransactionCommonMixin?> getTransactionDetails(String txId) async {
     final query = await _gql.execute(TransactionDetailsQuery(
         variables: TransactionDetailsArguments(txId: txId)));
-    return query.data!.transaction;
+    return query.data?.transaction;
   }
 
   /// Gets the entity history for a particular drive starting from the specified block height.
@@ -153,7 +153,7 @@ class ArweaveService {
     final driveTxs = userDriveEntitiesQuery.data!.transactions.edges
         .map((e) => e.node)
         .toList();
-    
+
     final driveResponses =
         await Future.wait(driveTxs.map((e) => client.api!.get(e.id)));
 
@@ -161,7 +161,7 @@ class ArweaveService {
     final drivesWithKey = <DriveEntity, SecretKey?>{};
     for (var i = 0; i < driveTxs.length; i++) {
       final driveTx = driveTxs[i];
-      
+
       // Ignore drive entity transactions which we already have newer entities for.
       if (drivesById.containsKey(driveTx.getTag(EntityTag.driveId))) {
         continue;
@@ -171,7 +171,7 @@ class ArweaveService {
           driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private
               ? await deriveDriveKey(
                   getWalletSignature,
-                  driveTx.getTag(EntityTag.driveId),
+                  driveTx.getTag(EntityTag.driveId)!,
                   password,
                 )
               : null;
@@ -247,7 +247,7 @@ class ArweaveService {
       return null;
     }
 
-    final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
+    final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
     final checkDriveKey = await deriveDriveKey(
       getSignatureFn,
       checkDriveId,
@@ -328,7 +328,8 @@ class ArweaveService {
         final query = await _gql.execute(
           TransactionStatusesQuery(
               variables: TransactionStatusesArguments(
-                  transactionIds: transactionIds.sublist(i, chunkEnd) as List<String>?)),
+                  transactionIds:
+                      transactionIds.sublist(i, chunkEnd) as List<String>?)),
         );
 
         final currentBlockHeight = query.data!.blocks.edges.first.node.height;

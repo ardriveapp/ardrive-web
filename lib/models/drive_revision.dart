@@ -35,11 +35,11 @@ extension DriveEntityExtensions on DriveEntity {
   DriveRevisionsCompanion toRevisionCompanion(
           {required String performedAction}) =>
       DriveRevisionsCompanion.insert(
-        driveId: id,
+        driveId: id!,
         ownerAddress: ownerAddress,
-        rootFolderId: rootFolderId,
-        name: name,
-        privacy: privacy,
+        rootFolderId: rootFolderId!,
+        name: name!,
+        privacy: privacy!,
         metadataTxId: txId,
         dateCreated: Value(createdAt),
         action: performedAction,
