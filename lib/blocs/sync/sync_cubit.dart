@@ -473,9 +473,13 @@ class SyncCubit extends Cubit<SyncState> {
                 .map((f) => f.path)
                 .getSingleOrNull()) ??
             '';
+
       }
 
-      await updateFolderTree(treeRoot, parentPath);
+      if (parentPath == null)
+        print('Missing parent folder: ' + treeRoot.folder.parentFolderId);
+      else
+        await updateFolderTree(treeRoot, parentPath);
     }
 
     // Update paths of files whose parent folders were not updated.
