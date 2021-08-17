@@ -473,6 +473,7 @@ class SyncCubit extends Cubit<SyncState> {
                 .map((f) => f.path)
                 .getSingleOrNull()) ??
             '';
+
       }
 
       await updateFolderTree(treeRoot, parentPath);
