@@ -29,7 +29,7 @@ class FileEntity extends Entity {
   DateTime? lastModifiedDate;
 
   String dataTxId = '';
-  String dataContentType = '';
+  String? dataContentType;
 
   FileEntity({
     this.id = '',
@@ -39,7 +39,7 @@ class FileEntity extends Entity {
     this.size = 0,
     this.lastModifiedDate,
     this.dataTxId = '',
-    this.dataContentType = '',
+    this.dataContentType,
   });
 
   FileEntity.withUserProvidedDetails(

@@ -5,8 +5,13 @@ import 'graphql_api.dart';
 export 'graphql_api.dart';
 
 extension TransactionMixinExtensions on TransactionCommonMixin {
-  String getTag(String tagName) =>
-      tags.firstWhere((t) => t.name == tagName).value;
+  String getTag(String tagName) {
+    try {
+      return tags.firstWhere((t) => t.name == tagName).value;
+    } catch (e) {
+      return '';
+    }
+  }
 
   DateTime getCommitTime() {
     final milliseconds = getTag(EntityTag.arFs) != '0.10'

@@ -282,7 +282,7 @@ class UploadCubit extends Cubit<UploadState> {
     if (!private) {
       uploadHandle.dataTx!.addTag(
         EntityTag.contentType,
-        fileEntity.dataContentType,
+        fileEntity.dataContentType!,
       );
     }
     final uploadHandleDataRawSignature = await profile
