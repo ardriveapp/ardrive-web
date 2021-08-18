@@ -1,50 +1,54 @@
-// import 'package:ardrive/blocs/blocs.dart';
-// import 'package:ardrive/models/models.dart';
-// import 'package:cryptography/cryptography.dart';
-// import 'package:cryptography/helpers.dart';
-// import 'package:mockito/mockito.dart';
-// import 'package:moor/moor.dart';
-// import 'package:test/test.dart';
+import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/config/app_config.dart';
+import 'package:cryptography/cryptography.dart';
+import 'package:cryptography/helpers.dart';
+import 'package:mockito/mockito.dart';
+import 'package:moor/moor.dart';
+import 'package:test/test.dart';
 
-// import '../utils/utils.dart';
+import '../utils/utils.dart';
 
-// void main() {
-//   group('DriveDetailCubit:', () {
-//     Database db;
-//     DriveDao driveDao;
+void main() {
+  group('DriveDetailCubit:', () {
+    late Database db;
+    late DriveDao driveDao;
 
-//     ProfileCubit profileCubit;
-//     DriveDetailCubit driveDetailCubit;
+    late ProfileCubit profileCubit;
+    late DriveDetailCubit driveDetailCubit;
+    late AppConfig config;
+    const mockDriveId = 'mock-drive-id';
 
-//     const mockDriveId = 'mock-drive-id';
+    setUp(() async {
+      db = getTestDb();
+      driveDao = db.driveDao;
+      config = MockConfig();
+      profileCubit = MockProfileCubit();
 
-//     setUp(() {
-//       db = getTestDb();
-//       driveDao = db.driveDao;
+      final keyBytes = Uint8List(32);
+      fillBytesWithSecureRandom(keyBytes);
+      final wallet = getTestWallet();
+      when(profileCubit.state).thenReturn(
+        ProfileLoggedIn(
+          username: '',
+          password: '123',
+          wallet: wallet,
+          cipherKey: SecretKey(keyBytes),
+          walletAddress: await wallet.getAddress(),
+          walletBalance: BigInt.one,
+        ),
+      );
 
-//       profileCubit = MockProfileCubit();
+      driveDetailCubit = DriveDetailCubit(
+        driveId: mockDriveId,
+        profileCubit: profileCubit,
+        driveDao: driveDao,
+        config: config,
+      );
+    });
 
-//       final keyBytes = Uint8List(32);
-//       fillBytesWithSecureRandom(keyBytes);
-
-//       when(profileCubit.state).thenReturn(
-//         ProfileLoggedIn(
-//           username: '',
-//           password: '123',
-//           wallet: getTestWallet(),
-//           cipherKey: SecretKey(keyBytes),
-//         ),
-//       );
-
-//       driveDetailCubit = DriveDetailCubit(
-//         driveId: mockDriveId,
-//         profileCubit: profileCubit,
-//         driveDao: driveDao,
-//       );
-//     });
-
-//     tearDown(() async {
-//       await db.close();
-//     });
-//   });
-// }
+    tearDown(() async {
+      await db.close();
+    });
+  });
+}
