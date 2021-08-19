@@ -3,8 +3,10 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
+import '../utils/fakes.dart';
 import '../utils/utils.dart';
 
 void main() {
@@ -17,6 +19,8 @@ void main() {
     late FolderCreateCubit folderCreateCubit;
 
     setUp(() {
+      registerFallbackValue(ProfileStatefake());
+
       db = getTestDb();
       driveDao = db.driveDao;
 

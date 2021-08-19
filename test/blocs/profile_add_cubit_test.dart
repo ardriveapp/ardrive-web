@@ -6,9 +6,10 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
+import '../utils/fakes.dart';
 import '../utils/utils.dart';
 
 void main() {
@@ -25,6 +26,10 @@ void main() {
     const fakePassword = '123';
 
     setUp(() async {
+      
+      registerFallbackValue(ProfileStatefake());
+      
+
       db = getTestDb();
       profileDao = db.profileDao;
 
@@ -41,7 +46,7 @@ void main() {
       );
 
       final walletAddress = await newUserWallet.getAddress();
-      when(arweave.getUniqueUserDriveEntityTxs(walletAddress))
+      when(() => arweave.getUniqueUserDriveEntityTxs(walletAddress))
           .thenAnswer((_) => Future.value([]));
     });
 
@@ -60,7 +65,7 @@ void main() {
       expect: () => [
         ProfileAddPromptDetails(isExistingUser: false),
       ],
-      verify: (_) => verify(
+      verify: (_) => verify(() =>
           profileCubit.unlockDefaultProfile(fakePassword, ProfileType.JSON)),
     );
 

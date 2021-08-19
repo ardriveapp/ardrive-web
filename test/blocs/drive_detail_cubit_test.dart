@@ -3,7 +3,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/helpers.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:moor/moor.dart';
 import 'package:test/test.dart';
 
@@ -28,7 +28,7 @@ void main() {
       final keyBytes = Uint8List(32);
       fillBytesWithSecureRandom(keyBytes);
       final wallet = getTestWallet();
-      when(profileCubit.state).thenReturn(
+      when(() => profileCubit.state).thenReturn(
         ProfileLoggedIn(
           username: '',
           password: '123',

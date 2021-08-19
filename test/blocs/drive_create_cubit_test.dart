@@ -6,10 +6,11 @@ import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/helpers.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:moor/moor.dart';
 import 'package:test/test.dart';
 
+import '../utils/fakes.dart';
 import '../utils/utils.dart';
 
 void main() {
@@ -25,6 +26,9 @@ void main() {
     const validDriveName = 'valid-drive-name';
 
     setUp(() async {
+      registerFallbackValue(DrivesStatefake());
+      registerFallbackValue(ProfileStatefake());
+
       db = getTestDb();
       driveDao = db.driveDao;
 
@@ -38,7 +42,7 @@ void main() {
       final keyBytes = Uint8List(32);
       fillBytesWithSecureRandom(keyBytes);
 
-      when(profileCubit.state).thenReturn(
+      when(() => profileCubit.state).thenReturn(
         ProfileLoggedIn(
           username: 'Test',
           password: '123',
