@@ -34,6 +34,7 @@ class ProfileLoggedIn extends ProfileAvailable {
   final BigInt walletBalance;
 
   final SecretKey cipherKey;
+  final arconnect = ArConnectService();
 
   ProfileLoggedIn({
     required this.username,

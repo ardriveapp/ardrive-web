@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:html';
 import 'dart:math';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/html/html.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -52,12 +52,8 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void restartSyncOnFocus() {
-    document.addEventListener('visibilitychange', (event) {
-      if (document.visibilityState != 'hidden') {
-        Future.delayed(Duration(seconds: 2))
-            .then((value) => createSyncStream());
-      }
-    });
+    whenTabIsUnhidden(() => Future.delayed(Duration(seconds: 2))
+        .then((value) => createSyncStream()));
   }
 
   Future<void> startSync() async {
@@ -70,7 +66,7 @@ class SyncCubit extends Cubit<SyncState> {
         //Check if profile is ArConnect to skip sync while tab is hidden
         final isArConnect = await _profileCubit.isCurrentProfileArConnect();
 
-        if (isArConnect && window.document.visibilityState != 'visible') {
+        if (isArConnect && isTabHidden()) {
           print('Tab hidden, skipping sync...');
           emit(SyncIdle());
           return;
@@ -473,7 +469,6 @@ class SyncCubit extends Cubit<SyncState> {
                 .map((f) => f.path)
                 .getSingleOrNull()) ??
             '';
-
       }
 
       await updateFolderTree(treeRoot, parentPath);

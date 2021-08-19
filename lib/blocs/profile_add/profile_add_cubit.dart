@@ -5,7 +5,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
+import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
@@ -37,6 +37,8 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         _profileDao = profileDao,
         _arweave = arweave,
         super(ProfileAddPromptWallet());
+
+  final arconnect = ArConnectService();
 
   bool isArconnectInstalled() {
     return arconnect.isExtensionPresent();

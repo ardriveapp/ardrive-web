@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
+import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
@@ -43,7 +43,7 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   Future<void> promptToAuthenticate() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
-
+    final arconnect = ArConnectService();
     // Profile unavailable - route to new profile screen
     if (profile == null) {
       emit(ProfilePromptAdd());
@@ -81,6 +81,8 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// Returns true if detected wallet or permissions change
   Future<bool> checkIfWalletMismatch() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
+    final arconnect = ArConnectService();
+
     if (profile == null) {
       return false;
     }
@@ -115,6 +117,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(ProfileLoggingIn());
 
     final profile = await _profileDao.loadDefaultProfile(password);
+    final arconnect = ArConnectService();
 
     if (profile == null) {
       emit(ProfilePromptAdd());
@@ -155,6 +158,8 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// Works even when the user is not authenticated.
   Future<void> logoutProfile() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
+    final arconnect = ArConnectService();
+
     if (profile != null && profile.profileType == ProfileType.ArConnect.index) {
       try {
         await arconnect.disconnect();
