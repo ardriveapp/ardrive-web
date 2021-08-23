@@ -103,7 +103,10 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       return null;
     }
 
-    final driveId = driveIdControl.value!;
+    final driveId = driveIdControl.value;
+    if (driveId == null) {
+      return null;
+    }
     final drive = await _arweave.getLatestDriveEntityWithId(driveId);
 
     if (drive == null) {

@@ -36,7 +36,7 @@ class _AppShellState extends State<AppShell> {
             //Used to prevent the dialog being shown multiple times.
             _showWalletSwitchDialog = false;
           });
-          Widget _buildAppBar() => AppBar(
+          AppBar _buildAppBar() => AppBar(
                 // title: Image.asset(
                 //   R.images.brand.logoHorizontalNoSubtitle,
                 //   height: 64,
@@ -123,7 +123,7 @@ class _AppShellState extends State<AppShell> {
                   AppDrawer(),
                   Expanded(
                     child: Scaffold(
-                      appBar: _buildAppBar() as PreferredSizeWidget?,
+                      appBar: _buildAppBar(),
                       body: widget.page,
                     ),
                   ),
@@ -132,7 +132,7 @@ class _AppShellState extends State<AppShell> {
             ),
             mobile: _buildPage(
               Scaffold(
-                appBar: _buildAppBar() as PreferredSizeWidget?,
+                appBar: _buildAppBar(),
                 drawer: AppDrawer(),
                 body: Row(
                   children: [
