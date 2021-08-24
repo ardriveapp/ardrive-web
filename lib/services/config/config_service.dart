@@ -8,7 +8,7 @@ import 'config.dart';
 class ConfigService {
   AppConfig? _config;
 
-  Future<AppConfig?> getConfig() async {
+  Future<AppConfig> getConfig() async {
     if (_config == null) {
       final environment = kReleaseMode ? 'prod' : 'dev';
       final configContent =
@@ -16,6 +16,6 @@ class ConfigService {
       _config = AppConfig.fromJson(json.decode(configContent));
     }
 
-    return _config;
+    return _config!;
   }
 }
