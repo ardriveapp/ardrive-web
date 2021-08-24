@@ -4,8 +4,8 @@ import 'components.dart';
 
 Future<void> showErrorDialog({
   required BuildContext context,
-  Object? error,
-  StackTrace? stackTrace,
+  required Object error,
+  required StackTrace stackTrace,
 }) =>
     showDialog(
       context: context,
