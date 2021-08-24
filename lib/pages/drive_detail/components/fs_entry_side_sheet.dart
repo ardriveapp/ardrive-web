@@ -152,8 +152,8 @@ class FsEntrySideSheet extends StatelessWidget {
         child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
           builder: (context, state) {
             if (state is FsEntryActivitySuccess) {
-              if (state.revisions!.isNotEmpty) {
-                final revision = state.revisions!.last;
+              if (state.revisions.isNotEmpty) {
+                final revision = state.revisions.last;
                 return DataTable(
                   // Hide the data table header.
 
@@ -230,10 +230,10 @@ class FsEntrySideSheet extends StatelessWidget {
           child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
             builder: (context, state) {
               if (state is FsEntryActivitySuccess) {
-                if (state.revisions!.isNotEmpty) {
+                if (state.revisions.isNotEmpty) {
                   return ListView.separated(
                     itemBuilder: (BuildContext context, int index) {
-                      final revision = state.revisions![index];
+                      final revision = state.revisions[index];
 
                       late Widget content;
                       late Widget dateCreatedSubtitle;
@@ -342,7 +342,7 @@ class FsEntrySideSheet extends StatelessWidget {
                       );
                     },
                     separatorBuilder: (context, index) => Divider(),
-                    itemCount: state.revisions!.length,
+                    itemCount: state.revisions.length,
                   );
                 } else {
                   return Center(child: Text('This item is being processed...'));
