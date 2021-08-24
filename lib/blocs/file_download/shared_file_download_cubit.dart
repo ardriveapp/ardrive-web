@@ -23,7 +23,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
           as FutureOr<FileEntity>);
 
       emit(FileDownloadInProgress(
-          fileName: file.name, totalByteCount: file.size));
+          fileName: file.name!, totalByteCount: file.size!));
       //Reinitialize here in case connection is closed with abort
 
       final dataRes = await http.get(Uri.parse(
