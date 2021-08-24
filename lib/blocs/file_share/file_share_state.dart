@@ -5,7 +5,7 @@ abstract class FileShareState extends Equatable {
   const FileShareState();
 
   @override
-  List<Object?> get props => [];
+  List<Object> get props => [];
 }
 
 /// [FileShareLoadInProgress] means that the file share details are being loaded.
@@ -13,7 +13,7 @@ class FileShareLoadInProgress extends FileShareState {}
 
 /// [FileShareLoadSuccess] provides details for the user to share the file with.
 class FileShareLoadSuccess extends FileShareState {
-  final String? fileName;
+  final String fileName;
 
   /// The link to share access of this file with.
   final Uri fileShareLink;
@@ -28,5 +28,5 @@ class FileShareLoadSuccess extends FileShareState {
   });
 
   @override
-  List<Object?> get props => [fileName, fileShareLink, isPublicFile];
+  List<Object> get props => [fileName, fileShareLink, isPublicFile];
 }
