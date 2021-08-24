@@ -34,7 +34,7 @@ Future<void> promptToDownloadProfileFile({
 
 Future<void> promptToDownloadSharedFile({
   required BuildContext context,
-  required String? fileId,
+  required String fileId,
   SecretKey? fileKey,
 }) =>
     showDialog(
