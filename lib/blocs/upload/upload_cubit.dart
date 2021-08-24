@@ -146,21 +146,17 @@ class UploadCubit extends Cubit<UploadState> {
     pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
 
     if (pstFee > BigInt.zero) {
-      final owner = await profile.getWalletOwner();
-
       feeTx = await _arweave.client.transactions!.prepare(
         Transaction(
           target: await _pst.getWeightedPstHolder(),
           quantity: pstFee,
         ),
-        owner,
+        profile.wallet,
       )
         ..addApplicationTags()
         ..addTag('Type', 'fee')
         ..addTag(TipType.tagName, TipType.dataUpload);
-      final rawSignature =
-          await profile.getRawWalletSignature(await feeTx!.getSignatureData());
-      await feeTx!.sign(rawSignature);
+      await feeTx!.sign(profile.wallet!);
     }
 
     final totalCost = uploadCost + pstFee;
@@ -265,14 +261,13 @@ class UploadCubit extends Cubit<UploadState> {
       uploadHandle.dataTx = private
           ? await createEncryptedDataItem(fileData, fileKey!)
           : DataItem.withBlobData(data: fileData);
-      uploadHandle.dataTx!.setOwner(await profile.getWalletOwner());
+      uploadHandle.dataTx!.setOwner(await profile.wallet!.getOwner());
     } else {
-      final owner = await profile.getWalletOwner();
       uploadHandle.dataTx = await _arweave.client.transactions!.prepare(
         private
             ? await createEncryptedTransaction(fileData, fileKey!)
             : Transaction.withBlobData(data: fileData),
-        owner,
+        profile.wallet,
       );
     }
 
@@ -285,25 +280,14 @@ class UploadCubit extends Cubit<UploadState> {
         fileEntity.dataContentType!,
       );
     }
-    final uploadHandleDataRawSignature = await profile
-        .getRawWalletSignature(await uploadHandle.dataTx!.getSignatureData());
-    await uploadHandle.dataTx!.sign(uploadHandleDataRawSignature);
+
+    await uploadHandle.dataTx!.sign(profile.wallet!);
 
     fileEntity.dataTxId = uploadHandle.dataTx!.id ?? '';
 
     if (fileSizeWithinBundleLimits) {
-      final owner = await profile.getWalletOwner();
-      final uploadHandleEntitySignatureData =
-          await uploadHandle.entityTx!.getSignatureData();
-      final uploadHandleEntityRawSignature =
-          await profile.getRawWalletSignature(uploadHandleEntitySignatureData);
       uploadHandle.entityTx = await _arweave.prepareEntityDataItem(
-          fileEntity, uploadHandleEntityRawSignature, owner, fileKey);
-
-      final uploadHandleBundleSignatureData =
-          await uploadHandle.bundleTx!.getSignatureData();
-      final uploadHandleBundleRawSignature =
-          await profile.getRawWalletSignature(uploadHandleBundleSignatureData);
+          fileEntity, profile.wallet!, fileKey);
       uploadHandle.bundleTx = await _arweave.prepareDataBundleTx(
         DataBundle(
           items: [
@@ -311,14 +295,11 @@ class UploadCubit extends Cubit<UploadState> {
             (uploadHandle.dataTx as DataItem?)!,
           ],
         ),
-        uploadHandleBundleRawSignature,
-        owner,
+        profile.wallet!,
       );
     } else {
-      final owner = await profile.getWalletOwner();
-
-      uploadHandle.entityTx = await _arweave.prepareEntityTx(
-          fileEntity, profile.getRawWalletSignature, owner, fileKey);
+      uploadHandle.entityTx =
+          await _arweave.prepareEntityTx(fileEntity, profile.wallet!, fileKey);
     }
 
     return uploadHandle;

@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
 
 part 'profile_state.dart';
@@ -133,7 +133,9 @@ class ProfileCubit extends Cubit<ProfileState> {
       ProfileLoggedIn(
         username: profile.details!.username,
         password: password,
-        wallet: profileType == ProfileType.ArConnect ? null : profile.wallet,
+        wallet: profileType == ProfileType.ArConnect
+            ? ArConnectWallet()
+            : profile.wallet,
         walletAddress: walletAddress,
         walletBalance: walletBalance,
         cipherKey: profile.key as SecretKey,
@@ -144,7 +146,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> refreshBalance() async {
     final profile = state as ProfileLoggedIn;
 
-    final walletAddress = await profile.getWalletAddress();
+    final walletAddress = await profile.wallet!.getAddress();
     final walletBalance = await Future.wait([
       _arweave.getWalletBalance(walletAddress),
       _arweave.getPendingTxFees(walletAddress),

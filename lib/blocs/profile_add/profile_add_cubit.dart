@@ -6,6 +6,7 @@ import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
@@ -78,8 +79,8 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         emit(ProfileAddFailiure());
         return;
       }
-
-      _lastKnownWalletAddress = await arconnect.getWalletAddress();
+      _wallet = ArConnectWallet();
+      _lastKnownWalletAddress = await _wallet!.getAddress();
 
       _driveTxs =
           await _arweave.getUniqueUserDriveEntityTxs(_lastKnownWalletAddress!);
@@ -144,11 +145,9 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       // right password.
       if (privateDriveTxs.isNotEmpty) {
         final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
-        final signature =
-            _wallet != null ? _wallet!.sign : arconnect.getSignature;
 
         final checkDriveKey = await deriveDriveKey(
-          signature,
+          _wallet!,
           checkDriveId,
           password!,
         );
@@ -170,7 +169,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
           return;
         }
       }
-      if (_wallet != null) {
+      if (_profileType == ProfileType.JSON) {
         await _profileDao.addProfile(username, password!, _wallet!);
       } else {
         final walletAddress = await arconnect.getWalletAddress();

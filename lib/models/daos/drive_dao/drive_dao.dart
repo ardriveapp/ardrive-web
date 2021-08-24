@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:moor/moor.dart';
@@ -30,7 +31,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     required String name,
     required String ownerAddress,
     required String privacy,
-    Future<Uint8List> Function(Uint8List message)? getWalletSignature,
+    Wallet? wallet,
     String? password,
     SecretKey? profileKey,
   }) async {
@@ -47,7 +48,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     SecretKey? driveKey;
     if (privacy == DrivePrivacy.private) {
-      driveKey = await deriveDriveKey(getWalletSignature!, driveId, password!);
+      driveKey = await deriveDriveKey(wallet!, driveId, password!);
       insertDriveOp = await _addDriveKeyToDriveCompanion(
           insertDriveOp, profileKey!, driveKey);
     }

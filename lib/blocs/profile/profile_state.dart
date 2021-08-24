@@ -71,20 +71,6 @@ class ProfileLoggedIn extends ProfileAvailable {
         walletBalance,
         cipherKey,
       ];
-
-  Future<Uint8List> getRawWalletSignature(Uint8List signatureData) {
-    return wallet == null
-        ? arconnect.getSignature(signatureData)
-        : wallet!.sign(signatureData);
-  }
-
-  Future<String> getWalletOwner() {
-    return wallet == null ? arconnect.getPublicKey() : wallet!.getOwner();
-  }
-
-  Future<String> getWalletAddress() {
-    return wallet == null ? arconnect.getWalletAddress() : wallet!.getAddress();
-  }
 }
 
 class ProfilePromptAdd extends ProfileUnavailable {}
