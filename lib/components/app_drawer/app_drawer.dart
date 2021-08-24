@@ -51,8 +51,8 @@ class AppDrawer extends StatelessWidget {
                                 padding: EdgeInsets.all(21),
                                 key: PageStorageKey<String>('driveScrollView'),
                                 children: [
-                                  if (state.userDrives!.isNotEmpty ||
-                                      state.sharedDrives!.isEmpty) ...{
+                                  if (state.userDrives.isNotEmpty ||
+                                      state.sharedDrives.isEmpty) ...{
                                     ListTile(
                                       dense: true,
                                       title: Text(
@@ -67,7 +67,7 @@ class AppDrawer extends StatelessWidget {
                                       ),
                                       trailing: _buildSyncButton(),
                                     ),
-                                    ...state.userDrives!.map(
+                                    ...state.userDrives.map(
                                       (d) => DriveListTile(
                                         drive: d,
                                         selected: state.selectedDriveId == d.id,
@@ -77,7 +77,7 @@ class AppDrawer extends StatelessWidget {
                                       ),
                                     ),
                                   },
-                                  if (state.sharedDrives!.isNotEmpty) ...{
+                                  if (state.sharedDrives.isNotEmpty) ...{
                                     ListTile(
                                       dense: true,
                                       title: Text(
@@ -90,11 +90,11 @@ class AppDrawer extends StatelessWidget {
                                                 color: ListTileTheme.of(context)
                                                     .textColor),
                                       ),
-                                      trailing: state.userDrives!.isEmpty
+                                      trailing: state.userDrives.isEmpty
                                           ? _buildSyncButton()
                                           : null,
                                     ),
-                                    ...state.sharedDrives!.map(
+                                    ...state.sharedDrives.map(
                                       (d) => DriveListTile(
                                         drive: d,
                                         selected: state.selectedDriveId == d.id,
@@ -199,10 +199,10 @@ class AppDrawer extends StatelessWidget {
                         },
                         if (drivesState is DrivesLoadSuccess) ...{
                           PopupMenuItem(
-                            enabled: drivesState.canCreateNewDrive!,
+                            enabled: drivesState.canCreateNewDrive,
                             value: (context) => promptToCreateDrive(context),
                             child: ListTile(
-                              enabled: drivesState.canCreateNewDrive!,
+                              enabled: drivesState.canCreateNewDrive,
                               title: Text('New drive'),
                             ),
                           ),
