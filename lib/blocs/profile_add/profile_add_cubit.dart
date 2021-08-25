@@ -21,7 +21,7 @@ part 'profile_add_state.dart';
 class ProfileAddCubit extends Cubit<ProfileAddState> {
   late FormGroup form;
 
-  Wallet? _wallet;
+  late Wallet _wallet;
   ProfileType? _profileType;
   String? _lastKnownWalletAddress;
   late List<TransactionCommonMixin> _driveTxs;
@@ -59,7 +59,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     _profileType = ProfileType.JSON;
     _wallet = Wallet.fromJwk(json.decode(walletJson));
     _driveTxs =
-        await _arweave.getUniqueUserDriveEntityTxs(await _wallet!.getAddress());
+        await _arweave.getUniqueUserDriveEntityTxs(await _wallet.getAddress());
 
     if (_driveTxs.isEmpty) {
       emit(ProfileAddOnboardingNewUser());
@@ -80,7 +80,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         return;
       }
       _wallet = ArConnectWallet();
-      _lastKnownWalletAddress = await _wallet!.getAddress();
+      _lastKnownWalletAddress = await _wallet.getAddress();
 
       _driveTxs =
           await _arweave.getUniqueUserDriveEntityTxs(_lastKnownWalletAddress!);
@@ -147,7 +147,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
 
         final checkDriveKey = await deriveDriveKey(
-          _wallet!,
+          _wallet,
           checkDriveId,
           password!,
         );
@@ -169,18 +169,10 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
           return;
         }
       }
-      if (_profileType == ProfileType.JSON) {
-        await _profileDao.addProfile(username, password!, _wallet!);
-      } else {
-        final walletAddress = await arconnect.getWalletAddress();
-        final walletPublicKey = await arconnect.getPublicKey();
-        await _profileDao.addProfileArconnect(
-          username,
-          password!,
-          walletAddress,
-          walletPublicKey,
-        );
-      }
+
+      await _profileDao.addProfile(
+          username, password!, _wallet, _profileType ?? ProfileType.JSON);
+
       await _profileCubit.unlockDefaultProfile(password, _profileType);
     } catch (e) {
       await _profileCubit.logoutProfile();

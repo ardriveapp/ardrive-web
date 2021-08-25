@@ -46,12 +46,11 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       return;
     }
 
+    final profile = _profileCubit.state as ProfileLoggedIn;
     if (await _profileCubit.logoutIfWalletMismatch()) {
       emit(DriveCreateWalletMismatch());
       return;
     }
-
-    final profile = _profileCubit.state as ProfileLoggedIn;
 
     final minimumWalletBalance = BigInt.from(10000000);
     if (profile.walletBalance <= minimumWalletBalance) {
@@ -63,8 +62,6 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     try {
       final driveName = form.control('name').value.toString().trim();
       final String drivePrivacy = form.control('privacy').value;
-
-      final profile = _profileCubit.state as ProfileLoggedIn;
       final walletAddress = await profile.wallet!.getAddress();
       final createRes = await _driveDao.createDrive(
         name: driveName,

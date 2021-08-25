@@ -73,46 +73,25 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     String username,
     String password,
     Wallet wallet,
+    ProfileType profileType,
   ) async {
     final profileKdRes = await deriveProfileKey(password);
     final profileSalt = profileKdRes.salt;
-    final encryptedWallet = await encryptWallet(wallet, profileKdRes);
+    //ArConnect wallet does not contain the jwk
+    final encryptedWallet = profileType == ProfileType.JSON
+        ? (await encryptWallet(wallet, profileKdRes))
+            .concatenation(nonce: false)
+        : Uint8List(0);
     final publicKey = await wallet.getOwner();
     final encryptedPublicKey = await encryptPublicKey(publicKey, profileKdRes);
     await into(profiles).insert(
       ProfilesCompanion.insert(
         id: await wallet.getAddress(),
         username: username,
-        encryptedWallet: encryptedWallet.concatenation(nonce: false),
+        encryptedWallet: encryptedWallet,
         keySalt: profileSalt as Uint8List,
         profileType: ProfileType.JSON.index,
         walletPublicKey: publicKey,
-        encryptedPublicKey: encryptedPublicKey.concatenation(nonce: false),
-      ),
-    );
-
-    return profileKdRes.key;
-  }
-
-  Future<SecretKey> addProfileArconnect(
-    String username,
-    String password,
-    String walletAddress,
-    String walletPublicKey,
-  ) async {
-    final profileKdRes = await deriveProfileKey(password);
-    final profileSalt = profileKdRes.salt;
-    final encryptedPublicKey =
-        await encryptPublicKey(walletPublicKey, profileKdRes);
-
-    await into(profiles).insert(
-      ProfilesCompanion.insert(
-        id: walletAddress,
-        username: username,
-        encryptedWallet: Uint8List(0),
-        keySalt: profileSalt as Uint8List,
-        profileType: ProfileType.ArConnect.index,
-        walletPublicKey: walletPublicKey,
         encryptedPublicKey: encryptedPublicKey.concatenation(nonce: false),
       ),
     );
