@@ -2,18 +2,18 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 
 class AppDialog extends StatelessWidget {
-  final String? title;
+  final String title;
   final EdgeInsetsGeometry contentPadding;
-  final Widget? content;
-  final List<Widget>? actions;
+  final Widget content;
+  final List<Widget> actions;
 
   final bool dismissable;
 
   const AppDialog({
-    this.title,
+    required this.title,
     this.contentPadding = const EdgeInsets.fromLTRB(24, 20, 24, 24),
-    this.content,
-    this.actions,
+    required this.content,
+    this.actions = const [],
     this.dismissable = true,
   });
 
@@ -32,7 +32,7 @@ class AppDialog extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      title!,
+                      title,
                       style: Theme.of(context)
                           .textTheme
                           .headline6!

@@ -77,8 +77,9 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         name: driveName,
         rootFolderId: createRes.rootFolderId,
         privacy: drivePrivacy,
-        authMode:
-            drivePrivacy == DrivePrivacy.private ? DriveAuthMode.password : '',
+        authMode: drivePrivacy == DrivePrivacy.private
+            ? DriveAuthMode.password
+            : null,
       );
 
       // TODO: Revert back to using data bundles when the api is stable again.
@@ -102,7 +103,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
       await _arweave.postTx(driveTx);
       await _arweave.postTx(rootFolderTx);
-      rootFolderEntity.txId = rootFolderTx.id ?? '';
+      rootFolderEntity.txId = rootFolderTx.id!;
       await _driveDao.insertFolderRevision(rootFolderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create));
 

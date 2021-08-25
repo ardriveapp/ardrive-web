@@ -58,7 +58,7 @@ class DriveRenameForm extends StatelessWidget {
                     ),
                   ),
                 )
-              : null,
+              : Container(),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),

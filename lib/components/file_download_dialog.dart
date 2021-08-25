@@ -34,7 +34,7 @@ Future<void> promptToDownloadProfileFile({
 
 Future<void> promptToDownloadSharedFile({
   required BuildContext context,
-  required String? fileId,
+  required String fileId,
   SecretKey? fileKey,
 }) =>
     showDialog(
@@ -90,7 +90,7 @@ class FileDownloadDialog extends StatelessWidget {
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(
-                    state.fileName!,
+                    state.fileName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

@@ -86,7 +86,7 @@ class FsEntryRenameForm extends StatelessWidget {
                     ),
                   ),
                 )
-              : null,
+              : Container(),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),

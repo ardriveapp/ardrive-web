@@ -6,7 +6,7 @@ abstract class FsEntryMoveState extends Equatable {
   const FsEntryMoveState({required this.isMovingFolder});
 
   @override
-  List<Object?> get props => [isMovingFolder];
+  List<Object> get props => [isMovingFolder];
 }
 
 class FsEntryMoveFolderLoadInProgress extends FsEntryMoveState {
@@ -19,7 +19,7 @@ class FsEntryMoveFolderLoadSuccess extends FsEntryMoveState {
   final FolderWithContents viewingFolder;
 
   /// The id of the folder/file entry being moved.
-  final String? movingEntryId;
+  final String movingEntryId;
 
   FsEntryMoveFolderLoadSuccess({
     required this.viewingRootFolder,
@@ -29,7 +29,7 @@ class FsEntryMoveFolderLoadSuccess extends FsEntryMoveState {
   }) : super(isMovingFolder: isMovingFolder);
 
   @override
-  List<Object?> get props =>
+  List<Object> get props =>
       [viewingRootFolder, viewingFolder, movingEntryId, isMovingFolder];
 }
 
