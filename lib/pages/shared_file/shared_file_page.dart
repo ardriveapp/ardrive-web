@@ -50,7 +50,7 @@ class SharedFilePage extends StatelessWidget {
                       label: Text('Download'),
                       onPressed: () => promptToDownloadSharedFile(
                         context: context,
-                        fileId: state.file.id,
+                        fileId: state.file.id!,
                         fileKey: state.fileKey,
                       ),
                     ),

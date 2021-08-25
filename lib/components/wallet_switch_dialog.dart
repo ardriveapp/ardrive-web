@@ -6,9 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class WalletSwitchDialog extends StatelessWidget {
-  final bool? fromAuthPage;
+  final bool fromAuthPage;
 
-  const WalletSwitchDialog({Key? key, this.fromAuthPage}) : super(key: key);
+  const WalletSwitchDialog({Key? key, this.fromAuthPage = false})
+      : super(key: key);
   @override
   Widget build(BuildContext context) => AppDialog(
         dismissable: false,
@@ -25,7 +26,7 @@ class WalletSwitchDialog extends StatelessWidget {
             onPressed: () {
               Navigator.pop(context);
               context.read<ProfileCubit>().logoutProfile();
-              if (fromAuthPage ?? false) {
+              if (fromAuthPage) {
                 window.location.reload();
                 context.read<ProfileAddCubit>().promptForWallet();
               }

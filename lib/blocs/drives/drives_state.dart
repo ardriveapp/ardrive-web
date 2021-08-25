@@ -13,18 +13,18 @@ class DrivesLoadSuccess extends DrivesState {
   /// Only null when the user has no drives.
   final String? selectedDriveId;
 
-  final List<Drive>? userDrives;
-  final List<Drive>? sharedDrives;
+  final List<Drive> userDrives;
+  final List<Drive> sharedDrives;
 
-  final bool? canCreateNewDrive;
+  final bool canCreateNewDrive;
 
-  bool get hasNoDrives => userDrives!.isEmpty && sharedDrives!.isEmpty;
+  bool get hasNoDrives => userDrives.isEmpty && sharedDrives.isEmpty;
 
   DrivesLoadSuccess({
-    this.selectedDriveId,
-    this.userDrives,
-    this.sharedDrives,
-    this.canCreateNewDrive,
+    required this.selectedDriveId,
+    required this.userDrives,
+    required this.sharedDrives,
+    required this.canCreateNewDrive,
   });
 
   DrivesLoadSuccess copyWith({

@@ -14,8 +14,8 @@ import 'services/services.dart';
 import 'theme/theme.dart';
 
 late ConfigService configService;
-AppConfig? config;
-ArweaveService? arweave;
+late AppConfig config;
+late ArweaveService arweave;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -23,7 +23,7 @@ void main() async {
   config = await configService.getConfig();
 
   arweave = ArweaveService(
-      Arweave(gatewayUrl: Uri.parse(config!.defaultArweaveGatewayUrl!)));
+      Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
   Future.delayed(Duration(hours: 12), () {
     window.location.reload();
   });
@@ -42,9 +42,9 @@ class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) => MultiRepositoryProvider(
         providers: [
-          RepositoryProvider<ArweaveService>(create: (_) => arweave as ArweaveService),
+          RepositoryProvider<ArweaveService>(create: (_) => arweave),
           RepositoryProvider<PstService>(create: (_) => PstService()),
-          RepositoryProvider<AppConfig>(create: (_) => config as AppConfig),
+          RepositoryProvider<AppConfig>(create: (_) => config),
           RepositoryProvider<Database>(create: (_) => Database()),
           RepositoryProvider<ProfileDao>(
               create: (context) => context.read<Database>().profileDao),

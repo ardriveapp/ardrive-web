@@ -51,7 +51,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                   const Center(child: CircularProgressIndicator())
                 else if (state is DriveShareLoadSuccess) ...{
                   ListTile(
-                    title: Text(state.driveName!),
+                    title: Text(state.driveName),
                     contentPadding: EdgeInsets.zero,
                   ),
                   Row(

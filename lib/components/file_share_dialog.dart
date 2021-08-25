@@ -54,7 +54,7 @@ class _FileShareDialogState extends State<FileShareDialog> {
                   const Center(child: CircularProgressIndicator())
                 else if (state is FileShareLoadSuccess) ...{
                   ListTile(
-                    title: Text(state.fileName!),
+                    title: Text(state.fileName),
                     contentPadding: EdgeInsets.zero,
                   ),
                   Row(

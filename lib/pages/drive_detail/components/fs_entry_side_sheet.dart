@@ -34,7 +34,7 @@ class FsEntrySideSheet extends StatelessWidget {
                       children: [
                         const SizedBox(height: 8),
                         ListTile(
-                          title: Text(state.name!),
+                          title: Text(state.name),
                           trailing: IconButton(
                             icon: const Icon(Icons.close),
                             onPressed: () => context
@@ -86,7 +86,7 @@ class FsEntrySideSheet extends StatelessWidget {
               DataCell(
                 CopyIconButton(
                   tooltip: 'Copy Drive ID',
-                  value: state.entry!.id,
+                  value: state.entry.id,
                 ),
               ),
             ]),
@@ -95,7 +95,7 @@ class FsEntrySideSheet extends StatelessWidget {
               // Capitalise the privacy enums of drives for display.
               DataCell(
                 Text(
-                  state.entry!.privacy == DrivePrivacy.private
+                  state.entry.privacy == DrivePrivacy.private
                       ? 'Private'
                       : 'Public',
                 ),
@@ -107,7 +107,7 @@ class FsEntrySideSheet extends StatelessWidget {
               DataCell(
                 CopyIconButton(
                   tooltip: 'Copy Folder ID',
-                  value: state.entry!.id,
+                  value: state.entry.id,
                 ),
               ),
             ]),
@@ -117,27 +117,27 @@ class FsEntrySideSheet extends StatelessWidget {
               DataCell(
                 CopyIconButton(
                   tooltip: 'Copy File ID',
-                  value: state.entry!.id,
+                  value: state.entry.id,
                 ),
               ),
             ]),
             DataRow(cells: [
               DataCell(Text('Size')),
-              DataCell(Text(filesize(state.entry!.size)))
+              DataCell(Text(filesize(state.entry.size)))
             ]),
             DataRow(cells: [
               DataCell(Text('Last modified')),
               DataCell(
-                  Text(yMMdDateFormatter.format(state.entry!.lastModifiedDate)))
+                  Text(yMMdDateFormatter.format(state.entry.lastModifiedDate)))
             ]),
           },
           DataRow(cells: [
             DataCell(Text('Last updated')),
-            DataCell(Text(yMMdDateFormatter.format(state.lastUpdated!))),
+            DataCell(Text(yMMdDateFormatter.format(state.lastUpdated))),
           ]),
           DataRow(cells: [
             DataCell(Text('Date created')),
-            DataCell(Text(yMMdDateFormatter.format(state.dateCreated!))),
+            DataCell(Text(yMMdDateFormatter.format(state.dateCreated))),
           ]),
         ],
       );
@@ -152,8 +152,8 @@ class FsEntrySideSheet extends StatelessWidget {
         child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
           builder: (context, state) {
             if (state is FsEntryActivitySuccess) {
-              if (state.revisions!.isNotEmpty) {
-                final revision = state.revisions!.last;
+              if (state.revisions.isNotEmpty) {
+                final revision = state.revisions.last;
                 return DataTable(
                   // Hide the data table header.
 
@@ -230,10 +230,10 @@ class FsEntrySideSheet extends StatelessWidget {
           child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
             builder: (context, state) {
               if (state is FsEntryActivitySuccess) {
-                if (state.revisions!.isNotEmpty) {
+                if (state.revisions.isNotEmpty) {
                   return ListView.separated(
                     itemBuilder: (BuildContext context, int index) {
-                      final revision = state.revisions![index];
+                      final revision = state.revisions[index];
 
                       late Widget content;
                       late Widget dateCreatedSubtitle;
@@ -342,7 +342,7 @@ class FsEntrySideSheet extends StatelessWidget {
                       );
                     },
                     separatorBuilder: (context, index) => Divider(),
-                    itemCount: state.revisions!.length,
+                    itemCount: state.revisions.length,
                   );
                 } else {
                   return Center(child: Text('This item is being processed...'));
