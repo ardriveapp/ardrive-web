@@ -62,7 +62,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     try {
       final driveName = form.control('name').value.toString().trim();
       final String drivePrivacy = form.control('privacy').value;
-      final walletAddress = await profile.wallet!.getAddress();
+      final walletAddress = await profile.wallet.getAddress();
       final createRes = await _driveDao.createDrive(
         name: driveName,
         ownerAddress: walletAddress,
@@ -84,7 +84,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       // TODO: Revert back to using data bundles when the api is stable again.
       final driveTx = await _arweave.prepareEntityTx(
         drive,
-        profile.wallet!,
+        profile.wallet,
         createRes.driveKey,
       );
 
@@ -96,7 +96,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
       final rootFolderTx = await _arweave.prepareEntityTx(
         rootFolderEntity,
-        profile.wallet!,
+        profile.wallet,
         createRes.driveKey,
       );
 

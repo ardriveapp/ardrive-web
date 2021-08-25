@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/entities/profileTypes.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -26,24 +27,10 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
 
     final profileSalt = profile.keySalt;
     final profileKdRes = await deriveProfileKey(password, profileSalt);
-    var walletJwk;
+    //Checks password for both JSON and ArConnect by decrypting stored public key
+    var publicKey;
     try {
-      //Will only decrypt wallet if it's a JSON Profile
-      if (profile.encryptedWallet.isNotEmpty) {
-        walletJwk = json.decode(
-          utf8.decode(
-            await aesGcm.decrypt(
-              secretBoxFromDataWithMacConcatenation(
-                profile.encryptedWallet,
-                nonce: profileSalt,
-              ),
-              secretKey: profileKdRes.key,
-            ),
-          ),
-        );
-      }
-      //Checks password for both JSON and ArConnect by decrypting stored public key
-      final publicKey = utf8.decode(
+      publicKey = utf8.decode(
         await aesGcm.decrypt(
           secretBoxFromDataWithMacConcatenation(
             profile.encryptedPublicKey,
@@ -52,18 +39,43 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
           secretKey: profileKdRes.key,
         ),
       );
-
-      //Returning this class doesn't do anything, but it could be useful for debugging
-      return ProfileLoadDetails(
-        details: profile,
-        wallet: profile.encryptedWallet.isNotEmpty
-            ? Wallet.fromJwk(walletJwk)
-            : null,
-        key: profileKdRes.key,
-        walletPublicKey: publicKey,
-      );
     } on SecretBoxAuthenticationError catch (_) {
       throw ProfilePasswordIncorrectException();
+    }
+
+    switch (profile.profileType as ProfileType) {
+      case ProfileType.JSON:
+        try {
+          //Will only decrypt wallet if it's a JSON Profile
+          final walletJwk = json.decode(
+            utf8.decode(
+              await aesGcm.decrypt(
+                secretBoxFromDataWithMacConcatenation(
+                  profile.encryptedWallet,
+                  nonce: profileSalt,
+                ),
+                secretKey: profileKdRes.key,
+              ),
+            ),
+          );
+
+          //Returning this class doesn't do anything, but it could be useful for debugging
+          return ProfileLoadDetails(
+            details: profile,
+            wallet: Wallet.fromJwk(walletJwk),
+            key: profileKdRes.key,
+            walletPublicKey: publicKey,
+          );
+        } on SecretBoxAuthenticationError catch (_) {
+          throw ProfilePasswordIncorrectException();
+        }
+      case ProfileType.ArConnect:
+        return ProfileLoadDetails(
+          details: profile,
+          wallet: ArConnectWallet(),
+          key: profileKdRes.key,
+          walletPublicKey: publicKey,
+        );
     }
   }
 
@@ -125,14 +137,14 @@ Future<SecretBox> encryptPublicKey(
 }
 
 class ProfileLoadDetails {
-  final Profile? details;
-  final Wallet? wallet;
-  final SecretKey? key;
-  final String? walletPublicKey;
+  final Profile details;
+  final Wallet wallet;
+  final SecretKey key;
+  final String walletPublicKey;
   ProfileLoadDetails({
-    this.details,
-    this.wallet,
-    this.key,
-    this.walletPublicKey,
+    required this.details,
+    required this.wallet,
+    required this.key,
+    required this.walletPublicKey,
   });
 }

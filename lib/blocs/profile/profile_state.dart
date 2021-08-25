@@ -26,7 +26,7 @@ class ProfileLoggedIn extends ProfileAvailable {
   final String? username;
   final String password;
 
-  final Wallet? wallet;
+  final Wallet wallet;
 
   final String walletAddress;
 

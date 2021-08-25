@@ -75,7 +75,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
         final driveEntity = drive.asEntity();
 
         final driveTx = await _arweave.prepareEntityTx(
-            driveEntity, profile.wallet!, driveKey);
+            driveEntity, profile.wallet, driveKey);
 
         await _arweave.postTx(driveTx);
         await _driveDao.writeToDrive(drive);

@@ -83,7 +83,7 @@ class SyncCubit extends Cubit<SyncState> {
         // later system.
         //
         final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
-            profile.wallet!, profile.password);
+            profile.wallet, profile.password);
 
         await _driveDao.updateUserDrives(userDriveEntities, profile.cipherKey);
       }
@@ -137,7 +137,7 @@ class SyncCubit extends Cubit<SyncState> {
         .expand((entities) => entities);
 
     //Handle newEntities being empty, i.e; There's nothing more to sync
-    if (newEntities == null || newEntities.isEmpty) {
+    if (newEntities.isEmpty) {
       //Reset the sync cursor after every sync to pick up files from other instances of the app.
       //(Different tab, different window, mobile, desktop etc)
       await _driveDao.writeToDrive(DrivesCompanion(

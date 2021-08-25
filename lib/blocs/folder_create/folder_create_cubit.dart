@@ -90,7 +90,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
 
         final folderTx = await _arweave.prepareEntityTx(
           folderEntity,
-          profile.wallet!,
+          profile.wallet,
           driveKey,
         );
 
