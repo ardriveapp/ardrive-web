@@ -22,7 +22,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   late FormGroup form;
 
   late Wallet _wallet;
-  ProfileType? _profileType;
+  late ProfileType _profileType;
   String? _lastKnownWalletAddress;
   late List<TransactionCommonMixin> _driveTxs;
 
@@ -171,7 +171,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       }
 
       await _profileDao.addProfile(
-          username, password!, _wallet, _profileType ?? ProfileType.JSON);
+          username, password!, _wallet, _profileType);
 
       await _profileCubit.unlockDefaultProfile(password, _profileType);
     } catch (e) {

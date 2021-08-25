@@ -23,7 +23,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
 
-  ProfileType? _profileType;
+  late ProfileType _profileType;
   String? _lastKnownWalletAddress;
 
   ProfileUnlockCubit({
@@ -72,7 +72,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
 
     try {
       //Store profile key so other private entities can be created and loaded
-      await _profileDao.loadDefaultProfile(password);
+      await _profileDao.loadDefaultProfile(password, _profileType);
     } on ProfilePasswordIncorrectException catch (_) {
       form
           .control('password')

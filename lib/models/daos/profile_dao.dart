@@ -22,7 +22,8 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   /// Loads the default profile with the provided password.
   ///
   /// Throws a [ProfilePasswordIncorrectException] if the provided password is incorrect.
-  Future<ProfileLoadDetails> loadDefaultProfile(String password) async {
+  Future<ProfileLoadDetails> loadDefaultProfile(
+      String password, ProfileType profileType) async {
     final profile = await defaultProfile().getSingle();
 
     final profileSalt = profile.keySalt;
@@ -43,7 +44,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       throw ProfilePasswordIncorrectException();
     }
 
-    switch (profile.profileType as ProfileType) {
+    switch (profileType) {
       case ProfileType.JSON:
         try {
           //Will only decrypt wallet if it's a JSON Profile
