@@ -116,7 +116,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   ) async {
     emit(ProfileLoggingIn());
 
-    final profile = await _profileDao.loadDefaultProfile(password, profileType);
+    final profile = await _profileDao.loadDefaultProfile(password);
     final arconnect = ArConnectService();
 
     final walletAddress = await (profileType == ProfileType.ArConnect

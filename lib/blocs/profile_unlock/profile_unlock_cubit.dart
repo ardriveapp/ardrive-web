@@ -72,7 +72,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
 
     try {
       //Store profile key so other private entities can be created and loaded
-      await _profileDao.loadDefaultProfile(password, _profileType);
+      await _profileDao.loadDefaultProfile(password);
     } on ProfilePasswordIncorrectException catch (_) {
       form
           .control('password')
