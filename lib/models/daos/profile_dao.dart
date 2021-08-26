@@ -89,11 +89,16 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   ) async {
     final profileKdRes = await deriveProfileKey(password);
     final profileSalt = profileKdRes.salt;
-    //ArConnect wallet does not contain the jwk
-    final encryptedWallet = profileType == ProfileType.JSON
-        ? (await encryptWallet(wallet, profileKdRes))
-            .concatenation(nonce: false)
-        : Uint8List(0);
+    final encryptedWallet = await () async {
+      switch (profileType) {
+        case ProfileType.JSON:
+          return (await encryptWallet(wallet, profileKdRes))
+              .concatenation(nonce: false);
+        case ProfileType.ArConnect:
+          //ArConnect wallet does not contain the jwk
+          return Uint8List(0);
+      }
+    }();
     final publicKey = await wallet.getOwner();
     final encryptedPublicKey = await encryptPublicKey(publicKey, profileKdRes);
     await into(profiles).insert(
