@@ -123,14 +123,20 @@ class ProfileCubit extends Cubit<ProfileState> {
         ? arconnect.getWalletAddress()
         : profile.wallet.getAddress());
     final walletBalance = await _arweave.getWalletBalance(walletAddress);
+    final wallet = () {
+      switch (profileType) {
+        case ProfileType.JSON:
+          return profile.wallet;
+        case ProfileType.ArConnect:
+          return ArConnectWallet();
+      }
+    }();
 
     emit(
       ProfileLoggedIn(
         username: profile.details.username,
         password: password,
-        wallet: profileType == ProfileType.ArConnect
-            ? ArConnectWallet()
-            : profile.wallet,
+        wallet: wallet,
         walletAddress: walletAddress,
         walletBalance: walletBalance,
         cipherKey: profile.key,
