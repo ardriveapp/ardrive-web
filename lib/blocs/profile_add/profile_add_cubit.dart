@@ -136,7 +136,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       emit(ProfileAddInProgress());
 
       final username = form.control('username').value.toString().trim();
-      final String? password = form.control('password').value;
+      final String password = form.control('password').value;
 
       final privateDriveTxs = _driveTxs.where(
           (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
@@ -149,7 +149,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         final checkDriveKey = await deriveDriveKey(
           _wallet,
           checkDriveId,
-          password!,
+          password,
         );
 
         final privateDrive = await _arweave.getLatestDriveEntityWithId(
@@ -170,8 +170,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         }
       }
 
-      await _profileDao.addProfile(
-          username, password!, _wallet, _profileType);
+      await _profileDao.addProfile(username, password, _wallet, _profileType);
 
       await _profileCubit.unlockDefaultProfile(password, _profileType);
     } catch (e) {
