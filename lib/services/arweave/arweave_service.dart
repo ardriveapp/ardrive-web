@@ -142,13 +142,13 @@ class ArweaveService {
 
   /// Gets the unique drive entities for a particular user.
   Future<Map<DriveEntity, SecretKey?>> getUniqueUserDriveEntities(
-    Future<Uint8List> Function(Uint8List message) getWalletSignature,
-    String walletAddress,
+    Wallet wallet,
     String password,
   ) async {
     final userDriveEntitiesQuery = await _gql.execute(
       UserDriveEntitiesQuery(
-          variables: UserDriveEntitiesArguments(owner: walletAddress)),
+          variables:
+              UserDriveEntitiesArguments(owner: await wallet.getAddress())),
     );
     final driveTxs = userDriveEntitiesQuery.data!.transactions.edges
         .map((e) => e.node)
@@ -170,7 +170,7 @@ class ArweaveService {
       final driveKey =
           driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private
               ? await deriveDriveKey(
-                  getWalletSignature,
+                  wallet,
                   driveTx.getTag(EntityTag.driveId)!,
                   password,
                 )
@@ -236,9 +236,10 @@ class ArweaveService {
 
   /// Gets any created private drive belonging to [profileId], as long as its unlockable with [password] when used with the [getSignatureFn]
   Future<DriveEntity?> getAnyPrivateDriveEntity(
-      String profileId,
-      String password,
-      Future<Uint8List> Function(Uint8List message) getSignatureFn) async {
+    String profileId,
+    String password,
+    Wallet wallet,
+  ) async {
     final driveTxs = await getUniqueUserDriveEntityTxs(profileId);
     final privateDriveTxs = driveTxs.where(
         (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
@@ -249,7 +250,7 @@ class ArweaveService {
 
     final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
     final checkDriveKey = await deriveDriveKey(
-      getSignatureFn,
+      wallet,
       checkDriveId,
       password,
     );
@@ -358,28 +359,26 @@ class ArweaveService {
 
   Future<Transaction> prepareEntityTx(
     Entity entity,
-    Future<Uint8List> Function(Uint8List) getRawSignature,
-    String owner, [
+    Wallet wallet, [
     SecretKey? key,
   ]) async {
     final tx = await client.transactions!.prepare(
       await entity.asTransaction(key),
-      owner,
+      wallet,
     );
-    final rawSignature = await getRawSignature(await tx.getSignatureData());
-    await tx.sign(rawSignature);
+    await tx.sign(wallet);
 
     return tx;
   }
 
   Future<Uint8List> getSignatureData(
     Entity entity,
-    String owner, [
+    Wallet wallet, [
     SecretKey? key,
   ]) async {
     final tx = await client.transactions!.prepare(
       await entity.asTransaction(key),
-      owner,
+      wallet,
     );
 
     return await tx.getSignatureData();
@@ -391,14 +390,13 @@ class ArweaveService {
 
   Future<DataItem> prepareEntityDataItem(
     Entity entity,
-    Uint8List rawSignature,
-    String owner, [
+    Wallet wallet, [
     SecretKey? key,
   ]) async {
     final item = await entity.asDataItem(key);
-    item.setOwner(owner);
+    item.setOwner(await wallet.getOwner());
 
-    await item.sign(rawSignature);
+    await item.sign(wallet);
 
     return item;
   }
@@ -406,13 +404,13 @@ class ArweaveService {
   /// Creates and signs a [Transaction] representing the provided [DataBundle].
 
   Future<Transaction> prepareDataBundleTx(
-      DataBundle bundle, Uint8List rawSignature, String owner) async {
+      DataBundle bundle, Wallet wallet) async {
     final bundleTx = await client.transactions!.prepare(
       Transaction.withDataBundle(bundle: bundle)..addApplicationTags(),
-      owner,
+      wallet,
     );
 
-    await bundleTx.sign(rawSignature);
+    await bundleTx.sign(wallet);
 
     return bundleTx;
   }

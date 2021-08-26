@@ -47,8 +47,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "98c3a59a5087d3c66c433383e70a6fce50cf037a"
-      resolved-ref: "98c3a59a5087d3c66c433383e70a6fce50cf037a"
+      ref: "85b2daf99bde0eb18466e4e5cc5137b7f824bfed"
+      resolved-ref: "85b2daf99bde0eb18466e4e5cc5137b7f824bfed"
       url: "https://github.com/ardriveapp/arweave-dart"
     source: git
     version: "0.1.0"
@@ -65,7 +65,7 @@ packages:
       name: bloc
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.1.0"
+    version: "7.0.0"
   bloc_test:
     dependency: "direct dev"
     description:
@@ -226,7 +226,7 @@ packages:
       name: cryptography
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.2"
+    version: "2.0.1"
   dart_style:
     dependency: transitive
     description:
@@ -377,7 +377,7 @@ packages:
       name: frontend_server_client
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.1"
+    version: "2.1.0"
   fuchsia_remote_debug_protocol:
     dependency: transitive
     description: flutter
@@ -968,7 +968,7 @@ packages:
       name: url_launcher_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.2"
+    version: "2.0.1"
   uuid:
     dependency: "direct main"
     description:
