@@ -31,9 +31,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     required String name,
     required String ownerAddress,
     required String privacy,
-    Wallet? wallet,
-    String? password,
-    SecretKey? profileKey,
+    required Wallet wallet,
+    required String password,
+    required SecretKey profileKey,
   }) async {
     final driveId = _uuid.v4();
     final rootFolderId = _uuid.v4();
@@ -47,10 +47,15 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
 
     SecretKey? driveKey;
-    if (privacy == DrivePrivacy.private) {
-      driveKey = await deriveDriveKey(wallet!, driveId, password!);
-      insertDriveOp = await _addDriveKeyToDriveCompanion(
-          insertDriveOp, profileKey!, driveKey);
+    switch (privacy) {
+      case DrivePrivacy.private:
+        driveKey = await deriveDriveKey(wallet, driveId, password);
+        insertDriveOp = await _addDriveKeyToDriveCompanion(
+            insertDriveOp, profileKey, driveKey);
+        break;
+      case DrivePrivacy.public:
+        // Nothing to do
+        break;
     }
 
     await batch((batch) {
