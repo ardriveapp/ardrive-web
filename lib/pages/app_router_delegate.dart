@@ -119,8 +119,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   child: BlocListener<DriveDetailCubit, DriveDetailState>(
                     listener: (context, state) {
                       if (state is DriveDetailLoadSuccess) {
-                        driveId = state.currentDrive!.id;
-                        driveFolderId = state.currentFolder!.folder!.id;
+                        driveId = state.currentDrive.id;
+                        driveFolderId = state.currentFolder.folder.id;
                         notifyListeners();
                       } else if (state is DriveDetailLoadNotFound) {
                         // Do not prompt the user to attach an unfound drive if they are logging out.

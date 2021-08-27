@@ -119,13 +119,13 @@ void main() {
           driveDao.watchFolderContents(driveId, folderPath: '').share();
 
       await Future.wait([
-        expectLater(folderStream.map((f) => f.folder!.id), emits(rootFolderId)),
+        expectLater(folderStream.map((f) => f.folder.id), emits(rootFolderId)),
         expectLater(
-          folderStream.map((f) => f.subfolders!.map((f) => f.name)),
+          folderStream.map((f) => f.subfolders.map((f) => f.name)),
           emits(allOf(hasLength(emptyNestedFolderCount), Sorted())),
         ),
         expectLater(
-          folderStream.map((f) => f.files!.map((f) => f.id).toList()),
+          folderStream.map((f) => f.files.map((f) => f.id).toList()),
           emits(allOf(hasLength(rootFolderFileCount), Sorted())),
         ),
       ]);
@@ -136,14 +136,14 @@ void main() {
           .share();
 
       await Future.wait([
-        expectLater(folderStream.map((f) => f.folder!.id),
+        expectLater(folderStream.map((f) => f.folder.id),
             emits(emptyNestedFolderIdPrefix + '0')),
         expectLater(
-          folderStream.map((f) => f.subfolders!.map((f) => f.id)),
+          folderStream.map((f) => f.subfolders.map((f) => f.id)),
           emits(hasLength(0)),
         ),
         expectLater(
-          folderStream.map((f) => f.files!.map((f) => f.name).toList()),
+          folderStream.map((f) => f.files.map((f) => f.name).toList()),
           emits(allOf(hasLength(nestedFolderFileCount), Sorted())),
         ),
       ]);
@@ -153,20 +153,17 @@ void main() {
       final treeRoot = await driveDao.getFolderTree(driveId, rootFolderId);
 
       expect(treeRoot.folder.id, equals(rootFolderId));
-      expect(treeRoot.files!.length, equals(rootFolderFileCount));
+      expect(treeRoot.files.length, equals(rootFolderFileCount));
 
-      final nestedSubfolderFileCount = treeRoot.subfolders!
-          .where((f) => f.folder.id == nestedFolderId)
+      final nestedSubfolderFileCount = treeRoot.subfolders.where((f) => f.folder.id == nestedFolderId)
           .single
-          .files!
-          .length;
+          .files.length;
       expect(nestedSubfolderFileCount, equals(nestedSubfolderFileCount));
 
-      final emptySubfolders = treeRoot.subfolders!
-          .where((f) => f.folder.id.startsWith(emptyNestedFolderIdPrefix));
-      expect(emptySubfolders.map((f) => f.subfolders!.length).toList(),
+      final emptySubfolders = treeRoot.subfolders.where((f) => f.folder.id.startsWith(emptyNestedFolderIdPrefix));
+      expect(emptySubfolders.map((f) => f.subfolders.length).toList(),
           everyElement(equals(0)));
-      expect(emptySubfolders.map((f) => f.files!.length).toList(),
+      expect(emptySubfolders.map((f) => f.files.length).toList(),
           everyElement(equals(0)));
     });
   });

@@ -3,7 +3,7 @@ part of '../drive_detail_page.dart';
 Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
     ListView(
       children: [
-        ...state.currentFolder!.subfolders!.map(
+        ...state.currentFolder.subfolders.map(
           (folder) => _buildFolderListTile(
             context: context,
             folder: folder,
@@ -21,7 +21,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
             },
           ),
         ),
-        ...state.currentFolder!.files!.map(
+        ...state.currentFolder.files.map(
           (file) => _buildFileListTile(
             context: context,
             file: file,

@@ -85,8 +85,8 @@ class FsEntryMoveForm extends StatelessWidget {
                 label: Text('CREATE FOLDER'),
                 onPressed: () => promptToCreateFolder(
                   context,
-                  driveId: state.viewingFolder.folder!.driveId,
-                  parentFolderId: state.viewingFolder.folder!.id,
+                  driveId: state.viewingFolder.folder.driveId,
+                  parentFolderId: state.viewingFolder.folder.id,
                 ),
               );
             } else {
@@ -117,7 +117,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                     padding: const EdgeInsets.all(16)),
                                 icon: const Icon(Icons.arrow_back),
                                 label: Text(
-                                    'Back to "${state.viewingFolder.folder!.name}" folder'),
+                                    'Back to "${state.viewingFolder.folder.name}" folder'),
                                 onPressed: () => context
                                     .read<FsEntryMoveCubit>()
                                     .loadParentFolder()),
@@ -129,7 +129,7 @@ class FsEntryMoveForm extends StatelessWidget {
                               child: ListView(
                                 shrinkWrap: true,
                                 children: [
-                                  ...state.viewingFolder.subfolders!.map(
+                                  ...state.viewingFolder.subfolders.map(
                                     (f) => ListTile(
                                       key: ValueKey(f.id),
                                       dense: true,
@@ -144,7 +144,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                       enabled: f.id != state.movingEntryId,
                                     ),
                                   ),
-                                  ...state.viewingFolder.files!.map(
+                                  ...state.viewingFolder.files.map(
                                     (f) => ListTile(
                                       key: ValueKey(f.id),
                                       leading: Icon(Icons.insert_drive_file),

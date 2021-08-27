@@ -2,17 +2,17 @@ part of 'drive_dao.dart';
 
 class FolderNode {
   final FolderEntry folder;
-  final List<FolderNode>? subfolders;
+  final List<FolderNode> subfolders;
 
   /// The names of the files in this folder, keyed by their id.
-  final Map<String, String>? files;
+  final Map<String, String> files;
 
-  FolderNode({required this.folder, this.subfolders, this.files});
+  FolderNode({required this.folder, required this.subfolders, required this.files});
 
   FolderNode? searchForFolder(String folderId) {
     if (folder.id == folderId) return this;
 
-    for (final subfolder in subfolders!) {
+    for (final subfolder in subfolders) {
       return subfolder.searchForFolder(folderId);
     }
 
