@@ -52,7 +52,7 @@ class AppRoutePath {
       AppRoutePath(
         sharedFileId: sharedFileId,
         sharedFileKey: sharedFilePk,
-        sharedRawFileKey: sharedRawFileKey ?? '',
+        sharedRawFileKey: sharedRawFileKey,
       );
 
   factory AppRoutePath.unknown() => AppRoutePath();

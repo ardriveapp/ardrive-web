@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
@@ -42,10 +43,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             .folderById(driveId: driveId, folderId: initialFolderId)
             .getSingleOrNull();
         // Open the root folder if the deep-linked folder could not be found.
-        openFolder(path: folder?.path ?? '');
+
+        openFolder(path: folder?.path ?? rootPath);
+        // The empty string here is required to open the root folder
       });
     } else {
-      openFolder(path: '');
+      openFolder(path: rootPath);
     }
   }
 
@@ -70,16 +73,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           emit(DriveDetailLoadNotFound());
           return;
         }
-
-        if (folderContents.folder == null) {
-          // Emit the loading state as it can be a while between the drive being not found, then added,
-          // and then the folders being loaded.
-          emit(DriveDetailLoadInProgress());
-        } else {
-          final state = this.state is DriveDetailLoadSuccess
-              ? this.state as DriveDetailLoadSuccess
-              : DriveDetailLoadSuccess();
-          final profile = _profileCubit.state;
+        final state = this.state is DriveDetailLoadSuccess
+            ? this.state as DriveDetailLoadSuccess
+            : null;
+        final profile = _profileCubit.state;
+        if (state != null) {
           emit(
             state.copyWith(
               currentDrive: drive,
@@ -90,12 +88,21 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               contentOrderingMode: contentOrderingMode,
             ),
           );
+        } else {
+          emit(DriveDetailLoadSuccess(
+            currentDrive: drive,
+            hasWritePermissions: profile is ProfileLoggedIn &&
+                drive.ownerAddress == profile.walletAddress,
+            currentFolder: folderContents,
+            contentOrderBy: contentOrderBy,
+            contentOrderingMode: contentOrderingMode,
+          ));
         }
       },
     ).listen((_) {});
   }
 
-  Future<void> selectItem(String? itemId, {bool isFolder = false}) async {
+  Future<void> selectItem(String itemId, {bool isFolder = false}) async {
     var state = this.state as DriveDetailLoadSuccess;
 
     state = state.copyWith(
@@ -103,13 +110,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       selectedItemIsFolder: isFolder,
     );
 
-    if (state.currentDrive!.isPublic && !isFolder) {
-      final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
-          driveId: driveId, fileId: state.selectedItemId ?? '');
-      final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
-      state = state.copyWith(
-          selectedFilePreviewUrl:
-              Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'));
+    if (state.selectedItemId != null) {
+      if (state.currentDrive.isPublic && !isFolder) {
+        final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
+            driveId: driveId, fileId: state.selectedItemId!);
+        final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
+        state = state.copyWith(
+            selectedFilePreviewUrl:
+                Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'));
+      }
     }
 
     emit(state);
@@ -120,7 +129,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       OrderingMode contentOrderingMode = OrderingMode.asc}) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
-        path: state.currentFolder!.folder!.path,
+        path: state.currentFolder.folder.path,
         contentOrderBy: contentOrderBy,
         contentOrderingMode: contentOrderingMode);
   }

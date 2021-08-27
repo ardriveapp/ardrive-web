@@ -91,10 +91,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 if (state is DrivesLoadSuccess) {
                   final selectedDriveChanged = driveId != state.selectedDriveId;
                   if (selectedDriveChanged) {
-                    driveFolderId = '';
+                    driveFolderId = null;
                   }
 
-                  driveId = state.selectedDriveId ?? '';
+                  driveId = state.selectedDriveId;
                   notifyListeners();
                 }
               },
@@ -106,41 +106,43 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 }
 
                 shellPage ??= const SizedBox();
-
-                return BlocProvider(
-                  key: ValueKey(driveId),
-                  create: (context) => DriveDetailCubit(
-                    driveId: driveId ?? '',
-                    initialFolderId: driveFolderId,
-                    profileCubit: context.read<ProfileCubit>(),
-                    driveDao: context.read<DriveDao>(),
-                    config: context.read<AppConfig>(),
-                  ),
-                  child: BlocListener<DriveDetailCubit, DriveDetailState>(
-                    listener: (context, state) {
-                      if (state is DriveDetailLoadSuccess) {
-                        driveId = state.currentDrive!.id;
-                        driveFolderId = state.currentFolder!.folder!.id;
-                        notifyListeners();
-                      } else if (state is DriveDetailLoadNotFound) {
-                        // Do not prompt the user to attach an unfound drive if they are logging out.
-                        final profileCubit = context.read<ProfileCubit>();
-                        if (profileCubit.state is ProfileLoggingOut) {
-                          return;
-                        }
-
-                        attachDrive(
-                          context: context,
-                          initialDriveId: driveId,
-                          driveName: driveName,
-                        );
-                      }
-                    },
-                    child: FloatingHelpButtonPortalEntry(
-                      child: AppShell(page: shellPage),
+                if (driveId != null) {
+                  return BlocProvider(
+                    key: ValueKey(driveId),
+                    create: (context) => DriveDetailCubit(
+                      driveId: driveId!,
+                      initialFolderId: driveFolderId,
+                      profileCubit: context.read<ProfileCubit>(),
+                      driveDao: context.read<DriveDao>(),
+                      config: context.read<AppConfig>(),
                     ),
-                  ),
-                );
+                    child: BlocListener<DriveDetailCubit, DriveDetailState>(
+                      listener: (context, state) {
+                        if (state is DriveDetailLoadSuccess) {
+                          driveId = state.currentDrive.id;
+                          driveFolderId = state.currentFolder.folder.id;
+                          notifyListeners();
+                        } else if (state is DriveDetailLoadNotFound) {
+                          // Do not prompt the user to attach an unfound drive if they are logging out.
+                          final profileCubit = context.read<ProfileCubit>();
+                          if (profileCubit.state is ProfileLoggingOut) {
+                            return;
+                          }
+
+                          attachDrive(
+                            context: context,
+                            initialDriveId: driveId,
+                            driveName: driveName,
+                          );
+                        }
+                      },
+                      child: FloatingHelpButtonPortalEntry(
+                        child: AppShell(page: shellPage),
+                      ),
+                    ),
+                  );
+                }
+                return Container();
               },
             );
           }

@@ -11,8 +11,8 @@ part 'fs_entry_move_state.dart';
 
 class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
   final String driveId;
-  final String folderId;
-  final String fileId;
+  final String? folderId;
+  final String? fileId;
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
@@ -21,12 +21,12 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
   StreamSubscription? _folderSubscription;
 
-  bool get _isMovingFolder => folderId.isNotEmpty;
+  bool get _isMovingFolder => folderId != null;
 
   FsEntryMoveCubit({
     required this.driveId,
-    this.folderId = '',
-    this.fileId = '',
+    this.folderId,
+    this.fileId,
     required ArweaveService arweave,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
@@ -35,34 +35,37 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
-        assert(folderId.isNotEmpty || fileId.isNotEmpty),
-        super(FsEntryMoveFolderLoadInProgress(
-            isMovingFolder: folderId.isNotEmpty)) {
+        assert(folderId != null || fileId != null),
+        super(
+            FsEntryMoveFolderLoadInProgress(isMovingFolder: folderId != null)) {
     _driveDao
         .driveById(driveId: driveId)
         .getSingle()
         .then((d) => loadFolder(d.rootFolderId));
   }
 
-  Future<void> loadParentFolder() {
+  Future<void> loadParentFolder() async {
     final state = this.state as FsEntryMoveFolderLoadSuccess;
-    return loadFolder(state.viewingFolder.folder!.parentFolderId);
+    if (state.viewingFolder.folder.parentFolderId != null) {
+      return loadFolder(state.viewingFolder.folder.parentFolderId!);
+    }
   }
 
-  Future<void> loadFolder(String? folderId) async {
+  Future<void> loadFolder(String folderId) async {
     unawaited(_folderSubscription?.cancel());
 
-    _folderSubscription =
-        _driveDao.watchFolderContents(driveId, folderId: folderId).listen(
-              (f) => emit(
-                FsEntryMoveFolderLoadSuccess(
-                  viewingRootFolder: f.folder!.parentFolderId == null,
-                  viewingFolder: f,
-                  isMovingFolder: _isMovingFolder,
-                  movingEntryId: this.folderId.isEmpty ? fileId : this.folderId,
-                ),
-              ),
-            );
+    _folderSubscription = _driveDao
+        .watchFolderContents(driveId, folderId: folderId)
+        .listen(
+          (f) => emit(
+            FsEntryMoveFolderLoadSuccess(
+              viewingRootFolder: f.folder.parentFolderId == null,
+              viewingFolder: f,
+              isMovingFolder: _isMovingFolder,
+              movingEntryId: this.folderId != null ? fileId! : this.folderId!,
+            ),
+          ),
+        );
   }
 
   Future<void> submit() async {
@@ -83,10 +86,10 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
         await _driveDao.transaction(() async {
           var folder = await _driveDao
-              .folderById(driveId: driveId, folderId: folderId)
+              .folderById(driveId: driveId, folderId: folderId!)
               .getSingle();
           folder = folder.copyWith(
-              parentFolderId: parentFolder!.id,
+              parentFolderId: parentFolder.id,
               path: '${parentFolder.path}/${folder.name}',
               lastUpdated: DateTime.now());
 
@@ -97,9 +100,9 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
-
-          folderEntity.txId = folderTx.id ?? '';
-
+          if (folderTx.id != null) {
+            folderEntity.txId = folderTx.id!;
+          }
           await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
               performedAction: RevisionAction.move));
 
@@ -113,10 +116,10 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
         await _driveDao.transaction(() async {
           var file = await _driveDao
-              .fileById(driveId: driveId, fileId: fileId)
+              .fileById(driveId: driveId, fileId: fileId!)
               .getSingle();
           file = file.copyWith(
-              parentFolderId: parentFolder!.id,
+              parentFolderId: parentFolder.id,
               path: '${parentFolder.path}/${file.name}',
               lastUpdated: DateTime.now());
 
@@ -130,8 +133,9 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
           await _arweave.postTx(fileTx);
           await _driveDao.writeToFile(file);
-
-          fileEntity.txId = fileTx.id ?? '';
+          if (fileTx.id != null) {
+            fileEntity.txId = fileTx.id!;
+          }
 
           await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
               performedAction: RevisionAction.move));

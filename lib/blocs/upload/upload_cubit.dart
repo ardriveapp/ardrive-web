@@ -198,8 +198,9 @@ class UploadCubit extends Cubit<UploadState> {
     await _driveDao.transaction(() async {
       for (final uploadHandle in _fileUploadHandles.values) {
         final fileEntity = uploadHandle.entity;
-
-        fileEntity.txId = uploadHandle.entityTx!.id ?? '';
+        if (uploadHandle.entityTx?.id != null) {
+          fileEntity.txId = uploadHandle.entityTx!.id!;
+        }
 
         await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
         await _driveDao.insertFileRevision(
@@ -283,7 +284,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     await uploadHandle.dataTx!.sign(profile.wallet);
 
-    fileEntity.dataTxId = uploadHandle.dataTx!.id ?? '';
+    fileEntity.dataTxId = uploadHandle.dataTx!.id;
 
     if (fileSizeWithinBundleLimits) {
       uploadHandle.entityTx = await _arweave.prepareEntityDataItem(
