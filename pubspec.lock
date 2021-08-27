@@ -297,6 +297,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.8.1+1"
+  file_selector_windows:
+    dependency: "direct main"
+    description:
+      name: file_selector_windows
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.0.2+1"
   filesize:
     dependency: "direct main"
     description:
