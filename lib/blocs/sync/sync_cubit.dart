@@ -218,6 +218,7 @@ class SyncCubit extends Cubit<SyncState> {
 
       final revisionPerformedAction =
           entity.getPerformedRevisionAction(latestRevision);
+
       final revision = entity.toRevisionCompanion(
           performedAction: revisionPerformedAction ?? '');
 
@@ -318,6 +319,9 @@ class SyncCubit extends Cubit<SyncState> {
 
       final revisionPerformedAction =
           entity.getPerformedRevisionAction(latestRevisions[entity.id]);
+      if (revisionPerformedAction == null) {
+        continue;
+      }
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 

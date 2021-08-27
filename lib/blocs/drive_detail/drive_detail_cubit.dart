@@ -42,7 +42,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             .folderById(driveId: driveId, folderId: initialFolderId)
             .getSingleOrNull();
         // Open the root folder if the deep-linked folder could not be found.
+
         openFolder(path: folder?.path ?? '');
+        // The empty string here is required to open the root folder
       });
     } else {
       openFolder(path: '');

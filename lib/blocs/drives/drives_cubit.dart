@@ -43,25 +43,26 @@ class DrivesCubit extends Cubit<DrivesState> {
       }
 
       final profile = _profileCubit.state;
-      final walletAddress =
-          profile is ProfileLoggedIn ? profile.walletAddress : '';
-      emit(
-        DrivesLoadSuccess(
-          selectedDriveId: selectedDriveId,
-          // If the user is not logged in, all drives are considered shared ones.
-          userDrives: drives
-              .where((d) => profile is ProfileLoggedIn
-                  ? d.ownerAddress == walletAddress
-                  : false)
-              .toList(),
-          sharedDrives: drives
-              .where((d) => profile is ProfileLoggedIn
-                  ? d.ownerAddress != walletAddress
-                  : true)
-              .toList(),
-          canCreateNewDrive: _profileCubit.state is ProfileLoggedIn,
-        ),
-      );
+      if (profile is ProfileLoggedIn) {
+        final walletAddress = profile.walletAddress;
+        emit(
+          DrivesLoadSuccess(
+            selectedDriveId: selectedDriveId,
+            // If the user is not logged in, all drives are considered shared ones.
+            userDrives: drives
+                .where((d) => profile is ProfileLoggedIn
+                    ? d.ownerAddress == walletAddress
+                    : false)
+                .toList(),
+            sharedDrives: drives
+                .where((d) => profile is ProfileLoggedIn
+                    ? d.ownerAddress != walletAddress
+                    : true)
+                .toList(),
+            canCreateNewDrive: _profileCubit.state is ProfileLoggedIn,
+          ),
+        );
+      }
     });
   }
 
