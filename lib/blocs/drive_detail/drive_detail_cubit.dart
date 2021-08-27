@@ -70,12 +70,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           emit(DriveDetailLoadNotFound());
           return;
         }
-
-        if (folderContents.folder == null) {
-          // Emit the loading state as it can be a while between the drive being not found, then added,
-          // and then the folders being loaded.
-          emit(DriveDetailLoadInProgress());
-        } else {
+        try {
           final state = this.state is DriveDetailLoadSuccess
               ? this.state as DriveDetailLoadSuccess
               : null;
@@ -101,6 +96,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               contentOrderingMode: contentOrderingMode,
             ));
           }
+        } catch (e) {
+          // In case folderContents.folder is null and the app throws and exception because the contents aren't loaded yet
+          // It can be a while between the drive being not found, then added, and then the folders being loaded.
+          emit(DriveDetailLoadInProgress());
         }
       },
     ).listen((_) {});
