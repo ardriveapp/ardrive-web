@@ -70,36 +70,30 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           emit(DriveDetailLoadNotFound());
           return;
         }
-        try {
-          final state = this.state is DriveDetailLoadSuccess
-              ? this.state as DriveDetailLoadSuccess
-              : null;
-          final profile = _profileCubit.state;
-          if (state != null) {
-            emit(
-              state.copyWith(
-                currentDrive: drive,
-                hasWritePermissions: profile is ProfileLoggedIn &&
-                    drive.ownerAddress == profile.walletAddress,
-                currentFolder: folderContents,
-                contentOrderBy: contentOrderBy,
-                contentOrderingMode: contentOrderingMode,
-              ),
-            );
-          } else {
-            emit(DriveDetailLoadSuccess(
+        final state = this.state is DriveDetailLoadSuccess
+            ? this.state as DriveDetailLoadSuccess
+            : null;
+        final profile = _profileCubit.state;
+        if (state != null) {
+          emit(
+            state.copyWith(
               currentDrive: drive,
               hasWritePermissions: profile is ProfileLoggedIn &&
                   drive.ownerAddress == profile.walletAddress,
               currentFolder: folderContents,
               contentOrderBy: contentOrderBy,
               contentOrderingMode: contentOrderingMode,
-            ));
-          }
-        } catch (e) {
-          // In case folderContents.folder is null and the app throws and exception because the contents aren't loaded yet
-          // It can be a while between the drive being not found, then added, and then the folders being loaded.
-          emit(DriveDetailLoadInProgress());
+            ),
+          );
+        } else {
+          emit(DriveDetailLoadSuccess(
+            currentDrive: drive,
+            hasWritePermissions: profile is ProfileLoggedIn &&
+                drive.ownerAddress == profile.walletAddress,
+            currentFolder: folderContents,
+            contentOrderBy: contentOrderBy,
+            contentOrderingMode: contentOrderingMode,
+          ));
         }
       },
     ).listen((_) {});
