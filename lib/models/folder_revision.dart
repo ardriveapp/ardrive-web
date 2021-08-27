@@ -33,7 +33,7 @@ extension FolderEntityExtensions on FolderEntity {
   ///
   /// This requires a `performedAction` to be specified.
   FolderRevisionsCompanion toRevisionCompanion(
-          {required String? performedAction}) =>
+          {required String performedAction}) =>
       FolderRevisionsCompanion.insert(
         folderId: id!,
         driveId: driveId!,
@@ -41,7 +41,7 @@ extension FolderEntityExtensions on FolderEntity {
         parentFolderId: Value(parentFolderId),
         metadataTxId: txId,
         dateCreated: Value(createdAt),
-        action: performedAction ?? '',
+        action: performedAction,
       );
 
   /// Returns the action performed on the folder that lead to the new revision.
