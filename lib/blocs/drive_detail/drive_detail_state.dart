@@ -9,13 +9,13 @@ abstract class DriveDetailState extends Equatable {
 class DriveDetailLoadInProgress extends DriveDetailState {}
 
 class DriveDetailLoadSuccess extends DriveDetailState {
-  final Drive? currentDrive;
-  final bool? hasWritePermissions;
+  final Drive currentDrive;
+  final bool hasWritePermissions;
 
-  final FolderWithContents? currentFolder;
+  final FolderWithContents currentFolder;
 
-  final DriveOrder? contentOrderBy;
-  final OrderingMode? contentOrderingMode;
+  final DriveOrder contentOrderBy;
+  final OrderingMode contentOrderingMode;
 
   final String? selectedItemId;
   final bool selectedItemIsFolder;
@@ -27,11 +27,11 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final Uri? selectedFilePreviewUrl;
 
   DriveDetailLoadSuccess({
-    this.currentDrive,
-    this.hasWritePermissions,
-    this.currentFolder,
-    this.contentOrderBy,
-    this.contentOrderingMode,
+    required this.currentDrive,
+    required this.hasWritePermissions,
+    required this.currentFolder,
+    required this.contentOrderBy,
+    required this.contentOrderingMode,
     this.selectedItemId,
     this.selectedItemIsFolder = false,
     this.showSelectedItemDetails = false,

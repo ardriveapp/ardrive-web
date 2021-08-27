@@ -78,18 +78,29 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         } else {
           final state = this.state is DriveDetailLoadSuccess
               ? this.state as DriveDetailLoadSuccess
-              : DriveDetailLoadSuccess();
+              : null;
           final profile = _profileCubit.state;
-          emit(
-            state.copyWith(
+          if (state != null) {
+            emit(
+              state.copyWith(
+                currentDrive: drive,
+                hasWritePermissions: profile is ProfileLoggedIn &&
+                    drive.ownerAddress == profile.walletAddress,
+                currentFolder: folderContents,
+                contentOrderBy: contentOrderBy,
+                contentOrderingMode: contentOrderingMode,
+              ),
+            );
+          } else {
+            emit(DriveDetailLoadSuccess(
               currentDrive: drive,
               hasWritePermissions: profile is ProfileLoggedIn &&
                   drive.ownerAddress == profile.walletAddress,
               currentFolder: folderContents,
               contentOrderBy: contentOrderBy,
               contentOrderingMode: contentOrderingMode,
-            ),
-          );
+            ));
+          }
         }
       },
     ).listen((_) {});
@@ -103,7 +114,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       selectedItemIsFolder: isFolder,
     );
 
-    if (state.currentDrive!.isPublic && !isFolder) {
+    if (state.currentDrive.isPublic && !isFolder) {
       final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
           driveId: driveId, fileId: state.selectedItemId ?? '');
       final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
@@ -120,7 +131,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       OrderingMode contentOrderingMode = OrderingMode.asc}) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
-        path: state.currentFolder!.folder!.path,
+        path: state.currentFolder.folder!.path,
         contentOrderBy: contentOrderBy,
         contentOrderingMode: contentOrderingMode);
   }
