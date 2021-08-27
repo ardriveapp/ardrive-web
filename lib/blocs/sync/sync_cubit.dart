@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/html/html.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -52,7 +52,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void restartSyncOnFocus() {
-    whenTabIsUnhidden(() => Future.delayed(Duration(seconds: 2))
+    whenBrowserTabIsUnhidden(() => Future.delayed(Duration(seconds: 2))
         .then((value) => createSyncStream()));
   }
 
@@ -66,7 +66,7 @@ class SyncCubit extends Cubit<SyncState> {
         //Check if profile is ArConnect to skip sync while tab is hidden
         final isArConnect = await _profileCubit.isCurrentProfileArConnect();
 
-        if (isArConnect && isTabHidden()) {
+        if (isArConnect && isBrowserTabHidden()) {
           print('Tab hidden, skipping sync...');
           emit(SyncIdle());
           return;

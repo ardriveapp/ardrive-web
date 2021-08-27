@@ -11,3 +11,19 @@ void whenTabIsUnhidden(Function onShow) {
     }
   });
 }
+
+void refreshPageAtInterval(Duration duration) {
+  Future.delayed(duration, () {
+    window.location.reload();
+  });
+}
+
+void onWalletSwitch(Function onWalletSwitch) {
+  window.addEventListener('walletSwitch', (event) {
+    onWalletSwitch();
+  });
+}
+
+void reload(){
+  window.location.reload();
+}

@@ -1,5 +1,5 @@
-import 'dart:html';
 
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,7 +26,7 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
         builder: (context, state) {
-          window.addEventListener('walletSwitch', (event) {
+          onArConnectWalletSwitch(() {
             if (_showWalletSwitchDialog) {
               showDialog(
                 context: context,
