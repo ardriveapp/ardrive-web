@@ -61,7 +61,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           id: rootFolderId,
           driveId: driveId,
           name: name,
-          path: '',
+          path: rootPath,
         ),
       );
     });

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
@@ -84,11 +86,11 @@ class DriveDetailPage extends StatelessWidget {
                           FsEntrySideSheet(
                             driveId: state.currentDrive.id,
                             folderId: state.selectedItemIsFolder
-                                ? state.selectedItemId ?? ''
-                                : '',
+                                ? state.selectedItemId
+                                : null,
                             fileId: !state.selectedItemIsFolder
-                                ? state.selectedItemId ?? ''
-                                : '',
+                                ? state.selectedItemId
+                                : null,
                           ),
                         }
                       ],
@@ -143,11 +145,11 @@ class DriveDetailPage extends StatelessWidget {
                         child: FsEntrySideSheet(
                           driveId: state.currentDrive.id,
                           folderId: state.selectedItemIsFolder
-                              ? state.selectedItemId ?? ''
-                              : '',
+                              ? state.selectedItemId
+                              : null,
                           fileId: !state.selectedItemIsFolder
-                              ? state.selectedItemId ?? ''
-                              : '',
+                              ? state.selectedItemId
+                              : null,
                         ),
                       )
                   ],

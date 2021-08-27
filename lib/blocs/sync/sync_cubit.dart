@@ -450,7 +450,7 @@ class SyncCubit extends Cubit<SyncState> {
       // If this is the root folder, we should not include its name as part of the path.
       final folderPath = node.folder.parentFolderId != null
           ? parentPath + '/' + node.folder.name
-          : '';
+          : rootPath;
 
       await _driveDao
           .updateFolderById(driveId, folderId)
@@ -473,8 +473,7 @@ class SyncCubit extends Cubit<SyncState> {
       // Get the path of this folder's parent.
       String? parentPath;
       if (treeRoot.folder.parentFolderId == null) {
-        parentPath = '';
-        //This here shows the parent path is the root folder
+        parentPath = rootPath;
       } else {
         parentPath = (await _driveDao
             .folderById(

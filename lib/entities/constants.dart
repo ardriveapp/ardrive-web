@@ -43,3 +43,5 @@ class DriveAuthMode {
   static const password = 'password';
   static const none = 'none';
 }
+
+const String rootPath = '';

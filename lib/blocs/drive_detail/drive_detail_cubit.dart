@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
@@ -43,11 +44,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             .getSingleOrNull();
         // Open the root folder if the deep-linked folder could not be found.
 
-        openFolder(path: folder?.path ?? '');
+        openFolder(path: folder?.path ?? rootPath);
         // The empty string here is required to open the root folder
       });
     } else {
-      openFolder(path: '');
+      openFolder(path: rootPath);
     }
   }
 

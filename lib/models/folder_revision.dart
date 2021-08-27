@@ -17,7 +17,7 @@ extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {
         driveId: driveId.value,
         parentFolderId: parentFolderId,
         name: name.value,
-        path: '',
+        path: rootPath,
         lastUpdated: dateCreated,
       );
 
