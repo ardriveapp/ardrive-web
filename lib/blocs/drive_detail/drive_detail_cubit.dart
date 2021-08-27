@@ -99,7 +99,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     ).listen((_) {});
   }
 
-  Future<void> selectItem(String? itemId, {bool isFolder = false}) async {
+  Future<void> selectItem(String itemId, {bool isFolder = false}) async {
     var state = this.state as DriveDetailLoadSuccess;
 
     state = state.copyWith(
@@ -107,13 +107,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       selectedItemIsFolder: isFolder,
     );
 
-    if (state.currentDrive.isPublic && !isFolder) {
-      final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
-          driveId: driveId, fileId: state.selectedItemId ?? '');
-      final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
-      state = state.copyWith(
-          selectedFilePreviewUrl:
-              Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'));
+    if (state.selectedItemId != null) {
+      if (state.currentDrive.isPublic && !isFolder) {
+        final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
+            driveId: driveId, fileId: state.selectedItemId!);
+        final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
+        state = state.copyWith(
+            selectedFilePreviewUrl:
+                Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'));
+      }
     }
 
     emit(state);
