@@ -91,10 +91,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 if (state is DrivesLoadSuccess) {
                   final selectedDriveChanged = driveId != state.selectedDriveId;
                   if (selectedDriveChanged) {
-                    driveFolderId = '';
+                    driveFolderId = null;
                   }
 
-                  driveId = state.selectedDriveId ?? '';
+                  driveId = state.selectedDriveId;
                   notifyListeners();
                 }
               },
@@ -110,7 +110,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 return BlocProvider(
                   key: ValueKey(driveId),
                   create: (context) => DriveDetailCubit(
-                    driveId: driveId ?? '',
+                    driveId: driveId!,
                     initialFolderId: driveFolderId,
                     profileCubit: context.read<ProfileCubit>(),
                     driveDao: context.read<DriveDao>(),

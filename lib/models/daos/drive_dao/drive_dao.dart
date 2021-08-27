@@ -187,9 +187,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       String? folderPath,
       DriveOrder orderBy = DriveOrder.name,
       OrderingMode orderingMode = OrderingMode.asc}) {
+    assert(folderId != null || folderPath != null);
     final folderStream = (folderId != null
             ? folderById(driveId: driveId, folderId: folderId)
-            : folderWithPath(driveId: driveId, path: folderPath ?? ''))
+            : folderWithPath(driveId: driveId, path: folderPath!))
         .watchSingleOrNull();
     final subfolderOrder =
         enumToFolderOrderByClause(folderEntries, orderBy, orderingMode);
@@ -198,7 +199,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         ? foldersInFolder(
             driveId: driveId, parentFolderId: folderId, order: subfolderOrder)
         : foldersInFolderAtPath(
-            driveId: driveId, path: folderPath ?? '', order: subfolderOrder));
+            driveId: driveId, path: folderPath!, order: subfolderOrder));
 
     final filesOrder =
         enumToFileOrderByClause(fileEntries, orderBy, orderingMode);
@@ -207,7 +208,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         ? filesInFolderWithRevisionTransactions(
             driveId: driveId, parentFolderId: folderId, order: filesOrder)
         : filesInFolderAtPathWithRevisionTransactions(
-            driveId: driveId, path: folderPath ?? '', order: filesOrder);
+            driveId: driveId, path: folderPath!, order: filesOrder);
 
     return Rx.combineLatest3(
       folderStream,
