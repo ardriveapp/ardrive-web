@@ -218,9 +218,11 @@ class SyncCubit extends Cubit<SyncState> {
 
       final revisionPerformedAction =
           entity.getPerformedRevisionAction(latestRevision);
-
-      final revision = entity.toRevisionCompanion(
-          performedAction: revisionPerformedAction ?? '');
+      if (revisionPerformedAction == null) {
+        continue;
+      }
+      final revision =
+          entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
       if (revision.action.value.isEmpty) {
         continue;
@@ -469,20 +471,22 @@ class SyncCubit extends Cubit<SyncState> {
 
     for (final treeRoot in staleFolderTree) {
       // Get the path of this folder's parent.
-      String parentPath;
+      String? parentPath;
       if (treeRoot.folder.parentFolderId == null) {
         parentPath = '';
+        //This here shows the parent path is the root folder
       } else {
         parentPath = (await _driveDao
-                .folderById(
-                    driveId: driveId,
-                    folderId: treeRoot.folder.parentFolderId ?? '')
-                .map((f) => f.path)
-                .getSingleOrNull()) ??
-            '';
+            .folderById(
+                driveId: driveId, folderId: treeRoot.folder.parentFolderId!)
+            .map((f) => f.path)
+            .getSingleOrNull());
       }
-
-      await updateFolderTree(treeRoot, parentPath);
+      if (parentPath != null) {
+        await updateFolderTree(treeRoot, parentPath);
+      } else {
+        print('Missing parent folder');
+      }
     }
 
     // Update paths of files whose parent folders were not updated.
