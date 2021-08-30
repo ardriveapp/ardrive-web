@@ -66,7 +66,7 @@ class DrivesCubit extends Cubit<DrivesState> {
     });
   }
 
-  void selectDrive(String? driveId) {
+  void selectDrive(String driveId) {
     final state = this.state as DrivesLoadSuccess;
     emit(state.copyWith(selectedDriveId: driveId));
   }

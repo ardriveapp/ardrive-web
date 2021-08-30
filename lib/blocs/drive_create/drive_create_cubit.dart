@@ -109,7 +109,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await _driveDao.insertFolderRevision(rootFolderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create));
 
-      _drivesCubit.selectDrive(drive.id);
+      _drivesCubit.selectDrive(drive.id!);
     } catch (err) {
       addError(err);
     }
