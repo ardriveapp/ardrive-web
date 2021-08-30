@@ -1,4 +1,3 @@
-import 'dart:html';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/wallet_switch_dialog.dart';
@@ -6,6 +5,7 @@ import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/profile_auth/components/profile_auth_fail_screen.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -22,8 +22,9 @@ class ProfileAuthPage extends StatefulWidget {
 
 class _ProfileAuthPageState extends State<ProfileAuthPage> {
   bool _showWalletSwitchDialog = true;
+
   void listenForWalletSwitch() {
-    window.addEventListener('walletSwitch', (event) {
+    onArConnectWalletSwitch(() {
       if (_showWalletSwitchDialog) {
         showDialog(
           context: context,

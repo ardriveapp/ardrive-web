@@ -1,7 +1,7 @@
-import 'dart:html';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/app_dialog.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -27,7 +27,7 @@ class WalletSwitchDialog extends StatelessWidget {
               Navigator.pop(context);
               context.read<ProfileCubit>().logoutProfile();
               if (fromAuthPage) {
-                window.location.reload();
+                triggerHTMLPageReload();
                 context.read<ProfileAddCubit>().promptForWallet();
               }
             },

@@ -1,42 +1,45 @@
-// import 'package:ardrive/blocs/blocs.dart';
-// import 'package:ardrive/models/models.dart';
-// import 'package:bloc_test/bloc_test.dart';
-// import 'package:test/test.dart';
+import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/models/models.dart';
+import 'package:bloc_test/bloc_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:test/test.dart';
 
-// import '../utils/utils.dart';
+import '../utils/fakes.dart';
+import '../utils/utils.dart';
 
-// void main() {
-//   group('DrivesCubit', () {
-//     Database db;
-//     DriveDao driveDao;
+void main() {
+  group('DrivesCubit', () {
+    late Database db;
+    late DriveDao driveDao;
 
-//     ProfileCubit profileCubit;
-//     DrivesCubit drivesCubit;
+    late ProfileCubit profileCubit;
+    late DrivesCubit drivesCubit;
 
-//     setUp(() {
-//       db = getTestDb();
-//       driveDao = db.driveDao;
+    setUp(() {
+      registerFallbackValue(SyncStatefake());
+      registerFallbackValue(ProfileStatefake());
+      db = getTestDb();
+      driveDao = db.driveDao;
 
-//       profileCubit = MockProfileCubit();
+      profileCubit = MockProfileCubit();
 
-//       drivesCubit = DrivesCubit(
-//         profileCubit: profileCubit,
-//         driveDao: driveDao,
-//       );
-//     });
+      drivesCubit = DrivesCubit(
+        profileCubit: profileCubit,
+        driveDao: driveDao,
+      );
+    });
 
-//     tearDown(() async {
-//       await db.close();
-//     });
+    tearDown(() async {
+      await db.close();
+    });
 
-//     blocTest<DrivesCubit, DrivesState>(
-//       'create public drive',
-//       build: () => drivesCubit,
-//       act: (bloc) async {},
-//       expect: [
-//         DrivesLoadInProgress(),
-//         DrivesLoadSuccess(),
-//       ],
-//     );
-//   });
-// }
+    blocTest<DrivesCubit, DrivesState>(
+      'create public drive',
+      build: () => drivesCubit,
+      act: (bloc) async {},
+      expect: () => [
+        DrivesLoadInProgress(),
+      ],
+    );
+  });
+}

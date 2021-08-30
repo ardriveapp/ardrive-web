@@ -1,44 +1,51 @@
-// import 'package:ardrive/blocs/blocs.dart';
-// import 'package:ardrive/models/models.dart';
-// import 'package:ardrive/services/services.dart';
-// import 'package:arweave/arweave.dart';
-// import 'package:bloc_test/bloc_test.dart';
-// import 'package:test/test.dart';
+import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/services.dart';
+import 'package:arweave/arweave.dart';
+import 'package:bloc_test/bloc_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:test/test.dart';
 
-// import '../utils/utils.dart';
+import '../utils/fakes.dart';
+import '../utils/utils.dart';
 
-// void main() {
-//   group('FolderCreateCubit:', () {
-//     Database db;
-//     DriveDao driveDao;
+void main() {
+  group('FolderCreateCubit:', () {
+    late DriveDao driveDao;
+    late Database db;
 
-//     ArweaveService arweave;
-//     ProfileCubit profileCubit;
-//     FolderCreateCubit folderCreateCubit;
+    late ArweaveService arweave;
+    late ProfileCubit profileCubit;
+    late FolderCreateCubit folderCreateCubit;
 
-//     setUp(() {
-//       db = getTestDb();
-//       driveDao = db.driveDao;
+    setUp(() {
+      registerFallbackValue(ProfileStatefake());
 
-//       arweave = ArweaveService(Arweave());
-//       profileCubit = MockProfileCubit();
+      db = getTestDb();
+      driveDao = db.driveDao;
 
-//       folderCreateCubit = FolderCreateCubit(
-//         arweave: arweave,
-//         driveDao: driveDao,
-//         profileCubit: profileCubit,
-//       );
-//     });
+      arweave = ArweaveService(Arweave());
+      profileCubit = MockProfileCubit();
 
-//     tearDown(() async {
-//       await db.close();
-//     });
+      folderCreateCubit = FolderCreateCubit(
+        arweave: arweave,
+        driveDao: driveDao,
+        profileCubit: profileCubit,
+        //TODO Mock or supply a driveId or parentFolderId
+        driveId: '',
+        parentFolderId: '',
+      );
+    });
 
-//     blocTest<FolderCreateCubit, FolderCreateState>(
-//       'does nothing when submitted without valid form',
-//       build: () => folderCreateCubit,
-//       act: (bloc) => bloc.submit(),
-//       expect: [],
-//     );
-//   });
-// }
+    tearDown(() async {
+      await db.close();
+    });
+
+    blocTest<FolderCreateCubit, FolderCreateState>(
+      'does nothing when submitted without valid form',
+      build: () => folderCreateCubit,
+      act: (bloc) => bloc.submit(),
+      expect: () => [],
+    );
+  });
+}

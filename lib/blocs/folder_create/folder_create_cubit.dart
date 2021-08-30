@@ -88,12 +88,9 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           name: folderName,
         );
 
-        final owner = await profile.getWalletOwner();
-
         final folderTx = await _arweave.prepareEntityTx(
           folderEntity,
-          profile.getRawWalletSignature,
-          owner,
+          profile.wallet,
           driveKey,
         );
 

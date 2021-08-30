@@ -26,7 +26,7 @@ class ProfileLoggedIn extends ProfileAvailable {
   final String? username;
   final String password;
 
-  final Wallet? wallet;
+  final Wallet wallet;
 
   final String walletAddress;
 
@@ -34,6 +34,7 @@ class ProfileLoggedIn extends ProfileAvailable {
   final BigInt walletBalance;
 
   final SecretKey cipherKey;
+  final arconnect = ArConnectService();
 
   ProfileLoggedIn({
     required this.username,
@@ -70,20 +71,6 @@ class ProfileLoggedIn extends ProfileAvailable {
         walletBalance,
         cipherKey,
       ];
-
-  Future<Uint8List> getRawWalletSignature(Uint8List signatureData) {
-    return wallet == null
-        ? arconnect.getSignature(signatureData)
-        : wallet!.sign(signatureData);
-  }
-
-  Future<String> getWalletOwner() {
-    return wallet == null ? arconnect.getPublicKey() : wallet!.getOwner();
-  }
-
-  Future<String> getWalletAddress() {
-    return wallet == null ? arconnect.getWalletAddress() : wallet!.getAddress();
-  }
 }
 
 class ProfilePromptAdd extends ProfileUnavailable {}

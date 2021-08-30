@@ -1,7 +1,7 @@
-import 'dart:html';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -33,7 +33,7 @@ class ProfileAuthFailScreen extends StatelessWidget {
             TextButton(
               onPressed: () {
                 context.read<ProfileCubit>().logoutProfile();
-                window.location.reload();
+                triggerHTMLPageReload();
                 context.read<ProfileAddCubit>().promptForWallet();
               },
               child: Text('Log In'),

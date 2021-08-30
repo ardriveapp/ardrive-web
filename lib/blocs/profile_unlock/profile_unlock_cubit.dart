@@ -2,7 +2,8 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
+import 'package:ardrive/services/arconnect/arconnect.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -22,7 +23,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
 
-  ProfileType? _profileType;
+  late ProfileType _profileType;
   String? _lastKnownWalletAddress;
 
   ProfileUnlockCubit({
@@ -42,13 +43,14 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
       emit(ProfileUnlockInitial(username: profile.username));
     }();
   }
+
+  final arconnect = ArConnectService();
+
   // Validate the user's password by loading and decrypting a private drive.
   Future<void> verifyPasswordArconnect(String password) async {
     final profile = await _profileDao.defaultProfile().getSingle();
-
-    final signature = arconnect.getSignature;
     final privateDrive = await _arweave.getAnyPrivateDriveEntity(
-        profile.id, password, signature);
+        profile.id, password, ArConnectWallet());
     if (privateDrive == null) {
       throw ProfilePasswordIncorrectException();
     }

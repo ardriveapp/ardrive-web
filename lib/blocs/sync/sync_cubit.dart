@@ -1,10 +1,11 @@
 import 'dart:async';
-import 'dart:html';
 import 'dart:math';
 
+import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -52,12 +53,8 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void restartSyncOnFocus() {
-    document.addEventListener('visibilitychange', (event) {
-      if (document.visibilityState != 'hidden') {
-        Future.delayed(Duration(seconds: 2))
-            .then((value) => createSyncStream());
-      }
-    });
+    whenBrowserTabIsUnhidden(() => Future.delayed(Duration(seconds: 2))
+        .then((value) => createSyncStream()));
   }
 
   Future<void> startSync() async {
@@ -70,7 +67,7 @@ class SyncCubit extends Cubit<SyncState> {
         //Check if profile is ArConnect to skip sync while tab is hidden
         final isArConnect = await _profileCubit.isCurrentProfileArConnect();
 
-        if (isArConnect && window.document.visibilityState != 'visible') {
+        if (isArConnect && isBrowserTabHidden()) {
           print('Tab hidden, skipping sync...');
           emit(SyncIdle());
           return;
@@ -87,9 +84,7 @@ class SyncCubit extends Cubit<SyncState> {
         // later system.
         //
         final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
-            profile.getRawWalletSignature,
-            await profile.getWalletAddress(),
-            profile.password);
+            profile.wallet, profile.password);
 
         await _driveDao.updateUserDrives(userDriveEntities, profile.cipherKey);
       }
@@ -143,7 +138,7 @@ class SyncCubit extends Cubit<SyncState> {
         .expand((entities) => entities);
 
     //Handle newEntities being empty, i.e; There's nothing more to sync
-    if (newEntities == null || newEntities.isEmpty) {
+    if (newEntities.isEmpty) {
       //Reset the sync cursor after every sync to pick up files from other instances of the app.
       //(Different tab, different window, mobile, desktop etc)
       await _driveDao.writeToDrive(DrivesCompanion(
