@@ -197,7 +197,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     final folderStream = (folderId != null
             ? folderById(driveId: driveId, folderId: folderId)
             : folderWithPath(driveId: driveId, path: folderPath!))
-        .watchSingleOrNull();
+        .watchSingle();
     final subfolderOrder =
         enumToFolderOrderByClause(folderEntries, orderBy, orderingMode);
 
@@ -252,7 +252,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   }
 
   UpdateStatement<FolderEntries, FolderEntry> updateFolderById(
-          String? driveId, String? folderId) =>
+          String driveId, String folderId) =>
       update(folderEntries)
         ..where((f) => f.driveId.equals(driveId) & f.id.equals(folderId));
 
@@ -289,7 +289,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   }
 
   UpdateStatement<FileEntries, FileEntry> updateFileById(
-          String? driveId, String? fileId) =>
+          String driveId, String fileId) =>
       update(fileEntries)
         ..where((f) => f.driveId.equals(driveId) & f.id.equals(fileId));
 
