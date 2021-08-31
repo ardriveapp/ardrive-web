@@ -27,7 +27,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       //Reinitialize here in case connection is closed with abort
 
       final dataRes = await http.get(Uri.parse(
-          _arweave.client.api!.gatewayUrl.origin + '/${file.dataTxId}'));
+          _arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}'));
 
       Uint8List dataBytes;
 
@@ -37,7 +37,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
         final dataTx = await (_arweave.getTransactionDetails(file.dataTxId!)
             as FutureOr<TransactionCommonMixin>);
         dataBytes = await decryptTransactionData(
-            dataTx, dataRes.bodyBytes, fileKey);
+            dataTx, dataRes.bodyBytes, fileKey!);
       }
 
       emit(

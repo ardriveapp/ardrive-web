@@ -146,7 +146,7 @@ class UploadCubit extends Cubit<UploadState> {
     pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
 
     if (pstFee > BigInt.zero) {
-      feeTx = await _arweave.client.transactions!.prepare(
+      feeTx = await _arweave.client.transactions.prepare(
         Transaction(
           target: await _pst.getWeightedPstHolder(),
           quantity: pstFee,
@@ -164,8 +164,7 @@ class UploadCubit extends Cubit<UploadState> {
     final arUploadCost = winstonToAr(totalCost);
     final usdUploadCost = await _arweave
         .getArUsdConversionRate()
-        .then((conversionRate) => double.parse(arUploadCost) * conversionRate)
-        .catchError(() => null);
+        .then((conversionRate) => double.parse(arUploadCost) * conversionRate);
     if (await _profileCubit.checkIfWalletMismatch()) {
       emit(UploadWalletMismatch());
       return;
@@ -264,7 +263,7 @@ class UploadCubit extends Cubit<UploadState> {
           : DataItem.withBlobData(data: fileData);
       uploadHandle.dataTx!.setOwner(await profile.wallet.getOwner());
     } else {
-      uploadHandle.dataTx = await _arweave.client.transactions!.prepare(
+      uploadHandle.dataTx = await _arweave.client.transactions.prepare(
         private
             ? await createEncryptedTransaction(fileData, fileKey!)
             : Transaction.withBlobData(data: fileData),

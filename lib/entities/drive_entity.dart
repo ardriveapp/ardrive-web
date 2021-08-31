@@ -43,7 +43,7 @@ class DriveEntity extends Entity {
       if (drivePrivacy == DrivePrivacy.public) {
         entityJson = json.decode(utf8.decode(data));
       } else if (drivePrivacy == DrivePrivacy.private) {
-        entityJson = await decryptEntityJson(transaction, data, driveKey);
+        entityJson = await decryptEntityJson(transaction, data, driveKey!);
       }
 
       return DriveEntity.fromJson(entityJson!)

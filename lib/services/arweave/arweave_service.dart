@@ -15,11 +15,10 @@ class ArweaveService {
   final ArtemisClient _gql;
 
   ArweaveService(this.client)
-      : _gql = ArtemisClient('${client.api!.gatewayUrl.origin}/graphql');
+      : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
 
   /// Returns the onchain balance of the specified address.
-  Future<BigInt> getWalletBalance(String address) => client.api!
-      .get('wallet/$address/balance')
+  Future<BigInt> getWalletBalance(String address) => client.api.get('wallet/$address/balance')
       .then((res) => BigInt.parse(res.body));
 
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
@@ -57,7 +56,7 @@ class ArweaveService {
     final queryEdges = driveEntityHistoryQuery.data!.transactions.edges;
     final entityTxs = queryEdges.map((e) => e.node).toList();
     final rawEntityData =
-        await Future.wait(entityTxs.map((e) => client.api!.get(e.id)))
+        await Future.wait(entityTxs.map((e) => client.api.get(e.id)))
             .then((rs) => rs.map((r) => r.bodyBytes).toList());
 
     final blockHistory = <BlockEntities>[];
@@ -155,7 +154,7 @@ class ArweaveService {
         .toList();
 
     final driveResponses =
-        await Future.wait(driveTxs.map((e) => client.api!.get(e.id)));
+        await Future.wait(driveTxs.map((e) => client.api.get(e.id)));
 
     final drivesById = <String?, DriveEntity>{};
     final drivesWithKey = <DriveEntity, SecretKey?>{};
@@ -224,7 +223,7 @@ class ArweaveService {
     }
 
     final fileTx = queryEdges.first.node;
-    final fileDataRes = await client.api!.get(fileTx.id);
+    final fileDataRes = await client.api.get(fileTx.id);
 
     try {
       return await DriveEntity.fromTransaction(
@@ -290,7 +289,7 @@ class ArweaveService {
     }
 
     final fileTx = queryEdges.first.node;
-    final fileDataRes = await client.api!.get(fileTx.id);
+    final fileDataRes = await client.api.get(fileTx.id);
 
     try {
       return await FileEntity.fromTransaction(
@@ -362,7 +361,7 @@ class ArweaveService {
     Wallet wallet, [
     SecretKey? key,
   ]) async {
-    final tx = await client.transactions!.prepare(
+    final tx = await client.transactions.prepare(
       await entity.asTransaction(key),
       wallet,
     );
@@ -376,7 +375,7 @@ class ArweaveService {
     Wallet wallet, [
     SecretKey? key,
   ]) async {
-    final tx = await client.transactions!.prepare(
+    final tx = await client.transactions.prepare(
       await entity.asTransaction(key),
       wallet,
     );
@@ -405,7 +404,7 @@ class ArweaveService {
 
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
-    final bundleTx = await client.transactions!.prepare(
+    final bundleTx = await client.transactions.prepare(
       Transaction.withDataBundle(bundle: bundle)..addApplicationTags(),
       wallet,
     );
@@ -416,7 +415,7 @@ class ArweaveService {
   }
 
   Future<void> postTx(Transaction transaction) =>
-      client.transactions!.post(transaction);
+      client.transactions.post(transaction);
 
   Future<double> getArUsdConversionRate() async {
     final client = http.Client();
