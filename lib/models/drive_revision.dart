@@ -5,7 +5,7 @@ import 'models.dart';
 
 extension DriveRevisionWithTransactionExtensions
     on DriveRevisionWithTransaction {
-  String? get confirmationStatus => metadataTx.status;
+  String get confirmationStatus => metadataTx.status;
 }
 
 extension DriveRevisionCompanionExtensions on DriveRevisionsCompanion {

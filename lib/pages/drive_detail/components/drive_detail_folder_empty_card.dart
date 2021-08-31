@@ -1,7 +1,7 @@
 part of '../drive_detail_page.dart';
 
 class DriveDetailFolderEmptyCard extends StatelessWidget {
-  final bool? promptToAddFiles;
+  final bool promptToAddFiles;
 
   const DriveDetailFolderEmptyCard({this.promptToAddFiles = false});
 
@@ -16,7 +16,7 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                 children: [
                   const Icon(Icons.folder_open),
                   const SizedBox(width: 16),
-                  if (promptToAddFiles!)
+                  if (promptToAddFiles)
                     Expanded(
                       child: Text(
                         'There\'s nothing to see here. Click "new" to add some files.',

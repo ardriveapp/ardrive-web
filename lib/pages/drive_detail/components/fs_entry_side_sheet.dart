@@ -234,7 +234,7 @@ class FsEntrySideSheet extends StatelessWidget {
 
                       late Widget content;
                       late Widget dateCreatedSubtitle;
-                      String? revisionConfirmationStatus;
+                      late String revisionConfirmationStatus;
 
                       if (revision is DriveRevisionWithTransaction) {
                         switch (revision.action) {
@@ -305,7 +305,7 @@ class FsEntrySideSheet extends StatelessWidget {
                             revision.metadataTx, revision.dataTx);
                       }
 
-                      Widget? statusIcon;
+                      late Widget statusIcon;
                       if (revisionConfirmationStatus ==
                           TransactionStatus.pending) {
                         statusIcon = Tooltip(
@@ -354,10 +354,10 @@ class FsEntrySideSheet extends StatelessWidget {
 }
 
 class CopyIconButton extends StatelessWidget {
-  final String? value;
-  final String? tooltip;
+  final String value;
+  final String tooltip;
 
-  CopyIconButton({this.value, this.tooltip});
+  CopyIconButton({required this.value, required this.tooltip});
 
   @override
   Widget build(BuildContext context) => IconButton(

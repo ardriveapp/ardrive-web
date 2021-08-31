@@ -82,10 +82,10 @@ DataRow _buildFolderRow({
   required BuildContext context,
   required FolderEntry folder,
   bool selected = false,
-  Function? onPressed,
+  required Function onPressed,
 }) =>
     DataRow(
-      onSelectChanged: (_) => onPressed!(),
+      onSelectChanged: (_) => onPressed(),
       selected: selected,
       cells: [
         DataCell(
@@ -108,10 +108,10 @@ DataRow _buildFileRow({
   required BuildContext context,
   required FileWithLatestRevisionTransactions file,
   bool selected = false,
-  Function? onPressed,
+  required Function onPressed,
 }) {
   return DataRow(
-    onSelectChanged: (_) => onPressed!(),
+    onSelectChanged: (_) => onPressed(),
     selected: selected,
     cells: [
       DataCell(

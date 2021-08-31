@@ -5,7 +5,7 @@ import 'models.dart';
 
 extension FolderRevisionWithTransactionExtensions
     on FolderRevisionWithTransaction {
-  String? get confirmationStatus => metadataTx.status;
+  String get confirmationStatus => metadataTx.status;
 }
 
 extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {

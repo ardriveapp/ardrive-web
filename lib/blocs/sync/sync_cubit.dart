@@ -301,7 +301,7 @@ class SyncCubit extends Cubit<SyncState> {
   Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions(
       String driveId, Iterable<FileEntity> newEntities) async {
     // The latest file revisions, keyed by their entity ids.
-    final latestRevisions = <String?, FileRevisionsCompanion>{};
+    final latestRevisions = <String, FileRevisionsCompanion>{};
 
     final newRevisions = <FileRevisionsCompanion>[];
     for (final entity in newEntities) {
@@ -310,7 +310,7 @@ class SyncCubit extends Cubit<SyncState> {
             .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id!)
             .getSingleOrNull();
         if (revisions != null) {
-          latestRevisions[entity.id] = revisions.toCompanion(true);
+          latestRevisions[entity.id!] = revisions.toCompanion(true);
         }
       }
 
@@ -327,7 +327,7 @@ class SyncCubit extends Cubit<SyncState> {
       }
 
       newRevisions.add(revision);
-      latestRevisions[entity.id] = revision;
+      latestRevisions[entity.id!] = revision;
     }
 
     await _db.batch((b) {
@@ -368,7 +368,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   /// Computes the refreshed folder entries from the provided revisions and returns them as a map keyed by their ids.
-  Future<Map<String?, FolderEntriesCompanion>>
+  Future<Map<String, FolderEntriesCompanion>>
       _computeRefreshedFolderEntriesFromRevisions(String driveId,
           List<FolderRevisionsCompanion> revisionsByFolderId) async {
     final updatedFoldersById = {
@@ -390,7 +390,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   /// Computes the refreshed file entries from the provided revisions and returns them as a map keyed by their ids.
-  Future<Map<String?, FileEntriesCompanion>>
+  Future<Map<String, FileEntriesCompanion>>
       _computeRefreshedFileEntriesFromRevisions(String driveId,
           List<FileRevisionsCompanion> revisionsByFileId) async {
     final updatedFilesById = {
@@ -414,8 +414,8 @@ class SyncCubit extends Cubit<SyncState> {
   /// Generates paths for the folders (and their subchildren) and files provided.
   Future<void> generateFsEntryPaths(
     String driveId,
-    Map<String?, FolderEntriesCompanion> foldersByIdMap,
-    Map<String?, FileEntriesCompanion> filesByIdMap,
+    Map<String, FolderEntriesCompanion> foldersByIdMap,
+    Map<String, FileEntriesCompanion> filesByIdMap,
   ) async {
     final staleFolderTree = <FolderNode>[];
     for (final folder in foldersByIdMap.values) {

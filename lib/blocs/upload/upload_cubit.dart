@@ -37,7 +37,7 @@ class UploadCubit extends Cubit<UploadState> {
   final Map<String, String> conflictingFiles = {};
 
   /// A map of [FileUploadHandle]s keyed by their respective file's id.
-  final Map<String?, FileUploadHandle> _fileUploadHandles = {};
+  final Map<String, FileUploadHandle> _fileUploadHandles = {};
 
   /// The [Transaction] that pays `pstFee` to a random PST holder.
   Transaction? feeTx;
@@ -122,7 +122,7 @@ class UploadCubit extends Cubit<UploadState> {
     try {
       for (final file in files) {
         final uploadHandle = await prepareFileUpload(file);
-        _fileUploadHandles[uploadHandle.entity.id] = uploadHandle;
+        _fileUploadHandles[uploadHandle.entity.id!] = uploadHandle;
       }
     } catch (err) {
       addError(err);
