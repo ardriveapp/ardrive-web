@@ -198,7 +198,7 @@ class UploadCubit extends Cubit<UploadState> {
       for (final uploadHandle in _fileUploadHandles.values) {
         final fileEntity = uploadHandle.entity;
         if (uploadHandle.entityTx?.id != null) {
-          fileEntity.txId = uploadHandle.entityTx!.id!;
+          fileEntity.txId = uploadHandle.entityTx!.id;
         }
 
         await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);

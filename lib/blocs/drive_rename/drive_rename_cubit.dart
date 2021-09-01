@@ -81,9 +81,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
         await _driveDao.writeToDrive(drive);
 
         driveEntity.ownerAddress = profile.walletAddress;
-        if (driveTx.id != null) {
-          driveEntity.txId = driveTx.id!;
-        }
+        driveEntity.txId = driveTx.id;
 
         await _driveDao.insertDriveRevision(driveEntity.toRevisionCompanion(
             performedAction: RevisionAction.rename));
