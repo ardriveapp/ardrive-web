@@ -11,6 +11,7 @@ class ProfileAuthOnboarding extends StatefulWidget {
 }
 
 class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
+  final int onboardingPageCount = 4;
   int _onboardingStepIndex = 0;
 
   @override
@@ -186,7 +187,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                for (var i = 0; i < 5; i++)
+                for (var i = 0; i <= onboardingPageCount; i++)
                   if (_onboardingStepIndex == i)
                     AnimatedContainer(
                       height: 16,
@@ -229,7 +230,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
           ),
           TextButton(
             onPressed: () {
-              if (_onboardingStepIndex < 4) {
+              if (_onboardingStepIndex < onboardingPageCount) {
                 setState(() => _onboardingStepIndex++);
               } else {
                 context.read<ProfileAddCubit>().completeOnboarding();
