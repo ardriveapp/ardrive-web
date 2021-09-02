@@ -220,7 +220,12 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       folderStream,
       subfolderQuery.watch(),
       filesQuery.watch(),
-      (dynamic folder, dynamic subfolders, dynamic files) => FolderWithContents(
+      (
+        FolderEntry folder,
+        List<FolderEntry> subfolders,
+        List<FileWithLatestRevisionTransactions> files,
+      ) =>
+          FolderWithContents(
         folder: folder,
         subfolders: subfolders,
         files: files,
