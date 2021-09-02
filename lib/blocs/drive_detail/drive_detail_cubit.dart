@@ -8,6 +8,7 @@ import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
+import 'package:reactive_forms/reactive_forms.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../blocs.dart';
@@ -15,6 +16,8 @@ import '../blocs.dart';
 part 'drive_detail_state.dart';
 
 class DriveDetailCubit extends Cubit<DriveDetailState> {
+  late FormGroup form;
+
   final String driveId;
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
@@ -35,7 +38,17 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     if (driveId.isEmpty) {
       return;
     }
+    form = FormGroup(
+      {
+        'search': FormControl<String>(
+          // Debounce drive name loading by 500ms.
+          asyncValidatorsDebounceTime: 500,
+          asyncValidators: [_searchValidator],
 
+          validators: [Validators.required],
+        ),
+      },
+    );
     if (initialFolderId != null) {
       // TODO: Handle deep-linking folders of unattached drives.
       Future.microtask(() async {
@@ -51,11 +64,23 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       openFolder(path: rootPath);
     }
   }
+  Future<Map<String, dynamic>?> _searchValidator(
+      AbstractControl<dynamic> control) async {
+    if (control.isNotNull &&
+        control.value is String &&
+        control.value.isNotEmpty) {
+      searchFolder(search: control.value);
+    }
 
-  void openFolder(
-      {required String path,
-      DriveOrder contentOrderBy = DriveOrder.name,
-      OrderingMode contentOrderingMode = OrderingMode.asc}) {
+    return null;
+  }
+
+  void openFolder({
+    required String path,
+    DriveOrder contentOrderBy = DriveOrder.name,
+    OrderingMode contentOrderingMode = OrderingMode.asc,
+    String search = '',
+  }) {
     emit(DriveDetailLoadInProgress());
 
     unawaited(_folderSubscription?.cancel());
@@ -63,10 +88,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _folderSubscription =
         Rx.combineLatest3<Drive?, FolderWithContents, ProfileState, void>(
       _driveDao.driveById(driveId: driveId).watchSingleOrNull(),
-      _driveDao.watchFolderContents(driveId,
-          folderPath: path,
-          orderBy: contentOrderBy,
-          orderingMode: contentOrderingMode),
+      _driveDao.watchFolderContents(
+        driveId,
+        folderPath: path,
+        orderBy: contentOrderBy,
+        orderingMode: contentOrderingMode,
+        search: search,
+      ),
       _profileCubit.stream.startWith(ProfileCheckingAvailability()),
       (drive, folderContents, _) async {
         if (drive == null) {
@@ -132,6 +160,34 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         path: state.currentFolder.folder.path,
         contentOrderBy: contentOrderBy,
         contentOrderingMode: contentOrderingMode);
+  }
+
+  void searchFolder(
+      {DriveOrder contentOrderBy = DriveOrder.name,
+      OrderingMode contentOrderingMode = OrderingMode.asc,
+      String search = ''}) {
+    final state = this.state as DriveDetailLoadSuccess;
+    openFolder(
+      path: state.currentFolder.folder.path,
+      contentOrderBy: contentOrderBy,
+      contentOrderingMode: contentOrderingMode,
+      search: search,
+    );
+  }
+
+  void submit() async {
+    form.markAllAsTouched();
+
+    if (form.invalid) {
+      return;
+    }
+
+    try {
+      final String search = form.control('search').value;
+      searchFolder(search: search);
+    } catch (err) {
+      addError(err);
+    }
   }
 
   void toggleSelectedItemDetails() {

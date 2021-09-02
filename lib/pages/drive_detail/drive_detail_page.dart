@@ -15,6 +15,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:moor/moor.dart' show OrderingMode;
+import 'package:reactive_forms/reactive_forms.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 import 'package:url_launcher/link.dart';
@@ -47,6 +48,30 @@ class DriveDetailPage extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                ReactiveForm(
+                                  formGroup:
+                                      context.watch<DriveDetailCubit>().form,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ReactiveTextField(
+                                        formControlName: 'search',
+                                        onSubmitted: () => context
+                                            .read<DriveDetailCubit>()
+                                            .submit(),
+                                        decoration: InputDecoration(
+                                          labelText: 'Search',
+                                          prefixIcon: Icon(Icons.search),
+                                          prefixIconConstraints:
+                                              const BoxConstraints.tightFor(
+                                                  width: 32, height: 24),
+                                        ),
+                                        validationMessages: (_) =>
+                                            kValidationMessages,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,

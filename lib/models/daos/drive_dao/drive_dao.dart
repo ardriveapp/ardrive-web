@@ -188,11 +188,14 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeToDrive(Insertable<Drive> drive) =>
       (update(drives)..whereSamePrimaryKey(drive)).write(drive);
 
-  Stream<FolderWithContents> watchFolderContents(String driveId,
-      {String? folderId,
-      String? folderPath,
-      DriveOrder orderBy = DriveOrder.name,
-      OrderingMode orderingMode = OrderingMode.asc}) {
+  Stream<FolderWithContents> watchFolderContents(
+    String driveId, {
+    String? folderId,
+    String? folderPath,
+    DriveOrder orderBy = DriveOrder.name,
+    OrderingMode orderingMode = OrderingMode.asc,
+    String search = '',
+  }) {
     assert(folderId != null || folderPath != null);
     final folderStream = (folderId != null
             ? folderById(driveId: driveId, folderId: folderId)
@@ -215,6 +218,16 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             driveId: driveId, parentFolderId: folderId, order: filesOrder)
         : filesInFolderAtPathWithRevisionTransactions(
             driveId: driveId, path: folderPath!, order: filesOrder);
+
+    var subFolderStream = subfolderQuery.watch();
+    var filesStream = filesQuery.watch();
+
+    if (search.isNotEmpty) {
+      subFolderStream = subFolderStream.map((folders) =>
+          folders.where((folder) => folder.name.contains(search)).toList());
+      filesStream = filesStream.map((files) =>
+          files.where((file) => file.name.contains(search)).toList());
+    }
 
     return Rx.combineLatest3(
       folderStream,
