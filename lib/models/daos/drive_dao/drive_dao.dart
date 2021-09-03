@@ -231,8 +231,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     return Rx.combineLatest3(
       folderStream,
-      subfolderQuery.watch(),
-      filesQuery.watch(),
+      subFolderStream,
+      filesStream,
       (dynamic folder, dynamic subfolders, dynamic files) => FolderWithContents(
         folder: folder,
         subfolders: subfolders,
