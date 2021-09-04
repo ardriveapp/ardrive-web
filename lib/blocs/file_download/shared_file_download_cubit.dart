@@ -37,7 +37,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
         final dataTx = await (_arweave.getTransactionDetails(file.dataTxId!)
             as FutureOr<TransactionCommonMixin>);
         dataBytes =
-            await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey);
+            await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey!);
       }
 
       emit(
