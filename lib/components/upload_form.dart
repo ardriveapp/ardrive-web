@@ -2,7 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
-import 'package:file_selector/file_selector.dart' as file_selector;
+import 'package:file_picker/file_picker.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,11 +15,16 @@ Future<void> promptToUploadFile(
   required String folderId,
   bool allowSelectMultiple = false,
 }) async {
-  final selectedFiles = allowSelectMultiple
-      ? await file_selector.openFiles()
-      : [await file_selector.openFile()].where((file) => file != null) as List<file_selector.XFile>;
+  await FilePicker.platform.clearTemporaryFiles();
+  final selectedFiles = await FilePicker.platform.pickFiles(
+    type: FileType.custom,
+    withData: false,
+    withReadStream: true,
+    allowCompression: true,
+    allowMultiple: allowSelectMultiple,
+  );
 
-  if (selectedFiles.isEmpty) {
+  if (selectedFiles == null || selectedFiles.count == 0) {
     return;
   }
 
@@ -29,7 +34,7 @@ Future<void> promptToUploadFile(
       create: (context) => UploadCubit(
         driveId: driveId,
         folderId: folderId,
-        files: selectedFiles,
+        files: selectedFiles.files,
         arweave: context.read<ArweaveService>(),
         pst: context.read<PstService>(),
         profileCubit: context.read<ProfileCubit>(),

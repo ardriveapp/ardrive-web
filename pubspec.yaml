@@ -31,10 +31,7 @@ dependencies:
   cryptography: ^2.0.1
   flutter_bloc: ^7.0.1
   flutter_portal: ^0.4.0
-  file_selector: ^0.8.2
-  file_selector_web: ^0.8.1
-  file_selector_macos: ^0.0.4
-  file_selector_windows: ^0.0.2+1
+  file_picker: ^4.0.1
   filesize: ^2.0.1
   google_fonts: ^2.1.0
   intersperse: ^2.0.0
@@ -55,6 +52,7 @@ dependencies:
   package_info_plus: ^1.0.3
   js: ^0.6.3
   collection: ^1.15.0-nullsafety.4
+  sqlite3_flutter_libs:
   
 
 dev_dependencies:

@@ -3,7 +3,6 @@ import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
@@ -67,19 +66,19 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
     if (!isCurrentlyShown) {
       isCurrentlyShown = true;
       _onLeave();
-
-      final fileName = await controller.getFilename(htmlFile);
-      final fileMIME = await controller.getFileMIME(htmlFile);
-      final fileLength = await controller.getFileSize(htmlFile);
-      final htmlUrl = await controller.createFileUrl(htmlFile);
-      final fileToUpload = XFile(
-        htmlUrl,
-        name: fileName,
-        mimeType: fileMIME,
-        lastModified: DateTime.now(),
-        length: fileLength,
-      );
-      final selectedFiles = <XFile>[fileToUpload];
+//TODO: Remake after making an io util
+      // final fileName = await controller.getFilename(htmlFile);
+      // final fileMIME = await controller.getFileMIME(htmlFile);
+      // final fileLength = await controller.getFileSize(htmlFile);
+      // final htmlUrl = await controller.createFileUrl(htmlFile);
+      // final fileToUpload = XFile(
+      //   htmlUrl,
+      //   name: fileName,
+      //   mimeType: fileMIME,
+      //   lastModified: DateTime.now(),
+      //   length: fileLength,
+      // );
+      // final selectedFiles = <XFile>[fileToUpload];
 
       await showDialog(
         context: context!,
@@ -87,7 +86,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
           create: (context) => UploadCubit(
             driveId: driveId,
             folderId: folderId,
-            files: selectedFiles,
+            files: [],
             arweave: context.read<ArweaveService>(),
             pst: context.read<PstService>(),
             profileCubit: context.read<ProfileCubit>(),

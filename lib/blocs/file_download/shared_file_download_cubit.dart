@@ -36,19 +36,17 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       } else {
         final dataTx = await (_arweave.getTransactionDetails(file.dataTxId!)
             as FutureOr<TransactionCommonMixin>);
-        dataBytes = await decryptTransactionData(
-            dataTx, dataRes.bodyBytes, fileKey);
+        dataBytes =
+            await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey);
       }
 
       emit(
         FileDownloadSuccess(
-          file: XFile.fromData(
-            dataBytes,
-            name: file.name,
-            mimeType: lookupMimeType(file.name!),
-            length: dataBytes.lengthInBytes,
-            lastModified: file.lastModifiedDate,
-          ),
+          file: PlatformFile.fromMap({
+            'bytes': dataBytes,
+            'name': file.name,
+            'size': dataBytes.lengthInBytes,
+          }),
         ),
       );
     } catch (err) {

@@ -1,14 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pedantic/pedantic.dart';
 
 import 'components.dart';
@@ -55,12 +56,30 @@ class FileDownloadDialog extends StatelessWidget {
       BlocConsumer<FileDownloadCubit, FileDownloadState>(
         listener: (context, state) async {
           if (state is FileDownloadSuccess) {
-            final savePath = await getSavePath();
-            if (savePath != null) {
-              unawaited(state.file.saveTo(savePath));
+            String path;
+            if (Platform.isAndroid) {
+              final dir = await getExternalStorageDirectory();
+              path = dir!.path;
+            } else {
+              final dir = await getApplicationDocumentsDirectory();
+              path = dir.path;
             }
 
-            Navigator.pop(context);
+            final _appDocDirFolder = Directory('$path/ardrive');
+            if (await _appDocDirFolder.exists()) {
+              final file = File('${_appDocDirFolder.path}/${state.file.name}');
+              print(file.path);
+              unawaited(file.writeAsBytes(state.file.bytes!));
+
+              Navigator.pop(context);
+            } else {
+              final _appDocDirNewFolder = await _appDocDirFolder.create();
+              final file =
+                  File('${_appDocDirNewFolder.path}/${state.file.name}');
+              print(file.path);
+              unawaited(file.writeAsBytes(state.file.bytes!));
+              Navigator.pop(context);
+            }
           }
         },
         builder: (context, state) {

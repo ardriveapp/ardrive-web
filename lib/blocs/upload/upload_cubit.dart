@@ -8,7 +8,7 @@ import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:file_selector/file_selector.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
 import 'package:pedantic/pedantic.dart';
@@ -22,7 +22,7 @@ part 'upload_state.dart';
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
   final String folderId;
-  final List<XFile> files;
+  final List<PlatformFile> files;
 
   final _uuid = Uuid();
   final ProfileCubit _profileCubit;
@@ -108,7 +108,7 @@ class UploadCubit extends Cubit<UploadState> {
         _targetDrive.isPrivate ? math.pow(10, 8) : 1.25 * math.pow(10, 9);
     final tooLargeFiles = [
       for (final file in files)
-        if (await file.length() > sizeLimit) file.name
+        if (file.size > sizeLimit) file.name
     ];
 
     if (tooLargeFiles.isNotEmpty) {
@@ -221,7 +221,7 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
-  Future<FileUploadHandle> prepareFileUpload(XFile file) async {
+  Future<FileUploadHandle> prepareFileUpload(PlatformFile file) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
     final fileName = file.name;
@@ -229,8 +229,8 @@ class UploadCubit extends Cubit<UploadState> {
     final fileEntity = FileEntity(
       driveId: _targetDrive.id,
       name: fileName,
-      size: await file.length(),
-      lastModifiedDate: await file.lastModified(),
+      size: file.size,
+      lastModifiedDate: DateTime.now(),
       parentFolderId: _targetFolder.id,
       dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
     );
@@ -245,7 +245,7 @@ class UploadCubit extends Cubit<UploadState> {
     final fileKey =
         private ? await deriveFileKey(driveKey!, fileEntity.id!) : null;
 
-    final fileData = await file.readAsBytes();
+    final fileData = file.bytes!;
 
     final uploadHandle = FileUploadHandle(entity: fileEntity, path: filePath);
 

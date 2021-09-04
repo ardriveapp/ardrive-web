@@ -1,6 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/misc/misc.dart';
-import 'package:file_selector/file_selector.dart' as file_selector;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/link.dart';
@@ -58,17 +58,22 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
       );
 
   void _pickWallet(BuildContext context) async {
-    final walletFile = await file_selector.openFile(acceptedTypeGroups: [
-      file_selector.XTypeGroup(label: 'wallet keys', extensions: ['json'])
-    ]);
+    final walletFile = (await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowMultiple: false,
+      allowedExtensions: ['json'],
+      withData: true,
+    ))
+        ?.files
+        .first;
 
     if (walletFile == null) {
       return;
+    } else {
+      await context
+          .read<ProfileAddCubit>()
+          .pickWallet(String.fromCharCodes(walletFile.bytes!));
     }
-
-    await context
-        .read<ProfileAddCubit>()
-        .pickWallet(await walletFile.readAsString());
   }
 
   void _pickWalletArconnect(BuildContext context) async {

@@ -23,7 +23,7 @@ class FileDownloadInProgress extends FileDownloadState {
 }
 
 class FileDownloadSuccess extends FileDownloadState {
-  final XFile file;
+  final PlatformFile file;
 
   FileDownloadSuccess({
     required this.file,
