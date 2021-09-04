@@ -164,8 +164,7 @@ class UploadCubit extends Cubit<UploadState> {
     final arUploadCost = winstonToAr(totalCost);
     final usdUploadCost = await _arweave
         .getArUsdConversionRate()
-        .then((conversionRate) => double.parse(arUploadCost) * conversionRate)
-        .catchError(() => null);
+        .then((conversionRate) => double.parse(arUploadCost) * conversionRate);
     if (await _profileCubit.checkIfWalletMismatch()) {
       emit(UploadWalletMismatch());
       return;

@@ -17,8 +17,7 @@ Future<void> promptToUploadFile(
 }) async {
   await FilePicker.platform.clearTemporaryFiles();
   final selectedFiles = await FilePicker.platform.pickFiles(
-    type: FileType.custom,
-    withData: false,
+    withData: true,
     withReadStream: true,
     allowCompression: true,
     allowMultiple: allowSelectMultiple,
