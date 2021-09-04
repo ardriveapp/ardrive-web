@@ -37,7 +37,7 @@ class UploadCubit extends Cubit<UploadState> {
   final Map<String, String> conflictingFiles = {};
 
   /// A map of [FileUploadHandle]s keyed by their respective file's id.
-  final Map<String?, FileUploadHandle> _fileUploadHandles = {};
+  final Map<String, FileUploadHandle> _fileUploadHandles = {};
 
   /// The [Transaction] that pays `pstFee` to a random PST holder.
   Transaction? feeTx;
@@ -122,7 +122,7 @@ class UploadCubit extends Cubit<UploadState> {
     try {
       for (final file in files) {
         final uploadHandle = await prepareFileUpload(file);
-        _fileUploadHandles[uploadHandle.entity.id] = uploadHandle;
+        _fileUploadHandles[uploadHandle.entity.id!] = uploadHandle;
       }
     } catch (err) {
       addError(err);
@@ -146,7 +146,7 @@ class UploadCubit extends Cubit<UploadState> {
     pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
 
     if (pstFee > BigInt.zero) {
-      feeTx = await _arweave.client.transactions!.prepare(
+      feeTx = await _arweave.client.transactions.prepare(
         Transaction(
           target: await _pst.getWeightedPstHolder(),
           quantity: pstFee,
@@ -197,8 +197,9 @@ class UploadCubit extends Cubit<UploadState> {
     await _driveDao.transaction(() async {
       for (final uploadHandle in _fileUploadHandles.values) {
         final fileEntity = uploadHandle.entity;
-
-        fileEntity.txId = uploadHandle.entityTx!.id ?? '';
+        if (uploadHandle.entityTx?.id != null) {
+          fileEntity.txId = uploadHandle.entityTx!.id;
+        }
 
         await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
         await _driveDao.insertFileRevision(
@@ -262,7 +263,7 @@ class UploadCubit extends Cubit<UploadState> {
           : DataItem.withBlobData(data: fileData);
       uploadHandle.dataTx!.setOwner(await profile.wallet.getOwner());
     } else {
-      uploadHandle.dataTx = await _arweave.client.transactions!.prepare(
+      uploadHandle.dataTx = await _arweave.client.transactions.prepare(
         private
             ? await createEncryptedTransaction(fileData, fileKey!)
             : Transaction.withBlobData(data: fileData),
@@ -282,7 +283,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     await uploadHandle.dataTx!.sign(profile.wallet);
 
-    fileEntity.dataTxId = uploadHandle.dataTx!.id ?? '';
+    fileEntity.dataTxId = uploadHandle.dataTx!.id;
 
     if (fileSizeWithinBundleLimits) {
       uploadHandle.entityTx = await _arweave.prepareEntityDataItem(

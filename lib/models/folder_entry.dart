@@ -6,7 +6,7 @@ extension FolderEntryExtensions on FolderEntry {
   FolderEntity asEntity() => FolderEntity(
         id: id,
         driveId: driveId,
-        parentFolderId: parentFolderId??'',
+        parentFolderId: parentFolderId,
         name: name,
       );
 }

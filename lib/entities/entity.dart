@@ -9,11 +9,11 @@ import 'entities.dart';
 abstract class Entity {
   /// The id of the transaction that represents this entity.
   @JsonKey(ignore: true)
-  String txId = '';
+  late String txId;
 
   /// The address of the owner of this entity.
   @JsonKey(ignore: true)
-  String ownerAddress = '';
+  late String ownerAddress;
 
   /// The time this entity was created at ie. its `Unix-Time`.
   @JsonKey(ignore: true)

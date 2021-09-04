@@ -16,7 +16,7 @@ final aesGcm = AesGcm.with256bits();
 Future<Map<String, dynamic>?> decryptEntityJson(
   TransactionCommonMixin transaction,
   Uint8List data,
-  SecretKey? key,
+  SecretKey key,
 ) async {
   final decryptedData = await decryptTransactionData(transaction, data, key);
   return json.decode(utf8.decode(decryptedData));
@@ -28,7 +28,7 @@ Future<Map<String, dynamic>?> decryptEntityJson(
 Future<Uint8List> decryptTransactionData(
   TransactionCommonMixin transaction,
   Uint8List data,
-  SecretKey? key,
+  SecretKey key,
 ) async {
   final cipher = transaction.getTag(EntityTag.cipher);
 
@@ -40,7 +40,7 @@ Future<Uint8List> decryptTransactionData(
       return aesGcm
           .decrypt(
             secretBoxFromDataWithMacConcatenation(data, nonce: cipherIv),
-            secretKey: key!,
+            secretKey: key,
           )
           .then((res) => Uint8List.fromList(res));
     }

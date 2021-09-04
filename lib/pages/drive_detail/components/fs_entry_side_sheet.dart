@@ -2,11 +2,10 @@ part of '../drive_detail_page.dart';
 
 class FsEntrySideSheet extends StatelessWidget {
   final String driveId;
-  final String folderId;
-  final String fileId;
+  final String? folderId;
+  final String? fileId;
 
-  FsEntrySideSheet(
-      {required this.driveId, this.folderId = '', this.fileId = ''});
+  FsEntrySideSheet({required this.driveId, this.folderId, this.fileId});
 
   @override
   Widget build(BuildContext context) => Drawer(
@@ -14,10 +13,8 @@ class FsEntrySideSheet extends StatelessWidget {
         child: BlocProvider<FsEntryInfoCubit>(
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
           key: ValueKey(driveId +
-              ([folderId, fileId].firstWhere(
-                (e) => e.isNotEmpty,
-                orElse: () => '',
-              ))),
+              ([folderId, fileId].firstWhere((e) => e != null,
+                  orElse: () => Random().nextInt(1000).toString())!)),
           create: (context) => FsEntryInfoCubit(
             driveId: driveId,
             folderId: folderId,
@@ -237,7 +234,7 @@ class FsEntrySideSheet extends StatelessWidget {
 
                       late Widget content;
                       late Widget dateCreatedSubtitle;
-                      String? revisionConfirmationStatus;
+                      late String revisionConfirmationStatus;
 
                       if (revision is DriveRevisionWithTransaction) {
                         switch (revision.action) {
@@ -308,7 +305,7 @@ class FsEntrySideSheet extends StatelessWidget {
                             revision.metadataTx, revision.dataTx);
                       }
 
-                      Widget? statusIcon;
+                      late Widget statusIcon;
                       if (revisionConfirmationStatus ==
                           TransactionStatus.pending) {
                         statusIcon = Tooltip(
@@ -357,10 +354,10 @@ class FsEntrySideSheet extends StatelessWidget {
 }
 
 class CopyIconButton extends StatelessWidget {
-  final String? value;
-  final String? tooltip;
+  final String value;
+  final String tooltip;
 
-  CopyIconButton({this.value, this.tooltip});
+  CopyIconButton({required this.value, required this.tooltip});
 
   @override
   Widget build(BuildContext context) => IconButton(

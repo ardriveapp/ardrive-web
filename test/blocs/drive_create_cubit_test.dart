@@ -31,8 +31,11 @@ void main() {
 
       db = getTestDb();
       driveDao = db.driveDao;
+      final configService = ConfigService();
+      final config = await configService.getConfig();
 
-      arweave = ArweaveService(Arweave());
+      arweave = ArweaveService(
+          Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
       drivesCubit = MockDrivesCubit();
       profileCubit = MockProfileCubit();
 

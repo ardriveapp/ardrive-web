@@ -8,8 +8,8 @@ part 'fs_entry_info_state.dart';
 
 class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
   final String driveId;
-  final String folderId;
-  final String fileId;
+  final String? folderId;
+  final String? fileId;
 
   final DriveDao _driveDao;
 
@@ -17,14 +17,14 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
 
   FsEntryInfoCubit(
       {required this.driveId,
-      this.folderId = '',
-      this.fileId = '',
+      this.folderId,
+      this.fileId,
       required DriveDao driveDao})
       : _driveDao = driveDao,
         super(FsEntryInfoInitial()) {
-    if (folderId.isNotEmpty) {
+    if (folderId != null) {
       _entrySubscription = _driveDao
-          .folderById(driveId: driveId, folderId: folderId)
+          .folderById(driveId: driveId, folderId: folderId!)
           .watchSingle()
           .listen(
             (f) => emit(
@@ -36,9 +36,9 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               ),
             ),
           );
-    } else if (fileId.isNotEmpty) {
+    } else if (fileId != null) {
       _entrySubscription = _driveDao
-          .fileById(driveId: driveId, fileId: fileId)
+          .fileById(driveId: driveId, fileId: fileId!)
           .watchSingle()
           .listen(
             (f) => emit(

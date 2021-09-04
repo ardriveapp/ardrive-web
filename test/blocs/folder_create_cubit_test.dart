@@ -18,13 +18,17 @@ void main() {
     late ProfileCubit profileCubit;
     late FolderCreateCubit folderCreateCubit;
 
-    setUp(() {
+    setUp(() async {
       registerFallbackValue(ProfileStatefake());
 
       db = getTestDb();
       driveDao = db.driveDao;
 
-      arweave = ArweaveService(Arweave());
+      final configService = ConfigService();
+      final config = await configService.getConfig();
+
+      arweave = ArweaveService(
+          Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
       profileCubit = MockProfileCubit();
 
       folderCreateCubit = FolderCreateCubit(

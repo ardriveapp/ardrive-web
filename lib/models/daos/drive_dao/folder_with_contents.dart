@@ -1,14 +1,15 @@
 part of 'drive_dao.dart';
 
 class FolderWithContents extends Equatable {
-  final FolderEntry? folder;
-  final List<FolderEntry>? subfolders;
-  final List<FileWithLatestRevisionTransactions>? files;
+  final List<FolderEntry> subfolders;
+  final List<FileWithLatestRevisionTransactions> files;
+  final FolderEntry folder;
 
-  FolderWithContents({required this.folder, this.subfolders, this.files});
+  FolderWithContents(
+      {required this.folder, required this.subfolders, required this.files});
 
   @override
-  List<Object?> get props => [folder, subfolders, files];
+  List<Object> get props => [folder, subfolders, files];
 }
 
 String fileStatusFromTransactions(

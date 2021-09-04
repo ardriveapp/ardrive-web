@@ -4,17 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ProfileAuthShell extends StatelessWidget {
-  final Widget? illustration;
+  final Widget illustration;
 
+  final Widget content;
   final double? contentWidthFactor;
-  final Widget? content;
   final Widget? contentFooter;
 
-  ProfileAuthShell(
-      {this.illustration,
-      this.contentWidthFactor,
-      this.content,
-      this.contentFooter});
+  ProfileAuthShell({
+    required this.illustration,
+    required this.content,
+    this.contentWidthFactor,
+    this.contentFooter,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +34,7 @@ class ProfileAuthShell extends StatelessWidget {
                     fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 32),
-                  content!,
+                  content,
                 ],
               ),
             ),

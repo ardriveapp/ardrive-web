@@ -42,7 +42,7 @@ class FileUploadHandle {
     }
 
     await for (final upload
-        in arweave.client.transactions!.upload(dataTx as Transaction? ?? bundleTx!)) {
+        in arweave.client.transactions.upload(dataTx as Transaction? ?? bundleTx!)) {
       uploadProgress = upload.progress;
       yield null;
     }

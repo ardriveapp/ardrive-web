@@ -170,28 +170,28 @@ class AppDrawer extends StatelessWidget {
                       itemBuilder: (context) => [
                         if (state is DriveDetailLoadSuccess) ...{
                           PopupMenuItem(
-                            enabled: state.hasWritePermissions!,
+                            enabled: state.hasWritePermissions,
                             value: (context) => promptToCreateFolder(
                               context,
-                              driveId: state.currentDrive!.id,
-                              parentFolderId: state.currentFolder!.folder!.id,
+                              driveId: state.currentDrive.id,
+                              parentFolderId: state.currentFolder.folder.id,
                             ),
                             child: ListTile(
-                              enabled: state.hasWritePermissions!,
+                              enabled: state.hasWritePermissions,
                               title: Text('New folder'),
                             ),
                           ),
                           PopupMenuDivider(),
                           PopupMenuItem(
-                            enabled: state.hasWritePermissions!,
+                            enabled: state.hasWritePermissions,
                             value: (context) => promptToUploadFile(
                               context,
-                              driveId: state.currentDrive!.id,
-                              folderId: state.currentFolder!.folder!.id,
+                              driveId: state.currentDrive.id,
+                              folderId: state.currentFolder.folder.id,
                               allowSelectMultiple: true,
                             ),
                             child: ListTile(
-                              enabled: state.hasWritePermissions!,
+                              enabled: state.hasWritePermissions,
                               title: Text('Upload file(s)'),
                             ),
                           ),

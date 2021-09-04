@@ -3,7 +3,7 @@ part of 'file_download_cubit.dart';
 /// [SharedFileDownloadCubit] includes logic to allow a user to download files that
 /// are shared with them without a login.
 class SharedFileDownloadCubit extends FileDownloadCubit {
-  final String? fileId;
+  final String fileId;
   final SecretKey? fileKey;
 
   final ArweaveService _arweave;
@@ -19,7 +19,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   Future<void> download() async {
     try {
-      final file = await (_arweave.getLatestFileEntityWithId(fileId!, fileKey)
+      final file = await (_arweave.getLatestFileEntityWithId(fileId, fileKey)
           as FutureOr<FileEntity>);
 
       emit(FileDownloadInProgress(
@@ -27,7 +27,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       //Reinitialize here in case connection is closed with abort
 
       final dataRes = await http.get(Uri.parse(
-          _arweave.client.api?.gatewayUrl.origin ?? '' '/${file.dataTxId}'));
+          _arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}'));
 
       Uint8List dataBytes;
 

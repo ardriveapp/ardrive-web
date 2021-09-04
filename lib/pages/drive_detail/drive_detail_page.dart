@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
@@ -50,7 +52,7 @@ class DriveDetailPage extends StatelessWidget {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      state.currentDrive!.name,
+                                      state.currentDrive.name,
                                       style:
                                           Theme.of(context).textTheme.headline5,
                                     ),
@@ -58,10 +60,9 @@ class DriveDetailPage extends StatelessWidget {
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
-                                    path: state.currentFolder!.folder!.path),
-                                if (state.currentFolder!.subfolders!
-                                        .isNotEmpty ||
-                                    state.currentFolder!.files!.isNotEmpty)
+                                    path: state.currentFolder.folder.path),
+                                if (state.currentFolder.subfolders.isNotEmpty ||
+                                    state.currentFolder.files.isNotEmpty)
                                   Expanded(
                                     child: Row(
                                       children: [
@@ -83,13 +84,13 @@ class DriveDetailPage extends StatelessWidget {
                         if (state.showSelectedItemDetails) ...{
                           VerticalDivider(width: 1),
                           FsEntrySideSheet(
-                            driveId: state.currentDrive!.id,
+                            driveId: state.currentDrive.id,
                             folderId: state.selectedItemIsFolder
-                                ? state.selectedItemId ?? ''
-                                : '',
+                                ? state.selectedItemId
+                                : null,
                             fileId: !state.selectedItemIsFolder
-                                ? state.selectedItemId ?? ''
-                                : '',
+                                ? state.selectedItemId
+                                : null,
                           ),
                         }
                       ],
@@ -113,7 +114,7 @@ class DriveDetailPage extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      state.currentDrive!.name,
+                                      state.currentDrive.name,
                                       style:
                                           Theme.of(context).textTheme.headline5,
                                     ),
@@ -124,10 +125,9 @@ class DriveDetailPage extends StatelessWidget {
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
-                                    path: state.currentFolder!.folder!.path),
-                                if (state.currentFolder!.subfolders!
-                                        .isNotEmpty ||
-                                    state.currentFolder!.files!.isNotEmpty)
+                                    path: state.currentFolder.folder.path),
+                                if (state.currentFolder.subfolders.isNotEmpty ||
+                                    state.currentFolder.files.isNotEmpty)
                                   Expanded(
                                     child: _buildDataList(context, state),
                                   )
@@ -143,13 +143,13 @@ class DriveDetailPage extends StatelessWidget {
                     if (state.showSelectedItemDetails)
                       Expanded(
                         child: FsEntrySideSheet(
-                          driveId: state.currentDrive!.id,
+                          driveId: state.currentDrive.id,
                           folderId: state.selectedItemIsFolder
-                              ? state.selectedItemId ?? ''
-                              : '',
+                              ? state.selectedItemId
+                              : null,
                           fileId: !state.selectedItemIsFolder
-                              ? state.selectedItemId ?? ''
-                              : '',
+                              ? state.selectedItemId
+                              : null,
                         ),
                       )
                   ],

@@ -14,7 +14,7 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         name: name.value,
         dataTxId: dataTxId.value,
         size: size.value,
-        path: '',
+        path: rootPath,
         lastUpdated: dateCreated,
         lastModifiedDate: lastModifiedDate.value,
         dataContentType: dataContentType,
@@ -35,7 +35,7 @@ extension FileEntityExtensions on FileEntity {
   ///
   /// This requires a `performedAction` to be specified.
   FileRevisionsCompanion toRevisionCompanion(
-          {required String? performedAction}) =>
+          {required String performedAction}) =>
       FileRevisionsCompanion.insert(
         fileId: id!,
         driveId: driveId!,
@@ -47,7 +47,7 @@ extension FileEntityExtensions on FileEntity {
         dataTxId: dataTxId!,
         dateCreated: Value(createdAt),
         dataContentType: Value(dataContentType),
-        action: performedAction ?? '',
+        action: performedAction,
       );
 
   /// Returns the action performed on the file that lead to the new revision.

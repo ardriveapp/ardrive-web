@@ -3,7 +3,7 @@ part of '../drive_detail_page.dart';
 Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
     ListView(
       children: [
-        ...state.currentFolder!.subfolders!.map(
+        ...state.currentFolder.subfolders.map(
           (folder) => _buildFolderListTile(
             context: context,
             folder: folder,
@@ -21,7 +21,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
             },
           ),
         ),
-        ...state.currentFolder!.files!.map(
+        ...state.currentFolder.files.map(
           (file) => _buildFileListTile(
             context: context,
             file: file,
@@ -42,11 +42,11 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
 Widget _buildFolderListTile({
   required BuildContext context,
   required FolderEntry folder,
+  required Function onPressed,
   bool selected = false,
-  Function? onPressed,
 }) =>
     ListTile(
-      onTap: () => onPressed!(),
+      onTap: () => onPressed(),
       selected: selected,
       leading: Padding(
         padding: const EdgeInsetsDirectional.only(end: 8.0),
@@ -58,11 +58,11 @@ Widget _buildFolderListTile({
 Widget _buildFileListTile({
   required BuildContext context,
   required FileWithLatestRevisionTransactions file,
+  required Function onPressed,
   bool selected = false,
-  Function? onPressed,
 }) =>
     ListTile(
-      onTap: () => onPressed!(),
+      onTap: () => onPressed(),
       selected: selected,
       leading: Padding(
         padding: const EdgeInsetsDirectional.only(end: 8.0),

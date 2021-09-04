@@ -24,6 +24,6 @@ void onWalletSwitch(Function onWalletSwitch) {
   });
 }
 
-void reload(){
+void reload() {
   window.location.reload();
 }

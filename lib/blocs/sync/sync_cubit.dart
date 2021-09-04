@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -212,8 +213,11 @@ class SyncCubit extends Cubit<SyncState> {
 
       final revisionPerformedAction =
           entity.getPerformedRevisionAction(latestRevision);
-      final revision = entity.toRevisionCompanion(
-          performedAction: revisionPerformedAction ?? '');
+      if (revisionPerformedAction == null) {
+        continue;
+      }
+      final revision =
+          entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
       if (revision.action.value.isEmpty) {
         continue;
@@ -261,6 +265,9 @@ class SyncCubit extends Cubit<SyncState> {
 
       final revisionPerformedAction =
           entity.getPerformedRevisionAction(latestRevisions[entity.id]);
+      if (revisionPerformedAction == null) {
+        continue;
+      }
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
@@ -294,7 +301,7 @@ class SyncCubit extends Cubit<SyncState> {
   Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions(
       String driveId, Iterable<FileEntity> newEntities) async {
     // The latest file revisions, keyed by their entity ids.
-    final latestRevisions = <String?, FileRevisionsCompanion>{};
+    final latestRevisions = <String, FileRevisionsCompanion>{};
 
     final newRevisions = <FileRevisionsCompanion>[];
     for (final entity in newEntities) {
@@ -303,12 +310,15 @@ class SyncCubit extends Cubit<SyncState> {
             .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id!)
             .getSingleOrNull();
         if (revisions != null) {
-          latestRevisions[entity.id] = revisions.toCompanion(true);
+          latestRevisions[entity.id!] = revisions.toCompanion(true);
         }
       }
 
       final revisionPerformedAction =
           entity.getPerformedRevisionAction(latestRevisions[entity.id]);
+      if (revisionPerformedAction == null) {
+        continue;
+      }
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
@@ -317,7 +327,7 @@ class SyncCubit extends Cubit<SyncState> {
       }
 
       newRevisions.add(revision);
-      latestRevisions[entity.id] = revision;
+      latestRevisions[entity.id!] = revision;
     }
 
     await _db.batch((b) {
@@ -358,7 +368,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   /// Computes the refreshed folder entries from the provided revisions and returns them as a map keyed by their ids.
-  Future<Map<String?, FolderEntriesCompanion>>
+  Future<Map<String, FolderEntriesCompanion>>
       _computeRefreshedFolderEntriesFromRevisions(String driveId,
           List<FolderRevisionsCompanion> revisionsByFolderId) async {
     final updatedFoldersById = {
@@ -380,7 +390,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   /// Computes the refreshed file entries from the provided revisions and returns them as a map keyed by their ids.
-  Future<Map<String?, FileEntriesCompanion>>
+  Future<Map<String, FileEntriesCompanion>>
       _computeRefreshedFileEntriesFromRevisions(String driveId,
           List<FileRevisionsCompanion> revisionsByFileId) async {
     final updatedFilesById = {
@@ -404,8 +414,8 @@ class SyncCubit extends Cubit<SyncState> {
   /// Generates paths for the folders (and their subchildren) and files provided.
   Future<void> generateFsEntryPaths(
     String driveId,
-    Map<String?, FolderEntriesCompanion> foldersByIdMap,
-    Map<String?, FileEntriesCompanion> filesByIdMap,
+    Map<String, FolderEntriesCompanion> foldersByIdMap,
+    Map<String, FileEntriesCompanion> filesByIdMap,
   ) async {
     final staleFolderTree = <FolderNode>[];
     for (final folder in foldersByIdMap.values) {
@@ -435,41 +445,42 @@ class SyncCubit extends Cubit<SyncState> {
       // If this is the root folder, we should not include its name as part of the path.
       final folderPath = node.folder.parentFolderId != null
           ? parentPath + '/' + node.folder.name
-          : '';
+          : rootPath;
 
       await _driveDao
           .updateFolderById(driveId, folderId)
           .write(FolderEntriesCompanion(path: Value(folderPath)));
 
-      for (final staleFileId in node.files!.keys) {
-        final filePath = folderPath + '/' + node.files![staleFileId]!;
+      for (final staleFileId in node.files.keys) {
+        final filePath = folderPath + '/' + node.files[staleFileId]!;
 
         await _driveDao
             .updateFileById(driveId, staleFileId)
             .write(FileEntriesCompanion(path: Value(filePath)));
       }
 
-      for (final staleFolder in node.subfolders!) {
+      for (final staleFolder in node.subfolders) {
         await updateFolderTree(staleFolder, folderPath);
       }
     }
 
     for (final treeRoot in staleFolderTree) {
       // Get the path of this folder's parent.
-      String parentPath;
+      String? parentPath;
       if (treeRoot.folder.parentFolderId == null) {
-        parentPath = '';
+        parentPath = rootPath;
       } else {
         parentPath = (await _driveDao
-                .folderById(
-                    driveId: driveId,
-                    folderId: treeRoot.folder.parentFolderId ?? '')
-                .map((f) => f.path)
-                .getSingleOrNull()) ??
-            '';
+            .folderById(
+                driveId: driveId, folderId: treeRoot.folder.parentFolderId!)
+            .map((f) => f.path)
+            .getSingleOrNull());
       }
-
-      await updateFolderTree(treeRoot, parentPath);
+      if (parentPath != null) {
+        await updateFolderTree(treeRoot, parentPath);
+      } else {
+        print('Missing parent folder');
+      }
     }
 
     // Update paths of files whose parent folders were not updated.

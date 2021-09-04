@@ -38,8 +38,8 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
                     operation: DragOperation.all,
                     onDrop: (htmlFile) => _onDrop(
                       htmlFile,
-                      driveId: state.currentDrive!.id,
-                      folderId: state.currentFolder!.folder!.id,
+                      driveId: state.currentDrive.id,
+                      folderId: state.currentFolder.folder.id,
                       context: context,
                     ),
                     onHover: _onHover,
@@ -59,7 +59,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
 
   Future<void> _onDrop(
     htmlFile, {
-    BuildContext? context,
+    required BuildContext context,
     required String driveId,
     required String folderId,
   }) async {
@@ -81,7 +81,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
       // final selectedFiles = <XFile>[fileToUpload];
 
       await showDialog(
-        context: context!,
+        context: context,
         builder: (_) => BlocProvider<UploadCubit>(
           create: (context) => UploadCubit(
             driveId: driveId,
