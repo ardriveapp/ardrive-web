@@ -66,6 +66,7 @@ dev_dependencies:
   moor_generator: ^4.4.1
   mocktail: ^0.1.4
   json_serializable: ^4.1.3
+  msix: ^2.1.3
 
 flutter:
   uses-material-design: true
