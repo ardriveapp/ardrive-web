@@ -15,7 +15,11 @@ Future<void> promptToUploadFile(
   required String folderId,
   bool allowSelectMultiple = false,
 }) async {
-  await FilePicker.platform.clearTemporaryFiles();
+  try {
+    await FilePicker.platform.clearTemporaryFiles();
+  } catch (e) {
+    print('Unsupported platform');
+  }
   final selectedFiles = await FilePicker.platform.pickFiles(
     withData: true,
     withReadStream: true,
