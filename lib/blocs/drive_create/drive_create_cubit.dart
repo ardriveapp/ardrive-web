@@ -19,7 +19,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         Validators.pattern(kTrimTrailingRegex),
       ],
     ),
-    'privacy': FormControl(
+    'privacy': FormControl<String>(
         value: DrivePrivacy.private, validators: [Validators.required]),
   });
 
