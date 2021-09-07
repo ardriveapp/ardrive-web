@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
@@ -129,9 +130,11 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
 
-    final uploadCost = _fileUploadHandles.values
-        .map((f) => f.cost)
-        .reduce((total, cost) => total + cost);
+    final uploadSize = _fileUploadHandles.values
+        .map((f) => int.parse(f.dataSize))
+        .reduce((total, size) => total + size);
+
+    final uploadCost = await arweave.getPrice(byteSize: uploadSize);
 
     var pstFee = await _pst
         .getPstFeePercentage()
@@ -268,6 +271,7 @@ class UploadCubit extends Cubit<UploadState> {
             ? await createEncryptedTransaction(fileData, fileKey!)
             : Transaction.withBlobData(data: fileData),
         profile.wallet,
+        setReward: false,
       );
     }
 

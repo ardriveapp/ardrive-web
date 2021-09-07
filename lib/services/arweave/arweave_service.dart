@@ -18,7 +18,8 @@ class ArweaveService {
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
 
   /// Returns the onchain balance of the specified address.
-  Future<BigInt> getWalletBalance(String address) => client.api.get('wallet/$address/balance')
+  Future<BigInt> getWalletBalance(String address) => client.api
+      .get('wallet/$address/balance')
       .then((res) => BigInt.parse(res.body));
 
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
@@ -39,6 +40,11 @@ class ArweaveService {
     final query = await _gql.execute(TransactionDetailsQuery(
         variables: TransactionDetailsArguments(txId: txId)));
     return query.data?.transaction;
+  }
+
+  Future<BigInt> getPrice({required int byteSize, String? targetAddress}) {
+    return client.transactions
+        .getPrice(byteSize: byteSize, targetAddress: targetAddress);
   }
 
   /// Gets the entity history for a particular drive starting from the specified block height.

@@ -16,6 +16,18 @@ class FileUploadHandle {
 
   /// The size of the file before it was encoded/encrypted for upload.
   int? get size => entity.size;
+  
+
+  /// The size of entityTx and dataTx data as String
+  String get dataSize {
+    if (bundleTx != null) {
+      return bundleTx!.dataSize;
+    } else {
+      return (int.parse((entityTx as Transaction).dataSize) +
+              int.parse((dataTx as Transaction).dataSize))
+          .toString();
+    }
+  }
 
   /// The size of the file that has been uploaded, not accounting for the file encoding/encryption overhead.
   int get uploadedSize => (size! * uploadProgress).round();
@@ -41,8 +53,8 @@ class FileUploadHandle {
       await arweave.postTx(entityTx as Transaction);
     }
 
-    await for (final upload
-        in arweave.client.transactions.upload(dataTx as Transaction? ?? bundleTx!)) {
+    await for (final upload in arweave.client.transactions
+        .upload(dataTx as Transaction? ?? bundleTx!)) {
       uploadProgress = upload.progress;
       yield null;
     }
