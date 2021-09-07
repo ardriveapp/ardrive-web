@@ -254,8 +254,8 @@ class UploadCubit extends Cubit<UploadState> {
     // We aim switch slightly below that to give ourselves some buffer.
     //
     // TODO: Reenable once we understand the problems with data bundle transactions.
-    final fileSizeWithinBundleLimits = false;
-    // fileData.lengthInBytes < (512 - 12) * math.pow(10, 6);
+    final fileSizeWithinBundleLimits =
+        fileData.lengthInBytes < (512 - 12) * math.pow(10, 6);
 
     if (fileSizeWithinBundleLimits) {
       uploadHandle.dataTx = private
