@@ -16,7 +16,7 @@ publish_to: 'none'
 version: 1.2.0
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: '>=2.13.0 <3.0.0'
 
 dependencies:
   flutter:
@@ -27,7 +27,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart
-      ref: fbd54e119b7e0357bd688a91aa49532c520e5b3a
+      ref: 2f10160579dd71fe286c5ac6bdf1de34ded68eb7
   cryptography: ^2.0.1
   flutter_bloc: ^7.0.1
   flutter_portal: ^0.4.0
@@ -57,8 +57,6 @@ dependencies:
 
 dev_dependencies:
   flutter_test:
-    sdk: flutter
-  flutter_driver:
     sdk: flutter
   test: ^1.16.8
   bloc_test: ^8.0.2
