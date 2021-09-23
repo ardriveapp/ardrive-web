@@ -5,14 +5,12 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'drive_rename_state.dart';
 
 class DriveRenameCubit extends Cubit<DriveRenameState> {
-  FormGroup form;
+  late FormGroup form;
 
   final String driveId;
 
@@ -21,11 +19,11 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
   final ProfileCubit _profileCubit;
 
   DriveRenameCubit({
-    @required this.driveId,
-    @required ArweaveService arweave,
-    @required DriveDao driveDao,
-    @required ProfileCubit profileCubit,
-    @required SyncCubit syncCubit,
+    required this.driveId,
+    required ArweaveService arweave,
+    required DriveDao driveDao,
+    required ProfileCubit profileCubit,
+    required SyncCubit syncCubit,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
@@ -76,9 +74,8 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
 
         final driveEntity = drive.asEntity();
 
-        final owner = await profile.getWalletOwner();
         final driveTx = await _arweave.prepareEntityTx(
-            driveEntity, profile.getRawWalletSignature, owner, driveKey);
+            driveEntity, profile.wallet, driveKey);
 
         await _arweave.postTx(driveTx);
         await _driveDao.writeToDrive(drive);
@@ -96,10 +93,10 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
     }
   }
 
-  Future<Map<String, dynamic>> _uniqueDriveName(
+  Future<Map<String, dynamic>?> _uniqueDriveName(
       AbstractControl<dynamic> control) async {
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-    final String newDriveName = control.value;
+    final String? newDriveName = control.value;
 
     if (newDriveName == drive.name) {
       return null;

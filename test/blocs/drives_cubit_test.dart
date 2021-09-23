@@ -1,19 +1,23 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
+import '../utils/fakes.dart';
 import '../utils/utils.dart';
 
 void main() {
   group('DrivesCubit', () {
-    Database db;
-    DriveDao driveDao;
+    late Database db;
+    late DriveDao driveDao;
 
-    ProfileCubit profileCubit;
-    DrivesCubit drivesCubit;
+    late ProfileCubit profileCubit;
+    late DrivesCubit drivesCubit;
 
     setUp(() {
+      registerFallbackValue(SyncStatefake());
+      registerFallbackValue(ProfileStatefake());
       db = getTestDb();
       driveDao = db.driveDao;
 
@@ -33,9 +37,8 @@ void main() {
       'create public drive',
       build: () => drivesCubit,
       act: (bloc) async {},
-      expect: [
+      expect: () => [
         DrivesLoadInProgress(),
-        DrivesLoadSuccess(),
       ],
     );
   });

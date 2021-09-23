@@ -11,11 +11,11 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   final ArweaveService _arweave;
 
   ProfileFileDownloadCubit({
-    @required this.driveId,
-    @required this.fileId,
-    @required ProfileCubit profileCubit,
-    @required DriveDao driveDao,
-    @required ArweaveService arweave,
+    required this.driveId,
+    required this.fileId,
+    required ProfileCubit profileCubit,
+    required DriveDao driveDao,
+    required ArweaveService arweave,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
@@ -32,23 +32,23 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
       emit(FileDownloadInProgress(
           fileName: file.name, totalByteCount: file.size));
-      final dataRes = await http
-          .get(_arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}');
-
-      Uint8List dataBytes;
+      final dataRes = await http.get(Uri.parse(
+          _arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}'));
+      late Uint8List dataBytes;
 
       if (drive.isPublic) {
-        dataBytes = await dataRes.bodyBytes;
+        dataBytes = dataRes.bodyBytes;
       } else if (drive.isPrivate) {
         final profile = _profileCubit.state as ProfileLoggedIn;
 
-        final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
+        final dataTx = await (_arweave.getTransactionDetails(file.dataTxId));
 
         final fileKey =
             await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
-
-        dataBytes = await decryptTransactionData(
-            dataTx, await dataRes.bodyBytes, fileKey);
+        if (dataTx != null) {
+          dataBytes =
+              await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey!);
+        }
       }
 
       emit(

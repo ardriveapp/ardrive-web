@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
+import 'package:ardrive/services/arconnect/arconnect.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
 
 part 'profile_state.dart';
@@ -22,9 +22,9 @@ class ProfileCubit extends Cubit<ProfileState> {
   final Database _db;
 
   ProfileCubit({
-    @required ArweaveService arweave,
-    @required ProfileDao profileDao,
-    @required Database db,
+    required ArweaveService arweave,
+    required ProfileDao profileDao,
+    required Database db,
   })  : _arweave = arweave,
         _profileDao = profileDao,
         _db = db,
@@ -33,13 +33,17 @@ class ProfileCubit extends Cubit<ProfileState> {
   }
 
   Future<bool> isCurrentProfileArConnect() async {
-    return (await _profileDao.defaultProfile().getSingleOrNull()).profileType ==
-        ProfileType.ArConnect.index;
+    final profile = await _profileDao.defaultProfile().getSingleOrNull();
+    if (profile != null) {
+      return profile.profileType == ProfileType.ArConnect.index;
+    } else {
+      return false;
+    }
   }
 
   Future<void> promptToAuthenticate() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
-
+    final arconnect = ArConnectService();
     // Profile unavailable - route to new profile screen
     if (profile == null) {
       emit(ProfilePromptAdd());
@@ -53,7 +57,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     // ArConnect extension missing - route to profile screen
-    if (!(await arconnect.isExtensionPresent())) {
+    if (!(arconnect.isExtensionPresent())) {
       emit(ProfilePromptAdd());
       return;
     }
@@ -77,6 +81,8 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// Returns true if detected wallet or permissions change
   Future<bool> checkIfWalletMismatch() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
+    final arconnect = ArConnectService();
+
     if (profile == null) {
       return false;
     }
@@ -111,22 +117,26 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(ProfileLoggingIn());
 
     final profile = await _profileDao.loadDefaultProfile(password);
-
-    if (profile == null) {
-      emit(ProfilePromptAdd());
-      return;
-    }
+    final arconnect = ArConnectService();
 
     final walletAddress = await (profileType == ProfileType.ArConnect
         ? arconnect.getWalletAddress()
         : profile.wallet.getAddress());
     final walletBalance = await _arweave.getWalletBalance(walletAddress);
+    final wallet = () {
+      switch (profileType) {
+        case ProfileType.JSON:
+          return profile.wallet;
+        case ProfileType.ArConnect:
+          return ArConnectWallet();
+      }
+    }();
 
     emit(
       ProfileLoggedIn(
         username: profile.details.username,
         password: password,
-        wallet: profileType == ProfileType.ArConnect ? null : profile.wallet,
+        wallet: wallet,
         walletAddress: walletAddress,
         walletBalance: walletBalance,
         cipherKey: profile.key,
@@ -137,7 +147,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> refreshBalance() async {
     final profile = state as ProfileLoggedIn;
 
-    final walletAddress = await profile.getWalletAddress();
+    final walletAddress = await profile.wallet.getAddress();
     final walletBalance = await Future.wait([
       _arweave.getWalletBalance(walletAddress),
       _arweave.getPendingTxFees(walletAddress),
@@ -151,6 +161,8 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// Works even when the user is not authenticated.
   Future<void> logoutProfile() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
+    final arconnect = ArConnectService();
+
     if (profile != null && profile.profileType == ProfileType.ArConnect.index) {
       try {
         await arconnect.disconnect();

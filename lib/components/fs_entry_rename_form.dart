@@ -11,8 +11,8 @@ import 'components.dart';
 
 Future<void> promptToRenameFolder(
   BuildContext context, {
-  @required String driveId,
-  @required String folderId,
+  required String driveId,
+  required String folderId,
 }) =>
     showDialog(
       context: context,
@@ -31,8 +31,8 @@ Future<void> promptToRenameFolder(
 
 Future<void> promptToRenameFile(
   BuildContext context, {
-  @required String driveId,
-  @required String fileId,
+  required String driveId,
+  required String fileId,
 }) =>
     showDialog(
       context: context,
@@ -43,6 +43,7 @@ Future<void> promptToRenameFile(
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),
+          syncCubit: context.read<SyncCubit>(),
         ),
         child: FsEntryRenameForm(),
       ),
@@ -85,15 +86,15 @@ class FsEntryRenameForm extends StatelessWidget {
                     ),
                   ),
                 )
-              : null,
+              : Container(),
           actions: [
             TextButton(
-              child: Text('CANCEL'),
               onPressed: () => Navigator.of(context).pop(),
+              child: Text('CANCEL'),
             ),
             ElevatedButton(
-              child: Text('RENAME'),
               onPressed: () => context.read<FsEntryRenameCubit>().submit(),
+              child: Text('RENAME'),
             ),
           ],
         ),

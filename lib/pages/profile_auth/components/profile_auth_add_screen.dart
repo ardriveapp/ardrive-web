@@ -27,10 +27,10 @@ class ProfileAuthAddScreen extends StatelessWidget {
                     children: [
                       Text(
                         state.isExistingUser
-                            ? AppLocalizations.of(context)
+                            ? AppLocalizations.of(context)!
                                 .welcomeBack
                                 .toUpperCase()
-                            : AppLocalizations.of(context)
+                            : AppLocalizations.of(context)!
                                 .letsGetStarted
                                 .toUpperCase(),
                         textAlign: TextAlign.center,
@@ -118,20 +118,20 @@ class ProfileAuthAddScreen extends StatelessWidget {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          child: Text('ADD PROFILE'),
                           onPressed: () =>
                               context.read<ProfileAddCubit>().submit(),
+                          child: Text('ADD PROFILE'),
                         ),
                       ),
                       const SizedBox(height: 16),
                       TextButton(
+                        onPressed: () =>
+                            context.read<ProfileAddCubit>().promptForWallet(),
                         child: context
                                 .read<ProfileAddCubit>()
                                 .isArconnectInstalled()
                             ? Text('LOG OUT')
                             : Text('Change wallet'),
-                        onPressed: () =>
-                            context.read<ProfileAddCubit>().promptForWallet(),
                       ),
                     ],
                   ),

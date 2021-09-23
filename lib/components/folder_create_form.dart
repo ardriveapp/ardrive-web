@@ -11,8 +11,8 @@ import 'components.dart';
 
 Future<void> promptToCreateFolder(
   BuildContext context, {
-  @required String driveId,
-  @required String parentFolderId,
+  required String driveId,
+  required String parentFolderId,
 }) =>
     showDialog(
       context: context,
@@ -59,12 +59,12 @@ class FolderCreateForm extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              child: Text('CANCEL'),
               onPressed: () => Navigator.of(context).pop(null),
+              child: Text('CANCEL'),
             ),
             ElevatedButton(
-              child: Text('CREATE'),
               onPressed: () => context.read<FolderCreateCubit>().submit(),
+              child: Text('CREATE'),
             ),
           ],
         ),

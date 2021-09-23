@@ -5,34 +5,32 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
 
 part 'fs_entry_move_state.dart';
 
 class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
   final String driveId;
-  final String folderId;
-  final String fileId;
+  final String? folderId;
+  final String? fileId;
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
 
-  StreamSubscription _folderSubscription;
+  StreamSubscription? _folderSubscription;
 
   bool get _isMovingFolder => folderId != null;
 
   FsEntryMoveCubit({
-    @required this.driveId,
+    required this.driveId,
     this.folderId,
     this.fileId,
-    @required ArweaveService arweave,
-    @required DriveDao driveDao,
-    @required ProfileCubit profileCubit,
-    @required SyncCubit syncCubit,
+    required ArweaveService arweave,
+    required DriveDao driveDao,
+    required ProfileCubit profileCubit,
+    required SyncCubit syncCubit,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
@@ -46,9 +44,11 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         .then((d) => loadFolder(d.rootFolderId));
   }
 
-  Future<void> loadParentFolder() {
+  Future<void> loadParentFolder() async {
     final state = this.state as FsEntryMoveFolderLoadSuccess;
-    return loadFolder(state.viewingFolder.folder.parentFolderId);
+    if (state.viewingFolder.folder.parentFolderId != null) {
+      return loadFolder(state.viewingFolder.folder.parentFolderId!);
+    }
   }
 
   Future<void> loadFolder(String folderId) async {
@@ -58,11 +58,10 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         _driveDao.watchFolderContents(driveId, folderId: folderId).listen(
               (f) => emit(
                 FsEntryMoveFolderLoadSuccess(
-                  viewingRootFolder: f.folder.parentFolderId == null,
-                  viewingFolder: f,
-                  isMovingFolder: _isMovingFolder,
-                  movingEntryId: this.folderId ?? fileId,
-                ),
+                    viewingRootFolder: f.folder.parentFolderId == null,
+                    viewingFolder: f,
+                    isMovingFolder: _isMovingFolder,
+                    movingEntryId: (this.folderId ?? fileId)!),
               ),
             );
   }
@@ -85,7 +84,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
         await _driveDao.transaction(() async {
           var folder = await _driveDao
-              .folderById(driveId: driveId, folderId: folderId)
+              .folderById(driveId: driveId, folderId: folderId!)
               .getSingle();
           folder = folder.copyWith(
               parentFolderId: parentFolder.id,
@@ -94,16 +93,12 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
           final folderEntity = folder.asEntity();
 
-          final owner = await profile.getWalletOwner();
-
           final folderTx = await _arweave.prepareEntityTx(
-              folderEntity, profile.getRawWalletSignature, owner, driveKey);
+              folderEntity, profile.wallet, driveKey);
 
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
-
           folderEntity.txId = folderTx.id;
-
           await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
               performedAction: RevisionAction.move));
 
@@ -117,7 +112,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
         await _driveDao.transaction(() async {
           var file = await _driveDao
-              .fileById(driveId: driveId, fileId: fileId)
+              .fileById(driveId: driveId, fileId: fileId!)
               .getSingle();
           file = file.copyWith(
               parentFolderId: parentFolder.id,
@@ -129,14 +124,11 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
           final fileEntity = file.asEntity();
 
-          final owner = await profile.getWalletOwner();
-
           final fileTx = await _arweave.prepareEntityTx(
-              fileEntity, profile.getRawWalletSignature, owner, fileKey);
+              fileEntity, profile.wallet, fileKey);
 
           await _arweave.postTx(fileTx);
           await _driveDao.writeToFile(file);
-
           fileEntity.txId = fileTx.id;
 
           await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(

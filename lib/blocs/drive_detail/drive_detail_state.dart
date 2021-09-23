@@ -3,7 +3,7 @@ part of 'drive_detail_cubit.dart';
 @immutable
 abstract class DriveDetailState extends Equatable {
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class DriveDetailLoadInProgress extends DriveDetailState {}
@@ -17,21 +17,21 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final DriveOrder contentOrderBy;
   final OrderingMode contentOrderingMode;
 
-  final String selectedItemId;
+  final String? selectedItemId;
   final bool selectedItemIsFolder;
   final bool showSelectedItemDetails;
 
   /// The preview URL for the selected file.
   ///
   /// Null if no file is selected.
-  final Uri selectedFilePreviewUrl;
+  final Uri? selectedFilePreviewUrl;
 
   DriveDetailLoadSuccess({
-    this.currentDrive,
-    this.hasWritePermissions,
-    this.currentFolder,
-    this.contentOrderBy,
-    this.contentOrderingMode,
+    required this.currentDrive,
+    required this.hasWritePermissions,
+    required this.currentFolder,
+    required this.contentOrderBy,
+    required this.contentOrderingMode,
     this.selectedItemId,
     this.selectedItemIsFolder = false,
     this.showSelectedItemDetails = false,
@@ -39,15 +39,15 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   });
 
   DriveDetailLoadSuccess copyWith({
-    Drive currentDrive,
-    bool hasWritePermissions,
-    FolderWithContents currentFolder,
-    DriveOrder contentOrderBy,
-    OrderingMode contentOrderingMode,
-    String selectedItemId,
-    bool selectedItemIsFolder,
-    bool showSelectedItemDetails,
-    Uri selectedFilePreviewUrl,
+    Drive? currentDrive,
+    bool? hasWritePermissions,
+    FolderWithContents? currentFolder,
+    DriveOrder? contentOrderBy,
+    OrderingMode? contentOrderingMode,
+    String? selectedItemId,
+    bool? selectedItemIsFolder,
+    bool? showSelectedItemDetails,
+    Uri? selectedFilePreviewUrl,
   }) =>
       DriveDetailLoadSuccess(
         currentDrive: currentDrive ?? this.currentDrive,
@@ -64,7 +64,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
       );
 
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
         currentDrive,
         hasWritePermissions,
         currentFolder,

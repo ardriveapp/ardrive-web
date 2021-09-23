@@ -16,7 +16,7 @@ class ProfileAddOnboardingNewUser extends ProfileAddState {}
 class ProfileAddPromptDetails extends ProfileAddState {
   final bool isExistingUser;
 
-  ProfileAddPromptDetails({this.isExistingUser});
+  ProfileAddPromptDetails({required this.isExistingUser});
 
   @override
   List<Object> get props => [isExistingUser];

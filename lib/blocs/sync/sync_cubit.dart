@@ -1,16 +1,16 @@
 import 'dart:async';
-import 'dart:html';
 import 'dart:math';
 
+import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
-import 'package:rxdart/rxdart.dart';
 
 import '../blocs.dart';
 
@@ -26,13 +26,13 @@ class SyncCubit extends Cubit<SyncState> {
   final DriveDao _driveDao;
   final Database _db;
 
-  StreamSubscription _syncSub;
+  StreamSubscription? _syncSub;
 
   SyncCubit({
-    @required ProfileCubit profileCubit,
-    @required ArweaveService arweave,
-    @required DriveDao driveDao,
-    @required Database db,
+    required ProfileCubit profileCubit,
+    required ArweaveService arweave,
+    required DriveDao driveDao,
+    required Database db,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _driveDao = driveDao,
@@ -45,20 +45,16 @@ class SyncCubit extends Cubit<SyncState> {
 
   void createSyncStream() {
     _syncSub?.cancel();
-    _syncSub = interval(const Duration(minutes: 2))
-        .startWith(null)
+    _syncSub = Stream.periodic(const Duration(minutes: 2))
         // Do not start another sync until the previous sync has completed.
-        .exhaustMap((value) => Stream.fromFuture(startSync()))
+        .map((value) => Stream.fromFuture(startSync()))
         .listen((_) {});
+    startSync();
   }
 
   void restartSyncOnFocus() {
-    document.addEventListener('visibilitychange', (event) {
-      if (document.visibilityState != 'hidden') {
-        Future.delayed(Duration(seconds: 2))
-            .then((value) => createSyncStream());
-      }
-    });
+    whenBrowserTabIsUnhidden(() => Future.delayed(Duration(seconds: 2))
+        .then((value) => createSyncStream()));
   }
 
   Future<void> startSync() async {
@@ -68,11 +64,10 @@ class SyncCubit extends Cubit<SyncState> {
       emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
       if (profile is ProfileLoggedIn) {
-        
         //Check if profile is ArConnect to skip sync while tab is hidden
         final isArConnect = await _profileCubit.isCurrentProfileArConnect();
 
-        if (isArConnect && window.document.visibilityState != 'visible') {
+        if (isArConnect && isBrowserTabHidden()) {
           print('Tab hidden, skipping sync...');
           emit(SyncIdle());
           return;
@@ -89,9 +84,7 @@ class SyncCubit extends Cubit<SyncState> {
         // later system.
         //
         final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
-            profile.getRawWalletSignature,
-            await profile.getWalletAddress(),
-            profile.password);
+            profile.wallet, profile.password);
 
         await _driveDao.updateUserDrives(userDriveEntities, profile.cipherKey);
       }
@@ -106,7 +99,6 @@ class SyncCubit extends Cubit<SyncState> {
         _updateTransactionStatuses(),
       ]);
     } catch (err) {
-      print(err);
       addError(err);
     }
 
@@ -116,7 +108,7 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> _syncDrive(String driveId) async {
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
 
-    SecretKey driveKey;
+    SecretKey? driveKey;
     if (drive.isPrivate) {
       final profile = _profileCubit.state;
 
@@ -135,7 +127,7 @@ class SyncCubit extends Cubit<SyncState> {
       // we are just starting 5 blocks before the lastBlockHeight to make sure it
       // picks up all files. 'after' indicates the cursor where it should start
       // syncing from. For first sync 'after' should be null or an empty string.
-      lastBlockHeight: max(drive.lastBlockHeight - 5, drive.lastBlockHeight),
+      lastBlockHeight: max(drive.lastBlockHeight! - 5, drive.lastBlockHeight!),
       after: drive.syncCursor,
       driveKey: driveKey,
     );
@@ -146,7 +138,7 @@ class SyncCubit extends Cubit<SyncState> {
         .expand((entities) => entities);
 
     //Handle newEntities being empty, i.e; There's nothing more to sync
-    if (newEntities == null || newEntities.isEmpty) {
+    if (newEntities.isEmpty) {
       //Reset the sync cursor after every sync to pick up files from other instances of the app.
       //(Different tab, different window, mobile, desktop etc)
       await _driveDao.writeToDrive(DrivesCompanion(
@@ -208,23 +200,26 @@ class SyncCubit extends Cubit<SyncState> {
 
   /// Computes the new drive revisions from the provided entities, inserts them into the database,
   /// and returns the latest revision.
-  Future<DriveRevisionsCompanion> _addNewDriveEntityRevisions(
+  Future<DriveRevisionsCompanion?> _addNewDriveEntityRevisions(
       Iterable<DriveEntity> newEntities) async {
-    DriveRevisionsCompanion latestRevision;
+    DriveRevisionsCompanion? latestRevision;
 
     final newRevisions = <DriveRevisionsCompanion>[];
     for (final entity in newEntities) {
       latestRevision ??= await _driveDao
-          .latestDriveRevisionByDriveId(driveId: entity.id)
+          .latestDriveRevisionByDriveId(driveId: entity.id!)
           .getSingleOrNull()
           .then((r) => r?.toCompanion(true));
 
       final revisionPerformedAction =
           entity.getPerformedRevisionAction(latestRevision);
+      if (revisionPerformedAction == null) {
+        continue;
+      }
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
-      if (revision.action.value == null) {
+      if (revision.action.value.isEmpty) {
         continue;
       }
 
@@ -259,24 +254,29 @@ class SyncCubit extends Cubit<SyncState> {
     final newRevisions = <FolderRevisionsCompanion>[];
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
-        latestRevisions[entity.id] = await _driveDao
+        final revisions = (await _driveDao
             .latestFolderRevisionByFolderId(
-                driveId: driveId, folderId: entity.id)
-            .getSingleOrNull()
-            .then((r) => r?.toCompanion(true));
+                driveId: driveId, folderId: entity.id!)
+            .getSingleOrNull());
+        if (revisions != null) {
+          latestRevisions[entity.id!] = revisions.toCompanion(true);
+        }
       }
 
       final revisionPerformedAction =
           entity.getPerformedRevisionAction(latestRevisions[entity.id]);
+      if (revisionPerformedAction == null) {
+        continue;
+      }
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
-      if (revision.action.value == null) {
+      if (revision.action.value.isEmpty) {
         continue;
       }
 
       newRevisions.add(revision);
-      latestRevisions[entity.id] = revision;
+      latestRevisions[entity.id!] = revision;
     }
 
     await _db.batch((b) {
@@ -306,23 +306,28 @@ class SyncCubit extends Cubit<SyncState> {
     final newRevisions = <FileRevisionsCompanion>[];
     for (final entity in newEntities) {
       if (!latestRevisions.containsKey(entity.id)) {
-        latestRevisions[entity.id] = await _driveDao
-            .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id)
-            .getSingleOrNull()
-            .then((r) => r?.toCompanion(true));
+        final revisions = await _driveDao
+            .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id!)
+            .getSingleOrNull();
+        if (revisions != null) {
+          latestRevisions[entity.id!] = revisions.toCompanion(true);
+        }
       }
 
       final revisionPerformedAction =
           entity.getPerformedRevisionAction(latestRevisions[entity.id]);
+      if (revisionPerformedAction == null) {
+        continue;
+      }
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
-      if (revision.action.value == null) {
+      if (revision.action.value.isEmpty) {
         continue;
       }
 
       newRevisions.add(revision);
-      latestRevisions[entity.id] = revision;
+      latestRevisions[entity.id!] = revision;
     }
 
     await _db.batch((b) {
@@ -358,8 +363,8 @@ class SyncCubit extends Cubit<SyncState> {
         .getSingleOrNull();
 
     return latestRevision.toEntryCompanion().copyWith(
-        dateCreated:
-            Value(oldestRevision?.dateCreated ?? latestRevision.dateCreated));
+        dateCreated: Value(oldestRevision?.dateCreated ??
+            latestRevision.dateCreated as DateTime));
   }
 
   /// Computes the refreshed folder entries from the provided revisions and returns them as a map keyed by their ids.
@@ -376,9 +381,9 @@ class SyncCubit extends Cubit<SyncState> {
           .oldestFolderRevisionByFolderId(driveId: driveId, folderId: folderId)
           .getSingleOrNull();
 
-      updatedFoldersById[folderId] = updatedFoldersById[folderId].copyWith(
+      updatedFoldersById[folderId] = updatedFoldersById[folderId]!.copyWith(
           dateCreated: Value(oldestRevision?.dateCreated ??
-              updatedFoldersById[folderId].dateCreated));
+              updatedFoldersById[folderId]!.dateCreated as DateTime));
     }
 
     return updatedFoldersById;
@@ -398,9 +403,9 @@ class SyncCubit extends Cubit<SyncState> {
           .oldestFileRevisionByFileId(driveId: driveId, fileId: fileId)
           .getSingleOrNull();
 
-      updatedFilesById[fileId] = updatedFilesById[fileId].copyWith(
+      updatedFilesById[fileId] = updatedFilesById[fileId]!.copyWith(
           dateCreated: Value(oldestRevision?.dateCreated ??
-              updatedFilesById[fileId].dateCreated));
+              updatedFilesById[fileId]!.dateCreated as DateTime));
     }
 
     return updatedFilesById;
@@ -440,14 +445,14 @@ class SyncCubit extends Cubit<SyncState> {
       // If this is the root folder, we should not include its name as part of the path.
       final folderPath = node.folder.parentFolderId != null
           ? parentPath + '/' + node.folder.name
-          : '';
+          : rootPath;
 
       await _driveDao
           .updateFolderById(driveId, folderId)
           .write(FolderEntriesCompanion(path: Value(folderPath)));
 
       for (final staleFileId in node.files.keys) {
-        final filePath = folderPath + '/' + node.files[staleFileId];
+        final filePath = folderPath + '/' + node.files[staleFileId]!;
 
         await _driveDao
             .updateFileById(driveId, staleFileId)
@@ -461,21 +466,21 @@ class SyncCubit extends Cubit<SyncState> {
 
     for (final treeRoot in staleFolderTree) {
       // Get the path of this folder's parent.
-      String parentPath;
+      String? parentPath;
       if (treeRoot.folder.parentFolderId == null) {
-        parentPath = '';
+        parentPath = rootPath;
       } else {
-        parentPath = await _driveDao
+        parentPath = (await _driveDao
             .folderById(
-                driveId: driveId, folderId: treeRoot.folder.parentFolderId)
+                driveId: driveId, folderId: treeRoot.folder.parentFolderId!)
             .map((f) => f.path)
-            .getSingleOrNull();
+            .getSingleOrNull());
       }
-
-      if (parentPath == null)
-        print('Missing parent folder: ' + treeRoot.folder.parentFolderId);
-      else
+      if (parentPath != null) {
         await updateFolderTree(treeRoot, parentPath);
+      } else {
+        print('Missing parent folder');
+      }
     }
 
     // Update paths of files whose parent folders were not updated.
@@ -513,8 +518,8 @@ class SyncCubit extends Cubit<SyncState> {
     await _driveDao.transaction(() async {
       for (final txId in pendingTxMap.keys) {
         final txConfirmed =
-            txConfirmations[txId] >= kRequiredTxConfirmationCount;
-        final txNotFound = txConfirmations[txId] < 0;
+            txConfirmations[txId]! >= kRequiredTxConfirmationCount;
+        final txNotFound = txConfirmations[txId]! < 0;
 
         var txStatus;
 
@@ -524,7 +529,7 @@ class SyncCubit extends Cubit<SyncState> {
           // Only mark transactions as failed if they are unconfirmed for over 45 minutes
           // as the transaction might not be queryable for right after it was created.
           final abovePendingThreshold = DateTime.now()
-                  .difference(pendingTxMap[txId].dateCreated)
+                  .difference(pendingTxMap[txId]!.dateCreated)
                   .inMinutes >
               45;
           if (abovePendingThreshold) {

@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'config.dart';
 
 class ConfigService {
-  AppConfig _config;
+  AppConfig? _config;
 
   Future<AppConfig> getConfig() async {
     if (_config == null) {
@@ -16,6 +16,6 @@ class ConfigService {
       _config = AppConfig.fromJson(json.decode(configContent));
     }
 
-    return _config;
+    return _config!;
   }
 }

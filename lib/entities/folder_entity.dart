@@ -13,30 +13,35 @@ part 'folder_entity.g.dart';
 @JsonSerializable()
 class FolderEntity extends Entity {
   @JsonKey(ignore: true)
-  String id;
+  String? id;
   @JsonKey(ignore: true)
-  String driveId;
+  String? driveId;
   @JsonKey(ignore: true)
-  String parentFolderId;
+  String? parentFolderId;
 
-  String name;
+  String? name;
 
-  FolderEntity({this.id, this.driveId, this.parentFolderId, this.name});
+  FolderEntity({
+    this.id,
+    this.driveId,
+    this.parentFolderId,
+    this.name,
+  });
 
   static Future<FolderEntity> fromTransaction(
     TransactionCommonMixin transaction,
     Uint8List data, [
-    SecretKey driveKey,
+    SecretKey? driveKey,
   ]) async {
     try {
-      Map<String, dynamic> entityJson;
+      Map<String, dynamic>? entityJson;
       if (driveKey == null) {
         entityJson = json.decode(utf8.decode(data));
       } else {
         entityJson = await decryptEntityJson(transaction, data, driveKey);
       }
 
-      return FolderEntity.fromJson(entityJson)
+      return FolderEntity.fromJson(entityJson!)
         ..id = transaction.getTag(EntityTag.folderId)
         ..driveId = transaction.getTag(EntityTag.driveId)
         ..parentFolderId = transaction.getTag(EntityTag.parentFolderId)
@@ -56,11 +61,11 @@ class FolderEntity extends Entity {
       ..addApplicationTags(unixTime: createdAt)
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.folder)
-      ..addTag(EntityTag.driveId, driveId)
-      ..addTag(EntityTag.folderId, id);
+      ..addTag(EntityTag.driveId, driveId!)
+      ..addTag(EntityTag.folderId, id!);
 
     if (parentFolderId != null) {
-      tx.addTag(EntityTag.parentFolderId, parentFolderId);
+      tx.addTag(EntityTag.parentFolderId, parentFolderId!);
     }
   }
 

@@ -41,7 +41,7 @@ class SharedFilePage extends StatelessWidget {
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.text_snippet),
-                      title: Text(state.file.name),
+                      title: Text(state.file.name!),
                       subtitle: Text(filesize(state.file.size)),
                     ),
                     const SizedBox(height: 24),
@@ -50,7 +50,7 @@ class SharedFilePage extends StatelessWidget {
                       label: Text('Download'),
                       onPressed: () => promptToDownloadSharedFile(
                         context: context,
-                        fileId: state.file.id,
+                        fileId: state.file.id!,
                         fileKey: state.fileKey,
                       ),
                     ),
@@ -79,8 +79,8 @@ class SharedFilePage extends StatelessWidget {
         uri: Uri.parse('https://ardrive.io/'),
         target: LinkTarget.blank,
         builder: (context, onPressed) => TextButton(
-          child: Text('Learn more about ArDrive'),
           onPressed: onPressed,
+          child: Text('Learn more about ArDrive'),
         ),
       );
 }

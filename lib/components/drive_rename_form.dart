@@ -12,7 +12,7 @@ import 'components.dart';
 
 Future<void> promptToRenameDrive(
   BuildContext context, {
-  @required String driveId,
+  required String driveId,
 }) =>
     showDialog(
       context: context,
@@ -58,15 +58,15 @@ class DriveRenameForm extends StatelessWidget {
                     ),
                   ),
                 )
-              : null,
+              : Container(),
           actions: [
             TextButton(
-              child: Text('CANCEL'),
               onPressed: () => Navigator.of(context).pop(),
+              child: Text('CANCEL'),
             ),
             ElevatedButton(
-              child: Text('RENAME'),
               onPressed: () => context.read<DriveRenameCubit>().submit(),
+              child: Text('RENAME'),
             ),
           ],
         ),

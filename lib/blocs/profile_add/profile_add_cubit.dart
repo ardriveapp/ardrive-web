@@ -5,7 +5,8 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/arconnect/arconnect.dart' as arconnect;
+import 'package:ardrive/services/arconnect/arconnect.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
@@ -18,31 +19,33 @@ import 'package:reactive_forms/reactive_forms.dart';
 part 'profile_add_state.dart';
 
 class ProfileAddCubit extends Cubit<ProfileAddState> {
-  FormGroup form;
+  late FormGroup form;
 
-  Wallet _wallet;
-  ProfileType _profileType;
-  String _lastKnownWalletAddress;
-  List<TransactionCommonMixin> _driveTxs;
+  late Wallet _wallet;
+  late ProfileType _profileType;
+  String? _lastKnownWalletAddress;
+  late List<TransactionCommonMixin> _driveTxs;
 
   final ProfileCubit _profileCubit;
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
   ProfileAddCubit({
-    @required ProfileCubit profileCubit,
-    @required ProfileDao profileDao,
-    @required ArweaveService arweave,
-    @required BuildContext context,
+    required ProfileCubit profileCubit,
+    required ProfileDao profileDao,
+    required ArweaveService arweave,
+    required BuildContext context,
   })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
         _arweave = arweave,
         super(ProfileAddPromptWallet());
 
+  final arconnect = ArConnectService();
+
   bool isArconnectInstalled() {
     return arconnect.isExtensionPresent();
   }
 
-  ProfileType getProfileType() => _profileType;
+  ProfileType? getProfileType() => _profileType;
 
   Future<void> promptForWallet() async {
     if (_profileType == ProfileType.ArConnect) {
@@ -76,11 +79,11 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         emit(ProfileAddFailiure());
         return;
       }
-
-      _lastKnownWalletAddress = await arconnect.getWalletAddress();
+      _wallet = ArConnectWallet();
+      _lastKnownWalletAddress = await _wallet.getAddress();
 
       _driveTxs =
-          await _arweave.getUniqueUserDriveEntityTxs(_lastKnownWalletAddress);
+          await _arweave.getUniqueUserDriveEntityTxs(_lastKnownWalletAddress!);
 
       if (_driveTxs.isEmpty) {
         emit(ProfileAddOnboardingNewUser());
@@ -98,7 +101,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     setupForm(withPasswordConfirmation: true);
   }
 
-  void setupForm({bool withPasswordConfirmation}) {
+  void setupForm({required bool withPasswordConfirmation}) {
     form = FormGroup(
       {
         'username': FormControl(validators: [Validators.required]),
@@ -141,12 +144,10 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       // Try and decrypt one of the user's private drive entities to check if they are entering the
       // right password.
       if (privateDriveTxs.isNotEmpty) {
-        final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId);
-        final signature =
-            _wallet != null ? _wallet.sign : arconnect.getSignature;
+        final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
 
         final checkDriveKey = await deriveDriveKey(
-          signature,
+          _wallet,
           checkDriveId,
           password,
         );
@@ -168,18 +169,9 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
           return;
         }
       }
-      if (_wallet != null) {
-        await _profileDao.addProfile(username, password, _wallet);
-      } else {
-        final walletAddress = await arconnect.getWalletAddress();
-        final walletPublicKey = await arconnect.getPublicKey();
-        await _profileDao.addProfileArconnect(
-          username,
-          password,
-          walletAddress,
-          walletPublicKey,
-        );
-      }
+
+      await _profileDao.addProfile(username, password, _wallet, _profileType);
+
       await _profileCubit.unlockDefaultProfile(password, _profileType);
     } catch (e) {
       await _profileCubit.logoutProfile();

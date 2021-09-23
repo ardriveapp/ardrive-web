@@ -6,25 +6,30 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
+import '../utils/fakes.dart';
 import '../utils/utils.dart';
 
 void main() {
   group('ProfileAddCubit', () {
-    Database db;
-    ProfileDao profileDao;
-    ArweaveService arweave;
+    late Database db;
+    late ProfileDao profileDao;
+    late ArweaveService arweave;
 
-    Wallet newUserWallet;
+    late Wallet newUserWallet;
 
-    ProfileCubit profileCubit;
-    ProfileAddCubit profileAddCubit;
+    late ProfileCubit profileCubit;
+    late ProfileAddCubit profileAddCubit;
 
     const fakePassword = '123';
 
     setUp(() async {
+      
+      registerFallbackValue(ProfileStatefake());
+      
+
       db = getTestDb();
       profileDao = db.profileDao;
 
@@ -34,10 +39,14 @@ void main() {
       newUserWallet = getTestWallet();
 
       profileAddCubit = ProfileAddCubit(
-          profileCubit: profileCubit, profileDao: profileDao, arweave: arweave);
+        profileCubit: profileCubit,
+        profileDao: profileDao,
+        arweave: arweave,
+        context: MockContext(),
+      );
 
       final walletAddress = await newUserWallet.getAddress();
-      when(arweave.getUniqueUserDriveEntityTxs(walletAddress))
+      when(() => arweave.getUniqueUserDriveEntityTxs(walletAddress))
           .thenAnswer((_) => Future.value([]));
     });
 
@@ -53,10 +62,10 @@ void main() {
         bloc.form.value = {'username': 'Bobby', 'password': fakePassword};
         await bloc.submit();
       },
-      expect: [
+      expect: () => [
         ProfileAddPromptDetails(isExistingUser: false),
       ],
-      verify: (_) => verify(
+      verify: (_) => verify(() =>
           profileCubit.unlockDefaultProfile(fakePassword, ProfileType.JSON)),
     );
 
@@ -67,7 +76,7 @@ void main() {
         bloc.form.value = {'password': ''};
         bloc.submit();
       },
-      expect: [],
+      expect: () => [],
     );
   });
 }

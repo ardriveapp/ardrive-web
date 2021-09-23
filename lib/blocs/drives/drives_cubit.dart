@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
-import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -18,12 +16,12 @@ class DrivesCubit extends Cubit<DrivesState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
 
-  StreamSubscription _drivesSubscription;
+  late StreamSubscription _drivesSubscription;
 
   DrivesCubit({
-    String initialSelectedDriveId,
-    @required ProfileCubit profileCubit,
-    @required DriveDao driveDao,
+    String? initialSelectedDriveId,
+    required ProfileCubit profileCubit,
+    required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         super(DrivesLoadInProgress()) {
@@ -31,12 +29,12 @@ class DrivesCubit extends Cubit<DrivesState> {
       _driveDao
           .allDrives(order: OrderBy([OrderingTerm.asc(_driveDao.drives.name)]))
           .watch(),
-      _profileCubit.startWith(null),
+      _profileCubit.stream.startWith(ProfileCheckingAvailability()),
       (drives, _) => drives,
     ).listen((drives) async {
       final state = this.state;
 
-      String selectedDriveId;
+      String? selectedDriveId;
       if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
         selectedDriveId = state.selectedDriveId;
       } else {
@@ -45,25 +43,26 @@ class DrivesCubit extends Cubit<DrivesState> {
       }
 
       final profile = _profileCubit.state;
-      final walletAddress =
-          profile is ProfileLoggedIn ? await profile.walletAddress : '';
-      emit(
-        DrivesLoadSuccess(
-          selectedDriveId: selectedDriveId,
-          // If the user is not logged in, all drives are considered shared ones.
-          userDrives: drives
-              .where((d) => profile is ProfileLoggedIn
-                  ? d.ownerAddress == walletAddress
-                  : false)
-              .toList(),
-          sharedDrives: drives
-              .where((d) => profile is ProfileLoggedIn
-                  ? d.ownerAddress != walletAddress
-                  : true)
-              .toList(),
-          canCreateNewDrive: _profileCubit.state is ProfileLoggedIn,
-        ),
-      );
+      if (profile is ProfileLoggedIn) {
+        final walletAddress = profile.walletAddress;
+        emit(
+          DrivesLoadSuccess(
+            selectedDriveId: selectedDriveId,
+            // If the user is not logged in, all drives are considered shared ones.
+            userDrives: drives
+                .where((d) => profile is ProfileLoggedIn
+                    ? d.ownerAddress == walletAddress
+                    : false)
+                .toList(),
+            sharedDrives: drives
+                .where((d) => profile is ProfileLoggedIn
+                    ? d.ownerAddress != walletAddress
+                    : true)
+                .toList(),
+            canCreateNewDrive: _profileCubit.state is ProfileLoggedIn,
+          ),
+        );
+      }
     });
   }
 

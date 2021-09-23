@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/entities/profileTypes.dart';
+import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -26,24 +27,10 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
 
     final profileSalt = profile.keySalt;
     final profileKdRes = await deriveProfileKey(password, profileSalt);
-    var walletJwk;
+    //Checks password for both JSON and ArConnect by decrypting stored public key
+    var publicKey;
     try {
-      //Will only decrypt wallet if it's a JSON Profile
-      if (profile.encryptedWallet.isNotEmpty) {
-        walletJwk = json.decode(
-          utf8.decode(
-            await aesGcm.decrypt(
-              secretBoxFromDataWithMacConcatenation(
-                profile.encryptedWallet,
-                nonce: profileSalt,
-              ),
-              secretKey: profileKdRes.key,
-            ),
-          ),
-        );
-      }
-      //Checks password for both JSON and ArConnect by decrypting stored public key
-      final publicKey = utf8.decode(
+      publicKey = utf8.decode(
         await aesGcm.decrypt(
           secretBoxFromDataWithMacConcatenation(
             profile.encryptedPublicKey,
@@ -52,18 +39,43 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
           secretKey: profileKdRes.key,
         ),
       );
-
-      //Returning this class doesn't do anything, but it could be useful for debugging
-      return ProfileLoadDetails(
-        details: profile,
-        wallet: profile.encryptedWallet.isNotEmpty
-            ? Wallet.fromJwk(walletJwk)
-            : null,
-        key: profileKdRes.key,
-        walletPublicKey: publicKey,
-      );
     } on SecretBoxAuthenticationError catch (_) {
       throw ProfilePasswordIncorrectException();
+    }
+    final parsedProfileType = ProfileType.values[profile.profileType];
+    switch (parsedProfileType) {
+      case ProfileType.JSON:
+        try {
+          //Will only decrypt wallet if it's a JSON Profile
+          final walletJwk = json.decode(
+            utf8.decode(
+              await aesGcm.decrypt(
+                secretBoxFromDataWithMacConcatenation(
+                  profile.encryptedWallet,
+                  nonce: profileSalt,
+                ),
+                secretKey: profileKdRes.key,
+              ),
+            ),
+          );
+
+          //Returning this class doesn't do anything, but it could be useful for debugging
+          return ProfileLoadDetails(
+            details: profile,
+            wallet: Wallet.fromJwk(walletJwk),
+            key: profileKdRes.key,
+            walletPublicKey: publicKey,
+          );
+        } on SecretBoxAuthenticationError catch (_) {
+          throw ProfilePasswordIncorrectException();
+        }
+      case ProfileType.ArConnect:
+        return ProfileLoadDetails(
+          details: profile,
+          wallet: ArConnectWallet(),
+          key: profileKdRes.key,
+          walletPublicKey: publicKey,
+        );
     }
   }
 
@@ -73,46 +85,30 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     String username,
     String password,
     Wallet wallet,
+    ProfileType profileType,
   ) async {
     final profileKdRes = await deriveProfileKey(password);
     final profileSalt = profileKdRes.salt;
-    final encryptedWallet = await encryptWallet(wallet, profileKdRes);
+    final encryptedWallet = await () async {
+      switch (profileType) {
+        case ProfileType.JSON:
+          return (await encryptWallet(wallet, profileKdRes))
+              .concatenation(nonce: false);
+        case ProfileType.ArConnect:
+          //ArConnect wallet does not contain the jwk
+          return Uint8List(0);
+      }
+    }();
     final publicKey = await wallet.getOwner();
     final encryptedPublicKey = await encryptPublicKey(publicKey, profileKdRes);
     await into(profiles).insert(
       ProfilesCompanion.insert(
         id: await wallet.getAddress(),
         username: username,
-        encryptedWallet: encryptedWallet.concatenation(nonce: false),
-        keySalt: profileSalt,
-        profileType: ProfileType.JSON.index,
+        encryptedWallet: encryptedWallet,
+        keySalt: profileSalt as Uint8List,
+        profileType: profileType.index,
         walletPublicKey: publicKey,
-        encryptedPublicKey: encryptedPublicKey.concatenation(nonce: false),
-      ),
-    );
-
-    return profileKdRes.key;
-  }
-
-  Future<SecretKey> addProfileArconnect(
-    String username,
-    String password,
-    String walletAddress,
-    String walletPublicKey,
-  ) async {
-    final profileKdRes = await deriveProfileKey(password);
-    final profileSalt = profileKdRes.salt;
-    final encryptedPublicKey =
-        await encryptPublicKey(walletPublicKey, profileKdRes);
-
-    await into(profiles).insert(
-      ProfilesCompanion.insert(
-        id: walletAddress,
-        username: username,
-        encryptedWallet: Uint8List(0),
-        keySalt: profileSalt,
-        profileType: ProfileType.ArConnect.index,
-        walletPublicKey: walletPublicKey,
         encryptedPublicKey: encryptedPublicKey.concatenation(nonce: false),
       ),
     );
@@ -151,9 +147,9 @@ class ProfileLoadDetails {
   final SecretKey key;
   final String walletPublicKey;
   ProfileLoadDetails({
-    this.details,
-    this.wallet,
-    this.key,
-    this.walletPublicKey,
+    required this.details,
+    required this.wallet,
+    required this.key,
+    required this.walletPublicKey,
   });
 }

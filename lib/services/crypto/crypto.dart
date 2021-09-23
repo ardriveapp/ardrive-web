@@ -11,7 +11,7 @@ final sha256 = Sha256();
 SecretBox secretBoxFromDataWithMacConcatenation(
   Uint8List data, {
   int macByteLength = 16,
-  Uint8List nonce,
+  required Uint8List nonce,
 }) =>
     SecretBox(
       Uint8List.sublistView(data, 0, data.lengthInBytes - macByteLength),

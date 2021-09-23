@@ -7,7 +7,6 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-import 'package:moor/moor.dart';
 
 class DriveFileDropZone extends StatefulWidget {
   @override
@@ -15,7 +14,7 @@ class DriveFileDropZone extends StatefulWidget {
 }
 
 class _DriveFileDropZoneState extends State<DriveFileDropZone> {
-  DropzoneViewController controller;
+  late DropzoneViewController controller;
   bool isHovering = false;
   bool isCurrentlyShown = false;
   @override
@@ -61,9 +60,9 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
 
   Future<void> _onDrop(
     htmlFile, {
-    BuildContext context,
-    @required String driveId,
-    @required String folderId,
+    required BuildContext context,
+    required String driveId,
+    required String folderId,
   }) async {
     if (!isCurrentlyShown) {
       isCurrentlyShown = true;

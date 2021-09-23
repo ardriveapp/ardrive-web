@@ -2,32 +2,41 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:bloc_test/bloc_test.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
+import '../utils/fakes.dart';
 import '../utils/utils.dart';
 
 void main() {
   group('ProfileUnlockCubit', () {
-    ProfileDao profileDao;
-    ProfileCubit profileCubit;
-    ProfileUnlockCubit profileUnlockCubit;
+    late ProfileDao profileDao;
+    late ProfileCubit profileCubit;
+    late ProfileUnlockCubit profileUnlockCubit;
+    late ArweaveService arweave;
 
     const rightPassword = 'right-password';
     const wrongPassword = 'wrong-password';
 
     setUp(() {
+      registerFallbackValue(ProfileStatefake());
+
       profileDao = MockProfileDao();
       profileCubit = MockProfileCubit();
+      arweave = MockArweaveService();
 
-      when(profileDao.loadDefaultProfile(rightPassword))
+      when(() => profileDao.loadDefaultProfile(rightPassword))
           .thenAnswer((_) => Future.value());
-      when(profileDao.loadDefaultProfile(wrongPassword))
+      when(() => profileDao.loadDefaultProfile(wrongPassword))
           .thenThrow(ProfilePasswordIncorrectException());
 
       profileUnlockCubit = ProfileUnlockCubit(
-          profileCubit: profileCubit, profileDao: profileDao);
+        profileCubit: profileCubit,
+        profileDao: profileDao,
+        arweave: arweave,
+      );
     });
 
     blocTest<ProfileUnlockCubit, ProfileUnlockState>(
@@ -37,7 +46,7 @@ void main() {
         bloc.form.value = {'password': rightPassword};
         bloc.submit();
       },
-      verify: (bloc) => verify(
+      verify: (bloc) => verify(() =>
           profileCubit.unlockDefaultProfile(rightPassword, ProfileType.JSON)),
     );
 
@@ -45,7 +54,7 @@ void main() {
       'emits [] when submitted without valid form',
       build: () => profileUnlockCubit,
       act: (bloc) => bloc.submit(),
-      expect: [],
+      expect: () => [],
     );
 
     blocTest<ProfileUnlockCubit, ProfileUnlockState>(

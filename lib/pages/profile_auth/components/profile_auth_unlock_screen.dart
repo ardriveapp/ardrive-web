@@ -42,7 +42,7 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              'WELCOME BACK, ${state.username.toUpperCase()}',
+                              'WELCOME BACK, ${state.username!.toUpperCase()}',
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.headline5,
                             ),
@@ -61,19 +61,19 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                child: Text('UNLOCK'),
                                 onPressed: () =>
                                     context.read<ProfileUnlockCubit>().submit(),
+                                child: Text('UNLOCK'),
                               ),
                             ),
                             const SizedBox(height: 16),
                             TextButton(
+                              onPressed: () =>
+                                  context.read<ProfileCubit>().logoutProfile(),
                               child: Text(
                                 'Forget wallet and change profile',
                                 textAlign: TextAlign.center,
                               ),
-                              onPressed: () =>
-                                  context.read<ProfileCubit>().logoutProfile(),
                             ),
                           ],
                         ),

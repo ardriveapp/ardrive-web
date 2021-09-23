@@ -5,18 +5,16 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'fs_entry_rename_state.dart';
 
 class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
-  FormGroup form;
+  late FormGroup form;
 
   final String driveId;
-  final String folderId;
-  final String fileId;
+  final String? folderId;
+  final String? fileId;
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
@@ -26,13 +24,13 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   bool get _isRenamingFolder => folderId != null;
 
   FsEntryRenameCubit({
-    @required this.driveId,
+    required this.driveId,
     this.folderId,
     this.fileId,
-    @required ArweaveService arweave,
-    @required DriveDao driveDao,
-    @required ProfileCubit profileCubit,
-    @required SyncCubit syncCubit,
+    required ArweaveService arweave,
+    required DriveDao driveDao,
+    required ProfileCubit profileCubit,
+    required SyncCubit syncCubit,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
@@ -56,11 +54,11 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     () async {
       final name = _isRenamingFolder
           ? await _driveDao
-              .folderById(driveId: driveId, folderId: folderId)
+              .folderById(driveId: driveId, folderId: folderId!)
               .map((f) => f.name)
               .getSingle()
           : await _driveDao
-              .fileById(driveId: driveId, fileId: fileId)
+              .fileById(driveId: driveId, fileId: fileId!)
               .map((f) => f.name)
               .getSingle();
 
@@ -92,18 +90,16 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
         await _driveDao.transaction(() async {
           var folder = await _driveDao
-              .folderById(driveId: driveId, folderId: folderId)
+              .folderById(driveId: driveId, folderId: folderId!)
               .getSingle();
           folder = folder.copyWith(name: newName, lastUpdated: DateTime.now());
 
           final folderEntity = folder.asEntity();
-          final owner = await profile.getWalletOwner();
           final folderTx = await _arweave.prepareEntityTx(
-              folderEntity, profile.getRawWalletSignature, owner, driveKey);
+              folderEntity, profile.wallet, driveKey);
 
           await _arweave.postTx(folderTx);
           await _driveDao.writeToFolder(folder);
-
           folderEntity.txId = folderTx.id;
 
           await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
@@ -119,7 +115,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
         await _driveDao.transaction(() async {
           var file = await _driveDao
-              .fileById(driveId: driveId, fileId: fileId)
+              .fileById(driveId: driveId, fileId: fileId!)
               .getSingle();
           file = file.copyWith(name: newName, lastUpdated: DateTime.now());
 
@@ -127,9 +123,8 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
 
           final fileEntity = file.asEntity();
-          final owner = await profile.getWalletOwner();
           final fileTx = await _arweave.prepareEntityTx(
-              fileEntity, profile.getRawWalletSignature, owner, fileKey);
+              fileEntity, profile.wallet, fileKey);
 
           await _arweave.postTx(fileTx);
           await _driveDao.writeToFile(file);
@@ -147,10 +142,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     }
   }
 
-  Future<Map<String, dynamic>> _uniqueFolderName(
+  Future<Map<String, dynamic>?> _uniqueFolderName(
       AbstractControl<dynamic> control) async {
     final folder = await _driveDao
-        .folderById(driveId: driveId, folderId: folderId)
+        .folderById(driveId: driveId, folderId: folderId!)
         .getSingle();
     final String newFolderName = control.value;
 
@@ -175,10 +170,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     return null;
   }
 
-  Future<Map<String, dynamic>> _uniqueFileName(
+  Future<Map<String, dynamic>?> _uniqueFileName(
       AbstractControl<dynamic> control) async {
     final file =
-        await _driveDao.fileById(driveId: driveId, fileId: fileId).getSingle();
+        await _driveDao.fileById(driveId: driveId, fileId: fileId!).getSingle();
     final String newFileName = control.value;
 
     if (newFileName == file.name) {

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:meta/meta.dart';
 
 import 'components.dart';
 
 Future<void> showErrorDialog({
-  @required BuildContext context,
-  Object error,
-  StackTrace stackTrace,
+  required BuildContext context,
+  required Object error,
+  required StackTrace stackTrace,
 }) =>
     showDialog(
       context: context,
@@ -17,8 +16,8 @@ Future<void> showErrorDialog({
         ),
         actions: [
           TextButton(
-            child: Text('CANCEL'),
             onPressed: () => Navigator.of(context).pop(null),
+            child: Text('CANCEL'),
           ),
         ],
       ),

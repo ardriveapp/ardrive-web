@@ -40,10 +40,10 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
     );
 
 Widget _buildFolderListTile({
-  @required BuildContext context,
-  @required FolderEntry folder,
+  required BuildContext context,
+  required FolderEntry folder,
+  required Function onPressed,
   bool selected = false,
-  Function onPressed,
 }) =>
     ListTile(
       onTap: () => onPressed(),
@@ -56,10 +56,10 @@ Widget _buildFolderListTile({
     );
 
 Widget _buildFileListTile({
-  @required BuildContext context,
-  @required FileWithLatestRevisionTransactions file,
+  required BuildContext context,
+  required FileWithLatestRevisionTransactions file,
+  required Function onPressed,
   bool selected = false,
-  Function onPressed,
 }) =>
     ListTile(
       onTap: () => onPressed(),
