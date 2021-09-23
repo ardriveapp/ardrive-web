@@ -27,7 +27,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart
-      ref: 5a91fb94d31d3375f34d1ce3987df09062e3481b
+      ref: 23208fd5bb45425ddda47062bd83aae5ef035169
   cryptography: ^2.0.1
   flutter_bloc: ^7.0.1
   flutter_portal: ^0.4.0
@@ -67,6 +67,9 @@ dev_dependencies:
   moor_generator: ^4.4.1
   mocktail: ^0.1.4
   json_serializable: ^4.1.3
+
+dependency_overrides:
+  meta: 1.7.0
 
 flutter:
   uses-material-design: true

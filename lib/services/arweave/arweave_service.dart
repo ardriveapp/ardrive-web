@@ -18,7 +18,8 @@ class ArweaveService {
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
 
   /// Returns the onchain balance of the specified address.
-  Future<BigInt> getWalletBalance(String address) => client.api.get('wallet/$address/balance')
+  Future<BigInt> getWalletBalance(String address) => client.api
+      .get('wallet/$address/balance')
       .then((res) => BigInt.parse(res.body));
 
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
@@ -404,8 +405,9 @@ class ArweaveService {
 
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
+    final bundleBlob = await bundle.asBlob(wallet);
     final bundleTx = await client.transactions.prepare(
-      Transaction.withDataBundle(bundle: bundle)..addApplicationTags(),
+      Transaction.withDataBundle(bundleBlob: bundleBlob)..addApplicationTags(),
       wallet,
     );
 
