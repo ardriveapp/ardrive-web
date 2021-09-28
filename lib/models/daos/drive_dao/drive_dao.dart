@@ -233,6 +233,55 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
+  Stream<FolderWatcher> watchFolderDriveInitialLoad(String driveId,
+      {String? folderId,
+      String? folderPath,
+      DriveOrder orderBy = DriveOrder.name,
+      OrderingMode orderingMode = OrderingMode.asc}) {
+    assert(folderId != null || folderPath != null);
+    final folderStream = (folderId != null
+            ? folderById(driveId: driveId, folderId: folderId)
+            : folderWithPath(driveId: driveId, path: folderPath!))
+        .watchSingleOrNull();
+    final subfolderOrder =
+        enumToFolderOrderByClause(folderEntries, orderBy, orderingMode);
+
+    final subfolderQuery = (folderId != null
+        ? foldersInFolder(
+            driveId: driveId, parentFolderId: folderId, order: subfolderOrder)
+        : foldersInFolderAtPath(
+            driveId: driveId, path: folderPath!, order: subfolderOrder));
+
+    final filesOrder =
+        enumToFileOrderByClause(fileEntries, orderBy, orderingMode);
+
+    final filesQuery = folderId != null
+        ? filesInFolderWithRevisionTransactions(
+            driveId: driveId, parentFolderId: folderId, order: filesOrder)
+        : filesInFolderAtPathWithRevisionTransactions(
+            driveId: driveId, path: folderPath!, order: filesOrder);
+
+    return Rx.combineLatest3(
+      folderStream,
+      subfolderQuery.watch(),
+      filesQuery.watch(),
+      (
+        FolderEntry? folder,
+        List<FolderEntry> subfolders,
+        List<FileWithLatestRevisionTransactions> files,
+      ) =>
+          FolderWatcher(
+        folderEntry: folder != null
+            ? FolderWithContents(
+                folder: folder,
+                subfolders: subfolders,
+                files: files,
+              )
+            : null,
+      ),
+    );
+  }
+
   /// Create a new folder entry.
   /// Returns the id of the created folder.
   Future<String> createFolder({

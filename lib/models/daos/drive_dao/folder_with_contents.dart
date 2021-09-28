@@ -24,3 +24,8 @@ String fileStatusFromTransactions(
     return TransactionStatus.confirmed;
   }
 }
+
+class FolderWatcher {
+  FolderWithContents? folderEntry;
+  FolderWatcher({this.folderEntry});
+}

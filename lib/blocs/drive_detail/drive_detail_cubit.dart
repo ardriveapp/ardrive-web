@@ -61,45 +61,36 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     unawaited(_folderSubscription?.cancel());
 
     _folderSubscription =
-        Rx.combineLatest3<Drive?, FolderWithContents, ProfileState, void>(
-      _driveDao.driveById(driveId: driveId).watchSingleOrNull(),
-      _driveDao.watchFolderContents(driveId,
-          folderPath: path,
-          orderBy: contentOrderBy,
-          orderingMode: contentOrderingMode),
-      _profileCubit.stream.startWith(ProfileCheckingAvailability()),
-      (drive, folderContents, _) async {
-        if (drive == null) {
-          emit(DriveDetailLoadNotFound());
-          return;
-        }
+        Rx.combineLatest3<Drive?, FolderWatcher, ProfileState, void>(
+            _driveDao.driveById(driveId: driveId).watchSingleOrNull(),
+            _driveDao.watchFolderDriveInitialLoad(driveId,
+                folderPath: path,
+                orderBy: contentOrderBy,
+                orderingMode: contentOrderingMode),
+            _profileCubit.stream.startWith(ProfileCheckingAvailability()),
+            (drive, folderWatcher, _) async {
+      if (drive == null) {
+        emit(DriveDetailLoadNotFound());
+        return;
+      }
+      if (folderWatcher.folderEntry?.folder == null) {
+        emit(DriveDetailLoadInProgress());
+      } else {
+        final profile = _profileCubit.state;
         final state = this.state is DriveDetailLoadSuccess
             ? this.state as DriveDetailLoadSuccess
-            : null;
-        final profile = _profileCubit.state;
-        if (state != null) {
-          emit(
-            state.copyWith(
-              currentDrive: drive,
-              hasWritePermissions: profile is ProfileLoggedIn &&
-                  drive.ownerAddress == profile.walletAddress,
-              currentFolder: folderContents,
-              contentOrderBy: contentOrderBy,
-              contentOrderingMode: contentOrderingMode,
-            ),
-          );
-        } else {
-          emit(DriveDetailLoadSuccess(
-            currentDrive: drive,
-            hasWritePermissions: profile is ProfileLoggedIn &&
-                drive.ownerAddress == profile.walletAddress,
-            currentFolder: folderContents,
-            contentOrderBy: contentOrderBy,
-            contentOrderingMode: contentOrderingMode,
-          ));
-        }
-      },
-    ).listen((_) {});
+            : DriveDetailLoadSuccess(
+                currentDrive: drive,
+                hasWritePermissions: profile is ProfileLoggedIn &&
+                    drive.ownerAddress == profile.walletAddress,
+                currentFolder: folderWatcher.folderEntry!,
+                contentOrderBy: contentOrderBy,
+                contentOrderingMode: contentOrderingMode,
+              );
+        emit(state);
+        return;
+      }
+    }).listen((_) {});
   }
 
   Future<void> selectItem(String itemId, {bool isFolder = false}) async {
