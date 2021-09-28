@@ -73,30 +73,23 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           emit(DriveDetailLoadNotFound());
           return;
         }
-        final state = this.state is DriveDetailLoadSuccess
-            ? this.state as DriveDetailLoadSuccess
-            : null;
-        final profile = _profileCubit.state;
-        if (state != null) {
-          emit(
-            state.copyWith(
-              currentDrive: drive,
-              hasWritePermissions: profile is ProfileLoggedIn &&
-                  drive.ownerAddress == profile.walletAddress,
-              currentFolder: folderContents,
-              contentOrderBy: contentOrderBy,
-              contentOrderingMode: contentOrderingMode,
-            ),
-          );
+        if (folderContents.folder == null) {
+          // Emit the loading state as it can be a while between the drive being not found, then added,
+          // and then the folders being loaded.
+          emit(DriveDetailLoadInProgress());
         } else {
-          emit(DriveDetailLoadSuccess(
-            currentDrive: drive,
-            hasWritePermissions: profile is ProfileLoggedIn &&
-                drive.ownerAddress == profile.walletAddress,
-            currentFolder: folderContents,
-            contentOrderBy: contentOrderBy,
-            contentOrderingMode: contentOrderingMode,
-          ));
+          final profile = _profileCubit.state;
+          final state = this.state is DriveDetailLoadSuccess
+              ? this.state as DriveDetailLoadSuccess
+              : DriveDetailLoadSuccess(
+                  currentDrive: drive,
+                  hasWritePermissions: profile is ProfileLoggedIn &&
+                      drive.ownerAddress == profile.walletAddress,
+                  currentFolder: folderContents,
+                  contentOrderBy: contentOrderBy,
+                  contentOrderingMode: contentOrderingMode,
+                );
+          emit(state);
         }
       },
     ).listen((_) {});
@@ -129,7 +122,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       OrderingMode contentOrderingMode = OrderingMode.asc}) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
-        path: state.currentFolder.folder.path,
+        path: state.currentFolder.folder!.path,
         contentOrderBy: contentOrderBy,
         contentOrderingMode: contentOrderingMode);
   }
