@@ -46,8 +46,8 @@ class FileShareCubit extends Cubit<FileShareState> {
     if (!isPublicFile) {
       final profile = _profileCubit.state as ProfileLoggedIn;
 
-      final fileKey = await (_driveDao.getFileKey(
-          driveId, fileId, profile.cipherKey) as FutureOr<SecretKey>);
+      final fileKey =
+          (await _driveDao.getFileKey(driveId, fileId, profile.cipherKey)) as SecretKey;
       final fileKeyBase64 =
           utils.encodeBytesToBase64(await fileKey.extractBytes());
 
