@@ -46,7 +46,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
   Future<void> loadParentFolder() async {
     final state = this.state as FsEntryMoveFolderLoadSuccess;
-    if (state.viewingFolder.folder!.parentFolderId != null) {
+    if (state.viewingFolder.folder?.parentFolderId != null) {
       return loadFolder(state.viewingFolder.folder!.parentFolderId!);
     }
   }
@@ -58,7 +58,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         _driveDao.watchFolderContents(driveId, folderId: folderId).listen(
               (f) => emit(
                 FsEntryMoveFolderLoadSuccess(
-                    viewingRootFolder: f.folder!.parentFolderId == null,
+                    viewingRootFolder: f.folder?.parentFolderId == null,
                     viewingFolder: f,
                     isMovingFolder: _isMovingFolder,
                     movingEntryId: (this.folderId ?? fileId)!),

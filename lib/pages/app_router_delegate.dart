@@ -121,6 +121,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         if (state is DriveDetailLoadSuccess) {
                           driveId = state.currentDrive.id;
                           driveFolderId = state.currentFolder.folder?.id;
+                          //Can be null at the root folder of the drive
                           notifyListeners();
                         } else if (state is DriveDetailLoadNotFound) {
                           // Do not prompt the user to attach an unfound drive if they are logging out.
