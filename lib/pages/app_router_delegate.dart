@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
@@ -106,43 +107,42 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 }
 
                 shellPage ??= const SizedBox();
-                if (driveId != null) {
-                  return BlocProvider(
-                    key: ValueKey(driveId),
-                    create: (context) => DriveDetailCubit(
-                      driveId: driveId!,
-                      initialFolderId: driveFolderId,
-                      profileCubit: context.read<ProfileCubit>(),
-                      driveDao: context.read<DriveDao>(),
-                      config: context.read<AppConfig>(),
-                    ),
-                    child: BlocListener<DriveDetailCubit, DriveDetailState>(
-                      listener: (context, state) {
-                        if (state is DriveDetailLoadSuccess) {
-                          driveId = state.currentDrive.id;
-                          driveFolderId = state.currentFolder.folder.id;
-                          notifyListeners();
-                        } else if (state is DriveDetailLoadNotFound) {
-                          // Do not prompt the user to attach an unfound drive if they are logging out.
-                          final profileCubit = context.read<ProfileCubit>();
-                          if (profileCubit.state is ProfileLoggingOut) {
-                            return;
-                          }
-
-                          attachDrive(
-                            context: context,
-                            initialDriveId: driveId,
-                            driveName: driveName,
-                          );
+                driveId = driveId ?? rootPath;
+                return BlocProvider(
+                  key: ValueKey(driveId),
+                  create: (context) => DriveDetailCubit(
+                    driveId: driveId!,
+                    initialFolderId: driveFolderId,
+                    profileCubit: context.read<ProfileCubit>(),
+                    driveDao: context.read<DriveDao>(),
+                    config: context.read<AppConfig>(),
+                  ),
+                  child: BlocListener<DriveDetailCubit, DriveDetailState>(
+                    listener: (context, state) {
+                      if (state is DriveDetailLoadSuccess) {
+                        driveId = state.currentDrive.id;
+                        driveFolderId = state.currentFolder.folder?.id;
+                        //Can be null at the root folder of the drive
+                        notifyListeners();
+                      } else if (state is DriveDetailLoadNotFound) {
+                        // Do not prompt the user to attach an unfound drive if they are logging out.
+                        final profileCubit = context.read<ProfileCubit>();
+                        if (profileCubit.state is ProfileLoggingOut) {
+                          return;
                         }
-                      },
-                      child: FloatingHelpButtonPortalEntry(
-                        child: AppShell(page: shellPage),
-                      ),
+
+                        attachDrive(
+                          context: context,
+                          initialDriveId: driveId,
+                          driveName: driveName,
+                        );
+                      }
+                    },
+                    child: FloatingHelpButtonPortalEntry(
+                      child: AppShell(page: shellPage),
                     ),
-                  );
-                }
-                return Container();
+                  ),
+                );
               },
             );
           }

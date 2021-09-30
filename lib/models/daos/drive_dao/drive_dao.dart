@@ -197,7 +197,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     final folderStream = (folderId != null
             ? folderById(driveId: driveId, folderId: folderId)
             : folderWithPath(driveId: driveId, path: folderPath!))
-        .watchSingle();
+        .watchSingleOrNull();
     final subfolderOrder =
         enumToFolderOrderByClause(folderEntries, orderBy, orderingMode);
 
@@ -221,7 +221,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       subfolderQuery.watch(),
       filesQuery.watch(),
       (
-        FolderEntry folder,
+        FolderEntry? folder,
         List<FolderEntry> subfolders,
         List<FileWithLatestRevisionTransactions> files,
       ) =>

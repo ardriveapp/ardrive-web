@@ -46,6 +46,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
                 driveId: widget.driveId,
                 folderId: widget.folderId,
                 context: context,
+
               ),
               onHover: _onHover,
               onLeave: _onLeave,
