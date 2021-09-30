@@ -100,7 +100,8 @@ class DriveDetailPage extends StatelessWidget {
                     if (kIsWeb)
                       DriveFileDropZone(
                         driveId: state.currentDrive.id,
-                        folderId: state.currentFolder.folder.id,
+                        folderId: state.currentFolder.folder?.id ??
+                            state.currentDrive.rootFolderId,
                       ),
                   ],
                 ),
