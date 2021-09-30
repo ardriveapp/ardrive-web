@@ -1,5 +1,4 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/services.dart';
@@ -9,6 +8,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
 
 class DriveFileDropZone extends StatefulWidget {
+  final String driveId;
+  final String folderId;
+
+  const DriveFileDropZone({
+    Key? key,
+    required this.driveId,
+    required this.folderId,
+  }) : super(key: key);
   @override
   _DriveFileDropZoneState createState() => _DriveFileDropZoneState();
 }
@@ -19,42 +26,34 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
   bool isCurrentlyShown = false;
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DriveDetailCubit, DriveDetailState>(
-      builder: (context, state) {
-        if (state is DriveDetailLoadSuccess) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 128, horizontal: 128),
-            /* 
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 128, horizontal: 128),
+      /* 
             Added padding here so that the drop zone doesn't overlap with the
             Link widget.
             */
-            child: IgnorePointer(
-              //ignoring: isHovering,
-              child: Stack(
-                children: [
-                  if (isHovering) _buildDropZoneOnHover(),
-                  DropzoneView(
-                    key: Key('dropZone'),
-                    onCreated: (ctrl) => controller = ctrl,
-                    operation: DragOperation.all,
-                    onDrop: (htmlFile) => _onDrop(
-                      htmlFile,
-                      driveId: state.currentDrive.id,
-                      folderId: state.currentFolder.folder.id,
-                      context: context,
-                    ),
-                    onHover: _onHover,
-                    onLeave: _onLeave,
-                    onError: (e) => _onLeave,
-                  ),
-                ],
+      child: IgnorePointer(
+        //ignoring: isHovering,
+        child: Stack(
+          children: [
+            if (isHovering) _buildDropZoneOnHover(),
+            DropzoneView(
+              key: Key('dropZone'),
+              onCreated: (ctrl) => controller = ctrl,
+              operation: DragOperation.all,
+              onDrop: (htmlFile) => _onDrop(
+                htmlFile,
+                driveId: widget.driveId,
+                folderId: widget.folderId,
+                context: context,
               ),
+              onHover: _onHover,
+              onLeave: _onLeave,
+              onError: (e) => _onLeave,
             ),
-          );
-        }
-
-        return const SizedBox();
-      },
+          ],
+        ),
+      ),
     );
   }
 
