@@ -97,7 +97,12 @@ class DriveDetailPage extends StatelessWidget {
                         }
                       ],
                     ),
-                    if (kIsWeb) DriveFileDropZone(),
+                    if (kIsWeb)
+                      DriveFileDropZone(
+                        driveId: state.currentDrive.id,
+                        folderId: state.currentFolder.folder?.id ??
+                            state.currentDrive.rootFolderId,
+                      ),
                   ],
                 ),
                 mobile: Row(
