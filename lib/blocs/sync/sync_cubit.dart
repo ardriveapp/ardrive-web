@@ -3,12 +3,14 @@ import 'dart:math';
 
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 
@@ -107,7 +109,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> _syncDrive(String driveId) async {
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-
+    final owner = await arweave.getOwnerForDriveEntityWithId(driveId);
     SecretKey? driveKey;
     if (drive.isPrivate) {
       final profile = _profileCubit.state;
@@ -130,6 +132,7 @@ class SyncCubit extends Cubit<SyncState> {
       lastBlockHeight: max(drive.lastBlockHeight! - 5, drive.lastBlockHeight!),
       after: drive.syncCursor,
       driveKey: driveKey,
+      owner: owner,
     );
 
     // Create entries for all the new revisions of file and folders in this drive.
@@ -201,7 +204,9 @@ class SyncCubit extends Cubit<SyncState> {
   /// Computes the new drive revisions from the provided entities, inserts them into the database,
   /// and returns the latest revision.
   Future<DriveRevisionsCompanion?> _addNewDriveEntityRevisions(
-      Iterable<DriveEntity> newEntities) async {
+    Iterable<DriveEntity> newEntities, {
+    String? owner,
+  }) async {
     DriveRevisionsCompanion? latestRevision;
 
     final newRevisions = <DriveRevisionsCompanion>[];
