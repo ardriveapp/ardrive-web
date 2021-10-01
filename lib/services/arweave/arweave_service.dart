@@ -18,7 +18,8 @@ class ArweaveService {
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
 
   /// Returns the onchain balance of the specified address.
-  Future<BigInt> getWalletBalance(String address) => client.api.get('wallet/$address/balance')
+  Future<BigInt> getWalletBalance(String address) => client.api
+      .get('wallet/$address/balance')
       .then((res) => BigInt.parse(res.body));
 
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
@@ -42,8 +43,13 @@ class ArweaveService {
   }
 
   /// Gets the entity history for a particular drive starting from the specified block height.
-  Future<DriveEntityHistory> getNewEntitiesForDrive(String driveId,
-      {String? after, int? lastBlockHeight, SecretKey? driveKey}) async {
+  Future<DriveEntityHistory> getNewEntitiesForDrive(
+    String driveId, {
+    String? after,
+    int? lastBlockHeight,
+    SecretKey? driveKey,
+    String? owner,
+  }) async {
     final driveEntityHistoryQuery = await _gql.execute(
       DriveEntityHistoryQuery(
         variables: DriveEntityHistoryArguments(
@@ -106,6 +112,8 @@ class ArweaveService {
     // Sort the entities in each block by ascending commit time.
     for (final block in blockHistory) {
       block.entities.sort((e1, e2) => e1!.createdAt.compareTo(e2!.createdAt));
+      //Remove entities with spoofed owners
+      block.entities.removeWhere((e) => e!.ownerAddress != owner);
     }
 
     return DriveEntityHistory(
@@ -231,6 +239,19 @@ class ArweaveService {
     } on EntityTransactionParseException catch (_) {
       return null;
     }
+  }
+
+  /// Gets the owner of the drive sorted by blockheight.
+  /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
+  Future<String?> getOwnerForDriveEntityWithId(String driveId) async {
+    final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
+        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
+
+    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    return firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
   }
 
   /// Gets any created private drive belonging to [profileId], as long as its unlockable with [password] when used with the [getSignatureFn]
