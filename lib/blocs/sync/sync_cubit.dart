@@ -68,7 +68,6 @@ class SyncCubit extends Cubit<SyncState> {
       emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
       if (profile is ProfileLoggedIn) {
-        
         //Check if profile is ArConnect to skip sync while tab is hidden
         final isArConnect = await _profileCubit.isCurrentProfileArConnect();
 
@@ -115,7 +114,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> _syncDrive(String driveId) async {
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-
+    final owner = await _arweave.getOwnerForDriveEntityWithId(driveId);
     SecretKey driveKey;
     if (drive.isPrivate) {
       final profile = _profileCubit.state;
@@ -138,6 +137,7 @@ class SyncCubit extends Cubit<SyncState> {
       lastBlockHeight: max(drive.lastBlockHeight - 5, drive.lastBlockHeight),
       after: drive.syncCursor,
       driveKey: driveKey,
+      owner: owner,
     );
 
     // Create entries for all the new revisions of file and folders in this drive.
