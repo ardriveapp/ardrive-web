@@ -32,7 +32,7 @@ class ProfileOverlay extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${double.parse(utils.winstonToAr(state.walletBalance)).toStringAsFixed(5)} AR',
+                                '${double.tryParse(utils.winstonToAr(state.walletBalance))?.toStringAsFixed(5) ?? 0} AR',
                                 style: Theme.of(context)
                                     .textTheme
                                     .headline6!
