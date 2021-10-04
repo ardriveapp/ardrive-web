@@ -204,9 +204,7 @@ class SyncCubit extends Cubit<SyncState> {
   /// Computes the new drive revisions from the provided entities, inserts them into the database,
   /// and returns the latest revision.
   Future<DriveRevisionsCompanion?> _addNewDriveEntityRevisions(
-    Iterable<DriveEntity> newEntities, {
-    String? owner,
-  }) async {
+      Iterable<DriveEntity> newEntities) async {
     DriveRevisionsCompanion? latestRevision;
 
     final newRevisions = <DriveRevisionsCompanion>[];

@@ -113,7 +113,7 @@ class ArweaveService {
     for (final block in blockHistory) {
       block.entities.sort((e1, e2) => e1!.createdAt.compareTo(e2!.createdAt));
       //Remove entities with spoofed owners
-      block.entities.removeWhere((e) => e!.ownerAddress != owner);
+      //block.entities.removeWhere((e) => e!.ownerAddress != owner);
     }
 
     return DriveEntityHistory(
