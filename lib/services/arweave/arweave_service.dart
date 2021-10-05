@@ -376,6 +376,7 @@ class ArweaveService {
   /// Creates and signs a [Transaction] representing the provided entity.
   ///
   /// Optionally provide a [SecretKey] to encrypt the entity data.
+
   Future<Transaction> prepareEntityTx(
     Entity entity,
     Wallet wallet, [
@@ -406,6 +407,7 @@ class ArweaveService {
   /// Creates and signs a [DataItem] representing the provided entity.
   ///
   /// Optionally provide a [SecretKey] to encrypt the entity data.
+
   Future<DataItem> prepareEntityDataItem(
     Entity entity,
     Wallet wallet, [
@@ -420,6 +422,7 @@ class ArweaveService {
   }
 
   /// Creates and signs a [Transaction] representing the provided [DataBundle].
+
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
     final bundleTx = await client.transactions.prepare(
