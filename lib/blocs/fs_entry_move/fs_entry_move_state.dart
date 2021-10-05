@@ -3,14 +3,14 @@ part of 'fs_entry_move_cubit.dart';
 abstract class FsEntryMoveState extends Equatable {
   final bool isMovingFolder;
 
-  const FsEntryMoveState({@required this.isMovingFolder});
+  const FsEntryMoveState({required this.isMovingFolder});
 
   @override
   List<Object> get props => [isMovingFolder];
 }
 
 class FsEntryMoveFolderLoadInProgress extends FsEntryMoveState {
-  FsEntryMoveFolderLoadInProgress({@required bool isMovingFolder})
+  FsEntryMoveFolderLoadInProgress({required bool isMovingFolder})
       : super(isMovingFolder: isMovingFolder);
 }
 
@@ -22,10 +22,10 @@ class FsEntryMoveFolderLoadSuccess extends FsEntryMoveState {
   final String movingEntryId;
 
   FsEntryMoveFolderLoadSuccess({
-    @required this.viewingRootFolder,
-    @required this.viewingFolder,
-    @required this.movingEntryId,
-    @required bool isMovingFolder,
+    required this.viewingRootFolder,
+    required this.viewingFolder,
+    required this.movingEntryId,
+    required bool isMovingFolder,
   }) : super(isMovingFolder: isMovingFolder);
 
   @override

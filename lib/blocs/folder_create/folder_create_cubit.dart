@@ -7,13 +7,12 @@ import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'folder_create_state.dart';
 
 class FolderCreateCubit extends Cubit<FolderCreateState> {
-  FormGroup form;
+  late FormGroup form;
 
   final String driveId;
   final String parentFolderId;
@@ -24,11 +23,11 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
   final DriveDao _driveDao;
 
   FolderCreateCubit({
-    @required this.driveId,
-    @required this.parentFolderId,
-    @required ProfileCubit profileCubit,
-    @required ArweaveService arweave,
-    @required DriveDao driveDao,
+    required this.driveId,
+    required this.parentFolderId,
+    required ProfileCubit profileCubit,
+    required ArweaveService arweave,
+    required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _driveDao = driveDao,
@@ -79,7 +78,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           driveId: targetFolder.driveId,
           parentFolderId: targetFolder.id,
           folderName: folderName,
-          path: '${targetFolder.path}/${folderName}',
+          path: '${targetFolder.path}/$folderName',
         );
 
         final folderEntity = FolderEntity(
@@ -89,19 +88,14 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           name: folderName,
         );
 
-        final owner = await profile.getWalletOwner();
-
         final folderTx = await _arweave.prepareEntityTx(
           folderEntity,
-          profile.getRawWalletSignature,
-          owner,
+          profile.wallet,
           driveKey,
         );
 
         await _arweave.postTx(folderTx);
-
         folderEntity.txId = folderTx.id;
-
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
             performedAction: RevisionAction.create));
       });
@@ -112,7 +106,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     emit(FolderCreateSuccess());
   }
 
-  Future<Map<String, dynamic>> _uniqueFolderName(
+  Future<Map<String, dynamic>?> _uniqueFolderName(
       AbstractControl<dynamic> control) async {
     final String folderName = control.value;
 

@@ -3,7 +3,7 @@ part of '../drive_detail_page.dart';
 class DriveDetailBreadcrumbRow extends StatelessWidget {
   final List<String> _pathSegments;
 
-  DriveDetailBreadcrumbRow({String path})
+  DriveDetailBreadcrumbRow({required String path})
       : _pathSegments = path.split('/').where((s) => s != '').toList();
 
   @override
@@ -32,7 +32,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
                       style:
                           _pathSegments.isEmpty ? selectedSegmentTheme : null,
                       onPressed: () =>
-                          context.read<DriveDetailCubit>().openFolder(path: ''),
+                          context.read<DriveDetailCubit>().openFolder(path: rootPath),
                       child: Text(
                         'Drive Root',
                       ),
@@ -86,7 +86,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
             TextButton(
               style: _pathSegments.isEmpty ? selectedSegmentTheme : null,
               onPressed: () =>
-                  context.read<DriveDetailCubit>().openFolder(path: ''),
+                  context.read<DriveDetailCubit>().openFolder(path: rootPath),
               child: Text(
                 'Drive Root',
               ),

@@ -12,7 +12,7 @@ class FsEntryActivityInitial extends FsEntryActivityState {}
 class FsEntryActivitySuccess<T> extends FsEntryActivityState {
   final List<T> revisions;
 
-  FsEntryActivitySuccess({this.revisions});
+  FsEntryActivitySuccess({required this.revisions});
 
   @override
   List<Object> get props => [revisions];

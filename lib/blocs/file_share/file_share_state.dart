@@ -22,9 +22,9 @@ class FileShareLoadSuccess extends FileShareState {
   final bool isPublicFile;
 
   FileShareLoadSuccess({
-    @required this.fileName,
-    @required this.fileShareLink,
-    @required this.isPublicFile,
+    required this.fileName,
+    required this.fileShareLink,
+    required this.isPublicFile,
   });
 
   @override

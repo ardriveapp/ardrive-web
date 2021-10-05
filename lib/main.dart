@@ -1,5 +1,5 @@
-import 'dart:html';
 
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,9 +13,9 @@ import 'pages/pages.dart';
 import 'services/services.dart';
 import 'theme/theme.dart';
 
-ConfigService configService;
-AppConfig config;
-ArweaveService arweave;
+late ConfigService configService;
+late AppConfig config;
+late ArweaveService arweave;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -23,10 +23,8 @@ void main() async {
   config = await configService.getConfig();
 
   arweave = ArweaveService(
-      Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl)));
-  Future.delayed(Duration(hours: 12), () {
-    window.location.reload();
-  });
+      Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
+  refreshHTMLPageAtInterval(Duration(hours: 12));
   runApp(App());
 }
 
@@ -76,7 +74,7 @@ class _AppState extends State<App> {
               textColor: kOnSurfaceBodyTextColor,
               iconColor: kOnSurfaceBodyTextColor,
               child: Portal(
-                child: child,
+                child: child!,
               ),
             ),
           ),

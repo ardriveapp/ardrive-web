@@ -5,7 +5,7 @@ abstract class SharedFileState extends Equatable {
   const SharedFileState();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class SharedFileLoadInProgress extends SharedFileState {}
@@ -14,12 +14,12 @@ class SharedFileLoadInProgress extends SharedFileState {}
 /// loaded successfully.
 class SharedFileLoadSuccess extends SharedFileState {
   final FileEntity file;
-  final SecretKey fileKey;
+  final SecretKey? fileKey;
 
-  const SharedFileLoadSuccess({@required this.file, this.fileKey});
+  const SharedFileLoadSuccess({required this.file, this.fileKey});
 
   @override
-  List<Object> get props => [file, fileKey];
+  List<Object?> get props => [file, fileKey];
 }
 
 class SharedFileNotFound extends SharedFileState {}

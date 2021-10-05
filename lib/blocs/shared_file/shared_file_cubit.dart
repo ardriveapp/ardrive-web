@@ -9,16 +9,16 @@ part 'shared_file_state.dart';
 
 /// [SharedFileCubit] includes logic for displaying a file shared with another user.
 class SharedFileCubit extends Cubit<SharedFileState> {
-  final String fileId;
+  final String? fileId;
 
   /// The [SecretKey] that can be used to decode the target file.
   ///
   /// `null` if the file is public.
-  final SecretKey fileKey;
+  final SecretKey? fileKey;
 
-  final ArweaveService _arweave;
+  final ArweaveService? _arweave;
 
-  SharedFileCubit({this.fileId, this.fileKey, ArweaveService arweave})
+  SharedFileCubit({this.fileId, this.fileKey, ArweaveService? arweave})
       : _arweave = arweave,
         super(SharedFileLoadInProgress()) {
     loadFileDetails();
@@ -27,7 +27,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   Future<void> loadFileDetails() async {
     emit(SharedFileLoadInProgress());
 
-    final file = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
+    final file = await _arweave!.getLatestFileEntityWithId(fileId!, fileKey);
 
     if (file != null) {
       emit(SharedFileLoadSuccess(file: file, fileKey: fileKey));

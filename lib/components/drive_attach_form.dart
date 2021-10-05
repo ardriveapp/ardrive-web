@@ -6,15 +6,16 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+// ignore: unused_import
 import 'package:meta/meta.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
 
 Future<void> attachDrive(
-        {@required BuildContext context,
-        String initialDriveId,
-        String driveName}) =>
+        {required BuildContext context,
+        String? initialDriveId,
+        String? driveName}) =>
     showDialog(
       context: context,
       builder: (BuildContext context) => BlocProvider<DriveAttachCubit>(
@@ -105,12 +106,12 @@ class DriveAttachForm extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              child: Text(AppLocalizations.of(context).cancel.toUpperCase()),
               onPressed: () => Navigator.of(context).pop(null),
+              child: Text(AppLocalizations.of(context)!.cancel.toUpperCase()),
             ),
             ElevatedButton(
-              child: Text(AppLocalizations.of(context).attach.toUpperCase()),
               onPressed: () => context.read<DriveAttachCubit>().submit(),
+              child: Text(AppLocalizations.of(context)!.attach.toUpperCase()),
             ),
           ],
         ),

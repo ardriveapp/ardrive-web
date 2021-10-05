@@ -1,5 +1,5 @@
-import 'dart:html';
 
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,7 +14,7 @@ import 'components/wallet_switch_dialog.dart';
 class AppShell extends StatefulWidget {
   final Widget page;
 
-  AppShell({Key key, this.page}) : super(key: key);
+  AppShell({Key? key, required this.page}) : super(key: key);
 
   @override
   _AppShellState createState() => _AppShellState();
@@ -26,7 +26,7 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
         builder: (context, state) {
-          window.addEventListener('walletSwitch', (event) {
+          onArConnectWalletSwitch(() {
             if (_showWalletSwitchDialog) {
               showDialog(
                 context: context,
@@ -36,7 +36,7 @@ class _AppShellState extends State<AppShell> {
             //Used to prevent the dialog being shown multiple times.
             _showWalletSwitchDialog = false;
           });
-          Widget _buildAppBar() => AppBar(
+          AppBar _buildAppBar() => AppBar(
                 // title: Image.asset(
                 //   R.images.brand.logoHorizontalNoSubtitle,
                 //   height: 64,

@@ -13,7 +13,7 @@ Future<void> showProgressDialog(BuildContext context, String title) =>
 class ProgressDialog extends StatelessWidget {
   final String title;
 
-  ProgressDialog({this.title});
+  ProgressDialog({required this.title});
 
   @override
   Widget build(BuildContext context) => AppDialog(

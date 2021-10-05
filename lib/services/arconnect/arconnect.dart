@@ -1,59 +1,35 @@
-@JS()
-library arconnect;
 
-import 'package:js/js.dart';
-import 'package:js/js_util.dart';
-import 'package:moor/moor.dart';
+import 'dart:typed_data';
 
-@JS('isExtensionPresent')
-external bool isExtensionPresent();
+import 'implementations/arconnect_web.dart'
+    if (dart.library.io) 'implementations/arconnect_stub.dart'
+    as implementation;
 
-@JS('connect')
-external dynamic _connect();
+class ArConnectService {
+  /// Returns true is the ArConnect browser extension is installed and available
+  bool isExtensionPresent() => implementation.isExtensionPresent();
 
-@JS('checkPermissions')
-external bool _checkPermissions();
+  /// Connects with ArConnect. If the user is not logged into it, asks user to login and
+  /// requests permissions.
+  Future<void> connect() => implementation.connect();
 
-@JS('disconnect')
-external dynamic _disconnect();
+  /// Returns true if necessary permissions have been provided
+  Future<bool> checkPermissions() => implementation.checkPermissions();
 
-@JS('listenForWalletSwitch')
-external void _listenForWalletSwitch();
+  /// Disonnects from the extensions and revokes permissions
+  Future<void> disconnect() => implementation.disconnect();
 
-@JS('getWalletAddress')
-external String _getWalletAddress();
+  /// Posts a 'walletSwitch' message to the window.parent DOM object when a wallet
+  /// switch occurs
+  void listenForWalletSwitch() => implementation.listenForWalletSwitch();
 
-@JS('getPublicKey')
-external String _getPublicKey();
+  /// Returns the wallet address
+  Future<String> getWalletAddress() => implementation.getWalletAddress();
 
-@JS('getSignature')
-external Uint8List _getSignature(Uint8List message);
+  /// Returns the wallet public key
+  Future<String> getPublicKey() => implementation.getPublicKey();
 
-Future<void> connect() {
-  return promiseToFuture(_connect());
-}
-
-Future<bool> checkPermissions() {
-  return promiseToFuture(_checkPermissions());
-}
-
-Future<void> disconnect() {
-  return promiseToFuture(_disconnect());
-}
-
-void listenForWalletSwitch() {
-  _listenForWalletSwitch();
-}
-
-Future<String> getWalletAddress() {
-  return promiseToFuture(_getWalletAddress());
-}
-
-Future<String> getPublicKey() async {
-  return await promiseToFuture(_getPublicKey());
-}
-
-Future<Uint8List> getSignature(Uint8List message) async {
-  final result = promiseToFuture<Uint8List>(_getSignature(message));
-  return result;
+  /// Takes a message and returns the signature
+  Future<Uint8List> getSignature(Uint8List message) =>
+      implementation.getSignature(message);
 }

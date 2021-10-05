@@ -79,10 +79,10 @@ List<DataColumn> _buildTableColumns(BuildContext context) {
 }
 
 DataRow _buildFolderRow({
-  @required BuildContext context,
-  @required FolderEntry folder,
+  required BuildContext context,
+  required FolderEntry folder,
   bool selected = false,
-  Function onPressed,
+  required Function onPressed,
 }) =>
     DataRow(
       onSelectChanged: (_) => onPressed(),
@@ -105,10 +105,10 @@ DataRow _buildFolderRow({
     );
 
 DataRow _buildFileRow({
-  @required BuildContext context,
-  @required FileWithLatestRevisionTransactions file,
+  required BuildContext context,
+  required FileWithLatestRevisionTransactions file,
   bool selected = false,
-  Function onPressed,
+  required Function onPressed,
 }) {
   return DataRow(
     onSelectChanged: (_) => onPressed(),
@@ -141,7 +141,7 @@ DataRow _buildFileRow({
   );
 }
 
-Widget _buildFileIcon(String status, String dataContentType) {
+Widget _buildFileIcon(String status, String? dataContentType) {
   String tooltipMessage;
   Color indicatorColor;
   Widget icon;
@@ -163,7 +163,7 @@ Widget _buildFileIcon(String status, String dataContentType) {
       throw ArgumentError();
   }
 
-  final fileType = dataContentType?.split('/')?.first;
+  final fileType = dataContentType?.split('/').first;
   switch (fileType) {
     case 'image':
       icon = const Icon(Icons.image);

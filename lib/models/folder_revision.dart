@@ -17,7 +17,7 @@ extension FolderRevisionCompanionExtensions on FolderRevisionsCompanion {
         driveId: driveId.value,
         parentFolderId: parentFolderId,
         name: name.value,
-        path: '',
+        path: rootPath,
         lastUpdated: dateCreated,
       );
 
@@ -33,11 +33,11 @@ extension FolderEntityExtensions on FolderEntity {
   ///
   /// This requires a `performedAction` to be specified.
   FolderRevisionsCompanion toRevisionCompanion(
-          {@required String performedAction}) =>
+          {required String performedAction}) =>
       FolderRevisionsCompanion.insert(
-        folderId: id,
-        driveId: driveId,
-        name: name,
+        folderId: id!,
+        driveId: driveId!,
+        name: name!,
         parentFolderId: Value(parentFolderId),
         metadataTxId: txId,
         dateCreated: Value(createdAt),
@@ -45,8 +45,8 @@ extension FolderEntityExtensions on FolderEntity {
       );
 
   /// Returns the action performed on the folder that lead to the new revision.
-  String getPerformedRevisionAction(
-      [FolderRevisionsCompanion previousRevision]) {
+  String? getPerformedRevisionAction(
+      [FolderRevisionsCompanion? previousRevision]) {
     if (previousRevision == null) {
       return RevisionAction.create;
     } else if (name != previousRevision.name.value) {

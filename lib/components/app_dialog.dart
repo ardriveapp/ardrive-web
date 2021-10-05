@@ -10,10 +10,10 @@ class AppDialog extends StatelessWidget {
   final bool dismissable;
 
   const AppDialog({
-    this.title,
+    required this.title,
     this.contentPadding = const EdgeInsets.fromLTRB(24, 20, 24, 24),
-    this.content,
-    this.actions,
+    required this.content,
+    this.actions = const [],
     this.dismissable = true,
   });
 
@@ -35,7 +35,7 @@ class AppDialog extends StatelessWidget {
                       title,
                       style: Theme.of(context)
                           .textTheme
-                          .headline6
+                          .headline6!
                           .copyWith(color: kOnDarkSurfaceHighEmphasis),
                     ),
                   ],

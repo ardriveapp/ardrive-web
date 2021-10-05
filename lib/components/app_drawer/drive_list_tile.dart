@@ -6,7 +6,11 @@ class DriveListTile extends StatelessWidget {
   final bool selected;
   final VoidCallback onPressed;
 
-  const DriveListTile({this.drive, this.selected = false, this.onPressed});
+  const DriveListTile({
+    required this.drive,
+    required this.onPressed,
+    this.selected = false,
+  });
 
   @override
   Widget build(BuildContext context) => Padding(

@@ -7,8 +7,8 @@ import 'package:test/test.dart';
 import '../../utils/utils.dart';
 
 void main() {
-  Database db;
-  DriveDao driveDao;
+  late Database db;
+  late DriveDao driveDao;
 
   group('DriveDao', () {
     const driveId = 'drive-id';
@@ -119,7 +119,7 @@ void main() {
           driveDao.watchFolderContents(driveId, folderPath: '').share();
 
       await Future.wait([
-        expectLater(folderStream.map((f) => f.folder.id), emits(rootFolderId)),
+        expectLater(folderStream.map((f) => f.folder!.id), emits(rootFolderId)),
         expectLater(
           folderStream.map((f) => f.subfolders.map((f) => f.name)),
           emits(allOf(hasLength(emptyNestedFolderCount), Sorted())),
@@ -136,7 +136,7 @@ void main() {
           .share();
 
       await Future.wait([
-        expectLater(folderStream.map((f) => f.folder.id),
+        expectLater(folderStream.map((f) => f.folder!.id),
             emits(emptyNestedFolderIdPrefix + '0')),
         expectLater(
           folderStream.map((f) => f.subfolders.map((f) => f.id)),
@@ -150,20 +150,17 @@ void main() {
     });
 
     test('getFolderTree() constructs tree correctly', () async {
-      var treeRoot = await driveDao.getFolderTree(driveId, rootFolderId);
+      final treeRoot = await driveDao.getFolderTree(driveId, rootFolderId);
 
       expect(treeRoot.folder.id, equals(rootFolderId));
       expect(treeRoot.files.length, equals(rootFolderFileCount));
 
-      final nestedSubfolderFileCount = treeRoot.subfolders
-          .where((f) => f.folder.id == nestedFolderId)
+      final nestedSubfolderFileCount = treeRoot.subfolders.where((f) => f.folder.id == nestedFolderId)
           .single
-          .files
-          .length;
+          .files.length;
       expect(nestedSubfolderFileCount, equals(nestedSubfolderFileCount));
 
-      final emptySubfolders = treeRoot.subfolders
-          .where((f) => f.folder.id.startsWith(emptyNestedFolderIdPrefix));
+      final emptySubfolders = treeRoot.subfolders.where((f) => f.folder.id.startsWith(emptyNestedFolderIdPrefix));
       expect(emptySubfolders.map((f) => f.subfolders.length).toList(),
           everyElement(equals(0)));
       expect(emptySubfolders.map((f) => f.files.length).toList(),

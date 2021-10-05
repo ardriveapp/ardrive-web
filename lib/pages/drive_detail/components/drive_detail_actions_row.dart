@@ -9,7 +9,7 @@ class DriveDetailActionRow extends StatelessWidget {
       builder: (context, state) {
         if (state is DriveDetailLoadSuccess) {
           final fsActions = <Widget>[
-            if (state.hasWritePermissions && state.selectedItemId == null)
+            if (state.hasWritePermissions&& state.selectedItemId == null)
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () {
@@ -24,7 +24,7 @@ class DriveDetailActionRow extends StatelessWidget {
                   onPressed: () => promptToDownloadProfileFile(
                     context: context,
                     driveId: state.currentDrive.id,
-                    fileId: state.selectedItemId,
+                    fileId: state.selectedItemId as String,
                   ),
                   tooltip: 'Download',
                 ),
@@ -34,7 +34,7 @@ class DriveDetailActionRow extends StatelessWidget {
                   onPressed: () => promptToShareFile(
                     context: context,
                     driveId: state.currentDrive.id,
-                    fileId: state.selectedItemId,
+                    fileId: state.selectedItemId as String,
                   ),
                 ),
                 if (state.currentDrive.isPublic)
@@ -55,11 +55,11 @@ class DriveDetailActionRow extends StatelessWidget {
                     if (state.selectedItemIsFolder) {
                       promptToRenameFolder(context,
                           driveId: state.currentDrive.id,
-                          folderId: state.selectedItemId);
+                          folderId: state.selectedItemId as String);
                     } else {
                       promptToRenameFile(context,
                           driveId: state.currentDrive.id,
-                          fileId: state.selectedItemId);
+                          fileId: state.selectedItemId as String);
                     }
                   },
                   tooltip: 'Rename',
@@ -70,11 +70,11 @@ class DriveDetailActionRow extends StatelessWidget {
                     if (state.selectedItemIsFolder) {
                       promptToMoveFolder(context,
                           driveId: state.currentDrive.id,
-                          folderId: state.selectedItemId);
+                          folderId: state.selectedItemId as String);
                     } else {
                       promptToMoveFile(context,
                           driveId: state.currentDrive.id,
-                          fileId: state.selectedItemId);
+                          fileId: state.selectedItemId as String);
                     }
                   },
                   tooltip: 'Move',

@@ -19,8 +19,8 @@ class DriveShareLoadSuccess extends DriveShareState {
   final Uri driveShareLink;
 
   DriveShareLoadSuccess({
-    @required this.driveName,
-    @required this.driveShareLink,
+    required this.driveName,
+    required this.driveShareLink,
   });
 
   @override

@@ -7,9 +7,9 @@ class FolderNode {
   /// The names of the files in this folder, keyed by their id.
   final Map<String, String> files;
 
-  FolderNode({this.folder, this.subfolders, this.files});
+  FolderNode({required this.folder, required this.subfolders, required this.files});
 
-  FolderNode searchForFolder(String folderId) {
+  FolderNode? searchForFolder(String folderId) {
     if (folder.id == folderId) return this;
 
     for (final subfolder in subfolders) {

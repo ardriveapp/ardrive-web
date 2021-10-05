@@ -3,19 +3,19 @@ part of 'fs_entry_rename_cubit.dart';
 abstract class FsEntryRenameState extends Equatable {
   final bool isRenamingFolder;
 
-  const FsEntryRenameState({@required this.isRenamingFolder});
+  const FsEntryRenameState({required this.isRenamingFolder});
 
   @override
   List<Object> get props => [isRenamingFolder];
 }
 
 class FsEntryRenameInitializing extends FsEntryRenameState {
-  FsEntryRenameInitializing({@required bool isRenamingFolder})
+  FsEntryRenameInitializing({required bool isRenamingFolder})
       : super(isRenamingFolder: isRenamingFolder);
 }
 
 class FsEntryRenameInitialized extends FsEntryRenameState {
-  FsEntryRenameInitialized({@required bool isRenamingFolder})
+  FsEntryRenameInitialized({required bool isRenamingFolder})
       : super(isRenamingFolder: isRenamingFolder);
 }
 

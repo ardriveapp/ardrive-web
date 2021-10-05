@@ -31,14 +31,14 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             ElevatedButton(
-              child: Text('SELECT WALLET'),
               onPressed: () => _pickWallet(context),
+              child: Text('SELECT WALLET'),
             ),
             if (context.read<ProfileAddCubit>().isArconnectInstalled()) ...[
               const SizedBox(height: 32),
               ElevatedButton(
-                child: Text('USE ARCONNECT'),
                 onPressed: () => _pickWalletArconnect(context),
+                child: Text('USE ARCONNECT'),
               ),
             ],
             const SizedBox(height: 16),

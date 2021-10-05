@@ -149,7 +149,7 @@ SnackBarThemeData _buildSnackBarTheme(SnackBarThemeData base) => base.copyWith(
 TooltipThemeData _buildToolTipTheme(
         TooltipThemeData base, TextTheme textTheme) =>
     base.copyWith(
-      textStyle: textTheme.bodyText2.copyWith(
+      textStyle: textTheme.bodyText2!.copyWith(
         color: Colors.white,
         fontSize: 12,
       ),

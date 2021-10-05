@@ -10,8 +10,8 @@ import 'components.dart';
 
 Future<void> promptToMoveFolder(
   BuildContext context, {
-  @required String driveId,
-  @required String folderId,
+  required String driveId,
+  required String folderId,
 }) =>
     showDialog(
       context: context,
@@ -30,8 +30,8 @@ Future<void> promptToMoveFolder(
 
 Future<void> promptToMoveFile(
   BuildContext context, {
-  @required String driveId,
-  @required String fileId,
+  required String driveId,
+  required String fileId,
 }) =>
     showDialog(
       context: context,
@@ -42,6 +42,7 @@ Future<void> promptToMoveFile(
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),
+          syncCubit: context.read<SyncCubit>(),
         ),
         child: FsEntryMoveForm(),
       ),
@@ -72,8 +73,8 @@ class FsEntryMoveForm extends StatelessWidget {
                       onPressed: () => Navigator.pop(context),
                       child: Text('CANCEL')),
                   ElevatedButton(
-                    child: Text('MOVE HERE'),
                     onPressed: () => context.read<FsEntryMoveCubit>().submit(),
+                    child: Text('MOVE HERE'),
                   ),
                 ],
               );
@@ -84,8 +85,8 @@ class FsEntryMoveForm extends StatelessWidget {
                 label: Text('CREATE FOLDER'),
                 onPressed: () => promptToCreateFolder(
                   context,
-                  driveId: state.viewingFolder.folder.driveId,
-                  parentFolderId: state.viewingFolder.folder.id,
+                  driveId: state.viewingFolder.folder!.driveId,
+                  parentFolderId: state.viewingFolder.folder!.id,
                 ),
               );
             } else {
@@ -116,7 +117,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                     padding: const EdgeInsets.all(16)),
                                 icon: const Icon(Icons.arrow_back),
                                 label: Text(
-                                    'Back to "${state.viewingFolder.folder.name}" folder'),
+                                    'Back to "${state.viewingFolder.folder!.name}" folder'),
                                 onPressed: () => context
                                     .read<FsEntryMoveCubit>()
                                     .loadParentFolder()),

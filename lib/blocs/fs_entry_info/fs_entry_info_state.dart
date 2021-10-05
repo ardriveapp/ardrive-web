@@ -15,8 +15,12 @@ class FsEntryInfoSuccess<T> extends FsEntryInfoState {
   final DateTime dateCreated;
   final T entry;
 
-  FsEntryInfoSuccess(
-      {this.name, this.lastUpdated, this.dateCreated, this.entry});
+  FsEntryInfoSuccess({
+    required this.name,
+    required this.lastUpdated,
+    required this.dateCreated,
+    required this.entry,
+  });
 
   @override
   List<Object> get props => [name, lastUpdated, dateCreated];

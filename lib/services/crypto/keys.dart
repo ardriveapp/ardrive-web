@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:uuid/uuid.dart';
 
 import 'crypto.dart';
 
 const keyByteLength = 256 ~/ 8;
-final _uuid = Uuid();
 
 final pbkdf2 = Pbkdf2(
   macAlgorithm: Hmac(sha256),
@@ -17,7 +17,7 @@ final pbkdf2 = Pbkdf2(
 final hkdf = Hkdf(hmac: Hmac(sha256), outputLength: keyByteLength);
 
 Future<ProfileKeyDerivationResult> deriveProfileKey(String password,
-    [List<int> salt]) async {
+    [List<int>? salt]) async {
   salt ??= aesGcm.newNonce();
 
   final profileKey = await pbkdf2.deriveKey(
@@ -29,13 +29,13 @@ Future<ProfileKeyDerivationResult> deriveProfileKey(String password,
 }
 
 Future<SecretKey> deriveDriveKey(
-  Future<Uint8List> Function(Uint8List message) getWalletSignature,
+  Wallet wallet,
   String driveId,
   String password,
 ) async {
   final message =
-      Uint8List.fromList(utf8.encode('drive') + _uuid.parse(driveId));
-  final walletSignature = await getWalletSignature(message);
+      Uint8List.fromList(utf8.encode('drive') + Uuid.parse(driveId));
+  final walletSignature = await wallet.sign(message);
   return hkdf.deriveKey(
     secretKey: SecretKey(walletSignature),
     info: utf8.encode(password),
@@ -44,7 +44,7 @@ Future<SecretKey> deriveDriveKey(
 }
 
 Future<SecretKey> deriveFileKey(SecretKey driveKey, String fileId) async {
-  final fileIdBytes = Uint8List.fromList(_uuid.parse(fileId));
+  final fileIdBytes = Uint8List.fromList(Uuid.parse(fileId));
 
   return hkdf.deriveKey(
     secretKey: driveKey,

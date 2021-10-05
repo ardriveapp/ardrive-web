@@ -15,7 +15,7 @@ class Sorted extends Matcher {
   @override
   bool matches(dynamic item, Map matchState) {
     if (item is Iterable<String>) {
-      String previousEl;
+      String? previousEl;
       for (final element in item) {
         if (previousEl != null && element.compareTo(previousEl) < 0) {
           return false;

@@ -14,8 +14,8 @@ class FileDownloadInProgress extends FileDownloadState {
   final int totalByteCount;
 
   FileDownloadInProgress({
-    @required this.fileName,
-    this.totalByteCount,
+    required this.fileName,
+    required this.totalByteCount,
   });
 
   @override
@@ -26,7 +26,7 @@ class FileDownloadSuccess extends FileDownloadState {
   final XFile file;
 
   FileDownloadSuccess({
-    @required this.file,
+    required this.file,
   });
 
   @override

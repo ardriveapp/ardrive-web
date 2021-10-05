@@ -1,5 +1,5 @@
-import 'implementations/pst_stub.dart'
-    if (dart.library.html) 'implementations/pst_web.dart' as implementation;
+import 'implementations/pst_web.dart'
+    if (dart.library.io) 'implementations/pst_stub.dart' as implementation;
 
 export 'enums.dart';
 

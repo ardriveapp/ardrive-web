@@ -11,8 +11,8 @@ class SyncIdle extends SyncState {}
 class SyncInProgress extends SyncState {}
 
 class SyncFailure extends SyncState {
-  final Object error;
-  final StackTrace stackTrace;
+  final Object? error;
+  final StackTrace? stackTrace;
 
   SyncFailure({this.error, this.stackTrace});
 }

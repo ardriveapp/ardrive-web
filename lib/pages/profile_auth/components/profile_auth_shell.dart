@@ -6,15 +6,16 @@ import 'package:responsive_builder/responsive_builder.dart';
 class ProfileAuthShell extends StatelessWidget {
   final Widget illustration;
 
-  final double contentWidthFactor;
   final Widget content;
-  final Widget contentFooter;
+  final double? contentWidthFactor;
+  final Widget? contentFooter;
 
-  ProfileAuthShell(
-      {this.illustration,
-      this.contentWidthFactor,
-      this.content,
-      this.contentFooter});
+  ProfileAuthShell({
+    required this.illustration,
+    required this.content,
+    this.contentWidthFactor,
+    this.contentFooter,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +38,7 @@ class ProfileAuthShell extends StatelessWidget {
                 ],
               ),
             ),
-            if (contentFooter != null) contentFooter,
+            if (contentFooter != null) contentFooter!,
           ],
         );
     Widget _buildIllustration() => Stack(

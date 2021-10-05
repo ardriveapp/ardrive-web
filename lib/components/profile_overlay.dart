@@ -21,7 +21,7 @@ class ProfileOverlay extends StatelessWidget {
                   builder: (context, state) => state is ProfileLoggedIn
                       ? ListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: Text(state.username),
+                          title: Text(state.username!),
                           subtitle: Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,10 +32,10 @@ class ProfileOverlay extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${double.parse(utils.winstonToAr(state.walletBalance)).toStringAsFixed(5)} AR',
+                                '${double.tryParse(utils.winstonToAr(state.walletBalance))?.toStringAsFixed(5) ?? 0} AR',
                                 style: Theme.of(context)
                                     .textTheme
-                                    .headline6
+                                    .headline6!
                                     .copyWith(
                                       color: kPrimarySwatch,
                                       fontWeight: FontWeight.bold,
