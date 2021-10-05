@@ -73,6 +73,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           emit(DriveDetailLoadNotFound());
           return;
         }
+        if (folderContents.folder == null) {
+          // Emit the loading state as it can be a while between the drive being not found, then added,
+          // and then the folders being loaded.
+          emit(DriveDetailLoadInProgress());
+        }
         final state = this.state is DriveDetailLoadSuccess
             ? this.state as DriveDetailLoadSuccess
             : null;
@@ -129,9 +134,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       OrderingMode contentOrderingMode = OrderingMode.asc}) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
-        path: state.currentFolder.folder.path,
-        contentOrderBy: contentOrderBy,
-        contentOrderingMode: contentOrderingMode);
+      path: state.currentFolder.folder?.path ?? rootPath,
+      contentOrderBy: contentOrderBy,
+      contentOrderingMode: contentOrderingMode,
+    );
   }
 
   void toggleSelectedItemDetails() {
