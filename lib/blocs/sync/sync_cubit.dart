@@ -95,8 +95,9 @@ class SyncCubit extends Cubit<SyncState> {
       final driveIds = await _driveDao.allDrives().map((d) => d.id).get();
       final driveSyncProcesses = driveIds
           .map((driveId) => _syncDrive(driveId).onError((error, stackTrace) {
-                print('Error syncing $driveId');
+                print('Error syncing drive with id $driveId');
                 print(error.toString() + stackTrace.toString());
+                addError(error!);
               }));
       await Future.wait(driveSyncProcesses);
 
