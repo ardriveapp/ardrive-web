@@ -38,10 +38,14 @@ jobs:
         with:
           flutter-version: '2.2.x'
       - name: Build app
+        - name: Prepare app
         run: |
           flutter pub get
           flutter pub run build_runner build
-          flutter test
+      - name: Run tests
+        run: flutter test
+      - name: Build app
+        run: |
           flutter config --enable-web
           flutter build web --profile
       - uses: JamesIves/github-pages-deploy-action@4.1.1
