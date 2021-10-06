@@ -28,7 +28,7 @@ jobs:
           persist-credentials: false
       - uses: subosito/flutter-action@v1
         with:
-          channel: 'stable'
+          flutter-version: '2.2.x'
       - name: Build app
         run: |
           flutter pub get
