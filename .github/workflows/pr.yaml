@@ -5,22 +5,6 @@ on:
       - gh-pages
       - master
 jobs:
-  # Use this if you want the tests to run in a different job and not interfere with the deploy
-  # test:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         persist-credentials: false
-  #     - uses: subosito/flutter-action@v1
-  #       with:
-  #         flutter-version: '2.2.x'
-  #     - name: Prepare app
-  #       run: |
-  #         flutter pub get
-  #         flutter pub run build_runner build
-  #     - name: Run tests
-  #       run: flutter test
   deploy-preview:
     runs-on: ubuntu-latest
     steps:
@@ -29,7 +13,7 @@ jobs:
           persist-credentials: false
       - uses: subosito/flutter-action@v1
         with:
-          flutter-version: '2.2.x'
+          flutter-version: "2.2.x"
       - name: Prepare app
         run: |
           flutter pub get
@@ -42,6 +26,6 @@ jobs:
           flutter build web --profile
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}"
           expires: 14d
