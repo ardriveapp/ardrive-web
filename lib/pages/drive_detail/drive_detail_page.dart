@@ -60,7 +60,9 @@ class DriveDetailPage extends StatelessWidget {
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
-                                    path: state.currentFolder.folder.path),
+                                  path: state.currentFolder.folder?.path ??
+                                      rootPath,
+                                ),
                                 if (state.currentFolder.subfolders.isNotEmpty ||
                                     state.currentFolder.files.isNotEmpty)
                                   Expanded(
@@ -95,7 +97,12 @@ class DriveDetailPage extends StatelessWidget {
                         }
                       ],
                     ),
-                    if (kIsWeb) DriveFileDropZone(),
+                    if (kIsWeb)
+                      DriveFileDropZone(
+                        driveId: state.currentDrive.id,
+                        folderId: state.currentFolder.folder?.id ??
+                            state.currentDrive.rootFolderId,
+                      ),
                   ],
                 ),
                 mobile: Row(
@@ -125,7 +132,9 @@ class DriveDetailPage extends StatelessWidget {
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
-                                    path: state.currentFolder.folder.path),
+                                  path: state.currentFolder.folder?.path ??
+                                      rootPath,
+                                ),
                                 if (state.currentFolder.subfolders.isNotEmpty ||
                                     state.currentFolder.files.isNotEmpty)
                                   Expanded(

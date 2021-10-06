@@ -19,8 +19,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   Future<void> download() async {
     try {
-      final file = await (_arweave.getLatestFileEntityWithId(fileId, fileKey)
-          as FutureOr<FileEntity>);
+      final file = (await _arweave.getLatestFileEntityWithId(fileId, fileKey))!;
 
       emit(FileDownloadInProgress(
           fileName: file.name!, totalByteCount: file.size!));
@@ -34,10 +33,9 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       if (fileKey == null) {
         dataBytes = dataRes.bodyBytes;
       } else {
-        final dataTx = await (_arweave.getTransactionDetails(file.dataTxId!)
-            as FutureOr<TransactionCommonMixin>);
-        dataBytes = await decryptTransactionData(
-            dataTx, dataRes.bodyBytes, fileKey!);
+        final dataTx = (await _arweave.getTransactionDetails(file.dataTxId!))!;
+        dataBytes =
+            await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey!);
       }
 
       emit(
