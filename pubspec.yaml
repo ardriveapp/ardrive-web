@@ -1,7 +1,7 @@
 name: ardrive
 description: Secure, permanent storage
 
-publish_to: 'none'
+publish_to: "none"
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -16,7 +16,7 @@ publish_to: 'none'
 version: 1.2.0
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: ">=2.12.0 <3.0.0"
 
 dependencies:
   flutter:
@@ -27,7 +27,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart
-      ref: 23208fd5bb45425ddda47062bd83aae5ef035169
+      ref: 92251a6da301296a7b1a5edd0bb48c82ed6d2c0c
   cryptography: ^2.0.1
   flutter_bloc: ^7.0.1
   flutter_portal: ^0.4.0
@@ -54,7 +54,6 @@ dependencies:
   package_info_plus: ^1.0.3
   js: ^0.6.3
   collection: ^1.15.0-nullsafety.4
-  
 
 dev_dependencies:
   flutter_test:
