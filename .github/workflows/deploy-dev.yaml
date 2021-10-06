@@ -12,21 +12,22 @@ on:
       tags:
         description: 'Test scenario tags'
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          persist-credentials: false
-      - uses: subosito/flutter-action@v1
-        with:
-          flutter-version: '2.2.x'
-      - name: Prepare app
-        run: |
-          flutter pub get
-          flutter pub run build_runner build
-      - name: Run tests
-        run: flutter test
+  # Use this if you want the tests to run in a different job and not interfere with the deploy
+  # test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         persist-credentials: false
+  #     - uses: subosito/flutter-action@v1
+  #       with:
+  #         flutter-version: '2.2.x'
+  #     - name: Prepare app
+  #       run: |
+  #         flutter pub get
+  #         flutter pub run build_runner build
+  #     - name: Run tests
+  #       run: flutter test
   deploy:
     runs-on: ubuntu-latest
     steps:
@@ -40,6 +41,7 @@ jobs:
         run: |
           flutter pub get
           flutter pub run build_runner build
+          flutter test
           flutter config --enable-web
           flutter build web --profile
       - uses: JamesIves/github-pages-deploy-action@4.1.1
