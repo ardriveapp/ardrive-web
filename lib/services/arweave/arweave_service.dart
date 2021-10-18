@@ -436,8 +436,14 @@ class ArweaveService {
     return bundleTx;
   }
 
-  Future<void> postTx(Transaction transaction) =>
-      client.transactions.post(transaction);
+  Future<void> postTx(
+    Transaction transaction, {
+    bool dryRun = false,
+  }) =>
+      client.transactions.post(
+        transaction,
+        dryRun: dryRun,
+      );
 
   Future<double> getArUsdConversionRate() async {
     final client = http.Client();
