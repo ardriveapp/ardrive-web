@@ -42,6 +42,8 @@ class UploadCubit extends Cubit<UploadState> {
   /// The [Transaction] that pays `pstFee` to a random PST holder.
   Transaction? feeTx;
 
+  final bool _useBundles = true;
+
   UploadCubit({
     required this.driveId,
     required this.folderId,
@@ -249,15 +251,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     final uploadHandle = FileUploadHandle(entity: fileEntity, path: filePath);
 
-    // Only use [DataBundle]s if the file being uploaded can be serialised as one.
-    // The limitation occurs as a result of string size limitations in JS implementations which is about 512MB.
-    // We aim switch slightly below that to give ourselves some buffer.
-    //
-    // TODO: Reenable once we understand the problems with data bundle transactions.
-    final fileSizeWithinBundleLimits =
-        fileData.lengthInBytes < (512 - 12) * math.pow(10, 6);
-
-    if (fileSizeWithinBundleLimits) {
+    if (_useBundles) {
       uploadHandle.dataTx = private
           ? await createEncryptedDataItem(fileData, fileKey!)
           : DataItem.withBlobData(data: fileData);
@@ -285,7 +279,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     fileEntity.dataTxId = uploadHandle.dataTx!.id;
 
-    if (fileSizeWithinBundleLimits) {
+    if (_useBundles) {
       uploadHandle.entityTx = await _arweave.prepareEntityDataItem(
           fileEntity, profile.wallet, fileKey);
       uploadHandle.bundleTx = await _arweave.prepareDataBundleTx(
