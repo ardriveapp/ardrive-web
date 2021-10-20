@@ -29,3 +29,24 @@ function serializeTags(tags) {
   }
   return Uint8Array.from(tagsBuffer);
 }
+async function deserializeTags(buffer) {
+  const tagSchema = avro.Type.forSchema({
+    type: 'record',
+    name: 'Tag',
+    fields: [
+      { name: 'name', type: 'string' },
+      { name: 'value', type: 'string' },
+    ],
+  });
+
+  const tagsSchema = avro.Type.forSchema({
+    type: 'array',
+    items: tagSchema,
+  });
+  const tags = tagsSchema.fromBuffer(
+    Buffer.from(
+      buffer.subarray(tagsStart + 16, tagsStart + 16 + numberOfTagBytes),
+    ),
+  );
+  return tags;
+}
