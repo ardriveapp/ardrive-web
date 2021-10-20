@@ -53,6 +53,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           labelText: 'Username',
                           prefixIcon: const Icon(Icons.person),
                         ),
+                        onSubmitted: () => context.read<ProfileAddCubit>().submit(),
                         validationMessages: (_) => kValidationMessages,
                       ),
                       const SizedBox(height: 16),
@@ -63,6 +64,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           labelText: 'Password',
                           prefixIcon: const Icon(Icons.lock),
                         ),
+                        onSubmitted: () => context.read<ProfileAddCubit>().submit(),
                         validationMessages: (_) => kValidationMessages,
                       ),
                       if (!state.isExistingUser) ...{
@@ -74,6 +76,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                             labelText: 'Confirm Password',
                             prefixIcon: const Icon(Icons.lock),
                           ),
+                          onSubmitted: () => context.read<ProfileAddCubit>().submit(),
                           validationMessages: (_) => const {
                             ...kValidationMessages,
                             'mustMatch':
@@ -85,7 +88,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          ReactiveCheckbox(formControlName: 'agreementConsent'),
+                          ReactiveCheckbox(formControlName: 'agreementConsent',),
                           const SizedBox(width: 12),
                           Flexible(
                             child: Link(
