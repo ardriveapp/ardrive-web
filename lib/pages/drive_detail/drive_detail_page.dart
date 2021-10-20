@@ -51,10 +51,14 @@ class DriveDetailPage extends StatelessWidget {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      state.currentDrive.name,
-                                      style:
-                                          Theme.of(context).textTheme.headline5,
+                                    Expanded(
+                                      child: Text(
+                                        state.currentDrive.name,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headline5,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
                                     DriveDetailActionRow(),
                                   ],
