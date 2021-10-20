@@ -46,7 +46,6 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
                 driveId: widget.driveId,
                 folderId: widget.folderId,
                 context: context,
-
               ),
               onHover: _onHover,
               onLeave: _onLeave,
@@ -80,7 +79,28 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
         length: fileLength,
       );
       final selectedFiles = <XFile>[fileToUpload];
-
+      try {
+        //This is the only wayo to know whether the dropped file is a folder
+        await fileToUpload.readAsBytes();
+      } catch (e) {
+        await showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text('Error'),
+            content: Text(
+              'We do not currently support drag and drop with folders',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('OK'),
+              ),
+            ],
+          ),
+          barrierDismissible: true,
+        ).then((value) => isCurrentlyShown = false);
+        return;
+      }
       await showDialog(
         context: context,
         builder: (_) => BlocProvider<UploadCubit>(
