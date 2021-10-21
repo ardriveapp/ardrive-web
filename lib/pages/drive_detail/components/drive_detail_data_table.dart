@@ -95,7 +95,14 @@ DataRow _buildFolderRow({
                 padding: const EdgeInsetsDirectional.only(end: 8.0),
                 child: const Icon(Icons.folder),
               ),
-              Text(folder.name),
+              Container(
+                width: MediaQuery.of(context).size.width / 1.7,
+                child: Text(
+                  folder.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
         ),
@@ -124,8 +131,13 @@ DataRow _buildFileRow({
                 file.dataContentType,
               ),
             ),
-            Text(
-              file.name,
+            Container(
+              width: MediaQuery.of(context).size.width / 1.7,
+              child: Text(
+                file.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
