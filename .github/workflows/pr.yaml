@@ -28,7 +28,7 @@ jobs:
           persist-credentials: false
       - uses: subosito/flutter-action@v1
         with:
-          flutter-version: '2.2.x'
+          flutter-version: "2.5.3"
       - name: Build app
         run: |
           flutter pub get
@@ -37,6 +37,6 @@ jobs:
           flutter build web --profile
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}"
           expires: 14d
