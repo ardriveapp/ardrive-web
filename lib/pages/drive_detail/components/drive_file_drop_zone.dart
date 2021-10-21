@@ -80,7 +80,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
       );
       final selectedFiles = <XFile>[fileToUpload];
       try {
-        //This is the only wayo to know whether the dropped file is a folder
+        //This is the only way to know whether the dropped file is a folder
         await fileToUpload.readAsBytes();
       } catch (e) {
         await showDialog(
