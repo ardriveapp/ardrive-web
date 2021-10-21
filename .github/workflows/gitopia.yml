@@ -19,6 +19,6 @@ jobs:
       - name: Mirror to Gitopia Action
         uses: gitopia/gitopia-mirror-action@v0.1.2
         with:
-          gitopiaWallet: "${{ secrets.GITOPIA_WALLET }}"
-          branch: "master"
-          remoteUrl: "gitopia://qBRa782iJ4Nry0apjK0svfIJK-X_7mppep7bnDOH6_g/ardrive-web"
+          gitopiaWallet: '${{ secrets.GITOPIA_WALLET }}'
+          branch: 'master'
+          remoteUrl: 'gitopia://qBRa782iJ4Nry0apjK0svfIJK-X_7mppep7bnDOH6_g/ardrive-web'
