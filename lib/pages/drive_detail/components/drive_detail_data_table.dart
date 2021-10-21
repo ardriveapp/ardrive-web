@@ -1,5 +1,7 @@
 part of '../drive_detail_page.dart';
 
+final fileNameWidth = 700.0;
+
 Widget _buildDataTable(BuildContext context, DriveDetailLoadSuccess state) =>
     Scrollbar(
       child: ListView(
@@ -96,7 +98,7 @@ DataRow _buildFolderRow({
                 child: const Icon(Icons.folder),
               ),
               Container(
-                width: MediaQuery.of(context).size.width / 1.7,
+                width: fileNameWidth,
                 child: Text(
                   folder.name,
                   maxLines: 2,
@@ -132,7 +134,7 @@ DataRow _buildFileRow({
               ),
             ),
             Container(
-              width: MediaQuery.of(context).size.width / 1.7,
+              width: fileNameWidth,
               child: Text(
                 file.name,
                 maxLines: 2,
