@@ -36,51 +36,53 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                 ),
                 contentWidthFactor: 0.5,
                 content: state is ProfileUnlockInitial
-                    ? ReactiveForm(
-                        formGroup: context.watch<ProfileUnlockCubit>().form,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'WELCOME BACK, ${state.username!.toUpperCase()}',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.headline5,
-                            ),
-                            const SizedBox(height: 32),
-                            ReactiveTextField(
-                              formControlName: 'password',
-                              autofocus: true,
-                              obscureText: true,
-                              decoration: InputDecoration(
-                                labelText: 'Password',
-                                prefixIcon: const Icon(Icons.lock),
-                              ),
-                              autofillHints: [AutofillHints.password],
-                              onSubmitted: () =>
-                                  context.read<ProfileUnlockCubit>().submit(),
-                              validationMessages: (_) => kValidationMessages,
-                            ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () =>
-                                    context.read<ProfileUnlockCubit>().submit(),
-                                child: Text('UNLOCK'),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            TextButton(
-                              onPressed: () =>
-                                  context.read<ProfileCubit>().logoutProfile(),
-                              child: Text(
-                                'Forget wallet and change profile',
+                    ? AutofillGroup(
+                      child: ReactiveForm(
+                          formGroup: context.watch<ProfileUnlockCubit>().form,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'WELCOME BACK, ${state.username!.toUpperCase()}',
                                 textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.headline5,
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 32),
+                              ReactiveTextField(
+                                formControlName: 'password',
+                                autofocus: true,
+                                obscureText: true,
+                                decoration: InputDecoration(
+                                  labelText: 'Password',
+                                  prefixIcon: const Icon(Icons.lock),
+                                ),
+                                autofillHints: [AutofillHints.password],
+                                onSubmitted: () =>
+                                    context.read<ProfileUnlockCubit>().submit(),
+                                validationMessages: (_) => kValidationMessages,
+                              ),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () =>
+                                      context.read<ProfileUnlockCubit>().submit(),
+                                  child: Text('UNLOCK'),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              TextButton(
+                                onPressed: () =>
+                                    context.read<ProfileCubit>().logoutProfile(),
+                                child: Text(
+                                  'Forget wallet and change profile',
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      )
+                    )
                     : const SizedBox(),
               );
             }
