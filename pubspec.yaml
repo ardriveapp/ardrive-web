@@ -38,7 +38,7 @@ dependencies:
   google_fonts: ^2.1.0
   intersperse: ^2.0.0
   intl: ^0.17.0
-  json_annotation: ^4.0.1
+  json_annotation: ^4.3.0
   mime: ^1.0.0
   moor: ^4.4.1
   path_provider: ^2.0.2
