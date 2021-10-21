@@ -55,6 +55,7 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                 labelText: 'Password',
                                 prefixIcon: const Icon(Icons.lock),
                               ),
+                              autofillHints: [AutofillHints.password],
                               onSubmitted: () =>
                                   context.read<ProfileUnlockCubit>().submit(),
                               validationMessages: (_) => kValidationMessages,
