@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -125,7 +126,6 @@ class SyncCubit extends Cubit<SyncState> {
         return;
       }
     }
-
     final entityHistory = await _arweave.getNewEntitiesForDrive(
       drive.id,
       // Syncs from lastBlockHeight - 5 and paginates through them using the syncCursor
@@ -133,7 +133,7 @@ class SyncCubit extends Cubit<SyncState> {
       // we are just starting 5 blocks before the lastBlockHeight to make sure it
       // picks up all files. 'after' indicates the cursor where it should start
       // syncing from. For first sync 'after' should be null or an empty string.
-      // lastBlockHeight: max(drive.lastBlockHeight! - 5, drive.lastBlockHeight!),
+      lastBlockHeight: max(drive.lastBlockHeight! - 30000, 0),
       after: drive.syncCursor,
       driveKey: driveKey,
       owner: owner,
