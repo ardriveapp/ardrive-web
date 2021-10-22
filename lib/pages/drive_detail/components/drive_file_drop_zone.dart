@@ -1,9 +1,4 @@
-import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/components/upload_form.dart';
-import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
-import 'package:ardrive/services/services.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
 
 class DriveFileDropZone extends StatefulWidget {
@@ -45,7 +40,6 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
                 driveId: widget.driveId,
                 folderId: widget.folderId,
                 context: context,
-
               ),
               onHover: _onHover,
               onLeave: _onLeave,
@@ -63,40 +57,61 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
     required String driveId,
     required String folderId,
   }) async {
-    if (!isCurrentlyShown) {
-      isCurrentlyShown = true;
-      _onLeave();
-//TODO: Remake after making an io util
-      // final fileName = await controller.getFilename(htmlFile);
-      // final fileMIME = await controller.getFileMIME(htmlFile);
-      // final fileLength = await controller.getFileSize(htmlFile);
-      // final htmlUrl = await controller.createFileUrl(htmlFile);
-      // final fileToUpload = XFile(
-      //   htmlUrl,
-      //   name: fileName,
-      //   mimeType: fileMIME,
-      //   lastModified: DateTime.now(),
-      //   length: fileLength,
-      // );
-      // final selectedFiles = <XFile>[fileToUpload];
+    // if (!isCurrentlyShown) {
+    //   isCurrentlyShown = true;
+    //   _onLeave();
 
-      await showDialog(
-        context: context,
-        builder: (_) => BlocProvider<UploadCubit>(
-          create: (context) => UploadCubit(
-            driveId: driveId,
-            folderId: folderId,
-            files: [],
-            arweave: context.read<ArweaveService>(),
-            pst: context.read<PstService>(),
-            profileCubit: context.read<ProfileCubit>(),
-            driveDao: context.read<DriveDao>(),
-          ),
-          child: UploadForm(),
-        ),
-        barrierDismissible: false,
-      ).then((value) => isCurrentlyShown = false);
-    }
+    //   final fileName = await controller.getFilename(htmlFile);
+    //   final fileMIME = await controller.getFileMIME(htmlFile);
+    //   final fileLength = await controller.getFileSize(htmlFile);
+    //   final htmlUrl = await controller.createFileUrl(htmlFile);
+    //   final fileToUpload = XFile(
+    //     htmlUrl,
+    //     name: fileName,
+    //     mimeType: fileMIME,
+    //     lastModified: DateTime.now(),
+    //     length: fileLength,
+    //   );
+    //   final selectedFiles = <XFile>[fileToUpload];
+    //   try {
+    //     //This is the only way to know whether the dropped file is a folder
+    //     await fileToUpload.readAsBytes();
+    //   } catch (e) {
+    //     await showDialog(
+    //       context: context,
+    //       builder: (_) => AlertDialog(
+    //         title: Text('Error'),
+    //         content: Text(
+    //           'We do not currently support drag and drop with folders',
+    //         ),
+    //         actions: [
+    //           TextButton(
+    //             onPressed: () => Navigator.of(context).pop(false),
+    //             child: Text('OK'),
+    //           ),
+    //         ],
+    //       ),
+    //       barrierDismissible: true,
+    //     ).then((value) => isCurrentlyShown = false);
+    //     return;
+    //   }
+    //   await showDialog(
+    //     context: context,
+    //     builder: (_) => BlocProvider<UploadCubit>(
+    //       create: (context) => UploadCubit(
+    //         driveId: driveId,
+    //         folderId: folderId,
+    //         files: [],
+    //         arweave: context.read<ArweaveService>(),
+    //         pst: context.read<PstService>(),
+    //         profileCubit: context.read<ProfileCubit>(),
+    //         driveDao: context.read<DriveDao>(),
+    //       ),
+    //       child: UploadForm(),
+    //     ),
+    //     barrierDismissible: false,
+    //   ).then((value) => isCurrentlyShown = false);
+    // }
   }
 
   void _onHover() => setState(() => isHovering = true);
