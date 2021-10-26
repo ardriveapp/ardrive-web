@@ -165,13 +165,6 @@ class SyncCubit extends Cubit<SyncState> {
       final latestFileRevisions = await _addNewFileEntityRevisions(
           driveId, newEntities.whereType<FileEntity>());
 
-      latestFileRevisions.map((file) {
-        //If Parent-Folder-Id is missing put it in the root folder of the drive
-        if (!file.parentFolderId.present) {
-          file = file.copyWith(parentFolderId: Value(drive.rootFolderId));
-        }
-      });
-
       //Check and handle cases where there's no more revisions
       final updatedDrive = latestDriveRevision != null
           ? await _computeRefreshedDriveFromRevision(latestDriveRevision)
