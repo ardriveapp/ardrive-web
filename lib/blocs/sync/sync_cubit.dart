@@ -148,7 +148,7 @@ class SyncCubit extends Cubit<SyncState> {
         .map((b) => b.entities)
         .expand((entities) => entities);
     // Handle newEntities being empty, i.e; There's nothing more to sync
-    if ((newEntities.isEmpty || entityHistory.cursor == null)) {
+    if ((newEntities.isEmpty && entityHistory.cursor == null)) {
       // Reset the sync cursor after every sync to pick up files from other instances of the app.
       // (Different tab, different window, mobile, desktop etc)
       await _driveDao.writeToDrive(DrivesCompanion(
