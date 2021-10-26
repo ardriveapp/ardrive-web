@@ -165,13 +165,6 @@ class SyncCubit extends Cubit<SyncState> {
       final latestFileRevisions = await _addNewFileEntityRevisions(
           driveId, newEntities.whereType<FileEntity>());
 
-      latestFileRevisions.map((file) {
-        //If Parent-Folder-Id is missing put it in the root folder of the drive
-        if (!file.parentFolderId.present) {
-          file = file.copyWith(parentFolderId: Value(drive.rootFolderId));
-        }
-      });
-
       //Check and handle cases where there's no more revisions
       final updatedDrive = latestDriveRevision != null
           ? await _computeRefreshedDriveFromRevision(latestDriveRevision)
@@ -337,8 +330,8 @@ class SyncCubit extends Cubit<SyncState> {
       if (revisionPerformedAction == null) {
         continue;
       }
-      // If Parent-Folder-Id is missing for a file, put it in the rootfolder
 
+      // If Parent-Folder-Id is missing for a file, put it in the rootfolder
       entity.parentFolderId = entity.parentFolderId ?? rootPath;
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
@@ -467,7 +460,7 @@ class SyncCubit extends Cubit<SyncState> {
       final folderPath = node.folder.parentFolderId != null
           ? parentPath + '/' + node.folder.name
           : rootPath;
-      
+
       await _driveDao
           .updateFolderById(driveId, folderId)
           .write(FolderEntriesCompanion(path: Value(folderPath)));
