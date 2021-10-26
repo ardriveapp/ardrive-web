@@ -165,6 +165,13 @@ class SyncCubit extends Cubit<SyncState> {
       final latestFileRevisions = await _addNewFileEntityRevisions(
           driveId, newEntities.whereType<FileEntity>());
 
+      latestFileRevisions.map((file) {
+        //If Parent-Folder-Id is missing put it in the root folder of the drive
+        if (!file.parentFolderId.present) {
+          file = file.copyWith(parentFolderId: Value(drive.rootFolderId));
+        }
+      });
+
       //Check and handle cases where there's no more revisions
       final updatedDrive = latestDriveRevision != null
           ? await _computeRefreshedDriveFromRevision(latestDriveRevision)
@@ -315,7 +322,8 @@ class SyncCubit extends Cubit<SyncState> {
 
     final newRevisions = <FileRevisionsCompanion>[];
     for (final entity in newEntities) {
-      if (!latestRevisions.containsKey(entity.id)) {
+      if (!latestRevisions.containsKey(entity.id) &&
+          entity.parentFolderId != null) {
         final revisions = await _driveDao
             .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id!)
             .getSingleOrNull();
@@ -329,6 +337,9 @@ class SyncCubit extends Cubit<SyncState> {
       if (revisionPerformedAction == null) {
         continue;
       }
+      // If Parent-Folder-Id is missing for a file, put it in the rootfolder
+
+      entity.parentFolderId = entity.parentFolderId ?? rootPath;
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
@@ -497,22 +508,25 @@ class SyncCubit extends Cubit<SyncState> {
     final staleOrphanFiles = filesByIdMap.values
         .where((f) => !foldersByIdMap.containsKey(f.parentFolderId));
     for (final staleOrphanFile in staleOrphanFiles) {
-      final parentPath = await _driveDao
-          .folderById(
-              driveId: driveId, folderId: staleOrphanFile.parentFolderId.value)
-          .map((f) => f.path)
-          .getSingleOrNull();
+      if (staleOrphanFile.parentFolderId.value.isNotEmpty) {
+        final parentPath = await _driveDao
+            .folderById(
+                driveId: driveId,
+                folderId: staleOrphanFile.parentFolderId.value)
+            .map((f) => f.path)
+            .getSingleOrNull();
 
-      if (parentPath != null) {
-        final filePath = parentPath + '/' + staleOrphanFile.name.value;
+        if (parentPath != null) {
+          final filePath = parentPath + '/' + staleOrphanFile.name.value;
 
-        await _driveDao.writeToFile(FileEntriesCompanion(
-            id: staleOrphanFile.id,
-            driveId: staleOrphanFile.driveId,
-            path: Value(filePath)));
-      } else {
-        print(
-            'Stale orphan file ${staleOrphanFile.id.value} parent folder ${staleOrphanFile.parentFolderId.value} could not be found.');
+          await _driveDao.writeToFile(FileEntriesCompanion(
+              id: staleOrphanFile.id,
+              driveId: staleOrphanFile.driveId,
+              path: Value(filePath)));
+        } else {
+          print(
+              'Stale orphan file ${staleOrphanFile.id.value} parent folder ${staleOrphanFile.parentFolderId.value} could not be found.');
+        }
       }
     }
   }
