@@ -91,10 +91,10 @@ class SyncCubit extends Cubit<SyncState> {
       }
 
       // Sync the contents of each drive attached in the app.
-      final driveIds = await _driveDao.allDrives().map((d) => d).get();
+      final drives = await _driveDao.allDrives().map((d) => d).get();
       final currentBlockHeight = await arweave.getCurrentBlockHeight();
 
-      final driveSyncProcesses = driveIds.map((drive) => _syncDrive(
+      final driveSyncProcesses = drives.map((drive) => _syncDrive(
             drive.id,
             lastBlockHeight: drive.lastBlockHeight!,
             currentBlockheight: currentBlockHeight,
@@ -147,14 +147,14 @@ class SyncCubit extends Cubit<SyncState> {
     final newEntities = entityHistory.blockHistory
         .map((b) => b.entities)
         .expand((entities) => entities);
-    print(newEntities.length);
-    //Handle newEntities being empty, i.e; There's nothing more to sync
+    // Handle newEntities being empty, i.e; There's nothing more to sync
     if ((newEntities.isEmpty || entityHistory.cursor == null)) {
-      //Reset the sync cursor after every sync to pick up files from other instances of the app.
-      //(Different tab, different window, mobile, desktop etc)
+      // Reset the sync cursor after every sync to pick up files from other instances of the app.
+      // (Different tab, different window, mobile, desktop etc)
       await _driveDao.writeToDrive(DrivesCompanion(
         id: Value(drive.id),
         lastBlockHeight: Value(currentBlockheight),
+        syncCursor: Value(null),
       ));
       emit(SyncEmpty());
       return;
@@ -168,7 +168,7 @@ class SyncCubit extends Cubit<SyncState> {
       final latestFileRevisions = await _addNewFileEntityRevisions(
           driveId, newEntities.whereType<FileEntity>());
 
-      //Check and handle cases where there's no more revisions
+      // Check and handle cases where there's no more revisions
       final updatedDrive = latestDriveRevision != null
           ? await _computeRefreshedDriveFromRevision(latestDriveRevision)
           : null;
@@ -196,15 +196,8 @@ class SyncCubit extends Cubit<SyncState> {
       await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
     });
 
-    //In case of very large drives, instead of waiting 2 minutes for the next sync,
-    //check if there's more to sync and start syncing here itself
-
-    await _driveDao.writeToDrive(DrivesCompanion(
-      id: Value(drive.id),
-      lastBlockHeight: Value(currentBlockheight),
-      syncCursor: Value(entityHistory.cursor),
-    ));
-
+    
+    // If there are more results to process, recurse.
     await _syncDrive(
       driveId,
       syncCursor: entityHistory.cursor,
