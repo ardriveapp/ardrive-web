@@ -22,99 +22,99 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       final breadCrumbSplit = _pathSegments.length - breadCrumbcount;
       return Row(
         children: [
-          if (_pathSegments.length >= breadCrumbcount) ...[
-            PopupMenuButton(
-              icon: Icon(Icons.navigate_before),
-              itemBuilder: (context) {
-                return <PopupMenuItem>[
-                  PopupMenuItem(
-                    child: TextButton(
-                      style:
-                          _pathSegments.isEmpty ? selectedSegmentTheme : null,
-                      onPressed: () =>
-                          context.read<DriveDetailCubit>().openFolder(path: rootPath),
-                      child: Text(
-                        'Drive Root',
-                      ),
-                    ),
-                  ),
-                  ..._pathSegments
-                      .sublist(0, (_pathSegments.length - breadCrumbcount))
-                      .asMap()
-                      .entries
-                      .expand((s) {
-                    return [
-                      PopupMenuItem(
-                        child: TextButton(
-                          onPressed: () => context
-                              .read<DriveDetailCubit>()
-                              .openFolder(
-                                  path:
-                                      '/${_pathSegments.sublist(0, s.key + 1).join('/')}'),
-                          child: Text(s.value),
-                        ),
-                      ),
-                    ];
-                  })
-                ];
-              },
-            ),
-            ..._pathSegments
-                .sublist(breadCrumbSplit)
-                .asMap()
-                .entries
-                .expand((s) {
-              final isLastSegment =
-                  s.key + breadCrumbSplit == _pathSegments.length - 1;
+          // if (_pathSegments.length >= breadCrumbcount) ...[
+          //   PopupMenuButton(
+          //     icon: Icon(Icons.navigate_before),
+          //     itemBuilder: (context) {
+          //       return <PopupMenuItem>[
+          //         PopupMenuItem(
+          //           child: TextButton(
+          //             style:
+          //                 _pathSegments.isEmpty ? selectedSegmentTheme : null,
+          //             onPressed: () =>
+          //                 context.read<DriveDetailCubit>().openFolder(path: rootPath),
+          //             child: Text(
+          //               'Drive Root',
+          //             ),
+          //           ),
+          //         ),
+          //         ..._pathSegments
+          //             .sublist(0, (_pathSegments.length - breadCrumbcount))
+          //             .asMap()
+          //             .entries
+          //             .expand((s) {
+          //           return [
+          //             PopupMenuItem(
+          //               child: TextButton(
+          //                 onPressed: () => context
+          //                     .read<DriveDetailCubit>()
+          //                     .openFolder(
+          //                         path:
+          //                             '/${_pathSegments.sublist(0, s.key + 1).join('/')}'),
+          //                 child: Text(s.value),
+          //               ),
+          //             ),
+          //           ];
+          //         })
+          //       ];
+          //     },
+          //   ),
+          //   ..._pathSegments
+          //       .sublist(breadCrumbSplit)
+          //       .asMap()
+          //       .entries
+          //       .expand((s) {
+          //     final isLastSegment =
+          //         s.key + breadCrumbSplit == _pathSegments.length - 1;
 
-              return [
-                TextButton(
-                  style: isLastSegment ? selectedSegmentTheme : null,
-                  onPressed: () => context.read<DriveDetailCubit>().openFolder(
-                      path:
-                          '/${_pathSegments.sublist(0, s.key + breadCrumbSplit + 1).join('/')}'),
-                  child: Text(s.value),
-                ),
-                if (!isLastSegment)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('/'),
-                  ),
-              ];
-            })
-          ] else ...[
-            TextButton(
-              style: _pathSegments.isEmpty ? selectedSegmentTheme : null,
-              onPressed: () =>
-                  context.read<DriveDetailCubit>().openFolder(path: rootPath),
-              child: Text(
-                'Drive Root',
-              ),
-            ),
-            if (_pathSegments.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text('/'),
-              ),
-            ..._pathSegments.asMap().entries.expand((s) {
-              final isLastSegment = s.key == _pathSegments.length - 1;
+          //     return [
+          //       TextButton(
+          //         style: isLastSegment ? selectedSegmentTheme : null,
+          //         onPressed: () => context.read<DriveDetailCubit>().openFolder(
+          //             path:
+          //                 '/${_pathSegments.sublist(0, s.key + breadCrumbSplit + 1).join('/')}'),
+          //         child: Text(s.value),
+          //       ),
+          //       if (!isLastSegment)
+          //         Padding(
+          //           padding: const EdgeInsets.symmetric(horizontal: 8),
+          //           child: Text('/'),
+          //         ),
+          //     ];
+          //   })
+          // ] else ...[
+          //   TextButton(
+          //     style: _pathSegments.isEmpty ? selectedSegmentTheme : null,
+          //     onPressed: () =>
+          //         context.read<DriveDetailCubit>().openFolder(path: rootPath),
+          //     child: Text(
+          //       'Drive Root',
+          //     ),
+          //   ),
+          //   if (_pathSegments.isNotEmpty)
+          //     Padding(
+          //       padding: const EdgeInsets.symmetric(horizontal: 8),
+          //       child: Text('/'),
+          //     ),
+          //   ..._pathSegments.asMap().entries.expand((s) {
+          //     final isLastSegment = s.key == _pathSegments.length - 1;
 
-              return [
-                TextButton(
-                  style: isLastSegment ? selectedSegmentTheme : null,
-                  onPressed: () => context.read<DriveDetailCubit>().openFolder(
-                      path:
-                          '/${_pathSegments.sublist(0, s.key + 1).join('/')}'),
-                  child: Text(s.value),
-                ),
-                if (!isLastSegment)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('/'),
-                  ),
-              ];
-            })
-          ]
+          //     return [
+          //       TextButton(
+          //         style: isLastSegment ? selectedSegmentTheme : null,
+          //         onPressed: () => context.read<DriveDetailCubit>().openFolder(
+          //             path:
+          //                 '/${_pathSegments.sublist(0, s.key + 1).join('/')}'),
+          //         child: Text(s.value),
+          //       ),
+          //       if (!isLastSegment)
+          //         Padding(
+          //           padding: const EdgeInsets.symmetric(horizontal: 8),
+          //           child: Text('/'),
+          //         ),
+          //     ];
+          //   })
+          // ]
         ],
       );
     }

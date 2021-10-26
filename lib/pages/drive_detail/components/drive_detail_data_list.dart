@@ -11,7 +11,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
             onPressed: () {
               final bloc = context.read<DriveDetailCubit>();
               if (folder.id == state.selectedItemId) {
-                bloc.openFolder(path: folder.path);
+                bloc.openFolder(path: folder.path, folderId: folder.id);
               } else {
                 bloc.selectItem(
                   folder.id,

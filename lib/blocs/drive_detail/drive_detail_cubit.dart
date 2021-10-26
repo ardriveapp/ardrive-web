@@ -44,27 +44,35 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             .getSingleOrNull();
         // Open the root folder if the deep-linked folder could not be found.
 
-        openFolder(path: folder?.path ?? rootPath);
+        openFolder(folderId: folder!.id, path: folder.path);
         // The empty string here is required to open the root folder
       });
     } else {
-      openFolder(path: rootPath);
+      Future.microtask(() async {
+        final drive =
+            await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+        // Open the root folder if the deep-linked folder could not be found.
+
+        openFolder(folderId: drive!.rootFolderId, path: rootPath);
+        // The empty string here is required to open the root folder
+      });
     }
   }
 
-  void openFolder(
-      {required String path,
-      DriveOrder contentOrderBy = DriveOrder.name,
-      OrderingMode contentOrderingMode = OrderingMode.asc}) {
+  void openFolder({
+    required String path,
+    required String folderId,
+    DriveOrder contentOrderBy = DriveOrder.name,
+    OrderingMode contentOrderingMode = OrderingMode.asc,
+  }) {
     emit(DriveDetailLoadInProgress());
 
     unawaited(_folderSubscription?.cancel());
-
     _folderSubscription =
         Rx.combineLatest3<Drive?, FolderWithContents, ProfileState, void>(
       _driveDao.driveById(driveId: driveId).watchSingleOrNull(),
       _driveDao.watchFolderContents(driveId,
-          folderPath: path,
+          folderId: folderId,
           orderBy: contentOrderBy,
           orderingMode: contentOrderingMode),
       _profileCubit.stream.startWith(ProfileCheckingAvailability()),
@@ -134,6 +142,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       OrderingMode contentOrderingMode = OrderingMode.asc}) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
+      folderId: state.currentFolder.folder!.id,
       path: state.currentFolder.folder?.path ?? rootPath,
       contentOrderBy: contentOrderBy,
       contentOrderingMode: contentOrderingMode,

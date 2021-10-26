@@ -467,7 +467,7 @@ class SyncCubit extends Cubit<SyncState> {
       final folderPath = node.folder.parentFolderId != null
           ? parentPath + '/' + node.folder.name
           : rootPath;
-
+      
       await _driveDao
           .updateFolderById(driveId, folderId)
           .write(FolderEntriesCompanion(path: Value(folderPath)));
