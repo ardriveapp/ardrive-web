@@ -32,7 +32,8 @@ folderById:
     WHERE driveId = :driveId AND id = :folderId;
 folderWithPath:
     SELECT * FROM folder_entries
-    WHERE driveId = :driveId AND path = :path;
+    WHERE driveId = :driveId AND path = :path 
+    LIMIT 1;
 
 foldersInFolder ($order = ''):
     SELECT * FROM folder_entries
