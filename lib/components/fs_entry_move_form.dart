@@ -80,7 +80,7 @@ class FsEntryMoveForm extends StatelessWidget {
                     children: [
                       Center(
                         child: Text(
-                          'Please rename the ${state.isMovingFolder ? 'folder' : 'file'} you are moving',
+                          'Please rename the ${state.isMovingFolder ? 'folder' : 'file'} you are moving.',
                         ),
                       ),
                     ],
