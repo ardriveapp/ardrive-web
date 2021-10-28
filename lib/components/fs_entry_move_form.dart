@@ -64,6 +64,35 @@ class FsEntryMoveForm extends StatelessWidget {
           } else if (state is FolderEntryMoveWalletMismatch ||
               state is FileEntryMoveWalletMismatch) {
             Navigator.pop(context);
+          } else if (state is FolderEntryMoveNameConflict ||
+              state is FileEntryMoveNameConflict) {
+            Navigator.pop(context);
+            Navigator.pop(context);
+            showDialog(
+              context: context,
+              builder: (BuildContext context) => AppDialog(
+                dismissable: true,
+                title: 'Name Conflict',
+                content: SizedBox(
+                  width: kSmallDialogWidth,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Center(
+                        child: Text(
+                          'Please rename the ${state.isMovingFolder ? 'folder' : 'file'} you are moving',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text('OK')),
+                ],
+              ),
+            );
           }
         },
         builder: (context, state) {

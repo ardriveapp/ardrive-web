@@ -105,17 +105,15 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
       }
       if (_isMovingFolder) {
         emit(FolderEntryMoveInProgress());
+        var folder = await _driveDao
+            .folderById(driveId: driveId, folderId: folderId!)
+            .getSingle();
 
+        if (await isUniqueFolderName(folder.name)) {
+          emit(FolderEntryMoveNameConflict());
+          return;
+        }
         await _driveDao.transaction(() async {
-          var folder = await _driveDao
-              .folderById(driveId: driveId, folderId: folderId!)
-              .getSingle();
-
-          if (await isUniqueFolderName(folder.name)) {
-            emit(FolderEntryMoveNameConflict());
-            return;
-          }
-
           folder = folder.copyWith(
               parentFolderId: parentFolder!.id,
               path: '${parentFolder.path}/${folder.name}',
@@ -139,21 +137,19 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         emit(FolderEntryMoveSuccess());
       } else {
         emit(FileEntryMoveInProgress());
+        var file = await _driveDao
+            .fileById(driveId: driveId, fileId: fileId!)
+            .getSingle();
+        file = file.copyWith(
+            parentFolderId: parentFolder!.id,
+            path: '${parentFolder.path}/${file.name}',
+            lastUpdated: DateTime.now());
 
+        if (await isUniqueFileName(file.name)) {
+          emit(FileEntryMoveNameConflict());
+          return;
+        }
         await _driveDao.transaction(() async {
-          var file = await _driveDao
-              .fileById(driveId: driveId, fileId: fileId!)
-              .getSingle();
-          file = file.copyWith(
-              parentFolderId: parentFolder!.id,
-              path: '${parentFolder.path}/${file.name}',
-              lastUpdated: DateTime.now());
-
-          if (await isUniqueFileName(file.name)) {
-            emit(FileEntryMoveNameConflict());
-            return;
-          }
-          
           final fileKey =
               driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
 
