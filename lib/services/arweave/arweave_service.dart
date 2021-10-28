@@ -22,6 +22,9 @@ class ArweaveService {
       .get('wallet/$address/balance')
       .then((res) => BigInt.parse(res.body));
 
+  Future<int> getCurrentBlockHeight() =>
+      client.api.get('/').then((res) => json.decode(res.body)['height']);
+
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
   Future<BigInt> getPendingTxFees(String address) async {
     final query = await _gql.execute(PendingTxFeesQuery(
@@ -72,6 +75,7 @@ class ArweaveService {
       // If we encounter a transaction that has yet to be mined, we stop moving through history.
       // We can continue once the transaction is mined.
       if (transaction.block == null) {
+        // TODO: Revisit
         break;
       }
 
@@ -97,7 +101,7 @@ class ArweaveService {
             driveKey: driveKey,
           );
         }
-
+        //TODO: Revisit
         if (blockHistory.isEmpty ||
             transaction.block!.height != blockHistory.last.blockHeight) {
           blockHistory.add(BlockEntities(transaction.block!.height));
