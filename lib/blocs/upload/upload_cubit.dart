@@ -104,8 +104,9 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
     emit(UploadPreparationInProgress());
-    final sizeLimit =
-        _targetDrive.isPrivate ? math.pow(10, 8) : 1.25 * math.pow(10, 9);
+    final sizeLimit = (_targetDrive.isPrivate
+        ? math.pow(10, 8)
+        : 1.25 * math.pow(10, 9)) as int;
     final tooLargeFiles = [
       for (final file in files)
         if (await file.length() > sizeLimit) file.name
