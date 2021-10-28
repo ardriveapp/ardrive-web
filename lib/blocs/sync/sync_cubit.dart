@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -92,13 +91,18 @@ class SyncCubit extends Cubit<SyncState> {
       }
 
       // Sync the contents of each drive attached in the app.
-      final driveIds = await _driveDao.allDrives().map((d) => d.id).get();
-      final driveSyncProcesses = driveIds
-          .map((driveId) => _syncDrive(driveId).onError((error, stackTrace) {
-                print('Error syncing drive with id $driveId');
-                print(error.toString() + stackTrace.toString());
-                addError(error!);
-              }));
+      final drives = await _driveDao.allDrives().map((d) => d).get();
+      final currentBlockHeight = await arweave.getCurrentBlockHeight();
+
+      final driveSyncProcesses = drives.map((drive) => _syncDrive(
+            drive.id,
+            lastBlockHeight: drive.lastBlockHeight!,
+            currentBlockheight: currentBlockHeight,
+          ).onError((error, stackTrace) {
+            print('Error syncing drive with id ${drive.id}');
+            print(error.toString() + stackTrace.toString());
+            addError(error!);
+          }));
       await Future.wait(driveSyncProcesses);
 
       await Future.wait([
@@ -112,7 +116,12 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncIdle());
   }
 
-  Future<void> _syncDrive(String driveId) async {
+  Future<void> _syncDrive(
+    String driveId, {
+    required int currentBlockheight,
+    required int lastBlockHeight,
+    String? syncCursor,
+  }) async {
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
     final owner = await arweave.getOwnerForDriveEntityWithId(driveId);
     SecretKey? driveKey;
@@ -126,16 +135,10 @@ class SyncCubit extends Cubit<SyncState> {
         return;
       }
     }
-
     final entityHistory = await _arweave.getNewEntitiesForDrive(
       drive.id,
-      // Syncs from lastBlockHeight - 5 and paginates through them using the syncCursor
-      // Starts syncing from lastBlock - 5. 5 is an arbitrary position,
-      // we are just starting 5 blocks before the lastBlockHeight to make sure it
-      // picks up all files. 'after' indicates the cursor where it should start
-      // syncing from. For first sync 'after' should be null or an empty string.
-      lastBlockHeight: max(drive.lastBlockHeight! - 5, drive.lastBlockHeight!),
-      after: drive.syncCursor,
+      lastBlockHeight: lastBlockHeight,
+      after: syncCursor,
       driveKey: driveKey,
       owner: owner,
     );
@@ -144,15 +147,15 @@ class SyncCubit extends Cubit<SyncState> {
     final newEntities = entityHistory.blockHistory
         .map((b) => b.entities)
         .expand((entities) => entities);
-
-    //Handle newEntities being empty, i.e; There's nothing more to sync
-    if (newEntities.isEmpty) {
-      //Reset the sync cursor after every sync to pick up files from other instances of the app.
-      //(Different tab, different window, mobile, desktop etc)
+    // Handle newEntities being empty, i.e; There's nothing more to sync
+    if ((newEntities.isEmpty && entityHistory.cursor == null)) {
+      // Reset the sync cursor after every sync to pick up files from other instances of the app.
+      // (Different tab, different window, mobile, desktop etc)
       await _driveDao.writeToDrive(DrivesCompanion(
-          id: Value(drive.id),
-          lastBlockHeight: Value(entityHistory.lastBlockHeight),
-          syncCursor: Value(null)));
+        id: Value(drive.id),
+        lastBlockHeight: Value(currentBlockheight),
+        syncCursor: Value(null),
+      ));
       emit(SyncEmpty());
       return;
     }
@@ -165,7 +168,7 @@ class SyncCubit extends Cubit<SyncState> {
       final latestFileRevisions = await _addNewFileEntityRevisions(
           driveId, newEntities.whereType<FileEntity>());
 
-      //Check and handle cases where there's no more revisions
+      // Check and handle cases where there's no more revisions
       final updatedDrive = latestDriveRevision != null
           ? await _computeRefreshedDriveFromRevision(latestDriveRevision)
           : null;
@@ -191,27 +194,23 @@ class SyncCubit extends Cubit<SyncState> {
       });
 
       await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
-      //Saves lastBlockHeight to query from for next sync. syncCursor is used to
-      //paginate through results.
-      await _driveDao.writeToDrive(DrivesCompanion(
-          id: Value(drive.id),
-          lastBlockHeight: Value(entityHistory.lastBlockHeight),
-          syncCursor: Value(entityHistory.cursor)));
     });
 
-    //In case of very large drives, instead of waiting 2 minutes for the next sync,
-    //check if there's more to sync and start syncing here itself
-    if (entityHistory.cursor != null) {
-      await _syncDrive(driveId);
-    }
+    
+    // If there are more results to process, recurse.
+    await _syncDrive(
+      driveId,
+      syncCursor: entityHistory.cursor,
+      lastBlockHeight: lastBlockHeight,
+      currentBlockheight: currentBlockheight,
+    );
   }
 
   /// Computes the new drive revisions from the provided entities, inserts them into the database,
   /// and returns the latest revision.
   Future<DriveRevisionsCompanion?> _addNewDriveEntityRevisions(
-    Iterable<DriveEntity> newEntities, {
-    String? owner,
-  }) async {
+    Iterable<DriveEntity> newEntities,
+  ) async {
     DriveRevisionsCompanion? latestRevision;
 
     final newRevisions = <DriveRevisionsCompanion>[];
@@ -315,7 +314,8 @@ class SyncCubit extends Cubit<SyncState> {
 
     final newRevisions = <FileRevisionsCompanion>[];
     for (final entity in newEntities) {
-      if (!latestRevisions.containsKey(entity.id)) {
+      if (!latestRevisions.containsKey(entity.id) &&
+          entity.parentFolderId != null) {
         final revisions = await _driveDao
             .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id!)
             .getSingleOrNull();
@@ -329,6 +329,9 @@ class SyncCubit extends Cubit<SyncState> {
       if (revisionPerformedAction == null) {
         continue;
       }
+      // If Parent-Folder-Id is missing for a file, put it in the rootfolder
+
+      entity.parentFolderId = entity.parentFolderId ?? rootPath;
       final revision =
           entity.toRevisionCompanion(performedAction: revisionPerformedAction);
 
@@ -497,22 +500,25 @@ class SyncCubit extends Cubit<SyncState> {
     final staleOrphanFiles = filesByIdMap.values
         .where((f) => !foldersByIdMap.containsKey(f.parentFolderId));
     for (final staleOrphanFile in staleOrphanFiles) {
-      final parentPath = await _driveDao
-          .folderById(
-              driveId: driveId, folderId: staleOrphanFile.parentFolderId.value)
-          .map((f) => f.path)
-          .getSingleOrNull();
+      if (staleOrphanFile.parentFolderId.value.isNotEmpty) {
+        final parentPath = await _driveDao
+            .folderById(
+                driveId: driveId,
+                folderId: staleOrphanFile.parentFolderId.value)
+            .map((f) => f.path)
+            .getSingleOrNull();
 
-      if (parentPath != null) {
-        final filePath = parentPath + '/' + staleOrphanFile.name.value;
+        if (parentPath != null) {
+          final filePath = parentPath + '/' + staleOrphanFile.name.value;
 
-        await _driveDao.writeToFile(FileEntriesCompanion(
-            id: staleOrphanFile.id,
-            driveId: staleOrphanFile.driveId,
-            path: Value(filePath)));
-      } else {
-        print(
-            'Stale orphan file ${staleOrphanFile.id.value} parent folder ${staleOrphanFile.parentFolderId.value} could not be found.');
+          await _driveDao.writeToFile(FileEntriesCompanion(
+              id: staleOrphanFile.id,
+              driveId: staleOrphanFile.driveId,
+              path: Value(filePath)));
+        } else {
+          print(
+              'Stale orphan file ${staleOrphanFile.id.value} parent folder ${staleOrphanFile.parentFolderId.value} could not be found.');
+        }
       }
     }
   }
