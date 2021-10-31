@@ -58,6 +58,8 @@ class SyncCubit extends Cubit<SyncState> {
         .then((value) => createSyncStream()));
   }
 
+  final List<String> missingParentIds = [];
+
   Future<void> startSync() async {
     try {
       final profile = _profileCubit.state;
@@ -156,6 +158,19 @@ class SyncCubit extends Cubit<SyncState> {
         lastBlockHeight: Value(currentBlockheight),
         syncCursor: Value(null),
       ));
+
+      //Finalize missing parent list
+      for (var id in missingParentIds) {
+        if ((await _driveDao
+                .folderById(driveId: drive.id, folderId: id)
+                .getSingleOrNull()) !=
+            null) {
+          missingParentIds.remove(id);
+        }
+      }
+      if(missingParentIds.isNotEmpty){
+        emit(SyncOrphansDetected());
+      }
       emit(SyncEmpty());
       return;
     }
@@ -196,7 +211,6 @@ class SyncCubit extends Cubit<SyncState> {
       await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
     });
 
-    
     // If there are more results to process, recurse.
     await _syncDrive(
       driveId,
@@ -492,6 +506,9 @@ class SyncCubit extends Cubit<SyncState> {
       if (parentPath != null) {
         await updateFolderTree(treeRoot, parentPath);
       } else {
+        if (!missingParentIds.contains(treeRoot.folder.parentFolderId)) {
+          missingParentIds.add(treeRoot.folder.parentFolderId!);
+        }
         print('Missing parent folder');
       }
     }
