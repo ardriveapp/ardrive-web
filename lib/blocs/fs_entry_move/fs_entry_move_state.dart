@@ -33,6 +33,17 @@ class FsEntryMoveFolderLoadSuccess extends FsEntryMoveState {
       [viewingRootFolder, viewingFolder, movingEntryId, isMovingFolder];
 }
 
+class FsEntryMoveNameConflict extends FsEntryMoveState {
+  final String name;
+  FsEntryMoveNameConflict({
+    required this.name,
+  }) : super(
+          isMovingFolder: true,
+        );
+  @override
+  List<Object> get props => [name];
+}
+
 class FolderEntryMoveInProgress extends FsEntryMoveState {
   FolderEntryMoveInProgress() : super(isMovingFolder: true);
 }
@@ -45,10 +56,6 @@ class FolderEntryMoveFailure extends FsEntryMoveState {
   FolderEntryMoveFailure() : super(isMovingFolder: true);
 }
 
-class FolderEntryMoveNameConflict extends FsEntryMoveState {
-  FolderEntryMoveNameConflict() : super(isMovingFolder: true);
-}
-
 class FolderEntryMoveWalletMismatch extends FsEntryMoveState {
   FolderEntryMoveWalletMismatch() : super(isMovingFolder: true);
 }
@@ -59,10 +66,6 @@ class FileEntryMoveInProgress extends FsEntryMoveState {
 
 class FileEntryMoveSuccess extends FsEntryMoveState {
   FileEntryMoveSuccess() : super(isMovingFolder: false);
-}
-
-class FileEntryMoveNameConflict extends FsEntryMoveState {
-  FileEntryMoveNameConflict() : super(isMovingFolder: false);
 }
 
 class FileEntryMoveFailure extends FsEntryMoveState {

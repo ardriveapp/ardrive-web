@@ -64,8 +64,7 @@ class FsEntryMoveForm extends StatelessWidget {
           } else if (state is FolderEntryMoveWalletMismatch ||
               state is FileEntryMoveWalletMismatch) {
             Navigator.pop(context);
-          } else if (state is FolderEntryMoveNameConflict ||
-              state is FileEntryMoveNameConflict) {
+          } else if (state is FsEntryMoveNameConflict) {
             Navigator.pop(context);
             Navigator.pop(context);
             showDialog(
@@ -80,6 +79,7 @@ class FsEntryMoveForm extends StatelessWidget {
                     children: [
                       Center(
                         child: Text(
+                          '${state.isMovingFolder ? 'Folder' : 'File'} with name ${state.name} already exists at move destination! '
                           'Please rename the ${state.isMovingFolder ? 'folder' : 'file'} you are moving.',
                         ),
                       ),

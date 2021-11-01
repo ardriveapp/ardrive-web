@@ -66,28 +66,19 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
             );
   }
 
-  Future<bool> isUniqueFolderName(String name) async {
-    final folder = await _driveDao
-        .folderById(driveId: driveId, folderId: folderId!)
-        .getSingle();
-// Check that the current folder does not already have a folder with the target file name.
+  Future<bool> entityNameExists({
+    required String name,
+    required String parentFolderId,
+  }) async {
     final foldersWithName = await _driveDao
         .foldersInFolderWithName(
-            driveId: driveId, parentFolderId: folder.parentFolderId, name: name)
+            driveId: driveId, parentFolderId: parentFolderId, name: name)
         .get();
-    return foldersWithName.isNotEmpty;
-  }
-
-  Future<bool> isUniqueFileName(String name) async {
-    final file =
-        await _driveDao.fileById(driveId: driveId, fileId: fileId!).getSingle();
-
-    // Check that the current folder does not already have a file with the target file name.
     final filesWithName = await _driveDao
         .filesInFolderWithName(
-            driveId: driveId, parentFolderId: file.parentFolderId, name: name)
+            driveId: driveId, parentFolderId: parentFolderId, name: name)
         .get();
-    return filesWithName.isNotEmpty;
+    return foldersWithName.isNotEmpty || filesWithName.isNotEmpty;
   }
 
   Future<void> submit() async {
@@ -109,15 +100,19 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
             .folderById(driveId: driveId, folderId: folderId!)
             .getSingle();
 
-        if (await isUniqueFolderName(folder.name)) {
-          emit(FolderEntryMoveNameConflict());
+        if (await entityNameExists(
+          name: folder.name,
+          parentFolderId: parentFolder!.id,
+        )) {
+          emit(FsEntryMoveNameConflict(name: folder.name));
           return;
         }
         await _driveDao.transaction(() async {
           folder = folder.copyWith(
-              parentFolderId: parentFolder!.id,
-              path: '${parentFolder.path}/${folder.name}',
-              lastUpdated: DateTime.now());
+            parentFolderId: parentFolder.id,
+            path: '${parentFolder.path}/${folder.name}',
+            lastUpdated: DateTime.now(),
+          );
 
           final folderEntity = folder.asEntity();
 
@@ -145,8 +140,11 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
             path: '${parentFolder.path}/${file.name}',
             lastUpdated: DateTime.now());
 
-        if (await isUniqueFileName(file.name)) {
-          emit(FileEntryMoveNameConflict());
+        if (await entityNameExists(
+          name: file.name,
+          parentFolderId: parentFolder.id,
+        )) {
+          emit(FsEntryMoveNameConflict(name: file.name));
           return;
         }
         await _driveDao.transaction(() async {
