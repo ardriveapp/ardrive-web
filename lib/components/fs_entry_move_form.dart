@@ -79,7 +79,7 @@ class FsEntryMoveForm extends StatelessWidget {
                     children: [
                       Center(
                         child: Text(
-                          '${state.isMovingFolder ? 'Folder' : 'File'} with name ${state.name} already exists at move destination! '
+                          'Entity with name ${state.name} already exists at move destination! '
                           'Please rename the ${state.isMovingFolder ? 'folder' : 'file'} you are moving.',
                         ),
                       ),
