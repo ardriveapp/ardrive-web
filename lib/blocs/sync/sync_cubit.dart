@@ -58,7 +58,7 @@ class SyncCubit extends Cubit<SyncState> {
         .then((value) => createSyncStream()));
   }
 
-  final List<String> missingParentIds = [];
+  final List<OrphanParent> missingParents = [];
 
   Future<void> startSync() async {
     try {
@@ -106,6 +106,7 @@ class SyncCubit extends Cubit<SyncState> {
             addError(error!);
           }));
       await Future.wait(driveSyncProcesses);
+      emit(SyncEmpty(orphanParents: missingParents));
 
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
@@ -160,18 +161,15 @@ class SyncCubit extends Cubit<SyncState> {
       ));
 
       //Finalize missing parent list
-      for (var id in missingParentIds) {
+      for (var parent in missingParents) {
         if ((await _driveDao
-                .folderById(driveId: drive.id, folderId: id)
+                .folderById(driveId: drive.id, folderId: parent.id)
                 .getSingleOrNull()) !=
             null) {
-          missingParentIds.remove(id);
+          missingParents.remove(parent);
         }
       }
-      if(missingParentIds.isNotEmpty){
-        emit(SyncOrphansDetected());
-      }
-      emit(SyncEmpty());
+
       return;
     }
 
@@ -506,8 +504,14 @@ class SyncCubit extends Cubit<SyncState> {
       if (parentPath != null) {
         await updateFolderTree(treeRoot, parentPath);
       } else {
-        if (!missingParentIds.contains(treeRoot.folder.parentFolderId)) {
-          missingParentIds.add(treeRoot.folder.parentFolderId!);
+        if (missingParents
+            .where((parent) => parent.id == treeRoot.folder.parentFolderId)
+            .isEmpty) {
+          final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+          missingParents.add(OrphanParent(
+              driveId: driveId,
+              id: treeRoot.folder.parentFolderId!,
+              parentFolderId: drive.rootFolderId));
         }
         print('Missing parent folder');
       }

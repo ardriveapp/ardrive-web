@@ -17,9 +17,22 @@ class SyncFailure extends SyncState {
   SyncFailure({this.error, this.stackTrace});
 }
 
-class SyncEmpty extends SyncState {}
-
-class SyncOrphansDetected extends SyncState {}
-
+class SyncEmpty extends SyncState {
+  final List<OrphanParent> orphanParents;
+  SyncEmpty({required this.orphanParents});
+  @override
+  List<Object> get props => [orphanParents];
+}
 
 class SyncWalletMismatch extends SyncState {}
+
+class OrphanParent {
+  String id;
+  String parentFolderId;
+  String driveId;
+  OrphanParent({
+    required this.id,
+    required this.parentFolderId,
+    required this.driveId,
+  });
+}
