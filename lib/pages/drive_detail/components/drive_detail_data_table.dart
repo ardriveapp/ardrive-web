@@ -80,38 +80,46 @@ List<DataColumn> _buildTableColumns(BuildContext context) {
   ];
 }
 
+String trimName({required String name, required BuildContext context}) {
+  final width = MediaQuery.of(context).size.width;
+  final stringLength = width > 1000
+      ? 75
+      : width > 700
+          ? 50
+          : 35;
+  
+
+  return '';
+}
+
 DataRow _buildFolderRow({
   required BuildContext context,
   required FolderEntry folder,
   bool selected = false,
   required Function onPressed,
-}) =>
-    DataRow(
-      onSelectChanged: (_) => onPressed(),
-      selected: selected,
-      cells: [
-        DataCell(
-          Row(
-            children: [
-              Padding(
-                padding: const EdgeInsetsDirectional.only(end: 8.0),
-                child: const Icon(Icons.folder),
-              ),
-              Container(
-                width: fileNameWidth,
-                child: Text(
-                  folder.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
+}) {
+  return DataRow(
+    onSelectChanged: (_) => onPressed(),
+    selected: selected,
+    cells: [
+      DataCell(
+        Row(
+          children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 8.0),
+              child: const Icon(Icons.folder),
+            ),
+            Text(
+              folder.name,
+            ),
+          ],
         ),
-        DataCell(Text('-')),
-        DataCell(Text('-')),
-      ],
-    );
+      ),
+      DataCell(Text('-')),
+      DataCell(Text('-')),
+    ],
+  );
+}
 
 DataRow _buildFileRow({
   required BuildContext context,
