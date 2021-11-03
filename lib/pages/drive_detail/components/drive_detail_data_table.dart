@@ -124,14 +124,7 @@ DataRow _buildFileRow({
                 file.dataContentType,
               ),
             ),
-            Container(
-              width: MediaQuery.of(context).size.width / 1.7,
-              child: Text(
-                file.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+            Text(file.name),
           ],
         ),
       ),
