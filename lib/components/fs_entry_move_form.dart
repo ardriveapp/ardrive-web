@@ -139,17 +139,20 @@ class FsEntryMoveForm extends StatelessWidget {
                           Padding(
                             padding: const EdgeInsets.only(
                                 left: 16, right: 16, bottom: 8),
-                            child: TextButton.icon(
+                            child: TextButton(
                                 style: TextButton.styleFrom(
                                     textStyle:
                                         Theme.of(context).textTheme.subtitle2,
                                     padding: const EdgeInsets.all(16)),
-                                icon: const Icon(Icons.arrow_back),
-                                label: Text(
-                                    'Back to "${state.viewingFolder.folder!.name}" folder'),
                                 onPressed: () => context
                                     .read<FsEntryMoveCubit>()
-                                    .loadParentFolder()),
+                                    .loadParentFolder(),
+                                child: ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.arrow_back),
+                                  title: Text(
+                                      'Back to "${state.viewingFolder.folder!.name}" folder'),
+                                )),
                           ),
                         Expanded(
                           child: Padding(
