@@ -64,6 +64,35 @@ class FsEntryMoveForm extends StatelessWidget {
           } else if (state is FolderEntryMoveWalletMismatch ||
               state is FileEntryMoveWalletMismatch) {
             Navigator.pop(context);
+          } else if (state is FsEntryMoveNameConflict) {
+            Navigator.pop(context);
+            Navigator.pop(context);
+            showDialog(
+              context: context,
+              builder: (BuildContext context) => AppDialog(
+                dismissable: true,
+                title: 'Name Conflict',
+                content: SizedBox(
+                  width: kSmallDialogWidth,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Center(
+                        child: Text(
+                          'Entity with name ${state.name} already exists at move destination! '
+                          'Please rename the file or folder you are moving and try again.',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text('OK')),
+                ],
+              ),
+            );
           }
         },
         builder: (context, state) {
@@ -108,19 +137,21 @@ class FsEntryMoveForm extends StatelessWidget {
                         const SizedBox(height: 16),
                         if (!state.viewingRootFolder)
                           Padding(
-                            padding: const EdgeInsets.only(
-                                left: 16, right: 16, bottom: 8),
-                            child: TextButton.icon(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: TextButton(
                                 style: TextButton.styleFrom(
                                     textStyle:
                                         Theme.of(context).textTheme.subtitle2,
                                     padding: const EdgeInsets.all(16)),
-                                icon: const Icon(Icons.arrow_back),
-                                label: Text(
-                                    'Back to "${state.viewingFolder.folder!.name}" folder'),
                                 onPressed: () => context
                                     .read<FsEntryMoveCubit>()
-                                    .loadParentFolder()),
+                                    .loadParentFolder(),
+                                child: ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.arrow_back),
+                                  title: Text(
+                                      'Back to "${state.viewingFolder.folder!.name}" folder'),
+                                )),
                           ),
                         Expanded(
                           child: Padding(

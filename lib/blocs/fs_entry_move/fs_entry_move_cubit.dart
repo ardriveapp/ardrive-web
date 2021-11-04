@@ -66,6 +66,21 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
             );
   }
 
+  Future<bool> entityNameExists({
+    required String name,
+    required String parentFolderId,
+  }) async {
+    final foldersWithName = await _driveDao
+        .foldersInFolderWithName(
+            driveId: driveId, parentFolderId: parentFolderId, name: name)
+        .get();
+    final filesWithName = await _driveDao
+        .filesInFolderWithName(
+            driveId: driveId, parentFolderId: parentFolderId, name: name)
+        .get();
+    return foldersWithName.isNotEmpty || filesWithName.isNotEmpty;
+  }
+
   Future<void> submit() async {
     try {
       final state = this.state as FsEntryMoveFolderLoadSuccess;
@@ -81,15 +96,23 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
       }
       if (_isMovingFolder) {
         emit(FolderEntryMoveInProgress());
+        var folder = await _driveDao
+            .folderById(driveId: driveId, folderId: folderId!)
+            .getSingle();
 
+        if (await entityNameExists(
+          name: folder.name,
+          parentFolderId: parentFolder!.id,
+        )) {
+          emit(FsEntryMoveNameConflict(name: folder.name));
+          return;
+        }
         await _driveDao.transaction(() async {
-          var folder = await _driveDao
-              .folderById(driveId: driveId, folderId: folderId!)
-              .getSingle();
           folder = folder.copyWith(
-              parentFolderId: parentFolder!.id,
-              path: '${parentFolder.path}/${folder.name}',
-              lastUpdated: DateTime.now());
+            parentFolderId: parentFolder.id,
+            path: '${parentFolder.path}/${folder.name}',
+            lastUpdated: DateTime.now(),
+          );
 
           final folderEntity = folder.asEntity();
 
@@ -109,16 +132,22 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         emit(FolderEntryMoveSuccess());
       } else {
         emit(FileEntryMoveInProgress());
+        var file = await _driveDao
+            .fileById(driveId: driveId, fileId: fileId!)
+            .getSingle();
+        file = file.copyWith(
+            parentFolderId: parentFolder!.id,
+            path: '${parentFolder.path}/${file.name}',
+            lastUpdated: DateTime.now());
 
+        if (await entityNameExists(
+          name: file.name,
+          parentFolderId: parentFolder.id,
+        )) {
+          emit(FsEntryMoveNameConflict(name: file.name));
+          return;
+        }
         await _driveDao.transaction(() async {
-          var file = await _driveDao
-              .fileById(driveId: driveId, fileId: fileId!)
-              .getSingle();
-          file = file.copyWith(
-              parentFolderId: parentFolder!.id,
-              path: '${parentFolder.path}/${file.name}',
-              lastUpdated: DateTime.now());
-
           final fileKey =
               driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
 
