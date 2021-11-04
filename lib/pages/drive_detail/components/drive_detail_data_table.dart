@@ -1,7 +1,5 @@
 part of '../drive_detail_page.dart';
 
-final fileNameWidth = 700.0;
-
 Widget _buildDataTable(BuildContext context, DriveDetailLoadSuccess state) =>
     Scrollbar(
       child: ListView(
@@ -82,13 +80,15 @@ List<DataColumn> _buildTableColumns(BuildContext context) {
 
 String trimName({required String name, required BuildContext context}) {
   final width = MediaQuery.of(context).size.width;
-  final stringLength = width > 1000
-      ? 75
-      : width > 700
+  final stringLength = width > 1500
+      ? 100
+      : width > 1200
           ? 50
           : 35;
 
-  return name.substring(0, stringLength) + '.....' + name.split('.').last;
+  return name.length > stringLength
+      ? name.substring(0, stringLength) + '.....' + name.split('.').last
+      : name;
 }
 
 DataRow _buildFolderRow({
@@ -109,7 +109,7 @@ DataRow _buildFolderRow({
               child: const Icon(Icons.folder),
             ),
             Text(
-              folder.name,
+              trimName(name: folder.name, context: context),
             ),
           ],
         ),
@@ -140,13 +140,8 @@ DataRow _buildFileRow({
                 file.dataContentType,
               ),
             ),
-            Container(
-              width: fileNameWidth,
-              child: Text(
-                file.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+            Text(
+              trimName(name: file.name, context: context),
             ),
           ],
         ),
