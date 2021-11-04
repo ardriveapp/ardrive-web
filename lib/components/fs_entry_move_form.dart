@@ -137,8 +137,7 @@ class FsEntryMoveForm extends StatelessWidget {
                         const SizedBox(height: 16),
                         if (!state.viewingRootFolder)
                           Padding(
-                            padding: const EdgeInsets.only(
-                                left: 16, right: 16, bottom: 8),
+                            padding: const EdgeInsets.only(bottom: 8),
                             child: TextButton(
                                 style: TextButton.styleFrom(
                                     textStyle:
