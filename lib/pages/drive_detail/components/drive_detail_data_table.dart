@@ -87,9 +87,8 @@ String trimName({required String name, required BuildContext context}) {
       : width > 700
           ? 50
           : 35;
-  
 
-  return '';
+  return name.substring(0, stringLength) + '.....' + name.split('.').last;
 }
 
 DataRow _buildFolderRow({
