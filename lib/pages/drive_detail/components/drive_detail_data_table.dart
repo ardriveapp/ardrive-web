@@ -79,15 +79,20 @@ List<DataColumn> _buildTableColumns(BuildContext context) {
 }
 
 String trimName({required String name, required BuildContext context}) {
+  const endBuffer = 10;
   final width = MediaQuery.of(context).size.width;
-  final stringLength = width > 1500
-      ? 100
-      : width > 1200
+  // No better way to do this. Lerping is too gradual and causes overlap.
+  final stringLength = width > 1600
+      ? 75
+      : width > 1400
           ? 50
-          : 35;
-
+          : width > 1200
+              ? 35
+              : 30;
   return name.length > stringLength
-      ? name.substring(0, stringLength) + '.....' + name.split('.').last
+      ? name.substring(0, stringLength - endBuffer) +
+          '...' +
+          name.substring(name.length - endBuffer)
       : name;
 }
 

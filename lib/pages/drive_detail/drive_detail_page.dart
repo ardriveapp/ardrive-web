@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
@@ -47,17 +48,23 @@ class DriveDetailPage extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      state.currentDrive.name,
-                                      style:
-                                          Theme.of(context).textTheme.headline5,
-                                    ),
-                                    DriveDetailActionRow(),
-                                  ],
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(minWidth: 100),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          state.currentDrive.name,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headline5,
+                                        ),
+                                      ),
+                                      DriveDetailActionRow(),
+                                    ],
+                                  ),
                                 ),
                                 DriveDetailBreadcrumbRow(
                                   path: state.currentFolder.folder?.path ??
