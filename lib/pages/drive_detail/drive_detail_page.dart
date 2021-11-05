@@ -48,23 +48,24 @@ class DriveDetailPage extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                ConstrainedBox(
-                                  constraints: BoxConstraints(minWidth: 100),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Container(
+                                        width: 400,
                                         child: Text(
                                           state.currentDrive.name,
                                           style: Theme.of(context)
                                               .textTheme
                                               .headline5,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                      DriveDetailActionRow(),
-                                    ],
-                                  ),
+                                    ),
+                                    DriveDetailActionRow(),
+                                  ],
                                 ),
                                 DriveDetailBreadcrumbRow(
                                   path: state.currentFolder.folder?.path ??
