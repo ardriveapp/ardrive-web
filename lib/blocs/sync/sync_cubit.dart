@@ -74,6 +74,12 @@ class SyncCubit extends Cubit<SyncState> {
           return;
         }
 
+        if (_profileCubit.isOverlayOpen()) {
+          print('Overlay open, skipping sync...');
+          emit(SyncIdle());
+          return;
+        }
+
         if (await _profileCubit.logoutIfWalletMismatch()) {
           emit(SyncWalletMismatch());
           return;
