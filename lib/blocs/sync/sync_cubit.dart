@@ -465,6 +465,17 @@ class SyncCubit extends Cubit<SyncState> {
       }
     }
 
+    Future<void> addMissingFolder(String folderId) async {
+      if (missingParents.where((parent) => parent.id == folderId).isEmpty) {
+        final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+        missingParents.add(OrphanParent(
+          driveId: driveId,
+          id: folderId,
+          parentFolderId: drive.rootFolderId,
+        ));
+      }
+    }
+
     Future<void> updateFolderTree(FolderNode node, String parentPath) async {
       final folderId = node.folder.id;
       // If this is the root folder, we should not include its name as part of the path.
@@ -504,15 +515,7 @@ class SyncCubit extends Cubit<SyncState> {
       if (parentPath != null) {
         await updateFolderTree(treeRoot, parentPath);
       } else {
-        if (missingParents
-            .where((parent) => parent.id == treeRoot.folder.parentFolderId)
-            .isEmpty) {
-          final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-          missingParents.add(OrphanParent(
-              driveId: driveId,
-              id: treeRoot.folder.parentFolderId!,
-              parentFolderId: drive.rootFolderId));
-        }
+        await addMissingFolder(treeRoot.folder.parentFolderId!);
         print('Missing parent folder');
       }
     }
@@ -537,6 +540,7 @@ class SyncCubit extends Cubit<SyncState> {
               driveId: staleOrphanFile.driveId,
               path: Value(filePath)));
         } else {
+          await addMissingFolder(staleOrphanFile.parentFolderId.value);
           print(
               'Stale orphan file ${staleOrphanFile.id.value} parent folder ${staleOrphanFile.parentFolderId.value} could not be found.');
         }
