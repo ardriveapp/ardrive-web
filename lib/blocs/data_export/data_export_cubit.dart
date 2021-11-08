@@ -34,11 +34,13 @@ class DataExportCubit extends Cubit<DataExportState> {
     final export = <List<String>>[
       [
         'File Id',
-        'Name',
-        'Parent Folder Id',
-        'Data Transaction Id',
-        'Metadata Transaction Id',
+        'File Name',
+        'Parent Folder ID',
+        'Data Transaction ID',
+        'Metadata Transaction ID',
+        'File Size',
         'Date Created',
+        'Last Modified',
         'Direct Download Link'
       ]
     ];
@@ -51,7 +53,9 @@ class DataExportCubit extends Cubit<DataExportState> {
         ..add(file.parentFolderId)
         ..add(file.dataTx.id)
         ..add(file.metadataTx.id)
-        ..add(file.dateCreated.toIso8601String())
+        ..add(file.size.toString())
+        ..add(file.dateCreated.toString())
+        ..add(file.lastModifiedDate.toIso8601String())
         ..add(Uri.parse(
                 _arweave.client.api.gatewayUrl.origin + '/${file.dataTx.id}')
             .toString());
