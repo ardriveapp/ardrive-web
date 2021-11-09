@@ -84,6 +84,8 @@ class _AppShellState extends State<AppShell> {
                   if (state is SyncEmpty && state.orphanParents.isNotEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
+                        duration: Duration(seconds: 30),
+                        width: 500,
                         content: Text(
                           'Orphaned Files Detected.',
                         ),
