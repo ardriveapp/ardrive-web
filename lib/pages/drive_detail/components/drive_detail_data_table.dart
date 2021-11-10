@@ -82,13 +82,20 @@ String trimName({required String name, required BuildContext context}) {
   const endBuffer = 8;
   final width = MediaQuery.of(context).size.width;
   // No better way to do this. Lerping is too gradual and causes overlap.
-  final stringLength = width > 1600
+  var stringLength = width > 1600
       ? 75
       : width > 1400
           ? 50
           : width > 1200
               ? 35
-              : 30;
+              : 20;
+
+  // If info sidebar is closed increase the width
+  final driveState = context.read<DriveDetailCubit>().state;
+  if (driveState is DriveDetailLoadSuccess &&
+      !driveState.showSelectedItemDetails) {
+    stringLength += 20;
+  }
   return name.length > stringLength
       ? name.substring(0, stringLength - endBuffer) +
           ' ... ' +
