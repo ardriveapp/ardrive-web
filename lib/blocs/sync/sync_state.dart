@@ -18,7 +18,7 @@ class SyncFailure extends SyncState {
 }
 
 class SyncEmpty extends SyncState {
-  final List<OrphanParent> orphanParents;
+  final Map<String, OrphanParent> orphanParents;
   SyncEmpty({required this.orphanParents});
   @override
   List<Object> get props => [orphanParents];
@@ -30,9 +30,11 @@ class OrphanParent {
   String id;
   String parentFolderId;
   String driveId;
+  int orphanCount;
   OrphanParent({
     required this.id,
     required this.parentFolderId,
     required this.driveId,
+    required this.orphanCount,
   });
 }

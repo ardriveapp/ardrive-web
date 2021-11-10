@@ -10,6 +10,7 @@ import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 
@@ -58,7 +59,7 @@ class SyncCubit extends Cubit<SyncState> {
         .then((value) => createSyncStream()));
   }
 
-  final List<OrphanParent> missingParents = [];
+  final Map<String, OrphanParent> missingParents = {};
   final List<String> missingRootFolders = [];
 
   Future<void> startSync() async {
@@ -162,13 +163,13 @@ class SyncCubit extends Cubit<SyncState> {
       ));
 
       //Finalize missing parent list
-      for (var parent in missingParents) {
+      for (var parent in missingParents.values) {
         final folderExists = (await _driveDao
                 .folderById(driveId: drive.id, folderId: parent.id)
                 .getSingleOrNull()) !=
             null;
         if (folderExists) {
-          missingParents.remove(parent);
+          missingParents.remove(parent.id);
         }
       }
       final rootFolderExists = await _driveDao
@@ -476,13 +477,20 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     Future<void> addMissingFolder(String folderId) async {
-      if (missingParents.where((parent) => parent.id == folderId).isEmpty) {
+      if (missingParents.containsKey(folderId)) {
+        missingParents[folderId]!.orphanCount++;
+      } else {
         final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-        missingParents.add(OrphanParent(
-          driveId: driveId,
-          id: folderId,
-          parentFolderId: drive.rootFolderId,
-        ));
+
+        missingParents.putIfAbsent(
+          folderId,
+          () => (OrphanParent(
+            driveId: driveId,
+            id: folderId,
+            parentFolderId: drive.rootFolderId,
+            orphanCount: 0,
+          )),
+        );
       }
     }
 

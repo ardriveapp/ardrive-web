@@ -92,7 +92,7 @@ class _AppShellState extends State<AppShell> {
                         action: SnackBarAction(
                           label: 'RECREATE FOLDERS',
                           onPressed: () {
-                            state.orphanParents.forEach((parent) {
+                            state.orphanParents.values.forEach((parent) {
                               unawaited(
                                 promptToReCreateFolder(
                                   context,
