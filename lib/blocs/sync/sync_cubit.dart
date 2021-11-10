@@ -59,6 +59,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   final List<OrphanParent> missingParents = [];
+  final List<String> missingRootFolders = [];
 
   Future<void> startSync() async {
     try {
@@ -162,12 +163,21 @@ class SyncCubit extends Cubit<SyncState> {
 
       //Finalize missing parent list
       for (var parent in missingParents) {
-        if ((await _driveDao
+        final folderExists = (await _driveDao
                 .folderById(driveId: drive.id, folderId: parent.id)
                 .getSingleOrNull()) !=
-            null) {
+            null;
+        if (folderExists) {
           missingParents.remove(parent);
         }
+      }
+      final rootFolderExists = await _driveDao
+              .folderById(driveId: drive.id, folderId: drive.rootFolderId)
+              .getSingleOrNull() !=
+          null;
+      if (!rootFolderExists) {
+        missingRootFolders.add(drive.rootFolderId);
+        print(missingRootFolders);
       }
 
       return;
@@ -541,8 +551,8 @@ class SyncCubit extends Cubit<SyncState> {
               path: Value(filePath)));
         } else {
           await addMissingFolder(staleOrphanFile.parentFolderId.value);
-          print(
-              'Stale orphan file ${staleOrphanFile.id.value} parent folder ${staleOrphanFile.parentFolderId.value} could not be found.');
+          // print(
+          //     'Stale orphan file ${staleOrphanFile.id.value} parent folder ${staleOrphanFile.parentFolderId.value} could not be found.');
         }
       }
     }
