@@ -33,6 +33,17 @@ class FsEntryMoveFolderLoadSuccess extends FsEntryMoveState {
       [viewingRootFolder, viewingFolder, movingEntryId, isMovingFolder];
 }
 
+class FsEntryMoveNameConflict extends FsEntryMoveState {
+  final String name;
+  FsEntryMoveNameConflict({
+    required this.name,
+  }) : super(
+          isMovingFolder: true,
+        );
+  @override
+  List<Object> get props => [name];
+}
+
 class FolderEntryMoveInProgress extends FsEntryMoveState {
   FolderEntryMoveInProgress() : super(isMovingFolder: true);
 }

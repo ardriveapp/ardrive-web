@@ -15,10 +15,13 @@ Future<void> promptToUploadFile(
   required String folderId,
   bool allowSelectMultiple = false,
 }) async {
+  final profleCubit = context.read<ProfileCubit>();
+  profleCubit.setOverlayOpen(true);
   final selectedFiles = allowSelectMultiple
       ? await file_selector.openFiles()
-      : [await file_selector.openFile()].where((file) => file != null) as List<file_selector.XFile>;
-
+      : [await file_selector.openFile()].where((file) => file != null)
+          as List<file_selector.XFile>;
+  profleCubit.setOverlayOpen(false);
   if (selectedFiles.isEmpty) {
     return;
   }
@@ -30,9 +33,9 @@ Future<void> promptToUploadFile(
         driveId: driveId,
         folderId: folderId,
         files: selectedFiles,
+        profileCubit: profleCubit,
         arweave: context.read<ArweaveService>(),
         pst: context.read<PstService>(),
-        profileCubit: context.read<ProfileCubit>(),
         driveDao: context.read<DriveDao>(),
       ),
       child: UploadForm(),
