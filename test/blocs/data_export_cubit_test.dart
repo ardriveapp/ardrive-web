@@ -3,6 +3,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
+import 'package:bloc_test/bloc_test.dart';
 import 'package:moor/moor.dart';
 import 'package:test/test.dart';
 
@@ -26,14 +27,12 @@ void main() {
     const emptyNestedFolderIdPrefix = 'empty-nested-folder-id';
     const emptyNestedFolderCount = 5;
 
+    const testGatewayURL = 'https://arweave.net';
     setUp(() async {
       db = getTestDb();
       driveDao = db.driveDao;
-      final configService = ConfigService();
-      final config = await configService.getConfig();
 
-      arweave = ArweaveService(
-          Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
+      arweave = ArweaveService(Arweave(gatewayUrl: Uri.parse(testGatewayURL)));
 
       // Setup mock drive.
       await db.batch((batch) {
@@ -118,18 +117,24 @@ void main() {
           ],
         );
       });
+      dataExportCubit = DataExportCubit(
+        arweave: arweave,
+        driveDao: driveDao,
+        driveId: driveId,
+      );
     });
 
     tearDown(() async {
       await db.close();
     });
-
-    test('csv contains the correct data', () async {
-      dataExportCubit = DataExportCubit(
-        arweave: arweave,
-        driveDao: driveDao,
-        driveId: 'drive-id',
-      );
-    });
+    blocTest<DataExportCubit, DataExportState>(
+      'export drive contents as csv file',
+      build: () => dataExportCubit,
+      expect: () => [TypeMatcher<DataExportSuccess>()],
+      verify: (cubit) async {
+        final state = cubit.state as DataExportSuccess;
+        print(await state.file.readAsString());
+      },
+    );
   });
 }

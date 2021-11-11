@@ -25,9 +25,7 @@ class DataExportCubit extends Cubit<DataExportState> {
     exportData();
   }
 
-  void exportData() async {
-    emit(DataExportInProgress());
-
+  Future<String> getFilesInDriveAsCSV(String driveId) async {
     final files = await _driveDao
         .filesInDriveithRevisionTransactions(driveId: driveId)
         .get();
@@ -61,8 +59,14 @@ class DataExportCubit extends Cubit<DataExportState> {
             .toString());
       export.add(fileContent);
     }
-    final csv = const ListToCsvConverter().convert(export);
-    final dataBytes = utf8.encode(csv) as Uint8List;
+    return const ListToCsvConverter().convert(export);
+  }
+
+  void exportData() async {
+    emit(DataExportInProgress());
+
+    final dataBytes =
+        utf8.encode((await getFilesInDriveAsCSV(driveId))) as Uint8List;
     emit(DataExportSuccess(
       file: XFile.fromData(
         dataBytes,
