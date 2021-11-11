@@ -114,7 +114,7 @@ filesInFolderAtPathWithRevisionTransactions ($order = '') AS FileWithLatestRevis
     WHERE driveId = :driveId AND path LIKE :path || '/%' AND path NOT LIKE :path || '/%/%'
     ORDER BY $order;
 
-filesInDriveithRevisionTransactions ($order = '') AS FileWithLatestRevisionTransactions:
+filesInDriveWithRevisionTransactions ($order = '') AS FileWithLatestRevisionTransactions:
 SELECT file_entries.*, metadataTx.**, dataTx.** FROM file_entries
 JOIN network_transactions AS metadataTx ON metadataTx.id = (
     SELECT metadataTxId FROM file_revisions AS rev

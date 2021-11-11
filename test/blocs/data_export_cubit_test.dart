@@ -4,6 +4,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:csv/csv.dart';
 import 'package:moor/moor.dart';
 import 'package:test/test.dart';
 
@@ -90,7 +91,7 @@ void main() {
                   parentFolderId: rootFolderId,
                   name: fileId,
                   path: '/$fileId',
-                  dataTxId: '',
+                  dataTxId: fileId + 'Data',
                   size: 500,
                   lastModifiedDate: DateTime.now(),
                   dataContentType: Value(''),
@@ -107,10 +108,96 @@ void main() {
                   parentFolderId: nestedFolderId,
                   name: fileId,
                   path: '/$nestedFolderId/$fileId',
-                  dataTxId: '',
+                  dataTxId: fileId + 'Data',
                   size: 500,
                   lastModifiedDate: DateTime.now(),
                   dataContentType: Value(''),
+                );
+              },
+            )..shuffle(),
+          ],
+        );
+        batch.insertAll(
+          db.fileRevisions,
+          [
+            ...List.generate(
+              rootFolderFileCount,
+              (i) {
+                final fileId = '$rootFolderId$i';
+                return FileRevisionsCompanion.insert(
+                  fileId: fileId,
+                  driveId: driveId,
+                  parentFolderId: rootFolderId,
+                  name: fileId,
+                  metadataTxId: fileId + 'Meta',
+                  action: RevisionAction.create,
+                  dataTxId: fileId + 'Data',
+                  size: 500,
+                  lastModifiedDate: DateTime.now(),
+                  dataContentType: Value(''),
+                );
+              },
+            )..shuffle(),
+            ...List.generate(
+              nestedFolderFileCount,
+              (i) {
+                final fileId = '$nestedFolderId$i';
+                return FileRevisionsCompanion.insert(
+                  fileId: fileId,
+                  driveId: driveId,
+                  parentFolderId: nestedFolderId,
+                  name: fileId,
+                  dataTxId: fileId + 'Meta',
+                  metadataTxId: fileId + 'Data',
+                  action: RevisionAction.create,
+                  size: 500,
+                  lastModifiedDate: DateTime.now(),
+                  dataContentType: Value(''),
+                );
+              },
+            )..shuffle(),
+          ],
+        );
+        batch.insertAll(
+          db.networkTransactions,
+          [
+            ...List.generate(
+              rootFolderFileCount,
+              (i) {
+                final fileId = '$rootFolderId$i';
+                return NetworkTransactionsCompanion.insert(
+                  id: fileId + 'Meta',
+                  status: Value(TransactionStatus.confirmed),
+                );
+              },
+            )..shuffle(),
+            ...List.generate(
+              rootFolderFileCount,
+              (i) {
+                final fileId = '$rootFolderId$i';
+                return NetworkTransactionsCompanion.insert(
+                  id: fileId + 'Data',
+                  status: Value(TransactionStatus.confirmed),
+                );
+              },
+            )..shuffle(),
+            ...List.generate(
+              nestedFolderFileCount,
+              (i) {
+                final fileId = '$nestedFolderId$i';
+                return NetworkTransactionsCompanion.insert(
+                  id: fileId + 'Meta',
+                  status: Value(TransactionStatus.confirmed),
+                );
+              },
+            )..shuffle(),
+            ...List.generate(
+              nestedFolderFileCount,
+              (i) {
+                final fileId = '$nestedFolderId$i';
+                return NetworkTransactionsCompanion.insert(
+                  id: fileId + 'Data',
+                  status: Value(TransactionStatus.confirmed),
                 );
               },
             )..shuffle(),
@@ -128,13 +215,15 @@ void main() {
       await db.close();
     });
     blocTest<DataExportCubit, DataExportState>(
-      'export drive contents as csv file',
-      build: () => dataExportCubit,
-      expect: () => [TypeMatcher<DataExportSuccess>()],
-      verify: (cubit) async {
-        final state = cubit.state as DataExportSuccess;
-        print(await state.file.readAsString());
-      },
-    );
+        'export drive contents as csv file exports the correct number of files',
+        build: () => dataExportCubit,
+        expect: () => [TypeMatcher<DataExportSuccess>()],
+        verify: (cubit) async {
+          final state = cubit.state as DataExportSuccess;
+          expect(
+            CsvToListConverter().convert(await state.file.readAsString()),
+            hasLength(11),
+          );
+        });
   });
 }
