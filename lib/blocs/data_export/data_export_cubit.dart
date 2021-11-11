@@ -27,7 +27,7 @@ class DataExportCubit extends Cubit<DataExportState> {
 
   Future<String> getFilesInDriveAsCSV(String driveId) async {
     final files = await _driveDao
-        .filesInDriveithRevisionTransactions(driveId: driveId)
+        .filesInDriveWithRevisionTransactions(driveId: driveId)
         .get();
     final export = <List<String>>[
       [

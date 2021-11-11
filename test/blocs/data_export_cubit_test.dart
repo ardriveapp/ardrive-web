@@ -222,7 +222,7 @@ void main() {
           final state = cubit.state as DataExportSuccess;
           expect(
             CsvToListConverter().convert(await state.file.readAsString()),
-            hasLength(11),
+            hasLength(rootFolderFileCount + nestedFolderFileCount + 1),
           );
         });
   });
