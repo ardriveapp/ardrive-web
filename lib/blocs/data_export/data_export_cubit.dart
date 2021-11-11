@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:csv/csv.dart';
 import 'package:equatable/equatable.dart';
@@ -13,17 +12,15 @@ part 'data_export_state.dart';
 class DataExportCubit extends Cubit<DataExportState> {
   final String driveId;
   final DriveDao _driveDao;
-  final ArweaveService _arweave;
+  final String _gatewayURL;
 
   DataExportCubit({
     required this.driveId,
     required DriveDao driveDao,
-    required ArweaveService arweave,
+    required String gatewayURL,
   })  : _driveDao = driveDao,
-        _arweave = arweave,
-        super(DataExportStarting()) {
-    exportData();
-  }
+        _gatewayURL = gatewayURL,
+        super(DataExportInitial());
 
   Future<String> getFilesInDriveAsCSV(String driveId) async {
     final files = await _driveDao
@@ -54,15 +51,13 @@ class DataExportCubit extends Cubit<DataExportState> {
         ..add(file.size.toString())
         ..add(file.dateCreated.toString())
         ..add(file.lastModifiedDate.toIso8601String())
-        ..add(Uri.parse(
-                _arweave.client.api.gatewayUrl.origin + '/${file.dataTx.id}')
-            .toString());
+        ..add(Uri.parse(_gatewayURL + '/${file.dataTx.id}').toString());
       export.add(fileContent);
     }
     return const ListToCsvConverter().convert(export);
   }
 
-  void exportData() async {
+  Future<void> exportData() async {
     emit(DataExportInProgress());
 
     final dataBytes =

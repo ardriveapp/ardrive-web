@@ -7,7 +7,7 @@ abstract class DataExportState extends Equatable {
   List<Object> get props => [];
 }
 
-class DataExportStarting extends DataExportState {}
+class DataExportInitial extends DataExportState {}
 
 class DataExportInProgress extends DataExportState {
   DataExportInProgress();

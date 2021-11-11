@@ -19,11 +19,14 @@ Future<void> promptToExportCSVData({
     showDialog(
       context: context,
       builder: (_) => BlocProvider<DataExportCubit>(
-        create: (_) => DataExportCubit(
-          driveId: driveId,
-          driveDao: context.read<DriveDao>(),
-          arweave: context.read<ArweaveService>(),
-        ),
+        create: (_) {
+          return DataExportCubit(
+            driveId: driveId,
+            driveDao: context.read<DriveDao>(),
+            gatewayURL:
+                context.read<ArweaveService>().client.api.gatewayUrl.toString(),
+          )..exportData();
+        },
         child: FileDownloadDialog(),
       ),
     );
