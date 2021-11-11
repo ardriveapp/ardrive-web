@@ -12,17 +12,15 @@ import 'components.dart';
 
 Future<void> promptToReCreateFolder(
   BuildContext context, {
-  required String driveId,
-  required String parentFolderId,
-  required String folderId,
+  required OrphanParent orphanParent
 }) =>
     showDialog(
       context: context,
       builder: (_) => BlocProvider(
         create: (context) => OrphanFixerCubit(
-          driveId: driveId,
-          parentFolderId: parentFolderId,
-          folderId: folderId,
+          driveId: orphanParent.driveId,
+          parentFolderId: orphanParent.parentFolderId,
+          folderId: orphanParent.id,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),

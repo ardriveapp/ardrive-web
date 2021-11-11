@@ -96,9 +96,7 @@ class _AppShellState extends State<AppShell> {
                               unawaited(
                                 promptToReCreateFolder(
                                   context,
-                                  driveId: parent.driveId,
-                                  parentFolderId: parent.parentFolderId,
-                                  folderId: parent.id,
+                                  orphanParent: parent,
                                 ),
                               );
                             });
