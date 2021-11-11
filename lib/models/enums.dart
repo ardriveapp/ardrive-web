@@ -10,3 +10,8 @@ class TransactionStatus {
   static const confirmed = 'confirmed';
   static const failed = 'failed';
 }
+
+enum OrphanType {
+  file,
+  folder,
+}

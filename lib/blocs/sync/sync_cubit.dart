@@ -60,7 +60,6 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   final Map<String, OrphanParent> missingParents = {};
-  final List<String> missingRootFolders = [];
 
   Future<void> startSync() async {
     try {
@@ -183,8 +182,15 @@ class SyncCubit extends Cubit<SyncState> {
               .getSingleOrNull() !=
           null;
       if (!rootFolderExists) {
-        missingRootFolders.add(drive.rootFolderId);
-        print(missingRootFolders);
+        if (missingParents.containsKey(drive.rootFolderId)) {
+          missingParents[drive.rootFolderId]!.parentFolderId = null;
+        } else {
+          missingParents[drive.rootFolderId] = OrphanParent(
+            id: drive.rootFolderId,
+            driveId: driveId,
+            orphans: [],
+          );
+        }
       }
 
       return;
@@ -482,9 +488,9 @@ class SyncCubit extends Cubit<SyncState> {
       }
     }
 
-    Future<void> addMissingFolder(String folderId) async {
+    Future<void> addMissingFolder(String folderId, Orphan orphan) async {
       if (missingParents.containsKey(folderId)) {
-        missingParents[folderId]!.orphanCount++;
+        missingParents[folderId]!.orphans.add(orphan);
       } else {
         final drive = await _driveDao.driveById(driveId: driveId).getSingle();
 
@@ -494,7 +500,7 @@ class SyncCubit extends Cubit<SyncState> {
             driveId: driveId,
             id: folderId,
             parentFolderId: drive.rootFolderId,
-            orphanCount: 0,
+            orphans: [orphan],
           )),
         );
       }
@@ -539,8 +545,14 @@ class SyncCubit extends Cubit<SyncState> {
       if (parentPath != null) {
         await updateFolderTree(treeRoot, parentPath);
       } else {
-        await addMissingFolder(treeRoot.folder.parentFolderId!);
-        print('Missing parent folder');
+        await addMissingFolder(
+          treeRoot.folder.parentFolderId!,
+          Orphan(
+            id: treeRoot.folder.id,
+            name: treeRoot.folder.name,
+            type: OrphanType.folder,
+          ),
+        );
       }
     }
 
@@ -564,9 +576,14 @@ class SyncCubit extends Cubit<SyncState> {
               driveId: staleOrphanFile.driveId,
               path: Value(filePath)));
         } else {
-          await addMissingFolder(staleOrphanFile.parentFolderId.value);
-          // print(
-          //     'Stale orphan file ${staleOrphanFile.id.value} parent folder ${staleOrphanFile.parentFolderId.value} could not be found.');
+          await addMissingFolder(
+            staleOrphanFile.parentFolderId.value,
+            Orphan(
+              id: staleOrphanFile.id.value,
+              name: staleOrphanFile.name.value,
+              type: OrphanType.file,
+            ),
+          );
         }
       }
     }

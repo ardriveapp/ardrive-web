@@ -14,18 +14,14 @@ part 'orphan_fixer_state.dart';
 class OrphanFixerCubit extends Cubit<OrphanFixerState> {
   late FormGroup form;
 
-  final String driveId;
-  final String parentFolderId;
-  final String folderId;
+  final OrphanParent orphanParent;
   final ProfileCubit _profileCubit;
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
 
   OrphanFixerCubit({
-    required this.driveId,
-    required this.parentFolderId,
-    required this.folderId,
+    required this.orphanParent,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
     required DriveDao driveDao,
@@ -64,10 +60,14 @@ class OrphanFixerCubit extends Cubit<OrphanFixerState> {
       emit(OrphanFixerInProgress());
 
       await _driveDao.transaction(() async {
-        final targetDrive =
-            await _driveDao.driveById(driveId: driveId).getSingle();
+        final targetDrive = await _driveDao
+            .driveById(driveId: orphanParent.driveId)
+            .getSingle();
         final targetFolder = await _driveDao
-            .folderById(driveId: driveId, folderId: parentFolderId)
+            .folderById(
+              driveId: orphanParent.driveId,
+              folderId: orphanParent.parentFolderId!,
+            )
             .getSingle();
 
         final driveKey = targetDrive.isPrivate
@@ -76,7 +76,7 @@ class OrphanFixerCubit extends Cubit<OrphanFixerState> {
             : null;
 
         final newFolderId = await _driveDao.createFolderWithId(
-          id: folderId,
+          id: orphanParent.id,
           driveId: targetFolder.driveId,
           parentFolderId: targetFolder.id,
           folderName: folderName,
@@ -115,7 +115,10 @@ class OrphanFixerCubit extends Cubit<OrphanFixerState> {
     // Check that the parent folder does not already have a folder with the input name.
     final foldersWithName = await _driveDao
         .foldersInFolderWithName(
-            driveId: driveId, parentFolderId: parentFolderId, name: folderName)
+          driveId: orphanParent.driveId,
+          parentFolderId: orphanParent.parentFolderId,
+          name: folderName,
+        )
         .get();
     final nameAlreadyExists = foldersWithName.isNotEmpty;
 

@@ -7,3 +7,5 @@ export 'file_entry.dart';
 export 'file_revision.dart';
 export 'folder_entry.dart';
 export 'folder_revision.dart';
+export 'orphan_parent.dart';
+export 'orphan.dart';

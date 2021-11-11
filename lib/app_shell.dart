@@ -1,4 +1,4 @@
-import 'package:ardrive/components/orphan_fixer_form.dart';
+import 'package:ardrive/components/fixer_form.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

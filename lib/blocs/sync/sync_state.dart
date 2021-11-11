@@ -25,16 +25,3 @@ class SyncEmpty extends SyncState {
 }
 
 class SyncWalletMismatch extends SyncState {}
-
-class OrphanParent {
-  String id;
-  String parentFolderId;
-  String driveId;
-  int orphanCount;
-  OrphanParent({
-    required this.id,
-    required this.parentFolderId,
-    required this.driveId,
-    required this.orphanCount,
-  });
-}

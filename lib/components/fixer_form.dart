@@ -1,5 +1,4 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/orphan_fixer/orphan_fixer_cubit.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -10,17 +9,14 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
 
-Future<void> promptToReCreateFolder(
-  BuildContext context, {
-  required OrphanParent orphanParent
-}) =>
-    showDialog(
+Future<void> promptToReCreateFolder(BuildContext context,
+    {required OrphanParent orphanParent}) {
+  if (orphanParent.parentFolderId != null) {
+    return showDialog(
       context: context,
       builder: (_) => BlocProvider(
         create: (context) => OrphanFixerCubit(
-          driveId: orphanParent.driveId,
-          parentFolderId: orphanParent.parentFolderId,
-          folderId: orphanParent.id,
+          orphanParent: orphanParent,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
@@ -28,6 +24,21 @@ Future<void> promptToReCreateFolder(
         child: OrphanFixerForm(),
       ),
     );
+  } else {
+    return showDialog(
+      context: context,
+      builder: (_) => BlocProvider(
+        create: (context) => RootFolderFixerCubit(
+          orphanParent: orphanParent,
+          profileCubit: context.read<ProfileCubit>(),
+          arweave: context.read<ArweaveService>(),
+          driveDao: context.read<DriveDao>(),
+        ),
+        child: RootFolderFixerForm(),
+      ),
+    );
+  }
+}
 
 class OrphanFixerForm extends StatelessWidget {
   @override
@@ -65,6 +76,39 @@ class OrphanFixerForm extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () => context.read<OrphanFixerCubit>().submit(),
+              child: Text('CREATE'),
+            ),
+          ],
+        ),
+      );
+}
+
+class RootFolderFixerForm extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) =>
+      BlocConsumer<RootFolderFixerCubit, RootFolderFixerState>(
+        listener: (context, state) {
+          if (state is RootFolderFixerInProgress) {
+            showProgressDialog(context, 'RECREATING ROOT FOLDER...');
+          } else if (state is RootFolderFixerSuccess) {
+            Navigator.pop(context);
+            Navigator.pop(context);
+          } else if (state is RootFolderFixerWalletMismatch) {
+            Navigator.pop(context);
+          }
+        },
+        builder: (context, state) => AppDialog(
+          title: 'RECREATE ROOT FOLDER',
+          content: SizedBox(
+            width: kMediumDialogWidth,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: Text('CANCEL'),
+            ),
+            ElevatedButton(
+              onPressed: () => context.read<RootFolderFixerCubit>().submit(),
               child: Text('CREATE'),
             ),
           ],
