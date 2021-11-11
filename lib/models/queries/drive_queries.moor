@@ -39,10 +39,16 @@ foldersInFolder ($order = ''):
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId
     ORDER BY $order;
+
 foldersInFolderAtPath ($order = ''):
     SELECT * FROM folder_entries
-    WHERE driveId = :driveId AND path LIKE :path || '/%' AND path NOT LIKE :path || '/%/%'
+    WHERE parentFolderId IN (
+        SELECT id FROM folder_entries
+        WHERE driveId = :driveId AND path = :path 
+        LIMIT 1
+    ) 
     ORDER BY $order;
+
 foldersInFolderWithName:
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;
