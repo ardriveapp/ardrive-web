@@ -128,6 +128,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         // Do not prompt the user to attach an unfound drive if they are logging out.
                         final profileCubit = context.read<ProfileCubit>();
                         if (profileCubit.state is ProfileLoggingOut) {
+                          clearState();
                           return;
                         }
 
@@ -221,6 +222,16 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     sharedFileId = path.sharedFileId;
     sharedFileKey = path.sharedFileKey;
     sharedRawFileKey = path.sharedRawFileKey;
+  }
+
+  void clearState() {
+    signingIn = true;
+    driveId = null;
+    driveName = null;
+    driveFolderId = null;
+    sharedFileId = null;
+    sharedFileKey = null;
+    sharedRawFileKey = null;
   }
 }
 

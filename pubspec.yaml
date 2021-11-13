@@ -13,7 +13,7 @@ publish_to: 'none'
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.2.0
+version: 1.2.5
 
 environment:
   sdk: '>=2.12.0 <3.0.0'
@@ -29,7 +29,7 @@ dependencies:
       url: https://github.com/ardriveapp/arweave-dart
       ref: fbd54e119b7e0357bd688a91aa49532c520e5b3a
   cryptography: ^2.0.1
-  flutter_bloc: ^7.0.1
+  flutter_bloc: ^8.0.0-dev.2
   flutter_portal: ^0.4.0
   file_selector: ^0.8.2
   file_selector_web: ^0.8.1
@@ -38,7 +38,7 @@ dependencies:
   google_fonts: ^2.1.0
   intersperse: ^2.0.0
   intl: ^0.17.0
-  json_annotation: ^4.0.1
+  json_annotation: ^4.1.0
   mime: ^1.0.0
   moor: ^4.4.1
   path_provider: ^2.0.2
@@ -49,7 +49,7 @@ dependencies:
   url_launcher: ^6.0.6
   uuid: ^3.0.4
   http_client: ^1.5.1
-  flutter_dropzone: ^2.0.1
+  flutter_dropzone: ^2.1.0
   responsive_builder: ^0.4.1
   package_info_plus: ^1.0.3
   js: ^0.6.3
@@ -62,11 +62,11 @@ dev_dependencies:
   flutter_driver:
     sdk: flutter
   test: ^1.16.8
-  bloc_test: ^8.0.2
+  bloc_test: ^9.0.0-dev.3
   build_runner: ^2.0.4
   moor_generator: ^4.4.1
-  mocktail: ^0.1.4
-  json_serializable: ^4.1.3
+  mocktail: ^0.2.0
+  json_serializable: ^4.1.0
 
 dependency_overrides:
   meta: 1.7.0
