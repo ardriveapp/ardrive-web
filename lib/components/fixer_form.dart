@@ -58,15 +58,23 @@ class OrphanFixerForm extends StatelessWidget {
           title: 'RECREATE FOLDER',
           content: SizedBox(
             width: kMediumDialogWidth,
-            child: ReactiveForm(
-              formGroup: context.watch<OrphanFixerCubit>().form,
-              child: ReactiveTextField(
-                formControlName: 'name',
-                autofocus: true,
-                decoration: const InputDecoration(labelText: 'Folder name'),
-                showErrors: (control) => control.dirty && control.invalid,
-                validationMessages: (_) => kValidationMessages,
-              ),
+            child: Column(
+              children: [
+                Text(
+                  '${context.read<OrphanFixerCubit>().orphanParent.orphans.length} orphans detected'
+                  ' for missing folder with ID ${context.read<OrphanFixerCubit>().orphanParent.parentFolderId}',
+                ),
+                ReactiveForm(
+                  formGroup: context.watch<OrphanFixerCubit>().form,
+                  child: ReactiveTextField(
+                    formControlName: 'name',
+                    autofocus: true,
+                    decoration: const InputDecoration(labelText: 'Folder name'),
+                    showErrors: (control) => control.dirty && control.invalid,
+                    validationMessages: (_) => kValidationMessages,
+                  ),
+                ),
+              ],
             ),
           ),
           actions: [

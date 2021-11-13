@@ -82,7 +82,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
             : null,
       );
 
-      // TODO: Revert back to using data bundles when the api is stable again.
+      // TODO: Revert back to using data bundles when the api is stable again.`
       final driveTx = await _arweave.prepareEntityTx(
         drive,
         profile.wallet,

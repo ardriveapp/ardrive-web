@@ -111,6 +111,20 @@ class AppDrawer extends StatelessWidget {
                       ],
                     ),
                   ),
+                  BlocBuilder<SyncCubit, SyncState>(
+                      builder: (context, syncState) {
+                    final cubit = context.read<SyncCubit>();
+                    return Column(
+                      children: [
+                        if (cubit.missingParents.isNotEmpty)
+                          for (var missingParent in cubit.missingParents.values)
+                            ListTile(
+                              title: Text('Orphaned Files Found'),
+                              subtitle: Text('Folder ID: ${missingParent.id}'),
+                            )
+                      ],
+                    );
+                  }),
                   FutureBuilder(
                     future: PackageInfo.fromPlatform(),
                     builder: (BuildContext context,
