@@ -18,6 +18,8 @@ void main() {
     late DrivesCubit drivesBloc;
     late DriveAttachCubit driveAttachCubit;
 
+    late DriveEntity driveEntity;
+
     const validDriveId = 'valid-drive-id';
     const validDriveName = 'valid-drive-name';
 
@@ -27,17 +29,25 @@ void main() {
       registerFallbackValue(SyncStatefake());
       registerFallbackValue(ProfileStatefake());
       registerFallbackValue(DrivesStatefake());
-      
+
       arweave = MockArweaveService();
       driveDao = MockDriveDao();
       syncBloc = MockSyncBloc();
       drivesBloc = MockDrivesCubit();
 
+      driveEntity = DriveEntity();
       when(() => arweave.getLatestDriveEntityWithId(validDriveId))
-          .thenAnswer((_) => Future.value(DriveEntity()));
+          .thenAnswer((_) => Future.value(driveEntity));
 
       when(() => arweave.getLatestDriveEntityWithId(notFoundDriveId))
           .thenAnswer((_) => Future.value(null));
+
+      when(
+        () => driveDao.writeDriveEntity(
+            name: validDriveName, entity: driveEntity),
+      ).thenAnswer((_) async {});
+
+      when(syncBloc.startSync).thenAnswer((_) async {});
 
       driveAttachCubit = DriveAttachCubit(
         arweave: arweave,
@@ -79,7 +89,7 @@ void main() {
       },
       expect: () => [
         DriveAttachInProgress(),
-        DriveAttachInitial(),
+        DriveAttachFailure(),
       ],
     );
 
