@@ -20,7 +20,7 @@ void main() {
     const rightPassword = 'right-password';
     const wrongPassword = 'wrong-password';
 
-    setUp(() {
+    setUp(() async {
       registerFallbackValue(ProfileStatefake());
 
       profileDao = MockProfileDao();
@@ -28,9 +28,13 @@ void main() {
       arweave = MockArweaveService();
 
       when(() => profileDao.loadDefaultProfile(rightPassword))
-          .thenAnswer((_) => Future.value());
+          .thenAnswer((_) => Future.value(MockProfileLoadDetails()));
       when(() => profileDao.loadDefaultProfile(wrongPassword))
           .thenThrow(ProfilePasswordIncorrectException());
+      when(() => profileCubit.unlockDefaultProfile(
+          rightPassword, ProfileType.JSON)).thenAnswer((_) async => {});
+      when(() => profileCubit.getDefaultProfile())
+          .thenAnswer((_) => Future.value(MockProfile()));
 
       profileUnlockCubit = ProfileUnlockCubit(
         profileCubit: profileCubit,
@@ -42,9 +46,9 @@ void main() {
     blocTest<ProfileUnlockCubit, ProfileUnlockState>(
       'loads user profile when right password is used',
       build: () => profileUnlockCubit,
-      act: (bloc) {
+      act: (bloc) async {
         bloc.form.value = {'password': rightPassword};
-        bloc.submit();
+        await bloc.submit();
       },
       verify: (bloc) => verify(() =>
           profileCubit.unlockDefaultProfile(rightPassword, ProfileType.JSON)),
@@ -53,7 +57,7 @@ void main() {
     blocTest<ProfileUnlockCubit, ProfileUnlockState>(
       'emits [] when submitted without valid form',
       build: () => profileUnlockCubit,
-      act: (bloc) => bloc.submit(),
+      act: (bloc) async => await bloc.submit(),
       expect: () => [],
     );
 

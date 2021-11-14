@@ -35,20 +35,24 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
         _arweave = arweave,
         super(ProfileUnlockInitializing()) {
     () async {
-      final profile = await _profileDao.defaultProfile().getSingle();
-      _lastKnownWalletAddress = profile.id;
-      _profileType = profile.profileType == ProfileType.ArConnect.index
-          ? ProfileType.ArConnect
-          : ProfileType.JSON;
-      emit(ProfileUnlockInitial(username: profile.username));
+      await checkForWalletChange();
     }();
+  }
+
+  Future<void> checkForWalletChange() async {
+    final profile = await _profileCubit.getDefaultProfile();
+    _lastKnownWalletAddress = profile.id;
+    _profileType = profile.profileType == ProfileType.ArConnect.index
+        ? ProfileType.ArConnect
+        : ProfileType.JSON;
+    emit(ProfileUnlockInitial(username: profile.username));
   }
 
   final arconnect = ArConnectService();
 
   // Validate the user's password by loading and decrypting a private drive.
   Future<void> verifyPasswordArconnect(String password) async {
-    final profile = await _profileDao.defaultProfile().getSingle();
+    final profile = await _profileCubit.getDefaultProfile();
     final privateDrive = await _arweave.getAnyPrivateDriveEntity(
         profile.id, password, ArConnectWallet());
     if (privateDrive == null) {

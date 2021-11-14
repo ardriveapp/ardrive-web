@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
@@ -29,3 +30,14 @@ class MockProfileCubit extends MockCubit<ProfileState> implements ProfileCubit {
 }
 
 class MockUploadBloc extends MockCubit<UploadState> implements UploadCubit {}
+
+class MockProfileLoadDetails extends Mock implements ProfileLoadDetails {}
+
+class MockProfile extends Mock implements Profile {
+  @override
+  int get profileType => ProfileType.JSON.index;
+  @override
+  String get id => 'Test';
+  @override
+  String get username => 'Test';
+}
