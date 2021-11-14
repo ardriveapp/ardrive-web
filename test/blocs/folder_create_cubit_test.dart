@@ -18,24 +18,21 @@ void main() {
     late ProfileCubit profileCubit;
     late FolderCreateCubit folderCreateCubit;
 
+    const testGatewayURL = 'https://arweave.net';
+
     setUp(() async {
       registerFallbackValue(ProfileStatefake());
 
       db = getTestDb();
       driveDao = db.driveDao;
 
-      final configService = ConfigService();
-      final config = await configService.getConfig();
-
-      arweave = ArweaveService(
-          Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
+      arweave = ArweaveService(Arweave(gatewayUrl: Uri.parse(testGatewayURL)));
       profileCubit = MockProfileCubit();
 
       folderCreateCubit = FolderCreateCubit(
         arweave: arweave,
         driveDao: driveDao,
         profileCubit: profileCubit,
-        //TODO Mock or supply a driveId or parentFolderId
         driveId: '',
         parentFolderId: '',
       );
