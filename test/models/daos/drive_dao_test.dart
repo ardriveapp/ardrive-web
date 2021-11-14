@@ -1,7 +1,4 @@
-import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:moor/moor.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:test/test.dart';
 
 import '../../utils/utils.dart';
@@ -26,125 +23,86 @@ void main() {
       driveDao = db.driveDao;
 
       // Setup mock drive.
-      await db.batch((batch) {
-        batch.insert(
-          db.drives,
-          DrivesCompanion.insert(
-            id: driveId,
-            rootFolderId: rootFolderId,
-            ownerAddress: 'owner-address',
-            name: 'drive-name',
-            privacy: DrivePrivacy.public,
-          ),
-        );
-
-        batch.insertAll(
-          db.folderEntries,
-          [
-            FolderEntriesCompanion.insert(
-                id: rootFolderId,
-                driveId: driveId,
-                name: 'drive-name',
-                path: ''),
-            FolderEntriesCompanion.insert(
-                id: nestedFolderId,
-                driveId: driveId,
-                parentFolderId: Value(rootFolderId),
-                name: nestedFolderId,
-                path: '/$nestedFolderId'),
-            ...List.generate(
-              emptyNestedFolderCount,
-              (i) {
-                final folderId = '$emptyNestedFolderIdPrefix$i';
-                return FolderEntriesCompanion.insert(
-                  id: folderId,
-                  driveId: driveId,
-                  parentFolderId: Value(rootFolderId),
-                  name: folderId,
-                  path: '/$folderId',
-                );
-              },
-            )..shuffle(),
-          ],
-        );
-
-        batch.insertAll(
-          db.fileEntries,
-          [
-            ...List.generate(
-              rootFolderFileCount,
-              (i) {
-                final fileId = '$rootFolderId$i';
-                return FileEntriesCompanion.insert(
-                  id: fileId,
-                  driveId: driveId,
-                  parentFolderId: rootFolderId,
-                  name: fileId,
-                  path: '/$fileId',
-                  dataTxId: '',
-                  size: 500,
-                  lastModifiedDate: DateTime.now(),
-                  dataContentType: Value(''),
-                );
-              },
-            )..shuffle(),
-            ...List.generate(
-              nestedFolderFileCount,
-              (i) {
-                final fileId = '$nestedFolderId$i';
-                return FileEntriesCompanion.insert(
-                  id: fileId,
-                  driveId: driveId,
-                  parentFolderId: nestedFolderId,
-                  name: fileId,
-                  path: '/$nestedFolderId/$fileId',
-                  dataTxId: '',
-                  size: 500,
-                  lastModifiedDate: DateTime.now(),
-                  dataContentType: Value(''),
-                );
-              },
-            )..shuffle(),
-          ],
-        );
-      });
+      await addTestFilesToDb(
+        db,
+        driveId: driveId,
+        rootFolderId: rootFolderId,
+        nestedFolderId: nestedFolderId,
+        emptyNestedFolderCount: emptyNestedFolderCount,
+        emptyNestedFolderIdPrefix: emptyNestedFolderIdPrefix,
+        rootFolderFileCount: rootFolderFileCount,
+        nestedFolderFileCount: nestedFolderFileCount,
+      );
     });
 
     tearDown(() async {
       await db.close();
     });
-
-    test('watchFolder() returns correct folder contents', () async {
-      var folderStream =
-          driveDao.watchFolderContents(driveId, folderPath: '').share();
+    test('watchFolder() with root path (' ') returns root folder', () async {
+      final folderStream =
+          driveDao.watchFolderContents(driveId, folderPath: '');
 
       await Future.wait([
         expectLater(folderStream.map((f) => f.folder!.id), emits(rootFolderId)),
+      ]);
+    });
+    test('watchFolder() returns correct number of files in root folder',
+        () async {
+      final folderStream =
+          driveDao.watchFolderContents(driveId, folderPath: '');
+
+      await Future.wait([
         expectLater(
-          folderStream.map((f) => f.subfolders.map((f) => f.name)),
-          emits(allOf(hasLength(emptyNestedFolderCount), Sorted())),
-        ),
-        expectLater(
-          folderStream.map((f) => f.files.map((f) => f.id).toList()),
+          folderStream.map((f) {
+            return f.files.map((f) => f.id);
+          }),
           emits(allOf(hasLength(rootFolderFileCount), Sorted())),
         ),
       ]);
+    });
+    test('watchFolder() returns correct number of folders in root folder',
+        () async {
+      final folderStream =
+          driveDao.watchFolderContents(driveId, folderPath: '');
 
-      folderStream = driveDao
-          .watchFolderContents(driveId,
-              folderPath: '/$emptyNestedFolderIdPrefix' '0')
-          .share();
+      await Future.wait([
+        expectLater(
+          folderStream.map((f) => f.subfolders.map((f) => f.name)),
+          // emptyNestedFolders + nestedFolder
+          emits(allOf(hasLength(emptyNestedFolderCount + 1), Sorted())),
+        ),
+      ]);
+    });
+
+    test('watchFolder() with subfolder path returns correct subfolder',
+        () async {
+      final folderStream = driveDao.watchFolderContents(driveId,
+          folderPath: '/$emptyNestedFolderIdPrefix' '0');
 
       await Future.wait([
         expectLater(folderStream.map((f) => f.folder!.id),
             emits(emptyNestedFolderIdPrefix + '0')),
+      ]);
+    });
+    test('watchFolder() returns correct folders inside empty folder', () async {
+      final folderStream = driveDao.watchFolderContents(driveId,
+          folderPath: '/$emptyNestedFolderIdPrefix' '0');
+
+      await Future.wait([
         expectLater(
           folderStream.map((f) => f.subfolders.map((f) => f.id)),
           emits(hasLength(0)),
         ),
+      ]);
+    });
+    test('watchFolder() returns correct files inside empty folder', () async {
+      final folderStream = driveDao.watchFolderContents(driveId,
+          folderPath: '/$emptyNestedFolderIdPrefix' '0');
+
+      await Future.wait([
         expectLater(
-          folderStream.map((f) => f.files.map((f) => f.name).toList()),
-          emits(allOf(hasLength(nestedFolderFileCount), Sorted())),
+          folderStream.map((f) => f.files.map((f) => f.id)),
+          emits(hasLength(0)),
         ),
       ]);
     });
@@ -155,12 +113,15 @@ void main() {
       expect(treeRoot.folder.id, equals(rootFolderId));
       expect(treeRoot.files.length, equals(rootFolderFileCount));
 
-      final nestedSubfolderFileCount = treeRoot.subfolders.where((f) => f.folder.id == nestedFolderId)
+      final nestedSubfolderFileCount = treeRoot.subfolders
+          .where((f) => f.folder.id == nestedFolderId)
           .single
-          .files.length;
+          .files
+          .length;
       expect(nestedSubfolderFileCount, equals(nestedSubfolderFileCount));
 
-      final emptySubfolders = treeRoot.subfolders.where((f) => f.folder.id.startsWith(emptyNestedFolderIdPrefix));
+      final emptySubfolders = treeRoot.subfolders
+          .where((f) => f.folder.id.startsWith(emptyNestedFolderIdPrefix));
       expect(emptySubfolders.map((f) => f.subfolders.length).toList(),
           everyElement(equals(0)));
       expect(emptySubfolders.map((f) => f.files.length).toList(),
