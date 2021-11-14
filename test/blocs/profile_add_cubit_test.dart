@@ -26,10 +26,7 @@ void main() {
     const fakePassword = '123';
 
     setUp(() async {
-      
       registerFallbackValue(ProfileStatefake());
-      
-
       db = getTestDb();
       profileDao = db.profileDao;
 
@@ -59,11 +56,20 @@ void main() {
       build: () => profileAddCubit,
       act: (bloc) async {
         await bloc.pickWallet(json.encode(newUserWallet.toJwk()));
-        bloc.form.value = {'username': 'Bobby', 'password': fakePassword};
+        await bloc.completeOnboarding();
+        bloc.form.value = {
+          'username': 'Bobby',
+          'password': fakePassword,
+          'passwordConfirmation': fakePassword,
+          'agreementConsent': true
+        };
         await bloc.submit();
       },
       expect: () => [
+        ProfileAddUserStateLoadInProgress(),
+        ProfileAddOnboardingNewUser(),
         ProfileAddPromptDetails(isExistingUser: false),
+        ProfileAddInProgress(),
       ],
       verify: (_) => verify(() =>
           profileCubit.unlockDefaultProfile(fakePassword, ProfileType.JSON)),
