@@ -1,10 +1,8 @@
-import 'package:ardrive/components/fixer_form.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_portal/flutter_portal.dart';
-import 'package:pedantic/pedantic.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:url_launcher/link.dart';
 
@@ -79,75 +77,47 @@ class _AppShellState extends State<AppShell> {
                   ),
                 ],
               );
-          Widget _buildPage(scaffold) => BlocListener<SyncCubit, SyncState>(
-                listener: (context, state) {
-                  if (state is SyncEmpty && state.orphanParents.isNotEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        duration: Duration(seconds: 30),
-                        width: 500,
-                        content: Text(
-                          'Orphaned Files Detected.',
+          Widget _buildPage(scaffold) => BlocBuilder<SyncCubit, SyncState>(
+                builder: (context, syncState) {
+                  if (syncState is SyncInProgress) {
+                    return Stack(
+                      children: [
+                        AbsorbPointer(
+                          child: scaffold,
                         ),
-                        action: SnackBarAction(
-                          label: 'RECREATE FOLDERS',
-                          onPressed: () {
-                            state.orphanParents.values.forEach((parent) {
-                              unawaited(
-                                promptToReCreateFolder(
-                                  context,
-                                  orphanParent: parent,
-                                ),
-                              );
-                            });
+                        SizedBox.expand(
+                          child: Container(
+                            color: Colors.black.withOpacity(0.5),
+                          ),
+                        ),
+                        BlocBuilder<ProfileCubit, ProfileState>(
+                          builder: (context, state) {
+                            return FutureBuilder(
+                              future: context
+                                  .read<ProfileCubit>()
+                                  .isCurrentProfileArConnect(),
+                              builder: (BuildContext context,
+                                  AsyncSnapshot snapshot) {
+                                if (snapshot.data ?? false) {
+                                  return ProgressDialog(
+                                    title:
+                                        'Syncing... Please remain on this tab.',
+                                  );
+                                } else {
+                                  return ProgressDialog(
+                                    title: 'Syncing... Please wait.',
+                                  );
+                                }
+                              },
+                            );
                           },
                         ),
-                      ),
+                      ],
                     );
+                  } else {
+                    return scaffold;
                   }
                 },
-                child: BlocBuilder<SyncCubit, SyncState>(
-                  builder: (context, syncState) {
-                    if (syncState is SyncInProgress) {
-                      return Stack(
-                        children: [
-                          AbsorbPointer(
-                            child: scaffold,
-                          ),
-                          SizedBox.expand(
-                            child: Container(
-                              color: Colors.black.withOpacity(0.5),
-                            ),
-                          ),
-                          BlocBuilder<ProfileCubit, ProfileState>(
-                            builder: (context, state) {
-                              return FutureBuilder(
-                                future: context
-                                    .read<ProfileCubit>()
-                                    .isCurrentProfileArConnect(),
-                                builder: (BuildContext context,
-                                    AsyncSnapshot snapshot) {
-                                  if (snapshot.data ?? false) {
-                                    return ProgressDialog(
-                                      title:
-                                          'Syncing... Please remain on this tab.',
-                                    );
-                                  } else {
-                                    return ProgressDialog(
-                                      title: 'Syncing... Please wait.',
-                                    );
-                                  }
-                                },
-                              );
-                            },
-                          ),
-                        ],
-                      );
-                    } else {
-                      return scaffold;
-                    }
-                  },
-                ),
               );
           return ScreenTypeLayout(
             desktop: _buildPage(

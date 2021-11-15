@@ -60,7 +60,9 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   final Map<String, OrphanParent> missingParents = {};
-
+  final List<OrphanParent> parents = [];
+  bool isFirstSync = true;
+  
   Future<void> startSync() async {
     try {
       final profile = _profileCubit.state;
@@ -113,6 +115,7 @@ class SyncCubit extends Cubit<SyncState> {
             addError(error!);
           }));
       await Future.wait(driveSyncProcesses);
+      await finalizeOrphans();
       emit(SyncEmpty(orphanParents: missingParents));
 
       await Future.wait([
@@ -124,6 +127,30 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     emit(SyncIdle());
+  }
+
+  Future<void> finalizeOrphans() async {
+    //Finalize missing parent list
+    if (isFirstSync) {
+      for (var parent in parents) {
+        final folderExists = (await _driveDao
+                .folderById(driveId: parent.driveId, folderId: parent.id)
+                .getSingleOrNull()) !=
+            null;
+        if (folderExists) {
+          parents.remove(parent.id);
+        }
+        if (missingParents.containsKey(parent.id)) {
+          missingParents[parent.id]!.orphans.addAll(parent.orphans);
+        } else {
+          missingParents.putIfAbsent(
+            parent.id,
+            () => parent,
+          );
+        }
+      }
+    }
+    isFirstSync = false;
   }
 
   Future<void> _syncDrive(
@@ -167,32 +194,21 @@ class SyncCubit extends Cubit<SyncState> {
         syncCursor: Value(null),
       ));
 
-      //Finalize missing parent list
-      for (var parent in missingParents.values) {
-        final folderExists = (await _driveDao
-                .folderById(driveId: drive.id, folderId: parent.id)
-                .getSingleOrNull()) !=
-            null;
-        if (folderExists) {
-          missingParents.remove(parent.id);
-        }
-      }
-      final rootFolderExists = await _driveDao
-              .folderById(driveId: drive.id, folderId: drive.rootFolderId)
-              .getSingleOrNull() !=
-          null;
-      if (!rootFolderExists) {
-        if (missingParents.containsKey(drive.rootFolderId)) {
-          missingParents[drive.rootFolderId]!.parentFolderId = null;
-        } else {
-          missingParents[drive.rootFolderId] = OrphanParent(
-            id: drive.rootFolderId,
-            driveId: driveId,
-            orphans: [],
-          );
-        }
-      }
-
+      // final rootFolderExists = await _driveDao
+      //         .folderById(driveId: drive.id, folderId: drive.rootFolderId)
+      //         .getSingleOrNull() !=
+      //     null;
+      // if (!rootFolderExists) {
+      //   if (missingParents.containsKey(drive.rootFolderId)) {
+      //     missingParents[drive.rootFolderId]!.parentFolderId = null;
+      //   } else {
+      //     missingParents[drive.rootFolderId] = OrphanParent(
+      //       id: drive.rootFolderId,
+      //       driveId: driveId,
+      //       orphans: [],
+      //     );
+      //   }
+      // }
       return;
     }
 
@@ -489,21 +505,15 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     Future<void> addMissingFolder(String folderId, Orphan orphan) async {
-      if (missingParents.containsKey(folderId)) {
-        missingParents[folderId]!.orphans.add(orphan);
-      } else {
-        final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-
-        missingParents.putIfAbsent(
-          folderId,
-          () => (OrphanParent(
-            driveId: driveId,
-            id: folderId,
-            parentFolderId: drive.rootFolderId,
-            orphans: [orphan],
-          )),
-        );
-      }
+      final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+      parents.add(
+        OrphanParent(
+          driveId: driveId,
+          id: folderId,
+          parentFolderId: drive.rootFolderId,
+          orphans: [orphan],
+        ),
+      );
     }
 
     Future<void> updateFolderTree(FolderNode node, String parentPath) async {
