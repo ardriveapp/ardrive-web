@@ -59,11 +59,16 @@ class OrphanFixerForm extends StatelessWidget {
           content: SizedBox(
             width: kMediumDialogWidth,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  '${context.read<OrphanFixerCubit>().orphanParent.orphans.length} orphans detected'
-                  ' for missing folder with ID ${context.read<OrphanFixerCubit>().orphanParent.parentFolderId}',
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    '${context.read<OrphanFixerCubit>().orphanParent.orphans.length} orphans detected'
+                    ' for missing folder with ID ${context.read<OrphanFixerCubit>().orphanParent.parentFolderId}',
+                  ),
                 ),
+                
                 ReactiveForm(
                   formGroup: context.watch<OrphanFixerCubit>().form,
                   child: ReactiveTextField(

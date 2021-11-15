@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/fixer_form.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -121,6 +122,10 @@ class AppDrawer extends StatelessWidget {
                             ListTile(
                               title: Text('Orphaned Files Found'),
                               subtitle: Text('Folder ID: ${missingParent.id}'),
+                              onTap: () => promptToReCreateFolder(
+                                context,
+                                orphanParent: missingParent,
+                              ),
                             )
                       ],
                     );
