@@ -65,10 +65,9 @@ class OrphanFixerForm extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
                     '${context.read<OrphanFixerCubit>().orphanParent.orphans.length} orphans detected'
-                    ' for missing folder with ID ${context.read<OrphanFixerCubit>().orphanParent.parentFolderId}',
+                    ' for missing folder with ID ${context.read<OrphanFixerCubit>().orphanParent.id}',
                   ),
                 ),
-                
                 ReactiveForm(
                   formGroup: context.watch<OrphanFixerCubit>().form,
                   child: ReactiveTextField(
