@@ -50,7 +50,7 @@ class DataExportCubit extends Cubit<DataExportState> {
         ..add(file.metadataTx.id)
         ..add(file.size.toString())
         ..add(file.dateCreated.toString())
-        ..add(file.lastModifiedDate.toIso8601String())
+        ..add(file.lastModifiedDate.toString())
         ..add(Uri.parse(_gatewayURL + '/${file.dataTx.id}').toString());
       export.add(fileContent);
     }

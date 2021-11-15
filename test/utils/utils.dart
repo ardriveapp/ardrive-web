@@ -13,8 +13,7 @@ export 'mocks.dart';
 Database getTestDb() => Database(VmDatabase.memory());
 
 Wallet getTestWallet() {
-  final walletJwk = json.decode(
-      '''
+  final walletJwk = json.decode('''
   {
     "kty": "RSA",
     "e": "AQAB",
@@ -42,6 +41,8 @@ Future<void> addTestFilesToDb(
   int seed = 0,
 }) async {
   await db.batch((batch) {
+    // Default date
+    final defaultDate = DateTime(2017, 9, 7, 17, 30);
     // Create fake drive for test
     batch.insert(
       db.drives,
@@ -99,8 +100,8 @@ Future<void> addTestFilesToDb(
               path: '/$fileId',
               dataTxId: fileId + 'Data',
               size: 500,
-              dateCreated: Value(DateTime.fromMillisecondsSinceEpoch(0)),
-              lastModifiedDate: DateTime.fromMillisecondsSinceEpoch(0),
+              dateCreated: Value(defaultDate),
+              lastModifiedDate: defaultDate,
               dataContentType: Value(''),
             );
           },
@@ -117,8 +118,8 @@ Future<void> addTestFilesToDb(
               path: '/$nestedFolderId/$fileId',
               dataTxId: fileId + 'Data',
               size: 500,
-              dateCreated: Value(DateTime.fromMillisecondsSinceEpoch(0)),
-              lastModifiedDate: DateTime.fromMillisecondsSinceEpoch(0),
+              dateCreated: Value(defaultDate),
+              lastModifiedDate: defaultDate,
               dataContentType: Value(''),
             );
           },
@@ -142,8 +143,8 @@ Future<void> addTestFilesToDb(
               action: RevisionAction.create,
               dataTxId: fileId + 'Data',
               size: 500,
-              dateCreated: Value(DateTime.fromMillisecondsSinceEpoch(0)),
-              lastModifiedDate: DateTime.fromMillisecondsSinceEpoch(0),
+              dateCreated: Value(defaultDate),
+              lastModifiedDate: defaultDate,
               dataContentType: Value(''),
             );
           },
@@ -161,8 +162,8 @@ Future<void> addTestFilesToDb(
               metadataTxId: fileId + 'Data',
               action: RevisionAction.create,
               size: 500,
-              dateCreated: Value(DateTime.fromMillisecondsSinceEpoch(0)),
-              lastModifiedDate: DateTime.fromMillisecondsSinceEpoch(0),
+              dateCreated: Value(defaultDate),
+              lastModifiedDate: defaultDate,
               dataContentType: Value(''),
             );
           },
@@ -180,7 +181,7 @@ Future<void> addTestFilesToDb(
             return NetworkTransactionsCompanion.insert(
               id: fileId + 'Meta',
               status: Value(TransactionStatus.confirmed),
-              dateCreated: Value(DateTime.fromMillisecondsSinceEpoch(0)),
+              dateCreated: Value(defaultDate),
             );
           },
         )..shuffle(Random(0)),
@@ -191,7 +192,7 @@ Future<void> addTestFilesToDb(
             return NetworkTransactionsCompanion.insert(
               id: fileId + 'Data',
               status: Value(TransactionStatus.confirmed),
-              dateCreated: Value(DateTime.fromMillisecondsSinceEpoch(0)),
+              dateCreated: Value(defaultDate),
             );
           },
         )..shuffle(Random(0)),
@@ -202,7 +203,7 @@ Future<void> addTestFilesToDb(
             return NetworkTransactionsCompanion.insert(
               id: fileId + 'Meta',
               status: Value(TransactionStatus.confirmed),
-              dateCreated: Value(DateTime.fromMillisecondsSinceEpoch(0)),
+              dateCreated: Value(defaultDate),
             );
           },
         )..shuffle(Random(0)),
@@ -213,7 +214,7 @@ Future<void> addTestFilesToDb(
             return NetworkTransactionsCompanion.insert(
               id: fileId + 'Data',
               status: Value(TransactionStatus.confirmed),
-              dateCreated: Value(DateTime.fromMillisecondsSinceEpoch(0)),
+              dateCreated: Value(defaultDate),
             );
           },
         )..shuffle(Random(0)),
