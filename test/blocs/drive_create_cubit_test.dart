@@ -42,7 +42,6 @@ void main() {
 
       final keyBytes = Uint8List(32);
       fillBytesWithSecureRandom(keyBytes);
-
       when(() => profileCubit.state).thenReturn(
         ProfileLoggedIn(
           username: 'Test',
@@ -62,7 +61,6 @@ void main() {
         drivesCubit: drivesCubit,
         profileCubit: profileCubit,
       );
-      
     });
 
     tearDown(() async {
@@ -85,7 +83,6 @@ void main() {
       ],
       verify: (_) {},
     );
-
     blocTest<DriveCreateCubit, DriveCreateState>(
       'create private drive',
       build: () => driveCreateCubit,
@@ -98,9 +95,7 @@ void main() {
       },
       expect: () => [
         DriveCreateInProgress(),
-        //DriveCreateSuccess(),
-        DriveCreateFailure(),
-        //TODO: Reenable after figuring out what's wrong with the secret key deriviation
+        DriveCreateSuccess(),
       ],
       verify: (_) {},
     );

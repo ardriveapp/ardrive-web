@@ -39,7 +39,10 @@ Future<SecretKey> deriveDriveKey(
   return hkdf.deriveKey(
     secretKey: SecretKey(walletSignature),
     info: utf8.encode(password),
-    nonce: Uint8List(0),
+    // This was an empty Uint8List(0), but due to the deferring implmentations of web crypto and dart-vm 
+    // we have to add a non empty nonce so that the function works, otherwise this will fail on dart-vm (tests and mobile)
+    // However this works with no noticable issues on mobile, so there's no risk.
+    nonce: Uint8List(1),
   );
 }
 
@@ -49,7 +52,9 @@ Future<SecretKey> deriveFileKey(SecretKey driveKey, String fileId) async {
   return hkdf.deriveKey(
     secretKey: driveKey,
     info: fileIdBytes,
-    nonce: Uint8List(0),
+    // This was an empty Uint8List(0), but due to the deferring implmentations of web crypto and dart-vm 
+    // we have to add a non empty nonce so that the function works, otherwise this will fail on dart-vm (tests and mobile)
+    nonce: Uint8List(1),
   );
 }
 
