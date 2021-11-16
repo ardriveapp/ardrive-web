@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -9,16 +10,19 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
 
-Future<void> promptToCreateDrive(BuildContext context) => showDialog(
-      context: context,
-      builder: (BuildContext context) => BlocProvider(
-        create: (_) => DriveCreateCubit(
-          arweave: context.read<ArweaveService>(),
-          driveDao: context.read<DriveDao>(),
-          profileCubit: context.read<ProfileCubit>(),
-          drivesCubit: context.read<DrivesCubit>(),
+Future<void> promptToCreateDrive(BuildContext context) => showCongestionWarning(
+      context,
+      showDialog(
+        context: context,
+        builder: (BuildContext context) => BlocProvider(
+          create: (_) => DriveCreateCubit(
+            arweave: context.read<ArweaveService>(),
+            driveDao: context.read<DriveDao>(),
+            profileCubit: context.read<ProfileCubit>(),
+            drivesCubit: context.read<DrivesCubit>(),
+          ),
+          child: DriveCreateForm(),
         ),
-        child: DriveCreateForm(),
       ),
     );
 

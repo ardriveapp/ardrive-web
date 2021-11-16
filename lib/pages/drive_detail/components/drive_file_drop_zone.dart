@@ -112,6 +112,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
             pst: context.read<PstService>(),
             profileCubit: context.read<ProfileCubit>(),
             driveDao: context.read<DriveDao>(),
+            isDragAndDrop: true,
           ),
           child: UploadForm(),
         ),

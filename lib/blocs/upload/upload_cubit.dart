@@ -33,6 +33,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
+  bool _isDragAndDrop = false;
 
   /// Map of conflicting file ids keyed by their file names.
   final Map<String, String> conflictingFiles = {};
@@ -51,17 +52,23 @@ class UploadCubit extends Cubit<UploadState> {
     required DriveDao driveDao,
     required ArweaveService arweave,
     required PstService pst,
+    bool isDragAndDrop = false,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
         _pst = pst,
+        _isDragAndDrop = isDragAndDrop,
         super(UploadPreparationInProgress()) {
     () async {
       _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
       _targetFolder = await _driveDao
           .folderById(driveId: driveId, folderId: folderId)
           .getSingle();
-      await checkMempoolCongestion();
+      if (isDragAndDrop) {
+        await checkMempoolCongestion();
+      } else {
+        unawaited(checkConflictingFiles());
+      }
     }();
   }
 

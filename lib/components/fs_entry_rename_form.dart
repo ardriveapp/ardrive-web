@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -14,18 +15,21 @@ Future<void> promptToRenameFolder(
   required String driveId,
   required String folderId,
 }) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider(
-        create: (context) => FsEntryRenameCubit(
-          driveId: driveId,
-          folderId: folderId,
-          arweave: context.read<ArweaveService>(),
-          driveDao: context.read<DriveDao>(),
-          profileCubit: context.read<ProfileCubit>(),
-          syncCubit: context.read<SyncCubit>(),
+    showCongestionWarning(
+      context,
+      showDialog(
+        context: context,
+        builder: (_) => BlocProvider(
+          create: (context) => FsEntryRenameCubit(
+            driveId: driveId,
+            folderId: folderId,
+            arweave: context.read<ArweaveService>(),
+            driveDao: context.read<DriveDao>(),
+            profileCubit: context.read<ProfileCubit>(),
+            syncCubit: context.read<SyncCubit>(),
+          ),
+          child: FsEntryRenameForm(),
         ),
-        child: FsEntryRenameForm(),
       ),
     );
 
@@ -34,20 +38,22 @@ Future<void> promptToRenameFile(
   required String driveId,
   required String fileId,
 }) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider(
-        create: (context) => FsEntryRenameCubit(
-          driveId: driveId,
-          fileId: fileId,
-          arweave: context.read<ArweaveService>(),
-          driveDao: context.read<DriveDao>(),
-          profileCubit: context.read<ProfileCubit>(),
-          syncCubit: context.read<SyncCubit>(),
-        ),
-        child: FsEntryRenameForm(),
-      ),
-    );
+    showCongestionWarning(
+        context,
+        showDialog(
+          context: context,
+          builder: (_) => BlocProvider(
+            create: (context) => FsEntryRenameCubit(
+              driveId: driveId,
+              fileId: fileId,
+              arweave: context.read<ArweaveService>(),
+              driveDao: context.read<DriveDao>(),
+              profileCubit: context.read<ProfileCubit>(),
+              syncCubit: context.read<SyncCubit>(),
+            ),
+            child: FsEntryRenameForm(),
+          ),
+        ));
 
 class FsEntryRenameForm extends StatelessWidget {
   @override
