@@ -52,7 +52,7 @@ Future<void> showCongestionWarning(
             },
             child: Text('TRY LATER'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () async {
               Navigator.of(context).pop(true);
             },
