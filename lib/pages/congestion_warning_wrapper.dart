@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/services/services.dart';
@@ -11,7 +12,9 @@ Future<void> showCongestionWarning(
   final warnAboutCongestion =
       await context.read<ArweaveService>().getMempoolsize() >
           mempoolWarningSizeLimit;
+
   if (warnAboutCongestion) {
+    context.read<ProfileCubit>().setOverlayOpen(true);
     final bool shouldShowDialog = await showDialog(
       context: context,
       builder: (_) => AppDialog(
@@ -62,6 +65,7 @@ Future<void> showCongestionWarning(
       ),
       barrierDismissible: false,
     );
+    context.read<ProfileCubit>().setOverlayOpen(false);
     if (shouldShowDialog) {
       return showAppDialog();
     } else {
