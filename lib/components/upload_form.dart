@@ -57,51 +57,7 @@ class UploadForm extends StatelessWidget {
           }
         },
         builder: (context, state) {
-          if (state is UploadMempoolCongestion) {
-            return AppDialog(
-              title: 'WARNING',
-              content: SizedBox(
-                width: kMediumDialogWidth,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.warning),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(
-                                    text:
-                                        'Arweave is currently experiencing heavy congestion. '
-                                        'It\'s not likely that your upload will succeed right now.'),
-                              ],
-                              style: Theme.of(context).textTheme.bodyText1,
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text('TRY LATER'),
-                ),
-                ElevatedButton(
-                  onPressed: () =>
-                      context.read<UploadCubit>().checkConflictingFiles(),
-                  child: Text('PROCEED'),
-                ),
-              ],
-            );
-          } else if (state is UploadFileConflict) {
+          if (state is UploadFileConflict) {
             return AppDialog(
               title:
                   '${state.conflictingFileNames.length} conflicting file(s) found',

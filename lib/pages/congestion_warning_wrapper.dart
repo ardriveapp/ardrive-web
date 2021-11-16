@@ -3,15 +3,16 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 Future<void> showCongestionWarning(
-    BuildContext context, Future<void> dialog) async {
-  final warnOrUpload = await context.read<ArweaveService>().getMempoolsize() >
-      mempoolWarningSizeLimit;
-  var proceedWithUpload = true;
-  if (warnOrUpload) {
-    await showDialog(
+    BuildContext context, Function() showAppDialog) async {
+  final warnAboutCongestion =
+      await context.read<ArweaveService>().getMempoolsize() >
+          mempoolWarningSizeLimit;
+  if (warnAboutCongestion) {
+    final bool shouldShowDialog = await showDialog(
       context: context,
       builder: (_) => AppDialog(
         title: 'WARNING',
@@ -47,21 +48,26 @@ Future<void> showCongestionWarning(
         actions: [
           TextButton(
             onPressed: () {
-              proceedWithUpload = false;
               Navigator.of(context).pop(false);
             },
             child: Text('TRY LATER'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () async {
+              Navigator.of(context).pop(true);
+            },
             child: Text('PROCEED'),
           ),
         ],
       ),
       barrierDismissible: false,
     );
-  }
-  if (proceedWithUpload) {
-    return dialog;
+    if (shouldShowDialog) {
+      return showAppDialog();
+    } else {
+      return;
+    }
+  } else {
+    return showAppDialog();
   }
 }

@@ -12,7 +12,7 @@ import 'components.dart';
 
 Future<void> promptToCreateDrive(BuildContext context) => showCongestionWarning(
       context,
-      showDialog(
+      () => showDialog(
         context: context,
         builder: (BuildContext context) => BlocProvider(
           create: (_) => DriveCreateCubit(

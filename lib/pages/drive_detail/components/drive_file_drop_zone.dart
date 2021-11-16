@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -101,23 +102,25 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
         ).then((value) => isCurrentlyShown = false);
         return;
       }
-      await showDialog(
-        context: context,
-        builder: (_) => BlocProvider<UploadCubit>(
-          create: (context) => UploadCubit(
-            driveId: driveId,
-            folderId: folderId,
-            files: selectedFiles,
-            arweave: context.read<ArweaveService>(),
-            pst: context.read<PstService>(),
-            profileCubit: context.read<ProfileCubit>(),
-            driveDao: context.read<DriveDao>(),
-            isDragAndDrop: true,
+      await showCongestionWarning(
+        context,
+        () => showDialog(
+          context: context,
+          builder: (_) => BlocProvider<UploadCubit>(
+            create: (context) => UploadCubit(
+              driveId: driveId,
+              folderId: folderId,
+              files: selectedFiles,
+              arweave: context.read<ArweaveService>(),
+              pst: context.read<PstService>(),
+              profileCubit: context.read<ProfileCubit>(),
+              driveDao: context.read<DriveDao>(),
+            ),
+            child: UploadForm(),
           ),
-          child: UploadForm(),
-        ),
-        barrierDismissible: false,
-      ).then((value) => isCurrentlyShown = false);
+          barrierDismissible: false,
+        ).then((value) => isCurrentlyShown = false),
+      );
     }
   }
 

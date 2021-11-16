@@ -17,7 +17,7 @@ Future<void> promptToCreateFolder(
 }) =>
     showCongestionWarning(
       context,
-      showDialog(
+      () => showDialog(
         context: context,
         builder: (_) => BlocProvider(
           create: (context) => FolderCreateCubit(

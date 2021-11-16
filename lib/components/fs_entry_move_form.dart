@@ -16,20 +16,20 @@ Future<void> promptToMoveFolder(
 }) =>
     showCongestionWarning(
         context,
-        showDialog(
-          context: context,
-          builder: (_) => BlocProvider(
-            create: (context) => FsEntryMoveCubit(
-              driveId: driveId,
-              folderId: folderId,
-              arweave: context.read<ArweaveService>(),
-              driveDao: context.read<DriveDao>(),
-              profileCubit: context.read<ProfileCubit>(),
-              syncCubit: context.read<SyncCubit>(),
-            ),
-            child: FsEntryMoveForm(),
-          ),
-        ));
+        () => showDialog(
+              context: context,
+              builder: (_) => BlocProvider(
+                create: (context) => FsEntryMoveCubit(
+                  driveId: driveId,
+                  folderId: folderId,
+                  arweave: context.read<ArweaveService>(),
+                  driveDao: context.read<DriveDao>(),
+                  profileCubit: context.read<ProfileCubit>(),
+                  syncCubit: context.read<SyncCubit>(),
+                ),
+                child: FsEntryMoveForm(),
+              ),
+            ));
 
 Future<void> promptToMoveFile(
   BuildContext context, {
@@ -38,7 +38,7 @@ Future<void> promptToMoveFile(
 }) =>
     showCongestionWarning(
       context,
-      showDialog(
+      () => showDialog(
         context: context,
         builder: (_) => BlocProvider(
           create: (context) => FsEntryMoveCubit(

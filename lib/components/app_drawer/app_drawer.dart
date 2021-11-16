@@ -187,7 +187,7 @@ class AppDrawer extends StatelessWidget {
                             enabled: state.hasWritePermissions,
                             value: (context) => showCongestionWarning(
                               context,
-                              promptToUploadFile(
+                              () => promptToUploadFile(
                                 context,
                                 driveId: state.currentDrive.id,
                                 folderId: state.currentFolder.folder!.id,

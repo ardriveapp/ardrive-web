@@ -11,4 +11,4 @@ const kTrimTrailingRegex = r'[^\s \.]+$';
     Safari supports it.
   */
 
-const mempoolWarningSizeLimit = 2000;
+const mempoolWarningSizeLimit = 1000;

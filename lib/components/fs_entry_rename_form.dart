@@ -17,7 +17,7 @@ Future<void> promptToRenameFolder(
 }) =>
     showCongestionWarning(
       context,
-      showDialog(
+      () => showDialog(
         context: context,
         builder: (_) => BlocProvider(
           create: (context) => FsEntryRenameCubit(
@@ -40,20 +40,20 @@ Future<void> promptToRenameFile(
 }) =>
     showCongestionWarning(
         context,
-        showDialog(
-          context: context,
-          builder: (_) => BlocProvider(
-            create: (context) => FsEntryRenameCubit(
-              driveId: driveId,
-              fileId: fileId,
-              arweave: context.read<ArweaveService>(),
-              driveDao: context.read<DriveDao>(),
-              profileCubit: context.read<ProfileCubit>(),
-              syncCubit: context.read<SyncCubit>(),
-            ),
-            child: FsEntryRenameForm(),
-          ),
-        ));
+        () => showDialog(
+              context: context,
+              builder: (_) => BlocProvider(
+                create: (context) => FsEntryRenameCubit(
+                  driveId: driveId,
+                  fileId: fileId,
+                  arweave: context.read<ArweaveService>(),
+                  driveDao: context.read<DriveDao>(),
+                  profileCubit: context.read<ProfileCubit>(),
+                  syncCubit: context.read<SyncCubit>(),
+                ),
+                child: FsEntryRenameForm(),
+              ),
+            ));
 
 class FsEntryRenameForm extends StatelessWidget {
   @override

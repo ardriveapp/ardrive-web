@@ -17,7 +17,7 @@ Future<void> promptToRenameDrive(
 }) =>
     showCongestionWarning(
       context,
-      showDialog(
+      () => showDialog(
         context: context,
         builder: (_) => BlocProvider(
           create: (context) => DriveRenameCubit(
