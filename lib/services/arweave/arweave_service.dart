@@ -25,6 +25,10 @@ class ArweaveService {
   Future<int> getCurrentBlockHeight() =>
       client.api.get('/').then((res) => json.decode(res.body)['height']);
 
+  Future<int> getMempoolsize() => client.api
+      .get('/tx/pending')
+      .then((res) => (json.decode(res.body) as List).length);
+
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
   Future<BigInt> getPendingTxFees(String address) async {
     final query = await _gql.execute(PendingTxFeesQuery(

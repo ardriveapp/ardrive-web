@@ -8,6 +8,8 @@ abstract class UploadState extends Equatable {
 
 class UploadPreparationInProgress extends UploadState {}
 
+class UploadMempoolCongestion extends UploadState {}
+
 class UploadPreparationFailure extends UploadState {}
 
 class UploadFileConflict extends UploadState {

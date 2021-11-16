@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
@@ -60,9 +61,16 @@ class UploadCubit extends Cubit<UploadState> {
       _targetFolder = await _driveDao
           .folderById(driveId: driveId, folderId: folderId)
           .getSingle();
-
-      unawaited(checkConflictingFiles());
+      await checkMempoolCongestion();
     }();
+  }
+
+  Future<void> checkMempoolCongestion() async {
+    if (await _arweave.getMempoolsize() > mempoolWarningSizeLimit) {
+      emit(UploadMempoolCongestion());
+    } else {
+      unawaited(checkConflictingFiles());
+    }
   }
 
   /// Tries to find a files that conflict with the files in the target folder.
