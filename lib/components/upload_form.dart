@@ -94,7 +94,7 @@ class UploadForm extends StatelessWidget {
                   onPressed: () => Navigator.of(context).pop(false),
                   child: Text('TRY LATER'),
                 ),
-                TextButton(
+                ElevatedButton(
                   onPressed: () =>
                       context.read<UploadCubit>().checkConflictingFiles(),
                   child: Text('PROCEED'),
