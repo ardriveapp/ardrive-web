@@ -10,7 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 Future<void> showCongestionWarning(
     BuildContext context, Function() showAppDialog) async {
   final warnAboutCongestion =
-      await context.read<ArweaveService>().getMempoolsize() >
+      await context.read<ArweaveService>().getCachedMempoolSize() >
           mempoolWarningSizeLimit;
 
   if (warnAboutCongestion) {
