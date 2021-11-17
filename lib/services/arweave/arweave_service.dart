@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
@@ -6,6 +7,7 @@ import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart' as http;
 import 'package:moor/moor.dart';
+import 'package:pedantic/pedantic.dart';
 
 import '../services.dart';
 
@@ -14,8 +16,11 @@ class ArweaveService {
 
   final ArtemisClient _gql;
 
+  int _mempoolSize = 0;
   ArweaveService(this.client)
-      : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
+      : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
+    unawaited(initializeMempoolStream());
+  }
 
   /// Returns the onchain balance of the specified address.
   Future<BigInt> getWalletBalance(String address) => client.api
@@ -25,9 +30,29 @@ class ArweaveService {
   Future<int> getCurrentBlockHeight() =>
       client.api.get('/').then((res) => json.decode(res.body)['height']);
 
-  Future<int> getMempoolsize() => client.api
-      .get('/tx/pending')
-      .then((res) => (json.decode(res.body) as List).length);
+  Future<void> initializeMempoolStream() async {
+    Stream.periodic(const Duration(minutes: 2))
+        .asyncMap((i) => getMempoolSizeFromArweave())
+        .listen((event) {
+      _mempoolSize = event;
+    });
+    _mempoolSize = await getMempoolSizeFromArweave();
+  }
+
+  Future<int> getMempoolSizeFromArweave() async {
+    try {
+      return await client.api
+          .get('tx/pending')
+          .then((res) => (json.decode(res.body) as List).length);
+    } catch (_) {
+      print('Error fetching mempool size');
+      return 0;
+    }
+  }
+
+  Future<int> getCachedMempoolSize() async {
+    return _mempoolSize;
+  }
 
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
   Future<BigInt> getPendingTxFees(String address) async {
