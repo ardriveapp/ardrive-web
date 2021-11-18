@@ -47,7 +47,7 @@ class ArweaveService {
           .then((res) => (json.decode(res.body) as List).length);
     } catch (_) {
       print('Error fetching mempool size');
-      return await getMempoolSizeFromArweave();
+      return 0;
     }
   }
 
