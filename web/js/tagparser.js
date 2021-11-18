@@ -1,6 +1,6 @@
 var avro = window.avro;
 
-function serializeTags(tags) {
+function serializeTagsToBuffer(tags) {
   const tagSchema = avro.Type.forSchema({
     type: 'record',
     name: 'Tag',
@@ -29,7 +29,7 @@ function serializeTags(tags) {
   }
   return Uint8Array.from(tagsBuffer);
 }
-async function deserializeTags(buffer) {
+function deserializeTagsFromBuffer(buffer) {
   const tagSchema = avro.Type.forSchema({
     type: 'record',
     name: 'Tag',
@@ -43,10 +43,6 @@ async function deserializeTags(buffer) {
     type: 'array',
     items: tagSchema,
   });
-  const tags = tagsSchema.fromBuffer(
-    Buffer.from(
-      buffer.subarray(tagsStart + 16, tagsStart + 16 + numberOfTagBytes),
-    ),
-  );
+  const tags = tagsSchema.fromBuffer(buffer);
   return tags;
 }
