@@ -33,13 +33,13 @@ class ArweaveService {
 
   Future<void> initializeMempoolStream() async {
     Rx.zip4(
-        Stream.periodic(const Duration(minutes: 0, seconds: 3))
+        Stream.periodic(const Duration(minutes: 1, seconds: 48))
             .asyncMap((i) => getMempoolSizeFromArweave()),
-        Stream.periodic(const Duration(minutes: 0, seconds: 7))
+        Stream.periodic(const Duration(minutes: 1, seconds: 52))
             .asyncMap((i) => getMempoolSizeFromArweave()),
-        Stream.periodic(const Duration(minutes: 0, seconds: 11))
+        Stream.periodic(const Duration(minutes: 1, seconds: 56))
             .asyncMap((i) => getMempoolSizeFromArweave()),
-        Stream.periodic(const Duration(minutes: 0, seconds: 15))
+        Stream.periodic(const Duration(minutes: 2, seconds: 0))
             .asyncMap((i) => getMempoolSizeFromArweave()),
         (int a, int b, int c, int d) => (a + b + c + d) ~/ 4).listen((mempool) {
       _mempoolSize = mempool;
