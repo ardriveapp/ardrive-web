@@ -31,6 +31,7 @@ class ArweaveService {
       client.api.get('/').then((res) => json.decode(res.body)['height']);
 
   Future<void> initializeMempoolStream() async {
+
     Stream.periodic(const Duration(minutes: 2))
         .asyncMap((i) => getMempoolSizeFromArweave())
         .listen((event) {
@@ -46,7 +47,7 @@ class ArweaveService {
           .then((res) => (json.decode(res.body) as List).length);
     } catch (_) {
       print('Error fetching mempool size');
-      return 0;
+      return await getMempoolSizeFromArweave();
     }
   }
 
