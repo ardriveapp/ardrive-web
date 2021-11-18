@@ -8,6 +8,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart' as http;
 import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../services.dart';
 
@@ -31,20 +32,32 @@ class ArweaveService {
       client.api.get('/').then((res) => json.decode(res.body)['height']);
 
   Future<void> initializeMempoolStream() async {
-
-    Stream.periodic(const Duration(minutes: 2))
-        .asyncMap((i) => getMempoolSizeFromArweave())
-        .listen((event) {
-      _mempoolSize = event;
+    Rx.zip4(
+        Stream.periodic(const Duration(minutes: 0, seconds: 3))
+            .asyncMap((i) => getMempoolSizeFromArweave()),
+        Stream.periodic(const Duration(minutes: 0, seconds: 7))
+            .asyncMap((i) => getMempoolSizeFromArweave()),
+        Stream.periodic(const Duration(minutes: 0, seconds: 11))
+            .asyncMap((i) => getMempoolSizeFromArweave()),
+        Stream.periodic(const Duration(minutes: 0, seconds: 15))
+            .asyncMap((i) => getMempoolSizeFromArweave()),
+        (int a, int b, int c, int d) => (a + b + c + d) ~/ 4).listen((mempool) {
+      _mempoolSize = mempool;
     });
-    _mempoolSize = await getMempoolSizeFromArweave();
+
+    _mempoolSize = (await getMempoolSizeFromArweave() +
+            await getMempoolSizeFromArweave() +
+            await getMempoolSizeFromArweave() +
+            await getMempoolSizeFromArweave()) ~/
+        4;
   }
 
   Future<int> getMempoolSizeFromArweave() async {
     try {
-      return await client.api
+      final mempool = await client.api
           .get('tx/pending')
           .then((res) => (json.decode(res.body) as List).length);
+      return mempool;
     } catch (_) {
       print('Error fetching mempool size');
       return 0;
