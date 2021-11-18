@@ -8,7 +8,6 @@ import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart' as http;
 import 'package:moor/moor.dart';
 import 'package:pedantic/pedantic.dart';
-import 'package:rxdart/rxdart.dart';
 
 import '../services.dart';
 
@@ -32,32 +31,28 @@ class ArweaveService {
       client.api.get('/').then((res) => json.decode(res.body)['height']);
 
   Future<void> initializeMempoolStream() async {
-    Rx.zip4(
-        Stream.periodic(const Duration(minutes: 1, seconds: 48))
-            .asyncMap((i) => getMempoolSizeFromArweave()),
-        Stream.periodic(const Duration(minutes: 1, seconds: 52))
-            .asyncMap((i) => getMempoolSizeFromArweave()),
-        Stream.periodic(const Duration(minutes: 1, seconds: 56))
-            .asyncMap((i) => getMempoolSizeFromArweave()),
-        Stream.periodic(const Duration(minutes: 2, seconds: 0))
-            .asyncMap((i) => getMempoolSizeFromArweave()),
-        (int a, int b, int c, int d) => (a + b + c + d) ~/ 4).listen((mempool) {
-      _mempoolSize = mempool;
+    Stream.periodic(Duration(minutes: 1, seconds: 44))
+        .asyncMap((event) => getMempoolAverage())
+        .listen((mempoolSize) {
+      _mempoolSize = mempoolSize;
     });
+    _mempoolSize = await getMempoolAverage();
+  }
 
-    _mempoolSize = (await getMempoolSizeFromArweave() +
-            await getMempoolSizeFromArweave() +
-            await getMempoolSizeFromArweave() +
-            await getMempoolSizeFromArweave()) ~/
+  // Spread requests across time to avoid getting load balanced to the same gateway
+  Future<int> getMempoolAverage() async {
+    return await Stream.periodic(Duration(seconds: 4))
+            .asyncMap((event) => getMempoolSizeFromArweave())
+            .take(4)
+            .reduce((next, acc) => acc += next) ~/
         4;
   }
 
   Future<int> getMempoolSizeFromArweave() async {
     try {
-      final mempool = await client.api
+      return await client.api
           .get('tx/pending')
           .then((res) => (json.decode(res.body) as List).length);
-      return mempool;
     } catch (_) {
       print('Error fetching mempool size');
       return 0;
