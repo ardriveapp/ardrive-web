@@ -13,7 +13,7 @@ publish_to: "none"
 # In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
 # Read more about iOS versioning at
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.2.5
+version: 1.2.7
 
 environment:
   sdk: ">=2.12.0 <3.0.0"
@@ -27,7 +27,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart
-      ref: 059692ada1576ddccd9863f68d66e316f252940f
+      ref: 9ac9ab99285e4b2f1bd57ec3c6702b4c0e419bf8
   cryptography: ^2.0.1
   flutter_bloc: ^8.0.0-dev.2
   flutter_portal: ^0.4.0
