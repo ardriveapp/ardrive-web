@@ -234,15 +234,12 @@ class UploadForm extends StatelessWidget {
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(file.entity.name!),
-                            subtitle: state.useBundles
-                                ? Text('${filesize(file.size)}')
-                                : Text(
-                                    '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
+                            subtitle: Text(
+                                '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
                             trailing: CircularProgressIndicator(
                                 // Show an indeterminate progress indicator if the upload hasn't started yet as
                                 // small uploads might never report a progress.
-                                value: !state.useBundles &&
-                                        file.uploadProgress != 0
+                                value: file.uploadProgress != 0
                                     ? file.uploadProgress
                                     : null),
                           ),
