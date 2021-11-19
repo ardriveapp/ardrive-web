@@ -7,11 +7,7 @@ class FileUploadHandle {
   final String path;
 
   BigInt get cost {
-    if (bundleTx != null) {
-      return bundleTx!.reward;
-    } else {
-      return (entityTx as Transaction).reward + (dataTx as Transaction).reward;
-    }
+    return (entityTx as Transaction).reward + (dataTx as Transaction).reward;
   }
 
   /// The size of the file before it was encoded/encrypted for upload.
@@ -22,37 +18,26 @@ class FileUploadHandle {
 
   double uploadProgress = 0;
 
-  Transaction? bundleTx;
-
   TransactionBase? entityTx;
   TransactionBase? dataTx;
 
   FileUploadHandle({
     required this.entity,
     required this.path,
-    this.bundleTx,
     this.entityTx,
     this.dataTx,
   });
 
   /// Uploads the file, emitting an event whenever the progress is updated.
   Stream<Null> upload(ArweaveService arweave) async* {
-    if (bundleTx != null) {
-      await for (final upload
-          in arweave.client.transactions.upload(bundleTx!)) {
-        uploadProgress = upload.progress;
-        yield null;
-      }
-    } else {
-      if (entityTx != null) {
-        await arweave.postTx(entityTx as Transaction);
-      }
+    if (entityTx != null) {
+      await arweave.postTx(entityTx as Transaction);
+    }
 
-      await for (final upload
-          in arweave.client.transactions.upload(dataTx as Transaction)) {
-        uploadProgress = upload.progress;
-        yield null;
-      }
+    await for (final upload
+        in arweave.client.transactions.upload(dataTx as Transaction)) {
+      uploadProgress = upload.progress;
+      yield null;
     }
   }
 }

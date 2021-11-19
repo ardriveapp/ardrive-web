@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:ardrive/blocs/upload/bundle_upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -32,6 +33,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
+  late BundleUploadHandle _bundleUploadHandle;
 
   /// Map of conflicting file ids keyed by their file names.
   final Map<String, String> conflictingFiles = {};
@@ -131,22 +133,27 @@ class UploadCubit extends Cubit<UploadState> {
       addError(err);
       return;
     }
-
-    final uploadCost = _fileUploadHandles.values
-        .map((f) => f.cost)
-        .reduce((total, cost) => total + cost);
-
-    var pstFee = await _pst
-        .getPstFeePercentage()
-        .then((feePercentage) =>
-            // Workaround [BigInt] percentage division problems
-            // by first multiplying by the percentage * 100 and then dividing by 100.
-            uploadCost * BigInt.from(feePercentage * 100) ~/ BigInt.from(100))
-        .catchError((_) => BigInt.zero,
-            test: (err) => err is UnimplementedError);
-
-    final minimumPstTip = BigInt.from(10000000);
-    pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
+    var uploadCost;
+    if (_useBundles) {
+      _bundleUploadHandle =
+          BundleUploadHandle(await _arweave.prepareDataBundleTx(
+        DataBundle(
+          items: [
+            ..._fileUploadHandles.values
+                .map((handle) =>
+                    [handle.dataTx as DataItem, handle.entityTx as DataItem])
+                .reduce((value, element) => value + element)
+          ],
+        ),
+        profile.wallet,
+      ));
+      uploadCost = _bundleUploadHandle.cost;
+    } else {
+      uploadCost = _fileUploadHandles.values
+          .map((f) => f.cost)
+          .reduce((total, cost) => total + cost);
+    }
+    final pstFee = await getPSTFee(uploadCost);
 
     if (pstFee > BigInt.zero) {
       feeTx = await _arweave.client.transactions.prepare(
@@ -181,8 +188,25 @@ class UploadCubit extends Cubit<UploadState> {
         uploadIsPublic: _targetDrive.isPublic,
         sufficientArBalance: profile.walletBalance >= totalCost,
         files: _fileUploadHandles.values.toList(),
+        bundle: _bundleUploadHandle,
+        useBundles: _useBundles,
       ),
     );
+  }
+
+  Future<BigInt> getPSTFee(BigInt uploadCost) async {
+    var pstFee = await _pst
+        .getPstFeePercentage()
+        .then((feePercentage) =>
+            // Workaround [BigInt] percentage division problems
+            // by first multiplying by the percentage * 100 and then dividing by 100.
+            uploadCost * BigInt.from(feePercentage * 100) ~/ BigInt.from(100))
+        .catchError((_) => BigInt.zero,
+            test: (err) => err is UnimplementedError);
+
+    final minimumPstTip = BigInt.from(10000000);
+    pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
+    return pstFee;
   }
 
   Future<void> startUpload() async {
@@ -212,9 +236,16 @@ class UploadCubit extends Cubit<UploadState> {
                 : RevisionAction.uploadNewVersion,
           ),
         );
-
-        await for (final _ in uploadHandle.upload(_arweave)) {
-          emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
+        if (_useBundles) {
+          await for (final _ in _bundleUploadHandle.upload(_arweave)) {
+            emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
+          }
+        } else {
+          {
+            await for (final _ in uploadHandle.upload(_arweave)) {
+              emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
+            }
+          }
         }
       }
     });
@@ -283,15 +314,6 @@ class UploadCubit extends Cubit<UploadState> {
     if (_useBundles) {
       uploadHandle.entityTx = await _arweave.prepareEntityDataItem(
           fileEntity, profile.wallet, fileKey);
-      uploadHandle.bundleTx = await _arweave.prepareDataBundleTx(
-        DataBundle(
-          items: [
-            (uploadHandle.entityTx as DataItem?)!,
-            (uploadHandle.dataTx as DataItem?)!,
-          ],
-        ),
-        profile.wallet,
-      );
     } else {
       uploadHandle.entityTx =
           await _arweave.prepareEntityTx(fileEntity, profile.wallet, fileKey);
