@@ -17,6 +17,8 @@ class DriveDetailActionRow extends StatelessWidget {
                 },
                 tooltip: 'Rename Drive',
               ),
+            ],
+            if (state.selectedItemId == null)
               IconButton(
                 icon: const Icon(Icons.table_chart),
                 onPressed: () {
@@ -25,7 +27,7 @@ class DriveDetailActionRow extends StatelessWidget {
                 },
                 tooltip: 'Export Drive Contents',
               ),
-            ], // A folder/file is selected.
+            // A folder/file is selected.
             if (state.selectedItemId != null) ...{
               if (!state.selectedItemIsFolder) ...{
                 IconButton(
