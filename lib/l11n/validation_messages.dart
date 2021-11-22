@@ -9,11 +9,14 @@ const kValidationMessages = {
       'A folder/file with this name is already present here.',
   AppValidationMessage.driveNameAlreadyPresent:
       'A drive with this name is already present.',
+  AppValidationMessage.fsEntryNameUnchanged:
+      'This name is identical to the current name.',
 };
 
 class AppValidationMessage {
   static const String passwordIncorrect = 'password-incorrect';
   static const String driveNotFound = 'drive-not-found';
   static const String fsEntryNameAlreadyPresent = 'name-already-present';
+  static const String fsEntryNameUnchanged = 'name-unchanged';
   static const String driveNameAlreadyPresent = 'drive-name-already-present';
 }

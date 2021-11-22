@@ -150,7 +150,8 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     final String newFolderName = control.value;
 
     if (newFolderName == folder.name) {
-      return null;
+      control.markAsTouched();
+      return {AppValidationMessage.fsEntryNameUnchanged: true};
     }
 
     // Check that the current folder does not already have a folder with the target file name.
@@ -177,7 +178,8 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     final String newFileName = control.value;
 
     if (newFileName == file.name) {
-      return null;
+      control.markAsTouched();
+      return {AppValidationMessage.fsEntryNameUnchanged: true};
     }
 
     // Check that the current folder does not already have a file with the target file name.
