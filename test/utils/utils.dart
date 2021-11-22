@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:math';
 
+import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:arweave/arweave.dart';
 import 'package:moor/ffi.dart';
+import 'package:moor/moor.dart';
 
 export 'matchers.dart';
 export 'mocks.dart';
@@ -24,4 +27,198 @@ Wallet getTestWallet() {
   }''');
 
   return Wallet.fromJwk(walletJwk);
+}
+
+Future<void> addTestFilesToDb(
+  Database db, {
+  required String driveId,
+  required String rootFolderId,
+  required String nestedFolderId,
+  required int emptyNestedFolderCount,
+  required String emptyNestedFolderIdPrefix,
+  required int rootFolderFileCount,
+  required int nestedFolderFileCount,
+  int seed = 0,
+}) async {
+  await db.batch((batch) {
+    // Default date
+    final defaultDate = DateTime(2017, 9, 7, 17, 30);
+    // Create fake drive for test
+    batch.insert(
+      db.drives,
+      DrivesCompanion.insert(
+        id: driveId,
+        rootFolderId: rootFolderId,
+        ownerAddress: 'fake-owner-address',
+        name: 'fake-drive-name',
+        privacy: DrivePrivacy.public,
+      ),
+    );
+    // Create fake root folder for drive and sub folders
+    batch.insertAll(
+      db.folderEntries,
+      [
+        FolderEntriesCompanion.insert(
+            id: rootFolderId,
+            driveId: driveId,
+            name: 'fake-drive-name',
+            path: ''),
+        FolderEntriesCompanion.insert(
+            id: nestedFolderId,
+            driveId: driveId,
+            parentFolderId: Value(rootFolderId),
+            name: nestedFolderId,
+            path: '/$nestedFolderId'),
+        ...List.generate(
+          emptyNestedFolderCount,
+          (i) {
+            final folderId = '$emptyNestedFolderIdPrefix$i';
+            return FolderEntriesCompanion.insert(
+              id: folderId,
+              driveId: driveId,
+              parentFolderId: Value(rootFolderId),
+              name: folderId,
+              path: '/$folderId',
+            );
+          },
+        )..shuffle(Random(0)),
+      ],
+    );
+    // Insert fake files
+    batch.insertAll(
+      db.fileEntries,
+      [
+        ...List.generate(
+          rootFolderFileCount,
+          (i) {
+            final fileId = '$rootFolderId$i';
+            return FileEntriesCompanion.insert(
+              id: fileId,
+              driveId: driveId,
+              parentFolderId: rootFolderId,
+              name: fileId,
+              path: '/$fileId',
+              dataTxId: fileId + 'Data',
+              size: 500,
+              dateCreated: Value(defaultDate),
+              lastModifiedDate: defaultDate,
+              dataContentType: Value(''),
+            );
+          },
+        )..shuffle(Random(0)),
+        ...List.generate(
+          nestedFolderFileCount,
+          (i) {
+            final fileId = '$nestedFolderId$i';
+            return FileEntriesCompanion.insert(
+              id: fileId,
+              driveId: driveId,
+              parentFolderId: nestedFolderId,
+              name: fileId,
+              path: '/$nestedFolderId/$fileId',
+              dataTxId: fileId + 'Data',
+              size: 500,
+              dateCreated: Value(defaultDate),
+              lastModifiedDate: defaultDate,
+              dataContentType: Value(''),
+            );
+          },
+        )..shuffle(Random(0)),
+      ],
+    );
+    // Insert fake file revisions
+    batch.insertAll(
+      db.fileRevisions,
+      [
+        ...List.generate(
+          rootFolderFileCount,
+          (i) {
+            final fileId = '$rootFolderId$i';
+            return FileRevisionsCompanion.insert(
+              fileId: fileId,
+              driveId: driveId,
+              parentFolderId: rootFolderId,
+              name: fileId,
+              metadataTxId: fileId + 'Meta',
+              action: RevisionAction.create,
+              dataTxId: fileId + 'Data',
+              size: 500,
+              dateCreated: Value(defaultDate),
+              lastModifiedDate: defaultDate,
+              dataContentType: Value(''),
+            );
+          },
+        )..shuffle(Random(0)),
+        ...List.generate(
+          nestedFolderFileCount,
+          (i) {
+            final fileId = '$nestedFolderId$i';
+            return FileRevisionsCompanion.insert(
+              fileId: fileId,
+              driveId: driveId,
+              parentFolderId: nestedFolderId,
+              name: fileId,
+              dataTxId: fileId + 'Meta',
+              metadataTxId: fileId + 'Data',
+              action: RevisionAction.create,
+              size: 500,
+              dateCreated: Value(defaultDate),
+              lastModifiedDate: defaultDate,
+              dataContentType: Value(''),
+            );
+          },
+        )..shuffle(Random(0)),
+      ],
+    );
+    // Insert fake metadata and data transactions
+    batch.insertAll(
+      db.networkTransactions,
+      [
+        ...List.generate(
+          rootFolderFileCount,
+          (i) {
+            final fileId = '$rootFolderId$i';
+            return NetworkTransactionsCompanion.insert(
+              id: fileId + 'Meta',
+              status: Value(TransactionStatus.confirmed),
+              dateCreated: Value(defaultDate),
+            );
+          },
+        )..shuffle(Random(0)),
+        ...List.generate(
+          rootFolderFileCount,
+          (i) {
+            final fileId = '$rootFolderId$i';
+            return NetworkTransactionsCompanion.insert(
+              id: fileId + 'Data',
+              status: Value(TransactionStatus.confirmed),
+              dateCreated: Value(defaultDate),
+            );
+          },
+        )..shuffle(Random(0)),
+        ...List.generate(
+          nestedFolderFileCount,
+          (i) {
+            final fileId = '$nestedFolderId$i';
+            return NetworkTransactionsCompanion.insert(
+              id: fileId + 'Meta',
+              status: Value(TransactionStatus.confirmed),
+              dateCreated: Value(defaultDate),
+            );
+          },
+        )..shuffle(Random(0)),
+        ...List.generate(
+          nestedFolderFileCount,
+          (i) {
+            final fileId = '$nestedFolderId$i';
+            return NetworkTransactionsCompanion.insert(
+              id: fileId + 'Data',
+              status: Value(TransactionStatus.confirmed),
+              dateCreated: Value(defaultDate),
+            );
+          },
+        )..shuffle(Random(0)),
+      ],
+    );
+  });
 }
