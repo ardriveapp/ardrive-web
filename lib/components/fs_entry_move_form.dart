@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -13,38 +14,43 @@ Future<void> promptToMoveFolder(
   required String driveId,
   required String folderId,
 }) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider(
-        create: (context) => FsEntryMoveCubit(
-          driveId: driveId,
-          folderId: folderId,
-          arweave: context.read<ArweaveService>(),
-          driveDao: context.read<DriveDao>(),
-          profileCubit: context.read<ProfileCubit>(),
-          syncCubit: context.read<SyncCubit>(),
-        ),
-        child: FsEntryMoveForm(),
-      ),
-    );
+    showCongestionWarning(
+        context,
+        () => showDialog(
+              context: context,
+              builder: (_) => BlocProvider(
+                create: (context) => FsEntryMoveCubit(
+                  driveId: driveId,
+                  folderId: folderId,
+                  arweave: context.read<ArweaveService>(),
+                  driveDao: context.read<DriveDao>(),
+                  profileCubit: context.read<ProfileCubit>(),
+                  syncCubit: context.read<SyncCubit>(),
+                ),
+                child: FsEntryMoveForm(),
+              ),
+            ));
 
 Future<void> promptToMoveFile(
   BuildContext context, {
   required String driveId,
   required String fileId,
 }) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider(
-        create: (context) => FsEntryMoveCubit(
-          driveId: driveId,
-          fileId: fileId,
-          arweave: context.read<ArweaveService>(),
-          driveDao: context.read<DriveDao>(),
-          profileCubit: context.read<ProfileCubit>(),
-          syncCubit: context.read<SyncCubit>(),
+    showCongestionWarning(
+      context,
+      () => showDialog(
+        context: context,
+        builder: (_) => BlocProvider(
+          create: (context) => FsEntryMoveCubit(
+            driveId: driveId,
+            fileId: fileId,
+            arweave: context.read<ArweaveService>(),
+            driveDao: context.read<DriveDao>(),
+            profileCubit: context.read<ProfileCubit>(),
+            syncCubit: context.read<SyncCubit>(),
+          ),
+          child: FsEntryMoveForm(),
         ),
-        child: FsEntryMoveForm(),
       ),
     );
 
