@@ -467,7 +467,7 @@ class ArweaveService {
 
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
-    final bundleBlob = await bundle.asBlob(wallet);
+    final bundleBlob = await bundle.asBlob();
     final bundleTx = await client.transactions.prepare(
       Transaction.withDataBundle(bundleBlob: bundleBlob)..addApplicationTags(),
       wallet,
