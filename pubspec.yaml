@@ -54,6 +54,7 @@ dependencies:
   package_info_plus: ^1.0.3
   js: ^0.6.3
   collection: ^1.15.0-nullsafety.4
+  csv: 5.0.0
 
 dev_dependencies:
   flutter_test:
