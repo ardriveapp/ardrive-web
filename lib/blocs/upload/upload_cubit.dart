@@ -43,7 +43,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// The [Transaction] that pays `pstFee` to a random PST holder.
   Transaction? feeTx;
-
+  final bool _useBundles = true;
   UploadCubit({
     required this.driveId,
     required this.folderId,
