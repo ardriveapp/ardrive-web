@@ -12,7 +12,7 @@ class BundleUploadHandle {
   }
 
   double uploadProgress = 0;
-
+  
   /// Uploads the file, emitting an event whenever the progress is updated.
   Stream<Null> upload(ArweaveService arweave) async* {
     await for (final upload in arweave.client.transactions.upload(bundleTx)) {
