@@ -42,7 +42,9 @@ class UploadCubit extends Cubit<UploadState> {
   /// The [Transaction] that pays `pstFee` to a random PST holder.
   Transaction? feeTx;
 
-  final bool _useBundles = true;
+  final bundleSizeLimit = 503316480;
+
+  bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
   UploadCubit({
     required this.driveId,
@@ -251,8 +253,7 @@ class UploadCubit extends Cubit<UploadState> {
     final fileData = await file.readAsBytes();
 
     final uploadHandle = FileUploadHandle(entity: fileEntity, path: filePath);
-
-    if (_useBundles) {
+    if (fileSizeWithinBundleLimits(fileData.length)) {
       uploadHandle.dataTx = private
           ? await createEncryptedDataItem(fileData, fileKey!)
           : DataItem.withBlobData(data: fileData);
@@ -280,7 +281,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     fileEntity.dataTxId = uploadHandle.dataTx!.id;
 
-    if (_useBundles) {
+    if (fileSizeWithinBundleLimits(fileData.length)) {
       uploadHandle.entityTx = await _arweave.prepareEntityDataItem(
           fileEntity, profile.wallet, fileKey);
       final entityDataItem = (uploadHandle.entityTx as DataItem?)!;
