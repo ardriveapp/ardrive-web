@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       logLevel:
-        description: "Log level"
+        description: 'Log level'
         required: true
-        default: "warning"
+        default: 'warning'
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -18,7 +18,7 @@ jobs:
           persist-credentials: false
       - uses: subosito/flutter-action@v1
         with:
-          flutter-version: "2.2.3"
+          flutter-version: '2.2.3'
       - name: Prepare app
         run: |
           flutter pub get
