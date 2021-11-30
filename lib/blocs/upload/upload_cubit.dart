@@ -42,7 +42,7 @@ class UploadCubit extends Cubit<UploadState> {
   /// The [Transaction] that pays `pstFee` to a random PST holder.
   Transaction? feeTx;
 
-  final bundleSizeLimit = 503316480;
+  final bundleSizeLimit = 250 * math.pow(2, 20);
 
   bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
