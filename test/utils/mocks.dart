@@ -37,7 +37,7 @@ class MockProfile extends Mock implements Profile {
   @override
   int get profileType => ProfileType.JSON.index;
   @override
-  String get id => 'Test';
+  String get id => 'testID';
   @override
-  String get username => 'Test';
+  String get username => 'testUserName';
 }
