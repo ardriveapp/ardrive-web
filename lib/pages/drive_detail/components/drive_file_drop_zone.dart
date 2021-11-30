@@ -71,7 +71,14 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
       final fileName = await controller.getFilename(htmlFile);
       final fileMIME = await controller.getFileMIME(htmlFile);
       final fileLength = await controller.getFileSize(htmlFile);
-      final fileLastModified = await controller.getFileLastModified(htmlFile);
+      var fileLastModified;
+      // In case of browsers that don't support it. Fails on firefox for now
+      try {
+        fileLastModified = await controller.getFileLastModified(htmlFile);
+      } catch (e) {
+        fileLastModified = DateTime.now();
+      }
+
       final htmlUrl = await controller.createFileUrl(htmlFile);
       final fileToUpload = XFile(
         htmlUrl,
