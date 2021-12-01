@@ -34,7 +34,7 @@ class AppDrawer extends StatelessWidget {
                     child: Column(
                       children: [
                         SizedBox(
-                          height: 32,
+                          height: 48,
                         ),
                         Image.asset(
                           R.images.brand.logoHorizontalNoSubtitleDark,
