@@ -36,7 +36,11 @@ class AppDrawer extends StatelessWidget {
                         SizedBox(
                           height: 32,
                         ),
-                        _buildLogo(),
+                        Image.asset(
+                          R.images.brand.logoHorizontalNoSubtitleDark,
+                          height: 32,
+                          fit: BoxFit.contain,
+                        ),
                         SizedBox(
                           height: 32,
                         ),
@@ -138,16 +142,6 @@ class AppDrawer extends StatelessWidget {
           ),
         ),
       );
-  Widget _buildLogo() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Image.asset(
-        R.images.brand.logoHorizontalNoSubtitleDark,
-        height: 32,
-        fit: BoxFit.contain,
-      ),
-    );
-  }
 
   Widget _buildDriveActionsButton(BuildContext context, DrivesState drivesState,
       ProfileState profileState) {
