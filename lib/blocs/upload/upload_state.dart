@@ -52,7 +52,7 @@ class UploadReady extends UploadState {
   final bool uploadIsPublic;
 
   final List<FileUploadHandle> files;
-  final BundleUploadHandle? bundle;
+  final List<BundleUploadHandle> bundles;
 
   UploadReady({
     required this.arUploadCost,
@@ -61,7 +61,7 @@ class UploadReady extends UploadState {
     required this.sufficientArBalance,
     required this.uploadIsPublic,
     required this.files,
-    this.bundle,
+    required this.bundles,
     this.usdUploadCost,
   });
 
@@ -77,11 +77,10 @@ class UploadReady extends UploadState {
 }
 
 class UploadInProgress extends UploadState {
-  final List<FileUploadHandle>? files;
+  final List<UploadHandle>? files;
 
   final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
-  final bool useBundles;
-  UploadInProgress({this.files, this.useBundles = false});
+  UploadInProgress({this.files});
 
   @override
   List<Object?> get props => [files, _equatableBust];
