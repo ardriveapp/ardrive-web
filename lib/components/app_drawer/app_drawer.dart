@@ -10,11 +10,16 @@ import 'package:url_launcher/link.dart';
 import '../components.dart';
 import 'drive_list_tile.dart';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   const AppDrawer({
     Key? key,
   }) : super(key: key);
 
+  @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
   @override
   Widget build(BuildContext context) => ListTileTheme(
         style: ListTileStyle.drawer,
