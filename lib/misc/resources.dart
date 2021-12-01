@@ -1,5 +1,6 @@
 class R {
   static final images = Images();
+  static final svgs = Svg();
   static final insufficientARWarning = 'Insufficient Funds';
   static final arHelpLink =
       'https://ardrive.io/questions/where-do-i-get-additional-arweave-tokens/';
@@ -23,6 +24,19 @@ class Brand {
       'assets/images/brand/logo-horiz-no-subtitle-light.png';
   final logoVerticalNoSubtitle =
       'assets/images/brand/logo-vert-no-subtitle.png';
+}
+
+class Svg {
+  const Svg();
+
+  final brand = const SvgBrand();
+}
+
+class SvgBrand {
+  const SvgBrand();
+
+  final logoHorizontalNoSubtitleDark =
+      'assets/svgs/brand/logo-horiz-no-subtitle-dark.svg';
 }
 
 class Profile {

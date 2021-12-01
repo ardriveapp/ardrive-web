@@ -55,6 +55,7 @@ dependencies:
   js: ^0.6.3
   collection: ^1.15.0-nullsafety.4
   csv: 5.0.0
+  flutter_svg: ^0.23.0+1
   
 
 dev_dependencies:
@@ -80,3 +81,4 @@ flutter:
     - assets/fonts/
     - assets/images/brand/
     - assets/images/profile/
+    - assets/svgs/brand/

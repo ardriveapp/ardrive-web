@@ -4,6 +4,7 @@ import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/link.dart';
 
@@ -41,8 +42,9 @@ class _AppDrawerState extends State<AppDrawer> {
                         SizedBox(
                           height: 48,
                         ),
-                        Image.asset(
-                          R.images.brand.logoHorizontalNoSubtitleDark,
+                        SvgPicture.asset(
+                          R.svgs.brand.logoHorizontalNoSubtitleDark,
+                          semanticsLabel: 'ArDrive Logo',
                           height: 32,
                           fit: BoxFit.contain,
                         ),
