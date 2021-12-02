@@ -3,6 +3,7 @@ import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'entities.dart';
 
@@ -55,9 +56,10 @@ class EntityTransactionParseException implements Exception {}
 
 extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the app name, version, and the specified unix time.
-  void addApplicationTags({DateTime? unixTime}) {
+  void addApplicationTags({DateTime? unixTime}) async {
+    final packageInfo = await PackageInfo.fromPlatform();
     addTag(EntityTag.appName, 'ArDrive-Web');
-    addTag(EntityTag.appVersion, '0.1.0');
+    addTag(EntityTag.appVersion, packageInfo.version);
     addTag(
         EntityTag.unixTime,
         ((unixTime ?? DateTime.now()).millisecondsSinceEpoch ~/ 1000)
