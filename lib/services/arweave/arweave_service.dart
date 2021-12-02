@@ -467,8 +467,9 @@ class ArweaveService {
 
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
+    final bundleBlob = await bundle.asBlob();
     final bundleTx = await client.transactions.prepare(
-      Transaction.withDataBundle(bundle: bundle)..addApplicationTags(),
+      Transaction.withDataBundle(bundleBlob: bundleBlob)..addApplicationTags(),
       wallet,
     );
 
@@ -477,8 +478,14 @@ class ArweaveService {
     return bundleTx;
   }
 
-  Future<void> postTx(Transaction transaction) =>
-      client.transactions.post(transaction);
+  Future<void> postTx(
+    Transaction transaction, {
+    bool dryRun = false,
+  }) =>
+      client.transactions.post(
+        transaction,
+        dryRun: dryRun,
+      );
 
   Future<double> getArUsdConversionRate() async {
     final client = http.Client();
