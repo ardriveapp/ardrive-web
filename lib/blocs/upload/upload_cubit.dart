@@ -227,67 +227,64 @@ class UploadCubit extends Cubit<UploadState> {
       await _arweave.postTx(feeTx!);
     }
     await _driveDao.transaction(() async {
-      final bundleItems = <List<DataItem>>[];
-      final dataItemsToBundle = <DataItem>[];
+      final bundleItems = <List<FileUploadHandle>>[];
+      final dataItemsToBundle = <FileUploadHandle>[];
       for (final uploadHandle in _dataItemUploadHandles.values) {
-        final fileEntity = uploadHandle.entity;
-        if (uploadHandle.entityTx?.id != null) {
-          fileEntity.txId = uploadHandle.entityTx!.id;
-        }
-
-        await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
-        await _driveDao.insertFileRevision(
-          fileEntity.toRevisionCompanion(
-            performedAction: !conflictingFiles.containsKey(fileEntity.name)
-                ? RevisionAction.create
-                : RevisionAction.uploadNewVersion,
-          ),
-        );
         final dataItemsToBundleSize = dataItemsToBundle.isNotEmpty
             ? dataItemsToBundle
-                .map((e) => e.data.lengthInBytes)
+                .map((e) => e.size as int)
                 .reduce((value, element) => value += element)
             : 0;
         final currentDataItemsSize = uploadHandle.size ?? 0;
         final addToBundle = fileSizeWithinBundleLimits(
             dataItemsToBundleSize + currentDataItemsSize);
         if (addToBundle) {
-          dataItemsToBundle.addAll(uploadHandle.asDataItems());
+          dataItemsToBundle.add(uploadHandle);
         } else {
           bundleItems.add(dataItemsToBundle);
           dataItemsToBundle.clear();
         }
       }
-
+      if (dataItemsToBundle.isNotEmpty) {
+        bundleItems.add(dataItemsToBundle);
+      }
       //Create bundles
-      for (var dataItems in bundleItems) {
+      for (var uploadHandles in bundleItems) {
+        for (var uploadHandle in uploadHandles) {
+          final fileEntity = uploadHandle.entity;
+          if (uploadHandle.entityTx?.id != null) {
+            fileEntity.txId = uploadHandle.entityTx!.id;
+          }
+
+          await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
+          await _driveDao.insertFileRevision(
+            fileEntity.toRevisionCompanion(
+              performedAction: !conflictingFiles.containsKey(fileEntity.name)
+                  ? RevisionAction.create
+                  : RevisionAction.uploadNewVersion,
+            ),
+          );
+        }
         _bundleUploadHandles.add(BundleUploadHandle(
             await _arweave.prepareDataBundleTx(
                 DataBundle(
-                  items: dataItems,
+                  items: uploadHandles
+                      .map((e) => e.asDataItems().toList())
+                      .reduce((value, element) => value += element)
+                      .toList(),
                 ),
                 profile.wallet),
-            dataItems
-                .map((e) => e.data.lengthInBytes)
+            uploadHandles
+                .map((e) => e.size as int)
                 .reduce((value, element) => value += element)));
-        dataItems.clear();
+        uploadHandles.clear();
       }
 
-      if (dataItemsToBundle.isNotEmpty) {
-        _bundleUploadHandles.add(BundleUploadHandle(
-            await _arweave.prepareDataBundleTx(
-                DataBundle(items: dataItemsToBundle), profile.wallet),
-            dataItemsToBundle
-                .map((e) => e.data.lengthInBytes)
-                .reduce((value, element) => value += element)));
-        dataItemsToBundle.clear();
-      }
       emit(UploadInProgress(
         files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
             _bundleUploadHandles,
       ));
       for (var uploadHandle in _bundleUploadHandles) {
-        print('i am here');
         await for (final _ in uploadHandle.upload(_arweave)) {
           emit(UploadInProgress(
             files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
