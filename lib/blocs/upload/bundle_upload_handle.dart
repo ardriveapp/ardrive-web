@@ -4,9 +4,8 @@ import 'package:arweave/arweave.dart';
 
 class BundleUploadHandle implements UploadHandle {
   final Transaction bundleTx;
-  final List<DataItem> dataItems = [];
 
-  BundleUploadHandle(this.bundleTx);
+  BundleUploadHandle(this.bundleTx, this.size);
 
   @override
   BigInt get cost {
@@ -25,11 +24,7 @@ class BundleUploadHandle implements UploadHandle {
   }
 
   @override
-  int get size => dataItems.isEmpty
-      ? 0
-      : dataItems
-          .map((e) => e.data.lengthInBytes)
-          .reduce((value, element) => value += element);
+  int size;
 
   @override
   int get uploadedSize => (size * uploadProgress).round();

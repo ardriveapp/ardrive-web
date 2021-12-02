@@ -188,7 +188,8 @@ class UploadCubit extends Cubit<UploadState> {
         totalCost: totalCost,
         uploadIsPublic: _targetDrive.isPublic,
         sufficientArBalance: profile.walletBalance >= totalCost,
-        files: _fileUploadHandles.values.toList(),
+        files: _fileUploadHandles.values.toList() +
+            _dataItemUploadHandles.values.toList(),
         bundles: _bundleUploadHandles,
       ),
     );
@@ -217,30 +218,15 @@ class UploadCubit extends Cubit<UploadState> {
       emit(UploadWalletMismatch());
       return;
     }
-    emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
+
+    emit(UploadInProgress(
+        files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
+            _dataItemUploadHandles.values.toList()));
 
     if (feeTx != null) {
       await _arweave.postTx(feeTx!);
     }
     await _driveDao.transaction(() async {
-      for (final uploadHandle in _fileUploadHandles.values) {
-        final fileEntity = uploadHandle.entity;
-        if (uploadHandle.entityTx?.id != null) {
-          fileEntity.txId = uploadHandle.entityTx!.id;
-        }
-
-        await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
-        await _driveDao.insertFileRevision(
-          fileEntity.toRevisionCompanion(
-            performedAction: !conflictingFiles.containsKey(fileEntity.name)
-                ? RevisionAction.create
-                : RevisionAction.uploadNewVersion,
-          ),
-        );
-        await for (final _ in uploadHandle.upload(_arweave)) {
-          emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
-        }
-      }
       final bundleItems = <List<DataItem>>[];
       final dataItemsToBundle = <DataItem>[];
       for (final uploadHandle in _dataItemUploadHandles.values) {
@@ -272,26 +258,62 @@ class UploadCubit extends Cubit<UploadState> {
           dataItemsToBundle.clear();
         }
       }
+
       //Create bundles
       for (var dataItems in bundleItems) {
-        _bundleUploadHandles
-            .add(BundleUploadHandle(await _arweave.prepareDataBundleTx(
+        _bundleUploadHandles.add(BundleUploadHandle(
+            await _arweave.prepareDataBundleTx(
                 DataBundle(
                   items: dataItems,
                 ),
-                profile.wallet)));
+                profile.wallet),
+            dataItems
+                .map((e) => e.data.lengthInBytes)
+                .reduce((value, element) => value += element)));
         dataItems.clear();
       }
 
       if (dataItemsToBundle.isNotEmpty) {
         _bundleUploadHandles.add(BundleUploadHandle(
             await _arweave.prepareDataBundleTx(
-                DataBundle(items: dataItemsToBundle), profile.wallet)));
+                DataBundle(items: dataItemsToBundle), profile.wallet),
+            dataItemsToBundle
+                .map((e) => e.data.lengthInBytes)
+                .reduce((value, element) => value += element)));
         dataItemsToBundle.clear();
       }
+      emit(UploadInProgress(
+        files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
+            _bundleUploadHandles,
+      ));
       for (var uploadHandle in _bundleUploadHandles) {
+        print('i am here');
         await for (final _ in uploadHandle.upload(_arweave)) {
-          emit(UploadInProgress(files: _bundleUploadHandles));
+          emit(UploadInProgress(
+            files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
+                _bundleUploadHandles,
+          ));
+        }
+      }
+      for (final uploadHandle in _fileUploadHandles.values) {
+        final fileEntity = uploadHandle.entity;
+        if (uploadHandle.entityTx?.id != null) {
+          fileEntity.txId = uploadHandle.entityTx!.id;
+        }
+
+        await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
+        await _driveDao.insertFileRevision(
+          fileEntity.toRevisionCompanion(
+            performedAction: !conflictingFiles.containsKey(fileEntity.name)
+                ? RevisionAction.create
+                : RevisionAction.uploadNewVersion,
+          ),
+        );
+        await for (final _ in uploadHandle.upload(_arweave)) {
+          emit(UploadInProgress(
+            files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
+                _bundleUploadHandles,
+          ));
         }
       }
     });
