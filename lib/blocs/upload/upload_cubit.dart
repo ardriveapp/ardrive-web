@@ -43,7 +43,7 @@ class UploadCubit extends Cubit<UploadState> {
   Transaction? feeTx;
 
   final bundleSizeLimit = 503316480;
-
+  final privateFileSizeLimit = 104858;
   bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
   UploadCubit({
@@ -109,7 +109,7 @@ class UploadCubit extends Cubit<UploadState> {
     }
     emit(UploadPreparationInProgress());
     final sizeLimit = (_targetDrive.isPrivate
-        ? math.pow(10, 8)
+        ? privateFileSizeLimit
         : 1.25 * math.pow(10, 9)) as int;
     final tooLargeFiles = [
       for (final file in files)
@@ -286,7 +286,7 @@ class UploadCubit extends Cubit<UploadState> {
           fileEntity, profile.wallet, fileKey);
       final entityDataItem = (uploadHandle.entityTx as DataItem?)!;
       final dataDataItem = (uploadHandle.dataTx as DataItem?)!;
-      
+
       await entityDataItem.sign(profile.wallet);
       await dataDataItem.sign(profile.wallet);
 
