@@ -27,9 +27,10 @@ abstract class Entity {
     final tx = key == null
         ? Transaction.withJsonData(data: this)
         : await createEncryptedEntityTransaction(this, key);
+    final packageInfo = await PackageInfo.fromPlatform();
 
     addEntityTagsToTransaction(tx);
-
+    tx.addApplicationTags(version: packageInfo.version, unixTime: createdAt);
     return tx;
   }
 
@@ -42,8 +43,9 @@ abstract class Entity {
     final item = key == null
         ? DataItem.withJsonData(data: this)
         : await createEncryptedEntityDataItem(this, key);
-
+    final packageInfo = await PackageInfo.fromPlatform();
     addEntityTagsToTransaction(item);
+    item.addApplicationTags(version: packageInfo.version);
 
     return item;
   }
@@ -56,10 +58,9 @@ class EntityTransactionParseException implements Exception {}
 
 extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the app name, version, and the specified unix time.
-  void addApplicationTags({DateTime? unixTime}) async {
-    final packageInfo = await PackageInfo.fromPlatform();
+  void addApplicationTags({required String version, DateTime? unixTime}) {
     addTag(EntityTag.appName, 'ArDrive-Web');
-    addTag(EntityTag.appVersion, packageInfo.version);
+    addTag(EntityTag.appVersion, version);
     addTag(
         EntityTag.unixTime,
         ((unixTime ?? DateTime.now()).millisecondsSinceEpoch ~/ 1000)

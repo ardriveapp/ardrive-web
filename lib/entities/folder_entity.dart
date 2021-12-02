@@ -58,7 +58,6 @@ class FolderEntity extends Entity {
     assert(id != null && driveId != null && name != null);
 
     tx
-      ..addApplicationTags(unixTime: createdAt)
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.folder)
       ..addTag(EntityTag.driveId, driveId!)
