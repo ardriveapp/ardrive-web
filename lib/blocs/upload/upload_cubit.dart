@@ -284,11 +284,17 @@ class UploadCubit extends Cubit<UploadState> {
     if (fileSizeWithinBundleLimits(fileData.length)) {
       uploadHandle.entityTx = await _arweave.prepareEntityDataItem(
           fileEntity, profile.wallet, fileKey);
+      final entityDataItem = (uploadHandle.entityTx as DataItem?)!;
+      final dataDataItem = (uploadHandle.dataTx as DataItem?)!;
+      
+      await entityDataItem.sign(profile.wallet);
+      await dataDataItem.sign(profile.wallet);
+
       uploadHandle.bundleTx = await _arweave.prepareDataBundleTx(
         DataBundle(
           items: [
-            (uploadHandle.entityTx as DataItem?)!,
-            (uploadHandle.dataTx as DataItem?)!,
+            entityDataItem,
+            dataDataItem,
           ],
         ),
         profile.wallet,
