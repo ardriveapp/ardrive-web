@@ -265,18 +265,29 @@ class UploadCubit extends Cubit<UploadState> {
             ),
           );
         }
-        _bundleUploadHandles.add(BundleUploadHandle(
-            await _arweave.prepareDataBundleTx(
-                DataBundle(
-                  items: uploadHandles
-                      .map((e) => e.asDataItems().toList())
-                      .reduce((value, element) => value += element)
-                      .toList(),
-                ),
-                profile.wallet),
-            uploadHandles
-                .map((e) => e.size as int)
-                .reduce((value, element) => value += element)));
+        final dataItems = uploadHandles
+            .map((e) => e.asDataItems().toList())
+            .reduce((value, element) => value += element)
+            .toList();
+        final dataItemTotalSize = uploadHandles
+            .map((e) => e.size as int)
+            .reduce((value, element) => value += element);
+        // DataItems must be signed here for bundle.verify() to be true
+        for (var item in dataItems) {
+          await item.sign(profile.wallet);
+        }
+        final dataBundle = DataBundle(
+          items: uploadHandles
+              .map((e) => e.asDataItems().toList())
+              .reduce((value, element) => value += element)
+              .toList(),
+        );
+        _bundleUploadHandles.add(
+          BundleUploadHandle(
+            await _arweave.prepareDataBundleTx(dataBundle, profile.wallet),
+            dataItemTotalSize,
+          ),
+        );
         uploadHandles.clear();
       }
 
@@ -357,9 +368,6 @@ class UploadCubit extends Cubit<UploadState> {
       // Prepare Metadata Tx
       uploadHandle.entityTx = await _arweave.prepareEntityDataItem(
           fileEntity, profile.wallet, fileKey);
-      // Sign Data Items
-      await (uploadHandle.entityTx as DataItem).sign(profile.wallet);
-      await (uploadHandle.dataTx as DataItem).sign(profile.wallet);
     } else {
       // Prepare Data Tx
       uploadHandle.dataTx = await _arweave.client.transactions.prepare(
@@ -368,7 +376,6 @@ class UploadCubit extends Cubit<UploadState> {
             : Transaction.withBlobData(data: fileData),
         profile.wallet,
       );
-      await uploadHandle.dataTx!.sign(profile.wallet);
       // Prepare Metadata Tx
       uploadHandle.entityTx =
           await _arweave.prepareEntityTx(fileEntity, profile.wallet, fileKey);
@@ -383,7 +390,9 @@ class UploadCubit extends Cubit<UploadState> {
         fileEntity.dataContentType!,
       );
     }
-
+    
+    // Sign dataTx to obtain id
+    await uploadHandle.dataTx!.sign(profile.wallet);
     fileEntity.dataTxId = uploadHandle.dataTx!.id;
 
     return uploadHandle;
