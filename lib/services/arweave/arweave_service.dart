@@ -7,6 +7,7 @@ import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart' as http;
 import 'package:moor/moor.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pedantic/pedantic.dart';
 
 import '../services.dart';
@@ -468,8 +469,11 @@ class ArweaveService {
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
     final bundleBlob = await bundle.asBlob();
+    final packageInfo = await PackageInfo.fromPlatform();
+
     final bundleTx = await client.transactions.prepare(
-      Transaction.withDataBundle(bundleBlob: bundleBlob)..addApplicationTags(),
+      Transaction.withDataBundle(bundleBlob: bundleBlob)
+        ..addApplicationTags(version: packageInfo.version),
       wallet,
     );
 
