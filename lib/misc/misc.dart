@@ -10,3 +10,5 @@ const kTrimTrailingRegex = r'[^\s \.]+$';
     Change back to previous regex with lookbehind when
     Safari supports it.
   */
+
+const mempoolWarningSizeLimit = 1000;

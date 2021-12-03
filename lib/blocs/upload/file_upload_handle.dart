@@ -37,14 +37,22 @@ class FileUploadHandle {
 
   /// Uploads the file, emitting an event whenever the progress is updated.
   Stream<Null> upload(ArweaveService arweave) async* {
-    if (entityTx != null) {
-      await arweave.postTx(entityTx as Transaction);
-    }
+    if (bundleTx != null) {
+      await for (final upload
+          in arweave.client.transactions.upload(bundleTx!)) {
+        uploadProgress = upload.progress;
+        yield null;
+      }
+    } else {
+      if (entityTx != null) {
+        await arweave.postTx(entityTx as Transaction);
+      }
 
-    await for (final upload
-        in arweave.client.transactions.upload(dataTx as Transaction? ?? bundleTx!)) {
-      uploadProgress = upload.progress;
-      yield null;
+      await for (final upload
+          in arweave.client.transactions.upload(dataTx as Transaction)) {
+        uploadProgress = upload.progress;
+        yield null;
+      }
     }
   }
 }
