@@ -43,7 +43,7 @@ class UploadCubit extends Cubit<UploadState> {
   Transaction? feeTx;
 
   final bundleSizeLimit = 503316480;
-  final privateFileSizeLimit = 104858;
+  final privateFileSizeLimit = 104857600;
   bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
   UploadCubit({
