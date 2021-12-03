@@ -366,7 +366,7 @@ class UploadCubit extends Cubit<UploadState> {
           : DataItem.withBlobData(data: fileData);
       uploadHandle.dataTx!.setOwner(await profile.wallet.getOwner());
       // Sign dataTx to obtain id
-      await uploadHandle.dataTx!.sign(profile.wallet);
+      await (uploadHandle.dataTx! as DataItem).sign(profile.wallet);
       fileEntity.dataTxId = uploadHandle.dataTx!.id;
       // Prepare Metadata Tx
       uploadHandle.entityTx = await _arweave.prepareEntityDataItem(
