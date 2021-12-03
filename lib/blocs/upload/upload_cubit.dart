@@ -365,6 +365,9 @@ class UploadCubit extends Cubit<UploadState> {
           ? await createEncryptedDataItem(fileData, fileKey!)
           : DataItem.withBlobData(data: fileData);
       uploadHandle.dataTx!.setOwner(await profile.wallet.getOwner());
+      // Sign dataTx to obtain id
+      await uploadHandle.dataTx!.sign(profile.wallet);
+      fileEntity.dataTxId = uploadHandle.dataTx!.id;
       // Prepare Metadata Tx
       uploadHandle.entityTx = await _arweave.prepareEntityDataItem(
           fileEntity, profile.wallet, fileKey);
@@ -376,6 +379,9 @@ class UploadCubit extends Cubit<UploadState> {
             : Transaction.withBlobData(data: fileData),
         profile.wallet,
       );
+      // Sign dataTx to obtain id
+      await uploadHandle.dataTx!.sign(profile.wallet);
+      fileEntity.dataTxId = uploadHandle.dataTx!.id;
       // Prepare Metadata Tx
       uploadHandle.entityTx =
           await _arweave.prepareEntityTx(fileEntity, profile.wallet, fileKey);
@@ -390,10 +396,6 @@ class UploadCubit extends Cubit<UploadState> {
         fileEntity.dataContentType!,
       );
     }
-    
-    // Sign dataTx to obtain id
-    await uploadHandle.dataTx!.sign(profile.wallet);
-    fileEntity.dataTxId = uploadHandle.dataTx!.id;
 
     return uploadHandle;
   }
