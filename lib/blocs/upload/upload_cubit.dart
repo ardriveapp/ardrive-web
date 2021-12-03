@@ -396,7 +396,7 @@ class UploadCubit extends Cubit<UploadState> {
         fileEntity.dataContentType!,
       );
     }
-
+    assert(fileEntity.dataTxId != null);
     return uploadHandle;
   }
 
