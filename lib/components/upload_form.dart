@@ -219,6 +219,21 @@ class UploadForm extends StatelessWidget {
                 ),
               ],
             );
+          } else if (state is UploadBundlingInProgress) {
+            return AppDialog(
+              title: 'Bundling upload...',
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text('This may take a while...'),
+                  ],
+                ),
+              ),
+            );
           } else if (state is UploadInProgress) {
             return AppDialog(
               dismissable: false,

@@ -220,10 +220,9 @@ class UploadCubit extends Cubit<UploadState> {
       emit(UploadWalletMismatch());
       return;
     }
-
-    emit(UploadInProgress(
-        files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
-            _dataItemUploadHandles.values.toList()));
+    if (_dataItemUploadHandles.isNotEmpty) {
+      emit(UploadBundlingInProgress());
+    }
 
     if (feeTx != null) {
       await _arweave.postTx(feeTx!);
@@ -267,17 +266,19 @@ class UploadCubit extends Cubit<UploadState> {
             ),
           );
         }
-        final dataItems = uploadHandles
-            .map((e) => e.asDataItems().toList())
-            .reduce((value, element) => value += element)
-            .toList();
-        final dataItemTotalSize = uploadHandles
-            .map((e) => e.size as int)
-            .reduce((value, element) => value += element);
-        // DataItems must be signed here for bundle.verify() to be true
-        for (var item in dataItems) {
-          await item.sign(profile.wallet);
+        final dataItems = <DataItem>[];
+        var dataItemTotalSize = 0;
+        for (var uploadHandle in uploadHandles) {
+          final dataDataItem = (uploadHandle.dataTx as DataItem);
+          final entityDataItem = (uploadHandle.dataTx as DataItem);
+
+          assert(uploadHandle.entity.dataTxId == dataDataItem.id);
+
+          dataItemTotalSize += entityDataItem.data.lengthInBytes +
+              dataDataItem.data.lengthInBytes;
+          dataItems.addAll([entityDataItem, dataDataItem]);
         }
+
         final dataBundle = DataBundle(
           items: uploadHandles
               .map((e) => e.asDataItems().toList())
@@ -362,32 +363,17 @@ class UploadCubit extends Cubit<UploadState> {
 
     final uploadHandle = FileUploadHandle(entity: fileEntity, path: filePath);
     if (fileSizeWithinBundleLimits(fileData.length)) {
-      // Use Bundles
-      // Prepare Data Tx
       uploadHandle.dataTx = private
           ? await createEncryptedDataItem(fileData, fileKey!)
           : DataItem.withBlobData(data: fileData);
       uploadHandle.dataTx!.setOwner(await profile.wallet.getOwner());
-      // Sign dataTx to obtain id
-      await (uploadHandle.dataTx! as DataItem).sign(profile.wallet);
-      fileEntity.dataTxId = uploadHandle.dataTx!.id;
-      // Prepare Metadata Tx
-      uploadHandle.entityTx = await _arweave.prepareEntityDataItem(
-          fileEntity, profile.wallet, fileKey);
     } else {
-      // Prepare Data Tx
       uploadHandle.dataTx = await _arweave.client.transactions.prepare(
         private
             ? await createEncryptedTransaction(fileData, fileKey!)
             : Transaction.withBlobData(data: fileData),
         profile.wallet,
       );
-      // Sign dataTx to obtain id
-      await uploadHandle.dataTx!.sign(profile.wallet);
-      fileEntity.dataTxId = uploadHandle.dataTx!.id;
-      // Prepare Metadata Tx
-      uploadHandle.entityTx =
-          await _arweave.prepareEntityTx(fileEntity, profile.wallet, fileKey);
     }
 
     uploadHandle.dataTx!.addApplicationTags(version: packageInfo.version);
@@ -399,7 +385,24 @@ class UploadCubit extends Cubit<UploadState> {
         fileEntity.dataContentType!,
       );
     }
-    assert(fileEntity.dataTxId != null);
+
+    await uploadHandle.dataTx!.sign(profile.wallet);
+
+    fileEntity.dataTxId = uploadHandle.dataTx!.id;
+
+    if (fileSizeWithinBundleLimits(fileData.length)) {
+      uploadHandle.entityTx = await _arweave.prepareEntityDataItem(
+          fileEntity, profile.wallet, fileKey);
+      final entityDataItem = (uploadHandle.entityTx as DataItem?)!;
+      final dataDataItem = (uploadHandle.dataTx as DataItem?)!;
+
+      await entityDataItem.sign(profile.wallet);
+      await dataDataItem.sign(profile.wallet);
+    } else {
+      uploadHandle.entityTx =
+          await _arweave.prepareEntityTx(fileEntity, profile.wallet, fileKey);
+    }
+
     return uploadHandle;
   }
 

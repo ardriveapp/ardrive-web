@@ -10,6 +10,8 @@ class UploadPreparationInProgress extends UploadState {}
 
 class UploadPreparationFailure extends UploadState {}
 
+class UploadBundlingInProgress extends UploadState {}
+
 class UploadFileConflict extends UploadState {
   final List<String> conflictingFileNames;
 
@@ -78,7 +80,7 @@ class UploadReady extends UploadState {
 
 class UploadInProgress extends UploadState {
   final List<UploadHandle>? files;
-
+  
   final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
   UploadInProgress({this.files});
 
