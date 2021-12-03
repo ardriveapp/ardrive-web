@@ -58,6 +58,8 @@ class EntityTransactionParseException implements Exception {}
 
 extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the app name, version, and the specified unix time.
+  /// https://ardrive.atlassian.net/wiki/spaces/ENGINEERIN/pages/277544961/Data+Model
+  /// TODO: Split App-Name into App-Name and Client
   void addApplicationTags({required String version, DateTime? unixTime}) {
     addTag(EntityTag.appName, 'ArDrive-Web');
     addTag(EntityTag.appVersion, version);

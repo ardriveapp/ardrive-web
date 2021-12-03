@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' if (dart.library.html) 'dart:html';
 import 'dart:math';
 
 import 'package:ardrive/entities/constants.dart';
@@ -222,3 +223,6 @@ Future<void> addTestFilesToDb(
     );
   });
 }
+
+Future<Transaction> getTestTransaction(String path) async =>
+    Transaction.fromJson(json.decode(await File(path).readAsString()));
