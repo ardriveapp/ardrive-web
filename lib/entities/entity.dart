@@ -3,6 +3,7 @@ import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'entities.dart';
 
@@ -26,9 +27,10 @@ abstract class Entity {
     final tx = key == null
         ? Transaction.withJsonData(data: this)
         : await createEncryptedEntityTransaction(this, key);
+    final packageInfo = await PackageInfo.fromPlatform();
 
     addEntityTagsToTransaction(tx);
-
+    tx.addApplicationTags(version: packageInfo.version, unixTime: createdAt);
     return tx;
   }
 
@@ -41,8 +43,9 @@ abstract class Entity {
     final item = key == null
         ? DataItem.withJsonData(data: this)
         : await createEncryptedEntityDataItem(this, key);
-
+    final packageInfo = await PackageInfo.fromPlatform();
     addEntityTagsToTransaction(item);
+    item.addApplicationTags(version: packageInfo.version);
 
     return item;
   }
@@ -55,9 +58,11 @@ class EntityTransactionParseException implements Exception {}
 
 extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the app name, version, and the specified unix time.
-  void addApplicationTags({DateTime? unixTime}) {
+  /// https://ardrive.atlassian.net/wiki/spaces/ENGINEERIN/pages/277544961/Data+Model
+  /// TODO: Split App-Name into App-Name and Client
+  void addApplicationTags({required String version, DateTime? unixTime}) {
     addTag(EntityTag.appName, 'ArDrive-Web');
-    addTag(EntityTag.appVersion, '0.1.0');
+    addTag(EntityTag.appVersion, version);
     addTag(
         EntityTag.unixTime,
         ((unixTime ?? DateTime.now()).millisecondsSinceEpoch ~/ 1000)

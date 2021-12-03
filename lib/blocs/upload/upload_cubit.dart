@@ -13,6 +13,7 @@ import 'package:equatable/equatable.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:uuid/uuid.dart';
 
@@ -106,6 +107,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> prepareUpload() async {
     final profile = _profileCubit.state as ProfileLoggedIn;
+    final packageInfo = await PackageInfo.fromPlatform();
 
     if (await _profileCubit.checkIfWalletMismatch()) {
       emit(UploadWalletMismatch());
@@ -164,7 +166,7 @@ class UploadCubit extends Cubit<UploadState> {
         ),
         profile.wallet,
       )
-        ..addApplicationTags()
+        ..addApplicationTags(version: packageInfo.version)
         ..addTag('Type', 'fee')
         ..addTag(TipType.tagName, TipType.dataUpload);
       await feeTx!.sign(profile.wallet);
@@ -333,6 +335,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<FileUploadHandle> prepareFileUpload(XFile file) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
+    final packageInfo = await PackageInfo.fromPlatform();
 
     final fileName = file.name;
     final filePath = '${_targetFolder.path}/$fileName';
@@ -387,7 +390,7 @@ class UploadCubit extends Cubit<UploadState> {
           await _arweave.prepareEntityTx(fileEntity, profile.wallet, fileKey);
     }
 
-    uploadHandle.dataTx!.addApplicationTags();
+    uploadHandle.dataTx!.addApplicationTags(version: packageInfo.version);
 
     // Don't include the file's Content-Type tag if it is meant to be private.
     if (!private) {
