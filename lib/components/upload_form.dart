@@ -1,3 +1,6 @@
+import 'dart:html';
+import 'dart:typed_data';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -42,6 +45,61 @@ Future<void> promptToUploadFile(
     ),
     barrierDismissible: false,
   );
+}
+
+Future<void> promptToUploadFolder(
+  BuildContext context, {
+  required String driveId,
+  required String folderId,
+}) async {
+  final profleCubit = context.read<ProfileCubit>();
+  profleCubit.setOverlayOpen(true);
+  final uploadInput = FileUploadInputElement()
+    ..setAttribute('webkitdirectory', 'multiple');
+  uploadInput.click();
+
+  uploadInput.onChange.listen((e) async {
+    // read file content as dataURL
+    final files = uploadInput.files;
+    if (files == null) {
+      return;
+    }
+    final selectedFiles = <file_selector.XFile>[];
+    final readers = <File, FileReader>{};
+    for (var file in files) {
+      final reader = FileReader();
+      reader.onLoadEnd.listen((e) {
+        selectedFiles.add(file_selector.XFile(
+          file.relativePath!,
+          mimeType: file.type,
+          bytes: reader.result as Uint8List,
+          lastModified: file.lastModifiedDate,
+          length: file.size,
+          name: file.name,
+        ));
+      });
+      readers[file] = reader..readAsArrayBuffer(file);
+    }
+    await Future.wait(readers.values.map((e) => e.onLoadEnd.first));
+    profleCubit.setOverlayOpen(false);
+
+    await showDialog(
+      context: context,
+      builder: (_) => BlocProvider<UploadCubit>(
+        create: (context) => UploadCubit(
+          driveId: driveId,
+          folderId: folderId,
+          files: selectedFiles,
+          profileCubit: profleCubit,
+          arweave: context.read<ArweaveService>(),
+          pst: context.read<PstService>(),
+          driveDao: context.read<DriveDao>(),
+        ),
+        child: UploadForm(),
+      ),
+      barrierDismissible: false,
+    );
+  });
 }
 
 class UploadForm extends StatelessWidget {
