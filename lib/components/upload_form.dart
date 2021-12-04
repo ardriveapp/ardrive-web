@@ -75,7 +75,7 @@ Future<void> promptToUploadFolder(
           mimeType: file.type,
           bytes: reader.result as Uint8List,
           lastModified: file.lastModified != null
-              ? file.lastModifiedDate
+              ? DateTime.fromMillisecondsSinceEpoch(file.lastModified!)
               : DateTime.now(),
           length: file.size,
           name: file.name,
