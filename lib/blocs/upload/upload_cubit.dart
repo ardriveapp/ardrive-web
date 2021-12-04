@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:ardrive/blocs/upload/bundle_upload_handle.dart';
+import 'package:ardrive/blocs/upload/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -33,12 +35,14 @@ class UploadCubit extends Cubit<UploadState> {
 
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
+  late List<BundleUploadHandle> _bundleUploadHandles = [];
 
   /// Map of conflicting file ids keyed by their file names.
   final Map<String, String> conflictingFiles = {};
 
   /// A map of [FileUploadHandle]s keyed by their respective file's id.
   final Map<String, FileUploadHandle> _fileUploadHandles = {};
+  final Map<String, FileUploadHandle> _dataItemUploadHandles = {};
 
   /// The [Transaction] that pays `pstFee` to a random PST holder.
   Transaction? feeTx;
@@ -129,28 +133,30 @@ class UploadCubit extends Cubit<UploadState> {
     try {
       for (final file in files) {
         final uploadHandle = await prepareFileUpload(file);
-        _fileUploadHandles[uploadHandle.entity.id!] = uploadHandle;
+        if (uploadHandle.entityTx is DataItem &&
+            uploadHandle.dataTx is DataItem) {
+          _dataItemUploadHandles[uploadHandle.entity.id!] = uploadHandle;
+        } else {
+          _fileUploadHandles[uploadHandle.entity.id!] = uploadHandle;
+        }
       }
     } catch (err) {
       addError(err);
       return;
     }
+    final dataItemsCost = _dataItemUploadHandles.isNotEmpty
+        ? await _arweave.getPrice(
+            byteSize: _dataItemUploadHandles.values
+                .map((e) => e.size)
+                .reduce((value, element) => value = value! + element!) as int)
+        : BigInt.zero;
+    final uploadCost = _fileUploadHandles.isNotEmpty
+        ? _fileUploadHandles.values
+            .map((e) => e.cost)
+            .reduce((value, element) => value += element)
+        : BigInt.zero + dataItemsCost;
 
-    final uploadCost = _fileUploadHandles.values
-        .map((f) => f.cost)
-        .reduce((total, cost) => total + cost);
-
-    var pstFee = await _pst
-        .getPstFeePercentage()
-        .then((feePercentage) =>
-            // Workaround [BigInt] percentage division problems
-            // by first multiplying by the percentage * 100 and then dividing by 100.
-            uploadCost * BigInt.from(feePercentage * 100) ~/ BigInt.from(100))
-        .catchError((_) => BigInt.zero,
-            test: (err) => err is UnimplementedError);
-
-    final minimumPstTip = BigInt.from(10000000);
-    pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
+    final pstFee = await getPSTFee(uploadCost);
 
     if (pstFee > BigInt.zero) {
       feeTx = await _arweave.client.transactions.prepare(
@@ -184,24 +190,122 @@ class UploadCubit extends Cubit<UploadState> {
         totalCost: totalCost,
         uploadIsPublic: _targetDrive.isPublic,
         sufficientArBalance: profile.walletBalance >= totalCost,
-        files: _fileUploadHandles.values.toList(),
+        files: _fileUploadHandles.values.toList() +
+            _dataItemUploadHandles.values.toList(),
+        bundles: _bundleUploadHandles,
       ),
     );
   }
 
+  Future<BigInt> getPSTFee(BigInt uploadCost) async {
+    var pstFee = await _pst
+        .getPstFeePercentage()
+        .then((feePercentage) =>
+            // Workaround [BigInt] percentage division problems
+            // by first multiplying by the percentage * 100 and then dividing by 100.
+            uploadCost * BigInt.from(feePercentage * 100) ~/ BigInt.from(100))
+        .catchError((_) => BigInt.zero,
+            test: (err) => err is UnimplementedError);
+
+    final minimumPstTip = BigInt.from(10000000);
+    pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
+    return pstFee;
+  }
+
   Future<void> startUpload() async {
+    final profile = _profileCubit.state as ProfileLoggedIn;
+
     //Check if the same wallet it being used before starting upload.
     if (await _profileCubit.checkIfWalletMismatch()) {
       emit(UploadWalletMismatch());
       return;
     }
-    emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
+    if (_dataItemUploadHandles.isNotEmpty) {
+      emit(UploadBundlingInProgress());
+    }
 
     if (feeTx != null) {
       await _arweave.postTx(feeTx!);
     }
-
     await _driveDao.transaction(() async {
+      final bundleItems = <List<FileUploadHandle>>[];
+      final dataItemsToBundle = <FileUploadHandle>[];
+      for (final uploadHandle in _dataItemUploadHandles.values) {
+        final dataItemsToBundleSize = dataItemsToBundle.isNotEmpty
+            ? dataItemsToBundle
+                .map((e) => e.size as int)
+                .reduce((value, element) => value += element)
+            : 0;
+        final currentDataItemsSize = uploadHandle.size ?? 0;
+        final addToBundle = fileSizeWithinBundleLimits(
+            dataItemsToBundleSize + currentDataItemsSize);
+        if (addToBundle) {
+          dataItemsToBundle.add(uploadHandle);
+        } else {
+          bundleItems.add(dataItemsToBundle);
+          dataItemsToBundle.clear();
+        }
+      }
+      if (dataItemsToBundle.isNotEmpty) {
+        bundleItems.add(dataItemsToBundle);
+      }
+      //Create bundles
+      for (var uploadHandles in bundleItems) {
+        for (var uploadHandle in uploadHandles) {
+          final fileEntity = uploadHandle.entity;
+          if (uploadHandle.entityTx?.id != null) {
+            fileEntity.txId = uploadHandle.entityTx!.id;
+          }
+
+          await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
+          await _driveDao.insertFileRevision(
+            fileEntity.toRevisionCompanion(
+              performedAction: !conflictingFiles.containsKey(fileEntity.name)
+                  ? RevisionAction.create
+                  : RevisionAction.uploadNewVersion,
+            ),
+          );
+        }
+        final dataItems = <DataItem>[];
+        var dataItemTotalSize = 0;
+        for (var uploadHandle in uploadHandles) {
+          final dataDataItem = (uploadHandle.dataTx as DataItem);
+          final entityDataItem = (uploadHandle.dataTx as DataItem);
+
+          assert(uploadHandle.entity.dataTxId == dataDataItem.id);
+
+          dataItemTotalSize += entityDataItem.data.lengthInBytes +
+              dataDataItem.data.lengthInBytes;
+          dataItems.addAll([entityDataItem, dataDataItem]);
+        }
+
+        final dataBundle = DataBundle(
+          items: uploadHandles
+              .map((e) => e.asDataItems().toList())
+              .reduce((value, element) => value += element)
+              .toList(),
+        );
+        _bundleUploadHandles.add(
+          BundleUploadHandle(
+            await _arweave.prepareDataBundleTx(dataBundle, profile.wallet),
+            dataItemTotalSize,
+          ),
+        );
+        uploadHandles.clear();
+      }
+
+      emit(UploadInProgress(
+        files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
+            _bundleUploadHandles,
+      ));
+      for (var uploadHandle in _bundleUploadHandles) {
+        await for (final _ in uploadHandle.upload(_arweave)) {
+          emit(UploadInProgress(
+            files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
+                _bundleUploadHandles,
+          ));
+        }
+      }
       for (final uploadHandle in _fileUploadHandles.values) {
         final fileEntity = uploadHandle.entity;
         if (uploadHandle.entityTx?.id != null) {
@@ -216,9 +320,11 @@ class UploadCubit extends Cubit<UploadState> {
                 : RevisionAction.uploadNewVersion,
           ),
         );
-
         await for (final _ in uploadHandle.upload(_arweave)) {
-          emit(UploadInProgress(files: _fileUploadHandles.values.toList()));
+          emit(UploadInProgress(
+            files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
+                _bundleUploadHandles,
+          ));
         }
       }
     });
@@ -292,16 +398,6 @@ class UploadCubit extends Cubit<UploadState> {
 
       await entityDataItem.sign(profile.wallet);
       await dataDataItem.sign(profile.wallet);
-
-      uploadHandle.bundleTx = await _arweave.prepareDataBundleTx(
-        DataBundle(
-          items: [
-            entityDataItem,
-            dataDataItem,
-          ],
-        ),
-        profile.wallet,
-      );
     } else {
       uploadHandle.entityTx =
           await _arweave.prepareEntityTx(fileEntity, profile.wallet, fileKey);

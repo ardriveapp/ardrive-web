@@ -10,6 +10,8 @@ class UploadPreparationInProgress extends UploadState {}
 
 class UploadPreparationFailure extends UploadState {}
 
+class UploadBundlingInProgress extends UploadState {}
+
 class UploadFileConflict extends UploadState {
   final List<String> conflictingFileNames;
 
@@ -52,6 +54,7 @@ class UploadReady extends UploadState {
   final bool uploadIsPublic;
 
   final List<FileUploadHandle> files;
+  final List<BundleUploadHandle> bundles;
 
   UploadReady({
     required this.arUploadCost,
@@ -60,6 +63,7 @@ class UploadReady extends UploadState {
     required this.sufficientArBalance,
     required this.uploadIsPublic,
     required this.files,
+    required this.bundles,
     this.usdUploadCost,
   });
 
@@ -75,10 +79,9 @@ class UploadReady extends UploadState {
 }
 
 class UploadInProgress extends UploadState {
-  final List<FileUploadHandle>? files;
-
+  final List<UploadHandle>? files;
+  
   final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
-
   UploadInProgress({this.files});
 
   @override

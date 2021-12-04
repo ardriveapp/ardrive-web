@@ -2,6 +2,7 @@ import 'dart:html';
 import 'dart:typed_data';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/upload/file_upload_handle.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -276,6 +277,21 @@ class UploadForm extends StatelessWidget {
                 ),
               ],
             );
+          } else if (state is UploadBundlingInProgress) {
+            return AppDialog(
+              title: 'Bundling upload...',
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text('This may take a while...'),
+                  ],
+                ),
+              ),
+            );
           } else if (state is UploadInProgress) {
             return AppDialog(
               dismissable: false,
@@ -291,7 +307,11 @@ class UploadForm extends StatelessWidget {
                         for (final file in state.files!) ...{
                           ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: Text(file.entity.name!),
+                            title: Text(
+                              file is FileUploadHandle
+                                  ? file.entity.name!
+                                  : 'Bundle',
+                            ),
                             subtitle: Text(
                                 '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
                             trailing: CircularProgressIndicator(

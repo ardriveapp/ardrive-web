@@ -40,6 +40,10 @@ class ArweaveService {
     _mempoolSize = await getMempoolAverage();
   }
 
+  Future<BigInt> getPrice({required int byteSize}) {
+    return client.api.get('/price/$byteSize').then((res) => BigInt.parse(res.body));
+  }
+
   // Spread requests across time to avoid getting load balanced to the same gateway
   Future<int> getMempoolAverage() async {
     return await Stream.periodic(Duration(seconds: 4))
