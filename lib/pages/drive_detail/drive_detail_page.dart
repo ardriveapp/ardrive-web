@@ -1,7 +1,9 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/l11n/l11n.dart';
@@ -51,10 +53,17 @@ class DriveDetailPage extends StatelessWidget {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      state.currentDrive.name,
-                                      style:
-                                          Theme.of(context).textTheme.headline5,
+                                    Expanded(
+                                      child: Container(
+                                        width: 400,
+                                        child: Text(
+                                          state.currentDrive.name,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headline5,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
                                     ),
                                     DriveDetailActionRow(),
                                   ],

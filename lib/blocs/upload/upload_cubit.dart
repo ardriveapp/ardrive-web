@@ -11,6 +11,7 @@ import 'package:equatable/equatable.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:uuid/uuid.dart';
 
@@ -41,6 +42,10 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// The [Transaction] that pays `pstFee` to a random PST holder.
   Transaction? feeTx;
+
+  final bundleSizeLimit = 503316480;
+
+  bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
   UploadCubit({
     required this.driveId,
@@ -98,6 +103,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> prepareUpload() async {
     final profile = _profileCubit.state as ProfileLoggedIn;
+    final packageInfo = await PackageInfo.fromPlatform();
 
     if (await _profileCubit.checkIfWalletMismatch()) {
       emit(UploadWalletMismatch());
@@ -154,7 +160,7 @@ class UploadCubit extends Cubit<UploadState> {
         ),
         profile.wallet,
       )
-        ..addApplicationTags()
+        ..addApplicationTags(version: packageInfo.version)
         ..addTag('Type', 'fee')
         ..addTag(TipType.tagName, TipType.dataUpload);
       await feeTx!.sign(profile.wallet);
@@ -224,6 +230,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<FileUploadHandle> prepareFileUpload(PlatformFile file) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
+    final packageInfo = await PackageInfo.fromPlatform();
 
     final fileName = file.name;
     final filePath = '${_targetFolder.path}/$fileName';
@@ -249,16 +256,7 @@ class UploadCubit extends Cubit<UploadState> {
     final fileData = file.bytes!;
 
     final uploadHandle = FileUploadHandle(entity: fileEntity, path: filePath);
-
-    // Only use [DataBundle]s if the file being uploaded can be serialised as one.
-    // The limitation occurs as a result of string size limitations in JS implementations which is about 512MB.
-    // We aim switch slightly below that to give ourselves some buffer.
-    //
-    // TODO: Reenable once we understand the problems with data bundle transactions.
-    final fileSizeWithinBundleLimits = false;
-    // fileData.lengthInBytes < (512 - 12) * math.pow(10, 6);
-
-    if (fileSizeWithinBundleLimits) {
+    if (fileSizeWithinBundleLimits(fileData.length)) {
       uploadHandle.dataTx = private
           ? await createEncryptedDataItem(fileData, fileKey!)
           : DataItem.withBlobData(data: fileData);
@@ -272,7 +270,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
     }
 
-    uploadHandle.dataTx!.addApplicationTags();
+    uploadHandle.dataTx!.addApplicationTags(version: packageInfo.version);
 
     // Don't include the file's Content-Type tag if it is meant to be private.
     if (!private) {
@@ -286,14 +284,20 @@ class UploadCubit extends Cubit<UploadState> {
 
     fileEntity.dataTxId = uploadHandle.dataTx!.id;
 
-    if (fileSizeWithinBundleLimits) {
+    if (fileSizeWithinBundleLimits(fileData.length)) {
       uploadHandle.entityTx = await _arweave.prepareEntityDataItem(
           fileEntity, profile.wallet, fileKey);
+      final entityDataItem = (uploadHandle.entityTx as DataItem?)!;
+      final dataDataItem = (uploadHandle.dataTx as DataItem?)!;
+
+      await entityDataItem.sign(profile.wallet);
+      await dataDataItem.sign(profile.wallet);
+
       uploadHandle.bundleTx = await _arweave.prepareDataBundleTx(
         DataBundle(
           items: [
-            (uploadHandle.entityTx as DataItem?)!,
-            (uploadHandle.dataTx as DataItem?)!,
+            entityDataItem,
+            dataDataItem,
           ],
         ),
         profile.wallet,

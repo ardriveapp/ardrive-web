@@ -27,9 +27,9 @@ class ArConnectService {
   Future<String> getWalletAddress() => implementation.getWalletAddress();
 
   /// Returns the wallet public key
-  Future<String> getPublicKey() => implementation.getPublicKey();
+  Future<String> getPublicKey() async => await implementation.getPublicKey();
 
   /// Takes a message and returns the signature
-  Future<Uint8List> getSignature(Uint8List message) =>
-      implementation.getSignature(message);
+  Future<Uint8List> getSignature(Uint8List message) async =>
+      await implementation.getSignature(message);
 }

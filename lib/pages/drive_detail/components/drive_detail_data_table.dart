@@ -78,31 +78,59 @@ List<DataColumn> _buildTableColumns(BuildContext context) {
   ];
 }
 
+String trimName({required String name, required BuildContext context}) {
+  const endBuffer = 8;
+  final width = MediaQuery.of(context).size.width;
+  // No better way to do this. Lerping is too gradual and causes overlap.
+  var stringLength = width > 1600
+      ? 75
+      : width > 1400
+          ? 50
+          : width > 1200
+              ? 35
+              : 20;
+
+  // If info sidebar is closed increase the width
+  final driveState = context.read<DriveDetailCubit>().state;
+  if (driveState is DriveDetailLoadSuccess &&
+      !driveState.showSelectedItemDetails) {
+    stringLength += 20;
+  }
+  return name.length > stringLength
+      ? name.substring(0, stringLength - endBuffer) +
+          ' ... ' +
+          name.substring(name.length - endBuffer)
+      : name;
+}
+
 DataRow _buildFolderRow({
   required BuildContext context,
   required FolderEntry folder,
   bool selected = false,
   required Function onPressed,
-}) =>
-    DataRow(
-      onSelectChanged: (_) => onPressed(),
-      selected: selected,
-      cells: [
-        DataCell(
-          Row(
-            children: [
-              Padding(
-                padding: const EdgeInsetsDirectional.only(end: 8.0),
-                child: const Icon(Icons.folder),
-              ),
-              Text(folder.name),
-            ],
-          ),
+}) {
+  return DataRow(
+    onSelectChanged: (_) => onPressed(),
+    selected: selected,
+    cells: [
+      DataCell(
+        Row(
+          children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 8.0),
+              child: const Icon(Icons.folder),
+            ),
+            Text(
+              trimName(name: folder.name, context: context),
+            ),
+          ],
         ),
-        DataCell(Text('-')),
-        DataCell(Text('-')),
-      ],
-    );
+      ),
+      DataCell(Text('-')),
+      DataCell(Text('-')),
+    ],
+  );
+}
 
 DataRow _buildFileRow({
   required BuildContext context,
@@ -124,7 +152,9 @@ DataRow _buildFileRow({
                 file.dataContentType,
               ),
             ),
-            Text(file.name),
+            Text(
+              trimName(name: file.name, context: context),
+            ),
           ],
         ),
       ),

@@ -54,6 +54,5 @@ Future<String> getPublicKey() async {
 }
 
 Future<Uint8List> getSignature(Uint8List message) async {
-  final result = promiseToFuture<Uint8List>(_getSignature(message));
-  return result;
+  return await promiseToFuture<Uint8List>(_getSignature(message));
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
@@ -6,6 +7,8 @@ import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart' as http;
 import 'package:moor/moor.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:pedantic/pedantic.dart';
 
 import '../services.dart';
 
@@ -14,8 +17,11 @@ class ArweaveService {
 
   final ArtemisClient _gql;
 
+  int _mempoolSize = 0;
   ArweaveService(this.client)
-      : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
+      : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
+    unawaited(initializeMempoolStream());
+  }
 
   /// Returns the onchain balance of the specified address.
   Future<BigInt> getWalletBalance(String address) => client.api
@@ -24,6 +30,39 @@ class ArweaveService {
 
   Future<int> getCurrentBlockHeight() =>
       client.api.get('/').then((res) => json.decode(res.body)['height']);
+
+  Future<void> initializeMempoolStream() async {
+    Stream.periodic(Duration(minutes: 1, seconds: 44))
+        .asyncMap((event) => getMempoolAverage())
+        .listen((mempoolSize) {
+      _mempoolSize = mempoolSize;
+    });
+    _mempoolSize = await getMempoolAverage();
+  }
+
+  // Spread requests across time to avoid getting load balanced to the same gateway
+  Future<int> getMempoolAverage() async {
+    return await Stream.periodic(Duration(seconds: 4))
+            .asyncMap((event) => getMempoolSizeFromArweave())
+            .take(4)
+            .reduce((next, acc) => acc += next) ~/
+        4;
+  }
+
+  Future<int> getMempoolSizeFromArweave() async {
+    try {
+      return await client.api
+          .get('tx/pending')
+          .then((res) => (json.decode(res.body) as List).length);
+    } catch (_) {
+      print('Error fetching mempool size');
+      return 0;
+    }
+  }
+
+  Future<int> getCachedMempoolSize() async {
+    return _mempoolSize;
+  }
 
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
   Future<BigInt> getPendingTxFees(String address) async {
@@ -429,8 +468,12 @@ class ArweaveService {
 
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
+    final bundleBlob = await bundle.asBlob();
+    final packageInfo = await PackageInfo.fromPlatform();
+
     final bundleTx = await client.transactions.prepare(
-      Transaction.withDataBundle(bundle: bundle)..addApplicationTags(),
+      Transaction.withDataBundle(bundleBlob: bundleBlob)
+        ..addApplicationTags(version: packageInfo.version),
       wallet,
     );
 
@@ -439,8 +482,14 @@ class ArweaveService {
     return bundleTx;
   }
 
-  Future<void> postTx(Transaction transaction) =>
-      client.transactions.post(transaction);
+  Future<void> postTx(
+    Transaction transaction, {
+    bool dryRun = false,
+  }) =>
+      client.transactions.post(
+        transaction,
+        dryRun: dryRun,
+      );
 
   Future<double> getArUsdConversionRate() async {
     final client = http.Client();
