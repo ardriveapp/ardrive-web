@@ -6,11 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       logLevel:
-        description: 'Log level'     
+        description: 'Log level'
         required: true
         default: 'warning'
-      tags:
-        description: 'Test scenario tags'  
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -21,10 +19,14 @@ jobs:
       - uses: subosito/flutter-action@v1
         with:
           flutter-version: '2.2.3'
-      - name: Build app
+      - name: Prepare app
         run: |
           flutter pub get
           flutter pub run build_runner build
+      - name: Run tests
+        run: flutter test
+      - name: Build app
+        run: |
           flutter config --enable-web
           flutter build web --profile
       - uses: JamesIves/github-pages-deploy-action@4.1.1
