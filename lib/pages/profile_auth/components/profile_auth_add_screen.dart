@@ -72,7 +72,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                               context.read<ProfileAddCubit>().submit(),
                           validationMessages: (_) => kValidationMessages,
                         ),
-                        if (!state.isExistingUser) ...{
+                        if (!state.isExistingUser) ...[
                           const SizedBox(height: 16),
                           ReactiveTextField(
                             formControlName: 'passwordConfirmation',
@@ -89,42 +89,44 @@ class ProfileAuthAddScreen extends StatelessWidget {
                                   'The confirmation password does not match.',
                             },
                           ),
-                        },
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            ReactiveCheckbox(
-                              formControlName: 'agreementConsent',
-                            ),
-                            const SizedBox(width: 12),
-                            Flexible(
-                              child: Link(
-                                uri: Uri.parse(
-                                    'https://ardrive.io/tos-and-privacy/'),
-                                target: LinkTarget.blank,
-                                builder: (context, onPressed) => GestureDetector(
-                                  onTap: onPressed,
-                                  child: Text.rich(
-                                    TextSpan(
-                                      children: [
-                                        TextSpan(text: 'I agree to the '),
-                                        TextSpan(
-                                          text:
-                                              'ArDrive terms of service and privacy policy',
-                                          style: TextStyle(
-                                            decoration: TextDecoration.underline,
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ReactiveCheckbox(
+                                formControlName: 'agreementConsent',
+                              ),
+                              const SizedBox(width: 12),
+                              Flexible(
+                                child: Link(
+                                  uri: Uri.parse(
+                                      'https://ardrive.io/tos-and-privacy/'),
+                                  target: LinkTarget.blank,
+                                  builder: (context, onPressed) =>
+                                      GestureDetector(
+                                    onTap: onPressed,
+                                    child: Text.rich(
+                                      TextSpan(
+                                        children: [
+                                          TextSpan(text: 'I agree to the '),
+                                          TextSpan(
+                                            text:
+                                                'ArDrive terms of service and privacy policy',
+                                            style: TextStyle(
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
                                           ),
-                                        ),
-                                        TextSpan(text: '.'),
-                                      ],
+                                          TextSpan(text: '.'),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 32),
                         SizedBox(
                           width: double.infinity,

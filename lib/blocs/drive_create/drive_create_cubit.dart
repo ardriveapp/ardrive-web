@@ -3,6 +3,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
@@ -82,8 +83,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
             : null,
       );
 
-      // TODO: Revert back to using data bundles when the api is stable again.
-      final driveTx = await _arweave.prepareEntityTx(
+      final driveDataItem = await _arweave.prepareEntityDataItem(
         drive,
         profile.wallet,
         createRes.driveKey,
@@ -95,15 +95,21 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         name: driveName,
       );
 
-      final rootFolderTx = await _arweave.prepareEntityTx(
+      final rootFolderDataItem = await _arweave.prepareEntityDataItem(
         rootFolderEntity,
         profile.wallet,
         createRes.driveKey,
       );
 
-      await _arweave.postTx(driveTx);
-      await _arweave.postTx(rootFolderTx);
-      rootFolderEntity.txId = rootFolderTx.id;
+      await rootFolderDataItem.sign(profile.wallet);
+      await driveDataItem.sign(profile.wallet);
+
+      final createTx = await _arweave.prepareDataBundleTx(
+          DataBundle(items: [driveDataItem, rootFolderDataItem]),
+          profile.wallet);
+
+      await _arweave.postTx(createTx);
+      rootFolderEntity.txId = rootFolderDataItem.id;
       await _driveDao.insertFolderRevision(rootFolderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create));
 

@@ -90,7 +90,6 @@ class FileEntity extends Entity {
         size != null);
 
     tx
-      ..addApplicationTags(unixTime: createdAt)
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.file)
       ..addTag(EntityTag.driveId, driveId!)
