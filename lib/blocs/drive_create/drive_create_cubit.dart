@@ -101,9 +101,6 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         createRes.driveKey,
       );
 
-      await rootFolderDataItem.sign(profile.wallet);
-      await driveDataItem.sign(profile.wallet);
-
       final createTx = await _arweave.prepareDataBundleTx(
           DataBundle(items: [driveDataItem, rootFolderDataItem]),
           profile.wallet);
