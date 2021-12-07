@@ -43,6 +43,10 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
+  Future<Profile> getDefaultProfile() async {
+    return await _profileDao.defaultProfile().getSingle();
+  }
+
   bool isOverlayOpen() => _isOverlayOpen;
 
   void setOverlayOpen(bool val) => _isOverlayOpen = val;
