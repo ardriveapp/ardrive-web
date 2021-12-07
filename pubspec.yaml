@@ -23,13 +23,13 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  artemis: ^7.0.0-beta.13
+  artemis: 7.2.6-beta
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart
-      ref: febfdd2f5f8f814cbfbdd7815c94e0a050a82734
+      ref: 4c54769ab2a39d1af8ccda709acd47e7f8ff89ab
   cryptography: ^2.0.1
-  flutter_bloc: ^8.0.0-dev.2
+  flutter_bloc: 8.0.0
   flutter_portal: ^0.4.0
   file_selector: ^0.8.2
   file_selector_web: ^0.8.1
@@ -53,7 +53,7 @@ dependencies:
   responsive_builder: ^0.4.1
   package_info_plus: ^1.0.3
   js: ^0.6.3
-  collection: ^1.15.0-nullsafety.4
+  collection: 1.15.0
   csv: 5.0.0
 
 dev_dependencies:
@@ -62,11 +62,11 @@ dev_dependencies:
   flutter_driver:
     sdk: flutter
   test: ^1.16.8
-  bloc_test: ^9.0.0-dev.3
+  bloc_test: 9.0.1
   build_runner: ^2.0.4
   moor_generator: ^4.4.1
   mocktail: ^0.2.0
-  json_serializable: ^4.1.0
+  json_serializable: 6.1.1
 
 dependency_overrides:
   meta: 1.7.0
