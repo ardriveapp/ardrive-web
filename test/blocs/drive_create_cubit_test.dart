@@ -8,8 +8,10 @@ import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/helpers.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:moor/moor.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:test/test.dart';
 
+import '../utils/fake_data.dart';
 import '../utils/fakes.dart';
 import '../utils/utils.dart';
 
@@ -24,6 +26,7 @@ void main() {
     late DriveCreateCubit driveCreateCubit;
 
     const validDriveName = 'valid-drive-name';
+    const testGatewayURL = 'https://arweave.net';
 
     setUp(() async {
       registerFallbackValue(DrivesStatefake());
@@ -31,30 +34,36 @@ void main() {
 
       db = getTestDb();
       driveDao = db.driveDao;
-      final configService = ConfigService();
-      final config = await configService.getConfig();
 
-      arweave = ArweaveService(
-          Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
+      arweave = ArweaveService(Arweave(gatewayUrl: Uri.parse(testGatewayURL)));
       drivesCubit = MockDrivesCubit();
       profileCubit = MockProfileCubit();
+
+      PackageInfo.setMockInitialValues(
+        appName: appName,
+        packageName: packageName,
+        version: version,
+        buildNumber: buildNumber,
+        buildSignature: buildSignature,
+      );
 
       final wallet = getTestWallet();
       final walletAddress = await wallet.getAddress();
 
       final keyBytes = Uint8List(32);
       fillBytesWithSecureRandom(keyBytes);
-
       when(() => profileCubit.state).thenReturn(
         ProfileLoggedIn(
           username: 'Test',
           password: '123',
           wallet: wallet,
           walletAddress: walletAddress,
-          walletBalance: BigInt.one,
+          walletBalance: BigInt.from(20000000),
           cipherKey: SecretKey(keyBytes),
         ),
       );
+      when(() => profileCubit.logoutIfWalletMismatch())
+          .thenAnswer((_) => Future.value(false));
 
       driveCreateCubit = DriveCreateCubit(
         arweave: arweave,
@@ -84,7 +93,6 @@ void main() {
       ],
       verify: (_) {},
     );
-
     blocTest<DriveCreateCubit, DriveCreateState>(
       'create private drive',
       build: () => driveCreateCubit,
