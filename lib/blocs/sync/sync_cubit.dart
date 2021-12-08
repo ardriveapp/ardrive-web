@@ -10,6 +10,7 @@ import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 
@@ -57,6 +58,9 @@ class SyncCubit extends Cubit<SyncState> {
     whenBrowserTabIsUnhidden(() => Future.delayed(Duration(seconds: 2))
         .then((value) => createSyncStream()));
   }
+
+  final Map<String, String> ghostFolders = {};
+  bool isFirstSync = true;
 
   Future<void> startSync() async {
     try {
@@ -110,6 +114,8 @@ class SyncCubit extends Cubit<SyncState> {
             addError(error!);
           }));
       await Future.wait(driveSyncProcesses);
+      await finalizeOrphans();
+      emit(SyncEmpty());
 
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
@@ -120,6 +126,34 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     emit(SyncIdle());
+  }
+
+  Future<void> finalizeOrphans() async {
+    //Finalize missing parent list
+    if (isFirstSync) {
+      for (var folder in ghostFolders.entries) {
+        final folderExists = (await _driveDao
+                .folderById(driveId: folder.value, folderId: folder.key)
+                .getSingleOrNull()) !=
+            null;
+        if (folderExists) {
+          ghostFolders.remove(folder.key);
+        } else {
+          // Add to database
+          final drive =
+              await _driveDao.driveById(driveId: folder.value).getSingle();
+          await _driveDao.into(_driveDao.folderEntries).insert(
+                FolderEntriesCompanion.insert(
+                  id: folder.key,
+                  driveId: drive.id,
+                  parentFolderId: Value(drive.rootFolderId),
+                  name: 'Ghost Folder',
+                  path: rootPath,
+                ),
+              );
+        }
+      }
+    }
   }
 
   Future<void> _syncDrive(
@@ -162,7 +196,6 @@ class SyncCubit extends Cubit<SyncState> {
         lastBlockHeight: Value(currentBlockheight),
         syncCursor: Value(null),
       ));
-      emit(SyncEmpty());
       return;
     }
 
@@ -202,7 +235,6 @@ class SyncCubit extends Cubit<SyncState> {
       await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
     });
 
-    
     // If there are more results to process, recurse.
     await _syncDrive(
       driveId,
@@ -459,6 +491,10 @@ class SyncCubit extends Cubit<SyncState> {
       }
     }
 
+    Future<void> addMissingFolder(String folderId) async {
+      ghostFolders.putIfAbsent(folderId, () => driveId);
+    }
+
     Future<void> updateFolderTree(FolderNode node, String parentPath) async {
       final folderId = node.folder.id;
       // If this is the root folder, we should not include its name as part of the path.
@@ -498,7 +534,9 @@ class SyncCubit extends Cubit<SyncState> {
       if (parentPath != null) {
         await updateFolderTree(treeRoot, parentPath);
       } else {
-        print('Missing parent folder');
+        await addMissingFolder(
+          treeRoot.folder.parentFolderId!,
+        );
       }
     }
 
@@ -522,8 +560,9 @@ class SyncCubit extends Cubit<SyncState> {
               driveId: staleOrphanFile.driveId,
               path: Value(filePath)));
         } else {
-          print(
-              'Stale orphan file ${staleOrphanFile.id.value} parent folder ${staleOrphanFile.parentFolderId.value} could not be found.');
+          await addMissingFolder(
+            staleOrphanFile.parentFolderId.value,
+          );
         }
       }
     }
