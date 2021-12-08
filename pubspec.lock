@@ -47,8 +47,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "4c54769ab2a39d1af8ccda709acd47e7f8ff89ab"
-      resolved-ref: "4c54769ab2a39d1af8ccda709acd47e7f8ff89ab"
+      ref: febfdd2f5f8f814cbfbdd7815c94e0a050a82734
+      resolved-ref: febfdd2f5f8f814cbfbdd7815c94e0a050a82734
       url: "https://github.com/ardriveapp/arweave-dart"
     source: git
     version: "0.1.0"
@@ -488,6 +488,11 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "4.0.0"
+  integration_test:
+    dependency: "direct dev"
+    description: flutter
+    source: sdk
+    version: "0.0.0"
   intersperse:
     dependency: "direct main"
     description:
