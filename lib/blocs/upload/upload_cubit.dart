@@ -287,9 +287,9 @@ class UploadCubit extends Cubit<UploadState> {
         );
         _bundleUploadHandles.add(
           BundleUploadHandle(
-            await _arweave.prepareDataBundleTx(dataBundle, profile.wallet),
-            dataItemTotalSize,
-          ),
+              await _arweave.prepareDataBundleTx(dataBundle, profile.wallet),
+              dataItemTotalSize,
+              uploadHandles.map((e) => e.entity.name!).toList()),
         );
         uploadHandles.clear();
       }

@@ -4,8 +4,9 @@ import 'package:arweave/arweave.dart';
 
 class BundleUploadHandle implements UploadHandle {
   final Transaction bundleTx;
+  List<String> fileNames = [];
 
-  BundleUploadHandle(this.bundleTx, this.size);
+  BundleUploadHandle(this.bundleTx, this.size,this.fileNames );
 
   @override
   BigInt get cost {

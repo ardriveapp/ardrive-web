@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/upload/bundle_upload_handle.dart';
 import 'package:ardrive/blocs/upload/file_upload_handle.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -247,22 +248,40 @@ class UploadForm extends StatelessWidget {
                       shrinkWrap: true,
                       children: [
                         for (final file in state.files!) ...{
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(
-                              file is FileUploadHandle
-                                  ? file.entity.name!
-                                  : 'Bundle',
-                            ),
-                            subtitle: Text(
-                                '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
-                            trailing: CircularProgressIndicator(
-                                // Show an indeterminate progress indicator if the upload hasn't started yet as
-                                // small uploads might never report a progress.
-                                value: file.uploadProgress != 0
-                                    ? file.uploadProgress
-                                    : null),
-                          ),
+                          file is FileUploadHandle
+                              ? ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(file.entity.name!),
+                                  subtitle: Text(
+                                      '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
+                                  trailing: CircularProgressIndicator(
+                                      // Show an indeterminate progress indicator if the upload hasn't started yet as
+                                      // small uploads might never report a progress.
+                                      value: file.uploadProgress != 0
+                                          ? file.uploadProgress
+                                          : null),
+                                )
+                              : ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      for (var name
+                                          in (file as BundleUploadHandle)
+                                              .fileNames)
+                                        Text(name)
+                                    ],
+                                  ),
+                                  subtitle: Text(
+                                      '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
+                                  trailing: CircularProgressIndicator(
+                                      // Show an indeterminate progress indicator if the upload hasn't started yet as
+                                      // small uploads might never report a progress.
+                                      value: file.uploadProgress != 0
+                                          ? file.uploadProgress
+                                          : null),
+                                ),
                         },
                       ],
                     ),
