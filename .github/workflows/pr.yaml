@@ -36,7 +36,7 @@ jobs:
           flutter drive \
           --driver=test_driver/integration_test.dart \
           --target=integration_test/pst_service_test.dart \
-          -d chrome
+          -d web-server
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
