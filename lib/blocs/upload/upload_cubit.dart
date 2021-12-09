@@ -227,7 +227,6 @@ class UploadCubit extends Cubit<UploadState> {
     bundleSizes.forEach((size) {
       size += 32;
     });
-    print(bundleSizes);
     var totalCost = BigInt.zero;
     for (var size in bundleSizes) {
       totalCost += await _arweave.getPrice(byteSize: size);
