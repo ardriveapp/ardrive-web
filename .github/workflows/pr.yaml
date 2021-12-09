@@ -29,9 +29,8 @@ jobs:
           # Add latest version from https://chromedriver.chromium.org/downloads
           chromedriver-version: '96.0.4664.45'
       - run: |
-          chromedriver/chromedriver --port=4444 &
+          chromedriver --port=4444 &
           sleep 5
-
       - name: Run web tests
         run: |
           flutter drive \
