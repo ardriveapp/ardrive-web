@@ -107,8 +107,9 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         'username': FormControl(validators: [Validators.required]),
         'password': FormControl(validators: [Validators.required]),
         if (withPasswordConfirmation) 'passwordConfirmation': FormControl(),
-        'agreementConsent':
-            FormControl<bool>(validators: [Validators.requiredTrue]),
+        if (withPasswordConfirmation)
+          'agreementConsent':
+              FormControl<bool>(validators: [Validators.requiredTrue]),
       },
       validators: [
         if (withPasswordConfirmation)
