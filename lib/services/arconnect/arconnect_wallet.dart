@@ -7,17 +7,17 @@ class ArConnectWallet extends Wallet {
   ArConnectService arConnectService = ArConnectService();
 
   @override
-  Future<String> getOwner() {
-    return arConnectService.getPublicKey();
+  Future<String> getOwner() async{
+    return await arConnectService.getPublicKey();
   }
 
   @override
-  Future<String> getAddress() {
-    return arConnectService.getWalletAddress();
+  Future<String> getAddress() async {
+    return await arConnectService.getWalletAddress();
   }
 
   @override
-  Future<Uint8List> sign(Uint8List message) async {
-    return arConnectService.getSignature(message);
+  Future<Uint8List> sign(Uint8List message) async{
+    return await arConnectService.getSignature(message);
   }
 }

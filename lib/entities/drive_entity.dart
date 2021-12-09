@@ -63,7 +63,6 @@ class DriveEntity extends Entity {
     assert(id != null && rootFolderId != null);
 
     tx
-      ..addApplicationTags(unixTime: createdAt)
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.drive)
       ..addTag(EntityTag.driveId, id!)
