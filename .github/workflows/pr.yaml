@@ -18,11 +18,24 @@ jobs:
         run: |
           flutter pub get
           flutter pub run build_runner build
-      - name: Run tests
+          flutter config --enable-web
+      - name: Run dart-vm tests
         run: flutter test
+      - uses: nanasess/setup-chromedriver@v1
+        with:
+          # Optional: do not specify to match Chrome's version
+          chromedriver-version: '88.0.4324.96'
+      - name: Run web tests
+      - run: |
+          export DISPLAY=:99
+          chromedriver --url-base=/wd/hub &
+          sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # optional
+          flutter drive \
+          --driver=test_driver/integration_test.dart \
+          --target=integration_test/pst_service_test.dart \
+          -d chrome
       - name: Build app
         run: |
-          flutter config --enable-web
           flutter build web --profile
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
