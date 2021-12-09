@@ -145,10 +145,7 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
     final dataItemsCost = _dataItemUploadHandles.isNotEmpty
-        ? await _arweave.getPrice(
-            byteSize: _dataItemUploadHandles.values
-                .map((e) => e.size)
-                .reduce((value, element) => value = value! + element!) as int)
+        ? await estimateBundleCosts(_dataItemUploadHandles.values)
         : BigInt.zero;
     final uploadCost = _fileUploadHandles.isNotEmpty
         ? _fileUploadHandles.values
@@ -210,6 +207,33 @@ class UploadCubit extends Cubit<UploadState> {
     final minimumPstTip = BigInt.from(10000000);
     pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
     return pstFee;
+  }
+
+  Future<BigInt> estimateBundleCosts(Iterable<FileUploadHandle> files) async {
+    // https://github.com/joshbenaron/arweave-standards/blob/ans104/ans/ANS-104.md
+    final fileSizes = files.map((e) => e.size!);
+    final bundleSizes = <int>[];
+    bundleSizes.add(0);
+    for (var fileSize in fileSizes) {
+      if (bundleSizes.last + fileSize > bundleSizeLimit) {
+        bundleSizes.add(0);
+      }
+      // Data Item Binary size
+      bundleSizes.last += fileSize;
+      // Data Item offset and entry id in header size
+      bundleSizes.last += 64;
+    }
+    // Add bytes that denote number of data items
+    bundleSizes.forEach((size) {
+      size += 32;
+    });
+    print(bundleSizes);
+    var totalCost = BigInt.zero;
+    for (var size in bundleSizes) {
+      totalCost += await _arweave.getPrice(byteSize: size);
+    }
+
+    return totalCost;
   }
 
   Future<void> startUpload() async {
