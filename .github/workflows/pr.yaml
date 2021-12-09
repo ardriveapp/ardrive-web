@@ -26,8 +26,8 @@ jobs:
           flutter build web --profile
       - uses: nanasess/setup-chromedriver@v1
         with:
-          # Optional: do not specify to match Chrome's version
-          chromedriver-version: '88.0.4324.96'
+          # Add latest version from https://chromedriver.chromium.org/downloads
+          chromedriver-version: '96.0.4664.45'
       - run: |
           export DISPLAY=:99
           chromedriver --url-base=/wd/hub &
