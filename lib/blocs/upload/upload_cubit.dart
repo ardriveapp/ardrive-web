@@ -211,7 +211,8 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<BigInt> estimateBundleCosts(Iterable<FileUploadHandle> files) async {
     // https://github.com/joshbenaron/arweave-standards/blob/ans104/ans/ANS-104.md
-    final fileSizes = files.map((e) => e.size!);
+    final fileSizes = files.map((e) =>
+        (e.dataTx as DataItem).getSize() + (e.entityTx as DataItem).getSize());
     final bundleSizes = <int>[];
     bundleSizes.add(0);
     for (var fileSize in fileSizes) {
