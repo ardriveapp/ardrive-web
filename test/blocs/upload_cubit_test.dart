@@ -6,9 +6,9 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../utils/fakes.dart';
-import '../utils/mocks.dart';
-import '../utils/utils.dart';
+import '../test_utils/fakes.dart';
+import '../test_utils/mocks.dart';
+import '../test_utils/utils.dart';
 
 void main() {
   late ProfileCubit profileCubit;
