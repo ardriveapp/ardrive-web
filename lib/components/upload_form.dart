@@ -1,6 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/upload/multi_file_upload_handle.dart';
 import 'package:ardrive/blocs/upload/file_upload_handle.dart';
+import 'package:ardrive/blocs/upload/multi_file_upload_handle.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -238,7 +238,8 @@ class UploadForm extends StatelessWidget {
           } else if (state is UploadInProgress) {
             return AppDialog(
               dismissable: false,
-              title: 'Uploading ${state.files!.length} file(s)...',
+              title:
+                  'Uploading ${state.files!.length} file(s) and bundle(s)...',
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: ConstrainedBox(
