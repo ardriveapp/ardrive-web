@@ -1,4 +1,5 @@
 import 'bundle_packer.dart';
+import 'sized_item.dart';
 
 class NextFitBundlePacker<T extends SizedItem> implements BundlePacker<T> {
   int maxBundleSize;

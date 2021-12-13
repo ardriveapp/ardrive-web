@@ -6,7 +6,7 @@ import 'package:ardrive/blocs/upload/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/next_fit_bundle_packer.dart';
+import 'package:ardrive/utils/bundles/next_fit_bundle_packer.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:bloc/bloc.dart';
