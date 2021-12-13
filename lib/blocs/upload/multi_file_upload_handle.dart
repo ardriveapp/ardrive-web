@@ -1,12 +1,13 @@
 import 'package:ardrive/blocs/upload/upload_handle.dart';
+import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 
-class BundleUploadHandle implements UploadHandle {
+class MultiFileUploadHandle implements UploadHandle {
   final Transaction bundleTx;
-  List<String> fileNames = [];
+  List<FileEntity> fileEntities = [];
 
-  BundleUploadHandle(this.bundleTx, this.size,this.fileNames );
+  MultiFileUploadHandle(this.bundleTx, this.size, this.fileEntities);
 
   @override
   BigInt get cost {

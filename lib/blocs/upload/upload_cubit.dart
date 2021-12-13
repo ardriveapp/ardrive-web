@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:ardrive/blocs/upload/bundle_upload_handle.dart';
+import 'package:ardrive/blocs/upload/multi_file_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
@@ -35,7 +35,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
-  late List<BundleUploadHandle> _bundleUploadHandles = [];
+  late List<MultiFileUploadHandle> _MultiFileUploadHandles = [];
 
   /// Map of conflicting file ids keyed by their file names.
   final Map<String, String> conflictingFiles = {};
@@ -189,7 +189,7 @@ class UploadCubit extends Cubit<UploadState> {
         sufficientArBalance: profile.walletBalance >= totalCost,
         files: _fileUploadHandles.values.toList() +
             _dataItemUploadHandles.values.toList(),
-        bundles: _bundleUploadHandles,
+        bundles: _MultiFileUploadHandles,
       ),
     );
   }
@@ -309,24 +309,24 @@ class UploadCubit extends Cubit<UploadState> {
               .reduce((value, element) => value += element)
               .toList(),
         );
-        _bundleUploadHandles.add(
-          BundleUploadHandle(
+        _MultiFileUploadHandles.add(
+          MultiFileUploadHandle(
               await _arweave.prepareDataBundleTx(dataBundle, profile.wallet),
               dataItemTotalSize,
-              uploadHandles.map((e) => e.entity.name!).toList()),
+              uploadHandles.map((e) => e.entity).toList()),
         );
         uploadHandles.clear();
       }
 
       emit(UploadInProgress(
         files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
-            _bundleUploadHandles,
+            _MultiFileUploadHandles,
       ));
-      for (var uploadHandle in _bundleUploadHandles) {
+      for (var uploadHandle in _MultiFileUploadHandles) {
         await for (final _ in uploadHandle.upload(_arweave)) {
           emit(UploadInProgress(
             files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
-                _bundleUploadHandles,
+                _MultiFileUploadHandles,
           ));
         }
       }
@@ -347,7 +347,7 @@ class UploadCubit extends Cubit<UploadState> {
         await for (final _ in uploadHandle.upload(_arweave)) {
           emit(UploadInProgress(
             files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
-                _bundleUploadHandles,
+                _MultiFileUploadHandles,
           ));
         }
       }

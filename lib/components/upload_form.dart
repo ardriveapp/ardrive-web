@@ -1,5 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/upload/bundle_upload_handle.dart';
+import 'package:ardrive/blocs/upload/multi_file_upload_handle.dart';
 import 'package:ardrive/blocs/upload/file_upload_handle.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -267,10 +267,10 @@ class UploadForm extends StatelessWidget {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      for (var name
-                                          in (file as BundleUploadHandle)
-                                              .fileNames)
-                                        Text(name)
+                                      for (var fileEntity
+                                          in (file as MultiFileUploadHandle)
+                                              .fileEntities)
+                                        Text(fileEntity.name!)
                                     ],
                                   ),
                                   subtitle: Text(

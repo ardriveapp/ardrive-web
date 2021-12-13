@@ -54,7 +54,7 @@ class UploadReady extends UploadState {
   final bool uploadIsPublic;
 
   final List<FileUploadHandle> files;
-  final List<BundleUploadHandle> bundles;
+  final List<MultiFileUploadHandle> bundles;
 
   UploadReady({
     required this.arUploadCost,
@@ -80,7 +80,7 @@ class UploadReady extends UploadState {
 
 class UploadInProgress extends UploadState {
   final List<UploadHandle>? files;
-  
+
   final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
   UploadInProgress({this.files});
 
