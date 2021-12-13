@@ -24,24 +24,8 @@ jobs:
         run: |
           flutter config --enable-web
           flutter build web --profile
-      - uses: nanasess/setup-chromedriver@v1
-        with:
-          # Add latest version from https://chromedriver.chromium.org/downloads
-          chromedriver-version: '96.0.4664.45'
-      - run: |
-          chromedriver --port=4444 &
-          sleep 5
-      - name: Run web tests
-        run: |
-          flutter drive \
-          --driver=test_driver/integration_test.dart \
-          --target=integration_test/pst_service_test.dart \
-          -d web-server
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
           expires: 14d
-      
-
-      
