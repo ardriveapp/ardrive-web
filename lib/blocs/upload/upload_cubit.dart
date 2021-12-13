@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/upload/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/next_fit_bundle_packer.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:bloc/bloc.dart';
@@ -254,27 +255,9 @@ class UploadCubit extends Cubit<UploadState> {
       await _arweave.postTx(feeTx!);
     }
     await _driveDao.transaction(() async {
-      final bundleItems = <List<FileUploadHandle>>[];
-      final dataItemsToBundle = <FileUploadHandle>[];
-      for (final uploadHandle in _dataItemUploadHandles.values) {
-        final dataItemsToBundleSize = dataItemsToBundle.isNotEmpty
-            ? dataItemsToBundle
-                .map((e) => e.size as int)
-                .reduce((value, element) => value += element)
-            : 0;
-        final currentDataItemsSize = uploadHandle.size ?? 0;
-        final addToBundle = fileSizeWithinBundleLimits(
-            dataItemsToBundleSize + currentDataItemsSize);
-        if (addToBundle) {
-          dataItemsToBundle.add(uploadHandle);
-        } else {
-          bundleItems.add(dataItemsToBundle);
-          dataItemsToBundle.clear();
-        }
-      }
-      if (dataItemsToBundle.isNotEmpty) {
-        bundleItems.add(dataItemsToBundle);
-      }
+      final bundleItems = await NextFitBundlePacker<FileUploadHandle>(
+              maxBundleSize: bundleSizeLimit)
+          .packItems(_dataItemUploadHandles.values.toList());
       //Create bundles
       for (var uploadHandles in bundleItems) {
         for (var uploadHandle in uploadHandles) {

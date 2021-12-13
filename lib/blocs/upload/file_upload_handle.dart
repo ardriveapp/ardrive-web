@@ -14,11 +14,11 @@ class FileUploadHandle implements UploadHandle {
 
   /// The size of the file before it was encoded/encrypted for upload.
   @override
-  int? get size => entity.size;
+  int get size => entity.size!;
 
   /// The size of the file that has been uploaded, not accounting for the file encoding/encryption overhead.
   @override
-  int get uploadedSize => (size! * uploadProgress).round();
+  int get uploadedSize => (size * uploadProgress).round();
 
   @override
   double uploadProgress = 0;
