@@ -144,12 +144,12 @@ class SyncCubit extends Cubit<SyncState> {
               await _driveDao.driveById(driveId: folder.value).getSingle();
           await _driveDao.into(_driveDao.folderEntries).insert(
                 FolderEntriesCompanion.insert(
-                  id: folder.key,
-                  driveId: drive.id,
-                  parentFolderId: Value(drive.rootFolderId),
-                  name: 'Ghost Folder',
-                  path: rootPath,
-                ),
+                    id: folder.key,
+                    driveId: drive.id,
+                    parentFolderId: Value(drive.rootFolderId),
+                    name: 'Ghost Folder',
+                    path: rootPath,
+                    isGhost: Value(true)),
               );
         }
       }
