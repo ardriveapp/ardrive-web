@@ -258,6 +258,7 @@ class UploadCubit extends Cubit<UploadState> {
           .packItems(_dataItemUploadHandles.values.toList());
       //Create bundles
       for (var uploadHandles in bundleItems) {
+        var uploadSize = 0;
         for (var uploadHandle in uploadHandles) {
           final fileEntity = uploadHandle.entity;
           if (uploadHandle.entityTx?.id != null) {
@@ -272,17 +273,9 @@ class UploadCubit extends Cubit<UploadState> {
                   : RevisionAction.uploadNewVersion,
             ),
           );
-        }
-        final dataItems = <DataItem>[];
-        var dataItemTotalSize = 0;
-        for (var uploadHandle in uploadHandles) {
-          final dataDataItem = (uploadHandle.dataTx as DataItem);
-          final entityDataItem = (uploadHandle.dataTx as DataItem);
 
-          assert(uploadHandle.entity.dataTxId == dataDataItem.id);
-
-          dataItemTotalSize += uploadHandle.entity.size!;
-          dataItems.addAll([entityDataItem, dataDataItem]);
+          assert(uploadHandle.entity.dataTxId == uploadHandle.dataTx!.id);
+          uploadSize += uploadHandle.entity.size!;
         }
 
         final dataBundle = DataBundle(
@@ -294,7 +287,7 @@ class UploadCubit extends Cubit<UploadState> {
         _multiFileUploadHandles.add(
           MultiFileUploadHandle(
               await _arweave.prepareDataBundleTx(dataBundle, profile.wallet),
-              dataItemTotalSize,
+              uploadSize,
               uploadHandles.map((e) => e.entity).toList()),
         );
         uploadHandles.clear();
