@@ -281,8 +281,7 @@ class UploadCubit extends Cubit<UploadState> {
 
           assert(uploadHandle.entity.dataTxId == dataDataItem.id);
 
-          dataItemTotalSize += entityDataItem.data.lengthInBytes +
-              dataDataItem.data.lengthInBytes;
+          dataItemTotalSize += uploadHandle.entity.size!;
           dataItems.addAll([entityDataItem, dataDataItem]);
         }
 
