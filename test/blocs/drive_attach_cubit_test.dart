@@ -7,8 +7,8 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
-import '../utils/fakes.dart';
-import '../utils/utils.dart';
+import '../test_utils/fakes.dart';
+import '../test_utils/mocks.dart';
 
 void main() {
   group('DriveAttachCubit', () {
@@ -27,7 +27,7 @@ void main() {
       registerFallbackValue(SyncStatefake());
       registerFallbackValue(ProfileStatefake());
       registerFallbackValue(DrivesStatefake());
-      
+
       arweave = MockArweaveService();
       driveDao = MockDriveDao();
       syncBloc = MockSyncBloc();
