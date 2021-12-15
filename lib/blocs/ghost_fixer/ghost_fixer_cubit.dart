@@ -1,5 +1,6 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
@@ -19,15 +20,20 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
+  final SyncCubit _syncCubit;
+
+  StreamSubscription? _folderSubscription;
 
   GhostFixerCubit({
     required this.ghostFolder,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
     required DriveDao driveDao,
+    required SyncCubit syncCubit,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _driveDao = driveDao,
+        _syncCubit = syncCubit,
         super(GhostFixerInitial()) {
     form = FormGroup({
       'name': FormControl(
@@ -41,6 +47,51 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
         ],
       ),
     });
+    _driveDao
+        .driveById(driveId: ghostFolder.driveId)
+        .getSingle()
+        .then((d) => loadFolder(d.rootFolderId));
+  }
+  Future<void> loadParentFolder() async {
+    final state = this.state as GhostFixerFolderLoadSuccess;
+    if (state.viewingFolder.folder?.parentFolderId != null) {
+      return loadFolder(state.viewingFolder.folder!.parentFolderId!);
+    }
+  }
+
+  Future<void> loadFolder(String folderId) async {
+    unawaited(_folderSubscription?.cancel());
+
+    _folderSubscription = _driveDao
+        .watchFolderContents(ghostFolder.driveId, folderId: folderId)
+        .listen(
+          (f) => emit(
+            GhostFixerFolderLoadSuccess(
+              viewingRootFolder: f.folder?.parentFolderId == null,
+              viewingFolder: f,
+              movingEntryId: ghostFolder.id,
+            ),
+          ),
+        );
+  }
+
+  Future<bool> entityNameExists({
+    required String name,
+    required String parentFolderId,
+  }) async {
+    final foldersWithName = await _driveDao
+        .foldersInFolderWithName(
+            driveId: ghostFolder.driveId,
+            parentFolderId: parentFolderId,
+            name: name)
+        .get();
+    final filesWithName = await _driveDao
+        .filesInFolderWithName(
+            driveId: ghostFolder.driveId,
+            parentFolderId: parentFolderId,
+            name: name)
+        .get();
+    return foldersWithName.isNotEmpty || filesWithName.isNotEmpty;
   }
 
   Future<void> submit() async {
@@ -52,7 +103,11 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
 
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
+      final state = this.state as GhostFixerFolderLoadSuccess;
+
       final String folderName = form.control('name').value;
+      final parentFolder = state.viewingFolder.folder!;
+
       if (await _profileCubit.logoutIfWalletMismatch()) {
         emit(GhostFixerWalletMismatch());
         return;
@@ -74,20 +129,15 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
                 targetFolder.driveId, profile.cipherKey)
             : null;
 
-        final newFolderId = await _driveDao.createFolderWithId(
+        final folder = ghostFolder.copyWith(
           id: ghostFolder.id,
-          driveId: targetFolder.driveId,
-          parentFolderId: targetFolder.id,
-          folderName: folderName,
-          path: '${targetFolder.path}/$folderName',
+          name: folderName,
+          parentFolderId: parentFolder.id,
+          path: '${parentFolder.path}/$folderName',
+          isGhost: false,
         );
 
-        final folderEntity = FolderEntity(
-          id: newFolderId,
-          driveId: targetFolder.driveId,
-          parentFolderId: targetFolder.id,
-          name: folderName,
-        );
+        final folderEntity = folder.asEntity();
 
         final folderTx = await _arweave.prepareEntityTx(
           folderEntity,
@@ -96,9 +146,13 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
         );
 
         await _arweave.postTx(folderTx);
+        await _driveDao.writeToFolder(folder);
+
         folderEntity.txId = folderTx.id;
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
             performedAction: RevisionAction.create));
+        final folderMap = {folder.id: folder.toCompanion(false)};
+        await _syncCubit.generateFsEntryPaths(folder.driveId, folderMap, {});
       });
     } catch (err) {
       addError(err);
@@ -109,17 +163,14 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
 
   Future<Map<String, dynamic>?> _uniqueFolderName(
       AbstractControl<dynamic> control) async {
+    final state = this.state as GhostFixerFolderLoadSuccess;
+
     final String folderName = control.value;
+    final parentFolder = state.viewingFolder.folder;
 
     // Check that the parent folder does not already have a folder with the input name.
-    final foldersWithName = await _driveDao
-        .foldersInFolderWithName(
-          driveId: ghostFolder.driveId,
-          parentFolderId: ghostFolder.parentFolderId,
-          name: folderName,
-        )
-        .get();
-    final nameAlreadyExists = foldersWithName.isNotEmpty;
+    final nameAlreadyExists = await entityNameExists(
+        name: folderName, parentFolderId: parentFolder!.id);
 
     if (nameAlreadyExists) {
       control.markAsTouched();
