@@ -26,6 +26,7 @@ void main() {
           throwsException,
         );
       });
+
       test('Creates a single bundle of max size for one max size item',
           () async {
         final testItem = TestSizedItem(size: 5);
