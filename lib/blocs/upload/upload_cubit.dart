@@ -148,7 +148,7 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
     final dataItemsCost = _dataItemUploadHandles.isNotEmpty
-        ? await estimateBundleCosts(_dataItemUploadHandles.values)
+        ? await estimateBundleCosts(_dataItemUploadHandles.values.toList())
         : BigInt.zero;
     final uploadCost = _fileUploadHandles.isNotEmpty
         ? _fileUploadHandles.values
@@ -212,27 +212,25 @@ class UploadCubit extends Cubit<UploadState> {
     return pstFee;
   }
 
-  Future<BigInt> estimateBundleCosts(Iterable<FileUploadHandle> files) async {
+  Future<BigInt> estimateBundleCosts(List<FileUploadHandle> files) async {
     // https://github.com/joshbenaron/arweave-standards/blob/ans104/ans/ANS-104.md
-    final fileSizes = files.map((e) =>
-        (e.dataTx as DataItem).getSize() + (e.entityTx as DataItem).getSize());
-    final bundleSizes = <int>[];
-    bundleSizes.add(0);
-    for (var fileSize in fileSizes) {
-      if (bundleSizes.last + fileSize > bundleSizeLimit) {
-        bundleSizes.add(0);
-      }
-      // Data Item Binary size
-      bundleSizes.last += fileSize;
-      // Data Item offset and entry id in header size
-      bundleSizes.last += 64;
-    }
-    // Add bytes that denote number of data items
-    bundleSizes.forEach((size) {
-      size += 32;
-    });
+    final bundleList = await NextFitBundlePacker<FileUploadHandle>(
+            maxBundleSize: bundleSizeLimit)
+        .packItems(files);
+
     var totalCost = BigInt.zero;
-    for (var size in bundleSizes) {
+    for (var bundle in bundleList) {
+      final fileSizes = bundle.map((e) =>
+          (e.dataTx as DataItem).getSize() +
+          (e.entityTx as DataItem).getSize());
+      var size = 0;
+      // Add data item binary size
+      size += fileSizes.reduce((value, element) => value + element);
+      // Add data item offset and entry id for each data item
+      size += (fileSizes.length * 64);
+      // Add bytes that denote number of data items
+      size += 32;
+
       totalCost += await _arweave.getPrice(byteSize: size);
     }
 
@@ -260,6 +258,7 @@ class UploadCubit extends Cubit<UploadState> {
           .packItems(_dataItemUploadHandles.values.toList());
       //Create bundles
       for (var uploadHandles in bundleItems) {
+        var uploadSize = 0;
         for (var uploadHandle in uploadHandles) {
           final fileEntity = uploadHandle.entity;
           if (uploadHandle.entityTx?.id != null) {
@@ -274,18 +273,9 @@ class UploadCubit extends Cubit<UploadState> {
                   : RevisionAction.uploadNewVersion,
             ),
           );
-        }
-        final dataItems = <DataItem>[];
-        var dataItemTotalSize = 0;
-        for (var uploadHandle in uploadHandles) {
-          final dataDataItem = (uploadHandle.dataTx as DataItem);
-          final entityDataItem = (uploadHandle.dataTx as DataItem);
 
-          assert(uploadHandle.entity.dataTxId == dataDataItem.id);
-
-          dataItemTotalSize += entityDataItem.data.lengthInBytes +
-              dataDataItem.data.lengthInBytes;
-          dataItems.addAll([entityDataItem, dataDataItem]);
+          assert(uploadHandle.entity.dataTxId == uploadHandle.dataTx!.id);
+          uploadSize += uploadHandle.entity.size!;
         }
 
         final dataBundle = DataBundle(
@@ -297,7 +287,7 @@ class UploadCubit extends Cubit<UploadState> {
         _multiFileUploadHandles.add(
           MultiFileUploadHandle(
               await _arweave.prepareDataBundleTx(dataBundle, profile.wallet),
-              dataItemTotalSize,
+              uploadSize,
               uploadHandles.map((e) => e.entity).toList()),
         );
         uploadHandles.clear();
