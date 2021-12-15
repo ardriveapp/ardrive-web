@@ -39,6 +39,7 @@ void main() {
           true,
         );
       });
+
       test('Creates a new bundle when next item does not fit', () async {
         final testItem1 = TestSizedItem(size: 5);
         final testItem2 = TestSizedItem(size: 1);
