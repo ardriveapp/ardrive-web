@@ -60,9 +60,8 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
       emit(GhostFixerInProgress());
 
       await _driveDao.transaction(() async {
-        final targetDrive = await _driveDao
-            .driveById(driveId: ghostFolder.driveId)
-            .getSingle();
+        final targetDrive =
+            await _driveDao.driveById(driveId: ghostFolder.driveId).getSingle();
         final targetFolder = await _driveDao
             .folderById(
               driveId: ghostFolder.driveId,

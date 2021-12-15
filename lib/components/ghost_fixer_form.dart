@@ -1,5 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/ghost%20fixer/ghost_fixer_cubit.dart';
+import 'package:ardrive/blocs/ghost_fixer/ghost_fixer_cubit.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
