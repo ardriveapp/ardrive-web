@@ -60,7 +60,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
   }
 
   Future<void> loadFolder(String folderId) async {
-    unawaited(_folderSubscription?.cancel());
+    await _folderSubscription?.cancel();
 
     _folderSubscription = _driveDao
         .watchFolderContents(ghostFolder.driveId, folderId: folderId)
