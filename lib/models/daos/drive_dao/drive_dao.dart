@@ -256,6 +256,27 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return id;
   }
 
+  // Used for recreating ghost folders
+  Future<String> createFolderWithId({
+    required String id,
+    required String driveId,
+    required String parentFolderId,
+    required String folderName,
+    required String path,
+  }) async {
+    await into(folderEntries).insert(
+      FolderEntriesCompanion.insert(
+        id: id,
+        driveId: driveId,
+        parentFolderId: Value(parentFolderId),
+        name: folderName,
+        path: path,
+      ),
+    );
+
+    return id;
+  }
+
   UpdateStatement<FolderEntries, FolderEntry> updateFolderById(
           String driveId, String folderId) =>
       update(folderEntries)

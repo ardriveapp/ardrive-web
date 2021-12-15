@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:ardrive/entities/constants.dart';
+import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
@@ -59,8 +59,7 @@ class SyncCubit extends Cubit<SyncState> {
         .then((value) => createSyncStream()));
   }
 
-  final Map<String, String> ghostFolders = {};
-  bool isFirstSync = true;
+  final Map<String, GhostFolder> ghostFolders = {};
 
   Future<void> startSync() async {
     try {
@@ -130,28 +129,41 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> finalizeOrphans() async {
     //Finalize missing parent list
-    if (isFirstSync) {
-      for (var folder in ghostFolders.entries) {
-        final folderExists = (await _driveDao
-                .folderById(driveId: folder.value, folderId: folder.key)
-                .getSingleOrNull()) !=
-            null;
-        if (folderExists) {
-          ghostFolders.remove(folder.key);
-        } else {
-          // Add to database
-          final drive =
-              await _driveDao.driveById(driveId: folder.value).getSingle();
-          await _driveDao.into(_driveDao.folderEntries).insert(
-                FolderEntriesCompanion.insert(
-                    id: folder.key,
-                    driveId: drive.id,
-                    parentFolderId: Value(drive.rootFolderId),
-                    name: 'Ghost Folder',
-                    path: rootPath,
-                    isGhost: Value(true)),
-              );
-        }
+
+    for (var i = 0; i < ghostFolders.length; i++) {
+      final ghostFolder = ghostFolders.values.elementAt(i);
+      final folderExists = (await _driveDao
+              .folderById(
+                  driveId: ghostFolder.driveId, folderId: ghostFolder.folderId)
+              .getSingleOrNull()) !=
+          null;
+      if (!folderExists) {
+        // Add to databasefinal drive =
+        final drive =
+            await _driveDao.driveById(driveId: ghostFolder.driveId).getSingle();
+        final folderEntry = FolderEntry(
+          id: ghostFolder.folderId,
+          driveId: drive.id,
+          parentFolderId: drive.rootFolderId,
+          name: 'Ghost Folder ${i + 1}',
+          path: rootPath,
+          lastUpdated: DateTime.now(),
+          isGhost: true,
+          dateCreated: DateTime.now(),
+        );
+        final files = await _driveDao
+            .filesInFolder(
+                driveId: drive.id, parentFolderId: ghostFolder.folderId)
+            .get();
+        await _driveDao.into(_driveDao.folderEntries).insert(folderEntry);
+
+        await generateFsEntryPaths(
+            drive.id,
+            Map.fromEntries([
+              MapEntry(ghostFolder.folderId, folderEntry.toCompanion(false))
+            ]),
+            files.asMap().map(
+                (key, value) => MapEntry(value.id, value.toCompanion(false))));
       }
     }
   }
@@ -492,7 +504,8 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     Future<void> addMissingFolder(String folderId) async {
-      ghostFolders.putIfAbsent(folderId, () => driveId);
+      ghostFolders.putIfAbsent(
+          folderId, () => GhostFolder(folderId: folderId, driveId: driveId));
     }
 
     Future<void> updateFolderTree(FolderNode node, String parentPath) async {

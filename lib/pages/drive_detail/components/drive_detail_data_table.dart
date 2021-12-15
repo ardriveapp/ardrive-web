@@ -112,23 +112,48 @@ DataRow _buildFolderRow({
   return DataRow(
     onSelectChanged: (_) => onPressed(),
     selected: selected,
-    cells: [
-      DataCell(
-        Row(
-          children: [
-            Padding(
-              padding: const EdgeInsetsDirectional.only(end: 8.0),
-              child: const Icon(Icons.folder),
+    cells: folder.isGhost!
+        ? [
+            DataCell(
+              Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(
+                        end: 8.0, top: 8.0, bottom: 8.0),
+                    child: const Icon(Icons.folder),
+                  ),
+                  Text(
+                    trimName(name: folder.name, context: context),
+                  ),
+                ],
+              ),
             ),
-            Text(
-              trimName(name: folder.name, context: context),
+            DataCell(Text('-')),
+            DataCell(
+              TextButton(
+                onPressed: () =>
+                    promptToReCreateFolder(context, ghostFolder: folder),
+                child: Text('Fix'),
+              ),
             ),
+          ]
+        : [
+            DataCell(
+              Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 8.0),
+                    child: const Icon(Icons.folder),
+                  ),
+                  Text(
+                    trimName(name: folder.name, context: context),
+                  ),
+                ],
+              ),
+            ),
+            DataCell(Text('-')),
+            DataCell(Text('-')),
           ],
-        ),
-      ),
-      DataCell(Text('-')),
-      DataCell(Text('-')),
-    ],
   );
 }
 
