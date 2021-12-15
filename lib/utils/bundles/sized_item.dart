@@ -1,5 +1,3 @@
-class SizedItem {
-  int get size {
-    throw UnimplementedError();
-  }
+abstract class SizedItem {
+  int get size;
 }
