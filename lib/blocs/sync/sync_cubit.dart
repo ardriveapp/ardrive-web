@@ -59,8 +59,8 @@ class SyncCubit extends Cubit<SyncState> {
         .then((value) => createSyncStream()));
   }
 
-  final Map<String, GhostFolder> ghostFolders = {};
-
+  final ghostFolders = <String, GhostFolder> {};
+  final ghostFoldersByDrive = <String, Map<String, FolderEntriesCompanion>>{};
   Future<void> startSync() async {
     try {
       final profile = _profileCubit.state;
@@ -115,7 +115,10 @@ class SyncCubit extends Cubit<SyncState> {
       await Future.wait(driveSyncProcesses);
       await finalizeOrphans();
       emit(SyncEmpty());
-
+      await Future.wait([
+        ...ghostFoldersByDrive.entries
+            .map((entry) => generateFsEntryPaths(entry.key, entry.value, {}))
+      ]);
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
         _updateTransactionStatuses(),
@@ -138,32 +141,26 @@ class SyncCubit extends Cubit<SyncState> {
               .getSingleOrNull()) !=
           null;
       if (!folderExists) {
-        // Add to databasefinal drive =
+        // Add to database
         final drive =
             await _driveDao.driveById(driveId: ghostFolder.driveId).getSingle();
-        final folderEntry = FolderEntry(
-          id: ghostFolder.folderId,
-          driveId: drive.id,
-          parentFolderId: drive.rootFolderId,
-          name: 'Ghost Folder ${i + 1}',
-          path: rootPath,
-          lastUpdated: DateTime.now(),
-          isGhost: true,
-          dateCreated: DateTime.now(),
-        );
-        final files = await _driveDao
-            .filesInFolder(
-                driveId: drive.id, parentFolderId: ghostFolder.folderId)
-            .get();
-        await _driveDao.into(_driveDao.folderEntries).insert(folderEntry);
+        // Dont create ghost folder if the ghost is a missing root folder
+        if (drive.rootFolderId != ghostFolder.folderId) {
+          final folderEntry = FolderEntry(
+            id: ghostFolder.folderId,
+            driveId: drive.id,
+            parentFolderId: drive.rootFolderId,
+            name: 'Ghost Folder ${i + 1}',
+            path: rootPath,
+            lastUpdated: DateTime.now(),
+            isGhost: true,
+            dateCreated: DateTime.now(),
+          );
 
-        await generateFsEntryPaths(
-            drive.id,
-            Map.fromEntries([
-              MapEntry(ghostFolder.folderId, folderEntry.toCompanion(false))
-            ]),
-            files.asMap().map(
-                (key, value) => MapEntry(value.id, value.toCompanion(false))));
+          await _driveDao.into(_driveDao.folderEntries).insert(folderEntry);
+          ghostFoldersByDrive.putIfAbsent(
+              drive.id, () => {folderEntry.id: folderEntry.toCompanion(false)});
+        }
       }
     }
   }
