@@ -5,7 +5,7 @@ import 'package:arweave/arweave.dart';
 
 class MultiFileUploadHandle implements UploadHandle {
   final Transaction bundleTx;
-  List<FileEntity> fileEntities = [];
+  final List<FileEntity> fileEntities;
 
   MultiFileUploadHandle(this.bundleTx, this.size, this.fileEntities);
 
