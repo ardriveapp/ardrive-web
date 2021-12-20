@@ -46,7 +46,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   void createSyncStream() {
     _syncSub?.cancel();
-    _syncSub = Stream.periodic(const Duration(minutes: 2))
+    _syncSub = Stream.periodic(const Duration(minutes: 5))
         // Do not start another sync until the previous sync has completed.
         .map((value) => Stream.fromFuture(startSync()))
         .listen((_) {});
