@@ -249,7 +249,7 @@ class UploadCubit extends Cubit<UploadState> {
       emit(UploadBundlingInProgress());
     }
 
-    if (feeTx != null) {
+    if (feeTx != null && _fileUploadHandles.isNotEmpty) {
       await _arweave.postTx(feeTx!);
     }
     await _driveDao.transaction(() async {
