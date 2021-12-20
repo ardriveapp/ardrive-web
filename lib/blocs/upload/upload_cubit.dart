@@ -47,7 +47,7 @@ class UploadCubit extends Cubit<UploadState> {
   /// A list of all multi file upload handles containing bundles of multiple files
   final List<MultiFileUploadHandle> _multiFileUploadHandles = [];
 
-  /// The [Transaction] that pays `pstFee` to a random PST holder.
+  /// The [Transaction] that pays `pstFee` to a random PST holder. (Only for v2 transaction uploads)
   Transaction? feeTx;
 
   final bundleSizeLimit = 503316480;
@@ -154,10 +154,10 @@ class UploadCubit extends Cubit<UploadState> {
         ? _fileUploadHandles.values
             .map((e) => e.cost)
             .reduce((value, element) => value += element)
-        : BigInt.zero + dataItemsCost;
+        : BigInt.zero;
 
     final pstFee = await getPSTFee(uploadCost);
-
+    final bundlePstFee = await getPSTFee(dataItemsCost);
     if (pstFee > BigInt.zero) {
       feeTx = await _arweave.client.transactions.prepare(
         Transaction(
@@ -172,7 +172,7 @@ class UploadCubit extends Cubit<UploadState> {
       await feeTx!.sign(profile.wallet);
     }
 
-    final totalCost = uploadCost + pstFee;
+    final totalCost = uploadCost + pstFee + bundlePstFee;
 
     final arUploadCost = winstonToAr(totalCost);
     final usdUploadCost = await _arweave
@@ -284,10 +284,20 @@ class UploadCubit extends Cubit<UploadState> {
               .reduce((value, element) => value += element)
               .toList(),
         );
+        // Create bundle tx
+        final bundleTx =
+            await _arweave.prepareDataBundleTx(dataBundle, profile.wallet);
+
+        // Add tips to bundle tx
+        final bundleTip = await getPSTFee(bundleTx.reward);
+        bundleTx
+          ..addTag('Type', 'fee')
+          ..addTag(TipType.tagName, TipType.dataUpload)
+          ..setTarget(await _pst.getWeightedPstHolder())
+          ..setQuantity(bundleTip);
+
         _multiFileUploadHandles.add(
-          MultiFileUploadHandle(
-              await _arweave.prepareDataBundleTx(dataBundle, profile.wallet),
-              uploadSize,
+          MultiFileUploadHandle(bundleTx, uploadSize,
               uploadHandles.map((e) => e.entity).toList()),
         );
         uploadHandles.clear();
