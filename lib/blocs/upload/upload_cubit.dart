@@ -291,7 +291,6 @@ class UploadCubit extends Cubit<UploadState> {
         // Add tips to bundle tx
         final bundleTip = await getPSTFee(bundleTx.reward);
         bundleTx
-          ..addTag('Type', 'fee')
           ..addTag(TipType.tagName, TipType.dataUpload)
           ..setTarget(await _pst.getWeightedPstHolder())
           ..setQuantity(bundleTip);
