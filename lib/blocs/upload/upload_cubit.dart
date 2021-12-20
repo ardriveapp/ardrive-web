@@ -296,8 +296,11 @@ class UploadCubit extends Cubit<UploadState> {
           ..setQuantity(bundleTip);
 
         _multiFileUploadHandles.add(
-          MultiFileUploadHandle(bundleTx, uploadSize,
-              uploadHandles.map((e) => e.entity).toList()),
+          MultiFileUploadHandle(
+            bundleTx,
+            uploadSize,
+            uploadHandles.map((e) => e.entity).toList(),
+          ),
         );
         uploadHandles.clear();
       }
