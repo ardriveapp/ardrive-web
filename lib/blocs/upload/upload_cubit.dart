@@ -172,7 +172,7 @@ class UploadCubit extends Cubit<UploadState> {
       await feeTx!.sign(profile.wallet);
     }
 
-    final totalCost = uploadCost + pstFee + bundlePstFee;
+    final totalCost = uploadCost + dataItemsCost + pstFee + bundlePstFee;
 
     final arUploadCost = winstonToAr(totalCost);
     final usdUploadCost = await _arweave
