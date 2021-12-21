@@ -59,7 +59,7 @@ class SyncCubit extends Cubit<SyncState> {
         .then((value) => createSyncStream()));
   }
 
-  final ghostFolders = <String, GhostFolder> {};
+  final ghostFolders = <String, GhostFolder>{};
   final ghostFoldersByDrive = <String, Map<String, FolderEntriesCompanion>>{};
   Future<void> startSync() async {
     try {
@@ -150,7 +150,7 @@ class SyncCubit extends Cubit<SyncState> {
             id: ghostFolder.folderId,
             driveId: drive.id,
             parentFolderId: drive.rootFolderId,
-            name: 'Ghost Folder ${i + 1}',
+            name: ghostFolder.folderId,
             path: rootPath,
             lastUpdated: DateTime.now(),
             isGhost: true,
