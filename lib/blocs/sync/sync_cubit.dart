@@ -74,7 +74,7 @@ class SyncCubit extends Cubit<SyncState> {
           return;
         }
 
-        if (_profileCubit.isOverlayOpen()) {
+        if (_profileCubit.isPerformingAction()) {
           print('Overlay open, skipping sync...');
           emit(SyncIdle());
           return;
@@ -202,7 +202,6 @@ class SyncCubit extends Cubit<SyncState> {
       await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
     });
 
-    
     // If there are more results to process, recurse.
     await _syncDrive(
       driveId,

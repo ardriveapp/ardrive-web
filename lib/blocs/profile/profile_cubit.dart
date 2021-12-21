@@ -21,7 +21,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   final ProfileDao _profileDao;
   final Database _db;
 
-  bool _isOverlayOpen = false;
+  bool _isPerformingAction = false;
 
   ProfileCubit({
     required ArweaveService arweave,
@@ -43,9 +43,15 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
-  bool isOverlayOpen() => _isOverlayOpen;
+  bool isPerformingAction() => _isPerformingAction;
 
-  void setOverlayOpen(bool val) => _isOverlayOpen = val;
+  void setPerformingAction(bool val) => _isPerformingAction = val;
+
+  void performAction(Function action) async {
+    _isPerformingAction = true;
+    await action();
+    _isPerformingAction = false;
+  }
 
   Future<void> promptToAuthenticate() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();

@@ -1,7 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
-import 'package:ardrive/pages/congestion_warning_wrapper.dart';
+import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -102,7 +102,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
         ).then((value) => isCurrentlyShown = false);
         return;
       }
-      await showCongestionWarning(
+      await performUserAction(
         context,
         () => showDialog(
           context: context,
