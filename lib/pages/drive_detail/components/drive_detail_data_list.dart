@@ -56,7 +56,9 @@ Widget _buildFolderListTile({
       trailing: folder.isGhost
           ? TextButton(
               style: TextButton.styleFrom(
-                backgroundColor: kSecondarySwatch[300],
+                backgroundColor: LightColors.kOnLightSurfaceMediumEmphasis,
+                textStyle:
+                    TextStyle(color: LightColors.kOnDarkSurfaceHighEmphasis),
               ),
               onPressed: () =>
                   promptToReCreateFolder(context, ghostFolder: folder),
