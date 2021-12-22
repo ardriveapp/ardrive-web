@@ -156,7 +156,7 @@ class UploadCubit extends Cubit<UploadState> {
             .reduce((value, element) => value += element)
         : BigInt.zero;
 
-    final pstFee = await getPSTFee(uploadCost);
+    var pstFee = await getPSTFee(uploadCost);
     final bundlePstFee = await getPSTFee(dataItemsCost);
     if (pstFee > BigInt.zero) {
       feeTx = await _arweave.client.transactions.prepare(
@@ -170,6 +170,11 @@ class UploadCubit extends Cubit<UploadState> {
         ..addTag('Type', 'fee')
         ..addTag(TipType.tagName, TipType.dataUpload);
       await feeTx!.sign(profile.wallet);
+    }
+
+    if (_fileUploadHandles.isNotEmpty) {
+      final minimumPstTip = BigInt.from(10000000);
+      pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
     }
 
     final totalCost = uploadCost + dataItemsCost + pstFee + bundlePstFee;
@@ -198,7 +203,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<BigInt> getPSTFee(BigInt uploadCost) async {
-    var pstFee = await _pst
+    return await _pst
         .getPstFeePercentage()
         .then((feePercentage) =>
             // Workaround [BigInt] percentage division problems
@@ -206,10 +211,6 @@ class UploadCubit extends Cubit<UploadState> {
             uploadCost * BigInt.from(feePercentage * 100) ~/ BigInt.from(100))
         .catchError((_) => BigInt.zero,
             test: (err) => err is UnimplementedError);
-
-    final minimumPstTip = BigInt.from(10000000);
-    pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
-    return pstFee;
   }
 
   Future<BigInt> estimateBundleCosts(List<FileUploadHandle> files) async {
@@ -302,6 +303,7 @@ class UploadCubit extends Cubit<UploadState> {
             uploadHandles.map((e) => e.entity).toList(),
           ),
         );
+        await bundleTx.sign(profile.wallet);
         uploadHandles.clear();
       }
 
