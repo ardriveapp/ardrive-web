@@ -23,6 +23,7 @@ Widget _buildDataTable(BuildContext context, DriveDetailLoadSuccess state) =>
                       bloc.selectItem(
                         folder.id,
                         isFolder: true,
+                        isGhost: folder.isGhost,
                       );
                     }
                   },
@@ -112,7 +113,7 @@ DataRow _buildFolderRow({
   return DataRow(
     onSelectChanged: (_) => onPressed(),
     selected: selected,
-    cells: folder.isGhost!
+    cells: folder.isGhost
         ? [
             DataCell(
               Row(
@@ -131,6 +132,9 @@ DataRow _buildFolderRow({
             DataCell(Text('-')),
             DataCell(
               TextButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: kSecondarySwatch[300],
+                ),
                 onPressed: () =>
                     promptToReCreateFolder(context, ghostFolder: folder),
                 child: Text('Fix'),

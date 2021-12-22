@@ -8,6 +8,6 @@ CREATE TABLE folder_entries (
 
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
     lastUpdated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
-    isGhost BOOLEAN DEFAULT FALSE,
+    isGhost BOOLEAN NOT NULL DEFAULT FALSE,
     PRIMARY KEY (id, driveId)
 ) As FolderEntry;
