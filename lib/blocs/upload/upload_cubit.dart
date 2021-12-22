@@ -47,11 +47,13 @@ class UploadCubit extends Cubit<UploadState> {
   /// A list of all multi file upload handles containing bundles of multiple files
   final List<MultiFileUploadHandle> _multiFileUploadHandles = [];
 
-  /// The [Transaction] that pays `pstFee` to a random PST holder.
+  /// The [Transaction] that pays `pstFee` to a random PST holder. (Only for v2 transaction uploads)
   Transaction? feeTx;
 
   final bundleSizeLimit = 503316480;
   final privateFileSizeLimit = 104857600;
+  final minimumPstTip = BigInt.from(10000000);
+
   bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
   UploadCubit({
@@ -154,10 +156,10 @@ class UploadCubit extends Cubit<UploadState> {
         ? _fileUploadHandles.values
             .map((e) => e.cost)
             .reduce((value, element) => value += element)
-        : BigInt.zero + dataItemsCost;
+        : BigInt.zero;
 
-    final pstFee = await getPSTFee(uploadCost);
-
+    var pstFee = await getPSTFee(uploadCost);
+    final bundlePstFee = await getPSTFee(dataItemsCost);
     if (pstFee > BigInt.zero) {
       feeTx = await _arweave.client.transactions.prepare(
         Transaction(
@@ -172,7 +174,11 @@ class UploadCubit extends Cubit<UploadState> {
       await feeTx!.sign(profile.wallet);
     }
 
-    final totalCost = uploadCost + pstFee;
+    if (_fileUploadHandles.isNotEmpty) {
+      pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
+    }
+
+    final totalCost = uploadCost + dataItemsCost + pstFee + bundlePstFee;
 
     final arUploadCost = winstonToAr(totalCost);
     final usdUploadCost = await _arweave
@@ -198,7 +204,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<BigInt> getPSTFee(BigInt uploadCost) async {
-    var pstFee = await _pst
+    return await _pst
         .getPstFeePercentage()
         .then((feePercentage) =>
             // Workaround [BigInt] percentage division problems
@@ -206,10 +212,6 @@ class UploadCubit extends Cubit<UploadState> {
             uploadCost * BigInt.from(feePercentage * 100) ~/ BigInt.from(100))
         .catchError((_) => BigInt.zero,
             test: (err) => err is UnimplementedError);
-
-    final minimumPstTip = BigInt.from(10000000);
-    pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
-    return pstFee;
   }
 
   Future<BigInt> estimateBundleCosts(List<FileUploadHandle> files) async {
@@ -249,7 +251,7 @@ class UploadCubit extends Cubit<UploadState> {
       emit(UploadBundlingInProgress());
     }
 
-    if (feeTx != null) {
+    if (feeTx != null && _fileUploadHandles.isNotEmpty) {
       await _arweave.postTx(feeTx!);
     }
     await _driveDao.transaction(() async {
@@ -284,12 +286,25 @@ class UploadCubit extends Cubit<UploadState> {
               .reduce((value, element) => value += element)
               .toList(),
         );
+        // Create bundle tx
+        final bundleTx =
+            await _arweave.prepareDataBundleTx(dataBundle, profile.wallet);
+
+        // Add tips to bundle tx
+        final bundleTip = await getPSTFee(bundleTx.reward);
+        bundleTx
+          ..addTag(TipType.tagName, TipType.dataUpload)
+          ..setTarget(await _pst.getWeightedPstHolder())
+          ..setQuantity(bundleTip);
+
         _multiFileUploadHandles.add(
           MultiFileUploadHandle(
-              await _arweave.prepareDataBundleTx(dataBundle, profile.wallet),
-              uploadSize,
-              uploadHandles.map((e) => e.entity).toList()),
+            bundleTx,
+            uploadSize,
+            uploadHandles.map((e) => e.entity).toList(),
+          ),
         );
+        await bundleTx.sign(profile.wallet);
         uploadHandles.clear();
       }
 
