@@ -53,6 +53,16 @@ Widget _buildFolderListTile({
         child: const Icon(Icons.folder),
       ),
       title: Text(folder.name),
+      trailing: folder.isGhost
+          ? TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: kSecondarySwatch[300],
+              ),
+              onPressed: () =>
+                  promptToReCreateFolder(context, ghostFolder: folder),
+              child: Text('Fix'),
+            )
+          : null,
     );
 
 Widget _buildFileListTile({
