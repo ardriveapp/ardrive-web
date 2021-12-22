@@ -18,6 +18,7 @@ import '../blocs.dart';
 part 'sync_state.dart';
 
 const kRequiredTxConfirmationCount = 15;
+const kSyncTimerDuration = 5;
 
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.
@@ -28,6 +29,7 @@ class SyncCubit extends Cubit<SyncState> {
   final Database _db;
 
   StreamSubscription? _syncSub;
+  DateTime? _lastSync;
 
   SyncCubit({
     required ProfileCubit profileCubit,
@@ -46,7 +48,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   void createSyncStream() {
     _syncSub?.cancel();
-    _syncSub = Stream.periodic(const Duration(minutes: 5))
+    _syncSub = Stream.periodic(const Duration(minutes: kSyncTimerDuration))
         // Do not start another sync until the previous sync has completed.
         .map((value) => Stream.fromFuture(startSync()))
         .listen((_) {});
@@ -54,8 +56,14 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void restartSyncOnFocus() {
-    whenBrowserTabIsUnhidden(() => Future.delayed(Duration(seconds: 2))
-        .then((value) => createSyncStream()));
+    whenBrowserTabIsUnhidden(() {
+      if (_lastSync != null &&
+          DateTime.now().difference(_lastSync!).inMinutes <
+              kSyncTimerDuration) {
+        return;
+      }
+      Future.delayed(Duration(seconds: 2)).then((value) => createSyncStream());
+    });
   }
 
   Future<void> startSync() async {
@@ -118,7 +126,7 @@ class SyncCubit extends Cubit<SyncState> {
     } catch (err) {
       addError(err);
     }
-
+    _lastSync = DateTime.now();
     emit(SyncIdle());
   }
 
@@ -202,7 +210,6 @@ class SyncCubit extends Cubit<SyncState> {
       await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
     });
 
-    
     // If there are more results to process, recurse.
     await _syncDrive(
       driveId,
