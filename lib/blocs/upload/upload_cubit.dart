@@ -52,6 +52,8 @@ class UploadCubit extends Cubit<UploadState> {
 
   final bundleSizeLimit = 503316480;
   final privateFileSizeLimit = 104857600;
+  final minimumPstTip = BigInt.from(10000000);
+
   bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
   UploadCubit({
@@ -173,7 +175,6 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     if (_fileUploadHandles.isNotEmpty) {
-      final minimumPstTip = BigInt.from(10000000);
       pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
     }
 
