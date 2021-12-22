@@ -113,12 +113,9 @@ class SyncCubit extends Cubit<SyncState> {
             addError(error!);
           }));
       await Future.wait(driveSyncProcesses);
-      await finalizeOrphans();
+      await createGhosts();
       emit(SyncEmpty());
-      await Future.wait([
-        ...ghostFoldersByDrive.entries
-            .map((entry) => generateFsEntryPaths(entry.key, entry.value, {}))
-      ]);
+
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
         _updateTransactionStatuses(),
@@ -130,7 +127,7 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncIdle());
   }
 
-  Future<void> finalizeOrphans() async {
+  Future<void> createGhosts() async {
     //Finalize missing parent list
 
     for (var i = 0; i < ghostFolders.length; i++) {
@@ -163,6 +160,10 @@ class SyncCubit extends Cubit<SyncState> {
         }
       }
     }
+    await Future.wait([
+      ...ghostFoldersByDrive.entries
+          .map((entry) => generateFsEntryPaths(entry.key, entry.value, {})),
+    ]);
   }
 
   Future<void> _syncDrive(

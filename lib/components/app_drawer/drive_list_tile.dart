@@ -1,21 +1,33 @@
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 
 class DriveListTile extends StatelessWidget {
   final Drive drive;
   final bool selected;
   final VoidCallback onPressed;
+  final bool hasAlert;
 
   const DriveListTile({
     required this.drive,
     required this.onPressed,
     this.selected = false,
+    this.hasAlert = false,
   });
 
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: ListTile(
+          minLeadingWidth: 12,
+          leading: hasAlert
+              ? const Icon(
+                  Icons.info,
+                  color: Color(kPrimaryValue),
+                  size: 12,
+                  
+                )
+              : null,
           trailing: drive.isPrivate
               ? const Icon(
                   Icons.lock_outline,
