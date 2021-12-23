@@ -19,6 +19,7 @@ part 'sync_state.dart';
 
 const kRequiredTxConfirmationCount = 15;
 const kSyncTimerDuration = 5;
+const kArConnectSyncTimerDuration = 2;
 
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.
@@ -29,6 +30,8 @@ class SyncCubit extends Cubit<SyncState> {
   final Database _db;
 
   StreamSubscription? _syncSub;
+  StreamSubscription? _arconnectSyncSub;
+
   DateTime? _lastSync;
 
   SyncCubit({
@@ -44,6 +47,9 @@ class SyncCubit extends Cubit<SyncState> {
     // Sync the user's drives on start and periodically.
     createSyncStream();
     restartSyncOnFocus();
+    // Sync ArConnect
+    createArConnectSyncStream();
+    restartArConnectSyncOnFocus();
   }
 
   void createSyncStream() {
@@ -88,10 +94,6 @@ class SyncCubit extends Cubit<SyncState> {
           return;
         }
 
-        if (await _profileCubit.logoutIfWalletMismatch()) {
-          emit(SyncWalletMismatch());
-          return;
-        }
         // This syncs in the latest info on drives owned by the user and will be overwritten
         // below when the full sync process is ran.
         //
@@ -128,6 +130,34 @@ class SyncCubit extends Cubit<SyncState> {
     }
     _lastSync = DateTime.now();
     emit(SyncIdle());
+  }
+
+  Future<void> createArConnectSyncStream() async {
+    if (await _profileCubit.isCurrentProfileArConnect()) {
+      await _arconnectSyncSub?.cancel();
+      _arconnectSyncSub = Stream.periodic(
+              const Duration(minutes: kArConnectSyncTimerDuration))
+          // Do not start another sync until the previous sync has completed.
+          .map((value) => Stream.fromFuture(arconnectSync()))
+          .listen((_) {});
+      unawaited(arconnectSync());
+    }
+  }
+
+  Future<void> arconnectSync() async {
+    if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
+      emit(SyncWalletMismatch());
+      return;
+    }
+  }
+
+  void restartArConnectSyncOnFocus() async {
+    if (await _profileCubit.isCurrentProfileArConnect()) {
+      whenBrowserTabIsUnhidden(() {
+        Future.delayed(Duration(seconds: 2))
+            .then((value) => createArConnectSyncStream());
+      });
+    }
   }
 
   Future<void> _syncDrive(
