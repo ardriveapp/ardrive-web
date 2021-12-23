@@ -129,11 +129,11 @@ DataRow _buildFolderRow({
                 ],
               ),
             ),
-            DataCell(Text('-')),
+            DataCell(Text('')),
             DataCell(
-              TextButton(
-                style: TextButton.styleFrom(
-                  backgroundColor: LightColors.kOnLightSurfaceMediumEmphasis,
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  primary: LightColors.kOnLightSurfaceMediumEmphasis,
                   textStyle:
                       TextStyle(color: LightColors.kOnDarkSurfaceHighEmphasis),
                 ),

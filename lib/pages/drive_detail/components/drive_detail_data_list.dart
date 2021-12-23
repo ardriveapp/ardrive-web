@@ -54,9 +54,9 @@ Widget _buildFolderListTile({
       ),
       title: Text(folder.name),
       trailing: folder.isGhost
-          ? TextButton(
-              style: TextButton.styleFrom(
-                backgroundColor: LightColors.kOnLightSurfaceMediumEmphasis,
+          ? ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                primary: LightColors.kOnLightSurfaceMediumEmphasis,
                 textStyle:
                     TextStyle(color: LightColors.kOnDarkSurfaceHighEmphasis),
               ),
