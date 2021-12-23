@@ -10,7 +10,8 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
 
-Future<void> promptToCreateDrive(BuildContext context) => performUserAction(
+Future<void> promptToCreateDrive(BuildContext context) =>
+    showUninterruptibleDialog(
       context,
       () => showDialog(
         context: context,

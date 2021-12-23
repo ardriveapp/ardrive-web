@@ -102,7 +102,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
         ).then((value) => isCurrentlyShown = false);
         return;
       }
-      await performUserAction(
+      await showUninterruptibleDialog(
         context,
         () => showDialog(
           context: context,

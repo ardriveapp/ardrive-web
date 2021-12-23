@@ -16,7 +16,7 @@ Future<void> promptToUploadFile(
   bool allowSelectMultiple = false,
 }) async {
   final profleCubit = context.read<ProfileCubit>();
-  profleCubit.performAction(
+  profleCubit.performUninterruptibleAction(
     () async {
       final selectedFiles = allowSelectMultiple
           ? await file_selector.openFiles()

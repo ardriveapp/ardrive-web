@@ -15,7 +15,7 @@ Future<void> promptToCreateFolder(
   required String driveId,
   required String parentFolderId,
 }) =>
-    performUserAction(
+    showUninterruptibleDialog(
       context,
       () => showDialog(
         context: context,

@@ -74,7 +74,7 @@ class SyncCubit extends Cubit<SyncState> {
           return;
         }
 
-        if (_profileCubit.isPerformingAction()) {
+        if (_profileCubit.doNotInterrupt()) {
           print('Overlay open, skipping sync...');
           emit(SyncIdle());
           return;

@@ -15,7 +15,7 @@ Future<void> promptToRenameFolder(
   required String driveId,
   required String folderId,
 }) =>
-    performUserAction(
+    showUninterruptibleDialog(
       context,
       () => showDialog(
         context: context,
@@ -38,7 +38,7 @@ Future<void> promptToRenameFile(
   required String driveId,
   required String fileId,
 }) =>
-    performUserAction(
+    showUninterruptibleDialog(
         context,
         () => showDialog(
               context: context,

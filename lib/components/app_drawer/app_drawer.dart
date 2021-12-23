@@ -185,7 +185,7 @@ class AppDrawer extends StatelessWidget {
                           PopupMenuDivider(),
                           PopupMenuItem(
                             enabled: state.hasWritePermissions,
-                            value: (context) => performUserAction(
+                            value: (context) => showUninterruptibleDialog(
                               context,
                               () => promptToUploadFile(
                                 context,

@@ -15,7 +15,7 @@ Future<void> promptToRenameDrive(
   BuildContext context, {
   required String driveId,
 }) =>
-    performUserAction(
+    showUninterruptibleDialog(
       context,
       () => showDialog(
         context: context,
