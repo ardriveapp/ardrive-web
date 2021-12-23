@@ -132,16 +132,18 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncIdle());
   }
 
-  Future<void> createArConnectSyncStream() async {
-    if (await _profileCubit.isCurrentProfileArConnect()) {
-      await _arconnectSyncSub?.cancel();
-      _arconnectSyncSub = Stream.periodic(
-              const Duration(minutes: kArConnectSyncTimerDuration))
-          // Do not start another sync until the previous sync has completed.
-          .map((value) => Stream.fromFuture(arconnectSync()))
-          .listen((_) {});
-      unawaited(arconnectSync());
-    }
+  void createArConnectSyncStream() {
+    _profileCubit.isCurrentProfileArConnect().then((isArConnect) {
+      if (isArConnect) {
+        _arconnectSyncSub?.cancel();
+        _arconnectSyncSub = Stream.periodic(
+                const Duration(minutes: kArConnectSyncTimerDuration))
+            // Do not start another sync until the previous sync has completed.
+            .map((value) => Stream.fromFuture(arconnectSync()))
+            .listen((_) {});
+        arconnectSync();
+      }
+    });
   }
 
   Future<void> arconnectSync() async {
