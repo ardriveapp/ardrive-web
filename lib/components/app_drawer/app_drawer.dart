@@ -1,6 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/misc/resources.dart';
-import 'package:ardrive/pages/user_interaction_wrapper.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -185,7 +185,8 @@ class AppDrawer extends StatelessWidget {
                           PopupMenuDivider(),
                           PopupMenuItem(
                             enabled: state.hasWritePermissions,
-                            value: (context) => showUninterruptibleDialog(
+                            value: (context) =>
+                                showCongestionDependentModalDialog(
                               context,
                               () => promptToUploadFile(
                                 context,

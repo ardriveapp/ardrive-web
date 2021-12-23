@@ -15,34 +15,29 @@ Future<void> promptToUploadFile(
   required String folderId,
   bool allowSelectMultiple = false,
 }) async {
-  final profleCubit = context.read<ProfileCubit>();
-  profleCubit.performUninterruptibleAction(
-    () async {
-      final selectedFiles = allowSelectMultiple
-          ? await file_selector.openFiles()
-          : [await file_selector.openFile()].where((file) => file != null)
-              as List<file_selector.XFile>;
-      if (selectedFiles.isEmpty) {
-        return;
-      }
+  final selectedFiles = allowSelectMultiple
+      ? await file_selector.openFiles()
+      : [await file_selector.openFile()].where((file) => file != null)
+          as List<file_selector.XFile>;
+  if (selectedFiles.isEmpty) {
+    return;
+  }
 
-      await showDialog(
-        context: context,
-        builder: (_) => BlocProvider<UploadCubit>(
-          create: (context) => UploadCubit(
-            driveId: driveId,
-            folderId: folderId,
-            files: selectedFiles,
-            profileCubit: profleCubit,
-            arweave: context.read<ArweaveService>(),
-            pst: context.read<PstService>(),
-            driveDao: context.read<DriveDao>(),
-          ),
-          child: UploadForm(),
-        ),
-        barrierDismissible: false,
-      );
-    },
+  await showDialog(
+    context: context,
+    builder: (_) => BlocProvider<UploadCubit>(
+      create: (context) => UploadCubit(
+        driveId: driveId,
+        folderId: folderId,
+        files: selectedFiles,
+        profileCubit: context.read<ProfileCubit>(),
+        arweave: context.read<ArweaveService>(),
+        pst: context.read<PstService>(),
+        driveDao: context.read<DriveDao>(),
+      ),
+      child: UploadForm(),
+    ),
+    barrierDismissible: false,
   );
 }
 

@@ -1,7 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/user_interaction_wrapper.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +15,7 @@ Future<void> promptToCreateFolder(
   required String driveId,
   required String parentFolderId,
 }) =>
-    showUninterruptibleDialog(
+    showCongestionDependentModalDialog(
       context,
       () => showDialog(
         context: context,

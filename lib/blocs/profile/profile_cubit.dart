@@ -21,8 +21,6 @@ class ProfileCubit extends Cubit<ProfileState> {
   final ProfileDao _profileDao;
   final Database _db;
 
-  bool _doNotInterrupt = false;
-
   ProfileCubit({
     required ArweaveService arweave,
     required ProfileDao profileDao,
@@ -41,14 +39,6 @@ class ProfileCubit extends Cubit<ProfileState> {
     } else {
       return false;
     }
-  }
-
-  bool doNotInterrupt() => _doNotInterrupt;
-
-  void performUninterruptibleAction(Function action) async {
-    _doNotInterrupt = true;
-    await action();
-    _doNotInterrupt = false;
   }
 
   Future<void> promptToAuthenticate() async {

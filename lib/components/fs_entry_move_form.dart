@@ -1,6 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/user_interaction_wrapper.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +14,7 @@ Future<void> promptToMoveFolder(
   required String driveId,
   required String folderId,
 }) =>
-    showUninterruptibleDialog(
+    showCongestionDependentModalDialog(
         context,
         () => showDialog(
               context: context,
@@ -36,7 +36,7 @@ Future<void> promptToMoveFile(
   required String driveId,
   required String fileId,
 }) =>
-    showUninterruptibleDialog(
+    showCongestionDependentModalDialog(
       context,
       () => showDialog(
         context: context,
