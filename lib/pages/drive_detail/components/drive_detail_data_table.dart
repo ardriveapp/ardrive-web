@@ -1,56 +1,97 @@
 part of '../drive_detail_page.dart';
 
-Widget _buildDataTable(BuildContext context, DriveDetailLoadSuccess state) =>
-    Scrollbar(
+Widget _buildDataTable(BuildContext context, DriveDetailLoadSuccess state) {
+  return DriveDataTable(
+    driveDetailState: state,
+    context: context,
+  );
+}
+
+class DriveDataTable extends StatefulWidget {
+  final DriveDetailLoadSuccess driveDetailState;
+  final BuildContext context;
+  const DriveDataTable({
+    Key? key,
+    required this.driveDetailState,
+    required this.context,
+  }) : super(key: key);
+
+  @override
+  State<DriveDataTable> createState() => _DriveDataTableState();
+}
+
+class _DriveDataTableState extends State<DriveDataTable> {
+  int rowsPerPage = 25;
+  @override
+  Widget build(BuildContext context) {
+    return Scrollbar(
       child: SingleChildScrollView(
           key: UniqueKey(),
-          child: PaginatedDataTable(
-            showCheckboxColumn: false,
-            columns: _buildTableColumns(context),
-            sortColumnIndex: DriveOrder.values.indexOf(state.contentOrderBy),
-            sortAscending: state.contentOrderingMode == OrderingMode.asc,
-            rowsPerPage: 25,
-            availableRowsPerPage: [50, 75, 100],
-            source: DriveDetailDataTableSource(
-              context: context,
-              files: state.currentFolder.files
-                  .map(
-                    (file) => DriveTableFile(
-                      file: file,
-                      selected: file.id == state.selectedItemId,
-                      onPressed: () async {
-                        final bloc = context.read<DriveDetailCubit>();
-                        if (file.id == state.selectedItemId) {
-                          bloc.toggleSelectedItemDetails();
-                        } else {
-                          await bloc.selectItem(file.id);
-                        }
-                      },
-                    ),
-                  )
-                  .toList(),
-              folders: state.currentFolder.subfolders
-                  .map(
-                    (folder) => DriveTableFolder(
-                      folder: folder,
-                      selected: folder.id == state.selectedItemId,
-                      onPressed: () {
-                        final bloc = context.read<DriveDetailCubit>();
-                        if (folder.id == state.selectedItemId) {
-                          bloc.openFolder(path: folder.path);
-                        } else {
-                          bloc.selectItem(
-                            folder.id,
-                            isFolder: true,
-                          );
-                        }
-                      },
-                    ),
-                  )
-                  .toList(),
+          child: Theme(
+            data: ThemeData(
+              cardTheme: CardTheme(
+                color: Colors.transparent,
+                elevation: 0.0,
+              ),
+            ),
+            child: PaginatedDataTable(
+              showCheckboxColumn: false,
+              columns: _buildTableColumns(context),
+              sortColumnIndex: DriveOrder.values
+                  .indexOf(widget.driveDetailState.contentOrderBy),
+              sortAscending: widget.driveDetailState.contentOrderingMode ==
+                  OrderingMode.asc,
+              rowsPerPage: rowsPerPage,
+              availableRowsPerPage: [25, 50, 75, 100],
+              onRowsPerPageChanged: (value) =>
+                  setState(() => rowsPerPage = value!),
+              source: DriveDetailDataTableSource(
+                context: context,
+                files: widget.driveDetailState.currentFolder.files
+                    .map(
+                      (file) => DriveTableFile(
+                        file: file,
+                        selected:
+                            file.id == widget.driveDetailState.selectedItemId,
+                        onPressed: () async {
+                          final bloc = context.read<DriveDetailCubit>();
+                          if (file.id ==
+                              widget.driveDetailState.selectedItemId) {
+                            bloc.toggleSelectedItemDetails();
+                          } else {
+                            await bloc.selectItem(file.id);
+                          }
+                        },
+                      ),
+                    )
+                    .toList(),
+                folders: widget.driveDetailState.currentFolder.subfolders
+                    .map(
+                      (folder) => DriveTableFolder(
+                        folder: folder,
+                        selected:
+                            folder.id == widget.driveDetailState.selectedItemId,
+                        onPressed: () {
+                          final bloc = context.read<DriveDetailCubit>();
+                          if (folder.id ==
+                              widget.driveDetailState.selectedItemId) {
+                            bloc.openFolder(path: folder.path);
+                          } else {
+                            bloc.selectItem(
+                              folder.id,
+                              isFolder: true,
+                            );
+                          }
+                        },
+                      ),
+                    )
+                    .toList(),
+              ),
             ),
           )),
     );
+  }
+}
 
 List<DataColumn> _buildTableColumns(BuildContext context) {
   final onSort = (columnIndex, sortAscending) =>

@@ -21,6 +21,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final AppConfig _config;
 
   StreamSubscription? _folderSubscription;
+  int _rowsPerPage = 25;
 
   DriveDetailCubit({
     required this.driveId,
@@ -128,6 +129,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     emit(state);
   }
+
+  void setRowsPerPage(int? rowsPerPage) => _rowsPerPage = rowsPerPage ?? 25;
+  void getRowsPerPage() => _rowsPerPage;
 
   void sortFolder(
       {DriveOrder contentOrderBy = DriveOrder.name,
