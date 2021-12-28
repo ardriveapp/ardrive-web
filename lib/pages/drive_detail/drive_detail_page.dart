@@ -25,6 +25,7 @@ part 'components/drive_detail_actions_row.dart';
 part 'components/drive_detail_breadcrumb_row.dart';
 part 'components/drive_detail_data_list.dart';
 part 'components/drive_detail_data_table.dart';
+part 'components/drive_detail_data_table_source.dart';
 part 'components/drive_detail_folder_empty_card.dart';
 part 'components/fs_entry_side_sheet.dart';
 
