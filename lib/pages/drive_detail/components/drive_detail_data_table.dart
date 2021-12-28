@@ -10,13 +10,7 @@ Widget _buildDataTable(BuildContext context, DriveDetailLoadSuccess state) =>
             sortColumnIndex: DriveOrder.values.indexOf(state.contentOrderBy),
             sortAscending: state.contentOrderingMode == OrderingMode.asc,
             rowsPerPage: 25,
-            availableRowsPerPage: [
-              50,
-              75,
-              100,
-              state.currentFolder.subfolders.length +
-                  state.currentFolder.files.length
-            ]..sort((a, b) => a.compareTo(b)),
+            availableRowsPerPage: [50, 75, 100],
             source: DriveDetailDataTableSource(
               context: context,
               files: state.currentFolder.files
