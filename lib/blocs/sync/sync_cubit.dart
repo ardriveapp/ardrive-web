@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/main.dart';
@@ -24,6 +25,7 @@ const kSyncTimerDuration = 5;
 /// It also checks the status of unconfirmed transactions made by revisions.
 class SyncCubit extends Cubit<SyncState> {
   final ProfileCubit _profileCubit;
+  final ActivityCubit _activityCubit;
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final Database _db;
@@ -33,10 +35,12 @@ class SyncCubit extends Cubit<SyncState> {
 
   SyncCubit({
     required ProfileCubit profileCubit,
+    required ActivityCubit activityCubit,
     required ArweaveService arweave,
     required DriveDao driveDao,
     required Database db,
   })  : _profileCubit = profileCubit,
+        _activityCubit = activityCubit,
         _arweave = arweave,
         _driveDao = driveDao,
         _db = db,
@@ -82,8 +86,8 @@ class SyncCubit extends Cubit<SyncState> {
           return;
         }
 
-        if (_profileCubit.isOverlayOpen()) {
-          print('Overlay open, skipping sync...');
+        if (_activityCubit.state is ActivityInProgress) {
+          print('Uninterruptable activity in progress, skipping sync...');
           emit(SyncIdle());
           return;
         }

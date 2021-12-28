@@ -14,7 +14,7 @@ Future<void> promptToMoveFolder(
   required String driveId,
   required String folderId,
 }) =>
-    showCongestionWarning(
+    showCongestionDependentModalDialog(
         context,
         () => showDialog(
               context: context,
@@ -36,7 +36,7 @@ Future<void> promptToMoveFile(
   required String driveId,
   required String fileId,
 }) =>
-    showCongestionWarning(
+    showCongestionDependentModalDialog(
       context,
       () => showDialog(
         context: context,

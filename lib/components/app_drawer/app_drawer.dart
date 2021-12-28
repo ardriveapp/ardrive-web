@@ -185,7 +185,8 @@ class AppDrawer extends StatelessWidget {
                           PopupMenuDivider(),
                           PopupMenuItem(
                             enabled: state.hasWritePermissions,
-                            value: (context) => showCongestionWarning(
+                            value: (context) =>
+                                showCongestionDependentModalDialog(
                               context,
                               () => promptToUploadFile(
                                 context,
