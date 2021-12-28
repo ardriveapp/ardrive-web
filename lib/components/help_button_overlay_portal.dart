@@ -17,7 +17,7 @@ class FloatingHelpButtonPortalEntry extends StatelessWidget {
           uri: Uri.parse('https://ardrive.typeform.com/to/pGeAVvtg'),
           target: LinkTarget.blank,
           builder: (context, onPressed) => Padding(
-            padding: const EdgeInsets.only(right: 16, bottom: 16),
+            padding: const EdgeInsets.only(left: 16, bottom: 16),
             child: FloatingActionButton(
               tooltip: 'Help',
               onPressed: onPressed,
@@ -25,8 +25,8 @@ class FloatingHelpButtonPortalEntry extends StatelessWidget {
             ),
           ),
         ),
-        portalAnchor: Alignment.bottomRight,
-        childAnchor: Alignment.bottomRight,
+        portalAnchor: Alignment.bottomLeft,
+        childAnchor: Alignment.bottomLeft,
         child: child,
       );
 }
