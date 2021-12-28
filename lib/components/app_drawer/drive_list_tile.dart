@@ -21,11 +21,14 @@ class DriveListTile extends StatelessWidget {
         child: ListTile(
           minLeadingWidth: 12,
           leading: hasAlert
-              ? const Icon(
-                  Icons.info,
-                  color: Color(kPrimaryValue),
-                  size: 12,
-                  
+              ? Tooltip(
+                  message:
+                      'We have detected issues with this drive. Navigate into drive to resolve them.',
+                  child: const Icon(
+                    Icons.info,
+                    color: Color(kPrimaryValue),
+                    size: 12,
+                  ),
                 )
               : null,
           trailing: drive.isPrivate
