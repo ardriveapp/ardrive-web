@@ -22,27 +22,49 @@ class DriveDataTable extends StatefulWidget {
 
 class _DriveDataTableState extends State<DriveDataTable> {
   int rowsPerPage = 25;
+  List<int> availableRowsPerPage = [25, 50, 75, 100];
+  @override
+  void initState() {
+    calculateRowsPerPage();
+    super.initState();
+  }
+
+  void calculateRowsPerPage() {
+    final itemCount = widget.driveDetailState.currentFolder.files.length +
+        widget.driveDetailState.currentFolder.subfolders.length;
+    if (itemCount < rowsPerPage) {
+      rowsPerPage = itemCount;
+      availableRowsPerPage.insert(0, rowsPerPage);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scrollbar(
-      child: SingleChildScrollView(
-          key: UniqueKey(),
-          child: Theme(
+      child: ListView(
+        children: [
+          Theme(
             data: ThemeData(
               cardTheme: CardTheme(
                 color: Colors.transparent,
                 elevation: 0.0,
               ),
             ),
-            child: PaginatedDataTable(
+            child: CustomPaginatedDataTable(
               showCheckboxColumn: false,
               columns: _buildTableColumns(context),
               sortColumnIndex: DriveOrder.values
                   .indexOf(widget.driveDetailState.contentOrderBy),
               sortAscending: widget.driveDetailState.contentOrderingMode ==
                   OrderingMode.asc,
-              rowsPerPage: rowsPerPage,
-              availableRowsPerPage: [25, 50, 75, 100],
+              rowsPerPage: widget.driveDetailState.currentFolder.files.length +
+                          widget.driveDetailState.currentFolder.subfolders
+                              .length <
+                      rowsPerPage
+                  ? widget.driveDetailState.currentFolder.files.length +
+                      widget.driveDetailState.currentFolder.subfolders.length
+                  : rowsPerPage,
+              availableRowsPerPage: availableRowsPerPage,
               onRowsPerPageChanged: (value) =>
                   setState(() => rowsPerPage = value!),
               source: DriveDetailDataTableSource(
@@ -88,7 +110,9 @@ class _DriveDataTableState extends State<DriveDataTable> {
                     .toList(),
               ),
             ),
-          )),
+          ),
+        ],
+      ),
     );
   }
 }
