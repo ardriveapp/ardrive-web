@@ -8,8 +8,13 @@ class ActivityCubit extends Cubit<ActivityState> {
   ActivityCubit() : super(ActivityNotRunning());
 
   void performUninterruptableActivity(Function activity) async {
+    if (state is ActivityInProgress) {
+      throw ActivityAlreadyInProgressError();
+    }
     emit(ActivityInProgress());
     await activity();
     emit(ActivityNotRunning());
   }
 }
+
+class ActivityAlreadyInProgressError extends Error {}
