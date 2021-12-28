@@ -22,7 +22,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
   final DriveDao _driveDao;
   final SyncCubit _syncCubit;
 
-  StreamSubscription? _folderSubscription;
+  StreamSubscription? _selectedFolderSubscription;
 
   GhostFixerCubit({
     required this.ghostFolder,
@@ -60,9 +60,9 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
   }
 
   Future<void> loadFolder(String folderId) async {
-    await _folderSubscription?.cancel();
+    await _selectedFolderSubscription?.cancel();
 
-    _folderSubscription = _driveDao
+    _selectedFolderSubscription = _driveDao
         .watchFolderContents(ghostFolder.driveId, folderId: folderId)
         .listen(
           (f) => emit(
@@ -112,7 +112,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
         emit(GhostFixerWalletMismatch());
         return;
       }
-      emit(GhostFixerInProgress());
+      emit(GhostFixerRepairInProgress());
 
       await _driveDao.transaction(() async {
         final targetDrive =

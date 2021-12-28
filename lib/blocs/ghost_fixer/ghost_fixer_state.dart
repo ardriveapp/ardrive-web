@@ -8,7 +8,7 @@ abstract class GhostFixerState extends Equatable {
 
 class GhostFixerInitial extends GhostFixerState {}
 
-class GhostFixerInProgress extends GhostFixerState {}
+class GhostFixerRepairInProgress extends GhostFixerState {}
 
 class GhostFixerSuccess extends GhostFixerState {}
 

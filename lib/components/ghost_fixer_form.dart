@@ -37,7 +37,7 @@ class GhostFixerForm extends StatelessWidget {
   Widget build(BuildContext context) =>
       BlocConsumer<GhostFixerCubit, GhostFixerState>(
           listener: (context, state) {
-        if (state is GhostFixerInProgress) {
+        if (state is GhostFixerRepairInProgress) {
           showProgressDialog(context, 'RECREATING FOLDER...');
         } else if (state is GhostFixerSuccess) {
           Navigator.pop(context);
