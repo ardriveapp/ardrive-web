@@ -51,6 +51,7 @@ class UploadCubit extends Cubit<UploadState> {
   Transaction? feeTx;
 
   final bundleSizeLimit = 503316480;
+  final maxBundleDataItemCount = 500;
   final privateFileSizeLimit = 104857600;
   final minimumPstTip = BigInt.from(10000000);
 
@@ -217,8 +218,9 @@ class UploadCubit extends Cubit<UploadState> {
   Future<BigInt> estimateBundleCosts(List<FileUploadHandle> files) async {
     // https://github.com/joshbenaron/arweave-standards/blob/ans104/ans/ANS-104.md
     final bundleList = await NextFitBundlePacker<FileUploadHandle>(
-            maxBundleSize: bundleSizeLimit)
-        .packItems(files);
+      maxBundleSize: bundleSizeLimit,
+      maxDataItemCount: maxBundleDataItemCount,
+    ).packItems(files);
 
     var totalCost = BigInt.zero;
     for (var bundle in bundleList) {
@@ -256,8 +258,9 @@ class UploadCubit extends Cubit<UploadState> {
     }
     await _driveDao.transaction(() async {
       final bundleItems = await NextFitBundlePacker<FileUploadHandle>(
-              maxBundleSize: bundleSizeLimit)
-          .packItems(_dataItemUploadHandles.values.toList());
+        maxBundleSize: bundleSizeLimit,
+        maxDataItemCount: maxBundleDataItemCount,
+      ).packItems(_dataItemUploadHandles.values.toList());
       //Create bundles
       for (var uploadHandles in bundleItems) {
         var uploadSize = 0;
