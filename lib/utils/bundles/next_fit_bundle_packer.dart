@@ -3,8 +3,10 @@ import 'sized_item.dart';
 
 class NextFitBundlePacker<T extends SizedItem> implements BundlePacker<T> {
   int maxBundleSize;
+  int maxDataItemCount;
   NextFitBundlePacker({
     required this.maxBundleSize,
+    required this.maxDataItemCount,
   });
 
   @override
@@ -25,7 +27,8 @@ class NextFitBundlePacker<T extends SizedItem> implements BundlePacker<T> {
           : 0;
 
       // Add items to current bundle if it will fit, new bundle otherwise
-      final shouldAddToBundle = totalBundleSize + item.size <= maxBundleSize;
+      final shouldAddToBundle = totalBundleSize + item.size <= maxBundleSize &&
+          bundleItems.length < maxDataItemCount;
       if (!shouldAddToBundle) {
         // Finish current bundle and prepare to start new bundle
         bundles.add(bundleItems);
