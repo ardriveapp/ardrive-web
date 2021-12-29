@@ -134,8 +134,7 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> createGhosts() async {
     //Finalize missing parent list
 
-    for (var i = 0; i < ghostFolders.length; i++) {
-      final ghostFolder = ghostFolders.values.elementAt(i);
+    for (final ghostFolder in ghostFolders.values) {
       final folderExists = (await _driveDao
               .folderById(
                   driveId: ghostFolder.driveId, folderId: ghostFolder.folderId)
