@@ -23,6 +23,12 @@ import 'file_upload_handle.dart';
 
 part 'upload_state.dart';
 
+final bundleSizeLimit = 503316480;
+final maxBundleDataItemCount = 500;
+final maxFilesPerBundle = maxBundleDataItemCount ~/ 2;
+final privateFileSizeLimit = 104857600;
+final minimumPstTip = BigInt.from(10000000);
+
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
   final String folderId;
@@ -49,11 +55,6 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// The [Transaction] that pays `pstFee` to a random PST holder. (Only for v2 transaction uploads)
   Transaction? feeTx;
-
-  final bundleSizeLimit = 503316480;
-  final maxBundleDataItemCount = 500;
-  final privateFileSizeLimit = 104857600;
-  final minimumPstTip = BigInt.from(10000000);
 
   bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
@@ -217,9 +218,10 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<BigInt> estimateBundleCosts(List<FileUploadHandle> files) async {
     // https://github.com/joshbenaron/arweave-standards/blob/ans104/ans/ANS-104.md
+    // NOTE: Using maxFilesPerBundle since FileUploadHandles have 2 data items
     final bundleList = await NextFitBundlePacker<FileUploadHandle>(
       maxBundleSize: bundleSizeLimit,
-      maxDataItemCount: maxBundleDataItemCount,
+      maxDataItemCount: maxFilesPerBundle,
     ).packItems(files);
 
     var totalCost = BigInt.zero;
@@ -257,9 +259,10 @@ class UploadCubit extends Cubit<UploadState> {
       await _arweave.postTx(feeTx!);
     }
     await _driveDao.transaction(() async {
+      // NOTE: Using maxFilesPerBundle since FileUploadHandles have 2 data items
       final bundleItems = await NextFitBundlePacker<FileUploadHandle>(
         maxBundleSize: bundleSizeLimit,
-        maxDataItemCount: maxBundleDataItemCount,
+        maxDataItemCount: maxFilesPerBundle,
       ).packItems(_dataItemUploadHandles.values.toList());
       //Create bundles
       for (var uploadHandles in bundleItems) {
