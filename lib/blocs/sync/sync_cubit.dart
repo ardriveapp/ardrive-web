@@ -20,6 +20,9 @@ part 'sync_state.dart';
 
 const kRequiredTxConfirmationCount = 15;
 
+typedef FolderID = String;
+typedef DriveID = String;
+
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.
 class SyncCubit extends Cubit<SyncState> {
@@ -59,8 +62,8 @@ class SyncCubit extends Cubit<SyncState> {
         .then((value) => createSyncStream()));
   }
 
-  final ghostFolders = <String, GhostFolder>{};
-  final ghostFoldersByDrive = <String, Map<String, FolderEntriesCompanion>>{};
+  final ghostFolders = <FolderID, GhostFolder>{};
+  final ghostFoldersByDrive = <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
   Future<void> startSync() async {
     try {
       final profile = _profileCubit.state;
