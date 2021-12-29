@@ -51,7 +51,7 @@ class UploadCubit extends Cubit<UploadState> {
   Transaction? feeTx;
 
   final bundleSizeLimit = 503316480;
-  final maxBundleDataItemCount = 1000;
+  final maxBundleDataItemCount = 2000;
   final privateFileSizeLimit = 104857600;
   final minimumPstTip = BigInt.from(10000000);
 
