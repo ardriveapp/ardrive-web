@@ -98,6 +98,7 @@ class _DriveDataTableState extends State<DriveDataTable> {
                           if (folder.id ==
                               widget.driveDetailState.selectedItemId) {
                             bloc.openFolder(path: folder.path);
+                            calculateRowsPerPage();
                           } else {
                             bloc.selectItem(
                               folder.id,
