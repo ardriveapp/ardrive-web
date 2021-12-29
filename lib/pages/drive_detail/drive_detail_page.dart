@@ -20,6 +20,7 @@ import 'package:moor/moor.dart' show OrderingMode;
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 import 'package:url_launcher/link.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 part 'components/drive_detail_actions_row.dart';
 part 'components/drive_detail_breadcrumb_row.dart';
