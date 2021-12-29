@@ -140,28 +140,34 @@ class SyncCubit extends Cubit<SyncState> {
                   driveId: ghostFolder.driveId, folderId: ghostFolder.folderId)
               .getSingleOrNull()) !=
           null;
-      if (!folderExists) {
-        // Add to database
-        final drive =
-            await _driveDao.driveById(driveId: ghostFolder.driveId).getSingle();
-        // Dont create ghost folder if the ghost is a missing root folder
-        if (drive.rootFolderId != ghostFolder.folderId) {
-          final folderEntry = FolderEntry(
-            id: ghostFolder.folderId,
-            driveId: drive.id,
-            parentFolderId: drive.rootFolderId,
-            name: ghostFolder.folderId,
-            path: rootPath,
-            lastUpdated: DateTime.now(),
-            isGhost: true,
-            dateCreated: DateTime.now(),
-          );
 
-          await _driveDao.into(_driveDao.folderEntries).insert(folderEntry);
-          ghostFoldersByDrive.putIfAbsent(
-              drive.id, () => {folderEntry.id: folderEntry.toCompanion(false)});
-        }
+      if (folderExists) {
+        continue;
       }
+
+      // Add to database
+      final drive =
+          await _driveDao.driveById(driveId: ghostFolder.driveId).getSingle();
+
+      // Dont create ghost folder if the ghost is a missing root folder
+      if (drive.rootFolderId == ghostFolder.folderId) {
+        continue;
+      }
+
+      final folderEntry = FolderEntry(
+        id: ghostFolder.folderId,
+        driveId: drive.id,
+        parentFolderId: drive.rootFolderId,
+        name: ghostFolder.folderId,
+        path: rootPath,
+        lastUpdated: DateTime.now(),
+        isGhost: true,
+        dateCreated: DateTime.now(),
+      );
+
+      await _driveDao.into(_driveDao.folderEntries).insert(folderEntry);
+      ghostFoldersByDrive.putIfAbsent(
+          drive.id, () => {folderEntry.id: folderEntry.toCompanion(false)});
     }
     await Future.wait([
       ...ghostFoldersByDrive.entries
