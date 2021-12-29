@@ -69,6 +69,8 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                   prefixIcon: const Icon(Icons.lock),
                                 ),
                                 validationMessages: (_) => kValidationMessages,
+                                onSubmitted: () =>
+                                    context.read<ProfileUnlockCubit>().submit(),
                               ),
                               const SizedBox(height: 16),
                               SizedBox(
