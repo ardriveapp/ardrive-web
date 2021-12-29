@@ -63,7 +63,8 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   final ghostFolders = <FolderID, GhostFolder>{};
-  final ghostFoldersByDrive = <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
+  final ghostFoldersByDrive =
+      <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
   Future<void> startSync() async {
     try {
       final profile = _profileCubit.state;
