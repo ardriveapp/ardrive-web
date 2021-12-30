@@ -4,7 +4,7 @@ import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:test/test.dart';
 
-import '../../utils/utils.dart';
+import '../../test_utils/utils.dart';
 
 void main() {
   late Database db;
@@ -155,12 +155,15 @@ void main() {
       expect(treeRoot.folder.id, equals(rootFolderId));
       expect(treeRoot.files.length, equals(rootFolderFileCount));
 
-      final nestedSubfolderFileCount = treeRoot.subfolders.where((f) => f.folder.id == nestedFolderId)
+      final nestedSubfolderFileCount = treeRoot.subfolders
+          .where((f) => f.folder.id == nestedFolderId)
           .single
-          .files.length;
+          .files
+          .length;
       expect(nestedSubfolderFileCount, equals(nestedSubfolderFileCount));
 
-      final emptySubfolders = treeRoot.subfolders.where((f) => f.folder.id.startsWith(emptyNestedFolderIdPrefix));
+      final emptySubfolders = treeRoot.subfolders
+          .where((f) => f.folder.id.startsWith(emptyNestedFolderIdPrefix));
       expect(emptySubfolders.map((f) => f.subfolders.length).toList(),
           everyElement(equals(0)));
       expect(emptySubfolders.map((f) => f.files.length).toList(),
