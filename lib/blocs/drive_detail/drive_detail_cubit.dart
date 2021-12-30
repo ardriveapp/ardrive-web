@@ -21,7 +21,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final AppConfig _config;
 
   StreamSubscription? _folderSubscription;
-  int _rowsPerPage = 25;
+  final _defaultRowsPerPage = 25;
+  final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
 
   DriveDetailCubit({
     required this.driveId,
@@ -78,31 +79,56 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           // Emit the loading state as it can be a while between the drive being not found, then added,
           // and then the folders being loaded.
           emit(DriveDetailLoadInProgress());
-        }
-        final state = this.state is DriveDetailLoadSuccess
-            ? this.state as DriveDetailLoadSuccess
-            : null;
-        final profile = _profileCubit.state;
-        if (state != null) {
-          emit(
-            state.copyWith(
+        } else {
+          final state = this.state is DriveDetailLoadSuccess
+              ? this.state as DriveDetailLoadSuccess
+              : null;
+          final profile = _profileCubit.state;
+
+          var currentFolder;
+
+          var rowsPerPage;
+          var availableRowsPerPage;
+
+          if (folderContents.folder != null) {
+            currentFolder = folderContents;
+          }
+          final itemCount =
+              currentFolder.files.length + currentFolder.subfolders.length;
+
+          if (itemCount < _defaultRowsPerPage) {
+            rowsPerPage = itemCount;
+            availableRowsPerPage = <int>[itemCount];
+          } else {
+            rowsPerPage = _defaultRowsPerPage;
+            availableRowsPerPage = _defaultAvailableRowsPerPage;
+          }
+
+          if (state != null) {
+            emit(
+              state.copyWith(
+                currentDrive: drive,
+                hasWritePermissions: profile is ProfileLoggedIn &&
+                    drive.ownerAddress == profile.walletAddress,
+                currentFolder: folderContents,
+                contentOrderBy: contentOrderBy,
+                contentOrderingMode: contentOrderingMode,
+                rowsPerPage: rowsPerPage,
+                availableRowsPerPage: availableRowsPerPage,
+              ),
+            );
+          } else {
+            emit(DriveDetailLoadSuccess(
               currentDrive: drive,
               hasWritePermissions: profile is ProfileLoggedIn &&
                   drive.ownerAddress == profile.walletAddress,
               currentFolder: folderContents,
               contentOrderBy: contentOrderBy,
               contentOrderingMode: contentOrderingMode,
-            ),
-          );
-        } else {
-          emit(DriveDetailLoadSuccess(
-            currentDrive: drive,
-            hasWritePermissions: profile is ProfileLoggedIn &&
-                drive.ownerAddress == profile.walletAddress,
-            currentFolder: folderContents,
-            contentOrderBy: contentOrderBy,
-            contentOrderingMode: contentOrderingMode,
-          ));
+              rowsPerPage: rowsPerPage,
+              availableRowsPerPage: availableRowsPerPage,
+            ));
+          }
         }
       },
     ).listen((_) {});
@@ -129,9 +155,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     emit(state);
   }
-
-  void setRowsPerPage(int? rowsPerPage) => _rowsPerPage = rowsPerPage ?? 25;
-  void getRowsPerPage() => _rowsPerPage;
 
   void sortFolder(
       {DriveOrder contentOrderBy = DriveOrder.name,

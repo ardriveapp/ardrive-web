@@ -26,12 +26,17 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   /// Null if no file is selected.
   final Uri? selectedFilePreviewUrl;
 
+  final int rowsPerPage;
+  final List<int> availableRowsPerPage;
+
   DriveDetailLoadSuccess({
     required this.currentDrive,
     required this.hasWritePermissions,
     required this.currentFolder,
     required this.contentOrderBy,
     required this.contentOrderingMode,
+    required this.rowsPerPage,
+    required this.availableRowsPerPage,
     this.selectedItemId,
     this.selectedItemIsFolder = false,
     this.showSelectedItemDetails = false,
@@ -48,6 +53,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     bool? selectedItemIsFolder,
     bool? showSelectedItemDetails,
     Uri? selectedFilePreviewUrl,
+    int? rowsPerPage,
+    List<int>? availableRowsPerPage,
   }) =>
       DriveDetailLoadSuccess(
         currentDrive: currentDrive ?? this.currentDrive,
@@ -61,6 +68,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
             showSelectedItemDetails ?? this.showSelectedItemDetails,
         selectedFilePreviewUrl:
             selectedFilePreviewUrl ?? this.selectedFilePreviewUrl,
+        availableRowsPerPage: availableRowsPerPage ?? this.availableRowsPerPage,
+        rowsPerPage: rowsPerPage ?? this.rowsPerPage,
       );
 
   @override
@@ -74,6 +83,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         selectedItemIsFolder,
         showSelectedItemDetails,
         selectedFilePreviewUrl,
+        rowsPerPage,
+        availableRowsPerPage
       ];
 }
 

@@ -21,21 +21,12 @@ class DriveDataTable extends StatefulWidget {
 }
 
 class _DriveDataTableState extends State<DriveDataTable> {
-  int rowsPerPage = 25;
-  List<int> availableRowsPerPage = [25, 50, 75, 100];
+  late int _rowsPerPage;
+
   @override
   void initState() {
-    calculateRowsPerPage();
+    _rowsPerPage = widget.driveDetailState.rowsPerPage;
     super.initState();
-  }
-
-  void calculateRowsPerPage() {
-    final itemCount = widget.driveDetailState.currentFolder.files.length +
-        widget.driveDetailState.currentFolder.subfolders.length;
-    if (itemCount < rowsPerPage) {
-      rowsPerPage = itemCount;
-      availableRowsPerPage.insert(0, rowsPerPage);
-    }
   }
 
   @override
@@ -57,16 +48,11 @@ class _DriveDataTableState extends State<DriveDataTable> {
                   .indexOf(widget.driveDetailState.contentOrderBy),
               sortAscending: widget.driveDetailState.contentOrderingMode ==
                   OrderingMode.asc,
-              rowsPerPage: widget.driveDetailState.currentFolder.files.length +
-                          widget.driveDetailState.currentFolder.subfolders
-                              .length <
-                      rowsPerPage
-                  ? widget.driveDetailState.currentFolder.files.length +
-                      widget.driveDetailState.currentFolder.subfolders.length
-                  : rowsPerPage,
-              availableRowsPerPage: availableRowsPerPage,
+              rowsPerPage: widget.driveDetailState.rowsPerPage,
+              availableRowsPerPage:
+                  widget.driveDetailState.availableRowsPerPage,
               onRowsPerPageChanged: (value) =>
-                  setState(() => rowsPerPage = value!),
+                  setState(() => _rowsPerPage = value!),
               source: DriveDetailDataTableSource(
                 context: context,
                 files: widget.driveDetailState.currentFolder.files
@@ -98,7 +84,6 @@ class _DriveDataTableState extends State<DriveDataTable> {
                           if (folder.id ==
                               widget.driveDetailState.selectedItemId) {
                             bloc.openFolder(path: folder.path);
-                            calculateRowsPerPage();
                           } else {
                             bloc.selectItem(
                               folder.id,
