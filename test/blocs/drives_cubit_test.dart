@@ -4,8 +4,8 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
-import '../utils/fakes.dart';
-import '../utils/utils.dart';
+import '../test_utils/fakes.dart';
+import '../test_utils/utils.dart';
 
 void main() {
   group('DrivesCubit', () {

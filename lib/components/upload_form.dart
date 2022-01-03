@@ -1,4 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/upload/file_upload_handle.dart';
+import 'package:ardrive/blocs/upload/multi_file_upload_handle.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -215,10 +217,26 @@ class UploadForm extends StatelessWidget {
                 ),
               ],
             );
+          } else if (state is UploadBundlingInProgress) {
+            return AppDialog(
+              title: 'Bundling upload...',
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text('This may take a while...'),
+                  ],
+                ),
+              ),
+            );
           } else if (state is UploadInProgress) {
             return AppDialog(
               dismissable: false,
-              title: 'Uploading ${state.files!.length} file(s)...',
+              title:
+                  'Uploading ${state.files!.length} file(s) and bundle(s)...',
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: ConstrainedBox(
@@ -228,18 +246,40 @@ class UploadForm extends StatelessWidget {
                       shrinkWrap: true,
                       children: [
                         for (final file in state.files!) ...{
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(file.entity.name!),
-                            subtitle: Text(
-                                '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
-                            trailing: CircularProgressIndicator(
-                                // Show an indeterminate progress indicator if the upload hasn't started yet as
-                                // small uploads might never report a progress.
-                                value: file.uploadProgress != 0
-                                    ? file.uploadProgress
-                                    : null),
-                          ),
+                          file is FileUploadHandle
+                              ? ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(file.entity.name!),
+                                  subtitle: Text(
+                                      '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
+                                  trailing: CircularProgressIndicator(
+                                      // Show an indeterminate progress indicator if the upload hasn't started yet as
+                                      // small uploads might never report a progress.
+                                      value: file.uploadProgress != 0
+                                          ? file.uploadProgress
+                                          : null),
+                                )
+                              : ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      for (var fileEntity
+                                          in (file as MultiFileUploadHandle)
+                                              .fileEntities)
+                                        Text(fileEntity.name!)
+                                    ],
+                                  ),
+                                  subtitle: Text(
+                                      '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
+                                  trailing: CircularProgressIndicator(
+                                      // Show an indeterminate progress indicator if the upload hasn't started yet as
+                                      // small uploads might never report a progress.
+                                      value: file.uploadProgress != 0
+                                          ? file.uploadProgress
+                                          : null),
+                                ),
                         },
                       ],
                     ),

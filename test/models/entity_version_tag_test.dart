@@ -4,8 +4,8 @@ import 'package:arweave/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:test/test.dart';
 
-import '../utils/fake_data.dart';
-import '../utils/utils.dart';
+import '../test_utils/fake_data.dart';
+import '../test_utils/utils.dart';
 
 void main() {
   late PackageInfo packageInfo;
