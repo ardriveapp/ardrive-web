@@ -134,6 +134,19 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     ).listen((_) {});
   }
 
+  void setRowsPerPage(int rowsPerPage) {
+    final state = this.state is DriveDetailLoadSuccess
+        ? this.state as DriveDetailLoadSuccess
+        : null;
+    if (state != null) {
+      emit(
+        state.copyWith(
+          rowsPerPage: rowsPerPage,
+        ),
+      );
+    }
+  }
+
   Future<void> selectItem(String itemId, {bool isFolder = false}) async {
     var state = this.state as DriveDetailLoadSuccess;
 
