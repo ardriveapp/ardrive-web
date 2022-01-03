@@ -201,15 +201,16 @@ class FsEntrySideSheet extends StatelessWidget {
                           ),
                         ),
                       ]),
-                      DataRow(cells: [
-                        DataCell(Text('Bundle Tx ID')),
-                        DataCell(
-                          CopyIconButton(
-                            tooltip: 'Copy Bundle Tx ID',
-                            value: revision.bundledIn,
+                      if (revision.bundledIn != null)
+                        DataRow(cells: [
+                          DataCell(Text('Bundle Tx ID')),
+                          DataCell(
+                            CopyIconButton(
+                              tooltip: 'Copy Bundle Tx ID',
+                              value: revision.bundledIn,
+                            ),
                           ),
-                        ),
-                      ]),
+                        ]),
                     },
                   ],
                 );
