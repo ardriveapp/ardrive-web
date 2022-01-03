@@ -17,12 +17,17 @@ Future<void> promptToUploadFile(
   required String folderId,
   bool allowSelectMultiple = false,
 }) async {
-  final selectedFiles = allowSelectMultiple
-      ? await file_selector.openFiles()
-      : [await file_selector.openFile()].where((file) => file != null)
-          as List<file_selector.XFile>;
-  if (selectedFiles.isEmpty) {
-    return;
+  var selectedFiles;
+  try {
+    selectedFiles = allowSelectMultiple
+        ? await file_selector.openFiles()
+        : [await file_selector.openFile()].where((file) => file != null)
+            as List<file_selector.XFile>;
+    if (selectedFiles.isEmpty) {
+      return;
+    }
+  } catch (e) {
+    rethrow;
   }
 
   await showDialog(

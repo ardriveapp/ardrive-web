@@ -12,7 +12,11 @@ class ActivityCubit extends Cubit<ActivityState> {
       throw ActivityAlreadyInProgressError();
     }
     emit(ActivityInProgress());
-    await activity();
+    try {
+      await activity();
+    } catch (e) {
+      print('Activity Interrupted');
+    }
     emit(ActivityNotRunning());
   }
 }
