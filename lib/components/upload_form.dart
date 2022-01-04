@@ -2,9 +2,10 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/file_upload_handle.dart';
 import 'package:ardrive/blocs/upload/multi_file_upload_handle.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
-import 'package:file_selector/file_selector.dart' as file_selector;
+import 'package:file_selector/file_selector.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -15,34 +16,29 @@ Future<void> promptToUploadFile(
   BuildContext context, {
   required String driveId,
   required String folderId,
-  bool allowSelectMultiple = false,
 }) async {
-  final profleCubit = context.read<ProfileCubit>();
-  profleCubit.setOverlayOpen(true);
-  final selectedFiles = allowSelectMultiple
-      ? await file_selector.openFiles()
-      : [await file_selector.openFile()].where((file) => file != null)
-          as List<file_selector.XFile>;
-  profleCubit.setOverlayOpen(false);
+  final selectedFiles = await openFiles();
   if (selectedFiles.isEmpty) {
     return;
   }
-
-  await showDialog(
-    context: context,
-    builder: (_) => BlocProvider<UploadCubit>(
-      create: (context) => UploadCubit(
-        driveId: driveId,
-        folderId: folderId,
-        files: selectedFiles,
-        profileCubit: profleCubit,
-        arweave: context.read<ArweaveService>(),
-        pst: context.read<PstService>(),
-        driveDao: context.read<DriveDao>(),
+  await showCongestionDependentModalDialog(
+    context,
+    () => showDialog(
+      context: context,
+      builder: (_) => BlocProvider<UploadCubit>(
+        create: (context) => UploadCubit(
+          driveId: driveId,
+          folderId: folderId,
+          files: selectedFiles,
+          profileCubit: context.read<ProfileCubit>(),
+          arweave: context.read<ArweaveService>(),
+          pst: context.read<PstService>(),
+          driveDao: context.read<DriveDao>(),
+        ),
+        child: UploadForm(),
       ),
-      child: UploadForm(),
+      barrierDismissible: false,
     ),
-    barrierDismissible: false,
   );
 }
 
