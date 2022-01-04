@@ -19,6 +19,8 @@ import '../blocs.dart';
 part 'sync_state.dart';
 
 const kRequiredTxConfirmationCount = 15;
+const kRequiredTxConfirmationPendingThreshold = 60;
+
 const kSyncTimerDuration = 5;
 const kArConnectSyncTimerDuration = 2;
 
@@ -596,7 +598,7 @@ class SyncCubit extends Cubit<SyncState> {
           final abovePendingThreshold = DateTime.now()
                   .difference(pendingTxMap[txId]!.dateCreated)
                   .inMinutes >
-              45;
+              kRequiredTxConfirmationPendingThreshold;
           if (abovePendingThreshold) {
             txStatus = TransactionStatus.failed;
           }
