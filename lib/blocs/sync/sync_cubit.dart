@@ -18,6 +18,7 @@ import '../blocs.dart';
 part 'sync_state.dart';
 
 const kRequiredTxConfirmationCount = 15;
+const kRequiredTxConfirmationPendingThreshold = 60;
 
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.
@@ -202,7 +203,6 @@ class SyncCubit extends Cubit<SyncState> {
       await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
     });
 
-    
     // If there are more results to process, recurse.
     await _syncDrive(
       driveId,
@@ -553,7 +553,7 @@ class SyncCubit extends Cubit<SyncState> {
           final abovePendingThreshold = DateTime.now()
                   .difference(pendingTxMap[txId]!.dateCreated)
                   .inMinutes >
-              45;
+              kRequiredTxConfirmationPendingThreshold;
           if (abovePendingThreshold) {
             txStatus = TransactionStatus.failed;
           }
