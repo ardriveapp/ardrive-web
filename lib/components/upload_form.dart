@@ -125,7 +125,19 @@ class UploadForm extends StatelessWidget {
                   children: <Widget>[
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
-                    Text('This may take a while...'),
+                    FutureBuilder(
+                      future: context
+                          .read<ProfileCubit>()
+                          .isCurrentProfileArConnect(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data as bool) {
+                          return Text(
+                            'Please stay on this tab. This may take a while...',
+                          );
+                        }
+                        return Text('This may take a while...');
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -226,7 +238,19 @@ class UploadForm extends StatelessWidget {
                   children: <Widget>[
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
-                    Text('This may take a while...'),
+                    FutureBuilder(
+                      future: context
+                          .read<ProfileCubit>()
+                          .isCurrentProfileArConnect(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data as bool) {
+                          return Text(
+                            'Please stay on this tab. This may take a while...',
+                          );
+                        }
+                        return Text('This may take a while...');
+                      },
+                    ),
                   ],
                 ),
               ),
