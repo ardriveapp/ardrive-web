@@ -15,7 +15,7 @@ Future<void> promptToRenameDrive(
   BuildContext context, {
   required String driveId,
 }) =>
-    showCongestionWarning(
+    showCongestionDependentModalDialog(
       context,
       () => showDialog(
         context: context,
