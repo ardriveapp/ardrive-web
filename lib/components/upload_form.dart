@@ -132,7 +132,7 @@ class UploadForm extends StatelessWidget {
                       builder: (context, snapshot) {
                         if (snapshot.hasData && snapshot.data as bool) {
                           return Text(
-                            'WARNING: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.',
+                            'Caution: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.',
                           );
                         }
                         return Text('This may take a while...');
@@ -245,7 +245,7 @@ class UploadForm extends StatelessWidget {
                       builder: (context, snapshot) {
                         if (snapshot.hasData && snapshot.data as bool) {
                           return Text(
-                            'WARNING: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.',
+                            'Caution: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.',
                           );
                         }
                         return Text('This may take a while...');
