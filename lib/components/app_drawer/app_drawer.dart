@@ -188,7 +188,6 @@ class AppDrawer extends StatelessWidget {
                               context,
                               driveId: state.currentDrive.id,
                               folderId: state.currentFolder.folder!.id,
-                              allowSelectMultiple: true,
                             ),
                             child: ListTile(
                               enabled: state.hasWritePermissions,

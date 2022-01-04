@@ -5,7 +5,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
-import 'package:file_selector/file_selector.dart' as file_selector;
+import 'package:file_selector/file_selector.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,12 +16,8 @@ Future<void> promptToUploadFile(
   BuildContext context, {
   required String driveId,
   required String folderId,
-  bool allowSelectMultiple = false,
 }) async {
-  final selectedFiles = allowSelectMultiple
-      ? await file_selector.openFiles()
-      : [await file_selector.openFile()].where((file) => file != null)
-          as List<file_selector.XFile>;
+  final selectedFiles = await openFiles();
   if (selectedFiles.isEmpty) {
     return;
   }
