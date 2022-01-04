@@ -120,7 +120,12 @@ class UploadCubit extends Cubit<UploadState> {
       emit(UploadWalletMismatch());
       return;
     }
-    emit(UploadPreparationInProgress());
+
+    emit(
+      UploadPreparationInProgress(
+        isArConnect: await _profileCubit.isCurrentProfileArConnect(),
+      ),
+    );
     final sizeLimit = (_targetDrive.isPrivate
         ? privateFileSizeLimit
         : 1.25 * math.pow(10, 9)) as int;
@@ -252,7 +257,11 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
     if (_dataItemUploadHandles.isNotEmpty) {
-      emit(UploadBundlingInProgress());
+      emit(
+        UploadBundlingInProgress(
+          isArConnect: await _profileCubit.isCurrentProfileArConnect(),
+        ),
+      );
     }
 
     if (feeTx != null && _fileUploadHandles.isNotEmpty) {

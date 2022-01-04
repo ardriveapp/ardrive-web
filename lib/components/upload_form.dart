@@ -125,7 +125,12 @@ class UploadForm extends StatelessWidget {
                   children: <Widget>[
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
-                    Text('This may take a while...'),
+                    if (state.isArConnect)
+                      Text(
+                        'CAUTION: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.',
+                      )
+                    else
+                      Text('This may take a while...')
                   ],
                 ),
               ),
@@ -226,7 +231,12 @@ class UploadForm extends StatelessWidget {
                   children: <Widget>[
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
-                    Text('This may take a while...'),
+                    if (state.isArConnect)
+                      Text(
+                        'CAUTION: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.',
+                      )
+                    else
+                      Text('This may take a while...')
                   ],
                 ),
               ),
