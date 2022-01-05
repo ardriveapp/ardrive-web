@@ -113,6 +113,15 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await _driveDao.insertFolderRevision(rootFolderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create));
 
+      //Update drive with bundledIn
+
+      drive
+        ..ownerAddress = walletAddress
+        ..bundledIn = createTx.id
+        ..txId = driveDataItem.id;
+
+      await _driveDao.insertDriveRevision(
+          drive.toRevisionCompanion(performedAction: RevisionAction.create));
       _drivesCubit.selectDrive(drive.id!);
     } catch (err) {
       addError(err);
