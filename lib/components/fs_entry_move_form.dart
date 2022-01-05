@@ -14,7 +14,7 @@ Future<void> promptToMoveFolder(
   required String driveId,
   required String folderId,
 }) =>
-    showCongestionWarning(
+    showCongestionDependentModalDialog(
         context,
         () => showDialog(
               context: context,
@@ -36,7 +36,7 @@ Future<void> promptToMoveFile(
   required String driveId,
   required String fileId,
 }) =>
-    showCongestionWarning(
+    showCongestionDependentModalDialog(
       context,
       () => showDialog(
         context: context,
@@ -118,10 +118,18 @@ class FsEntryMoveForm extends StatelessWidget {
               return TextButton.icon(
                 icon: const Icon(Icons.create_new_folder),
                 label: Text('CREATE FOLDER'),
-                onPressed: () => promptToCreateFolder(
-                  context,
-                  driveId: state.viewingFolder.folder!.driveId,
-                  parentFolderId: state.viewingFolder.folder!.id,
+                onPressed: () => showDialog(
+                  context: context,
+                  builder: (_) => BlocProvider(
+                    create: (context) => FolderCreateCubit(
+                      driveId: state.viewingFolder.folder!.driveId,
+                      parentFolderId: state.viewingFolder.folder!.id,
+                      profileCubit: context.read<ProfileCubit>(),
+                      arweave: context.read<ArweaveService>(),
+                      driveDao: context.read<DriveDao>(),
+                    ),
+                    child: FolderCreateForm(),
+                  ),
                 ),
               );
             } else {
