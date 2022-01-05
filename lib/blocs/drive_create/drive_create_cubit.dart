@@ -113,7 +113,10 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await _driveDao.insertFolderRevision(rootFolderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create));
 
-      //Update drive with bundledIn
+      // Update drive with bundledIn
+      // Creates a drive revision immediately after creation
+      // so there is no more pending state in the info panel when waiting for sync to
+      // pick up the drive
 
       drive
         ..ownerAddress = walletAddress
