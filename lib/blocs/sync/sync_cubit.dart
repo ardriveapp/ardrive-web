@@ -83,9 +83,40 @@ class SyncCubit extends Cubit<SyncState> {
     });
   }
 
+  void createArConnectSyncStream() {
+    _profileCubit.isCurrentProfileArConnect().then((isArConnect) {
+      if (isArConnect) {
+        _arconnectSyncSub?.cancel();
+        _arconnectSyncSub = Stream.periodic(
+                const Duration(minutes: kArConnectSyncTimerDuration))
+            // Do not start another sync until the previous sync has completed.
+            .map((value) => Stream.fromFuture(arconnectSync()))
+            .listen((_) {});
+        arconnectSync();
+      }
+    });
+  }
+
+  Future<void> arconnectSync() async {
+    if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
+      emit(SyncWalletMismatch());
+      return;
+    }
+  }
+
+  void restartArConnectSyncOnFocus() async {
+    if (await _profileCubit.isCurrentProfileArConnect()) {
+      whenBrowserTabIsUnhidden(() {
+        Future.delayed(Duration(seconds: 2))
+            .then((value) => createArConnectSyncStream());
+      });
+    }
+  }
+
   final ghostFolders = <FolderID, GhostFolder>{};
   final ghostFoldersByDrive =
       <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
+
   Future<void> startSync() async {
     try {
       final profile = _profileCubit.state;
@@ -190,36 +221,6 @@ class SyncCubit extends Cubit<SyncState> {
       ...ghostFoldersByDrive.entries
           .map((entry) => generateFsEntryPaths(entry.key, entry.value, {})),
     ]);
-  }
-
-  void createArConnectSyncStream() {
-    _profileCubit.isCurrentProfileArConnect().then((isArConnect) {
-      if (isArConnect) {
-        _arconnectSyncSub?.cancel();
-        _arconnectSyncSub = Stream.periodic(
-                const Duration(minutes: kArConnectSyncTimerDuration))
-            // Do not start another sync until the previous sync has completed.
-            .map((value) => Stream.fromFuture(arconnectSync()))
-            .listen((_) {});
-        arconnectSync();
-      }
-    });
-  }
-
-  Future<void> arconnectSync() async {
-    if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
-      emit(SyncWalletMismatch());
-      return;
-    }
-  }
-
-  void restartArConnectSyncOnFocus() async {
-    if (await _profileCubit.isCurrentProfileArConnect()) {
-      whenBrowserTabIsUnhidden(() {
-        Future.delayed(Duration(seconds: 2))
-            .then((value) => createArConnectSyncStream());
-      });
-    }
   }
 
   Future<void> _syncDrive(
