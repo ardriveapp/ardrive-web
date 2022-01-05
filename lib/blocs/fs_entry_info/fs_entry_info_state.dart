@@ -51,7 +51,7 @@ class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {
         );
 
   @override
-  List<Object> get props => [name, lastUpdated, dateCreated];
+  List<Object> get props => [name, lastUpdated, dateCreated, rootFolder];
 }
 
 class FsEntryInfoFailure extends FsEntryInfoState {}
