@@ -7,7 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:moor/moor.dart';
 import 'package:test/test.dart';
 
-import '../utils/utils.dart';
+import '../test_utils/utils.dart';
 
 void main() {
   group('DriveDetailCubit:', () {

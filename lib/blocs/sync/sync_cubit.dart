@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
+import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
@@ -19,6 +21,10 @@ import '../blocs.dart';
 part 'sync_state.dart';
 
 const kRequiredTxConfirmationCount = 15;
+const kRequiredTxConfirmationPendingThreshold = 60;
+
+const kSyncTimerDuration = 5;
+const kArConnectSyncTimerDuration = 2;
 
 typedef FolderID = String;
 typedef DriveID = String;
@@ -27,18 +33,24 @@ typedef DriveID = String;
 /// It also checks the status of unconfirmed transactions made by revisions.
 class SyncCubit extends Cubit<SyncState> {
   final ProfileCubit _profileCubit;
+  final ActivityCubit _activityCubit;
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final Database _db;
 
   StreamSubscription? _syncSub;
+  StreamSubscription? _arconnectSyncSub;
+
+  DateTime? _lastSync;
 
   SyncCubit({
     required ProfileCubit profileCubit,
+    required ActivityCubit activityCubit,
     required ArweaveService arweave,
     required DriveDao driveDao,
     required Database db,
   })  : _profileCubit = profileCubit,
+        _activityCubit = activityCubit,
         _arweave = arweave,
         _driveDao = driveDao,
         _db = db,
@@ -46,11 +58,14 @@ class SyncCubit extends Cubit<SyncState> {
     // Sync the user's drives on start and periodically.
     createSyncStream();
     restartSyncOnFocus();
+    // Sync ArConnect
+    createArConnectSyncStream();
+    restartArConnectSyncOnFocus();
   }
 
   void createSyncStream() {
     _syncSub?.cancel();
-    _syncSub = Stream.periodic(const Duration(minutes: 2))
+    _syncSub = Stream.periodic(const Duration(minutes: kSyncTimerDuration))
         // Do not start another sync until the previous sync has completed.
         .map((value) => Stream.fromFuture(startSync()))
         .listen((_) {});
@@ -58,8 +73,14 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void restartSyncOnFocus() {
-    whenBrowserTabIsUnhidden(() => Future.delayed(Duration(seconds: 2))
-        .then((value) => createSyncStream()));
+    whenBrowserTabIsUnhidden(() {
+      if (_lastSync != null &&
+          DateTime.now().difference(_lastSync!).inMinutes <
+              kSyncTimerDuration) {
+        return;
+      }
+      Future.delayed(Duration(seconds: 2)).then((value) => createSyncStream());
+    });
   }
 
   final ghostFolders = <FolderID, GhostFolder>{};
@@ -81,16 +102,12 @@ class SyncCubit extends Cubit<SyncState> {
           return;
         }
 
-        if (_profileCubit.isOverlayOpen()) {
-          print('Overlay open, skipping sync...');
+        if (_activityCubit.state is ActivityInProgress) {
+          print('Uninterruptable activity in progress, skipping sync...');
           emit(SyncIdle());
           return;
         }
 
-        if (await _profileCubit.logoutIfWalletMismatch()) {
-          emit(SyncWalletMismatch());
-          return;
-        }
         // This syncs in the latest info on drives owned by the user and will be overwritten
         // below when the full sync process is ran.
         //
@@ -127,7 +144,7 @@ class SyncCubit extends Cubit<SyncState> {
     } catch (err) {
       addError(err);
     }
-
+    _lastSync = DateTime.now();
     emit(SyncIdle());
   }
 
@@ -173,6 +190,36 @@ class SyncCubit extends Cubit<SyncState> {
       ...ghostFoldersByDrive.entries
           .map((entry) => generateFsEntryPaths(entry.key, entry.value, {})),
     ]);
+  }
+
+  void createArConnectSyncStream() {
+    _profileCubit.isCurrentProfileArConnect().then((isArConnect) {
+      if (isArConnect) {
+        _arconnectSyncSub?.cancel();
+        _arconnectSyncSub = Stream.periodic(
+                const Duration(minutes: kArConnectSyncTimerDuration))
+            // Do not start another sync until the previous sync has completed.
+            .map((value) => Stream.fromFuture(arconnectSync()))
+            .listen((_) {});
+        arconnectSync();
+      }
+    });
+  }
+
+  Future<void> arconnectSync() async {
+    if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
+      emit(SyncWalletMismatch());
+      return;
+    }
+  }
+
+  void restartArConnectSyncOnFocus() async {
+    if (await _profileCubit.isCurrentProfileArConnect()) {
+      whenBrowserTabIsUnhidden(() {
+        Future.delayed(Duration(seconds: 2))
+            .then((value) => createArConnectSyncStream());
+      });
+    }
   }
 
   Future<void> _syncDrive(
@@ -612,7 +659,7 @@ class SyncCubit extends Cubit<SyncState> {
           final abovePendingThreshold = DateTime.now()
                   .difference(pendingTxMap[txId]!.dateCreated)
                   .inMinutes >
-              45;
+              kRequiredTxConfirmationPendingThreshold;
           if (abovePendingThreshold) {
             txStatus = TransactionStatus.failed;
           }
