@@ -4,7 +4,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:test/test.dart';
 
 import '../snapshots/data_export_snapshot.dart';
-import '../utils/utils.dart';
+import '../test_utils/utils.dart';
 
 void main() {
   late Database db;
