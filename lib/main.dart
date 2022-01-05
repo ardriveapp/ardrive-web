@@ -1,4 +1,3 @@
-import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
