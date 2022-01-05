@@ -4,6 +4,7 @@ import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
@@ -105,6 +106,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     final isMismatch = await checkIfWalletMismatch();
     if (isMismatch) {
       await logoutProfile();
+      triggerHTMLPageReload();
     }
     return isMismatch;
   }
