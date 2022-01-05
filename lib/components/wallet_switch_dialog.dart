@@ -1,4 +1,4 @@
-
+import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/app_dialog.dart';
 import 'package:ardrive/utils/html/html_util.dart';
@@ -24,6 +24,9 @@ class WalletSwitchDialog extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () {
+              if (context.read<ActivityCubit>().state is ActivityInProgress) {
+                Navigator.pop(context);
+              }
               Navigator.pop(context);
               context.read<ProfileCubit>().logoutProfile();
               if (fromAuthPage) {
