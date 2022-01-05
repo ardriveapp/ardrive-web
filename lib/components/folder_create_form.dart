@@ -15,7 +15,7 @@ Future<void> promptToCreateFolder(
   required String driveId,
   required String parentFolderId,
 }) =>
-    showCongestionWarning(
+    showCongestionDependentModalDialog(
       context,
       () => showDialog(
         context: context,
