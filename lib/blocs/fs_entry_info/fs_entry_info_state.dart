@@ -26,4 +26,32 @@ class FsEntryInfoSuccess<T> extends FsEntryInfoState {
   List<Object> get props => [name, lastUpdated, dateCreated];
 }
 
+class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {
+  @override
+  final String name;
+  @override
+  final DateTime lastUpdated;
+  @override
+  final DateTime dateCreated;
+
+  final Drive drive;
+  final FolderRevision rootFolder;
+
+  FsEntryDriveInfoSuccess({
+    required this.name,
+    required this.lastUpdated,
+    required this.dateCreated,
+    required this.drive,
+    required this.rootFolder,
+  }) : super(
+          name: name,
+          lastUpdated: lastUpdated,
+          dateCreated: dateCreated,
+          entry: drive,
+        );
+
+  @override
+  List<Object> get props => [name, lastUpdated, dateCreated];
+}
+
 class FsEntryInfoFailure extends FsEntryInfoState {}
