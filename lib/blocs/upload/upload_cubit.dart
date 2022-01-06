@@ -165,8 +165,8 @@ class UploadCubit extends Cubit<UploadState> {
             .reduce((value, element) => value += element)
         : BigInt.zero;
 
-    var pstFee = await getPSTFee(uploadCost);
-    final bundlePstFee = await getPSTFee(dataItemsCost);
+    var pstFee = await _pst.getPSTFee(uploadCost);
+    final bundlePstFee = await _pst.getPSTFee(dataItemsCost);
     if (pstFee > BigInt.zero) {
       feeTx = await _arweave.client.transactions.prepare(
         Transaction(
@@ -210,17 +210,6 @@ class UploadCubit extends Cubit<UploadState> {
     );
   }
 
-  Future<BigInt> getPSTFee(BigInt uploadCost) async {
-    return await _pst
-        .getPstFeePercentage()
-        .then((feePercentage) =>
-            // Workaround [BigInt] percentage division problems
-            // by first multiplying by the percentage * 100 and then dividing by 100.
-            uploadCost * BigInt.from(feePercentage * 100) ~/ BigInt.from(100))
-        .catchError((_) => BigInt.zero,
-            test: (err) => err is UnimplementedError);
-  }
-
   Future<BigInt> estimateBundleCosts(List<FileUploadHandle> files) async {
     // https://github.com/joshbenaron/arweave-standards/blob/ans104/ans/ANS-104.md
     // NOTE: Using maxFilesPerBundle since FileUploadHandles have 2 data items
@@ -231,21 +220,24 @@ class UploadCubit extends Cubit<UploadState> {
 
     var totalCost = BigInt.zero;
     for (var bundle in bundleList) {
-      final fileSizes = bundle.map((e) =>
-          (e.dataTx as DataItem).getSize() +
-          (e.entityTx as DataItem).getSize());
-      var size = 0;
-      // Add data item binary size
-      size += fileSizes.reduce((value, element) => value + element);
-      // Add data item offset and entry id for each data item
-      size += (fileSizes.length * 64);
-      // Add bytes that denote number of data items
-      size += 32;
-
-      totalCost += await _arweave.getPrice(byteSize: size);
+      totalCost += await estimateBundleCost(bundle);
     }
 
     return totalCost;
+  }
+
+  Future<BigInt> estimateBundleCost(List<FileUploadHandle> files) {
+    final fileSizes = files.map((e) =>
+        (e.dataTx as DataItem).getSize() + (e.entityTx as DataItem).getSize());
+    var size = 0;
+    // Add data item binary size
+    size += fileSizes.reduce((value, element) => value + element);
+    // Add data item offset and entry id for each data item
+    size += (fileSizes.length * 64);
+    // Add bytes that denote number of data items
+    size += 32;
+
+    return _arweave.getPrice(byteSize: size);
   }
 
   Future<void> startUpload() async {
@@ -295,31 +287,16 @@ class UploadCubit extends Cubit<UploadState> {
           uploadSize += uploadHandle.entity.size!;
         }
 
-        final dataBundle = DataBundle(
-          items: uploadHandles
-              .map((e) => e.asDataItems().toList())
-              .reduce((value, element) => value += element)
-              .toList(),
-        );
-        // Create bundle tx
-        final bundleTx =
-            await _arweave.prepareDataBundleTx(dataBundle, profile.wallet);
-
-        // Add tips to bundle tx
-        final bundleTip = await getPSTFee(bundleTx.reward);
-        bundleTx
-          ..addTag(TipType.tagName, TipType.dataUpload)
-          ..setTarget(await _pst.getWeightedPstHolder())
-          ..setQuantity(bundleTip);
-
         _multiFileUploadHandles.add(
           MultiFileUploadHandle(
-            bundleTx,
-            uploadSize,
+            uploadHandles
+                .map((e) => e.asDataItems().toList())
+                .reduce((value, element) => value += element)
+                .toList(),
             uploadHandles.map((e) => e.entity).toList(),
+            uploadSize,
           ),
         );
-        await bundleTx.sign(profile.wallet);
         uploadHandles.clear();
       }
 
@@ -328,12 +305,18 @@ class UploadCubit extends Cubit<UploadState> {
             _multiFileUploadHandles,
       ));
       for (var uploadHandle in _multiFileUploadHandles) {
+        await uploadHandle.prepareBundle(
+          arweaveService: _arweave,
+          pstService: _pst,
+          wallet: profile.wallet,
+        );
         await for (final _ in uploadHandle.upload(_arweave)) {
           emit(UploadInProgress(
             files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
                 _multiFileUploadHandles,
           ));
         }
+        uploadHandle.dispose();
       }
       for (final uploadHandle in _fileUploadHandles.values) {
         final fileEntity = uploadHandle.entity;
