@@ -93,11 +93,12 @@ class UploadReady extends UploadState {
 class UploadInProgress extends UploadState {
   final List<FileUploadHandle> files;
   final List<BundleUploadHandle> bundles;
+  final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
 
   UploadInProgress({required this.files, required this.bundles});
 
   @override
-  List<Object?> get props => [files, bundles];
+  List<Object?> get props => [files, bundles, _equatableBust];
 }
 
 class UploadFailure extends UploadState {}

@@ -301,7 +301,6 @@ class UploadCubit extends Cubit<UploadState> {
           assert(uploadHandle.entity.dataTxId == uploadHandle.dataTx!.id);
           uploadSize += uploadHandle.entity.size!;
         }
-
         _multiFileUploadHandles.add(
           BundleUploadHandle(
             uploadHandles
