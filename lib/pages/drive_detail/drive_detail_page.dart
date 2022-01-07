@@ -9,6 +9,7 @@ import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:filesize/filesize.dart';

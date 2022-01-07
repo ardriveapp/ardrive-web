@@ -60,8 +60,10 @@ Widget _buildFolderListTile({
                 textStyle:
                     TextStyle(color: LightColors.kOnDarkSurfaceHighEmphasis),
               ),
-              onPressed: () =>
-                  promptToReCreateFolder(context, ghostFolder: folder),
+              onPressed: () => showCongestionDependentModalDialog(
+                context,
+                () => promptToReCreateFolder(context, ghostFolder: folder),
+              ),
               child: Text('Fix'),
             )
           : null,
