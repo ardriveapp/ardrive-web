@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:ardrive/blocs/upload/multi_file_upload_handle.dart';
-import 'package:ardrive/blocs/upload/upload_handle.dart';
+import 'package:ardrive/blocs/upload/bundle_upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -51,10 +50,10 @@ class UploadCubit extends Cubit<UploadState> {
   final Map<String, FileUploadHandle> _dataItemUploadHandles = {};
 
   /// A list of all multi file upload handles containing bundles of multiple files
-  final List<MultiFileUploadHandle> _multiFileUploadHandles = [];
+  final List<BundleUploadHandle> _multiFileUploadHandles = [];
 
   /// The [Transaction] that pays `pstFee` to a random PST holder. (Only for v2 transaction uploads)
-  Transaction? feeTx;
+  Transaction? v2FilesFeeTx;
 
   bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
@@ -114,7 +113,6 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> prepareUpload() async {
     final profile = _profileCubit.state as ProfileLoggedIn;
-    final packageInfo = await PackageInfo.fromPlatform();
 
     if (await _profileCubit.checkIfWalletMismatch()) {
       emit(UploadWalletMismatch());
@@ -159,33 +157,25 @@ class UploadCubit extends Cubit<UploadState> {
     final dataItemsCost = _dataItemUploadHandles.isNotEmpty
         ? await estimateBundleCosts(_dataItemUploadHandles.values.toList())
         : BigInt.zero;
-    final uploadCost = _fileUploadHandles.isNotEmpty
+    final v2FilesUploadCost = _fileUploadHandles.isNotEmpty
         ? _fileUploadHandles.values
             .map((e) => e.cost)
             .reduce((value, element) => value += element)
         : BigInt.zero;
 
-    var pstFee = await _pst.getPSTFee(uploadCost);
     final bundlePstFee = await _pst.getPSTFee(dataItemsCost);
-    if (pstFee > BigInt.zero) {
-      feeTx = await _arweave.client.transactions.prepare(
-        Transaction(
-          target: await _pst.getWeightedPstHolder(),
-          quantity: pstFee,
-        ),
-        profile.wallet,
-      )
-        ..addApplicationTags(version: packageInfo.version)
-        ..addTag('Type', 'fee')
-        ..addTag(TipType.tagName, TipType.dataUpload);
-      await feeTx!.sign(profile.wallet);
-    }
 
-    if (_fileUploadHandles.isNotEmpty) {
-      pstFee = pstFee > minimumPstTip ? pstFee : minimumPstTip;
-    }
+    v2FilesFeeTx = await prepareAndSignV2FilesTipTx(
+        wallet: profile.wallet, v2FilesUploadCost: v2FilesUploadCost);
 
-    final totalCost = uploadCost + dataItemsCost + pstFee + bundlePstFee;
+    final v2FilesPstFee = _fileUploadHandles.isNotEmpty && v2FilesFeeTx != null
+        ? v2FilesFeeTx!.reward > minimumPstTip
+            ? v2FilesFeeTx!.reward
+            : minimumPstTip
+        : BigInt.zero;
+
+    final totalCost =
+        v2FilesUploadCost + dataItemsCost + v2FilesPstFee + bundlePstFee;
 
     final arUploadCost = winstonToAr(totalCost);
     final usdUploadCost = await _arweave
@@ -199,7 +189,7 @@ class UploadCubit extends Cubit<UploadState> {
       UploadReady(
         arUploadCost: arUploadCost,
         usdUploadCost: usdUploadCost,
-        pstFee: pstFee,
+        pstFee: v2FilesPstFee,
         totalCost: totalCost,
         uploadIsPublic: _targetDrive.isPublic,
         sufficientArBalance: profile.walletBalance >= totalCost,
@@ -208,6 +198,30 @@ class UploadCubit extends Cubit<UploadState> {
         bundles: _multiFileUploadHandles,
       ),
     );
+  }
+
+  Future<Transaction?> prepareAndSignV2FilesTipTx({
+    required Wallet wallet,
+    required v2FilesUploadCost,
+  }) async {
+    if (v2FilesUploadCost <= BigInt.zero) {
+      return null;
+    }
+    final packageInfo = await PackageInfo.fromPlatform();
+    final pstFee = await _pst.getPSTFee(v2FilesUploadCost);
+
+    final feeTx = await _arweave.client.transactions.prepare(
+      Transaction(
+        target: await _pst.getWeightedPstHolder(),
+        quantity: pstFee,
+      ),
+      wallet,
+    )
+      ..addApplicationTags(version: packageInfo.version)
+      ..addTag('Type', 'fee')
+      ..addTag(TipType.tagName, TipType.dataUpload);
+    await feeTx.sign(wallet);
+    return feeTx;
   }
 
   Future<BigInt> estimateBundleCosts(List<FileUploadHandle> files) async {
@@ -256,8 +270,8 @@ class UploadCubit extends Cubit<UploadState> {
       );
     }
 
-    if (feeTx != null && _fileUploadHandles.isNotEmpty) {
-      await _arweave.postTx(feeTx!);
+    if (v2FilesFeeTx != null && _fileUploadHandles.isNotEmpty) {
+      await _arweave.postTx(v2FilesFeeTx!);
     }
     await _driveDao.transaction(() async {
       // NOTE: Using maxFilesPerBundle since FileUploadHandles have 2 data items
@@ -265,7 +279,8 @@ class UploadCubit extends Cubit<UploadState> {
         maxBundleSize: bundleSizeLimit,
         maxDataItemCount: maxFilesPerBundle,
       ).packItems(_dataItemUploadHandles.values.toList());
-      //Create bundles
+
+      // Create bundle plans
       for (var uploadHandles in bundleItems) {
         var uploadSize = 0;
         for (var uploadHandle in uploadHandles) {
@@ -288,7 +303,7 @@ class UploadCubit extends Cubit<UploadState> {
         }
 
         _multiFileUploadHandles.add(
-          MultiFileUploadHandle(
+          BundleUploadHandle(
             uploadHandles
                 .map((e) => e.asDataItems().toList())
                 .reduce((value, element) => value += element)
@@ -300,10 +315,15 @@ class UploadCubit extends Cubit<UploadState> {
         uploadHandles.clear();
       }
 
-      emit(UploadInProgress(
-        files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
-            _multiFileUploadHandles,
-      ));
+      // Start Upload
+      emit(
+        UploadInProgress(
+          files: _fileUploadHandles.values.toList(),
+          bundles: _multiFileUploadHandles,
+        ),
+      );
+
+      // Upload Bundles
       for (var uploadHandle in _multiFileUploadHandles) {
         await uploadHandle.prepareBundle(
           arweaveService: _arweave,
@@ -312,12 +332,14 @@ class UploadCubit extends Cubit<UploadState> {
         );
         await for (final _ in uploadHandle.upload(_arweave)) {
           emit(UploadInProgress(
-            files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
-                _multiFileUploadHandles,
+            files: _fileUploadHandles.values.toList(),
+            bundles: _multiFileUploadHandles,
           ));
         }
         uploadHandle.dispose();
       }
+
+      // Upload V2 Files
       for (final uploadHandle in _fileUploadHandles.values) {
         final fileEntity = uploadHandle.entity;
         if (uploadHandle.entityTx?.id != null) {
@@ -334,8 +356,8 @@ class UploadCubit extends Cubit<UploadState> {
         );
         await for (final _ in uploadHandle.upload(_arweave)) {
           emit(UploadInProgress(
-            files: List<UploadHandle>.from(_fileUploadHandles.values.toList()) +
-                _multiFileUploadHandles,
+            files: _fileUploadHandles.values.toList(),
+            bundles: _multiFileUploadHandles,
           ));
         }
       }

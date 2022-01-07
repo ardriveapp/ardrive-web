@@ -4,18 +4,20 @@ import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:moor/moor.dart';
 
-class MultiFileUploadHandle implements UploadHandle {
+class BundleUploadHandle implements UploadHandle {
   final List<FileEntity> fileEntities;
   final List<DataItem> dataItems;
 
   late Transaction bundleTx;
 
-  MultiFileUploadHandle(this.dataItems, this.fileEntities, this.size);
+  BundleUploadHandle(this.dataItems, this.fileEntities, this.size);
 
   @override
   BigInt get cost {
     return bundleTx.reward;
   }
+
+  int get numberOfFiles => fileEntities.length;
 
   @override
   double uploadProgress = 0;

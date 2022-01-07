@@ -66,7 +66,7 @@ class UploadReady extends UploadState {
   final bool uploadIsPublic;
 
   final List<FileUploadHandle> files;
-  final List<MultiFileUploadHandle> bundles;
+  final List<BundleUploadHandle> bundles;
 
   UploadReady({
     required this.arUploadCost,
@@ -91,13 +91,13 @@ class UploadReady extends UploadState {
 }
 
 class UploadInProgress extends UploadState {
-  final List<UploadHandle>? files;
+  final List<FileUploadHandle> files;
+  final List<BundleUploadHandle> bundles;
 
-  final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
-  UploadInProgress({this.files});
+  UploadInProgress({required this.files, required this.bundles});
 
   @override
-  List<Object?> get props => [files, _equatableBust];
+  List<Object?> get props => [files, bundles];
 }
 
 class UploadFailure extends UploadState {}
