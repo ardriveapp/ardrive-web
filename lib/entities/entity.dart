@@ -18,7 +18,7 @@ abstract class Entity {
 
   /// The bundle this entity is a part of.
   @JsonKey(ignore: true)
-  late String? bundledIn;
+  String? bundledIn;
 
   /// The time this entity was created at ie. its `Unix-Time`.
   @JsonKey(ignore: true)
