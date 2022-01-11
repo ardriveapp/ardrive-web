@@ -278,10 +278,12 @@ class UploadCubit extends Cubit<UploadState> {
       ).packItems(_dataItemUploadHandles.values.toList());
 
       // Start Upload
-      
+
       // Create bundle plans
       for (var uploadHandles in bundleItems) {
         var uploadSize = 0;
+        var dataItems = <DataItem>[];
+        var entities = <FileEntity>[];
         for (var uploadHandle in uploadHandles) {
           await uploadHandle.prepareAndSign(
             arweave: _arweave,
@@ -303,13 +305,13 @@ class UploadCubit extends Cubit<UploadState> {
 
           assert(uploadHandle.entity.dataTxId == uploadHandle.dataTx!.id);
           uploadSize += uploadHandle.entity.size!;
+          dataItems.addAll(uploadHandle.asDataItems());
+          entities.add(uploadHandle.entity);
         }
+        uploadHandles.clear();
         final bundleToUpload = BundleUploadHandle(
-          uploadHandles
-              .map((e) => e.asDataItems().toList())
-              .reduce((value, element) => value += element)
-              .toList(),
-          uploadHandles.map((e) => e.entity).toList(),
+          dataItems,
+          entities,
           uploadSize,
         );
         await bundleToUpload.prepareBundle(
@@ -324,7 +326,6 @@ class UploadCubit extends Cubit<UploadState> {
           ));
         }
         bundleToUpload.dispose();
-        uploadHandles.clear();
       }
 
       // Upload V2 Files
