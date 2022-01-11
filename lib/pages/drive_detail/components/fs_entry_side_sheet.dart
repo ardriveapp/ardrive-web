@@ -161,16 +161,35 @@ class FsEntrySideSheet extends StatelessWidget {
                     DataColumn(label: Text('')),
                   ],
                   rows: [
-                    if (infoState is FsEntryInfoSuccess<Drive>) ...{
+                    if (infoState is FsEntryDriveInfoSuccess) ...{
                       DataRow(cells: [
-                        DataCell(Text('Metadata Tx ID')),
+                        DataCell(Text('Drive Tx ID')),
                         DataCell(
                           CopyIconButton(
-                            tooltip: 'Copy Metadata Tx ID',
+                            tooltip: 'Copy Drive Tx ID',
                             value: revision.metadataTx.id,
                           ),
                         ),
                       ]),
+                      DataRow(cells: [
+                        DataCell(Text('Root Folder Tx ID')),
+                        DataCell(
+                          CopyIconButton(
+                            tooltip: 'Copy Root Folder Tx ID',
+                            value: infoState.rootFolder.metadataTxId,
+                          ),
+                        ),
+                      ]),
+                      if (revision.bundledIn != null)
+                        DataRow(cells: [
+                          DataCell(Text('Bundle Tx ID')),
+                          DataCell(
+                            CopyIconButton(
+                              tooltip: 'Copy Bundle Tx ID',
+                              value: revision.bundledIn,
+                            ),
+                          ),
+                        ]),
                     } else if (infoState
                         is FsEntryInfoSuccess<FolderEntry>) ...{
                       DataRow(cells: [
@@ -201,6 +220,16 @@ class FsEntrySideSheet extends StatelessWidget {
                           ),
                         ),
                       ]),
+                      if (revision.bundledIn != null)
+                        DataRow(cells: [
+                          DataCell(Text('Bundle Tx ID')),
+                          DataCell(
+                            CopyIconButton(
+                              tooltip: 'Copy Bundle Tx ID',
+                              value: revision.bundledIn,
+                            ),
+                          ),
+                        ]),
                     },
                   ],
                 );
