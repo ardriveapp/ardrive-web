@@ -34,20 +34,19 @@ class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {
   @override
   final DateTime dateCreated;
 
-  final Drive drive;
   final FolderRevision rootFolder;
 
   FsEntryDriveInfoSuccess({
     required this.name,
     required this.lastUpdated,
     required this.dateCreated,
-    required this.drive,
     required this.rootFolder,
+    required entry,
   }) : super(
           name: name,
           lastUpdated: lastUpdated,
           dateCreated: dateCreated,
-          entry: drive,
+          entry: entry,
         );
 
   @override

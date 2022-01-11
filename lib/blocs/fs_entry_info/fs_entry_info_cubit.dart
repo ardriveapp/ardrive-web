@@ -69,7 +69,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               name: d.name,
               lastUpdated: d.lastUpdated,
               dateCreated: d.dateCreated,
-              drive: d,
+              entry: d,
               rootFolder: rootFolder,
             ),
           );
