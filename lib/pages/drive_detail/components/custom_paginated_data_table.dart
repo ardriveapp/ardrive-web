@@ -4,6 +4,7 @@
 
 import 'dart:math' as math;
 
+import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/gestures.dart' show DragStartBehavior;
 import 'package:flutter/material.dart';
 
@@ -347,11 +348,26 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
     pageTo(((_rowCount - 1) / widget.rowsPerPage).floor() * widget.rowsPerPage);
   }
 
+  int _getPageCount() {
+    return ((_rowCount - 1) / widget.rowsPerPage).floor();
+  }
+
+  int _getCurrentPage() {
+    return (_firstRowIndex + 1) ~/ widget.rowsPerPage;
+  }
+
   bool _isNextPageUnavailable() =>
       !_rowCountApproximate &&
       (_firstRowIndex + widget.rowsPerPage >= _rowCount);
 
   final GlobalKey _tableKey = GlobalKey();
+
+  final pageButtonStyle = TextButton.styleFrom(
+    padding: EdgeInsets.zero,
+    textStyle: TextStyle(
+      color: kOnSurfaceBodyTextColor,
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -439,7 +455,45 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
         tooltip: localizations.previousPageTooltip,
         onPressed: _firstRowIndex <= 0 ? null : _handlePrevious,
       ),
-      Container(width: 24.0),
+      Row(
+        children: [
+          if (_getPageCount() > 5) ...[
+            if (_getCurrentPage() < (_getPageCount() / 2)) ...[
+              for (var i = 1; i <= 4; i++)
+                TextButton(
+                  style: pageButtonStyle,
+                  onPressed: () => pageTo(widget.rowsPerPage * (i - 1)),
+                  child: Text(i.toString()),
+                ),
+              Text('...'),
+              TextButton(
+                style: pageButtonStyle,
+                onPressed: () => _handleLast(),
+                child: Text(_getPageCount().toString()),
+              ),
+            ] else ...[
+              TextButton(
+                style: pageButtonStyle,
+                onPressed: () => _handleFirst(),
+                child: Text('1'),
+              ),
+              Text('...'),
+              for (var i = _getPageCount() - 5; i <= _getPageCount(); i++)
+                TextButton(
+                  style: pageButtonStyle,
+                  onPressed: () => pageTo(widget.rowsPerPage * i),
+                  child: Text(i.toString()),
+                ),
+            ]
+          ] else
+            for (var i = 1; i <= _getPageCount(); i++)
+              TextButton(
+                style: pageButtonStyle,
+                onPressed: () => pageTo(i),
+                child: Text(i.toString()),
+              ),
+        ],
+      ),
       IconButton(
         icon: Icon(Icons.chevron_right, color: widget.arrowHeadColor),
         padding: EdgeInsets.zero,
@@ -530,13 +584,9 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
                   // TODO(bkonyi): this won't handle text zoom correctly,
                   //  https://github.com/flutter/flutter/issues/48522
                   height: 56.0,
-                  child: SingleChildScrollView(
-                    dragStartBehavior: widget.dragStartBehavior,
-                    scrollDirection: Axis.horizontal,
-                    reverse: true,
-                    child: Row(
-                      children: footerWidgets,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: footerWidgets,
                   ),
                 ),
               ),

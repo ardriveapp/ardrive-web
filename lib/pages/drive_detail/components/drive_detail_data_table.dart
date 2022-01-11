@@ -53,6 +53,7 @@ class _DriveDataTableState extends State<DriveDataTable> {
                   widget.driveDetailState.availableRowsPerPage,
               onRowsPerPageChanged: (value) => setState(() =>
                   context.read<DriveDetailCubit>().setRowsPerPage(value!)),
+              showFirstLastButtons: true,
               source: DriveDetailDataTableSource(
                 context: context,
                 files: widget.driveDetailState.currentFolder.files
