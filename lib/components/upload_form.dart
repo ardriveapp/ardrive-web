@@ -240,9 +240,11 @@ class UploadForm extends StatelessWidget {
               ),
             );
           } else if (state is UploadInProgress) {
-            final numberOfFilesInBundles = state.bundles
-                .map((e) => e.numberOfFiles)
-                .reduce((value, element) => value += element);
+            final numberOfFilesInBundles = state.bundles.isNotEmpty
+                ? state.bundles
+                    .map((e) => e.numberOfFiles)
+                    .reduce((value, element) => value += element)
+                : 0;
             final numberOfV2Files = state.files.length;
             return AppDialog(
               dismissable: false,
