@@ -281,9 +281,14 @@ class UploadCubit extends Cubit<UploadState> {
 
       // Create bundle plans
       for (var uploadHandles in bundleItems) {
+        emit(
+          UploadBundlingInProgress(
+            isArConnect: await _profileCubit.isCurrentProfileArConnect(),
+          ),
+        );
         var uploadSize = 0;
-        var dataItems = <DataItem>[];
-        var entities = <FileEntity>[];
+        final dataItems = <DataItem>[];
+        final entities = <FileEntity>[];
         for (var uploadHandle in uploadHandles) {
           await uploadHandle.prepareAndSign(
             arweave: _arweave,
