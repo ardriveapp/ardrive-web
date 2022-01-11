@@ -278,7 +278,7 @@ class UploadCubit extends Cubit<UploadState> {
       ).packItems(_dataItemUploadHandles.values.toList());
 
       // Start Upload
-      
+
       // Create bundle plans
       for (var uploadHandles in bundleItems) {
         emit(
@@ -312,8 +312,7 @@ class UploadCubit extends Cubit<UploadState> {
         final bundleToUpload = BundleUploadHandle(
           uploadHandles
               .map((e) => e.asDataItems().toList())
-              .reduce((value, element) => value += element)
-              .toList(),
+              .reduce((value, element) => value += element),
           uploadHandles.map((e) => e.entity).toList(),
           uploadSize,
         );
