@@ -1,25 +1,9 @@
-// Copyright 2014 The Flutter Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
-
 import 'dart:math' as math;
 
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/gestures.dart' show DragStartBehavior;
 import 'package:flutter/material.dart';
 
-/// A material design data table that shows data using multiple pages.
-///
-/// A paginated data table shows [rowsPerPage] rows of data per page and
-/// provides controls for showing other pages.
-///
-/// Data is read lazily from a [DataTableSource]. The widget is presented
-/// as a [Card].
-///
-/// See also:
-///
-///  * [DataTable], which is not paginated.
-///  * <https://material.io/go/design-data-tables#data-tables-tables-within-cards>
 class CustomPaginatedDataTable extends StatefulWidget {
   /// Creates a widget describing a paginated [DataTable] on a [Card].
   ///
@@ -236,7 +220,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
   late bool _rowCountApproximate;
   int _selectedRowCount = 0;
   final Map<int, DataRow?> _rows = <int, DataRow?>{};
-
+  final int _pagesToShow = 6;
   @override
   void initState() {
     super.initState();
@@ -349,7 +333,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
   }
 
   int _getPageCount() {
-    return ((_rowCount - 1) / widget.rowsPerPage).floor();
+    return ((_rowCount - 1) / widget.rowsPerPage).ceil();
   }
 
   int _getCurrentPage() {
@@ -395,7 +379,22 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
         }).toList(),
       );
     }
-
+    TextButton pageButton({
+      required int page,
+      required Function onPressed,
+    }) =>
+        TextButton(
+          style: pageButtonStyle,
+          onPressed: () => pageTo(widget.rowsPerPage * page),
+          child: Text(
+            (page + 1).toString(),
+            style: TextStyle(
+              color: page == _getCurrentPage()
+                  ? kPrimarySwatch.shade500
+                  : kOnSurfaceBodyTextColor,
+            ),
+          ),
+        );
     // FOOTER
     final footerTextStyle = themeData.textTheme.caption;
     final footerWidgets = <Widget>[];
@@ -457,40 +456,48 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
       ),
       Row(
         children: [
-          if (_getPageCount() > 5) ...[
-            if (_getCurrentPage() < (_getPageCount() / 2)) ...[
-              for (var i = 1; i <= 4; i++)
-                TextButton(
-                  style: pageButtonStyle,
-                  onPressed: () => pageTo(widget.rowsPerPage * (i - 1)),
-                  child: Text(i.toString()),
+          if (_getPageCount() > _pagesToShow) ...[
+            if (_getCurrentPage() < _pagesToShow) ...[
+              for (var i = 0; i < _pagesToShow; i++)
+                pageButton(
+                  page: i,
+                  onPressed: () => pageTo(widget.rowsPerPage * i),
                 ),
               Text('...'),
-              TextButton(
-                style: pageButtonStyle,
+              pageButton(
+                page: _getPageCount(),
                 onPressed: () => _handleLast(),
-                child: Text(_getPageCount().toString()),
               ),
+            ] else if (_getCurrentPage() >= _pagesToShow &&
+                _getCurrentPage() < _getPageCount() - _pagesToShow) ...[
+              Text('...'),
+              for (var i = _getCurrentPage() - 2;
+                  i <= _getCurrentPage() + 3;
+                  i++)
+                pageButton(
+                  page: i,
+                  onPressed: () => pageTo(widget.rowsPerPage * i),
+                ),
+              Text('...'),
             ] else ...[
-              TextButton(
-                style: pageButtonStyle,
+              pageButton(
+                page: 1,
                 onPressed: () => _handleFirst(),
-                child: Text('1'),
               ),
               Text('...'),
-              for (var i = _getPageCount() - 5; i <= _getPageCount(); i++)
-                TextButton(
-                  style: pageButtonStyle,
+              for (var i = _getPageCount() - _pagesToShow;
+                  i <= _getPageCount();
+                  i++)
+                pageButton(
+                  page: i,
                   onPressed: () => pageTo(widget.rowsPerPage * i),
-                  child: Text(i.toString()),
                 ),
             ]
           ] else
-            for (var i = 1; i <= _getPageCount(); i++)
-              TextButton(
-                style: pageButtonStyle,
-                onPressed: () => pageTo(i),
-                child: Text(i.toString()),
+            for (var i = 0; i < _getPageCount(); i++)
+              pageButton(
+                page: i,
+                onPressed: () => pageTo(widget.rowsPerPage * i),
               ),
         ],
       ),
@@ -520,9 +527,6 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
               Semantics(
                 container: true,
                 child: DefaultTextStyle(
-                  // These typographic styles aren't quite the regular ones. We pick the closest ones from the regular
-                  // list and then tweak them appropriately.
-                  // See https://material.io/design/components/data-tables.html#tables-within-cards
                   style: _selectedRowCount > 0
                       ? themeData.textTheme.subtitle1!
                           .copyWith(color: themeData.colorScheme.secondary)
@@ -560,9 +564,6 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
                   sortColumnIndex: widget.sortColumnIndex,
                   sortAscending: widget.sortAscending,
                   onSelectAll: widget.onSelectAll,
-                  // Make sure no decoration is set on the DataTable
-                  // from the theme, as its already wrapped in a Card.
-                  decoration: const BoxDecoration(),
                   dataRowHeight: widget.dataRowHeight,
                   headingRowHeight: widget.headingRowHeight,
                   horizontalMargin: widget.horizontalMargin,
@@ -581,8 +582,6 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
                   opacity: 0.54,
                 ),
                 child: SizedBox(
-                  // TODO(bkonyi): this won't handle text zoom correctly,
-                  //  https://github.com/flutter/flutter/issues/48522
                   height: 56.0,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
