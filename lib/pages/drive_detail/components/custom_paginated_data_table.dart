@@ -218,7 +218,6 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
   late int _firstRowIndex;
   late int _rowCount;
   late bool _rowCountApproximate;
-  int _selectedRowCount = 0;
   final Map<int, DataRow?> _rows = <int, DataRow?>{};
   final int _pagesToShow = 6;
   @override
@@ -251,7 +250,6 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
     setState(() {
       _rowCount = widget.source.rowCount;
       _rowCountApproximate = widget.source.isRowCountApproximate;
-      _selectedRowCount = widget.source.selectedRowCount;
       _rows.clear();
     });
   }
@@ -355,30 +353,11 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO(ianh): This whole build function doesn't handle RTL yet.
-    assert(debugCheckHasMaterialLocalizations(context));
-    final themeData = Theme.of(context);
-    final localizations = MaterialLocalizations.of(context);
-    // HEADER
-    final headerWidgets = <Widget>[];
-    if (_selectedRowCount == 0 && widget.header != null) {
-      headerWidgets.add(Expanded(child: widget.header!));
-    } else if (widget.header != null) {
-      headerWidgets.add(Expanded(
-        child: Text(localizations.selectedRowCountTitle(_selectedRowCount)),
-      ));
-    }
-    if (widget.actions != null) {
-      headerWidgets.addAll(
-        widget.actions!.map<Widget>((Widget action) {
-          return Padding(
-            // 8.0 is the default padding of an icon button
-            padding: const EdgeInsetsDirectional.only(start: 24.0 - 8.0 * 2.0),
-            child: action,
-          );
-        }).toList(),
-      );
-    }
+    final footerTextStyle = Theme.of(context)
+        .textTheme
+        .caption!
+        .copyWith(color: kOnSurfaceBodyTextColor);
+
     TextButton pageButton({
       required int page,
       required Function onPressed,
@@ -388,15 +367,13 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
           onPressed: () => pageTo(widget.rowsPerPage * page),
           child: Text(
             (page + 1).toString(),
-            style: TextStyle(
+            style: footerTextStyle.copyWith(
               color: page == _getCurrentPage()
                   ? kPrimarySwatch.shade500
                   : kOnSurfaceBodyTextColor,
             ),
           ),
         );
-    // FOOTER
-    final footerTextStyle = themeData.textTheme.caption;
     final footerWidgets = <Widget>[];
     if (widget.onRowsPerPageChanged != null) {
       final List<Widget> availableRowsPerPage = widget.availableRowsPerPage
@@ -410,9 +387,11 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
       }).toList();
       footerWidgets.addAll(<Widget>[
         Container(
-            width:
-                14.0), // to match trailing padding in case we overflow and end up scrolling
-        Text(localizations.rowsPerPageTitle),
+          width: 14.0,
+        ), // to match trailing padding in case we overflow and end up scrolling
+        Text(
+          'Rows Per Page',
+        ),
         ConstrainedBox(
           constraints: const BoxConstraints(
               minWidth: 64.0), // 40.0 for the text, 24.0 for the icon
@@ -420,10 +399,10 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
             alignment: AlignmentDirectional.centerEnd,
             child: DropdownButtonHideUnderline(
               child: DropdownButton<int>(
+                style: footerTextStyle,
                 items: availableRowsPerPage.cast<DropdownMenuItem<int>>(),
                 value: widget.rowsPerPage,
                 onChanged: widget.onRowsPerPageChanged,
-                style: footerTextStyle,
               ),
             ),
           ),
@@ -433,25 +412,20 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
     footerWidgets.addAll(<Widget>[
       Container(width: 32.0),
       Text(
-        localizations.pageRowsInfoTitle(
-          _firstRowIndex + 1,
-          _firstRowIndex + widget.rowsPerPage,
-          _rowCount,
-          _rowCountApproximate,
-        ),
+        '${_firstRowIndex + 1} - ${_firstRowIndex + widget.rowsPerPage} of $_rowCount',
       ),
       Container(width: 32.0),
       if (widget.showFirstLastButtons)
         IconButton(
           icon: Icon(Icons.skip_previous, color: widget.arrowHeadColor),
           padding: EdgeInsets.zero,
-          tooltip: localizations.firstPageTooltip,
+          tooltip: 'Go to first',
           onPressed: _firstRowIndex <= 0 ? null : _handleFirst,
         ),
       IconButton(
         icon: Icon(Icons.chevron_left, color: widget.arrowHeadColor),
         padding: EdgeInsets.zero,
-        tooltip: localizations.previousPageTooltip,
+        tooltip: 'Previous',
         onPressed: _firstRowIndex <= 0 ? null : _handlePrevious,
       ),
       Row(
@@ -465,7 +439,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
                 ),
               Text('...'),
               pageButton(
-                page: _getPageCount(),
+                page: _getPageCount() - 1,
                 onPressed: () => _handleLast(),
               ),
             ] else if (_getCurrentPage() >= _pagesToShow &&
@@ -481,12 +455,12 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
               Text('...'),
             ] else ...[
               pageButton(
-                page: 1,
+                page: 0,
                 onPressed: () => _handleFirst(),
               ),
               Text('...'),
               for (var i = _getPageCount() - _pagesToShow;
-                  i <= _getPageCount();
+                  i < _getPageCount();
                   i++)
                 pageButton(
                   page: i,
@@ -504,79 +478,51 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
       IconButton(
         icon: Icon(Icons.chevron_right, color: widget.arrowHeadColor),
         padding: EdgeInsets.zero,
-        tooltip: localizations.nextPageTooltip,
+        tooltip: 'Next',
         onPressed: _isNextPageUnavailable() ? null : _handleNext,
       ),
       if (widget.showFirstLastButtons)
         IconButton(
           icon: Icon(Icons.skip_next, color: widget.arrowHeadColor),
           padding: EdgeInsets.zero,
-          tooltip: localizations.lastPageTooltip,
+          tooltip: 'Go to Last',
           onPressed: _isNextPageUnavailable() ? null : _handleLast,
         ),
       Container(width: 14.0),
     ]);
 
-    // CARD
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (headerWidgets.isNotEmpty)
-              Semantics(
-                container: true,
-                child: DefaultTextStyle(
-                  style: _selectedRowCount > 0
-                      ? themeData.textTheme.subtitle1!
-                          .copyWith(color: themeData.colorScheme.secondary)
-                      : themeData.textTheme.headline6!
-                          .copyWith(fontWeight: FontWeight.w400),
-                  child: IconTheme.merge(
-                    data: const IconThemeData(
-                      opacity: 0.54,
-                    ),
-                    child: Ink(
-                      height: 64.0,
-                      color: _selectedRowCount > 0
-                          ? themeData.secondaryHeaderColor
-                          : null,
-                      child: Padding(
-                        padding: const EdgeInsetsDirectional.only(
-                            start: 24, end: 14.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: headerWidgets,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               dragStartBehavior: widget.dragStartBehavior,
               child: ConstrainedBox(
                 constraints: BoxConstraints(minWidth: constraints.minWidth),
-                child: DataTable(
-                  key: _tableKey,
-                  columns: widget.columns,
-                  sortColumnIndex: widget.sortColumnIndex,
-                  sortAscending: widget.sortAscending,
-                  onSelectAll: widget.onSelectAll,
-                  dataRowHeight: widget.dataRowHeight,
-                  headingRowHeight: widget.headingRowHeight,
-                  horizontalMargin: widget.horizontalMargin,
-                  checkboxHorizontalMargin: widget.checkboxHorizontalMargin,
-                  columnSpacing: widget.columnSpacing,
-                  showCheckboxColumn: widget.showCheckboxColumn,
-                  showBottomBorder: true,
-                  rows: _getRows(_firstRowIndex, widget.rowsPerPage),
+                child: Theme(
+                  data: Theme.of(context),
+                  child: DataTable(
+                    key: _tableKey,
+                    columns: widget.columns,
+                    sortColumnIndex: widget.sortColumnIndex,
+                    sortAscending: widget.sortAscending,
+                    onSelectAll: widget.onSelectAll,
+                    dataRowHeight: widget.dataRowHeight,
+                    headingRowHeight: widget.headingRowHeight,
+                    horizontalMargin: widget.horizontalMargin,
+                    checkboxHorizontalMargin: widget.checkboxHorizontalMargin,
+                    columnSpacing: widget.columnSpacing,
+                    showCheckboxColumn: widget.showCheckboxColumn,
+                    showBottomBorder: true,
+                    rows: _getRows(_firstRowIndex, widget.rowsPerPage),
+                  ),
                 ),
               ),
             ),
             DefaultTextStyle(
-              style: footerTextStyle!,
+              style: footerTextStyle,
               child: IconTheme.merge(
                 data: const IconThemeData(
                   opacity: 0.54,
