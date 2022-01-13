@@ -219,7 +219,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
   late int _rowCount;
   late bool _rowCountApproximate;
   final Map<int, DataRow?> _rows = <int, DataRow?>{};
-  final int _pagesToShow = 6;
+  final int _pagesToShow = 5;
   @override
   void initState() {
     super.initState();
@@ -431,7 +431,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
       Row(
         children: [
           if (_getPageCount() > _pagesToShow) ...[
-            if (_getCurrentPage() < _pagesToShow) ...[
+            if (_getCurrentPage() < (_pagesToShow - 1)) ...[
               for (var i = 0; i < _pagesToShow; i++)
                 pageButton(
                   page: i,
@@ -439,20 +439,28 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
                 ),
               Text('...'),
               pageButton(
-                page: _getPageCount() - 1,
+                page: _getPageCount(),
                 onPressed: () => _handleLast(),
               ),
-            ] else if (_getCurrentPage() >= _pagesToShow &&
+            ] else if (_getCurrentPage() >= (_pagesToShow - 1) &&
                 _getCurrentPage() < _getPageCount() - _pagesToShow) ...[
+              pageButton(
+                page: 0,
+                onPressed: () => _handleFirst(),
+              ),
               Text('...'),
               for (var i = _getCurrentPage() - 2;
-                  i <= _getCurrentPage() + 3;
+                  i <= _getCurrentPage() + 2;
                   i++)
                 pageButton(
                   page: i,
                   onPressed: () => pageTo(widget.rowsPerPage * i),
                 ),
               Text('...'),
+              pageButton(
+                page: _getPageCount(),
+                onPressed: () => _handleLast(),
+              ),
             ] else ...[
               pageButton(
                 page: 0,
@@ -460,7 +468,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
               ),
               Text('...'),
               for (var i = _getPageCount() - _pagesToShow;
-                  i < _getPageCount();
+                  i <= _getPageCount();
                   i++)
                 pageButton(
                   page: i,
