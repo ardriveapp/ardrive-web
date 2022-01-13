@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:ardrive/theme/theme.dart';
-import 'package:flutter/gestures.dart' show DragStartBehavior;
 import 'package:flutter/material.dart';
 
 class CustomPaginatedDataTable extends StatefulWidget {
@@ -59,7 +58,6 @@ class CustomPaginatedDataTable extends StatefulWidget {
       defaultRowsPerPage * 10
     ],
     this.onRowsPerPageChanged,
-    this.dragStartBehavior = DragStartBehavior.start,
     this.arrowHeadColor,
     required this.source,
     this.checkboxHorizontalMargin,
@@ -192,9 +190,6 @@ class CustomPaginatedDataTable extends StatefulWidget {
   /// [CustomPaginatedDataTable] widget itself; it should be reused each time the
   /// [CustomPaginatedDataTable] constructor is called.
   final DataTableSource source;
-
-  /// {@macro flutter.widgets.scrollable.dragStartBehavior}
-  final DragStartBehavior dragStartBehavior;
 
   /// Horizontal margin around the checkbox, if it is displayed.
   ///
@@ -504,28 +499,24 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              dragStartBehavior: widget.dragStartBehavior,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minWidth: constraints.minWidth),
-                child: Theme(
-                  data: Theme.of(context),
-                  child: DataTable(
-                    key: _tableKey,
-                    columns: widget.columns,
-                    sortColumnIndex: widget.sortColumnIndex,
-                    sortAscending: widget.sortAscending,
-                    onSelectAll: widget.onSelectAll,
-                    dataRowHeight: widget.dataRowHeight,
-                    headingRowHeight: widget.headingRowHeight,
-                    horizontalMargin: widget.horizontalMargin,
-                    checkboxHorizontalMargin: widget.checkboxHorizontalMargin,
-                    columnSpacing: widget.columnSpacing,
-                    showCheckboxColumn: widget.showCheckboxColumn,
-                    showBottomBorder: true,
-                    rows: _getRows(_firstRowIndex, widget.rowsPerPage),
-                  ),
+            ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.minWidth),
+              child: Theme(
+                data: Theme.of(context),
+                child: DataTable(
+                  key: _tableKey,
+                  columns: widget.columns,
+                  sortColumnIndex: widget.sortColumnIndex,
+                  sortAscending: widget.sortAscending,
+                  onSelectAll: widget.onSelectAll,
+                  dataRowHeight: widget.dataRowHeight,
+                  headingRowHeight: widget.headingRowHeight,
+                  horizontalMargin: widget.horizontalMargin,
+                  checkboxHorizontalMargin: widget.checkboxHorizontalMargin,
+                  columnSpacing: widget.columnSpacing,
+                  showCheckboxColumn: widget.showCheckboxColumn,
+                  showBottomBorder: true,
+                  rows: _getRows(_firstRowIndex, widget.rowsPerPage),
                 ),
               ),
             ),
