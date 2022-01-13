@@ -21,13 +21,12 @@ class DriveDataTable extends StatefulWidget {
 }
 
 class _DriveDataTableState extends State<DriveDataTable> {
-  var listKey = 0;
   @override
   Widget build(BuildContext context) {
     return Scrollbar(
       child: SingleChildScrollView(
         padding: EdgeInsets.all(0),
-        key: ObjectKey(listKey),
+        key: ObjectKey(widget.driveDetailState.currentFolder),
         child: CustomPaginatedDataTable(
           columns: _buildTableColumns(context),
           sortColumnIndex:
@@ -39,11 +38,6 @@ class _DriveDataTableState extends State<DriveDataTable> {
           onRowsPerPageChanged: (value) => setState(
               () => context.read<DriveDetailCubit>().setRowsPerPage(value!)),
           showFirstLastButtons: true,
-          onPageChanged: (value) {
-            setState(() {
-              listKey = value;
-            });
-          },
           source: DriveDetailDataTableSource(
             context: context,
             files: widget.driveDetailState.currentFolder.files
