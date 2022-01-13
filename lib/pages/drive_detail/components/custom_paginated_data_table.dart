@@ -198,15 +198,6 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
     }
   }
 
-  DataRow _getBlankRowFor(int index) {
-    return DataRow.byIndex(
-      index: index,
-      cells: widget.columns
-          .map<DataCell>((DataColumn column) => DataCell.empty)
-          .toList(),
-    );
-  }
-
   DataRow _getProgressIndicatorRowFor(int index) {
     var haveProgressIndicator = false;
     final cells = widget.columns.map<DataCell>((DataColumn column) {
@@ -239,8 +230,10 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
           haveProgressIndicator = true;
         }
       }
-      row ??= _getBlankRowFor(index);
-      result.add(row);
+      //row ??= _getBlankRowFor(index);
+      if (row != null) {
+        result.add(row);
+      }
     }
     return result;
   }
