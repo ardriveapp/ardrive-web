@@ -29,7 +29,6 @@ class _DriveDataTableState extends State<DriveDataTable> {
         padding: EdgeInsets.all(0),
         key: ObjectKey(listKey),
         child: CustomPaginatedDataTable(
-          showCheckboxColumn: false,
           columns: _buildTableColumns(context),
           sortColumnIndex:
               DriveOrder.values.indexOf(widget.driveDetailState.contentOrderBy),
