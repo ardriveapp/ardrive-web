@@ -47,8 +47,7 @@ class DriveDetailPage extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 32, horizontal: 24),
+                            padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [

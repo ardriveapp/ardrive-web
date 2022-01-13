@@ -494,50 +494,44 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
       Container(width: 14.0),
     ]);
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            ConstrainedBox(
-              constraints: BoxConstraints(minWidth: constraints.minWidth),
-              child: Theme(
-                data: Theme.of(context),
-                child: DataTable(
-                  key: _tableKey,
-                  columns: widget.columns,
-                  sortColumnIndex: widget.sortColumnIndex,
-                  sortAscending: widget.sortAscending,
-                  onSelectAll: widget.onSelectAll,
-                  dataRowHeight: widget.dataRowHeight,
-                  headingRowHeight: widget.headingRowHeight,
-                  horizontalMargin: widget.horizontalMargin,
-                  checkboxHorizontalMargin: widget.checkboxHorizontalMargin,
-                  columnSpacing: widget.columnSpacing,
-                  showCheckboxColumn: widget.showCheckboxColumn,
-                  showBottomBorder: true,
-                  rows: _getRows(_firstRowIndex, widget.rowsPerPage),
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: <Widget>[
+        ConstrainedBox(
+          constraints: BoxConstraints(minWidth: double.infinity),
+          child: DataTable(
+            key: _tableKey,
+            columns: widget.columns,
+            sortColumnIndex: widget.sortColumnIndex,
+            sortAscending: widget.sortAscending,
+            onSelectAll: widget.onSelectAll,
+            dataRowHeight: widget.dataRowHeight,
+            headingRowHeight: widget.headingRowHeight,
+            horizontalMargin: widget.horizontalMargin,
+            checkboxHorizontalMargin: widget.checkboxHorizontalMargin,
+            columnSpacing: widget.columnSpacing,
+            showCheckboxColumn: widget.showCheckboxColumn,
+            showBottomBorder: true,
+            rows: _getRows(_firstRowIndex, widget.rowsPerPage),
+          ),
+        ),
+        DefaultTextStyle(
+          style: footerTextStyle,
+          child: IconTheme.merge(
+            data: const IconThemeData(
+              opacity: 0.54,
+            ),
+            child: SizedBox(
+              height: 56.0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: footerWidgets,
               ),
             ),
-            DefaultTextStyle(
-              style: footerTextStyle,
-              child: IconTheme.merge(
-                data: const IconThemeData(
-                  opacity: 0.54,
-                ),
-                child: SizedBox(
-                  height: 56.0,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: footerWidgets,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+          ),
+        ),
+      ],
     );
   }
 }
