@@ -429,43 +429,48 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
       Container(width: 14.0),
     ]);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: <Widget>[
-        ConstrainedBox(
-          constraints: BoxConstraints(minWidth: double.infinity),
-          child: DataTable(
-            key: _tableKey,
-            columns: widget.columns,
-            showCheckboxColumn: false,
-            sortColumnIndex: widget.sortColumnIndex,
-            sortAscending: widget.sortAscending,
-            dataRowHeight: widget.dataRowHeight,
-            headingRowHeight: widget.headingRowHeight,
-            horizontalMargin: widget.horizontalMargin,
-            checkboxHorizontalMargin: widget.checkboxHorizontalMargin,
-            columnSpacing: widget.columnSpacing,
-            showBottomBorder: true,
-            rows: _getRows(_firstRowIndex, widget.rowsPerPage),
-          ),
-        ),
-        DefaultTextStyle(
-          style: footerTextStyle,
-          child: IconTheme.merge(
-            data: const IconThemeData(
-              opacity: 0.54,
-            ),
-            child: SizedBox(
-              height: 56.0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: footerWidgets,
+    return Scrollbar(
+      child: SingleChildScrollView(
+        key: ObjectKey(_getCurrentPage()),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: <Widget>[
+            ConstrainedBox(
+              constraints: BoxConstraints(minWidth: double.infinity),
+              child: DataTable(
+                key: _tableKey,
+                columns: widget.columns,
+                showCheckboxColumn: false,
+                sortColumnIndex: widget.sortColumnIndex,
+                sortAscending: widget.sortAscending,
+                dataRowHeight: widget.dataRowHeight,
+                headingRowHeight: widget.headingRowHeight,
+                horizontalMargin: widget.horizontalMargin,
+                checkboxHorizontalMargin: widget.checkboxHorizontalMargin,
+                columnSpacing: widget.columnSpacing,
+                showBottomBorder: true,
+                rows: _getRows(_firstRowIndex, widget.rowsPerPage),
               ),
             ),
-          ),
+            DefaultTextStyle(
+              style: footerTextStyle,
+              child: IconTheme.merge(
+                data: const IconThemeData(
+                  opacity: 0.54,
+                ),
+                child: SizedBox(
+                  height: 56.0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: footerWidgets,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

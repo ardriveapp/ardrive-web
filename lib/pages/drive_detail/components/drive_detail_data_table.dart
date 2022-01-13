@@ -23,61 +23,55 @@ class DriveDataTable extends StatefulWidget {
 class _DriveDataTableState extends State<DriveDataTable> {
   @override
   Widget build(BuildContext context) {
-    return Scrollbar(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.all(0),
-        key: ObjectKey(widget.driveDetailState.currentFolder),
-        child: CustomPaginatedDataTable(
-          columns: _buildTableColumns(context),
-          sortColumnIndex:
-              DriveOrder.values.indexOf(widget.driveDetailState.contentOrderBy),
-          sortAscending:
-              widget.driveDetailState.contentOrderingMode == OrderingMode.asc,
-          rowsPerPage: widget.driveDetailState.rowsPerPage,
-          availableRowsPerPage: widget.driveDetailState.availableRowsPerPage,
-          onRowsPerPageChanged: (value) => setState(
-              () => context.read<DriveDetailCubit>().setRowsPerPage(value!)),
-          showFirstLastButtons: true,
-          source: DriveDetailDataTableSource(
-            context: context,
-            files: widget.driveDetailState.currentFolder.files
-                .map(
-                  (file) => DriveTableFile(
-                    file: file,
-                    selected: file.id == widget.driveDetailState.selectedItemId,
-                    onPressed: () async {
-                      final bloc = context.read<DriveDetailCubit>();
-                      if (file.id == widget.driveDetailState.selectedItemId) {
-                        bloc.toggleSelectedItemDetails();
-                      } else {
-                        await bloc.selectItem(file.id);
-                      }
-                    },
-                  ),
-                )
-                .toList(),
-            folders: widget.driveDetailState.currentFolder.subfolders
-                .map(
-                  (folder) => DriveTableFolder(
-                    folder: folder,
-                    selected:
-                        folder.id == widget.driveDetailState.selectedItemId,
-                    onPressed: () {
-                      final bloc = context.read<DriveDetailCubit>();
-                      if (folder.id == widget.driveDetailState.selectedItemId) {
-                        bloc.openFolder(path: folder.path);
-                      } else {
-                        bloc.selectItem(
-                          folder.id,
-                          isFolder: true,
-                        );
-                      }
-                    },
-                  ),
-                )
-                .toList(),
-          ),
-        ),
+    return CustomPaginatedDataTable(
+      columns: _buildTableColumns(context),
+      sortColumnIndex:
+          DriveOrder.values.indexOf(widget.driveDetailState.contentOrderBy),
+      sortAscending:
+          widget.driveDetailState.contentOrderingMode == OrderingMode.asc,
+      rowsPerPage: widget.driveDetailState.rowsPerPage,
+      availableRowsPerPage: widget.driveDetailState.availableRowsPerPage,
+      onRowsPerPageChanged: (value) => setState(
+          () => context.read<DriveDetailCubit>().setRowsPerPage(value!)),
+      showFirstLastButtons: true,
+      source: DriveDetailDataTableSource(
+        context: context,
+        files: widget.driveDetailState.currentFolder.files
+            .map(
+              (file) => DriveTableFile(
+                file: file,
+                selected: file.id == widget.driveDetailState.selectedItemId,
+                onPressed: () async {
+                  final bloc = context.read<DriveDetailCubit>();
+                  if (file.id == widget.driveDetailState.selectedItemId) {
+                    bloc.toggleSelectedItemDetails();
+                  } else {
+                    await bloc.selectItem(file.id);
+                  }
+                },
+              ),
+            )
+            .toList(),
+        folders: widget.driveDetailState.currentFolder.subfolders
+            .map(
+              (folder) => DriveTableFolder(
+                folder: folder,
+                selected:
+                    folder.id == widget.driveDetailState.selectedItemId,
+                onPressed: () {
+                  final bloc = context.read<DriveDetailCubit>();
+                  if (folder.id == widget.driveDetailState.selectedItemId) {
+                    bloc.openFolder(path: folder.path);
+                  } else {
+                    bloc.selectItem(
+                      folder.id,
+                      isFolder: true,
+                    );
+                  }
+                },
+              ),
+            )
+            .toList(),
       ),
     );
   }
