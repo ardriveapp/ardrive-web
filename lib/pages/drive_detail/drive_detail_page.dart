@@ -43,6 +43,7 @@ class DriveDetailPage extends StatelessWidget {
                 desktop: Stack(
                   children: [
                     Row(
+                      key: ObjectKey(state.currentDrive.id),
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
@@ -78,6 +79,8 @@ class DriveDetailPage extends StatelessWidget {
                                     state.currentFolder.files.isNotEmpty)
                                   Expanded(
                                     child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Expanded(
                                           child:
