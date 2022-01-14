@@ -1,9 +1,14 @@
+import 'dart:convert';
+
 import 'package:ardrive/blocs/upload/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/bundles/fake_tags.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:moor/moor.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 final bundleSizeLimit = 503316480;
@@ -97,6 +102,43 @@ class FileUploadHandle implements UploadHandle {
 
   Iterable<DataItem> asDataItems() {
     return [entityTx as DataItem, dataTx as DataItem];
+  }
+
+  Future<int> estimateEntityDataItemSize({
+    required ArweaveService arweave,
+    required Wallet wallet,
+  }) async {
+    final entityFake = FileEntity(
+      id: entity.id,
+      dataContentType: entity.dataContentType,
+      dataTxId: base64Encode(Uint8List(43)),
+      driveId: entity.driveId,
+      lastModifiedDate: entity.lastModifiedDate,
+      name: entity.name,
+      parentFolderId: entity.parentFolderId,
+      size: entity.size,
+    );
+    final fakeEntityTx =
+        await arweave.prepareEntityDataItem(entityFake, wallet, fileKey);
+    return (fakeEntityTx).getSize();
+  }
+
+  Future<int> estimateDataDataItemSize() async {
+    final fakeTags = <Tag>[];
+    if (isPrivate) {
+      fakeTags.addAll(fakePrivateTags);
+    } else {
+      fakeTags.add(Tag(
+        EntityTag.contentType,
+        entity.dataContentType!,
+      ));
+    }
+    fakeTags.addAll(fakeApplicationTags);
+    return estimateDataItemSize(
+      fileDataSize: size,
+      tags: fakeTags,
+      nonce: [],
+    );
   }
 
   /// Uploads the file, emitting an event whenever the progress is updated.
