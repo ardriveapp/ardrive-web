@@ -255,7 +255,14 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
   }
 
   int _getPageCount() {
-    return ((_rowCount - 1) / widget.rowsPerPage).ceil();
+    final pageCountExact = ((_rowCount - 1) / widget.rowsPerPage);
+    final onBoundary = widget.rowsPerPage % 2 == 0 &&
+        ((_rowCount - 1) % (widget.rowsPerPage / 2)) == 0;
+    if (onBoundary) {
+      return pageCountExact.floor();
+    } else {
+      return pageCountExact.ceil();
+    }
   }
 
   int _getCurrentPage() {
@@ -424,7 +431,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
 
     return Scrollbar(
       child: SingleChildScrollView(
-        key: ObjectKey(_getCurrentPage()),
+        key: GlobalKey(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisAlignment: MainAxisAlignment.start,
