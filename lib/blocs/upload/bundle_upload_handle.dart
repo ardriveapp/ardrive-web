@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/upload/file_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handle.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/services/services.dart';
@@ -5,12 +6,14 @@ import 'package:arweave/arweave.dart';
 import 'package:moor/moor.dart';
 
 class BundleUploadHandle implements UploadHandle {
-  final List<FileEntity> fileEntities;
-  final List<DataItem> dataItems;
+  final List<FileUploadHandle> dataItemUploadHandles;
 
   late Transaction bundleTx;
+  late List<FileEntity> fileEntities;
 
-  BundleUploadHandle(this.dataItems, this.fileEntities, this.size);
+  BundleUploadHandle(this.dataItemUploadHandles, this.size) {
+    fileEntities = List.from(dataItemUploadHandles.map((e) => e.entity));
+  }
 
   @override
   BigInt get cost {
@@ -27,10 +30,14 @@ class BundleUploadHandle implements UploadHandle {
     required PstService pstService,
     required Wallet wallet,
   }) async {
-    final dataBundle = DataBundle(items: dataItems);
+    final bundleBlob =
+        await DataBundle().asBlobFromUploader(items: dataItemUploadHandles);
+    dataItemUploadHandles.clear();
     // Create bundle tx
-    bundleTx = await arweaveService.prepareDataBundleTx(dataBundle, wallet);
-    dataItems.clear();
+    bundleTx = await arweaveService.prepareDataBundleTxFromBlob(
+      bundleBlob,
+      wallet,
+    );
 
     // Add tips to bundle tx
     final bundleTip = await pstService.getPSTFee(bundleTx.reward);

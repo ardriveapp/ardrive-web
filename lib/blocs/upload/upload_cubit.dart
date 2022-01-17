@@ -142,6 +142,11 @@ class UploadCubit extends Cubit<UploadState> {
     try {
       for (final file in files) {
         final uploadHandle = await prepareFileUpload(file);
+        uploadHandle.SetRevisionAction(
+          !conflictingFiles.containsKey(uploadHandle.entity.name)
+              ? RevisionAction.create
+              : RevisionAction.uploadNewVersion,
+        );
         if (await uploadHandle.isWithInBundleLimits()) {
           _dataItemUploadHandles[uploadHandle.entity.id!] = uploadHandle;
         } else {
@@ -288,32 +293,10 @@ class UploadCubit extends Cubit<UploadState> {
         );
         var uploadSize = 0;
         for (var uploadHandle in uploadHandles) {
-          await uploadHandle.prepareAndSign(
-            arweave: _arweave,
-            wallet: profile.wallet,
-          );
-          final fileEntity = uploadHandle.entity;
-          if (uploadHandle.entityTx?.id != null) {
-            fileEntity.txId = uploadHandle.entityTx!.id;
-          }
-
-          await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
-          await _driveDao.insertFileRevision(
-            fileEntity.toRevisionCompanion(
-              performedAction: !conflictingFiles.containsKey(fileEntity.name)
-                  ? RevisionAction.create
-                  : RevisionAction.uploadNewVersion,
-            ),
-          );
-
-          assert(uploadHandle.entity.dataTxId == uploadHandle.dataTx!.id);
           uploadSize += uploadHandle.entity.size!;
         }
         final bundleToUpload = BundleUploadHandle(
-          uploadHandles
-              .map((e) => e.asDataItems().toList())
-              .reduce((value, element) => value += element),
-          uploadHandles.map((e) => e.entity).toList(),
+          uploadHandles,
           uploadSize,
         );
         await bundleToUpload.prepareBundle(
@@ -333,23 +316,8 @@ class UploadCubit extends Cubit<UploadState> {
 
       // Upload V2 Files
       for (final uploadHandle in _fileUploadHandles.values) {
-        await uploadHandle.prepareAndSign(
-          arweave: _arweave,
-          wallet: profile.wallet,
-        );
-        final fileEntity = uploadHandle.entity;
-        if (uploadHandle.entityTx?.id != null) {
-          fileEntity.txId = uploadHandle.entityTx!.id;
-        }
-
-        await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
-        await _driveDao.insertFileRevision(
-          fileEntity.toRevisionCompanion(
-            performedAction: !conflictingFiles.containsKey(fileEntity.name)
-                ? RevisionAction.create
-                : RevisionAction.uploadNewVersion,
-          ),
-        );
+        await uploadHandle.prepareAndSign();
+        await uploadHandle.writeToDatabase();
         await for (final _ in uploadHandle.upload(_arweave)) {
           emit(UploadInProgress(
             files: _fileUploadHandles.values.toList(),
@@ -397,6 +365,9 @@ class UploadCubit extends Cubit<UploadState> {
       isPrivate: private,
       driveKey: driveKey,
       fileKey: fileKey,
+      arweave: _arweave,
+      driveDao: _driveDao,
+      wallet: profile.wallet,
     );
 
     return uploadHandle;

@@ -41,7 +41,9 @@ class ArweaveService {
   }
 
   Future<BigInt> getPrice({required int byteSize}) {
-    return client.api.get('/price/$byteSize').then((res) => BigInt.parse(res.body));
+    return client.api
+        .get('/price/$byteSize')
+        .then((res) => BigInt.parse(res.body));
   }
 
   // Spread requests across time to avoid getting load balanced to the same gateway
@@ -473,6 +475,21 @@ class ArweaveService {
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
     final bundleBlob = await bundle.asBlob();
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    final bundleTx = await client.transactions.prepare(
+      Transaction.withDataBundle(bundleBlob: bundleBlob)
+        ..addApplicationTags(version: packageInfo.version),
+      wallet,
+    );
+
+    await bundleTx.sign(wallet);
+
+    return bundleTx;
+  }
+
+  Future<Transaction> prepareDataBundleTxFromBlob(
+      Uint8List bundleBlob, Wallet wallet) async {
     final packageInfo = await PackageInfo.fromPlatform();
 
     final bundleTx = await client.transactions.prepare(

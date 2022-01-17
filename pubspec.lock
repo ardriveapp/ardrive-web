@@ -47,8 +47,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "6eec04153357a426b43af25677b5239c1c6efd7b"
-      resolved-ref: "6eec04153357a426b43af25677b5239c1c6efd7b"
+      ref: "6fc8f06e0f7012a5c418cb9f833f60365a1ab06b"
+      resolved-ref: "6fc8f06e0f7012a5c418cb9f833f60365a1ab06b"
       url: "https://github.com/ardriveapp/arweave-dart"
     source: git
     version: "0.1.0"

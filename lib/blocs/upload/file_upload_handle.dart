@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:ardrive/blocs/upload/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/bundles/fake_tags.dart';
 import 'package:arweave/arweave.dart';
@@ -13,7 +14,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 final bundleSizeLimit = 503316480;
 
-class FileUploadHandle implements UploadHandle {
+class FileUploadHandle implements UploadHandle, DataItemUploader {
   final FileEntity entity;
   final XFile file;
   final String path;
@@ -43,21 +44,43 @@ class FileUploadHandle implements UploadHandle {
   TransactionBase? entityTx;
   TransactionBase? dataTx;
 
+  ArweaveService arweave;
+  DriveDao driveDao;
+  Wallet wallet;
+
+  String _revisionAction = RevisionAction.create;
+
   FileUploadHandle({
     required this.entity,
     required this.path,
     required this.file,
     required this.isPrivate,
+    required this.arweave,
+    required this.driveDao,
+    required this.wallet,
     this.entityTx,
     this.dataTx,
     this.driveKey,
     this.fileKey,
   });
 
-  Future<void> prepareAndSign({
-    required ArweaveService arweave,
-    required Wallet wallet,
-  }) async {
+  void SetRevisionAction(String action) => _revisionAction = action;
+
+  Future<void> writeToDatabase() async {
+    final fileEntity = entity;
+    if (entityTx?.id != null) {
+      fileEntity.txId = entityTx!.id;
+    }
+
+    await driveDao.writeFileEntity(fileEntity, path);
+    await driveDao.insertFileRevision(
+      fileEntity.toRevisionCompanion(performedAction: _revisionAction),
+    );
+
+    assert(entity.dataTxId == dataTx!.id);
+  }
+
+  Future<void> prepareAndSign() async {
     final packageInfo = await PackageInfo.fromPlatform();
 
     final fileData = await file.readAsBytes();
@@ -152,5 +175,12 @@ class FileUploadHandle implements UploadHandle {
       uploadProgress = upload.progress;
       yield null;
     }
+  }
+
+  @override
+  Future<List<DataItem>> processAndPrepareDataItems() async {
+    await prepareAndSign();
+    await writeToDatabase();
+    return List.from(asDataItems());
   }
 }
