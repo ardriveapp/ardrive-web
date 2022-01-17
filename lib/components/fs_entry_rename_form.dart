@@ -15,7 +15,7 @@ Future<void> promptToRenameFolder(
   required String driveId,
   required String folderId,
 }) =>
-    showCongestionWarning(
+    showCongestionDependentModalDialog(
       context,
       () => showDialog(
         context: context,
@@ -38,7 +38,7 @@ Future<void> promptToRenameFile(
   required String driveId,
   required String fileId,
 }) =>
-    showCongestionWarning(
+    showCongestionDependentModalDialog(
         context,
         () => showDialog(
               context: context,

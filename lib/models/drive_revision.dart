@@ -43,6 +43,7 @@ extension DriveEntityExtensions on DriveEntity {
         metadataTxId: txId,
         dateCreated: Value(createdAt),
         action: performedAction,
+        bundledIn: Value(bundledIn),
       );
 
   /// Returns the action performed on the Drive that lead to the new revision.
