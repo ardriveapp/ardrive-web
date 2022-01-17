@@ -141,9 +141,22 @@ class FileUploadHandle implements UploadHandle, DataItemUploader {
       parentFolderId: entity.parentFolderId,
       size: entity.size,
     );
-    final fakeEntityTx =
-        await arweave.prepareEntityDataItem(entityFake, wallet, fileKey);
-    return (fakeEntityTx).getSize();
+    final metadataSize =
+        (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
+    final fakeTags = <Tag>[];
+    if (isPrivate) {
+      fakeTags.addAll(fakePrivateTags);
+    } else {
+      fakeTags.add(Tag(
+        EntityTag.contentType,
+        entity.dataContentType!,
+      ));
+    }
+    return estimateDataItemSize(
+      fileDataSize: metadataSize,
+      tags: fakeTags,
+      nonce: [],
+    );
   }
 
   Future<int> estimateDataDataItemSize() async {
