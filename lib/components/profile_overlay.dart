@@ -58,8 +58,12 @@ class ProfileOverlay extends StatelessWidget {
                           trailing: IconButton(
                             icon: const Icon(Icons.login),
                             tooltip: 'Login',
-                            onPressed: () =>
-                                launch(Uri(path: '/sign-in').toString()),
+                            onPressed: () => launch(
+                              Uri(
+                                path: '/sign-in',
+                              ).toString(),
+                              webOnlyWindowName: '_self',
+                            ),
                           ),
                         ),
                 ),
