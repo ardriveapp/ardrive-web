@@ -1,11 +1,10 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/misc/resources.dart';
-import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/link.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../components.dart';
 import 'drive_list_tile.dart';
@@ -185,14 +184,10 @@ class AppDrawer extends StatelessWidget {
                           PopupMenuDivider(),
                           PopupMenuItem(
                             enabled: state.hasWritePermissions,
-                            value: (context) => showCongestionWarning(
+                            value: (context) => promptToUploadFile(
                               context,
-                              () => promptToUploadFile(
-                                context,
-                                driveId: state.currentDrive.id,
-                                folderId: state.currentFolder.folder!.id,
-                                allowSelectMultiple: true,
-                              ),
+                              driveId: state.currentDrive.id,
+                              folderId: state.currentFolder.folder!.id,
                             ),
                             child: ListTile(
                               enabled: state.hasWritePermissions,
@@ -264,20 +259,16 @@ class AppDrawer extends StatelessWidget {
                                 .copyWith(color: Colors.grey),
                           ),
                         ),
-                        Link(
-                          uri: Uri.parse(R.arHelpLink),
-                          target: LinkTarget.blank,
-                          builder: (context, onPressed) => TextButton(
-                            onPressed: onPressed,
-                            child: Text(
-                              'How do I get AR?',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                decoration: TextDecoration.underline,
-                              ),
+                        TextButton(
+                          onPressed: () => launch(R.arHelpLink),
+                          child: Text(
+                            'How do I get AR?',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              decoration: TextDecoration.underline,
                             ),
                           ),
-                        )
+                        ),
                       ],
                     ),
             ),

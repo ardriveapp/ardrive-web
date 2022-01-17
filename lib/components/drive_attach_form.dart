@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -16,31 +17,34 @@ Future<void> attachDrive(
         {required BuildContext context,
         String? initialDriveId,
         String? driveName}) =>
-    showDialog(
-      context: context,
-      builder: (BuildContext context) => BlocProvider<DriveAttachCubit>(
-        create: (context) => DriveAttachCubit(
-          initialDriveId: initialDriveId,
-          driveName: driveName,
-          arweave: context.read<ArweaveService>(),
-          driveDao: context.read<DriveDao>(),
-          syncBloc: context.read<SyncCubit>(),
-          drivesBloc: context.read<DrivesCubit>(),
-        ),
-        child: BlocListener<DriveAttachCubit, DriveAttachState>(
-          listener: (context, state) {
-            if (state is DriveAttachFailure) {
-              // Close the progress dialog if the drive attachment fails.
-              Navigator.pop(context);
-            } else if (state is DriveAttachSuccess) {
-              Navigator.pop(context);
-            }
-          },
-          child: driveName != null
-              ? ProgressDialog(
-                  title: 'ATTACHING DRIVE...',
-                )
-              : DriveAttachForm(),
+    showModalDialog(
+      context,
+      () => showDialog(
+        context: context,
+        builder: (BuildContext context) => BlocProvider<DriveAttachCubit>(
+          create: (context) => DriveAttachCubit(
+            initialDriveId: initialDriveId,
+            driveName: driveName,
+            arweave: context.read<ArweaveService>(),
+            driveDao: context.read<DriveDao>(),
+            syncBloc: context.read<SyncCubit>(),
+            drivesBloc: context.read<DrivesCubit>(),
+          ),
+          child: BlocListener<DriveAttachCubit, DriveAttachState>(
+            listener: (context, state) {
+              if (state is DriveAttachFailure) {
+                // Close the progress dialog if the drive attachment fails.
+                Navigator.pop(context);
+              } else if (state is DriveAttachSuccess) {
+                Navigator.pop(context);
+              }
+            },
+            child: driveName != null
+                ? ProgressDialog(
+                    title: 'ATTACHING DRIVE...',
+                  )
+                : DriveAttachForm(),
+          ),
         ),
       ),
     );
