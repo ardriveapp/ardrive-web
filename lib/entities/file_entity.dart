@@ -75,6 +75,7 @@ class FileEntity extends Entity {
         ..lastModifiedDate ??= commitTime
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
+        ..bundledIn = transaction.bundledIn?.id
         ..createdAt = commitTime;
     } catch (_) {
       throw EntityTransactionParseException();
