@@ -230,7 +230,6 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
           haveProgressIndicator = true;
         }
       }
-      //row ??= _getBlankRowFor(index);
       if (row != null) {
         result.add(row);
       }
