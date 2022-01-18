@@ -80,23 +80,14 @@ class FileUploadHandle implements UploadHandle, DataItemUploader {
     assert(entity.dataTxId == dataTx!.id);
   }
 
-  Future<void> prepareAndSign() async {
+  Future<void> prepareAndSignV2() async {
     final packageInfo = await PackageInfo.fromPlatform();
 
     final fileData = await file.readAsBytes();
-    if (await isWithInBundleLimits()) {
-      dataTx = isPrivate
-          ? await createEncryptedDataItem(fileData, fileKey!)
-          : DataItem.withBlobData(data: fileData);
-      dataTx!.setOwner(await wallet.getOwner());
-    } else {
-      dataTx = await arweave.client.transactions.prepare(
-        isPrivate
-            ? await createEncryptedTransaction(fileData, fileKey!)
-            : Transaction.withBlobData(data: fileData),
-        wallet,
-      );
-    }
+    dataTx = isPrivate
+        ? await createEncryptedDataItem(fileData, fileKey!)
+        : DataItem.withBlobData(data: fileData);
+    dataTx!.setOwner(await wallet.getOwner());
 
     dataTx!.addApplicationTags(version: packageInfo.version);
 
@@ -111,20 +102,37 @@ class FileUploadHandle implements UploadHandle, DataItemUploader {
     await dataTx!.sign(wallet);
 
     entity.dataTxId = dataTx!.id;
-    if (await isWithInBundleLimits()) {
-      entityTx = await arweave.prepareEntityDataItem(entity, wallet, fileKey);
-      final entityDataItem = (entityTx as DataItem?)!;
-      final dataDataItem = (dataTx as DataItem?)!;
-
-      await entityDataItem.sign(wallet);
-      await dataDataItem.sign(wallet);
-    } else {
-      entityTx = await arweave.prepareEntityTx(entity, wallet, fileKey);
-    }
+    entityTx = await arweave.prepareEntityTx(entity, wallet, fileKey);
   }
 
-  Iterable<DataItem> asDataItems() {
-    return [entityTx as DataItem, dataTx as DataItem];
+  Future<List<DataItem>> prepareAndSignDataItems() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    final fileData = await file.readAsBytes();
+    dataTx = isPrivate
+        ? await createEncryptedDataItem(fileData, fileKey!)
+        : DataItem.withBlobData(data: fileData);
+    final dataDataItem = dataTx as DataItem;
+    dataDataItem.setOwner(await wallet.getOwner());
+
+    dataDataItem.addApplicationTags(version: packageInfo.version);
+
+    // Don't include the file's Content-Type tag if it is meant to be private.
+    if (!isPrivate) {
+      dataDataItem.addTag(
+        EntityTag.contentType,
+        entity.dataContentType!,
+      );
+    }
+
+    await dataDataItem.sign(wallet);
+
+    entity.dataTxId = dataDataItem.id;
+    entityTx = await arweave.prepareEntityDataItem(entity, wallet, fileKey);
+    final entityDataItem = entityTx as DataItem;
+
+    await entityDataItem.sign(wallet);
+    await dataDataItem.sign(wallet);
+    return [entityDataItem, dataDataItem];
   }
 
   Future<int> _estimateEntityDataItemSize() async {
@@ -158,7 +166,7 @@ class FileUploadHandle implements UploadHandle, DataItemUploader {
     fakeTags.addAll(fakeApplicationTags);
     return estimateDataItemSize(
       fileDataSize: metadataSize,
-      tags: fakeTags,
+      tags: [],
       nonce: [],
     );
   }
@@ -176,7 +184,7 @@ class FileUploadHandle implements UploadHandle, DataItemUploader {
     fakeTags.addAll(fakeApplicationTags);
     return estimateDataItemSize(
       fileDataSize: size,
-      tags: fakeTags,
+      tags: [],
       nonce: [],
     );
   }
@@ -201,8 +209,11 @@ class FileUploadHandle implements UploadHandle, DataItemUploader {
 
   @override
   Future<List<DataItem>> processAndPrepareDataItems() async {
-    await prepareAndSign();
+    final dataItems = await prepareAndSignDataItems();
     await writeToDatabase();
-    return List.from(asDataItems());
+    // dataItems.forEach((element) async {
+    //   assert(await element.verify(), true);
+    // });
+    return dataItems;
   }
 }

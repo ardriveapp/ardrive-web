@@ -319,7 +319,7 @@ class UploadCubit extends Cubit<UploadState> {
 
       // Upload V2 Files
       for (final uploadHandle in _fileUploadHandles.values) {
-        await uploadHandle.prepareAndSign();
+        await uploadHandle.prepareAndSignV2();
         await uploadHandle.writeToDatabase();
         await for (final _ in uploadHandle.upload(_arweave)) {
           emit(UploadInProgress(
