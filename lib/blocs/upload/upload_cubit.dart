@@ -243,8 +243,11 @@ class UploadCubit extends Cubit<UploadState> {
     return totalCost;
   }
 
-  Future<BigInt> estimateBundleCost(List<FileUploadHandle> files) {
-    final fileSizes = files.map((e) => e.size);
+  Future<BigInt> estimateBundleCost(List<FileUploadHandle> files) async {
+    final fileSizes = <int>[];
+    for (var file in files) {
+      fileSizes.add(await file.estimateDataItemSizes());
+    }
     var size = 0;
     // Add data item binary size
     size += fileSizes.reduce((value, element) => value + element);

@@ -127,10 +127,7 @@ class FileUploadHandle implements UploadHandle, DataItemUploader {
     return [entityTx as DataItem, dataTx as DataItem];
   }
 
-  Future<int> estimateEntityDataItemSize({
-    required ArweaveService arweave,
-    required Wallet wallet,
-  }) async {
+  Future<int> _estimateEntityDataItemSize() async {
     final entityFake = FileEntity(
       id: entity.id,
       dataContentType: entity.dataContentType,
@@ -143,7 +140,13 @@ class FileUploadHandle implements UploadHandle, DataItemUploader {
     );
     final metadataSize =
         (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
-    final fakeTags = <Tag>[];
+    final fakeTags = <Tag>[
+      Tag(EntityTag.arFs, '0.11'),
+      Tag(EntityTag.entityType, EntityType.file),
+      Tag(EntityTag.driveId, entityFake.driveId!),
+      Tag(EntityTag.parentFolderId, entityFake.parentFolderId!),
+      Tag(EntityTag.fileId, entityFake.id!),
+    ];
     if (isPrivate) {
       fakeTags.addAll(fakePrivateTags);
     } else {
@@ -152,6 +155,7 @@ class FileUploadHandle implements UploadHandle, DataItemUploader {
         entity.dataContentType!,
       ));
     }
+    fakeTags.addAll(fakeApplicationTags);
     return estimateDataItemSize(
       fileDataSize: metadataSize,
       tags: fakeTags,
@@ -159,7 +163,7 @@ class FileUploadHandle implements UploadHandle, DataItemUploader {
     );
   }
 
-  Future<int> estimateDataDataItemSize() async {
+  Future<int> _estimateDataDataItemSize() async {
     final fakeTags = <Tag>[];
     if (isPrivate) {
       fakeTags.addAll(fakePrivateTags);
@@ -175,6 +179,11 @@ class FileUploadHandle implements UploadHandle, DataItemUploader {
       tags: fakeTags,
       nonce: [],
     );
+  }
+
+  Future<int> estimateDataItemSizes() async {
+    return await _estimateDataDataItemSize() +
+        await _estimateEntityDataItemSize();
   }
 
   /// Uploads the file, emitting an event whenever the progress is updated.
