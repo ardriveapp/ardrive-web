@@ -14,7 +14,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 final bundleSizeLimit = 503316480;
 
-class FileUploadHandle implements UploadHandle, DataItemUploader {
+class FileUploadHandle implements UploadHandle, DataItemHandle {
   final FileEntity entity;
   final XFile file;
   final String path;
@@ -66,7 +66,7 @@ class FileUploadHandle implements UploadHandle, DataItemUploader {
 
   void SetRevisionAction(String action) => _revisionAction = action;
 
-  Future<void> writeToDatabase() async {
+  Future<void> writeEntityToDatabase() async {
     final fileEntity = entity;
     if (entityTx?.id != null) {
       fileEntity.txId = entityTx!.id;
@@ -208,12 +208,9 @@ class FileUploadHandle implements UploadHandle, DataItemUploader {
   }
 
   @override
-  Future<List<DataItem>> processAndPrepareDataItems() async {
+  Future<List<DataItem>> createDataItemsFromFileHandle() async {
     final dataItems = await prepareAndSignDataItems();
-    await writeToDatabase();
-    // dataItems.forEach((element) async {
-    //   assert(await element.verify(), true);
-    // });
+    await writeEntityToDatabase();
     return dataItems;
   }
 }
