@@ -60,7 +60,7 @@ class ProfileOverlay extends StatelessWidget {
                             tooltip: 'Login',
                             onPressed: () => launch(
                               Uri(
-                                path: '/sign-in',
+                                path: '/',
                               ).toString(),
                               webOnlyWindowName: '_self',
                             ),
