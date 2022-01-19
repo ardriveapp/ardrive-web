@@ -85,23 +85,23 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               : null;
           final profile = _profileCubit.state;
 
-          var currentFolder;
+          FolderWithContents currentFolder;
 
-          var rowsPerPage;
-          var availableRowsPerPage;
+          var rowsPerPage = _defaultRowsPerPage;
+          var availableRowsPerPage = _defaultAvailableRowsPerPage;
 
           if (folderContents.folder != null) {
             currentFolder = folderContents;
-          }
-          final itemCount =
-              currentFolder.files.length + currentFolder.subfolders.length;
+            final itemCount =
+                currentFolder.files.length + currentFolder.subfolders.length;
 
-          if (itemCount < _defaultRowsPerPage) {
-            rowsPerPage = itemCount;
-            availableRowsPerPage = <int>[itemCount];
-          } else {
-            rowsPerPage = _defaultRowsPerPage;
-            availableRowsPerPage = _defaultAvailableRowsPerPage;
+            if (itemCount < _defaultRowsPerPage) {
+              rowsPerPage = itemCount;
+              availableRowsPerPage = <int>[itemCount];
+            } else {
+              rowsPerPage = _defaultRowsPerPage;
+              availableRowsPerPage = _defaultAvailableRowsPerPage;
+            }
           }
 
           if (state != null) {
@@ -135,15 +135,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   void setRowsPerPage(int rowsPerPage) {
-    final state = this.state is DriveDetailLoadSuccess
-        ? this.state as DriveDetailLoadSuccess
-        : null;
-    if (state != null) {
-      emit(
-        state.copyWith(
-          rowsPerPage: rowsPerPage,
-        ),
-      );
+    switch (state.runtimeType) {
+      case DriveDetailLoadSuccess:
+        emit(
+          (state as DriveDetailLoadSuccess).copyWith(
+            rowsPerPage: rowsPerPage,
+          ),
+        );
     }
   }
 

@@ -11,7 +11,7 @@ class DriveDetailDataTableSource extends DataTableSource {
   DataRow? getRow(int index) {
     assert(index >= 0);
 
-    if (index >= (folders.length + files.length)) {
+    if (index >= rowCount) {
       return null;
     }
 
@@ -25,9 +25,8 @@ class DriveDetailDataTableSource extends DataTableSource {
         selected: folder.selected,
       );
     } else {
-      final file = files[folders.length > files.length
-          ? folders.length - index
-          : index - folders.length];
+      final fileIndex = index - folders.length;
+      final file = files[fileIndex];
       return _buildFileRow(
         context: context,
         file: file.file,
