@@ -21,7 +21,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final AppConfig _config;
 
   StreamSubscription? _folderSubscription;
-  final _defaultRowsPerPage = 25;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
 
   DriveDetailCubit({
@@ -87,21 +86,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
           FolderWithContents currentFolder;
 
-          var rowsPerPage = _defaultRowsPerPage;
           var availableRowsPerPage = _defaultAvailableRowsPerPage;
 
           if (folderContents.folder != null) {
             currentFolder = folderContents;
-            final itemCount =
-                currentFolder.files.length + currentFolder.subfolders.length;
-
-            if (itemCount < _defaultRowsPerPage) {
-              rowsPerPage = itemCount;
-              availableRowsPerPage = <int>[itemCount];
-            } else {
-              rowsPerPage = _defaultRowsPerPage;
-              availableRowsPerPage = _defaultAvailableRowsPerPage;
-            }
+            availableRowsPerPage = calculateRowsPerPage(
+                currentFolder.files.length + currentFolder.subfolders.length);
           }
 
           if (state != null) {
@@ -113,7 +103,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 currentFolder: folderContents,
                 contentOrderBy: contentOrderBy,
                 contentOrderingMode: contentOrderingMode,
-                rowsPerPage: rowsPerPage,
+                rowsPerPage: availableRowsPerPage.first,
                 availableRowsPerPage: availableRowsPerPage,
               ),
             );
@@ -125,13 +115,23 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               currentFolder: folderContents,
               contentOrderBy: contentOrderBy,
               contentOrderingMode: contentOrderingMode,
-              rowsPerPage: rowsPerPage,
+              rowsPerPage: availableRowsPerPage.first,
               availableRowsPerPage: availableRowsPerPage,
             ));
           }
         }
       },
     ).listen((_) {});
+  }
+
+  List<int> calculateRowsPerPage(int totalEntries) {
+    List<int> availableRowsPerPage;
+    if (totalEntries < _defaultAvailableRowsPerPage.first) {
+      availableRowsPerPage = <int>[totalEntries];
+    } else {
+      availableRowsPerPage = _defaultAvailableRowsPerPage;
+    }
+    return availableRowsPerPage;
   }
 
   void setRowsPerPage(int rowsPerPage) {
