@@ -30,7 +30,7 @@ class BundleUploadHandle implements UploadHandle {
     required PstService pstService,
     required Wallet wallet,
   }) async {
-    final bundle = await DataBundle.fromHandles(items: dataItemUploadHandles);
+    final bundle = await DataBundle.fromHandles(handles: dataItemUploadHandles);
     dataItemUploadHandles.clear();
     // Create bundle tx
     bundleTx = await arweaveService.prepareDataBundleTxFromBlob(
