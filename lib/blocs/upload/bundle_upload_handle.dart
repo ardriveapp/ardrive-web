@@ -31,7 +31,6 @@ class BundleUploadHandle implements UploadHandle {
     required Wallet wallet,
   }) async {
     final bundle = await DataBundle.fromHandles(handles: dataItemUploadHandles);
-    dataItemUploadHandles.clear();
     // Create bundle tx
     bundleTx = await arweaveService.prepareDataBundleTxFromBlob(
       bundle.blob,
@@ -45,6 +44,10 @@ class BundleUploadHandle implements UploadHandle {
       ..setTarget(await pstService.getWeightedPstHolder())
       ..setQuantity(bundleTip);
     await bundleTx.sign(wallet);
+
+    dataItemUploadHandles.forEach((file) async {
+      await file.updateBundledInTxId(bundledInTxId: bundleTx.id);
+    });
   }
 
   /// Uploads the bundle, emitting an event whenever the progress is updated.

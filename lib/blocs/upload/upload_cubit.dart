@@ -142,7 +142,7 @@ class UploadCubit extends Cubit<UploadState> {
     try {
       for (final file in files) {
         final uploadHandle = await prepareFileUpload(file);
-        uploadHandle.SetRevisionAction(
+        uploadHandle.setRevisionAction(
           !conflictingFiles.containsKey(uploadHandle.entity.name)
               ? RevisionAction.create
               : RevisionAction.uploadNewVersion,

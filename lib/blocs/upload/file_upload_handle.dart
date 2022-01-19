@@ -64,20 +64,32 @@ class FileUploadHandle implements UploadHandle, DataItemHandle {
     this.fileKey,
   });
 
-  void SetRevisionAction(String action) => _revisionAction = action;
+  void setRevisionAction(String action) => _revisionAction = action;
 
   Future<void> writeEntityToDatabase() async {
-    final fileEntity = entity;
     if (entityTx?.id != null) {
-      fileEntity.txId = entityTx!.id;
+      entity.txId = entityTx!.id;
     }
 
-    await driveDao.writeFileEntity(fileEntity, path);
-    await driveDao.insertFileRevision(
-      fileEntity.toRevisionCompanion(performedAction: _revisionAction),
-    );
+    await driveDao.writeFileEntity(entity, path);
+    //  For V2 insert revision here, otherwise for bundles
+    //  insert revision only after updating bundleTxId
+    if (!await isWithInBundleLimits()) {
+      await driveDao.insertFileRevision(
+        entity.toRevisionCompanion(performedAction: _revisionAction),
+      );
+    }
 
     assert(entity.dataTxId == dataTx!.id);
+  }
+
+  Future<void> updateBundledInTxId({required String bundledInTxId}) async {
+    entity.bundledIn = bundledInTxId;
+    await driveDao.writeFileEntity(entity, path);
+
+    await driveDao.insertFileRevision(
+      entity.toRevisionCompanion(performedAction: _revisionAction),
+    );
   }
 
   Future<void> prepareAndSignV2() async {
@@ -205,6 +217,8 @@ class FileUploadHandle implements UploadHandle, DataItemHandle {
   Future<List<DataItem>> createDataItemsFromFileHandle() async {
     final dataItems = await prepareAndSignDataItems();
     await writeEntityToDatabase();
+    // Remove file data references
+    dataTx = null;
     return dataItems;
   }
 }
