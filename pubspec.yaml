@@ -16,7 +16,7 @@ publish_to: 'none'
 version: 1.4.2
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: '>=2.13.0 <3.0.0'
 
 dependencies:
   flutter:
@@ -27,7 +27,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart
-      ref: 27fea131c7e5c95c7b4e0e632d9618cb6ac9d856
+      ref: b7cb60f8d2e39f17b478a938eacb2113d0d6ce15
   cryptography: ^2.0.1
   flutter_bloc: ^8.0.1
   flutter_portal: ^0.4.0
@@ -42,19 +42,18 @@ dependencies:
   mime: ^1.0.0
   moor: ^4.4.1
   path_provider: ^2.0.2
-  pedantic: ^1.11.1
-  reactive_forms: ^10.4.1
+  reactive_forms: ^11.0.0
   rxdart: ^0.27.1
   timeago: ^3.1.0
   url_launcher: ^6.0.6
   uuid: ^3.0.4
   http_client: ^1.5.1
-  flutter_dropzone: ^2.1.0
+  flutter_dropzone: ^3.0.5
   responsive_builder: ^0.4.1
   package_info_plus: ^1.0.3
   js: ^0.6.3
   collection: ^1.15.0-nullsafety.4
-  csv: 5.0.0
+  csv: ^5.0.1
 
 dev_dependencies:
   flutter_test:
@@ -66,10 +65,8 @@ dev_dependencies:
   build_runner: ^2.0.4
   moor_generator: ^4.4.1
   mocktail: ^0.2.0
-  json_serializable: ^4.1.0
-
-dependency_overrides:
-  meta: 1.7.0
+  json_serializable: ^6.1.4
+  lints: ^1.0.1
 
 flutter:
   uses-material-design: true
