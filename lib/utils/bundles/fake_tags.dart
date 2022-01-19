@@ -1,4 +1,4 @@
-import 'package:ardrive/entities/constants.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:arweave/arweave.dart';
 
 final fakePrivateTags = [
@@ -16,3 +16,11 @@ final fakeApplicationTags = [
   Tag(EntityTag.unixTime,
       (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString())
 ];
+
+List<Tag> createFakeEntityTags(FileEntity entity) => <Tag>[
+      Tag(EntityTag.arFs, '0.11'),
+      Tag(EntityTag.entityType, EntityType.file),
+      Tag(EntityTag.driveId, entity.driveId!),
+      Tag(EntityTag.parentFolderId, entity.parentFolderId!),
+      Tag(EntityTag.fileId, entity.id!),
+    ];

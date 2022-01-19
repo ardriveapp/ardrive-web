@@ -148,13 +148,7 @@ class FileUploadHandle implements UploadHandle, DataItemHandle {
     );
     final metadataSize =
         (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
-    final fakeTags = <Tag>[
-      Tag(EntityTag.arFs, '0.11'),
-      Tag(EntityTag.entityType, EntityType.file),
-      Tag(EntityTag.driveId, entityFake.driveId!),
-      Tag(EntityTag.parentFolderId, entityFake.parentFolderId!),
-      Tag(EntityTag.fileId, entityFake.id!),
-    ];
+    final fakeTags = createFakeEntityTags(entity);
     if (isPrivate) {
       fakeTags.addAll(fakePrivateTags);
     } else {
@@ -166,7 +160,7 @@ class FileUploadHandle implements UploadHandle, DataItemHandle {
     fakeTags.addAll(fakeApplicationTags);
     return estimateDataItemSize(
       fileDataSize: metadataSize,
-      tags: [],
+      tags: fakeTags,
       nonce: [],
     );
   }
@@ -184,7 +178,7 @@ class FileUploadHandle implements UploadHandle, DataItemHandle {
     fakeTags.addAll(fakeApplicationTags);
     return estimateDataItemSize(
       fileDataSize: size,
-      tags: [],
+      tags: fakeTags,
       nonce: [],
     );
   }
