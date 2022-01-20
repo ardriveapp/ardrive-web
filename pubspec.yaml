@@ -49,7 +49,7 @@ dependencies:
   url_launcher: ^6.0.6
   uuid: ^3.0.4
   http_client: ^1.5.1
-  flutter_dropzone: ^2.1.0
+  flutter_dropzone: 3.0.4
   responsive_builder: ^0.4.1
   package_info_plus: ^1.0.3
   js: ^0.6.3
