@@ -3,7 +3,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/link.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileOverlay extends StatelessWidget {
   @override
@@ -55,12 +55,14 @@ class ProfileOverlay extends StatelessWidget {
                           title: Text('You\'re not logged in'),
                           subtitle: Text(
                               'Log in to experience all of ArDrive\'s features!'),
-                          trailing: Link(
-                            uri: Uri(path: '/sign-in'),
-                            builder: (context, onPressed) => IconButton(
-                              icon: const Icon(Icons.login),
-                              tooltip: 'Login',
-                              onPressed: onPressed,
+                          trailing: IconButton(
+                            icon: const Icon(Icons.login),
+                            tooltip: 'Login',
+                            onPressed: () => launch(
+                              Uri(
+                                path: '/',
+                              ).toString(),
+                              webOnlyWindowName: '_self',
                             ),
                           ),
                         ),
