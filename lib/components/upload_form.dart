@@ -150,8 +150,15 @@ class UploadForm extends StatelessWidget {
               ],
             );
           } else if (state is UploadReady) {
+            final numberOfFilesInBundles = state.bundles.isNotEmpty
+                ? state.bundles
+                    .map((e) => e.numberOfFiles)
+                    .reduce((value, element) => value += element)
+                : 0;
+            final numberOfV2Files = state.files.length;
             return AppDialog(
-              title: 'Upload ${state.files.length} file(s)',
+              title:
+                  'Upload ${numberOfFilesInBundles + numberOfV2Files} file(s)',
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -170,6 +177,15 @@ class UploadForm extends StatelessWidget {
                                 title: Text(file.entity.name!),
                                 subtitle: Text(filesize(file.size)),
                               ),
+                            },
+                            for (final bundle in state.bundles) ...{
+                              for (final fileEntity in bundle.fileEntities) ...{
+                                ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(fileEntity.name!),
+                                  subtitle: Text(filesize(fileEntity.size)),
+                                ),
+                              },
                             },
                           ],
                         ),

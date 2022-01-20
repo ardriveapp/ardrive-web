@@ -45,11 +45,11 @@ class UploadCubit extends Cubit<UploadState> {
   final Map<String, String> conflictingFiles = {};
 
   /// A map of [FileUploadHandle]s keyed by their respective file's id.
-  final Map<String, FileUploadHandle> _fileUploadHandles = {};
+  final Map<String, FileUploadHandle> _v2FileUploadHandles = {};
   final Map<String, FileUploadHandle> _dataItemUploadHandles = {};
 
   /// A list of all multi file upload handles containing bundles of multiple files
-  final List<BundleUploadHandle> _multiFileUploadHandles = [];
+  final List<BundleUploadHandle> _bundleUploadHandles = [];
 
   /// The [Transaction] that pays `pstFee` to a random PST holder. (Only for v2 transaction uploads)
   Transaction? v2FilesFeeTx;
@@ -150,19 +150,22 @@ class UploadCubit extends Cubit<UploadState> {
         if (await uploadHandle.isWithInBundleLimits()) {
           _dataItemUploadHandles[uploadHandle.entity.id!] = uploadHandle;
         } else {
-          _fileUploadHandles[uploadHandle.entity.id!] = uploadHandle;
+          _v2FileUploadHandles[uploadHandle.entity.id!] = uploadHandle;
         }
       }
     } catch (err) {
       addError(err);
       return;
     }
-    final dataItemsCost = _dataItemUploadHandles.isNotEmpty
-        ? await estimateBundleCosts(_dataItemUploadHandles.values.toList())
+
+    await prepareBundleHandles();
+
+    final dataItemsCost = _bundleUploadHandles.isNotEmpty
+        ? await estimateBundleCosts(_bundleUploadHandles)
         : BigInt.zero;
-    final v2FilesUploadCost = _fileUploadHandles.isNotEmpty
-        ? _fileUploadHandles.values
-            .map((e) => e.cost)
+    final v2FilesUploadCost = _v2FileUploadHandles.isNotEmpty
+        ? _v2FileUploadHandles.values
+            .map((e) => e.estimateV2UploadCost())
             .reduce((value, element) => value += element)
         : BigInt.zero;
 
@@ -171,11 +174,12 @@ class UploadCubit extends Cubit<UploadState> {
     v2FilesFeeTx = await prepareAndSignV2FilesTipTx(
         wallet: profile.wallet, v2FilesUploadCost: v2FilesUploadCost);
 
-    final v2FilesPstFee = _fileUploadHandles.isNotEmpty && v2FilesFeeTx != null
-        ? v2FilesFeeTx!.reward > minimumPstTip
-            ? v2FilesFeeTx!.reward
-            : minimumPstTip
-        : BigInt.zero;
+    final v2FilesPstFee =
+        _v2FileUploadHandles.isNotEmpty && v2FilesFeeTx != null
+            ? v2FilesFeeTx!.reward > minimumPstTip
+                ? v2FilesFeeTx!.reward
+                : minimumPstTip
+            : BigInt.zero;
 
     final totalCost =
         v2FilesUploadCost + dataItemsCost + v2FilesPstFee + bundlePstFee;
@@ -196,9 +200,8 @@ class UploadCubit extends Cubit<UploadState> {
         totalCost: totalCost,
         uploadIsPublic: _targetDrive.isPublic,
         sufficientArBalance: profile.walletBalance >= totalCost,
-        files: _fileUploadHandles.values.toList() +
-            _dataItemUploadHandles.values.toList(),
-        bundles: _multiFileUploadHandles,
+        files: _v2FileUploadHandles.values.toList(),
+        bundles: _bundleUploadHandles,
       ),
     );
   }
@@ -227,17 +230,12 @@ class UploadCubit extends Cubit<UploadState> {
     return feeTx;
   }
 
-  Future<BigInt> estimateBundleCosts(List<FileUploadHandle> files) async {
-    // https://github.com/joshbenaron/arweave-standards/blob/ans104/ans/ANS-104.md
-    // NOTE: Using maxFilesPerBundle since FileUploadHandles have 2 data items
-    final bundleList = await NextFitBundlePacker<FileUploadHandle>(
-      maxBundleSize: bundleSizeLimit,
-      maxDataItemCount: maxFilesPerBundle,
-    ).packItems(files);
-
+  Future<BigInt> estimateBundleCosts(
+    List<BundleUploadHandle> bundleUploadHandles,
+  ) async {
     var totalCost = BigInt.zero;
-    for (var bundle in bundleList) {
-      totalCost += await estimateBundleCost(bundle);
+    for (var bundle in bundleUploadHandles) {
+      totalCost += await estimateBundleCost(bundle.dataItemUploadHandles);
     }
 
     return totalCost;
@@ -256,7 +254,34 @@ class UploadCubit extends Cubit<UploadState> {
     // Add bytes that denote number of data items
     size += 32;
 
-    return _arweave.getPrice(byteSize: size);
+    return _arweave.calculateARPriceForByteSize(byteSize: size);
+  }
+
+  Future<void> prepareBundleHandles() async {
+    // NOTE: Using maxFilesPerBundle since FileUploadHandles have 2 data items
+    final bundleItems = await NextFitBundlePacker<FileUploadHandle>(
+      maxBundleSize: bundleSizeLimit,
+      maxDataItemCount: maxFilesPerBundle,
+    ).packItems(_dataItemUploadHandles.values.toList());
+    for (var uploadHandles in bundleItems) {
+      emit(
+        UploadBundlingInProgress(
+          isArConnect: await _profileCubit.isCurrentProfileArConnect(),
+        ),
+      );
+      var uploadSize = 0;
+      for (var uploadHandle in uploadHandles) {
+        uploadSize += uploadHandle.entity.size!;
+      }
+
+      final bundleToUpload = BundleUploadHandle(
+        List.from(uploadHandles),
+        uploadSize,
+      );
+      _bundleUploadHandles.add(bundleToUpload);
+      uploadHandles.clear();
+    }
+    _dataItemUploadHandles.clear();
   }
 
   Future<void> startUpload() async {
@@ -275,56 +300,42 @@ class UploadCubit extends Cubit<UploadState> {
       );
     }
 
-    if (v2FilesFeeTx != null && _fileUploadHandles.isNotEmpty) {
+    if (v2FilesFeeTx != null && _v2FileUploadHandles.isNotEmpty) {
       await _arweave.postTx(v2FilesFeeTx!);
     }
+
+    // Used since each prepareBundle executes database operations
     await _driveDao.transaction(() async {
-      // NOTE: Using maxFilesPerBundle since FileUploadHandles have 2 data items
-      final bundleItems = await NextFitBundlePacker<FileUploadHandle>(
-        maxBundleSize: bundleSizeLimit,
-        maxDataItemCount: maxFilesPerBundle,
-      ).packItems(_dataItemUploadHandles.values.toList());
-
-      // Start Upload
-
-      // Create bundle plans
-      for (var uploadHandles in bundleItems) {
+      // Upload Bundles
+      for (var bundleHandle in _bundleUploadHandles) {
         emit(
           UploadBundlingInProgress(
             isArConnect: await _profileCubit.isCurrentProfileArConnect(),
           ),
         );
-        var uploadSize = 0;
-        for (var uploadHandle in uploadHandles) {
-          uploadSize += uploadHandle.entity.size!;
-        }
-        final bundleToUpload = BundleUploadHandle(
-          uploadHandles,
-          uploadSize,
-        );
-        await bundleToUpload.prepareBundle(
+
+        await bundleHandle.prepareBundle(
           arweaveService: _arweave,
           pstService: _pst,
           wallet: profile.wallet,
         );
-        await for (final _ in bundleToUpload.upload(_arweave)) {
+        await for (final _ in bundleHandle.upload(_arweave)) {
           emit(UploadInProgress(
-            files: _fileUploadHandles.values.toList(),
-            bundles: [bundleToUpload],
+            files: _v2FileUploadHandles.values.toList(),
+            bundles: _bundleUploadHandles,
           ));
         }
-        bundleToUpload.dispose();
-        uploadHandles.clear();
+        bundleHandle.dispose();
       }
 
       // Upload V2 Files
-      for (final uploadHandle in _fileUploadHandles.values) {
+      for (final uploadHandle in _v2FileUploadHandles.values) {
         await uploadHandle.prepareAndSignV2();
         await uploadHandle.writeEntityToDatabase();
         await for (final _ in uploadHandle.upload(_arweave)) {
           emit(UploadInProgress(
-            files: _fileUploadHandles.values.toList(),
-            bundles: _multiFileUploadHandles,
+            files: _v2FileUploadHandles.values.toList(),
+            bundles: _bundleUploadHandles,
           ));
         }
       }

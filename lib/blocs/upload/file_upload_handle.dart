@@ -21,10 +21,6 @@ class FileUploadHandle implements UploadHandle, DataItemHandle {
   final bool isPrivate;
   final SecretKey? driveKey;
   final SecretKey? fileKey;
-  @override
-  BigInt get cost {
-    return (entityTx as Transaction).reward + (dataTx as Transaction).reward;
-  }
 
   Future<bool> isWithInBundleLimits() async {
     return await file.length() < bundleSizeLimit;
@@ -148,18 +144,6 @@ class FileUploadHandle implements UploadHandle, DataItemHandle {
   }
 
   Future<int> _estimateEntityDataItemSize() async {
-    final entityFake = FileEntity(
-      id: entity.id,
-      dataContentType: entity.dataContentType,
-      dataTxId: base64Encode(Uint8List(43)),
-      driveId: entity.driveId,
-      lastModifiedDate: entity.lastModifiedDate,
-      name: entity.name,
-      parentFolderId: entity.parentFolderId,
-      size: entity.size,
-    );
-    final metadataSize =
-        (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
     final fakeTags = createFakeEntityTags(entity);
     if (isPrivate) {
       fakeTags.addAll(fakePrivateTags);
@@ -171,10 +155,24 @@ class FileUploadHandle implements UploadHandle, DataItemHandle {
     }
     fakeTags.addAll(fakeApplicationTags);
     return estimateDataItemSize(
-      fileDataSize: metadataSize,
+      fileDataSize: getEntityJSONSize(),
       tags: fakeTags,
       nonce: [],
     );
+  }
+
+  int getEntityJSONSize() {
+    final entityFake = FileEntity(
+      id: entity.id,
+      dataContentType: entity.dataContentType,
+      dataTxId: base64Encode(Uint8List(43)),
+      driveId: entity.driveId,
+      lastModifiedDate: entity.lastModifiedDate,
+      name: entity.name,
+      parentFolderId: entity.parentFolderId,
+      size: entity.size,
+    );
+    return (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
   }
 
   Future<int> _estimateDataDataItemSize() async {
@@ -198,6 +196,11 @@ class FileUploadHandle implements UploadHandle, DataItemHandle {
   Future<int> estimateDataItemSizes() async {
     return await _estimateDataDataItemSize() +
         await _estimateEntityDataItemSize();
+  }
+
+  BigInt estimateV2UploadCost() {
+    return arweave.calculateARPriceForByteSize(byteSize: entity.size!) +
+        arweave.calculateARPriceForByteSize(byteSize: getEntityJSONSize());
   }
 
   /// Uploads the file, emitting an event whenever the progress is updated.
