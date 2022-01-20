@@ -62,7 +62,7 @@ class GhostFixerForm extends StatelessWidget {
             return TextButton.icon(
               icon: const Icon(Icons.create_new_folder),
               label: Text('CREATE FOLDER'),
-              onPressed: () => promptToCreateFolder(
+              onPressed: () => promptToCreateFolderWithoutCongestionWarning(
                 context,
                 driveId: state.viewingFolder.folder!.driveId,
                 parentFolderId: state.viewingFolder.folder!.id,
