@@ -2,10 +2,15 @@ part of '../drive_detail_page.dart';
 
 class FsEntrySideSheet extends StatelessWidget {
   final String driveId;
+  final FolderWithContents currentFolder;
   final String? folderId;
   final String? fileId;
 
-  FsEntrySideSheet({required this.driveId, this.folderId, this.fileId});
+  FsEntrySideSheet(
+      {required this.driveId,
+      required this.currentFolder,
+      this.folderId,
+      this.fileId});
 
   @override
   Widget build(BuildContext context) => Drawer(
@@ -77,6 +82,21 @@ class FsEntrySideSheet extends StatelessWidget {
           DataColumn(label: Text('')),
         ],
         rows: [
+          DataRow(cells: [
+            DataCell(Text('Contains')),
+            DataCell(
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '${currentFolder.files.length} files, ${currentFolder.subfolders.length} folders',
+                  style: Theme.of(context)
+                      .textTheme
+                      .caption!
+                      .copyWith(color: kOnSurfaceBodyTextColor),
+                ),
+              ),
+            ),
+          ]),
           if (state is FsEntryInfoSuccess<Drive>) ...{
             DataRow(cells: [
               DataCell(Text('Drive ID')),
@@ -91,10 +111,13 @@ class FsEntrySideSheet extends StatelessWidget {
               DataCell(Text('Privacy')),
               // Capitalise the privacy enums of drives for display.
               DataCell(
-                Text(
-                  state.entry.privacy == DrivePrivacy.private
-                      ? 'Private'
-                      : 'Public',
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    state.entry.privacy == DrivePrivacy.private
+                        ? 'Private'
+                        : 'Public',
+                  ),
                 ),
               )
             ]),
@@ -120,21 +143,46 @@ class FsEntrySideSheet extends StatelessWidget {
             ]),
             DataRow(cells: [
               DataCell(Text('Size')),
-              DataCell(Text(filesize(state.entry.size)))
+              DataCell(
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(filesize(state.entry.size)),
+                ),
+              )
             ]),
             DataRow(cells: [
               DataCell(Text('Last modified')),
               DataCell(
-                  Text(yMMdDateFormatter.format(state.entry.lastModifiedDate)))
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    yMMdDateFormatter.format(state.entry.lastModifiedDate),
+                  ),
+                ),
+              )
             ]),
           },
           DataRow(cells: [
             DataCell(Text('Last updated')),
-            DataCell(Text(yMMdDateFormatter.format(state.lastUpdated))),
+            DataCell(
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  yMMdDateFormatter.format(state.lastUpdated),
+                ),
+              ),
+            ),
           ]),
           DataRow(cells: [
             DataCell(Text('Date created')),
-            DataCell(Text(yMMdDateFormatter.format(state.dateCreated))),
+            DataCell(
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  yMMdDateFormatter.format(state.dateCreated),
+                ),
+              ),
+            ),
           ]),
         ],
       );
@@ -389,9 +437,12 @@ class CopyIconButton extends StatelessWidget {
   CopyIconButton({required this.value, required this.tooltip});
 
   @override
-  Widget build(BuildContext context) => IconButton(
-        icon: Icon(Icons.copy, color: Colors.black54),
-        tooltip: tooltip,
-        onPressed: () => Clipboard.setData(ClipboardData(text: value)),
+  Widget build(BuildContext context) => Container(
+        alignment: Alignment.centerRight,
+        child: IconButton(
+          icon: Icon(Icons.copy, color: Colors.black54),
+          tooltip: tooltip,
+          onPressed: () => Clipboard.setData(ClipboardData(text: value)),
+        ),
       );
 }

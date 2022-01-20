@@ -19,7 +19,6 @@ import 'package:intersperse/intersperse.dart';
 import 'package:moor/moor.dart' show OrderingMode;
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
-import 'package:url_launcher/link.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 part 'components/drive_detail_actions_row.dart';
@@ -97,6 +96,7 @@ class DriveDetailPage extends StatelessWidget {
                           VerticalDivider(width: 1),
                           FsEntrySideSheet(
                             driveId: state.currentDrive.id,
+                            currentFolder: state.currentFolder,
                             folderId: state.selectedItemIsFolder
                                 ? state.selectedItemId
                                 : null,
@@ -163,6 +163,7 @@ class DriveDetailPage extends StatelessWidget {
                       Expanded(
                         child: FsEntrySideSheet(
                           driveId: state.currentDrive.id,
+                          currentFolder: state.currentFolder,
                           folderId: state.selectedItemIsFolder
                               ? state.selectedItemId
                               : null,
