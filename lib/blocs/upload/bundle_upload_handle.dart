@@ -1,4 +1,4 @@
-import 'package:ardrive/blocs/upload/file_upload_handle.dart';
+import 'package:ardrive/blocs/upload/data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handle.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/services/services.dart';
@@ -6,7 +6,7 @@ import 'package:arweave/arweave.dart';
 import 'package:moor/moor.dart';
 
 class BundleUploadHandle implements UploadHandle {
-  final List<FileUploadHandle> dataItemUploadHandles;
+  final List<DataItemUploadHandle> dataItemUploadHandles;
 
   late Transaction bundleTx;
   late List<FileEntity> fileEntities;
@@ -15,7 +15,6 @@ class BundleUploadHandle implements UploadHandle {
     fileEntities = List.from(dataItemUploadHandles.map((e) => e.entity));
   }
 
-  @override
   BigInt get cost {
     return bundleTx.reward;
   }
@@ -46,7 +45,7 @@ class BundleUploadHandle implements UploadHandle {
     await bundleTx.sign(wallet);
 
     dataItemUploadHandles.forEach((file) async {
-      await file.updateBundledInTxId(bundledInTxId: bundleTx.id);
+      await file.writeEntityToDatabase(bundledInTxId: bundleTx.id);
     });
   }
 

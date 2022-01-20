@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:ardrive/blocs/upload/bundle_upload_handle.dart';
+import 'package:ardrive/blocs/upload/data_item_upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -22,6 +23,7 @@ import 'file_upload_handle.dart';
 
 part 'upload_state.dart';
 
+final bundleSizeLimit = 503316480;
 final maxBundleDataItemCount = 500;
 final maxFilesPerBundle = maxBundleDataItemCount ~/ 2;
 final privateFileSizeLimit = 104857600;
@@ -46,7 +48,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// A map of [FileUploadHandle]s keyed by their respective file's id.
   final Map<String, FileUploadHandle> _v2FileUploadHandles = {};
-  final Map<String, FileUploadHandle> _dataItemUploadHandles = {};
+  final Map<String, DataItemUploadHandle> _dataItemUploadHandles = {};
 
   /// A list of all multi file upload handles containing bundles of multiple files
   final List<BundleUploadHandle> _bundleUploadHandles = [];
@@ -138,26 +140,7 @@ class UploadCubit extends Cubit<UploadState> {
       ));
       return;
     }
-
-    try {
-      for (final file in files) {
-        final uploadHandle = await prepareFileUpload(file);
-        uploadHandle.setRevisionAction(
-          !conflictingFiles.containsKey(uploadHandle.entity.name)
-              ? RevisionAction.create
-              : RevisionAction.uploadNewVersion,
-        );
-        if (await uploadHandle.isWithInBundleLimits()) {
-          _dataItemUploadHandles[uploadHandle.entity.id!] = uploadHandle;
-        } else {
-          _v2FileUploadHandles[uploadHandle.entity.id!] = uploadHandle;
-        }
-      }
-    } catch (err) {
-      addError(err);
-      return;
-    }
-
+    await prepareFiles(files);
     await prepareBundleHandles();
 
     final dataItemsCost = _bundleUploadHandles.isNotEmpty
@@ -241,10 +224,10 @@ class UploadCubit extends Cubit<UploadState> {
     return totalCost;
   }
 
-  Future<BigInt> estimateBundleCost(List<FileUploadHandle> files) async {
+  Future<BigInt> estimateBundleCost(List<DataItemUploadHandle> items) async {
     final fileSizes = <int>[];
-    for (var file in files) {
-      fileSizes.add(await file.estimateDataItemSizes());
+    for (var item in items) {
+      fileSizes.add(await item.estimateDataItemSizes());
     }
     var size = 0;
     // Add data item binary size
@@ -259,7 +242,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> prepareBundleHandles() async {
     // NOTE: Using maxFilesPerBundle since FileUploadHandles have 2 data items
-    final bundleItems = await NextFitBundlePacker<FileUploadHandle>(
+    final bundleItems = await NextFitBundlePacker<DataItemUploadHandle>(
       maxBundleSize: bundleSizeLimit,
       maxDataItemCount: maxFilesPerBundle,
     ).packItems(_dataItemUploadHandles.values.toList());
@@ -330,7 +313,7 @@ class UploadCubit extends Cubit<UploadState> {
 
       // Upload V2 Files
       for (final uploadHandle in _v2FileUploadHandles.values) {
-        await uploadHandle.prepareAndSignV2();
+        await uploadHandle.prepareAndSign();
         await uploadHandle.writeEntityToDatabase();
         await for (final _ in uploadHandle.upload(_arweave)) {
           emit(UploadInProgress(
@@ -346,45 +329,63 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
-  Future<FileUploadHandle> prepareFileUpload(XFile file) async {
+  Future<void> prepareFiles(List<XFile> files) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
+    for (var file in files) {
+      final fileName = file.name;
+      final filePath = '${_targetFolder.path}/$fileName';
+      final fileSize = await file.length();
+      final fileEntity = FileEntity(
+        driveId: _targetDrive.id,
+        name: fileName,
+        size: fileSize,
+        lastModifiedDate: await file.lastModified(),
+        parentFolderId: _targetFolder.id,
+        dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
+      );
 
-    final fileName = file.name;
-    final filePath = '${_targetFolder.path}/$fileName';
-    final fileEntity = FileEntity(
-      driveId: _targetDrive.id,
-      name: fileName,
-      size: await file.length(),
-      lastModifiedDate: await file.lastModified(),
-      parentFolderId: _targetFolder.id,
-      dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
-    );
+      // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
+      fileEntity.id = conflictingFiles[fileName] ?? _uuid.v4();
 
-    // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
-    fileEntity.id = conflictingFiles[fileName] ?? _uuid.v4();
+      final private = _targetDrive.isPrivate;
+      final driveKey = private
+          ? await _driveDao.getDriveKey(_targetDrive.id, profile.cipherKey)
+          : null;
+      final fileKey =
+          private ? await deriveFileKey(driveKey!, fileEntity.id!) : null;
 
-    final private = _targetDrive.isPrivate;
-    final driveKey = private
-        ? await _driveDao.getDriveKey(_targetDrive.id, profile.cipherKey)
-        : null;
-    final fileKey =
-        private ? await deriveFileKey(driveKey!, fileEntity.id!) : null;
+      final revisionAction = !conflictingFiles.containsKey(file.name)
+          ? RevisionAction.create
+          : RevisionAction.uploadNewVersion;
 
-    //final fileData = await file.readAsBytes();
-
-    final uploadHandle = FileUploadHandle(
-      entity: fileEntity,
-      path: filePath,
-      file: file,
-      isPrivate: private,
-      driveKey: driveKey,
-      fileKey: fileKey,
-      arweave: _arweave,
-      driveDao: _driveDao,
-      wallet: profile.wallet,
-    );
-
-    return uploadHandle;
+      if (fileSize < bundleSizeLimit) {
+        _dataItemUploadHandles[fileEntity.id!] = DataItemUploadHandle(
+          entity: fileEntity,
+          path: filePath,
+          file: file,
+          isPrivate: private,
+          driveKey: driveKey,
+          fileKey: fileKey,
+          arweave: _arweave,
+          driveDao: _driveDao,
+          wallet: profile.wallet,
+          revisionAction: revisionAction,
+        );
+      } else {
+        _v2FileUploadHandles[fileEntity.id!] = FileUploadHandle(
+          entity: fileEntity,
+          path: filePath,
+          file: file,
+          isPrivate: private,
+          driveKey: driveKey,
+          fileKey: fileKey,
+          arweave: _arweave,
+          driveDao: _driveDao,
+          wallet: profile.wallet,
+          revisionAction: revisionAction,
+        );
+      }
+    }
   }
 
   @override
