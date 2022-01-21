@@ -237,7 +237,7 @@ class UploadCubit extends Cubit<UploadState> {
     // Add bytes that denote number of data items
     size += 32;
 
-    return _arweave.calculateARPriceForByteSize(byteSize: size);
+    return _arweave.getPrice(byteSize: size);
   }
 
   Future<void> prepareBundleHandles() async {

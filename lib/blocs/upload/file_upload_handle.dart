@@ -100,9 +100,8 @@ class FileUploadHandle implements UploadHandle {
   }
 
   Future<BigInt> estimateV2UploadCost() async {
-    return await arweave.calculateARPriceForByteSize(byteSize: entity.size!) +
-        await arweave.calculateARPriceForByteSize(
-            byteSize: getEntityJSONSize());
+    return await arweave.getPrice(byteSize: entity.size!) +
+        await arweave.getPrice(byteSize: getEntityJSONSize());
   }
 
   /// Uploads the file, emitting an event whenever the progress is updated.
