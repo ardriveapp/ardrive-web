@@ -146,11 +146,11 @@ class UploadCubit extends Cubit<UploadState> {
     final dataItemsCost = _bundleUploadHandles.isNotEmpty
         ? await estimateBundleCosts(_bundleUploadHandles)
         : BigInt.zero;
-    final v2FilesUploadCost = _v2FileUploadHandles.isNotEmpty
-        ? _v2FileUploadHandles.values
-            .map((e) => e.estimateV2UploadCost())
-            .reduce((value, element) => value += element)
-        : BigInt.zero;
+    var v2FilesUploadCost = BigInt.zero;
+    for (final value in _v2FileUploadHandles.values
+        .map((e) async => await e.estimateV2UploadCost())) {
+      v2FilesUploadCost += await value;
+    }
 
     final bundlePstFee = await _pst.getPSTFee(dataItemsCost);
 

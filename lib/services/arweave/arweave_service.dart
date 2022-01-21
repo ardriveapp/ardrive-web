@@ -19,13 +19,12 @@ class ArweaveService {
 
   final ArtemisClient _gql;
 
-  BigInt _cachedPricePerChunk = BigInt.zero;
+  final Map<int, BigInt> _cachedPriceForChunkCount = {};
   int _mempoolSize = 0;
 
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     unawaited(initializeMempoolStream());
-    unawaited(cacheChunkPrice());
   }
 
   int bytesToChunks(int bytes) {
@@ -49,17 +48,14 @@ class ArweaveService {
     _mempoolSize = await getMempoolAverage();
   }
 
-  Future<void> cacheChunkPrice() async {
-    _cachedPricePerChunk = await getPrice(byteSize: byteCountPerChunk);
-    print(_cachedPricePerChunk.toString());
-  }
-
-  BigInt calculateARPriceForByteSize({required int byteSize}) {
+  Future<BigInt> calculateARPriceForByteSize({required int byteSize}) async {
     final chunks = bytesToChunks(byteSize);
-    if (_cachedPricePerChunk <= BigInt.zero) {
-      throw Error();
+    if (_cachedPriceForChunkCount.containsKey(byteSize)) {
+      return _cachedPriceForChunkCount[chunks]!;
     }
-    return _cachedPricePerChunk * BigInt.from(chunks);
+    final price = await getPrice(byteSize: byteSize);
+    _cachedPriceForChunkCount[chunks] = price;
+    return price;
   }
 
   Future<BigInt> getPrice({required int byteSize}) {
