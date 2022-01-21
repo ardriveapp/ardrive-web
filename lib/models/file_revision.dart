@@ -18,6 +18,7 @@ extension FileRevisionsCompanionExtensions on FileRevisionsCompanion {
         lastUpdated: dateCreated,
         lastModifiedDate: lastModifiedDate.value,
         dataContentType: dataContentType,
+        bundledIn: bundledIn,
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing the metadata and data transactions
@@ -48,6 +49,7 @@ extension FileEntityExtensions on FileEntity {
         dateCreated: Value(createdAt),
         dataContentType: Value(dataContentType),
         action: performedAction,
+        bundledIn: Value(bundledIn),
       );
 
   /// Returns the action performed on the file that lead to the new revision.

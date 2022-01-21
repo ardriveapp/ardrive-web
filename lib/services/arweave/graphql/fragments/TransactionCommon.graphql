@@ -3,6 +3,9 @@ fragment TransactionCommon on Transaction {
   owner {
     address
   }
+  bundledIn {
+    id
+  }
   block {
     height
   }

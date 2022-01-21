@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:reactive_forms/reactive_forms.dart';
-import 'package:url_launcher/link.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'profile_auth_shell.dart';
 
@@ -98,28 +98,24 @@ class ProfileAuthAddScreen extends StatelessWidget {
                               ),
                               const SizedBox(width: 12),
                               Flexible(
-                                child: Link(
-                                  uri: Uri.parse(
-                                      'https://ardrive.io/tos-and-privacy/'),
-                                  target: LinkTarget.blank,
-                                  builder: (context, onPressed) =>
-                                      GestureDetector(
-                                    onTap: onPressed,
-                                    child: Text.rich(
-                                      TextSpan(
-                                        children: [
-                                          TextSpan(text: 'I agree to the '),
-                                          TextSpan(
-                                            text:
-                                                'ArDrive terms of service and privacy policy',
-                                            style: TextStyle(
-                                              decoration:
-                                                  TextDecoration.underline,
-                                            ),
+                                child: GestureDetector(
+                                  onTap: () => launch(
+                                    'https://ardrive.io/tos-and-privacy/',
+                                  ),
+                                  child: Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        TextSpan(text: 'I agree to the '),
+                                        TextSpan(
+                                          text:
+                                              'ArDrive terms of service and privacy policy',
+                                          style: TextStyle(
+                                            decoration:
+                                                TextDecoration.underline,
                                           ),
-                                          TextSpan(text: '.'),
-                                        ],
-                                      ),
+                                        ),
+                                        TextSpan(text: '.'),
+                                      ],
                                     ),
                                   ),
                                 ),
