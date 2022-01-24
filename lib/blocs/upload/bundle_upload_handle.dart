@@ -11,8 +11,24 @@ class BundleUploadHandle implements UploadHandle {
   late Transaction bundleTx;
   late List<FileEntity> fileEntities;
 
-  BundleUploadHandle(this.dataItemUploadHandles, this.size) {
+  BundleUploadHandle._create({
+    required this.dataItemUploadHandles,
+    this.size = 0,
+  });
+
+  static Future<BundleUploadHandle> create({
+    required List<DataItemUploadHandle> dataItemUploadHandles,
+  }) async {
+    final bundle = BundleUploadHandle._create(
+      dataItemUploadHandles: dataItemUploadHandles,
+    );
+    bundle.size = await bundle.computeBundleSize();
+    return bundle;
+  }
+
+  BundleUploadHandle(this.dataItemUploadHandles, {this.size = 0}) {
     fileEntities = List.from(dataItemUploadHandles.map((e) => e.entity));
+    computeBundleSize();
   }
 
   BigInt get cost {
@@ -62,6 +78,10 @@ class BundleUploadHandle implements UploadHandle {
   }
 
   Future<BigInt> estimateBundleCost({required ArweaveService arweave}) async {
+    return arweave.getPrice(byteSize: await computeBundleSize());
+  }
+
+  Future<int> computeBundleSize() async {
     final fileSizes = <int>[];
     for (var item in dataItemUploadHandles) {
       fileSizes.add(await item.estimateDataItemSizes());
@@ -73,8 +93,8 @@ class BundleUploadHandle implements UploadHandle {
     size += (fileSizes.length * 64);
     // Add bytes that denote number of data items
     size += 32;
-
-    return arweave.getPrice(byteSize: size);
+    this.size = size;
+    return size;
   }
 
   @override

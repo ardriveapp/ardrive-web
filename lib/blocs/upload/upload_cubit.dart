@@ -231,14 +231,9 @@ class UploadCubit extends Cubit<UploadState> {
           isArConnect: await _profileCubit.isCurrentProfileArConnect(),
         ),
       );
-      var uploadSize = 0;
-      for (var uploadHandle in uploadHandles) {
-        uploadSize += uploadHandle.entity.size!;
-      }
 
-      final bundleToUpload = BundleUploadHandle(
-        List.from(uploadHandles),
-        uploadSize,
+      final bundleToUpload = await BundleUploadHandle.create(
+        dataItemUploadHandles: List.from(uploadHandles),
       );
       _bundleUploadHandles.add(bundleToUpload);
       uploadHandles.clear();
