@@ -214,26 +214,9 @@ class UploadCubit extends Cubit<UploadState> {
   ) async {
     var totalCost = BigInt.zero;
     for (var bundle in bundleUploadHandles) {
-      totalCost += await estimateBundleCost(bundle.dataItemUploadHandles);
+      totalCost += await bundle.estimateBundleCost(arweave: _arweave);
     }
-
     return totalCost;
-  }
-
-  Future<BigInt> estimateBundleCost(List<DataItemUploadHandle> items) async {
-    final fileSizes = <int>[];
-    for (var item in items) {
-      fileSizes.add(await item.estimateDataItemSizes());
-    }
-    var size = 0;
-    // Add data item binary size
-    size += fileSizes.reduce((value, element) => value + element);
-    // Add data item offset and entry id for each data item
-    size += (fileSizes.length * 64);
-    // Add bytes that denote number of data items
-    size += 32;
-
-    return _arweave.getPrice(byteSize: size);
   }
 
   Future<void> prepareBundleHandles() async {

@@ -61,6 +61,22 @@ class BundleUploadHandle implements UploadHandle {
     bundleTx.setData(Uint8List(0));
   }
 
+  Future<BigInt> estimateBundleCost({required ArweaveService arweave}) async {
+    final fileSizes = <int>[];
+    for (var item in dataItemUploadHandles) {
+      fileSizes.add(await item.estimateDataItemSizes());
+    }
+    var size = 0;
+    // Add data item binary size
+    size += fileSizes.reduce((value, element) => value + element);
+    // Add data item offset and entry id for each data item
+    size += (fileSizes.length * 64);
+    // Add bytes that denote number of data items
+    size += 32;
+
+    return arweave.getPrice(byteSize: size);
+  }
+
   @override
   int size;
 
