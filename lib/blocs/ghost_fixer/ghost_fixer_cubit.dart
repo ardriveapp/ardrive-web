@@ -100,7 +100,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
     if (form.invalid) {
       return;
     }
-
+    await _selectedFolderSubscription?.cancel();
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
       final state = this.state as GhostFixerFolderLoadSuccess;
