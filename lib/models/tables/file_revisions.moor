@@ -23,4 +23,5 @@ CREATE TABLE file_revisions (
     PRIMARY KEY (fileId, driveId, dateCreated),
     FOREIGN KEY (metadataTxId) REFERENCES network_transactions(id),
     FOREIGN KEY (dataTxId) REFERENCES network_transactions(id)
+    
 );
