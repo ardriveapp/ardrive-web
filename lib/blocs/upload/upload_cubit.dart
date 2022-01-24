@@ -154,18 +154,12 @@ class UploadCubit extends Cubit<UploadState> {
 
     final bundlePstFee = await _pst.getPSTFee(dataItemsCost);
 
-    v2FilesFeeTx = await prepareAndSignV2FilesTipTx(
-        wallet: profile.wallet, v2FilesUploadCost: v2FilesUploadCost);
-
-    final v2FilesPstFee =
-        _v2FileUploadHandles.isNotEmpty && v2FilesFeeTx != null
-            ? v2FilesFeeTx!.reward > minimumPstTip
-                ? v2FilesFeeTx!.reward
-                : minimumPstTip
-            : BigInt.zero;
-
-    final totalCost =
-        v2FilesUploadCost + dataItemsCost + v2FilesPstFee + bundlePstFee;
+    if (_v2FileUploadHandles.isNotEmpty) {
+      v2FilesFeeTx = await prepareAndSignV2FilesTipTx(
+          wallet: profile.wallet, v2FilesUploadCost: v2FilesUploadCost);
+    }
+    final v2FilesPstFee = (v2FilesFeeTx?.quantity ?? BigInt.zero);
+    final totalCost = v2FilesUploadCost + dataItemsCost + bundlePstFee;
 
     final arUploadCost = winstonToAr(totalCost);
     final usdUploadCost = await _arweave
@@ -198,11 +192,13 @@ class UploadCubit extends Cubit<UploadState> {
     }
     final packageInfo = await PackageInfo.fromPlatform();
     final pstFee = await _pst.getPSTFee(v2FilesUploadCost);
+    final quantity =
+        pstFee > minimumPstTip ? v2FilesFeeTx!.reward : minimumPstTip;
 
     final feeTx = await _arweave.client.transactions.prepare(
       Transaction(
         target: await _pst.getWeightedPstHolder(),
-        quantity: pstFee,
+        quantity: quantity,
       ),
       wallet,
     )
