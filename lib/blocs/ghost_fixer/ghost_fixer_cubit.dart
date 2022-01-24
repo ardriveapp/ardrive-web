@@ -154,11 +154,10 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
         final folderMap = {folder.id: folder.toCompanion(false)};
         await _syncCubit.generateFsEntryPaths(folder.driveId, folderMap, {});
       });
+      emit(GhostFixerSuccess());
     } catch (err) {
       addError(err);
     }
-
-    emit(GhostFixerSuccess());
   }
 
   Future<Map<String, dynamic>?> _uniqueFolderName(
