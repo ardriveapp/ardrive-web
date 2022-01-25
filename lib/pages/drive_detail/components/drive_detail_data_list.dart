@@ -53,6 +53,20 @@ Widget _buildFolderListTile({
         child: const Icon(Icons.folder),
       ),
       title: Text(folder.name),
+      trailing: folder.isGhost
+          ? ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                primary: LightColors.kOnLightSurfaceMediumEmphasis,
+                textStyle:
+                    TextStyle(color: LightColors.kOnDarkSurfaceHighEmphasis),
+              ),
+              onPressed: () => showCongestionDependentModalDialog(
+                context,
+                () => promptToReCreateFolder(context, ghostFolder: folder),
+              ),
+              child: Text('Fix'),
+            )
+          : null,
     );
 
 Widget _buildFileListTile({
