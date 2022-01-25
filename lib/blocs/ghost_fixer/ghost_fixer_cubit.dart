@@ -100,7 +100,6 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
     if (form.invalid) {
       return;
     }
-    await _selectedFolderSubscription?.cancel();
     try {
       final profile = _profileCubit.state as ProfileLoggedIn;
       final state = this.state as GhostFixerFolderLoadSuccess;
@@ -158,6 +157,12 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
     } catch (err) {
       addError(err);
     }
+  }
+
+  @override
+  Future<void> close() async {
+    await _selectedFolderSubscription?.cancel();
+    await super.close();
   }
 
   Future<Map<String, dynamic>?> _uniqueFolderName(
