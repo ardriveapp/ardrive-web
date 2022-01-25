@@ -147,8 +147,8 @@ class UploadCubit extends Cubit<UploadState> {
         ? await estimateBundleCosts(_bundleUploadHandles)
         : BigInt.zero;
     var v2FilesUploadCost = BigInt.zero;
-    for (final value in _v2FileUploadHandles.values
-        .map((e) async => await e.estimateV2UploadCost())) {
+    for (final value in _v2FileUploadHandles.values.map(
+        (e) async => await e.estimateV2UploadCost(arweaveService: _arweave))) {
       v2FilesUploadCost += await value;
     }
 
@@ -287,8 +287,13 @@ class UploadCubit extends Cubit<UploadState> {
 
       // Upload V2 Files
       for (final uploadHandle in _v2FileUploadHandles.values) {
-        await uploadHandle.prepareAndSign();
-        await uploadHandle.writeEntityToDatabase();
+        await uploadHandle.prepareAndSign(
+          arweaveService: _arweave,
+          wallet: profile.wallet,
+        );
+        await uploadHandle.writeEntityToDatabase(
+          driveDao: _driveDao,
+        );
         await for (final _ in uploadHandle.upload(_arweave)) {
           emit(UploadInProgress(
             files: _v2FileUploadHandles.values.toList(),
@@ -351,9 +356,6 @@ class UploadCubit extends Cubit<UploadState> {
           file: file,
           driveKey: driveKey,
           fileKey: fileKey,
-          arweave: _arweave,
-          driveDao: _driveDao,
-          wallet: profile.wallet,
           revisionAction: revisionAction,
         );
       }

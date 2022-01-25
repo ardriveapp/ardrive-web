@@ -34,34 +34,28 @@ class FileUploadHandle implements UploadHandle {
   late Transaction entityTx;
   late Transaction dataTx;
 
-  ArweaveService arweave;
-  DriveDao driveDao;
-  Wallet wallet;
-
   FileUploadHandle({
     required this.entity,
     required this.path,
     required this.file,
     required this.revisionAction,
-    required this.arweave,
-    required this.driveDao,
-    required this.wallet,
     this.driveKey,
     this.fileKey,
   });
 
-  Future<void> writeEntityToDatabase() async {
+  Future<void> writeEntityToDatabase({required DriveDao driveDao}) async {
     await driveDao.writeFileEntity(entity, path);
     await driveDao.insertFileRevision(
       entity.toRevisionCompanion(performedAction: revisionAction),
     );
   }
 
-  Future<void> prepareAndSign() async {
+  Future<void> prepareAndSign(
+      {required ArweaveService arweaveService, required Wallet wallet}) async {
     final packageInfo = await PackageInfo.fromPlatform();
 
     final fileData = await file.readAsBytes();
-    dataTx = await arweave.client.transactions.prepare(
+    dataTx = await arweaveService.client.transactions.prepare(
       isPrivate
           ? await createEncryptedTransaction(fileData, fileKey!)
           : Transaction.withBlobData(data: fileData),
@@ -81,7 +75,7 @@ class FileUploadHandle implements UploadHandle {
     await dataTx.sign(wallet);
 
     entity.dataTxId = dataTx.id;
-    entityTx = await arweave.prepareEntityTx(entity, wallet, fileKey);
+    entityTx = await arweaveService.prepareEntityTx(entity, wallet, fileKey);
     entity.txId = entityTx.id;
   }
 
@@ -99,9 +93,10 @@ class FileUploadHandle implements UploadHandle {
     return (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
   }
 
-  Future<BigInt> estimateV2UploadCost() async {
-    return await arweave.getPrice(byteSize: entity.size!) +
-        await arweave.getPrice(byteSize: getEntityJSONSize());
+  Future<BigInt> estimateV2UploadCost(
+      {required ArweaveService arweaveService}) async {
+    return await arweaveService.getPrice(byteSize: entity.size!) +
+        await arweaveService.getPrice(byteSize: getEntityJSONSize());
   }
 
   /// Uploads the file, emitting an event whenever the progress is updated.
