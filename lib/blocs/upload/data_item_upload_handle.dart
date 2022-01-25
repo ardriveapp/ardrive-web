@@ -37,7 +37,6 @@ class DataItemUploadHandle implements UploadHandle, DataItemHandle {
   late DataItem dataTx;
 
   ArweaveService arweave;
-  DriveDao driveDao;
   Wallet wallet;
 
   DataItemUploadHandle({
@@ -46,18 +45,22 @@ class DataItemUploadHandle implements UploadHandle, DataItemHandle {
     required this.file,
     required this.revisionAction,
     required this.arweave,
-    required this.driveDao,
     required this.wallet,
     this.driveKey,
     this.fileKey,
   });
 
-  Future<void> writeEntityToDatabase({required String bundledInTxId}) async {
+  Future<void> writeEntityToDatabase({
+    required String bundledInTxId,
+    required DriveDao driveDao,
+  }) async {
     entity.bundledIn = bundledInTxId;
-    await driveDao.writeFileEntity(entity, path);
-    await driveDao.insertFileRevision(
-      entity.toRevisionCompanion(performedAction: revisionAction),
-    );
+    await driveDao.transaction(() async {
+      await driveDao.writeFileEntity(entity, path);
+      await driveDao.insertFileRevision(
+        entity.toRevisionCompanion(performedAction: revisionAction),
+      );
+    });
   }
 
   Future<List<DataItem>> prepareAndSignDataItems() async {

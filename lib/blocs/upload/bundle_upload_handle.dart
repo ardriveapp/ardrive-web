@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/upload/data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handle.dart';
 import 'package:ardrive/entities/file_entity.dart';
+import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:moor/moor.dart';
@@ -37,6 +38,7 @@ class BundleUploadHandle implements UploadHandle {
 
   Future<void> prepareBundle({
     required ArweaveService arweaveService,
+    required DriveDao driveDao,
     required PstService pstService,
     required Wallet wallet,
   }) async {
@@ -56,7 +58,8 @@ class BundleUploadHandle implements UploadHandle {
     await bundleTx.sign(wallet);
 
     dataItemUploadHandles.forEach((file) async {
-      await file.writeEntityToDatabase(bundledInTxId: bundleTx.id);
+      await file.writeEntityToDatabase(
+          bundledInTxId: bundleTx.id, driveDao: driveDao);
     });
   }
 

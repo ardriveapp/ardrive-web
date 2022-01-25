@@ -44,10 +44,12 @@ class FileUploadHandle implements UploadHandle {
   });
 
   Future<void> writeEntityToDatabase({required DriveDao driveDao}) async {
-    await driveDao.writeFileEntity(entity, path);
-    await driveDao.insertFileRevision(
-      entity.toRevisionCompanion(performedAction: revisionAction),
-    );
+    await driveDao.transaction(() async {
+      await driveDao.writeFileEntity(entity, path);
+      await driveDao.insertFileRevision(
+        entity.toRevisionCompanion(performedAction: revisionAction),
+      );
+    });
   }
 
   Future<void> prepareAndSign(
