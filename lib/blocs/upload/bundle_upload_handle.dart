@@ -26,11 +26,6 @@ class BundleUploadHandle implements UploadHandle {
     return bundle;
   }
 
-  BundleUploadHandle(this.dataItemUploadHandles, {this.size = 0}) {
-    fileEntities = List.from(dataItemUploadHandles.map((e) => e.entity));
-    computeBundleSize();
-  }
-
   BigInt get cost {
     return bundleTx.reward;
   }
