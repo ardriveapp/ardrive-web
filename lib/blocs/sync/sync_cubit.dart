@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
+import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/main.dart';
@@ -11,6 +12,7 @@ import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 
@@ -23,6 +25,9 @@ const kRequiredTxConfirmationPendingThreshold = 60;
 
 const kSyncTimerDuration = 5;
 const kArConnectSyncTimerDuration = 2;
+
+typedef FolderID = String;
+typedef DriveID = String;
 
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.
@@ -78,6 +83,40 @@ class SyncCubit extends Cubit<SyncState> {
     });
   }
 
+  void createArConnectSyncStream() {
+    _profileCubit.isCurrentProfileArConnect().then((isArConnect) {
+      if (isArConnect) {
+        _arconnectSyncSub?.cancel();
+        _arconnectSyncSub = Stream.periodic(
+                const Duration(minutes: kArConnectSyncTimerDuration))
+            // Do not start another sync until the previous sync has completed.
+            .map((value) => Stream.fromFuture(arconnectSync()))
+            .listen((_) {});
+        arconnectSync();
+      }
+    });
+  }
+
+  Future<void> arconnectSync() async {
+    if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
+      emit(SyncWalletMismatch());
+      return;
+    }
+  }
+
+  void restartArConnectSyncOnFocus() async {
+    if (await _profileCubit.isCurrentProfileArConnect()) {
+      whenBrowserTabIsUnhidden(() {
+        Future.delayed(Duration(seconds: 2))
+            .then((value) => createArConnectSyncStream());
+      });
+    }
+  }
+
+  final ghostFolders = <FolderID, GhostFolder>{};
+  final ghostFoldersByDrive =
+      <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
+
   Future<void> startSync() async {
     try {
       final profile = _profileCubit.state;
@@ -126,6 +165,8 @@ class SyncCubit extends Cubit<SyncState> {
             addError(error!);
           }));
       await Future.wait(driveSyncProcesses);
+      await createGhosts();
+      emit(SyncEmpty());
 
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
@@ -138,34 +179,48 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncIdle());
   }
 
-  void createArConnectSyncStream() {
-    _profileCubit.isCurrentProfileArConnect().then((isArConnect) {
-      if (isArConnect) {
-        _arconnectSyncSub?.cancel();
-        _arconnectSyncSub = Stream.periodic(
-                const Duration(minutes: kArConnectSyncTimerDuration))
-            // Do not start another sync until the previous sync has completed.
-            .map((value) => Stream.fromFuture(arconnectSync()))
-            .listen((_) {});
-        arconnectSync();
+  Future<void> createGhosts() async {
+    //Finalize missing parent list
+
+    for (final ghostFolder in ghostFolders.values) {
+      final folderExists = (await _driveDao
+              .folderById(
+                  driveId: ghostFolder.driveId, folderId: ghostFolder.folderId)
+              .getSingleOrNull()) !=
+          null;
+
+      if (folderExists) {
+        continue;
       }
-    });
-  }
 
-  Future<void> arconnectSync() async {
-    if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
-      emit(SyncWalletMismatch());
-      return;
-    }
-  }
+      // Add to database
+      final drive =
+          await _driveDao.driveById(driveId: ghostFolder.driveId).getSingle();
 
-  void restartArConnectSyncOnFocus() async {
-    if (await _profileCubit.isCurrentProfileArConnect()) {
-      whenBrowserTabIsUnhidden(() {
-        Future.delayed(Duration(seconds: 2))
-            .then((value) => createArConnectSyncStream());
-      });
+      // Dont create ghost folder if the ghost is a missing root folder
+      if (drive.rootFolderId == ghostFolder.folderId) {
+        continue;
+      }
+
+      final folderEntry = FolderEntry(
+        id: ghostFolder.folderId,
+        driveId: drive.id,
+        parentFolderId: drive.rootFolderId,
+        name: ghostFolder.folderId,
+        path: rootPath,
+        lastUpdated: DateTime.now(),
+        isGhost: true,
+        dateCreated: DateTime.now(),
+      );
+
+      await _driveDao.into(_driveDao.folderEntries).insert(folderEntry);
+      ghostFoldersByDrive.putIfAbsent(
+          drive.id, () => {folderEntry.id: folderEntry.toCompanion(false)});
     }
+    await Future.wait([
+      ...ghostFoldersByDrive.entries
+          .map((entry) => generateFsEntryPaths(entry.key, entry.value, {})),
+    ]);
   }
 
   Future<void> _syncDrive(
@@ -208,7 +263,6 @@ class SyncCubit extends Cubit<SyncState> {
         lastBlockHeight: Value(currentBlockheight),
         syncCursor: Value(null),
       ));
-      emit(SyncEmpty());
       return;
     }
 
@@ -504,6 +558,11 @@ class SyncCubit extends Cubit<SyncState> {
       }
     }
 
+    Future<void> addMissingFolder(String folderId) async {
+      ghostFolders.putIfAbsent(
+          folderId, () => GhostFolder(folderId: folderId, driveId: driveId));
+    }
+
     Future<void> updateFolderTree(FolderNode node, String parentPath) async {
       final folderId = node.folder.id;
       // If this is the root folder, we should not include its name as part of the path.
@@ -543,7 +602,9 @@ class SyncCubit extends Cubit<SyncState> {
       if (parentPath != null) {
         await updateFolderTree(treeRoot, parentPath);
       } else {
-        print('Missing parent folder');
+        await addMissingFolder(
+          treeRoot.folder.parentFolderId!,
+        );
       }
     }
 
@@ -567,8 +628,9 @@ class SyncCubit extends Cubit<SyncState> {
               driveId: staleOrphanFile.driveId,
               path: Value(filePath)));
         } else {
-          print(
-              'Stale orphan file ${staleOrphanFile.id.value} parent folder ${staleOrphanFile.parentFolderId.value} could not be found.');
+          await addMissingFolder(
+            staleOrphanFile.parentFolderId.value,
+          );
         }
       }
     }

@@ -23,6 +23,7 @@ Widget _buildDataTable(BuildContext context, DriveDetailLoadSuccess state) =>
                       bloc.selectItem(
                         folder.id,
                         isFolder: true,
+                        isGhost: folder.isGhost,
                       );
                     }
                   },
@@ -112,23 +113,55 @@ DataRow _buildFolderRow({
   return DataRow(
     onSelectChanged: (_) => onPressed(),
     selected: selected,
-    cells: [
-      DataCell(
-        Row(
-          children: [
-            Padding(
-              padding: const EdgeInsetsDirectional.only(end: 8.0),
-              child: const Icon(Icons.folder),
+    cells: folder.isGhost
+        ? [
+            DataCell(
+              Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(
+                        end: 8.0, top: 8.0, bottom: 8.0),
+                    child: const Icon(Icons.folder),
+                  ),
+                  Text(
+                    trimName(name: folder.name, context: context),
+                  ),
+                ],
+              ),
             ),
-            Text(
-              trimName(name: folder.name, context: context),
+            DataCell(Text('')),
+            DataCell(
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  primary: LightColors.kOnLightSurfaceMediumEmphasis,
+                  textStyle:
+                      TextStyle(color: LightColors.kOnDarkSurfaceHighEmphasis),
+                ),
+                onPressed: () => showCongestionDependentModalDialog(
+                  context,
+                  () => promptToReCreateFolder(context, ghostFolder: folder),
+                ),
+                child: Text('Fix'),
+              ),
             ),
+          ]
+        : [
+            DataCell(
+              Row(
+                children: [
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(end: 8.0),
+                    child: const Icon(Icons.folder),
+                  ),
+                  Text(
+                    trimName(name: folder.name, context: context),
+                  ),
+                ],
+              ),
+            ),
+            DataCell(Text('-')),
+            DataCell(Text('-')),
           ],
-        ),
-      ),
-      DataCell(Text('-')),
-      DataCell(Text('-')),
-    ],
   );
 }
 

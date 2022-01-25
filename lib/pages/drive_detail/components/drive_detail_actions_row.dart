@@ -56,7 +56,7 @@ class DriveDetailActionRow extends StatelessWidget {
                     tooltip: 'Preview',
                   ),
               },
-              if (state.hasWritePermissions) ...{
+              if (state.hasWritePermissions && !state.selectedItemIsGhost) ...{
                 IconButton(
                   icon: const Icon(Icons.drive_file_rename_outline),
                   onPressed: () {

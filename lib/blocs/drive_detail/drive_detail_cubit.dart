@@ -107,12 +107,17 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     ).listen((_) {});
   }
 
-  Future<void> selectItem(String itemId, {bool isFolder = false}) async {
+  Future<void> selectItem(
+    String itemId, {
+    bool isFolder = false,
+    bool isGhost = false,
+  }) async {
     var state = this.state as DriveDetailLoadSuccess;
 
     state = state.copyWith(
       selectedItemId: itemId,
       selectedItemIsFolder: isFolder,
+      selectedItemIsGhost: isGhost,
     );
 
     if (state.selectedItemId != null) {
