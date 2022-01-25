@@ -14,7 +14,6 @@ class FileUploadHandle implements UploadHandle {
   final FileEntity entity;
   final XFile file;
   final String path;
-  final bool isPrivate;
   final SecretKey? driveKey;
   final SecretKey? fileKey;
   final String revisionAction;
@@ -26,6 +25,8 @@ class FileUploadHandle implements UploadHandle {
   /// The size of the file that has been uploaded, not accounting for the file encoding/encryption overhead.
   @override
   int get uploadedSize => (size * uploadProgress).round();
+
+  bool get isPrivate => driveKey != null && fileKey != null;
 
   @override
   double uploadProgress = 0;
@@ -42,7 +43,6 @@ class FileUploadHandle implements UploadHandle {
     required this.path,
     required this.file,
     required this.revisionAction,
-    required this.isPrivate,
     required this.arweave,
     required this.driveDao,
     required this.wallet,
