@@ -244,9 +244,10 @@ class UploadForm extends StatelessWidget {
                 ),
               ],
             );
-          } else if (state is UploadBundlingInProgress) {
+          } else if (state is UploadSigningInProgress) {
             return AppDialog(
-              title: 'Bundling upload...',
+              title:
+                  '${state.mappedUploadHandles.bundleUploadHandles.isNotEmpty ? 'Bundling and signing' : 'Signing'} upload...',
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(

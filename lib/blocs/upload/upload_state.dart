@@ -16,12 +16,14 @@ class UploadPreparationInProgress extends UploadState {
 
 class UploadPreparationFailure extends UploadState {}
 
-class UploadBundlingInProgress extends UploadState {
+class UploadSigningInProgress extends UploadState {
+  final MappedUploadHandles mappedUploadHandles;
   final bool isArConnect;
 
-  UploadBundlingInProgress({this.isArConnect = false});
+  UploadSigningInProgress(
+      {required this.mappedUploadHandles, this.isArConnect = false});
   @override
-  List<Object> get props => [isArConnect];
+  List<Object> get props => [mappedUploadHandles, isArConnect];
 }
 
 class UploadFileConflict extends UploadState {

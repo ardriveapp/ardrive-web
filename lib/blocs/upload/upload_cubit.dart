@@ -162,6 +162,12 @@ class UploadCubit extends Cubit<UploadState> {
       emit(UploadWalletMismatch());
       return;
     }
+    emit(
+      UploadSigningInProgress(
+        mappedUploadHandles: mappedUploadHandles,
+        isArConnect: await _profileCubit.isCurrentProfileArConnect(),
+      ),
+    );
 
     if (costEstimate.v2FilesFeeTx != null) {
       await _arweave.postTx(costEstimate.v2FilesFeeTx!);
@@ -169,12 +175,6 @@ class UploadCubit extends Cubit<UploadState> {
 
     // Upload Bundles
     for (var bundleHandle in mappedUploadHandles.bundleUploadHandles) {
-      emit(
-        UploadBundlingInProgress(
-          isArConnect: await _profileCubit.isCurrentProfileArConnect(),
-        ),
-      );
-
       await bundleHandle.prepareBundle(
         arweaveService: _arweave,
         driveDao: _driveDao,
