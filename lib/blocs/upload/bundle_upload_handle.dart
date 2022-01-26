@@ -10,12 +10,14 @@ class BundleUploadHandle implements UploadHandle {
   final List<DataItemUploadHandle> dataItemUploadHandles;
 
   late Transaction bundleTx;
-  late List<FileEntity> fileEntities;
+  late Iterable<FileEntity> fileEntities;
 
   BundleUploadHandle._create({
     required this.dataItemUploadHandles,
     this.size = 0,
-  });
+  }) {
+    fileEntities = dataItemUploadHandles.map((item) => item.entity);
+  }
 
   static Future<BundleUploadHandle> create({
     required List<DataItemUploadHandle> dataItemUploadHandles,
@@ -23,6 +25,7 @@ class BundleUploadHandle implements UploadHandle {
     final bundle = BundleUploadHandle._create(
       dataItemUploadHandles: dataItemUploadHandles,
     );
+
     bundle.size = await bundle.computeBundleSize();
     return bundle;
   }

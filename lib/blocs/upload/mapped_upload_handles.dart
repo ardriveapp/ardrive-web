@@ -11,16 +11,18 @@ final maxFilesPerBundle = maxBundleDataItemCount ~/ 2;
 
 class MappedUploadHandles {
   /// A map of [FileUploadHandle]s keyed by their respective file's id.
-  final Map<String, FileUploadHandle> v2FileUploadHandles = {};
+  late Map<String, FileUploadHandle> v2FileUploadHandles;
 
   /// A map of [DataItemUploadHandle]s keyed by their respective file's id.
-  final Map<String, DataItemUploadHandle> dataItemUploadHandles = {};
+  late Map<String, DataItemUploadHandle> _dataItemUploadHandles;
   final List<BundleUploadHandle> bundleUploadHandles = [];
 
   MappedUploadHandles._create({
-    required Map<String, FileUploadHandle> v2FileUploadHandles,
     required Map<String, DataItemUploadHandle> dataItemUploadHandles,
-  });
+    required this.v2FileUploadHandles,
+  }) {
+    _dataItemUploadHandles = dataItemUploadHandles;
+  }
 
   static Future<MappedUploadHandles> create({
     required Map<String, FileUploadHandle> v2FileUploadHandles,
@@ -35,7 +37,6 @@ class MappedUploadHandles {
   }
 
   Future<void> prepareBundleHandles() async {
-    final _dataItemUploadHandles = dataItemUploadHandles;
     // NOTE: Using maxFilesPerBundle since FileUploadHandles have 2 data items
     final bundleItems = await NextFitBundlePacker<DataItemUploadHandle>(
       maxBundleSize: bundleSizeLimit,
