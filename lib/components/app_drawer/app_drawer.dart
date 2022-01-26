@@ -74,6 +74,8 @@ class AppDrawer extends StatelessWidget {
                                         onPressed: () => context
                                             .read<DrivesCubit>()
                                             .selectDrive(d.id),
+                                        hasAlert: state.drivesWithAlerts
+                                            .contains(d.id),
                                       ),
                                     ),
                                   },

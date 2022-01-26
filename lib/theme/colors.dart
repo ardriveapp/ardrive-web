@@ -43,6 +43,7 @@ class LightColors {
   static const kDarkSurfaceColor = Color(0xFF333333);
   static const kOnDarkSurfaceHighEmphasis = Colors.white;
   static const kOnDarkSurfaceMediumEmphasis = Colors.white60;
+  static const kOnLightSurfaceMediumEmphasis = Color(0xFF121212);
   final onDarkSurfaceSelectedColor = kPrimarySwatch.shade300.withOpacity(0.12);
 
   final errorColor = kPrimarySwatch.shade300;
