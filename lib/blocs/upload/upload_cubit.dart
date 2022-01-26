@@ -94,7 +94,7 @@ class UploadCubit extends Cubit<UploadState> {
       emit(UploadFileConflict(
           conflictingFileNames: conflictingFiles.keys.toList()));
     } else {
-      unawaited(prepareUpload());
+      await prepareUpload();
     }
   }
 
