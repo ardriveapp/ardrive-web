@@ -32,11 +32,11 @@ class MappedUploadHandles {
       dataItemUploadHandles: dataItemUploadHandles,
       v2FileUploadHandles: v2FileUploadHandles,
     );
-    await bundle.prepareBundleHandles();
+    await bundle.createBundleHandlesFromDataItemHandles();
     return bundle;
   }
 
-  Future<void> prepareBundleHandles() async {
+  Future<void> createBundleHandlesFromDataItemHandles() async {
     // NOTE: Using maxFilesPerBundle since FileUploadHandles have 2 data items
     final bundleItems = await NextFitBundlePacker<DataItemUploadHandle>(
       maxBundleSize: bundleSizeLimit,
@@ -52,12 +52,12 @@ class MappedUploadHandles {
     _dataItemUploadHandles.clear();
   }
 
-  Future<BigInt> estimateBundleCosts({
+  Future<BigInt> estimateCostOfAllBundles({
     required ArweaveService arweaveService,
   }) async {
     var totalCost = BigInt.zero;
     for (var bundle in bundleUploadHandles) {
-      totalCost += await bundle.estimateBundleCost(
+      totalCost += await bundle.estimateUploadCost(
         arweave: arweaveService,
       );
     }

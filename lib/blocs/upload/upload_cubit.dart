@@ -23,6 +23,7 @@ import 'file_upload_handle.dart';
 part 'upload_state.dart';
 
 final privateFileSizeLimit = 104857600;
+final publicFileSizeLimit = 1.25 * math.pow(10, 9) as int;
 final minimumPstTip = BigInt.from(10000000);
 
 class UploadCubit extends Cubit<UploadState> {
@@ -94,11 +95,11 @@ class UploadCubit extends Cubit<UploadState> {
       emit(UploadFileConflict(
           conflictingFileNames: conflictingFiles.keys.toList()));
     } else {
-      await prepareUpload();
+      await prepareUploadPlanAndCostEstimates();
     }
   }
 
-  Future<void> prepareUpload() async {
+  Future<void> prepareUploadPlanAndCostEstimates() async {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
     if (await _profileCubit.checkIfWalletMismatch()) {
@@ -111,9 +112,8 @@ class UploadCubit extends Cubit<UploadState> {
         isArConnect: await _profileCubit.isCurrentProfileArConnect(),
       ),
     );
-    final sizeLimit = (_targetDrive.isPrivate
-        ? privateFileSizeLimit
-        : 1.25 * math.pow(10, 9)) as int;
+    final sizeLimit =
+        _targetDrive.isPrivate ? privateFileSizeLimit : publicFileSizeLimit;
     final tooLargeFiles = [
       for (final file in files)
         if (await file.length() > sizeLimit) file.name
@@ -126,7 +126,7 @@ class UploadCubit extends Cubit<UploadState> {
       ));
       return;
     }
-    final mappedUploadHandles = await prepareFiles(
+    final mappedUploadHandles = await mapUploadHandlesFromXFiles(
       files: files,
       cipherKey: profile.cipherKey,
       wallet: profile.wallet,
@@ -175,7 +175,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     // Upload Bundles
     for (var bundleHandle in mappedUploadHandles.bundleUploadHandles) {
-      await bundleHandle.prepareBundle(
+      await bundleHandle.prepareAndSignBundleTransaction(
         arweaveService: _arweave,
         driveDao: _driveDao,
         pstService: _pst,
@@ -189,11 +189,11 @@ class UploadCubit extends Cubit<UploadState> {
 
     // Upload V2 Files
     for (final uploadHandle in mappedUploadHandles.v2FileUploadHandles.values) {
-      await uploadHandle.prepareAndSign(
+      await uploadHandle.prepareAndSignTransactions(
         arweaveService: _arweave,
         wallet: profile.wallet,
       );
-      await uploadHandle.writeEntityToDatabase(
+      await uploadHandle.writeFileEntityToDatabase(
         driveDao: _driveDao,
       );
       await for (final _ in uploadHandle.upload(_arweave)) {
@@ -206,7 +206,7 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
-  Future<MappedUploadHandles> prepareFiles({
+  Future<MappedUploadHandles> mapUploadHandlesFromXFiles({
     required List<XFile> files,
     required SecretKey cipherKey,
     required Wallet wallet,

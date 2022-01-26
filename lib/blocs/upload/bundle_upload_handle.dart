@@ -39,7 +39,7 @@ class BundleUploadHandle implements UploadHandle {
   @override
   double uploadProgress = 0;
 
-  Future<void> prepareBundle({
+  Future<void> prepareAndSignBundleTransaction({
     required ArweaveService arweaveService,
     required DriveDao driveDao,
     required PstService pstService,
@@ -61,7 +61,7 @@ class BundleUploadHandle implements UploadHandle {
     await bundleTx.sign(wallet);
 
     dataItemUploadHandles.forEach((file) async {
-      await file.writeEntityToDatabase(
+      await file.writeFileEntityToDatabase(
           bundledInTxId: bundleTx.id, driveDao: driveDao);
     });
   }
@@ -78,7 +78,9 @@ class BundleUploadHandle implements UploadHandle {
     bundleTx.setData(Uint8List(0));
   }
 
-  Future<BigInt> estimateBundleCost({required ArweaveService arweave}) async {
+  Future<BigInt> estimateUploadCost({
+    required ArweaveService arweave,
+  }) async {
     return arweave.getPrice(byteSize: await computeBundleSize());
   }
 

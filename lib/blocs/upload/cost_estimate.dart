@@ -42,13 +42,13 @@ class CostEstimate {
   }) async {
     final _v2FileUploadHandles = mappedUploadHandles.v2FileUploadHandles;
     final dataItemsCost = mappedUploadHandles.bundleUploadHandles.isNotEmpty
-        ? await mappedUploadHandles.estimateBundleCosts(
+        ? await mappedUploadHandles.estimateCostOfAllBundles(
             arweaveService: arweaveService,
           )
         : BigInt.zero;
     var v2FilesUploadCost = BigInt.zero;
     for (final value in _v2FileUploadHandles.values.map((e) async =>
-        await e.estimateV2UploadCost(arweaveService: arweaveService))) {
+        await e.estimateUploadCost(arweaveService: arweaveService))) {
       v2FilesUploadCost += await value;
     }
 

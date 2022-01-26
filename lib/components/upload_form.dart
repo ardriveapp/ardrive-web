@@ -81,7 +81,7 @@ class UploadForm extends StatelessWidget {
                   child: Text('CANCEL'),
                 ),
                 ElevatedButton(
-                  onPressed: () => context.read<UploadCubit>().prepareUpload(),
+                  onPressed: () => context.read<UploadCubit>().prepareUploadPlanAndCostEstimates(),
                   child: Text('CONTINUE'),
                 ),
               ],

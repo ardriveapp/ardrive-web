@@ -50,7 +50,7 @@ class DataItemUploadHandle implements UploadHandle, DataItemHandle {
     this.fileKey,
   });
 
-  Future<void> writeEntityToDatabase({
+  Future<void> writeFileEntityToDatabase({
     required String bundledInTxId,
     required DriveDao driveDao,
   }) async {

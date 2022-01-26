@@ -43,7 +43,7 @@ class FileUploadHandle implements UploadHandle {
     this.fileKey,
   });
 
-  Future<void> writeEntityToDatabase({required DriveDao driveDao}) async {
+  Future<void> writeFileEntityToDatabase({required DriveDao driveDao}) async {
     await driveDao.transaction(() async {
       await driveDao.writeFileEntity(entity, path);
       await driveDao.insertFileRevision(
@@ -52,7 +52,7 @@ class FileUploadHandle implements UploadHandle {
     });
   }
 
-  Future<void> prepareAndSign(
+  Future<void> prepareAndSignTransactions(
       {required ArweaveService arweaveService, required Wallet wallet}) async {
     final packageInfo = await PackageInfo.fromPlatform();
 
@@ -95,8 +95,9 @@ class FileUploadHandle implements UploadHandle {
     return (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
   }
 
-  Future<BigInt> estimateV2UploadCost(
-      {required ArweaveService arweaveService}) async {
+  Future<BigInt> estimateUploadCost({
+    required ArweaveService arweaveService,
+  }) async {
     return await arweaveService.getPrice(byteSize: entity.size!) +
         await arweaveService.getPrice(byteSize: getEntityJSONSize());
   }
