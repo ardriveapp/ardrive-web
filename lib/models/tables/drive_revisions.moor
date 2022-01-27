@@ -19,6 +19,4 @@ CREATE TABLE drive_revisions (
 
     PRIMARY KEY (driveId, dateCreated),
     FOREIGN KEY (metadataTxId) REFERENCES network_transactions(id)
-
-    
 );
