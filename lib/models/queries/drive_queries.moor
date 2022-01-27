@@ -49,6 +49,10 @@ foldersInFolderAtPath ($order = ''):
     ) 
     ORDER BY $order;
 
+ghostFolders:
+    SELECT * FROM folder_entries
+    WHERE isGhost = TRUE;
+
 foldersInFolderWithName:
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;
