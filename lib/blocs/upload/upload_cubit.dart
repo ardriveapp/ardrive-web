@@ -3,7 +3,7 @@ import 'dart:math' as math;
 
 import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/data_item_upload_handle.dart';
-import 'package:ardrive/blocs/upload/mapped_upload_handles.dart';
+import 'package:ardrive/blocs/upload/upload_plan.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -126,13 +126,13 @@ class UploadCubit extends Cubit<UploadState> {
       ));
       return;
     }
-    final mappedUploadHandles = await mapUploadHandlesFromXFiles(
+    final uploadPlan = await xfilesToUploadPlan(
       files: files,
       cipherKey: profile.cipherKey,
       wallet: profile.wallet,
     );
     final costEstimate = await CostEstimate.create(
-      mappedUploadHandles: mappedUploadHandles,
+      uploadPlan: uploadPlan,
       arweaveService: _arweave,
       pstService: _pst,
       wallet: profile.wallet,
@@ -146,13 +146,13 @@ class UploadCubit extends Cubit<UploadState> {
         costEstimate: costEstimate,
         uploadIsPublic: _targetDrive.isPublic,
         sufficientArBalance: profile.walletBalance >= costEstimate.totalCost,
-        mappedUploadHandles: mappedUploadHandles,
+        uploadPlan: uploadPlan,
       ),
     );
   }
 
   Future<void> startUpload({
-    required MappedUploadHandles mappedUploadHandles,
+    required UploadPlan uploadPlan,
     required CostEstimate costEstimate,
   }) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
@@ -164,7 +164,7 @@ class UploadCubit extends Cubit<UploadState> {
     }
     emit(
       UploadSigningInProgress(
-        mappedUploadHandles: mappedUploadHandles,
+        uploadPlan: uploadPlan,
         isArConnect: await _profileCubit.isCurrentProfileArConnect(),
       ),
     );
@@ -174,7 +174,7 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     // Upload Bundles
-    for (var bundleHandle in mappedUploadHandles.bundleUploadHandles) {
+    for (var bundleHandle in uploadPlan.bundleUploadHandles) {
       await bundleHandle.prepareAndSignBundleTransaction(
         arweaveService: _arweave,
         driveDao: _driveDao,
@@ -182,13 +182,13 @@ class UploadCubit extends Cubit<UploadState> {
         wallet: profile.wallet,
       );
       await for (final _ in bundleHandle.upload(_arweave)) {
-        emit(UploadInProgress(mappedUploadHandles: mappedUploadHandles));
+        emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       bundleHandle.dispose();
     }
 
     // Upload V2 Files
-    for (final uploadHandle in mappedUploadHandles.v2FileUploadHandles.values) {
+    for (final uploadHandle in uploadPlan.v2FileUploadHandles.values) {
       await uploadHandle.prepareAndSignTransactions(
         arweaveService: _arweave,
         wallet: profile.wallet,
@@ -197,8 +197,9 @@ class UploadCubit extends Cubit<UploadState> {
         driveDao: _driveDao,
       );
       await for (final _ in uploadHandle.upload(_arweave)) {
-        emit(UploadInProgress(mappedUploadHandles: mappedUploadHandles));
+        emit(UploadInProgress(uploadPlan: uploadPlan));
       }
+      uploadHandle.dispose();
     }
 
     unawaited(_profileCubit.refreshBalance());
@@ -206,7 +207,7 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
-  Future<MappedUploadHandles> mapUploadHandlesFromXFiles({
+  Future<UploadPlan> xfilesToUploadPlan({
     required List<XFile> files,
     required SecretKey cipherKey,
     required Wallet wallet,
@@ -262,7 +263,7 @@ class UploadCubit extends Cubit<UploadState> {
         );
       }
     }
-    return MappedUploadHandles.create(
+    return UploadPlan.create(
       v2FileUploadHandles: _v2FileUploadHandles,
       dataItemUploadHandles: _dataItemUploadHandles,
     );

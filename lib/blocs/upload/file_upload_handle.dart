@@ -81,7 +81,11 @@ class FileUploadHandle implements UploadHandle {
     entity.txId = entityTx.id;
   }
 
-  int getEntityJSONSize() {
+  int getFileDataSize() {
+    return entity.size!;
+  }
+
+  int getMetadataJSONSize() {
     final entityFake = FileEntity(
       id: entity.id,
       dataContentType: entity.dataContentType,
@@ -95,13 +99,6 @@ class FileUploadHandle implements UploadHandle {
     return (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
   }
 
-  Future<BigInt> estimateUploadCost({
-    required ArweaveService arweaveService,
-  }) async {
-    return await arweaveService.getPrice(byteSize: entity.size!) +
-        await arweaveService.getPrice(byteSize: getEntityJSONSize());
-  }
-
   /// Uploads the file, emitting an event whenever the progress is updated.
   Stream<Null> upload(ArweaveService arweave) async* {
     await arweave.postTx(entityTx);
@@ -110,5 +107,10 @@ class FileUploadHandle implements UploadHandle {
       uploadProgress = upload.progress;
       yield null;
     }
+  }
+
+  void dispose() {
+    entityTx.setData(Uint8List(0));
+    dataTx.setData(Uint8List(0));
   }
 }

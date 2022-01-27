@@ -17,13 +17,12 @@ class UploadPreparationInProgress extends UploadState {
 class UploadPreparationFailure extends UploadState {}
 
 class UploadSigningInProgress extends UploadState {
-  final MappedUploadHandles mappedUploadHandles;
+  final UploadPlan uploadPlan;
   final bool isArConnect;
 
-  UploadSigningInProgress(
-      {required this.mappedUploadHandles, this.isArConnect = false});
+  UploadSigningInProgress({required this.uploadPlan, this.isArConnect = false});
   @override
-  List<Object> get props => [mappedUploadHandles, isArConnect];
+  List<Object> get props => [uploadPlan, isArConnect];
 }
 
 class UploadFileConflict extends UploadState {
@@ -56,32 +55,32 @@ class UploadReady extends UploadState {
   /// Whether or not the upload will be made public ie. without encryption.
   final bool uploadIsPublic;
 
-  final MappedUploadHandles mappedUploadHandles;
+  final UploadPlan uploadPlan;
   UploadReady({
     required this.costEstimate,
     required this.sufficientArBalance,
     required this.uploadIsPublic,
-    required this.mappedUploadHandles,
+    required this.uploadPlan,
   });
 
   @override
   List<Object?> get props => [
         costEstimate,
         sufficientArBalance,
-        mappedUploadHandles,
+        uploadPlan,
       ];
 }
 
 class UploadInProgress extends UploadState {
-  final MappedUploadHandles mappedUploadHandles;
+  final UploadPlan uploadPlan;
   final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
 
   UploadInProgress({
-    required this.mappedUploadHandles,
+    required this.uploadPlan,
   });
 
   @override
-  List<Object?> get props => [mappedUploadHandles, _equatableBust];
+  List<Object?> get props => [uploadPlan, _equatableBust];
 }
 
 class UploadFailure extends UploadState {}

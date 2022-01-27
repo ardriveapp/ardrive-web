@@ -78,12 +78,6 @@ class BundleUploadHandle implements UploadHandle {
     bundleTx.setData(Uint8List(0));
   }
 
-  Future<BigInt> estimateUploadCost({
-    required ArweaveService arweave,
-  }) async {
-    return arweave.getPrice(byteSize: await computeBundleSize());
-  }
-
   Future<int> computeBundleSize() async {
     final fileSizes = <int>[];
     for (var item in dataItemUploadHandles) {

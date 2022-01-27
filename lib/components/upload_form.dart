@@ -81,7 +81,9 @@ class UploadForm extends StatelessWidget {
                   child: Text('CANCEL'),
                 ),
                 ElevatedButton(
-                  onPressed: () => context.read<UploadCubit>().prepareUploadPlanAndCostEstimates(),
+                  onPressed: () => context
+                      .read<UploadCubit>()
+                      .prepareUploadPlanAndCostEstimates(),
                   child: Text('CONTINUE'),
                 ),
               ],
@@ -151,13 +153,12 @@ class UploadForm extends StatelessWidget {
             );
           } else if (state is UploadReady) {
             final numberOfFilesInBundles =
-                state.mappedUploadHandles.bundleUploadHandles.isNotEmpty
-                    ? state.mappedUploadHandles.bundleUploadHandles
+                state.uploadPlan.bundleUploadHandles.isNotEmpty
+                    ? state.uploadPlan.bundleUploadHandles
                         .map((e) => e.numberOfFiles)
                         .reduce((value, element) => value += element)
                     : 0;
-            final numberOfV2Files =
-                state.mappedUploadHandles.v2FileUploadHandles.length;
+            final numberOfV2Files = state.uploadPlan.v2FileUploadHandles.length;
             return AppDialog(
               title:
                   'Upload ${numberOfFilesInBundles + numberOfV2Files} file(s)',
@@ -173,16 +174,16 @@ class UploadForm extends StatelessWidget {
                         child: ListView(
                           shrinkWrap: true,
                           children: [
-                            for (final file in state.mappedUploadHandles
-                                .v2FileUploadHandles.values) ...{
+                            for (final file in state
+                                .uploadPlan.v2FileUploadHandles.values) ...{
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(file.entity.name!),
                                 subtitle: Text(filesize(file.size)),
                               ),
                             },
-                            for (final bundle in state
-                                .mappedUploadHandles.bundleUploadHandles) ...{
+                            for (final bundle
+                                in state.uploadPlan.bundleUploadHandles) ...{
                               for (final fileEntity in bundle.fileEntities) ...{
                                 ListTile(
                                   contentPadding: EdgeInsets.zero,
@@ -236,7 +237,7 @@ class UploadForm extends StatelessWidget {
                 ElevatedButton(
                   onPressed: state.sufficientArBalance
                       ? () => context.read<UploadCubit>().startUpload(
-                            mappedUploadHandles: state.mappedUploadHandles,
+                            uploadPlan: state.uploadPlan,
                             costEstimate: state.costEstimate,
                           )
                       : null,
@@ -247,7 +248,7 @@ class UploadForm extends StatelessWidget {
           } else if (state is UploadSigningInProgress) {
             return AppDialog(
               title:
-                  '${state.mappedUploadHandles.bundleUploadHandles.isNotEmpty ? 'Bundling and signing' : 'Signing'} upload...',
+                  '${state.uploadPlan.bundleUploadHandles.isNotEmpty ? 'Bundling and signing' : 'Signing'} upload...',
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -267,13 +268,12 @@ class UploadForm extends StatelessWidget {
             );
           } else if (state is UploadInProgress) {
             final numberOfFilesInBundles =
-                state.mappedUploadHandles.bundleUploadHandles.isNotEmpty
-                    ? state.mappedUploadHandles.bundleUploadHandles
+                state.uploadPlan.bundleUploadHandles.isNotEmpty
+                    ? state.uploadPlan.bundleUploadHandles
                         .map((e) => e.numberOfFiles)
                         .reduce((value, element) => value += element)
                     : 0;
-            final numberOfV2Files =
-                state.mappedUploadHandles.v2FileUploadHandles.length;
+            final numberOfV2Files = state.uploadPlan.v2FileUploadHandles.length;
             return AppDialog(
               dismissable: false,
               title:
@@ -286,8 +286,8 @@ class UploadForm extends StatelessWidget {
                     child: ListView(
                       shrinkWrap: true,
                       children: [
-                        for (final file in state.mappedUploadHandles
-                            .v2FileUploadHandles.values) ...{
+                        for (final file
+                            in state.uploadPlan.v2FileUploadHandles.values) ...{
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(file.entity.name!),
@@ -301,8 +301,8 @@ class UploadForm extends StatelessWidget {
                                     : null),
                           ),
                         },
-                        for (final bundle in state
-                            .mappedUploadHandles.bundleUploadHandles) ...{
+                        for (final bundle
+                            in state.uploadPlan.bundleUploadHandles) ...{
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Column(

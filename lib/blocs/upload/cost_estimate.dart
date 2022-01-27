@@ -1,4 +1,6 @@
-import 'package:ardrive/blocs/upload/mapped_upload_handles.dart';
+import 'package:ardrive/blocs/upload/bundle_upload_handle.dart';
+import 'package:ardrive/blocs/upload/file_upload_handle.dart';
+import 'package:ardrive/blocs/upload/upload_plan.dart';
 import 'package:ardrive/entities/entity.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
@@ -35,22 +37,19 @@ class CostEstimate {
   });
 
   static Future<CostEstimate> create({
-    required MappedUploadHandles mappedUploadHandles,
+    required UploadPlan uploadPlan,
     required ArweaveService arweaveService,
     required PstService pstService,
     required Wallet wallet,
   }) async {
-    final _v2FileUploadHandles = mappedUploadHandles.v2FileUploadHandles;
-    final dataItemsCost = mappedUploadHandles.bundleUploadHandles.isNotEmpty
-        ? await mappedUploadHandles.estimateCostOfAllBundles(
-            arweaveService: arweaveService,
-          )
-        : BigInt.zero;
-    var v2FilesUploadCost = BigInt.zero;
-    for (final value in _v2FileUploadHandles.values.map((e) async =>
-        await e.estimateUploadCost(arweaveService: arweaveService))) {
-      v2FilesUploadCost += await value;
-    }
+    final _v2FileUploadHandles = uploadPlan.v2FileUploadHandles;
+    final dataItemsCost = await estimateCostOfAllBundles(
+      bundleUploadHandles: uploadPlan.bundleUploadHandles,
+      arweaveService: arweaveService,
+    );
+    final v2FilesUploadCost = await estimateV2UploadsCost(
+        fileUploadHandles: _v2FileUploadHandles.values.toList(),
+        arweaveService: arweaveService);
 
     final bundlePstFee = await pstService.getPSTFee(dataItemsCost);
 
@@ -105,5 +104,49 @@ class CostEstimate {
       ..addTag(TipType.tagName, TipType.dataUpload);
     await feeTx.sign(wallet);
     return feeTx;
+  }
+
+  static Future<BigInt> estimateCostOfAllBundles({
+    required List<BundleUploadHandle> bundleUploadHandles,
+    required ArweaveService arweaveService,
+  }) async {
+    var totalCost = BigInt.zero;
+    for (var bundle in bundleUploadHandles) {
+      totalCost += await estimateBundleUploadCost(
+        bundle: bundle,
+        arweave: arweaveService,
+      );
+    }
+    return totalCost;
+  }
+
+  static Future<BigInt> estimateBundleUploadCost({
+    required BundleUploadHandle bundle,
+    required ArweaveService arweave,
+  }) async {
+    return arweave.getPrice(byteSize: await bundle.computeBundleSize());
+  }
+
+  static Future<BigInt> estimateV2UploadsCost({
+    required List<FileUploadHandle> fileUploadHandles,
+    required ArweaveService arweaveService,
+  }) async {
+    var totalCost = BigInt.zero;
+    for (final cost in fileUploadHandles.map((e) async =>
+        await estimateV2FileUploadCost(
+            fileUploadHandle: e, arweaveService: arweaveService))) {
+      totalCost += await cost;
+    }
+    return totalCost;
+  }
+
+  static Future<BigInt> estimateV2FileUploadCost({
+    required FileUploadHandle fileUploadHandle,
+    required ArweaveService arweaveService,
+  }) async {
+    return await arweaveService.getPrice(
+            byteSize: fileUploadHandle.getFileDataSize()) +
+        await arweaveService.getPrice(
+            byteSize: fileUploadHandle.getMetadataJSONSize());
   }
 }
