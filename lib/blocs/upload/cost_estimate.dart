@@ -64,7 +64,8 @@ class CostEstimate {
       );
     }
     final v2FilesPstFee = (v2FilesFeeTx?.quantity ?? BigInt.zero);
-    final totalCost = v2FilesUploadCost + dataItemsCost + bundlePstFee;
+    final totalCost =
+        v2FilesUploadCost + dataItemsCost + bundlePstFee + v2FilesPstFee;
 
     final arUploadCost = winstonToAr(totalCost);
     final usdUploadCost = await arweaveService
