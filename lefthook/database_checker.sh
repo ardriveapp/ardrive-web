@@ -4,7 +4,7 @@ if [ $(git diff @{u}...HEAD ./lib/models/tables | wc -l) -eq "0" ]; then
     exit 0
 else
     previousSchemaPattern='([-][[:space:]]*int get schemaVersion =>[[:space:]]*[[:digit:]]+)'
-    currentSchemaPattern='([+][[:space:]]* int get schemaVersion =>[[:space:]]*[[:digit:]]+)'
+    currentSchemaPattern='([+][[:space:]]*int get schemaVersion =>[[:space:]]*[[:digit:]]+)'
 
     databaseSchemaDiff=$(git diff @{u}...HEAD ./lib/models/database/database.dart)
 
