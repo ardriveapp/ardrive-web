@@ -18,7 +18,10 @@ else
     currentVersion=${currentSchemaRegexMatch[${#currentSchemaRegexMatch[@]} - 1]}
     # Force integer conversion
     currentVersion=$(($currentVersion + 0))
-
+    if [[ "$currentVersion" == "0" || "$previousVersion" == "0" ]]; then
+        echo "  🔴 Database schema parsing error. Quit"
+        exit 1
+    fi
     if [ $currentVersion -lt $previousVersion ]; then
         echo "  🔴 Database version not updated. Quit"
         exit 1
