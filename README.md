@@ -41,6 +41,9 @@ Finally, to start a development instance for web, run:
 flutter run -d Chrome
 ```
 
+Install lefthook for your platform from the intructions [here](https://github.com/evilmartians/lefthook/blob/master/docs/other.md).
+This will enable the use of git hooks.
+
 All changes made to `dev` will be continuously deployed to [staging.ardrive.io](https://staging.ardrive.io). All PRs from this repo merging into `dev` will trigger a preview build that can be shared freely.
 
 ## Release

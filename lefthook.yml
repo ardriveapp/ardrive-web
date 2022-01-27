@@ -2,5 +2,5 @@ pre-push:
   parallel: true
   commands:
     database-check:
-      run: ./database_checker.sh
+      run: ./lefthook/database_checker.sh
     
