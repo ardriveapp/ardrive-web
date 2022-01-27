@@ -9,6 +9,9 @@ Have any questions? Join the ArDrive Discord channel for support, news and updat
 
 ## Setting up the Development Environment
 
+Install lefthook for your platform from the intructions [here](https://github.com/evilmartians/lefthook/blob/master/docs/other.md).
+This will enable the use of git hooks.
+
 If your environment is using homebrew, install the Flutter SDK with its cask as shown below. Alternatively, visit the [Flutter Installation Instructions][https://flutter.dev/docs/get-started/install] to get the Flutter SDK up and running for your OS / local setup.
 
 ```shell
@@ -40,9 +43,6 @@ Finally, to start a development instance for web, run:
 ```shell
 flutter run -d Chrome
 ```
-
-Install lefthook for your platform from the intructions [here](https://github.com/evilmartians/lefthook/blob/master/docs/other.md).
-This will enable the use of git hooks.
 
 All changes made to `dev` will be continuously deployed to [staging.ardrive.io](https://staging.ardrive.io). All PRs from this repo merging into `dev` will trigger a preview build that can be shared freely.
 
