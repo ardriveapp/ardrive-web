@@ -1,4 +1,5 @@
 #!/bin/bash
+exec 2>/dev/null 
 if [ $(git diff @{u}...HEAD ./lib/models/tables | wc -l) -eq "0" ]; then
     echo "  🟢 Database tables are unchanged."
     exit 0
