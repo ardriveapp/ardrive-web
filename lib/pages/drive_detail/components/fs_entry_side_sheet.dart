@@ -6,11 +6,12 @@ class FsEntrySideSheet extends StatelessWidget {
   final String? folderId;
   final String? fileId;
 
-  FsEntrySideSheet(
-      {required this.driveId,
-      required this.currentFolder,
-      this.folderId,
-      this.fileId});
+  FsEntrySideSheet({
+    required this.driveId,
+    required this.currentFolder,
+    this.folderId,
+    this.fileId,
+  });
 
   @override
   Widget build(BuildContext context) => Drawer(
@@ -82,22 +83,20 @@ class FsEntrySideSheet extends StatelessWidget {
           DataColumn(label: Text('')),
         ],
         rows: [
-          DataRow(cells: [
-            DataCell(Text('Contains')),
-            DataCell(
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  '${currentFolder.files.length} files, ${currentFolder.subfolders.length} folders',
-                  style: Theme.of(context)
-                      .textTheme
-                      .caption!
-                      .copyWith(color: kOnSurfaceBodyTextColor),
-                ),
-              ),
-            ),
-          ]),
           if (state is FsEntryInfoSuccess<Drive>) ...{
+            if (state.entry.rootFolderId == currentFolder.folder!.id)
+              DataRow(cells: [
+                DataCell(Text('Contains')),
+                DataCell(
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '${currentFolder.files.length} files, ${currentFolder.subfolders.length} folders',
+                      textAlign: TextAlign.end,
+                    ),
+                  ),
+                ),
+              ]),
             DataRow(cells: [
               DataCell(Text('Drive ID')),
               DataCell(
@@ -121,13 +120,24 @@ class FsEntrySideSheet extends StatelessWidget {
                 ),
               )
             ]),
-          } else if (state is FsEntryInfoSuccess<FolderEntry>) ...{
+          } else if (state is FsEntryInfoSuccess<FolderWithContents>) ...{
+            DataRow(cells: [
+              DataCell(Text('Contains')),
+              DataCell(
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '${state.entry.files.length} files, ${state.entry.subfolders.length} folders',
+                  ),
+                ),
+              ),
+            ]),
             DataRow(cells: [
               DataCell(Text('Folder ID')),
               DataCell(
                 CopyIconButton(
                   tooltip: 'Copy Folder ID',
-                  value: state.entry.id,
+                  value: state.entry.folder!.id,
                 ),
               ),
             ]),

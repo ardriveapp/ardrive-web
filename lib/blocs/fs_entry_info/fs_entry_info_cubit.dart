@@ -23,19 +23,17 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
       : _driveDao = driveDao,
         super(FsEntryInfoInitial()) {
     if (folderId != null) {
-      _entrySubscription = _driveDao
-          .folderById(driveId: driveId, folderId: folderId!)
-          .watchSingle()
-          .listen(
-            (f) => emit(
-              FsEntryInfoSuccess<FolderEntry>(
-                name: f.name,
-                lastUpdated: f.lastUpdated,
-                dateCreated: f.dateCreated,
-                entry: f,
-              ),
-            ),
-          );
+      _entrySubscription =
+          _driveDao.watchFolderContents(driveId, folderId: folderId!).listen(
+                (f) => emit(
+                  FsEntryInfoSuccess<FolderWithContents>(
+                    name: f.folder!.name,
+                    lastUpdated: f.folder!.lastUpdated,
+                    dateCreated: f.folder!.dateCreated,
+                    entry: f,
+                  ),
+                ),
+              );
     } else if (fileId != null) {
       _entrySubscription = _driveDao
           .fileById(driveId: driveId, fileId: fileId!)
@@ -64,6 +62,7 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                 driveId: d.id,
               )
               .getSingle();
+
           emit(
             FsEntryDriveInfoSuccess(
               name: d.name,
