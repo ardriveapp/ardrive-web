@@ -1,0 +1,6 @@
+pre-push:
+  parallel: true
+  commands:
+    database-check:
+      run: ./lefthook/database_checker.sh
+    
