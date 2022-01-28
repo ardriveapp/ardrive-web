@@ -19,6 +19,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 
   final String? selectedItemId;
   final bool selectedItemIsFolder;
+  final bool selectedItemIsGhost;
   final bool showSelectedItemDetails;
 
   /// The preview URL for the selected file.
@@ -39,6 +40,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.availableRowsPerPage,
     this.selectedItemId,
     this.selectedItemIsFolder = false,
+    this.selectedItemIsGhost = false,
     this.showSelectedItemDetails = false,
     this.selectedFilePreviewUrl,
   });
@@ -51,6 +53,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     OrderingMode? contentOrderingMode,
     String? selectedItemId,
     bool? selectedItemIsFolder,
+    bool? selectedItemIsGhost,
     bool? showSelectedItemDetails,
     Uri? selectedFilePreviewUrl,
     int? rowsPerPage,
@@ -64,6 +67,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         contentOrderingMode: contentOrderingMode ?? this.contentOrderingMode,
         selectedItemId: selectedItemId ?? this.selectedItemId,
         selectedItemIsFolder: selectedItemIsFolder ?? this.selectedItemIsFolder,
+        selectedItemIsGhost: selectedItemIsGhost ?? this.selectedItemIsGhost,
         showSelectedItemDetails:
             showSelectedItemDetails ?? this.showSelectedItemDetails,
         selectedFilePreviewUrl:
@@ -81,6 +85,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         contentOrderingMode,
         selectedItemId,
         selectedItemIsFolder,
+        selectedItemIsGhost,
         showSelectedItemDetails,
         selectedFilePreviewUrl,
         rowsPerPage,

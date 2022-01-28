@@ -56,8 +56,7 @@ class _DriveDataTableState extends State<DriveDataTable> {
             .map(
               (folder) => DriveTableFolder(
                 folder: folder,
-                selected:
-                    folder.id == widget.driveDetailState.selectedItemId,
+                selected: folder.id == widget.driveDetailState.selectedItemId,
                 onPressed: () {
                   final bloc = context.read<DriveDetailCubit>();
                   if (folder.id == widget.driveDetailState.selectedItemId) {
@@ -66,6 +65,7 @@ class _DriveDataTableState extends State<DriveDataTable> {
                     bloc.selectItem(
                       folder.id,
                       isFolder: true,
+                      isGhost: folder.isGhost,
                     );
                   }
                 },
