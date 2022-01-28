@@ -32,6 +32,25 @@ Future<void> promptToCreateFolder(
       ),
     );
 
+Future<void> promptToCreateFolderWithoutCongestionWarning(
+  BuildContext context, {
+  required String driveId,
+  required String parentFolderId,
+}) =>
+    showDialog(
+      context: context,
+      builder: (_) => BlocProvider(
+        create: (context) => FolderCreateCubit(
+          driveId: driveId,
+          parentFolderId: parentFolderId,
+          profileCubit: context.read<ProfileCubit>(),
+          arweave: context.read<ArweaveService>(),
+          driveDao: context.read<DriveDao>(),
+        ),
+        child: FolderCreateForm(),
+      ),
+    );
+
 class FolderCreateForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
