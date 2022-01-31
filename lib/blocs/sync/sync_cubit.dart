@@ -120,11 +120,14 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> startSync() async {
     try {
       final profile = _profileCubit.state;
+      late String? ownerAddress;
+
       print('Syncing...');
       emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
       if (profile is ProfileLoggedIn) {
         //Check if profile is ArConnect to skip sync while tab is hidden
+        ownerAddress = profile.walletAddress;
         final isArConnect = await _profileCubit.isCurrentProfileArConnect();
 
         if (isArConnect && isBrowserTabHidden()) {
@@ -165,7 +168,7 @@ class SyncCubit extends Cubit<SyncState> {
             addError(error!);
           }));
       await Future.wait(driveSyncProcesses);
-      await createGhosts();
+      await createGhosts(ownerAddress: ownerAddress);
       emit(SyncEmpty());
 
       await Future.wait([
@@ -179,7 +182,7 @@ class SyncCubit extends Cubit<SyncState> {
     emit(SyncIdle());
   }
 
-  Future<void> createGhosts() async {
+  Future<void> createGhosts({String? ownerAddress}) async {
     //Finalize missing parent list
 
     for (final ghostFolder in ghostFolders.values) {
@@ -198,7 +201,11 @@ class SyncCubit extends Cubit<SyncState> {
           await _driveDao.driveById(driveId: ghostFolder.driveId).getSingle();
 
       // Dont create ghost folder if the ghost is a missing root folder
-      if (drive.rootFolderId == ghostFolder.folderId) {
+      // Or if the drive doesn't belong to the user
+      final isOwnDrive = drive.ownerAddress == ownerAddress;
+      final isNotRootFolderGhost = drive.rootFolderId == ghostFolder.folderId;
+
+      if (isOwnDrive && isNotRootFolderGhost) {
         continue;
       }
 
