@@ -10,7 +10,7 @@ Widget _buildDataTable(BuildContext context, DriveDetailLoadSuccess state) =>
             sortColumnIndex: DriveOrder.values.indexOf(state.contentOrderBy),
             sortAscending: state.contentOrderingMode == OrderingMode.asc,
             rows: [
-              ...state.currentFolder.subfolders.map(
+              ...state.folderInView.subfolders.map(
                 (folder) => _buildFolderRow(
                   context: context,
                   folder: folder,
@@ -29,7 +29,7 @@ Widget _buildDataTable(BuildContext context, DriveDetailLoadSuccess state) =>
                   },
                 ),
               ),
-              ...state.currentFolder.files.map(
+              ...state.folderInView.files.map(
                 (file) => _buildFileRow(
                   context: context,
                   file: file,

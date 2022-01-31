@@ -12,7 +12,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final Drive currentDrive;
   final bool hasWritePermissions;
 
-  final FolderWithContents currentFolder;
+  final FolderWithContents folderInView;
 
   final DriveOrder contentOrderBy;
   final OrderingMode contentOrderingMode;
@@ -30,7 +30,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   DriveDetailLoadSuccess({
     required this.currentDrive,
     required this.hasWritePermissions,
-    required this.currentFolder,
+    required this.folderInView,
     required this.contentOrderBy,
     required this.contentOrderingMode,
     this.selectedItemId,
@@ -43,7 +43,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   DriveDetailLoadSuccess copyWith({
     Drive? currentDrive,
     bool? hasWritePermissions,
-    FolderWithContents? currentFolder,
+    FolderWithContents? folderInView,
     DriveOrder? contentOrderBy,
     OrderingMode? contentOrderingMode,
     String? selectedItemId,
@@ -55,7 +55,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
       DriveDetailLoadSuccess(
         currentDrive: currentDrive ?? this.currentDrive,
         hasWritePermissions: hasWritePermissions ?? this.hasWritePermissions,
-        currentFolder: currentFolder ?? this.currentFolder,
+        folderInView: folderInView ?? this.folderInView,
         contentOrderBy: contentOrderBy ?? this.contentOrderBy,
         contentOrderingMode: contentOrderingMode ?? this.contentOrderingMode,
         selectedItemId: selectedItemId ?? this.selectedItemId,
@@ -71,7 +71,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   List<Object?> get props => [
         currentDrive,
         hasWritePermissions,
-        currentFolder,
+        folderInView,
         contentOrderBy,
         contentOrderingMode,
         selectedItemId,
@@ -84,10 +84,10 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   String? getCurrentFolderId() {
     if (selectedItemIsFolder) {
       return selectedItemId;
-    } else if (currentFolder.folder!.id != currentDrive.rootFolderId) {
+    } else if (folderInView.folder!.id != currentDrive.rootFolderId) {
       // If nothing is selected and we are in a subfolder
       // Show the info of that subfolder
-      return currentFolder.folder!.id;
+      return folderInView.folder!.id;
     }
     return null;
   }

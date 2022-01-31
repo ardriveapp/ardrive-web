@@ -71,11 +71,11 @@ class DriveDetailPage extends StatelessWidget {
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
-                                  path: state.currentFolder.folder?.path ??
+                                  path: state.folderInView.folder?.path ??
                                       rootPath,
                                 ),
-                                if (state.currentFolder.subfolders.isNotEmpty ||
-                                    state.currentFolder.files.isNotEmpty)
+                                if (state.folderInView.subfolders.isNotEmpty ||
+                                    state.folderInView.files.isNotEmpty)
                                   Expanded(
                                     child: Row(
                                       children: [
@@ -98,7 +98,7 @@ class DriveDetailPage extends StatelessWidget {
                           VerticalDivider(width: 1),
                           FsEntrySideSheet(
                             driveId: state.currentDrive.id,
-                            currentFolder: state.currentFolder,
+                            currentFolder: state.folderInView,
                             folderId: state.getCurrentFolderId(),
                             fileId: state.getCurrentFileId(),
                           ),
@@ -108,7 +108,7 @@ class DriveDetailPage extends StatelessWidget {
                     if (kIsWeb)
                       DriveFileDropZone(
                         driveId: state.currentDrive.id,
-                        folderId: state.currentFolder.folder?.id ??
+                        folderId: state.folderInView.folder?.id ??
                             state.currentDrive.rootFolderId,
                       ),
                   ],
@@ -140,11 +140,11 @@ class DriveDetailPage extends StatelessWidget {
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
-                                  path: state.currentFolder.folder?.path ??
+                                  path: state.folderInView.folder?.path ??
                                       rootPath,
                                 ),
-                                if (state.currentFolder.subfolders.isNotEmpty ||
-                                    state.currentFolder.files.isNotEmpty)
+                                if (state.folderInView.subfolders.isNotEmpty ||
+                                    state.folderInView.files.isNotEmpty)
                                   Expanded(
                                     child: _buildDataList(context, state),
                                   )
@@ -161,7 +161,7 @@ class DriveDetailPage extends StatelessWidget {
                       Expanded(
                         child: FsEntrySideSheet(
                           driveId: state.currentDrive.id,
-                          currentFolder: state.currentFolder,
+                          currentFolder: state.folderInView,
                           folderId: state.getCurrentFolderId(),
                           fileId: state.getCurrentFileId(),
                         ),

@@ -88,7 +88,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               currentDrive: drive,
               hasWritePermissions: profile is ProfileLoggedIn &&
                   drive.ownerAddress == profile.walletAddress,
-              currentFolder: folderContents,
+              folderInView: folderContents,
               contentOrderBy: contentOrderBy,
               contentOrderingMode: contentOrderingMode,
             ),
@@ -98,7 +98,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             currentDrive: drive,
             hasWritePermissions: profile is ProfileLoggedIn &&
                 drive.ownerAddress == profile.walletAddress,
-            currentFolder: folderContents,
+            folderInView: folderContents,
             contentOrderBy: contentOrderBy,
             contentOrderingMode: contentOrderingMode,
           ));
@@ -139,7 +139,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       OrderingMode contentOrderingMode = OrderingMode.asc}) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
-      path: state.currentFolder.folder?.path ?? rootPath,
+      path: state.folderInView.folder?.path ?? rootPath,
       contentOrderBy: contentOrderBy,
       contentOrderingMode: contentOrderingMode,
     );
