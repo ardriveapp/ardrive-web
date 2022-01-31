@@ -230,6 +230,8 @@ class SyncCubit extends Cubit<SyncState> {
     String? syncCursor,
   }) async {
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+    print(
+        'Syncing drive $driveId from last block height $lastBlockHeight and current block height $currentBlockheight');
     final owner = await arweave.getOwnerForDriveEntityWithId(driveId);
     SecretKey? driveKey;
     if (drive.isPrivate) {
