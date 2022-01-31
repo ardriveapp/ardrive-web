@@ -203,9 +203,9 @@ class SyncCubit extends Cubit<SyncState> {
       // Dont create ghost folder if the ghost is a missing root folder
       // Or if the drive doesn't belong to the user
       final isOwnDrive = drive.ownerAddress == ownerAddress;
-      final isNotRootFolderGhost = drive.rootFolderId == ghostFolder.folderId;
+      final isRootFolderGhost = drive.rootFolderId == ghostFolder.folderId;
 
-      if (isOwnDrive && isNotRootFolderGhost) {
+      if (!isOwnDrive && !isRootFolderGhost) {
         continue;
       }
 
