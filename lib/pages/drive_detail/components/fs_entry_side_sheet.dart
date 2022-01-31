@@ -91,7 +91,8 @@ class FsEntrySideSheet extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerRight,
                     child: Text(
-                      '${currentFolder.files.length} files, ${currentFolder.subfolders.length} folders',
+                      '${(state as FsEntryDriveInfoSuccess).rootFolderTree.getRecursiveFileCount()} files, '
+                      '${state.rootFolderTree.getRecursiveFolderCount()} folders',
                       textAlign: TextAlign.end,
                     ),
                   ),
@@ -120,14 +121,14 @@ class FsEntrySideSheet extends StatelessWidget {
                 ),
               )
             ]),
-          } else if (state is FsEntryInfoSuccess<FolderWithContents>) ...{
+          } else if (state is FsEntryInfoSuccess<FolderNode>) ...{
             DataRow(cells: [
               DataCell(Text('Contains')),
               DataCell(
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    '${state.entry.files.length} files, ${state.entry.subfolders.length} folders',
+                    '${state.entry.getRecursiveFileCount()} files, ${state.entry.getRecursiveFolderCount()} folders',
                   ),
                 ),
               ),
@@ -137,7 +138,7 @@ class FsEntrySideSheet extends StatelessWidget {
               DataCell(
                 CopyIconButton(
                   tooltip: 'Copy Folder ID',
-                  value: state.entry.folder!.id,
+                  value: state.entry.folder.id,
                 ),
               ),
             ]),
@@ -234,7 +235,7 @@ class FsEntrySideSheet extends StatelessWidget {
                         DataCell(
                           CopyIconButton(
                             tooltip: 'Copy Root Folder Tx ID',
-                            value: infoState.rootFolder.metadataTxId,
+                            value: infoState.rootFolderRevision.metadataTxId,
                           ),
                         ),
                       ]),

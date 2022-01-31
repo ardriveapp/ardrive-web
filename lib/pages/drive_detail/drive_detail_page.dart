@@ -101,7 +101,12 @@ class DriveDetailPage extends StatelessWidget {
                             currentFolder: state.currentFolder,
                             folderId: state.selectedItemIsFolder
                                 ? state.selectedItemId
-                                : null,
+                                // If nothing is selected and we are in a subfolder
+                                // Show the info of that subfolder
+                                : state.currentFolder.folder!.id !=
+                                        state.currentDrive.rootFolderId
+                                    ? state.currentFolder.folder!.id
+                                    : null,
                             fileId: !state.selectedItemIsFolder
                                 ? state.selectedItemId
                                 : null,

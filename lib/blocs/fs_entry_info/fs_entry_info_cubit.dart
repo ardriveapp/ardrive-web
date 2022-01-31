@@ -24,12 +24,12 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
         super(FsEntryInfoInitial()) {
     if (folderId != null) {
       _entrySubscription =
-          _driveDao.watchFolderContents(driveId, folderId: folderId!).listen(
+          _driveDao.getFolderTree(driveId, folderId!).asStream().listen(
                 (f) => emit(
-                  FsEntryInfoSuccess<FolderWithContents>(
-                    name: f.folder!.name,
-                    lastUpdated: f.folder!.lastUpdated,
-                    dateCreated: f.folder!.dateCreated,
+                  FsEntryInfoSuccess<FolderNode>(
+                    name: f.folder.name,
+                    lastUpdated: f.folder.lastUpdated,
+                    dateCreated: f.folder.dateCreated,
                     entry: f,
                   ),
                 ),
@@ -56,20 +56,22 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
           .watchSingle()
           .listen(
         (d) async {
-          final rootFolder = await _driveDao
+          final rootFolderRevision = await _driveDao
               .latestFolderRevisionByFolderId(
                 folderId: d.rootFolderId,
                 driveId: d.id,
               )
               .getSingle();
-
+          final rootFolderTree =
+              await _driveDao.getFolderTree(d.id, d.rootFolderId);
           emit(
             FsEntryDriveInfoSuccess(
               name: d.name,
               lastUpdated: d.lastUpdated,
               dateCreated: d.dateCreated,
               drive: d,
-              rootFolder: rootFolder,
+              rootFolderRevision: rootFolderRevision,
+              rootFolderTree: rootFolderTree,
             ),
           );
         },
