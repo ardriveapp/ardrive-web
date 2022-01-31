@@ -120,7 +120,7 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> startSync() async {
     try {
       final profile = _profileCubit.state;
-      late String? ownerAddress;
+      String? ownerAddress;
 
       print('Syncing...');
       emit(SyncInProgress());
