@@ -80,6 +80,19 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         showSelectedItemDetails,
         selectedFilePreviewUrl,
       ];
+
+  String? getCurrentFolderId() {
+    if (selectedItemIsFolder) {
+      return selectedItemId;
+    } else if (currentFolder.folder!.id != currentDrive.rootFolderId) {
+      // If nothing is selected and we are in a subfolder
+      // Show the info of that subfolder
+      return currentFolder.folder!.id;
+    }
+    return null;
+  }
+
+  String? getCurrentFileId() => !selectedItemIsFolder ? selectedItemId : null;
 }
 
 /// [DriveDetailLoadNotFound] means that the specified drive could not be found attached to

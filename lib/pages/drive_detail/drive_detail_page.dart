@@ -99,17 +99,8 @@ class DriveDetailPage extends StatelessWidget {
                           FsEntrySideSheet(
                             driveId: state.currentDrive.id,
                             currentFolder: state.currentFolder,
-                            folderId: state.selectedItemIsFolder
-                                ? state.selectedItemId
-                                // If nothing is selected and we are in a subfolder
-                                // Show the info of that subfolder
-                                : state.currentFolder.folder!.id !=
-                                        state.currentDrive.rootFolderId
-                                    ? state.currentFolder.folder!.id
-                                    : null,
-                            fileId: !state.selectedItemIsFolder
-                                ? state.selectedItemId
-                                : null,
+                            folderId: state.getCurrentFolderId(),
+                            fileId: state.getCurrentFileId(),
                           ),
                         }
                       ],
@@ -171,12 +162,8 @@ class DriveDetailPage extends StatelessWidget {
                         child: FsEntrySideSheet(
                           driveId: state.currentDrive.id,
                           currentFolder: state.currentFolder,
-                          folderId: state.selectedItemIsFolder
-                              ? state.selectedItemId
-                              : null,
-                          fileId: !state.selectedItemIsFolder
-                              ? state.selectedItemId
-                              : null,
+                          folderId: state.getCurrentFolderId(),
+                          fileId: state.getCurrentFileId(),
                         ),
                       )
                   ],
