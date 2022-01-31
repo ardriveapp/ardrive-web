@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:intersperse/src/intersperse_extensions.dart';
 
 class CustomPaginatedDataTable extends StatefulWidget {
   CustomPaginatedDataTable({
@@ -276,6 +277,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
 
   final pageButtonStyle = TextButton.styleFrom(
     padding: EdgeInsets.zero,
+    minimumSize: Size(10, 10),
     textStyle: TextStyle(
       color: kOnSurfaceBodyTextColor,
     ),
@@ -291,19 +293,82 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
     TextButton pageButton({
       required int page,
       required Function onPressed,
-    }) =>
-        TextButton(
-          style: pageButtonStyle,
-          onPressed: () => pageTo(widget.rowsPerPage * page),
-          child: Text(
-            (page + 1).toString(),
-            style: footerTextStyle.copyWith(
-              color: page == _getCurrentPage()
-                  ? kPrimarySwatch.shade500
-                  : kOnSurfaceBodyTextColor,
-            ),
+    }) {
+      return TextButton(
+        style: pageButtonStyle,
+        onPressed: () => pageTo(widget.rowsPerPage * page),
+        child: Text(
+          (page + 1).toString(),
+          style: footerTextStyle.copyWith(
+            color: page == _getCurrentPage()
+                ? kPrimarySwatch.shade500
+                : kOnSurfaceBodyTextColor,
           ),
-        );
+        ),
+      );
+    }
+
+    const ellipsisSeparator = Text('...');
+    const pageNumberSeparator = Text('|');
+
+    Widget pageRow(int pagesToShow) {
+      return Row(
+        children: [
+          if (_getPageCount() > pagesToShow) ...[
+            if (_getCurrentPage() < (pagesToShow - 1)) ...[
+              for (var i = 0; i < pagesToShow; i++)
+                pageButton(
+                  page: i,
+                  onPressed: () => pageTo(widget.rowsPerPage * i),
+                ),
+              ellipsisSeparator,
+              pageButton(
+                page: _getPageCount(),
+                onPressed: () => _handleLast(),
+              ),
+            ] else if (_getCurrentPage() >= (pagesToShow - 1) &&
+                _getCurrentPage() < _getPageCount() - pagesToShow) ...[
+              pageButton(
+                page: 0,
+                onPressed: () => _handleFirst(),
+              ),
+              ellipsisSeparator,
+              for (var i = _getCurrentPage() - 2;
+                  i <= _getCurrentPage() + 2;
+                  i++)
+                pageButton(
+                  page: i,
+                  onPressed: () => pageTo(widget.rowsPerPage * i),
+                ),
+              ellipsisSeparator,
+              pageButton(
+                page: _getPageCount(),
+                onPressed: () => _handleLast(),
+              ),
+            ] else ...[
+              pageButton(
+                page: 0,
+                onPressed: () => _handleFirst(),
+              ),
+              ellipsisSeparator,
+              for (var i = _getPageCount() - pagesToShow;
+                  i <= _getPageCount();
+                  i++)
+                pageButton(
+                  page: i,
+                  onPressed: () => pageTo(widget.rowsPerPage * i),
+                ),
+            ]
+          ] else
+            for (var i = 0; i < _getPageCount(); i++)
+              pageButton(
+                page: i,
+                onPressed: () => pageTo(widget.rowsPerPage * i),
+              ),
+        ].intersperse(pageNumberSeparator).toList(),
+      );
+    }
+
     final footerWidgets = <Widget>[];
     if (widget.onRowsPerPageChanged != null) {
       final List<Widget> availableRowsPerPage = widget.availableRowsPerPage
@@ -357,61 +422,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
         tooltip: 'Previous',
         onPressed: _firstRowIndex <= 0 ? null : _handlePrevious,
       ),
-      Row(
-        children: [
-          if (_getPageCount() > _pagesToShow) ...[
-            if (_getCurrentPage() < (_pagesToShow - 1)) ...[
-              for (var i = 0; i < _pagesToShow; i++)
-                pageButton(
-                  page: i,
-                  onPressed: () => pageTo(widget.rowsPerPage * i),
-                ),
-              Text('...'),
-              pageButton(
-                page: _getPageCount(),
-                onPressed: () => _handleLast(),
-              ),
-            ] else if (_getCurrentPage() >= (_pagesToShow - 1) &&
-                _getCurrentPage() < _getPageCount() - _pagesToShow) ...[
-              pageButton(
-                page: 0,
-                onPressed: () => _handleFirst(),
-              ),
-              Text('...'),
-              for (var i = _getCurrentPage() - 2;
-                  i <= _getCurrentPage() + 2;
-                  i++)
-                pageButton(
-                  page: i,
-                  onPressed: () => pageTo(widget.rowsPerPage * i),
-                ),
-              Text('...'),
-              pageButton(
-                page: _getPageCount(),
-                onPressed: () => _handleLast(),
-              ),
-            ] else ...[
-              pageButton(
-                page: 0,
-                onPressed: () => _handleFirst(),
-              ),
-              Text('...'),
-              for (var i = _getPageCount() - _pagesToShow;
-                  i <= _getPageCount();
-                  i++)
-                pageButton(
-                  page: i,
-                  onPressed: () => pageTo(widget.rowsPerPage * i),
-                ),
-            ]
-          ] else
-            for (var i = 0; i < _getPageCount(); i++)
-              pageButton(
-                page: i,
-                onPressed: () => pageTo(widget.rowsPerPage * i),
-              ),
-        ],
-      ),
+      pageRow(_pagesToShow),
       IconButton(
         icon: Icon(Icons.chevron_right, color: widget.arrowHeadColor),
         padding: EdgeInsets.zero,
