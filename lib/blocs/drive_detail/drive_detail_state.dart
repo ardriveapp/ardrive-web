@@ -71,7 +71,6 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   List<Object?> get props => [
         currentDrive,
         hasWritePermissions,
-        folderInView,
         contentOrderBy,
         contentOrderingMode,
         selectedItemId,
@@ -81,7 +80,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         selectedFilePreviewUrl,
       ];
 
-  String? getCurrentFolderId() {
+  FolderID? getSelectedFolderId() {
     if (selectedItemIsFolder) {
       return selectedItemId;
     } else if (folderInView.folder!.id != currentDrive.rootFolderId) {
@@ -92,7 +91,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     return null;
   }
 
-  String? getCurrentFileId() => !selectedItemIsFolder ? selectedItemId : null;
+  FileID? getSelectedFileId() => !selectedItemIsFolder ? selectedItemId : null;
 }
 
 /// [DriveDetailLoadNotFound] means that the specified drive could not be found attached to

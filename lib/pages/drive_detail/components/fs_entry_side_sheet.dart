@@ -2,13 +2,11 @@ part of '../drive_detail_page.dart';
 
 class FsEntrySideSheet extends StatelessWidget {
   final String driveId;
-  final FolderWithContents currentFolder;
   final String? folderId;
   final String? fileId;
 
   FsEntrySideSheet({
     required this.driveId,
-    required this.currentFolder,
     this.folderId,
     this.fileId,
   });
@@ -84,20 +82,23 @@ class FsEntrySideSheet extends StatelessWidget {
         ],
         rows: [
           if (state is FsEntryInfoSuccess<Drive>) ...{
-            if (state.entry.rootFolderId == currentFolder.folder!.id)
-              DataRow(cells: [
-                DataCell(Text('Contains')),
-                DataCell(
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '${(state as FsEntryDriveInfoSuccess).rootFolderTree.getRecursiveFileCount()} files, '
-                      '${state.rootFolderTree.getRecursiveFolderCount()} folders',
-                      textAlign: TextAlign.end,
-                    ),
+            DataRow(cells: [
+              DataCell(Text('Contains')),
+              DataCell(
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    fileAndFolderCountsToString(
+                        fileCount: (state as FsEntryDriveInfoSuccess)
+                            .rootFolderTree
+                            .getRecursiveFileCount(),
+                        folderCount:
+                            state.rootFolderTree.getRecursiveSubFolderCount()),
+                    textAlign: TextAlign.end,
                   ),
                 ),
-              ]),
+              ),
+            ]),
             DataRow(cells: [
               DataCell(Text('Drive ID')),
               DataCell(
@@ -128,7 +129,10 @@ class FsEntrySideSheet extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    '${state.entry.getRecursiveFileCount()} files, ${state.entry.getRecursiveFolderCount()} folders',
+                    fileAndFolderCountsToString(
+                      folderCount: state.entry.getRecursiveFileCount(),
+                      fileCount: state.entry.getRecursiveSubFolderCount(),
+                    ),
                     textAlign: TextAlign.end,
                   ),
                 ),

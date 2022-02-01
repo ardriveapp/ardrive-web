@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/entities/constants.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';

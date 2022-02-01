@@ -21,10 +21,10 @@ class FolderNode {
     return null;
   }
 
-  int getRecursiveFolderCount() {
+  int getRecursiveSubFolderCount() {
     var totalSubFolders = subfolders.length;
     for (var subfolder in subfolders) {
-      totalSubFolders += subfolder.getRecursiveFolderCount();
+      totalSubFolders += subfolder.getRecursiveSubFolderCount();
     }
     return totalSubFolders;
   }

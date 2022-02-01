@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
@@ -12,6 +11,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -98,9 +98,8 @@ class DriveDetailPage extends StatelessWidget {
                           VerticalDivider(width: 1),
                           FsEntrySideSheet(
                             driveId: state.currentDrive.id,
-                            currentFolder: state.folderInView,
-                            folderId: state.getCurrentFolderId(),
-                            fileId: state.getCurrentFileId(),
+                            folderId: state.getSelectedFolderId(),
+                            fileId: state.getSelectedFileId(),
                           ),
                         }
                       ],
@@ -161,9 +160,8 @@ class DriveDetailPage extends StatelessWidget {
                       Expanded(
                         child: FsEntrySideSheet(
                           driveId: state.currentDrive.id,
-                          currentFolder: state.folderInView,
-                          folderId: state.getCurrentFolderId(),
-                          fileId: state.getCurrentFileId(),
+                          folderId: state.getSelectedFolderId(),
+                          fileId: state.getSelectedFileId(),
                         ),
                       )
                   ],
