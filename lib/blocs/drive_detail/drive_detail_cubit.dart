@@ -83,6 +83,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             ? this.state as DriveDetailLoadSuccess
             : null;
         final profile = _profileCubit.state;
+
+        // Set selected item to subfolder if the folder being viewed is not drive root
+
+        final selectedItem = folderContents.folder!.id != drive.rootFolderId
+            ? SelectedItem(selectedFolder: folderContents.folder)
+            : null;
+
         if (state != null) {
           emit(
             state.copyWith(
@@ -92,6 +99,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               folderInView: folderContents,
               contentOrderBy: contentOrderBy,
               contentOrderingMode: contentOrderingMode,
+              selectedItem: selectedItem,
             ),
           );
         } else {
@@ -102,6 +110,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             folderInView: folderContents,
             contentOrderBy: contentOrderBy,
             contentOrderingMode: contentOrderingMode,
+            selectedItem: selectedItem,
           ));
         }
       },
@@ -112,8 +121,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     var state = this.state as DriveDetailLoadSuccess;
 
     state = state.copyWith(selectedItem: selectedItem);
-
-    if (state.currentDrive.isPublic && !selectedItem.isFolder()) {
+    if (state.currentDrive.isPublic &&
+        selectedItem.getItemType() == SelectedItemType.File) {
       final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
           driveId: driveId, fileId: selectedItem.getID());
       final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;

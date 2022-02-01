@@ -24,6 +24,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   ///
   /// Null if no file is selected.
   final Uri? selectedFilePreviewUrl;
+  final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
 
   DriveDetailLoadSuccess({
     required this.currentDrive,
@@ -67,6 +68,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         contentOrderingMode,
         showSelectedItemDetails,
         selectedFilePreviewUrl,
+        _equatableBust,
       ];
 
   bool isViewingRootFolder() =>

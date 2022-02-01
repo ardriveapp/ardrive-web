@@ -23,28 +23,33 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
         super(FsEntryActivityInitial()) {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
-      if (selectedItem.isFolder()) {
-        _entrySubscription = _driveDao
-            .latestFolderRevisionsByFolderIdWithTransactions(
-              driveId: driveId,
-              folderId: selectedItem.getID(),
-            )
-            .watch()
-            .listen((r) => emit(
-                FsEntryActivitySuccess<FolderRevisionWithTransaction>(
-                    revisions: r)));
-      } else if (selectedItem.isFile()) {
-        _entrySubscription = _driveDao
-            .latestFileRevisionsByFileIdWithTransactions(
-              driveId: driveId,
-              fileId: selectedItem.getID(),
-            )
-            .watch()
-            .listen((r) => emit(
-                FsEntryActivitySuccess<FileRevisionWithTransactions>(
-                    revisions: r)));
+      switch (selectedItem.getItemType()) {
+        case SelectedItemType.Folder:
+          _entrySubscription = _driveDao
+              .latestFolderRevisionsByFolderIdWithTransactions(
+                driveId: driveId,
+                folderId: selectedItem.getID(),
+              )
+              .watch()
+              .listen((r) => emit(
+                  FsEntryActivitySuccess<FolderRevisionWithTransaction>(
+                      revisions: r)));
+          break;
+        case SelectedItemType.File:
+          _entrySubscription = _driveDao
+              .latestFileRevisionsByFileIdWithTransactions(
+                driveId: driveId,
+                fileId: selectedItem.getID(),
+              )
+              .watch()
+              .listen((r) => emit(
+                  FsEntryActivitySuccess<FileRevisionWithTransactions>(
+                      revisions: r)));
+          break;
+
+        default:
       }
-    } else if (driveId.isNotEmpty) {
+    } else {
       _entrySubscription = _driveDao
           .latestDriveRevisionsByDriveIdWithTransactions(driveId: driveId)
           .watch()

@@ -11,9 +11,24 @@ class SelectedItem {
     assert(selectedFile != null || selectedFolder != null, true);
   }
 
-  bool isFile() => selectedFile != null;
-  bool isFolder() => selectedFolder != null;
-  bool isGhost() => selectedFolder?.isGhost ?? false;
+  SelectedItemType getItemType() {
+    if (selectedFile != null) {
+      return SelectedItemType.File;
+    } else if (selectedFolder != null && selectedFolder!.isGhost) {
+      return SelectedItemType.Ghost;
+    } else if (selectedFolder != null) {
+      return SelectedItemType.Folder;
+    } else {
+      throw UnimplementedError();
+    }
+  }
 
   String getID() => selectedFile?.id ?? selectedFolder!.id;
+}
+
+enum SelectedItemType {
+  File,
+  Folder,
+  Ghost,
+  Manifest,
 }

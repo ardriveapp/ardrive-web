@@ -23,34 +23,38 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
         super(FsEntryInfoInitial()) {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
-      if (selectedItem.isFolder()) {
-        _entrySubscription = _driveDao
-            .getFolderTree(driveId, selectedItem.getID())
-            .asStream()
-            .listen(
-              (f) => emit(
-                FsEntryInfoSuccess<FolderNode>(
-                  name: f.folder.name,
-                  lastUpdated: f.folder.lastUpdated,
-                  dateCreated: f.folder.dateCreated,
-                  entry: f,
+      switch (selectedItem.getItemType()) {
+        case SelectedItemType.Folder:
+          _entrySubscription = _driveDao
+              .getFolderTree(driveId, selectedItem.getID())
+              .asStream()
+              .listen(
+                (f) => emit(
+                  FsEntryInfoSuccess<FolderNode>(
+                    name: f.folder.name,
+                    lastUpdated: f.folder.lastUpdated,
+                    dateCreated: f.folder.dateCreated,
+                    entry: f,
+                  ),
                 ),
-              ),
-            );
-      } else if (selectedItem.isFolder()) {
-        _entrySubscription = _driveDao
-            .fileById(driveId: driveId, fileId: selectedItem.getID())
-            .watchSingle()
-            .listen(
-              (f) => emit(
-                FsEntryInfoSuccess<FileEntry>(
-                  name: f.name,
-                  lastUpdated: f.lastUpdated,
-                  dateCreated: f.dateCreated,
-                  entry: f,
+              );
+          break;
+        case SelectedItemType.File:
+          _entrySubscription = _driveDao
+              .fileById(driveId: driveId, fileId: selectedItem.getID())
+              .watchSingle()
+              .listen(
+                (f) => emit(
+                  FsEntryInfoSuccess<FileEntry>(
+                    name: f.name,
+                    lastUpdated: f.lastUpdated,
+                    dateCreated: f.dateCreated,
+                    entry: f,
+                  ),
                 ),
-              ),
-            );
+              );
+          break;
+        default:
       }
     } else {
       _entrySubscription = _driveDao
