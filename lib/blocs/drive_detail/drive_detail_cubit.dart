@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/entities/constants.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
@@ -108,28 +108,18 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     ).listen((_) {});
   }
 
-  Future<void> selectItem(
-    String itemId, {
-    bool isFolder = false,
-    bool isGhost = false,
-  }) async {
+  Future<void> selectItem(SelectedItem selectedItem) async {
     var state = this.state as DriveDetailLoadSuccess;
 
-    state = state.copyWith(
-      selectedItemId: itemId,
-      selectedItemIsFolder: isFolder,
-      selectedItemIsGhost: isGhost,
-    );
+    state = state.copyWith(selectedItem: selectedItem);
 
-    if (state.selectedItemId != null) {
-      if (state.currentDrive.isPublic && !isFolder) {
-        final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
-            driveId: driveId, fileId: state.selectedItemId!);
-        final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
-        state = state.copyWith(
-            selectedFilePreviewUrl:
-                Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'));
-      }
+    if (state.currentDrive.isPublic && !selectedItem.isFolder()) {
+      final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
+          driveId: driveId, fileId: selectedItem.getID());
+      final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
+      state = state.copyWith(
+          selectedFilePreviewUrl:
+              Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'));
     }
 
     emit(state);

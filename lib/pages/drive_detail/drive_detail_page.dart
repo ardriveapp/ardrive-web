@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
@@ -98,8 +99,7 @@ class DriveDetailPage extends StatelessWidget {
                           VerticalDivider(width: 1),
                           FsEntrySideSheet(
                             driveId: state.currentDrive.id,
-                            folderId: state.getSelectedFolderId(),
-                            fileId: state.getSelectedFileId(),
+                            maybeSelectedItem: state.selectedItem,
                           ),
                         }
                       ],
@@ -160,8 +160,7 @@ class DriveDetailPage extends StatelessWidget {
                       Expanded(
                         child: FsEntrySideSheet(
                           driveId: state.currentDrive.id,
-                          folderId: state.getSelectedFolderId(),
-                          fileId: state.getSelectedFileId(),
+                          maybeSelectedItem: state.selectedItem,
                         ),
                       )
                   ],

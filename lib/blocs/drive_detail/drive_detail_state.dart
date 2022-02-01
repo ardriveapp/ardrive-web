@@ -17,9 +17,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final DriveOrder contentOrderBy;
   final OrderingMode contentOrderingMode;
 
-  final String? selectedItemId;
-  final bool selectedItemIsFolder;
-  final bool selectedItemIsGhost;
+  final SelectedItem? selectedItem;
   final bool showSelectedItemDetails;
 
   /// The preview URL for the selected file.
@@ -33,9 +31,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.folderInView,
     required this.contentOrderBy,
     required this.contentOrderingMode,
-    this.selectedItemId,
-    this.selectedItemIsFolder = false,
-    this.selectedItemIsGhost = false,
+    this.selectedItem,
     this.showSelectedItemDetails = false,
     this.selectedFilePreviewUrl,
   });
@@ -46,9 +42,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     FolderWithContents? folderInView,
     DriveOrder? contentOrderBy,
     OrderingMode? contentOrderingMode,
-    String? selectedItemId,
-    bool? selectedItemIsFolder,
-    bool? selectedItemIsGhost,
+    SelectedItem? selectedItem,
     bool? showSelectedItemDetails,
     Uri? selectedFilePreviewUrl,
   }) =>
@@ -58,9 +52,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         folderInView: folderInView ?? this.folderInView,
         contentOrderBy: contentOrderBy ?? this.contentOrderBy,
         contentOrderingMode: contentOrderingMode ?? this.contentOrderingMode,
-        selectedItemId: selectedItemId ?? this.selectedItemId,
-        selectedItemIsFolder: selectedItemIsFolder ?? this.selectedItemIsFolder,
-        selectedItemIsGhost: selectedItemIsGhost ?? this.selectedItemIsGhost,
+        selectedItem: selectedItem ?? this.selectedItem,
         showSelectedItemDetails:
             showSelectedItemDetails ?? this.showSelectedItemDetails,
         selectedFilePreviewUrl:
@@ -73,25 +65,12 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         hasWritePermissions,
         contentOrderBy,
         contentOrderingMode,
-        selectedItemId,
-        selectedItemIsFolder,
-        selectedItemIsGhost,
         showSelectedItemDetails,
         selectedFilePreviewUrl,
       ];
 
-  FolderID? getSelectedFolderId() {
-    if (selectedItemIsFolder) {
-      return selectedItemId;
-    } else if (folderInView.folder!.id != currentDrive.rootFolderId) {
-      // If nothing is selected and we are in a subfolder
-      // Show the info of that subfolder
-      return folderInView.folder!.id;
-    }
-    return null;
-  }
-
-  FileID? getSelectedFileId() => !selectedItemIsFolder ? selectedItemId : null;
+  bool isViewingRootFolder() =>
+      folderInView.folder!.id != currentDrive.rootFolderId;
 }
 
 /// [DriveDetailLoadNotFound] means that the specified drive could not be found attached to

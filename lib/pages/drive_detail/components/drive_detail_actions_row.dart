@@ -8,8 +8,9 @@ class DriveDetailActionRow extends StatelessWidget {
     return BlocBuilder<DriveDetailCubit, DriveDetailState>(
       builder: (context, state) {
         if (state is DriveDetailLoadSuccess) {
+          final selectedItem = state.selectedItem;
           final fsActions = <Widget>[
-            if (state.hasWritePermissions && state.selectedItemId == null) ...[
+            if (state.hasWritePermissions && selectedItem == null) ...[
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () {
@@ -18,7 +19,7 @@ class DriveDetailActionRow extends StatelessWidget {
                 tooltip: 'Rename Drive',
               ),
             ],
-            if (state.selectedItemId == null)
+            if (selectedItem == null)
               IconButton(
                 icon: const Icon(Icons.table_chart),
                 onPressed: () {
@@ -28,14 +29,14 @@ class DriveDetailActionRow extends StatelessWidget {
                 tooltip: 'Export Drive Contents',
               ),
             // A folder/file is selected.
-            if (state.selectedItemId != null) ...{
-              if (!state.selectedItemIsFolder) ...{
+            if (selectedItem != null) ...{
+              if (!selectedItem.isFolder()) ...{
                 IconButton(
                   icon: const Icon(Icons.file_download),
                   onPressed: () => promptToDownloadProfileFile(
                     context: context,
                     driveId: state.currentDrive.id,
-                    fileId: state.selectedItemId as String,
+                    fileId: selectedItem.getID(),
                   ),
                   tooltip: 'Download',
                 ),
@@ -45,7 +46,7 @@ class DriveDetailActionRow extends StatelessWidget {
                   onPressed: () => promptToShareFile(
                     context: context,
                     driveId: state.currentDrive.id,
-                    fileId: state.selectedItemId as String,
+                    fileId: selectedItem.getID(),
                   ),
                 ),
                 if (state.currentDrive.isPublic)
@@ -56,18 +57,22 @@ class DriveDetailActionRow extends StatelessWidget {
                     tooltip: 'Preview',
                   ),
               },
-              if (state.hasWritePermissions && !state.selectedItemIsGhost) ...{
+              if (state.hasWritePermissions && !selectedItem.isGhost()) ...{
                 IconButton(
                   icon: const Icon(Icons.drive_file_rename_outline),
                   onPressed: () {
-                    if (state.selectedItemIsFolder) {
-                      promptToRenameFolder(context,
-                          driveId: state.currentDrive.id,
-                          folderId: state.selectedItemId as String);
+                    if (selectedItem.isFolder()) {
+                      promptToRenameFolder(
+                        context,
+                        driveId: state.currentDrive.id,
+                        folderId: selectedItem.getID(),
+                      );
                     } else {
-                      promptToRenameFile(context,
-                          driveId: state.currentDrive.id,
-                          fileId: state.selectedItemId as String);
+                      promptToRenameFile(
+                        context,
+                        driveId: state.currentDrive.id,
+                        fileId: selectedItem.getID(),
+                      );
                     }
                   },
                   tooltip: 'Rename',
@@ -75,14 +80,18 @@ class DriveDetailActionRow extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.drive_file_move),
                   onPressed: () {
-                    if (state.selectedItemIsFolder) {
-                      promptToMoveFolder(context,
-                          driveId: state.currentDrive.id,
-                          folderId: state.selectedItemId as String);
+                    if (selectedItem.isFolder()) {
+                      promptToMoveFolder(
+                        context,
+                        driveId: state.currentDrive.id,
+                        folderId: selectedItem.getID(),
+                      );
                     } else {
-                      promptToMoveFile(context,
-                          driveId: state.currentDrive.id,
-                          fileId: state.selectedItemId as String);
+                      promptToMoveFile(
+                        context,
+                        driveId: state.currentDrive.id,
+                        fileId: selectedItem.getID(),
+                      );
                     }
                   },
                   tooltip: 'Move',

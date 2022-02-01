@@ -2,13 +2,10 @@ part of '../drive_detail_page.dart';
 
 class FsEntrySideSheet extends StatelessWidget {
   final String driveId;
-  final String? folderId;
-  final String? fileId;
-
+  final SelectedItem? maybeSelectedItem;
   FsEntrySideSheet({
     required this.driveId,
-    this.folderId,
-    this.fileId,
+    this.maybeSelectedItem,
   });
 
   @override
@@ -16,13 +13,13 @@ class FsEntrySideSheet extends StatelessWidget {
         elevation: 1,
         child: BlocProvider<FsEntryInfoCubit>(
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
-          key: ValueKey(driveId +
-              ([folderId, fileId].firstWhere((e) => e != null,
-                  orElse: () => Random().nextInt(1000).toString())!)),
+          key: ValueKey(
+            driveId +
+                '${maybeSelectedItem != null ? maybeSelectedItem!.getID() : Random().nextInt(1000).toString()}',
+          ),
           create: (context) => FsEntryInfoCubit(
             driveId: driveId,
-            folderId: folderId,
-            fileId: fileId,
+            maybeSelectedItem: maybeSelectedItem,
             driveDao: context.read<DriveDao>(),
           ),
           child: DefaultTabController(
@@ -206,8 +203,6 @@ class FsEntrySideSheet extends StatelessWidget {
       BlocProvider(
         create: (context) => FsEntryActivityCubit(
           driveId: driveId,
-          folderId: folderId,
-          fileId: fileId,
           driveDao: context.read<DriveDao>(),
         ),
         child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
@@ -313,8 +308,7 @@ class FsEntrySideSheet extends StatelessWidget {
         child: BlocProvider(
           create: (context) => FsEntryActivityCubit(
             driveId: driveId,
-            folderId: folderId,
-            fileId: fileId,
+            maybeSelectedItem: maybeSelectedItem,
             driveDao: context.read<DriveDao>(),
           ),
           child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
