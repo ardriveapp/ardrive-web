@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:artemis/artemis.dart';
@@ -134,7 +133,7 @@ class ArweaveService {
         final entityType = transaction.getTag(EntityTag.entityType);
 
         if (responses[i].statusCode != 200) {
-          throw HttpException(
+          throw Exception(
             'Failed to fetch entity data for tx ${entityTxs[i].id}',
           );
         }
