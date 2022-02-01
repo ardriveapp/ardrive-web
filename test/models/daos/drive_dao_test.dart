@@ -9,6 +9,7 @@ void main() {
 
   group('DriveDao', () {
     const driveId = 'drive-id';
+    const rootPath = '';
     const rootFolderId = 'root-folder-id';
     const rootFolderFileCount = 5;
 
@@ -38,9 +39,10 @@ void main() {
     tearDown(() async {
       await db.close();
     });
+    // Any empty string is a root path
     test('watchFolder() with root path (' ') returns root folder', () async {
       final folderStream =
-          driveDao.watchFolderContents(driveId, folderPath: '');
+          driveDao.watchFolderContents(driveId, folderPath: rootPath);
 
       await Future.wait([
         expectLater(folderStream.map((f) => f.folder!.id), emits(rootFolderId)),
@@ -49,7 +51,7 @@ void main() {
     test('watchFolder() returns correct number of files in root folder',
         () async {
       final folderStream =
-          driveDao.watchFolderContents(driveId, folderPath: '');
+          driveDao.watchFolderContents(driveId, folderPath: rootPath);
 
       await Future.wait([
         expectLater(
@@ -63,7 +65,7 @@ void main() {
     test('watchFolder() returns correct number of folders in root folder',
         () async {
       final folderStream =
-          driveDao.watchFolderContents(driveId, folderPath: '');
+          driveDao.watchFolderContents(driveId, folderPath: rootPath);
 
       await Future.wait([
         expectLater(
@@ -132,7 +134,7 @@ void main() {
       final treeRoot = await driveDao.getFolderTree(driveId, rootFolderId);
 
       expect(
-        treeRoot.getRecursiveFolderCount(),
+        treeRoot.getRecursiveSubFolderCount(),
         // 5 empty nested folders and one nested folder with files
         equals(emptyNestedFolderCount + 1),
       );
