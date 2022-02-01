@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:artemis/artemis.dart';
@@ -41,7 +42,9 @@ class ArweaveService {
   }
 
   Future<BigInt> getPrice({required int byteSize}) {
-    return client.api.get('/price/$byteSize').then((res) => BigInt.parse(res.body));
+    return client.api
+        .get('/price/$byteSize')
+        .then((res) => BigInt.parse(res.body));
   }
 
   // Spread requests across time to avoid getting load balanced to the same gateway
@@ -107,9 +110,9 @@ class ArweaveService {
     );
     final queryEdges = driveEntityHistoryQuery.data!.transactions.edges;
     final entityTxs = queryEdges.map((e) => e.node).toList();
-    final rawEntityData =
+    final responses =
         await Future.wait(entityTxs.map((e) => client.api.get(e.id)))
-            .then((rs) => rs.map((r) => r.bodyBytes).toList());
+            .then((rs) => rs.map((r) => r).toList());
 
     final blockHistory = <BlockEntities>[];
     for (var i = 0; i < entityTxs.length; i++) {
@@ -130,17 +133,25 @@ class ArweaveService {
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
 
+        if (responses[i].statusCode != 200) {
+          throw HttpException(
+            'Failed to fetch entity data for tx ${entityTxs[i].id}',
+          );
+        }
+
+        final rawEntityData = responses[i].bodyBytes;
+
         Entity? entity;
         if (entityType == EntityType.drive) {
           entity = await DriveEntity.fromTransaction(
-              transaction, rawEntityData[i], driveKey);
+              transaction, rawEntityData, driveKey);
         } else if (entityType == EntityType.folder) {
           entity = await FolderEntity.fromTransaction(
-              transaction, rawEntityData[i], driveKey);
+              transaction, rawEntityData, driveKey);
         } else if (entityType == EntityType.file) {
           entity = await FileEntity.fromTransaction(
             transaction,
-            rawEntityData[i],
+            rawEntityData,
             driveKey: driveKey,
           );
         }
