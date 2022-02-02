@@ -33,6 +33,7 @@ Future<void> attachDrive({
             driveDao: context.read<DriveDao>(),
             syncBloc: context.read<SyncCubit>(),
             drivesBloc: context.read<DrivesCubit>(),
+            profileCubit: context.read<ProfileCubit>(),
           ),
           child: BlocListener<DriveAttachCubit, DriveAttachState>(
             listener: (context, state) {

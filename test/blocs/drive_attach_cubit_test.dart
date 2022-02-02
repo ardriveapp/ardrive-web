@@ -16,6 +16,7 @@ void main() {
     late DriveDao driveDao;
     late SyncCubit syncBloc;
     late DrivesCubit drivesBloc;
+    late ProfileCubit profileCubit;
     late DriveAttachCubit driveAttachCubit;
 
     const validDriveId = 'valid-drive-id';
@@ -32,7 +33,7 @@ void main() {
       driveDao = MockDriveDao();
       syncBloc = MockSyncBloc();
       drivesBloc = MockDrivesCubit();
-
+      profileCubit = MockProfileCubit();
       when(() => arweave.getLatestDriveEntityWithId(validDriveId))
           .thenAnswer((_) => Future.value(DriveEntity()));
 
@@ -44,6 +45,7 @@ void main() {
         driveDao: driveDao,
         syncBloc: syncBloc,
         drivesBloc: drivesBloc,
+        profileCubit: profileCubit,
       );
     });
 

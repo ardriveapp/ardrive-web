@@ -20,6 +20,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   final DriveDao _driveDao;
   final SyncCubit _syncBloc;
   final DrivesCubit _drivesBloc;
+  final ProfileCubit _profileCubit;
 
   final SecretKey? _sharedDriveKey;
 
@@ -31,10 +32,12 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     required DriveDao driveDao,
     required SyncCubit syncBloc,
     required DrivesCubit drivesBloc,
+    required ProfileCubit profileCubit,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _syncBloc = syncBloc,
         _drivesBloc = drivesBloc,
+        _profileCubit = profileCubit,
         _sharedDriveKey = sharedDriveKey,
         super(DriveAttachInitial()) {
     form = FormGroup(
@@ -71,7 +74,9 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   void submit() async {
     form.markAllAsTouched();
 
-    if (form.invalid) {
+    if (form.invalid ||
+        (_profileCubit.state is! ProfileLoggedIn && _sharedDriveKey != null)) {
+      emit(DriveAttachFailure());
       return;
     }
 
@@ -90,7 +95,12 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         return;
       }
 
-      await _driveDao.writeDriveEntity(name: driveName, entity: driveEntity);
+      await _driveDao.writeDriveEntity(
+        name: driveName,
+        entity: driveEntity,
+        driveKey: _sharedDriveKey,
+        profileKey: (_profileCubit.state as ProfileLoggedIn).cipherKey,
+      );
 
       _drivesBloc.selectDrive(driveId);
       unawaited(_syncBloc.startSync());
