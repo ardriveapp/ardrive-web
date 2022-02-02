@@ -1,34 +1,27 @@
 import 'package:ardrive/models/models.dart';
 
-class SelectedItem {
-  FolderEntry? selectedFolder;
-  FileWithLatestRevisionTransactions? selectedFile;
+abstract class SelectedItem<T> {
+  final T item;
 
-  SelectedItem({
-    this.selectedFolder,
-    this.selectedFile,
-  }) {
-    assert(selectedFile != null || selectedFolder != null, true);
-  }
+  SelectedItem({required this.item});
 
-  SelectedItemType getItemType() {
-    if (selectedFile != null) {
-      return SelectedItemType.File;
-    } else if (selectedFolder != null && selectedFolder!.isGhost) {
-      return SelectedItemType.Ghost;
-    } else if (selectedFolder != null) {
-      return SelectedItemType.Folder;
-    } else {
-      throw UnimplementedError();
-    }
-  }
-
-  String getID() => selectedFile?.id ?? selectedFolder!.id;
+  String get id;
 }
 
-enum SelectedItemType {
-  File,
-  Folder,
-  Ghost,
-  Manifest,
+class SelectedFile extends SelectedItem<FileWithLatestRevisionTransactions> {
+  SelectedFile({
+    required FileWithLatestRevisionTransactions file,
+  }) : super(item: file);
+
+  @override
+  String get id => item.id;
+}
+
+class SelectedFolder extends SelectedItem<FolderEntry> {
+  SelectedFolder({
+    required FolderEntry folder,
+  }) : super(item: folder);
+
+  @override
+  String get id => item.id;
 }

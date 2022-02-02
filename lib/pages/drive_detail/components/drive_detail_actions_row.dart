@@ -30,13 +30,13 @@ class DriveDetailActionRow extends StatelessWidget {
               ),
             // A folder/file is selected.
             if (selectedItem != null) ...{
-              if (selectedItem.getItemType() == SelectedItemType.File) ...{
+              if (selectedItem is SelectedFile) ...{
                 IconButton(
                   icon: const Icon(Icons.file_download),
                   onPressed: () => promptToDownloadProfileFile(
                     context: context,
                     driveId: state.currentDrive.id,
-                    fileId: selectedItem.getID(),
+                    fileId: selectedItem.id,
                   ),
                   tooltip: 'Download',
                 ),
@@ -46,7 +46,7 @@ class DriveDetailActionRow extends StatelessWidget {
                   onPressed: () => promptToShareFile(
                     context: context,
                     driveId: state.currentDrive.id,
-                    fileId: selectedItem.getID(),
+                    fileId: selectedItem.id,
                   ),
                 ),
                 if (state.currentDrive.isPublic)
@@ -57,22 +57,22 @@ class DriveDetailActionRow extends StatelessWidget {
                     tooltip: 'Preview',
                   ),
               },
-              if (state.hasWritePermissions &&
-                  (selectedItem.getItemType() != SelectedItemType.Ghost)) ...{
+              if (state.hasWritePermissions) ...{
                 IconButton(
                   icon: const Icon(Icons.drive_file_rename_outline),
                   onPressed: () {
-                    if (selectedItem.getItemType() == SelectedItemType.Folder) {
+                    if (selectedItem is SelectedFolder &&
+                        !selectedItem.item.isGhost) {
                       promptToRenameFolder(
                         context,
                         driveId: state.currentDrive.id,
-                        folderId: selectedItem.getID(),
+                        folderId: selectedItem.id,
                       );
                     } else {
                       promptToRenameFile(
                         context,
                         driveId: state.currentDrive.id,
-                        fileId: selectedItem.getID(),
+                        fileId: selectedItem.id,
                       );
                     }
                   },
@@ -81,17 +81,17 @@ class DriveDetailActionRow extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.drive_file_move),
                   onPressed: () {
-                    if (selectedItem.getItemType() == SelectedItemType.Folder) {
+                    if (SelectedItem is SelectedFolder) {
                       promptToMoveFolder(
                         context,
                         driveId: state.currentDrive.id,
-                        folderId: selectedItem.getID(),
+                        folderId: selectedItem.id,
                       );
                     } else {
                       promptToMoveFile(
                         context,
                         driveId: state.currentDrive.id,
-                        fileId: selectedItem.getID(),
+                        fileId: selectedItem.id,
                       );
                     }
                   },

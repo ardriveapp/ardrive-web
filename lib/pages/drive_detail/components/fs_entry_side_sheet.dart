@@ -15,7 +15,7 @@ class FsEntrySideSheet extends StatelessWidget {
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
           key: ValueKey(
             driveId +
-                '${maybeSelectedItem != null ? maybeSelectedItem!.getID() : Random().nextInt(1000).toString()}',
+                '${maybeSelectedItem?.id ?? Random().nextInt(1000).toString()}',
           ),
           create: (context) => FsEntryInfoCubit(
             driveId: driveId,
@@ -204,6 +204,7 @@ class FsEntrySideSheet extends StatelessWidget {
         create: (context) => FsEntryActivityCubit(
           driveId: driveId,
           driveDao: context.read<DriveDao>(),
+          maybeSelectedItem: maybeSelectedItem,
         ),
         child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
           builder: (context, state) {

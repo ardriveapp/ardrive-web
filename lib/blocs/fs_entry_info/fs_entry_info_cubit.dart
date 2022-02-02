@@ -23,10 +23,10 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
         super(FsEntryInfoInitial()) {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
-      switch (selectedItem.getItemType()) {
-        case SelectedItemType.Folder:
+      switch (selectedItem.runtimeType) {
+        case SelectedFolder:
           _entrySubscription = _driveDao
-              .getFolderTree(driveId, selectedItem.getID())
+              .getFolderTree(driveId, selectedItem.id)
               .asStream()
               .listen(
                 (f) => emit(
@@ -39,9 +39,9 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                 ),
               );
           break;
-        case SelectedItemType.File:
+        case SelectedFile:
           _entrySubscription = _driveDao
-              .fileById(driveId: driveId, fileId: selectedItem.getID())
+              .fileById(driveId: driveId, fileId: selectedItem.id)
               .watchSingle()
               .listen(
                 (f) => emit(

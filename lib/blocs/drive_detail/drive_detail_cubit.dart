@@ -87,7 +87,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         // Set selected item to subfolder if the folder being viewed is not drive root
 
         final selectedItem = folderContents.folder!.id != drive.rootFolderId
-            ? SelectedItem(selectedFolder: folderContents.folder)
+            ? SelectedFolder(folder: folderContents.folder!)
             : null;
 
         if (state != null) {
@@ -121,10 +121,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     var state = this.state as DriveDetailLoadSuccess;
 
     state = state.copyWith(selectedItem: selectedItem);
-    if (state.currentDrive.isPublic &&
-        selectedItem.getItemType() == SelectedItemType.File) {
+    if (state.currentDrive.isPublic && selectedItem is SelectedFile) {
       final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
-          driveId: driveId, fileId: selectedItem.getID());
+        driveId: driveId,
+        fileId: selectedItem.id,
+      );
       final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
       state = state.copyWith(
           selectedFilePreviewUrl:

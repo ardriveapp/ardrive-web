@@ -23,23 +23,23 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
         super(FsEntryActivityInitial()) {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
-      switch (selectedItem.getItemType()) {
-        case SelectedItemType.Folder:
+      switch (selectedItem.runtimeType) {
+        case SelectedFolder:
           _entrySubscription = _driveDao
               .latestFolderRevisionsByFolderIdWithTransactions(
                 driveId: driveId,
-                folderId: selectedItem.getID(),
+                folderId: selectedItem.id,
               )
               .watch()
               .listen((r) => emit(
                   FsEntryActivitySuccess<FolderRevisionWithTransaction>(
                       revisions: r)));
           break;
-        case SelectedItemType.File:
+        case SelectedFile:
           _entrySubscription = _driveDao
               .latestFileRevisionsByFileIdWithTransactions(
                 driveId: driveId,
-                fileId: selectedItem.getID(),
+                fileId: selectedItem.id,
               )
               .watch()
               .listen((r) => emit(
