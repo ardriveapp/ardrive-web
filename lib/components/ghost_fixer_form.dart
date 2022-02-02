@@ -64,8 +64,8 @@ class GhostFixerForm extends StatelessWidget {
               label: Text('CREATE FOLDER'),
               onPressed: () => promptToCreateFolderWithoutCongestionWarning(
                 context,
-                driveId: state.viewingFolder.folder!.driveId,
-                parentFolderId: state.viewingFolder.folder!.id,
+                driveId: state.viewingFolder.folder.driveId,
+                parentFolderId: state.viewingFolder.folder.id,
               ),
             );
           } else {
