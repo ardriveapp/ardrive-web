@@ -313,6 +313,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
 
     Widget pageRow(int pagesToShow) {
       return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           if (_getPageCount() > pagesToShow) ...[
             if (_getCurrentPage() < (pagesToShow - 1)) ...[
@@ -388,7 +389,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
           'Rows Per Page',
         ),
         ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 64.0),
+          constraints: const BoxConstraints(minWidth: 56.0),
           child: Align(
             alignment: AlignmentDirectional.centerEnd,
             child: DropdownButtonHideUnderline(
@@ -411,27 +412,43 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
       Container(width: 32.0),
       if (widget.showFirstLastButtons)
         IconButton(
-          icon: Icon(Icons.skip_previous, color: widget.arrowHeadColor),
+          icon: Icon(
+            Icons.skip_previous,
+            color: widget.arrowHeadColor,
+            size: 16,
+          ),
           padding: EdgeInsets.zero,
           tooltip: 'Go to first',
           onPressed: _firstRowIndex <= 0 ? null : _handleFirst,
         ),
       IconButton(
-        icon: Icon(Icons.chevron_left, color: widget.arrowHeadColor),
+        icon: Icon(
+          Icons.chevron_left,
+          color: widget.arrowHeadColor,
+          size: 16,
+        ),
         padding: EdgeInsets.zero,
         tooltip: 'Previous',
         onPressed: _firstRowIndex <= 0 ? null : _handlePrevious,
       ),
       pageRow(_pagesToShow),
       IconButton(
-        icon: Icon(Icons.chevron_right, color: widget.arrowHeadColor),
+        icon: Icon(
+          Icons.chevron_right,
+          color: widget.arrowHeadColor,
+          size: 16,
+        ),
         padding: EdgeInsets.zero,
         tooltip: 'Next',
         onPressed: _isNextPageUnavailable() ? null : _handleNext,
       ),
       if (widget.showFirstLastButtons)
         IconButton(
-          icon: Icon(Icons.skip_next, color: widget.arrowHeadColor),
+          icon: Icon(
+            Icons.skip_next,
+            color: widget.arrowHeadColor,
+            size: 16,
+          ),
           padding: EdgeInsets.zero,
           tooltip: 'Go to Last',
           onPressed: _isNextPageUnavailable() ? null : _handleLast,
