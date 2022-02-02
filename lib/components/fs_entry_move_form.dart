@@ -122,8 +122,8 @@ class FsEntryMoveForm extends StatelessWidget {
                   context: context,
                   builder: (_) => BlocProvider(
                     create: (context) => FolderCreateCubit(
-                      driveId: state.viewingFolder.folder!.driveId,
-                      parentFolderId: state.viewingFolder.folder!.id,
+                      driveId: state.viewingFolder.folder.driveId,
+                      parentFolderId: state.viewingFolder.folder.id,
                       profileCubit: context.read<ProfileCubit>(),
                       arweave: context.read<ArweaveService>(),
                       driveDao: context.read<DriveDao>(),
@@ -164,7 +164,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                   dense: true,
                                   leading: const Icon(Icons.arrow_back),
                                   title: Text(
-                                      'Back to "${state.viewingFolder.folder!.name}" folder'),
+                                      'Back to "${state.viewingFolder.folder.name}" folder'),
                                 )),
                           ),
                         Expanded(

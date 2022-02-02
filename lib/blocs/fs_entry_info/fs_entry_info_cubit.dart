@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -8,23 +9,26 @@ part 'fs_entry_info_state.dart';
 
 class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
   final String driveId;
-  final String? folderId;
-  final String? fileId;
+  final SelectedItem? maybeSelectedItem;
 
   final DriveDao _driveDao;
 
   StreamSubscription? _entrySubscription;
 
-  FsEntryInfoCubit(
-      {required this.driveId,
-      this.folderId,
-      this.fileId,
-      required DriveDao driveDao})
-      : _driveDao = driveDao,
+  FsEntryInfoCubit({
+    required this.driveId,
+    this.maybeSelectedItem,
+    required DriveDao driveDao,
+  })  : _driveDao = driveDao,
         super(FsEntryInfoInitial()) {
-    if (folderId != null) {
-      _entrySubscription =
-          _driveDao.getFolderTree(driveId, folderId!).asStream().listen(
+    final selectedItem = maybeSelectedItem;
+    if (selectedItem != null) {
+      switch (selectedItem.runtimeType) {
+        case SelectedFolder:
+          _entrySubscription = _driveDao
+              .getFolderTree(driveId, selectedItem.id)
+              .asStream()
+              .listen(
                 (f) => emit(
                   FsEntryInfoSuccess<FolderNode>(
                     name: f.folder.name,
@@ -34,20 +38,24 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                   ),
                 ),
               );
-    } else if (fileId != null) {
-      _entrySubscription = _driveDao
-          .fileById(driveId: driveId, fileId: fileId!)
-          .watchSingle()
-          .listen(
-            (f) => emit(
-              FsEntryInfoSuccess<FileEntry>(
-                name: f.name,
-                lastUpdated: f.lastUpdated,
-                dateCreated: f.dateCreated,
-                entry: f,
-              ),
-            ),
-          );
+          break;
+        case SelectedFile:
+          _entrySubscription = _driveDao
+              .fileById(driveId: driveId, fileId: selectedItem.id)
+              .watchSingle()
+              .listen(
+                (f) => emit(
+                  FsEntryInfoSuccess<FileEntry>(
+                    name: f.name,
+                    lastUpdated: f.lastUpdated,
+                    dateCreated: f.dateCreated,
+                    entry: f,
+                  ),
+                ),
+              );
+          break;
+        default:
+      }
     } else {
       _entrySubscription = _driveDao
           .driveById(

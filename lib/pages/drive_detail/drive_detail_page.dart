@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
@@ -71,8 +72,7 @@ class DriveDetailPage extends StatelessWidget {
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
-                                  path: state.folderInView.folder?.path ??
-                                      rootPath,
+                                  path: state.folderInView.folder.path,
                                 ),
                                 if (state.folderInView.subfolders.isNotEmpty ||
                                     state.folderInView.files.isNotEmpty)
@@ -98,8 +98,7 @@ class DriveDetailPage extends StatelessWidget {
                           VerticalDivider(width: 1),
                           FsEntrySideSheet(
                             driveId: state.currentDrive.id,
-                            folderId: state.getSelectedFolderId(),
-                            fileId: state.getSelectedFileId(),
+                            maybeSelectedItem: state.maybeSelectedItem,
                           ),
                         }
                       ],
@@ -107,8 +106,7 @@ class DriveDetailPage extends StatelessWidget {
                     if (kIsWeb)
                       DriveFileDropZone(
                         driveId: state.currentDrive.id,
-                        folderId: state.folderInView.folder?.id ??
-                            state.currentDrive.rootFolderId,
+                        folderId: state.folderInView.folder.id,
                       ),
                   ],
                 ),
@@ -139,8 +137,7 @@ class DriveDetailPage extends StatelessWidget {
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
-                                  path: state.folderInView.folder?.path ??
-                                      rootPath,
+                                  path: state.folderInView.folder.path,
                                 ),
                                 if (state.folderInView.subfolders.isNotEmpty ||
                                     state.folderInView.files.isNotEmpty)
@@ -160,8 +157,7 @@ class DriveDetailPage extends StatelessWidget {
                       Expanded(
                         child: FsEntrySideSheet(
                           driveId: state.currentDrive.id,
-                          folderId: state.getSelectedFolderId(),
-                          fileId: state.getSelectedFileId(),
+                          maybeSelectedItem: state.maybeSelectedItem,
                         ),
                       )
                   ],
