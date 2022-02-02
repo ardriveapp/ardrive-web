@@ -109,9 +109,9 @@ class ArweaveService {
     );
     final queryEdges = driveEntityHistoryQuery.data!.transactions.edges;
     final entityTxs = queryEdges.map((e) => e.node).toList();
-    final responses =
-        await Future.wait(entityTxs.map((e) => client.api.get(e.id)))
-            .then((rs) => rs.map((r) => r).toList());
+    final responses = await Future.wait(
+      entityTxs.map((e) => client.api.get(e.id)),
+    );
 
     final blockHistory = <BlockEntities>[];
     for (var i = 0; i < entityTxs.length; i++) {
