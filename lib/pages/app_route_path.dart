@@ -9,7 +9,9 @@ class AppRoutePath {
   final String? driveId;
   final String? driveName;
   final String? driveFolderId;
+
   final SecretKey? sharedDriveKey;
+  final String? sharedRawDriveKey;
 
   final String? sharedFileId;
 
@@ -25,6 +27,7 @@ class AppRoutePath {
     this.driveName,
     this.driveFolderId,
     this.sharedDriveKey,
+    this.sharedRawDriveKey,
     this.sharedFileId,
     this.sharedFileKey,
     this.sharedRawFileKey,
@@ -38,11 +41,13 @@ class AppRoutePath {
     required String driveId,
     String? driveName,
     SecretKey? sharedDrivePk,
+    String? sharedRawDriveKey,
   }) =>
       AppRoutePath(
         driveId: driveId,
         driveName: driveName,
         sharedDriveKey: sharedDrivePk,
+        sharedRawDriveKey: sharedRawDriveKey,
       );
 
   /// Creates a route that points to a folder in a particular drive.

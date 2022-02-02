@@ -20,6 +20,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String? driveFolderId;
 
   SecretKey? sharedDriveKey;
+  String? sharedRawDriveKey;
 
   String? sharedFileId;
   SecretKey? sharedFileKey;
@@ -37,6 +38,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         driveId: driveId,
         driveName: driveName,
         sharedDriveKey: sharedDriveKey,
+        sharedRawDriveKey: sharedRawDriveKey,
         driveFolderId: driveFolderId,
         sharedFileId: sharedFileId,
         sharedFileKey: sharedFileKey,
@@ -225,10 +227,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveId = path.driveId;
     driveName = path.driveName;
     driveFolderId = path.driveFolderId;
+    sharedDriveKey = path.sharedDriveKey;
+    sharedRawDriveKey = path.sharedRawDriveKey;
     sharedFileId = path.sharedFileId;
     sharedFileKey = path.sharedFileKey;
     sharedRawFileKey = path.sharedRawFileKey;
-    sharedDriveKey = path.sharedDriveKey;
   }
 
   void clearState() {
@@ -236,10 +239,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveId = null;
     driveName = null;
     driveFolderId = null;
+    sharedDriveKey = null;
+    sharedRawDriveKey = null;
     sharedFileId = null;
     sharedFileKey = null;
     sharedRawFileKey = null;
-    sharedDriveKey = null;
   }
 }
 

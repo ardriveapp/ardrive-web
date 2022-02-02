@@ -33,6 +33,7 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
               driveId: driveId,
               driveName: name,
               sharedDrivePk: SecretKey(sharedDrivePkBytes),
+              sharedRawDriveKey: driveKeyBase64,
             );
           } else if (uri.pathSegments.length == 2) {
             // Handle '/drives/:driveId'
@@ -76,6 +77,13 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
     if (path.signingIn) {
       return RouteInformation(location: '/sign-in');
     } else if (path.driveId != null) {
+      if (path.driveName != null && path.sharedRawDriveKey != null) {
+        return RouteInformation(
+          location: '/drives/${path.driveId}?name=${path.driveName}'
+              '&$driveKeyQueryParamName=${path.sharedRawDriveKey}',
+        );
+      }
+
       return path.driveFolderId == null
           ? RouteInformation(location: '/drives/${path.driveId}')
           : RouteInformation(

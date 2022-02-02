@@ -28,6 +28,7 @@ Future<void> attachDrive({
           create: (context) => DriveAttachCubit(
             initialDriveId: initialDriveId,
             driveName: driveName,
+            sharedDriveKey: sharedDriveKey,
             arweave: context.read<ArweaveService>(),
             driveDao: context.read<DriveDao>(),
             syncBloc: context.read<SyncCubit>(),
