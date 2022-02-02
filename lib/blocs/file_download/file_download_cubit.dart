@@ -1,10 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -12,6 +8,10 @@ import 'package:file_selector/file_selector.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 import 'package:moor/moor.dart';
+
+import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/services.dart';
 
 part 'file_download_state.dart';
 part 'personal_file_download_cubit.dart';

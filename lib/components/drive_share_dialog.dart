@@ -17,6 +17,7 @@ Future<void> promptToShareDrive({
         create: (_) => DriveShareCubit(
           driveId: driveId,
           driveDao: context.read<DriveDao>(),
+          profileCubit: context.read<ProfileCubit>(),
         ),
         child: DriveShareDialog(),
       ),

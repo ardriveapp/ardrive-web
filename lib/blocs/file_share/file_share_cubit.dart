@@ -7,7 +7,6 @@ import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:meta/meta.dart';
 
 part 'file_share_state.dart';
 
@@ -46,8 +45,8 @@ class FileShareCubit extends Cubit<FileShareState> {
     if (!isPublicFile) {
       final profile = _profileCubit.state as ProfileLoggedIn;
 
-      final fileKey =
-          (await _driveDao.getFileKey(driveId, fileId, profile.cipherKey)) as SecretKey;
+      final fileKey = (await _driveDao.getFileKey(
+          driveId, fileId, profile.cipherKey)) as SecretKey;
       final fileKeyBase64 =
           utils.encodeBytesToBase64(await fileKey.extractBytes());
 

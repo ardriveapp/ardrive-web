@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
@@ -21,7 +20,6 @@ import 'package:intersperse/intersperse.dart';
 import 'package:moor/moor.dart' show OrderingMode;
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
-import 'package:url_launcher/link.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 part 'components/drive_detail_actions_row.dart';
