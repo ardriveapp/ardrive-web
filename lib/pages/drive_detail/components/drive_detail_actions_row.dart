@@ -100,15 +100,14 @@ class DriveDetailActionRow extends StatelessWidget {
               },
               // Nothing is selected.
             } else ...{
-              if (state.currentDrive.isPublic)
-                IconButton(
-                  icon: const Icon(Icons.share),
-                  onPressed: () => promptToShareDrive(
-                    context: context,
-                    driveId: state.currentDrive.id,
-                  ),
-                  tooltip: 'Share Drive',
+              IconButton(
+                icon: const Icon(Icons.share),
+                onPressed: () => promptToShareDrive(
+                  context: context,
+                  driveId: state.currentDrive.id,
                 ),
+                tooltip: 'Share Drive',
+              ),
             }
           ];
 
