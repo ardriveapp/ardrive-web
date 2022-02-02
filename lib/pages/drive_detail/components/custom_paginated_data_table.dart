@@ -413,20 +413,20 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
       Container(width: 32.0),
       if (widget.showFirstLastButtons)
         IconButton(
+          iconSize: 16,
           icon: Icon(
             Icons.skip_previous,
             color: widget.arrowHeadColor,
-            size: 16,
           ),
           padding: EdgeInsets.zero,
           tooltip: 'Go to first',
           onPressed: _firstRowIndex <= 0 ? null : _handleFirst,
         ),
       IconButton(
+        iconSize: 16,
         icon: Icon(
           Icons.chevron_left,
           color: widget.arrowHeadColor,
-          size: 16,
         ),
         padding: EdgeInsets.zero,
         tooltip: 'Previous',
@@ -434,10 +434,10 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
       ),
       pageRow(_pagesToShow),
       IconButton(
+        iconSize: 16,
         icon: Icon(
           Icons.chevron_right,
           color: widget.arrowHeadColor,
-          size: 16,
         ),
         padding: EdgeInsets.zero,
         tooltip: 'Next',
@@ -445,10 +445,10 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
       ),
       if (widget.showFirstLastButtons)
         IconButton(
+          iconSize: 16,
           icon: Icon(
             Icons.skip_next,
             color: widget.arrowHeadColor,
-            size: 16,
           ),
           padding: EdgeInsets.zero,
           tooltip: 'Go to Last',
