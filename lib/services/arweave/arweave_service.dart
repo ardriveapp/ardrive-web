@@ -131,14 +131,14 @@ class ArweaveService {
 
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
+        final entityResponse = responses[i];
 
-        if (responses[i].statusCode != 200) {
+        if (entityResponse.statusCode != 200) {
           throw Exception(
-            'Failed to fetch entity data for tx ${entityTxs[i].id}',
-          );
+              'Failed to fetch entity data for tx ${transaction.id}');
         }
 
-        final rawEntityData = responses[i].bodyBytes;
+        final rawEntityData = entityResponse.bodyBytes;
 
         Entity? entity;
         if (entityType == EntityType.drive) {
