@@ -127,8 +127,8 @@ class FsEntrySideSheet extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: Text(
                     fileAndFolderCountsToString(
-                      folderCount: state.entry.getRecursiveFileCount(),
-                      fileCount: state.entry.getRecursiveSubFolderCount(),
+                      folderCount: state.entry.getRecursiveSubFolderCount(),
+                      fileCount: state.entry.getRecursiveFileCount(),
                     ),
                     textAlign: TextAlign.end,
                   ),

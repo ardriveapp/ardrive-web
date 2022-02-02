@@ -215,11 +215,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             driveId: driveId, path: folderPath!, order: filesOrder);
 
     return Rx.combineLatest3(
-      folderStream,
+      folderStream.where((folder) => folder != null).map((folder) => folder!),
       subfolderQuery.watch(),
       filesQuery.watch(),
       (
-        FolderEntry? folder,
+        FolderEntry folder,
         List<FolderEntry> subfolders,
         List<FileWithLatestRevisionTransactions> files,
       ) =>

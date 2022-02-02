@@ -45,7 +45,7 @@ void main() {
           driveDao.watchFolderContents(driveId, folderPath: rootPath);
 
       await Future.wait([
-        expectLater(folderStream.map((f) => f.folder!.id), emits(rootFolderId)),
+        expectLater(folderStream.map((f) => f.folder.id), emits(rootFolderId)),
       ]);
     });
     test('watchFolder() returns correct number of files in root folder',
@@ -82,7 +82,7 @@ void main() {
           folderPath: '/$emptyNestedFolderIdPrefix' '0');
 
       await Future.wait([
-        expectLater(folderStream.map((f) => f.folder!.id),
+        expectLater(folderStream.map((f) => f.folder.id),
             emits(emptyNestedFolderIdPrefix + '0')),
       ]);
     });

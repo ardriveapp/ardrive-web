@@ -17,14 +17,13 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final DriveOrder contentOrderBy;
   final OrderingMode contentOrderingMode;
 
-  final SelectedItem? selectedItem;
+  final SelectedItem? maybeSelectedItem;
   final bool showSelectedItemDetails;
 
   /// The preview URL for the selected file.
   ///
   /// Null if no file is selected.
   final Uri? selectedFilePreviewUrl;
-  final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
 
   DriveDetailLoadSuccess({
     required this.currentDrive,
@@ -32,7 +31,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.folderInView,
     required this.contentOrderBy,
     required this.contentOrderingMode,
-    this.selectedItem,
+    this.maybeSelectedItem,
     this.showSelectedItemDetails = false,
     this.selectedFilePreviewUrl,
   });
@@ -43,7 +42,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     FolderWithContents? folderInView,
     DriveOrder? contentOrderBy,
     OrderingMode? contentOrderingMode,
-    SelectedItem? selectedItem,
+    SelectedItem? maybeSelectedItem,
     bool? showSelectedItemDetails,
     Uri? selectedFilePreviewUrl,
   }) =>
@@ -53,7 +52,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         folderInView: folderInView ?? this.folderInView,
         contentOrderBy: contentOrderBy ?? this.contentOrderBy,
         contentOrderingMode: contentOrderingMode ?? this.contentOrderingMode,
-        selectedItem: selectedItem ?? this.selectedItem,
+        maybeSelectedItem: maybeSelectedItem ?? this.maybeSelectedItem,
         showSelectedItemDetails:
             showSelectedItemDetails ?? this.showSelectedItemDetails,
         selectedFilePreviewUrl:
@@ -68,11 +67,11 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         contentOrderingMode,
         showSelectedItemDetails,
         selectedFilePreviewUrl,
-        _equatableBust,
+        maybeSelectedItem,
       ];
 
   bool isViewingRootFolder() =>
-      folderInView.folder!.id != currentDrive.rootFolderId;
+      folderInView.folder.id != currentDrive.rootFolderId;
 }
 
 /// [DriveDetailLoadNotFound] means that the specified drive could not be found attached to

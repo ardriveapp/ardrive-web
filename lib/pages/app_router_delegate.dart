@@ -122,7 +122,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     listener: (context, state) {
                       if (state is DriveDetailLoadSuccess) {
                         driveId = state.currentDrive.id;
-                        driveFolderId = state.folderInView.folder?.id;
+                        driveFolderId = state.folderInView.folder.id;
                         //Can be null at the root folder of the drive
                         notifyListeners();
                       } else if (state is DriveDetailLoadNotFound) {

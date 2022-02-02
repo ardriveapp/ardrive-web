@@ -8,7 +8,7 @@ class DriveDetailActionRow extends StatelessWidget {
     return BlocBuilder<DriveDetailCubit, DriveDetailState>(
       builder: (context, state) {
         if (state is DriveDetailLoadSuccess) {
-          final selectedItem = state.selectedItem;
+          final selectedItem = state.maybeSelectedItem;
           final fsActions = <Widget>[
             if (state.hasWritePermissions && selectedItem == null) ...[
               IconButton(

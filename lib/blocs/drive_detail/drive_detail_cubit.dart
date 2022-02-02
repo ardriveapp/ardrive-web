@@ -74,11 +74,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           emit(DriveDetailLoadNotFound());
           return;
         }
-        if (folderContents.folder == null) {
-          // Emit the loading state as it can be a while between the drive being not found, then added,
-          // and then the folders being loaded.
-          emit(DriveDetailLoadInProgress());
-        }
+
         final state = this.state is DriveDetailLoadSuccess
             ? this.state as DriveDetailLoadSuccess
             : null;
@@ -86,8 +82,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
         // Set selected item to subfolder if the folder being viewed is not drive root
 
-        final selectedItem = folderContents.folder!.id != drive.rootFolderId
-            ? SelectedFolder(folder: folderContents.folder!)
+        final maybeSelectedItem = folderContents.folder.id != drive.rootFolderId
+            ? SelectedFolder(folder: folderContents.folder)
             : null;
 
         if (state != null) {
@@ -99,7 +95,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               folderInView: folderContents,
               contentOrderBy: contentOrderBy,
               contentOrderingMode: contentOrderingMode,
-              selectedItem: selectedItem,
+              maybeSelectedItem: maybeSelectedItem,
             ),
           );
         } else {
@@ -110,7 +106,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             folderInView: folderContents,
             contentOrderBy: contentOrderBy,
             contentOrderingMode: contentOrderingMode,
-            selectedItem: selectedItem,
+            maybeSelectedItem: maybeSelectedItem,
           ));
         }
       },
@@ -120,7 +116,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   Future<void> selectItem(SelectedItem selectedItem) async {
     var state = this.state as DriveDetailLoadSuccess;
 
-    state = state.copyWith(selectedItem: selectedItem);
+    state = state.copyWith(maybeSelectedItem: selectedItem);
     if (state.currentDrive.isPublic && selectedItem is SelectedFile) {
       final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
         driveId: driveId,
@@ -140,7 +136,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       OrderingMode contentOrderingMode = OrderingMode.asc}) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
-      path: state.folderInView.folder?.path ?? rootPath,
+      path: state.folderInView.folder.path,
       contentOrderBy: contentOrderBy,
       contentOrderingMode: contentOrderingMode,
     );
