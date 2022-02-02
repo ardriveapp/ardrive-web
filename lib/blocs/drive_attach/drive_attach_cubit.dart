@@ -4,6 +4,7 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
@@ -20,9 +21,12 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   final SyncCubit _syncBloc;
   final DrivesCubit _drivesBloc;
 
+  final SecretKey? _sharedDriveKey;
+
   DriveAttachCubit({
     String? initialDriveId,
     String? driveName,
+    SecretKey? sharedDriveKey,
     required ArweaveService arweave,
     required DriveDao driveDao,
     required SyncCubit syncBloc,
@@ -31,6 +35,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         _driveDao = driveDao,
         _syncBloc = syncBloc,
         _drivesBloc = drivesBloc,
+        _sharedDriveKey = sharedDriveKey,
         super(DriveAttachInitial()) {
     form = FormGroup(
       {
@@ -75,9 +80,9 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     try {
       final String driveId = form.control('driveId').value;
       final driveName = form.control('name').value.toString().trim();
-
-      final driveEntity = await _arweave.getLatestDriveEntityWithId(driveId);
-
+      print(_sharedDriveKey);
+      final driveEntity =
+          await _arweave.getLatestDriveEntityWithId(driveId, _sharedDriveKey);
       if (driveEntity == null) {
         form
             .control('driveId')

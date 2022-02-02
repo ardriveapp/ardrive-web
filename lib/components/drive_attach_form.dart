@@ -4,6 +4,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -13,10 +14,12 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
 
-Future<void> attachDrive(
-        {required BuildContext context,
-        String? initialDriveId,
-        String? driveName}) =>
+Future<void> attachDrive({
+  required BuildContext context,
+  String? initialDriveId,
+  String? driveName,
+  SecretKey? sharedDriveKey,
+}) =>
     showModalDialog(
       context,
       () => showDialog(

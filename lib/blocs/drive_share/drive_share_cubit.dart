@@ -44,7 +44,7 @@ class DriveShareCubit extends Cubit<DriveShareState> {
       final driveKeyBase64 =
           utils.encodeBytesToBase64(await driveKey.extractBytes());
 
-      driveShareLink = driveShareLink + '?driveKey=$driveKeyBase64';
+      driveShareLink = driveShareLink + '&driveKey=$driveKeyBase64';
     }
     emit(
       DriveShareLoadSuccess(

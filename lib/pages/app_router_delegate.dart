@@ -19,6 +19,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String? driveName;
   String? driveFolderId;
 
+  SecretKey? sharedDriveKey;
+
   String? sharedFileId;
   SecretKey? sharedFileKey;
   String? sharedRawFileKey;
@@ -26,6 +28,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   bool canAnonymouslyShowDriveDetail(ProfileState profileState) =>
       profileState is ProfileUnavailable && tryingToViewDrive;
   bool get tryingToViewDrive => driveId != null;
+  bool get tryingToViewSharedPrivateDrive => sharedDriveKey != null;
   bool get isViewingSharedFile => sharedFileId != null;
 
   @override
@@ -33,6 +36,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         signingIn: signingIn,
         driveId: driveId,
         driveName: driveName,
+        sharedDriveKey: sharedDriveKey,
         driveFolderId: driveFolderId,
         sharedFileId: sharedFileId,
         sharedFileKey: sharedFileKey,
@@ -132,11 +136,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                           clearState();
                           return;
                         }
-
                         attachDrive(
                           context: context,
                           initialDriveId: driveId,
                           driveName: driveName,
+                          sharedDriveKey: sharedDriveKey,
                         );
                       }
                     },
@@ -224,6 +228,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     sharedFileId = path.sharedFileId;
     sharedFileKey = path.sharedFileKey;
     sharedRawFileKey = path.sharedRawFileKey;
+    sharedDriveKey = path.sharedDriveKey;
   }
 
   void clearState() {
@@ -234,6 +239,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     sharedFileId = null;
     sharedFileKey = null;
     sharedRawFileKey = null;
+    sharedDriveKey = null;
   }
 }
 

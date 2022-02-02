@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'pages.dart';
 
 const fileKeyQueryParamName = 'fileKey';
+const driveKeyQueryParamName = 'driveKey';
 
 class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
   @override
@@ -24,7 +25,16 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
         if (uri.pathSegments.length > 1) {
           final driveId = uri.pathSegments[1];
           final name = uri.queryParameters['name'];
-          if (uri.pathSegments.length == 2) {
+          final driveKeyBase64 = uri.queryParameters[driveKeyQueryParamName];
+          if (driveKeyBase64 != null) {
+            final sharedDrivePkBytes =
+                utils.decodeBase64ToBytes(driveKeyBase64);
+            return AppRoutePath.driveDetail(
+              driveId: driveId,
+              driveName: name,
+              sharedDrivePk: SecretKey(sharedDrivePkBytes),
+            );
+          } else if (uri.pathSegments.length == 2) {
             // Handle '/drives/:driveId'
             return AppRoutePath.driveDetail(driveId: driveId, driveName: name);
           } else if (uri.pathSegments.length == 4 &&
