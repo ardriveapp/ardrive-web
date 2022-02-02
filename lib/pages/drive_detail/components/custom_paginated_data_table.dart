@@ -152,6 +152,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
   late bool _rowCountApproximate;
   final Map<int, DataRow?> _rows = <int, DataRow?>{};
   final int _pagesToShow = 5;
+  final ScrollController scrollController = ScrollController();
   @override
   void initState() {
     super.initState();
@@ -457,7 +458,9 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
     ]);
 
     return Scrollbar(
+      controller: scrollController,
       child: SingleChildScrollView(
+        controller: scrollController,
         key: GlobalKey(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
