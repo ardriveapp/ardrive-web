@@ -103,7 +103,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 currentFolder: folderContents,
                 contentOrderBy: contentOrderBy,
                 contentOrderingMode: contentOrderingMode,
-                rowsPerPage: availableRowsPerPage.first,
                 availableRowsPerPage: availableRowsPerPage,
               ),
             );
