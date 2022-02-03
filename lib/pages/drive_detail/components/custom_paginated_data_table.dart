@@ -265,14 +265,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
   }
 
   int _getPageCount() {
-    final pageCountExact = ((_rowCount - 1) / widget.rowsPerPage);
-    final onBoundary = widget.rowsPerPage % 2 != 0 &&
-        ((_rowCount - 1) % (widget.rowsPerPage / 2)) == 0;
-    if (onBoundary) {
-      return pageCountExact.floor();
-    } else {
-      return pageCountExact.ceil();
-    }
+    return (_rowCount / widget.rowsPerPage).ceil();
   }
 
   int _getCurrentPage() {
@@ -334,7 +327,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
                 ),
               ellipsisSeparator,
               pageButton(
-                page: _getPageCount(),
+                page: _getPageCount() - 1,
                 onPressed: () => _handleLast(),
               ),
             ] else if (_getCurrentPage() >= (pagesToShow - 1) &&
@@ -353,7 +346,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
                 ),
               ellipsisSeparator,
               pageButton(
-                page: _getPageCount(),
+                page: _getPageCount() - 1,
                 onPressed: () => _handleLast(),
               ),
             ] else ...[
