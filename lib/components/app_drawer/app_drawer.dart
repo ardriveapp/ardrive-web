@@ -145,7 +145,7 @@ class AppDrawer extends StatelessWidget {
                                 ),
                               );
                             } else {
-                              return Container();
+                              return SizedBox(height: 32, width: 32);
                             }
                           },
                         ),
