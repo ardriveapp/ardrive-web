@@ -140,9 +140,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         );
                       }
                     },
-                    child: FloatingHelpButtonPortalEntry(
-                      child: AppShell(page: shellPage),
-                    ),
+                    child: AppShell(page: shellPage),
                   ),
                 );
               },

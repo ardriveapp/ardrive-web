@@ -22,6 +22,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final AppConfig _config;
 
   StreamSubscription? _folderSubscription;
+  final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
 
   DriveDetailCubit({
     required this.driveId,
@@ -85,19 +86,24 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         final maybeSelectedItem = folderContents.folder.id != drive.rootFolderId
             ? SelectedFolder(folder: folderContents.folder)
             : null;
+        var availableRowsPerPage = _defaultAvailableRowsPerPage;
+
+        availableRowsPerPage = calculateRowsPerPage(
+          folderContents.files.length + folderContents.subfolders.length,
+        );
 
         if (state != null) {
-          emit(
-            state.copyWith(
-              currentDrive: drive,
-              hasWritePermissions: profile is ProfileLoggedIn &&
-                  drive.ownerAddress == profile.walletAddress,
-              folderInView: folderContents,
-              contentOrderBy: contentOrderBy,
-              contentOrderingMode: contentOrderingMode,
-              maybeSelectedItem: maybeSelectedItem,
-            ),
-          );
+          emit(state.copyWith(
+            currentDrive: drive,
+            hasWritePermissions: profile is ProfileLoggedIn &&
+                drive.ownerAddress == profile.walletAddress,
+            folderInView: folderContents,
+            contentOrderBy: contentOrderBy,
+            contentOrderingMode: contentOrderingMode,
+            rowsPerPage: availableRowsPerPage.first,
+            availableRowsPerPage: availableRowsPerPage,
+            maybeSelectedItem: maybeSelectedItem,
+          ));
         } else {
           emit(DriveDetailLoadSuccess(
             currentDrive: drive,
@@ -106,11 +112,34 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             folderInView: folderContents,
             contentOrderBy: contentOrderBy,
             contentOrderingMode: contentOrderingMode,
+            rowsPerPage: availableRowsPerPage.first,
+            availableRowsPerPage: availableRowsPerPage,
             maybeSelectedItem: maybeSelectedItem,
           ));
         }
       },
     ).listen((_) {});
+  }
+
+  List<int> calculateRowsPerPage(int totalEntries) {
+    List<int> availableRowsPerPage;
+    if (totalEntries < _defaultAvailableRowsPerPage.first) {
+      availableRowsPerPage = <int>[totalEntries];
+    } else {
+      availableRowsPerPage = _defaultAvailableRowsPerPage;
+    }
+    return availableRowsPerPage;
+  }
+
+  void setRowsPerPage(int rowsPerPage) {
+    switch (state.runtimeType) {
+      case DriveDetailLoadSuccess:
+        emit(
+          (state as DriveDetailLoadSuccess).copyWith(
+            rowsPerPage: rowsPerPage,
+          ),
+        );
+    }
   }
 
   Future<void> selectItem(SelectedItem selectedItem) async {
