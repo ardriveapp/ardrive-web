@@ -331,7 +331,10 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
                 style: footerTextStyle,
                 items: availableRowsPerPage.cast<DropdownMenuItem<int>>(),
                 value: widget.rowsPerPage,
-                onChanged: widget.onRowsPerPageChanged,
+                onChanged: (rowsPerPage) {
+                  widget.onRowsPerPageChanged?.call(rowsPerPage);
+                  _handleFirst();
+                },
               ),
             ),
           ),
