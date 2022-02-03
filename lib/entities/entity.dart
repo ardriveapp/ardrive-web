@@ -62,8 +62,11 @@ class EntityTransactionParseException implements Exception {}
 
 class EntityTransactionDataNetworkException implements Exception {
   final String transactionId;
-
-  EntityTransactionDataNetworkException({required this.transactionId});
+  final int statusCode;
+  EntityTransactionDataNetworkException({
+    required this.transactionId,
+    required this.statusCode,
+  });
 }
 
 extension TransactionUtils on TransactionBase {

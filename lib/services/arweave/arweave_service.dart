@@ -136,6 +136,7 @@ class ArweaveService {
         if (entityResponse.statusCode != 200) {
           throw EntityTransactionDataNetworkException(
             transactionId: transaction.id,
+            statusCode: entityResponse.statusCode,
           );
         }
 
