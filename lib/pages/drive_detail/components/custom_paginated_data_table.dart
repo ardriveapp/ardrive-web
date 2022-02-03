@@ -356,7 +356,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
               ),
               ellipsisSeparator,
               for (var i = _getPageCount() - pagesToShow;
-                  i <= _getPageCount();
+                  i < _getPageCount();
                   i++)
                 pageButton(
                   page: i,
