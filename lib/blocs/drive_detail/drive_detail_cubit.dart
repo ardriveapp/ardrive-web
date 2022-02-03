@@ -104,6 +104,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 contentOrderBy: contentOrderBy,
                 contentOrderingMode: contentOrderingMode,
                 availableRowsPerPage: availableRowsPerPage,
+                // In case sync hasn't populated the drive yet,
+                // set a default rows per page
                 rowsPerPage: availableRowsPerPage.contains(state.rowsPerPage)
                     ? state.rowsPerPage
                     : availableRowsPerPage.first,
