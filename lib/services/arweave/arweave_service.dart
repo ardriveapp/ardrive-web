@@ -134,8 +134,7 @@ class ArweaveService {
         final entityResponse = responses[i];
 
         if (entityResponse.statusCode != 200) {
-          throw Exception(
-              'Failed to fetch entity data for tx ${transaction.id}');
+          throw EntityTransactionDataNetworkException();
         }
 
         final rawEntityData = entityResponse.bodyBytes;
@@ -163,7 +162,8 @@ class ArweaveService {
         blockHistory.last.entities.add(entity);
 
         // If there are errors in parsing the entity, ignore it.
-      } on EntityTransactionParseException catch (_) {}
+      } on EntityTransactionParseException catch (_) {
+      } on EntityTransactionDataNetworkException catch (_) {}
     }
 
     // Sort the entities in each block by ascending commit time.

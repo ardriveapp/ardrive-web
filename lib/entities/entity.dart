@@ -60,6 +60,8 @@ abstract class Entity {
 
 class EntityTransactionParseException implements Exception {}
 
+class EntityTransactionDataNetworkException implements Exception {}
+
 extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the app name, version, and the specified unix time.
   /// https://ardrive.atlassian.net/wiki/spaces/ENGINEERIN/pages/277544961/Data+Model
