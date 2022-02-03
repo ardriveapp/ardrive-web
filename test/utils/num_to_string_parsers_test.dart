@@ -4,7 +4,7 @@ import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('num to strin parser tests', () {
+  group('num to string parser tests', () {
     test(
         'fileAndFolderCountsToString returns the correct results '
         'for 1 file and 1 folder', () {
