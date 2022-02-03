@@ -198,6 +198,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
         (oldFirstRowIndex != _firstRowIndex)) {
       widget.onPageChanged!(_firstRowIndex);
     }
+    _resetScroll();
   }
 
   DataRow _getProgressIndicatorRowFor(int index) {
@@ -239,6 +240,14 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
     return result;
   }
 
+  void _resetScroll() {
+    scrollController.animateTo(
+      0,
+      duration: Duration(milliseconds: 10),
+      curve: Curves.easeIn,
+    );
+  }
+
   void _handleFirst() {
     pageTo(0);
   }
@@ -257,7 +266,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
 
   int _getPageCount() {
     final pageCountExact = ((_rowCount - 1) / widget.rowsPerPage);
-    final onBoundary = widget.rowsPerPage % 2 == 0 &&
+    final onBoundary = widget.rowsPerPage % 2 != 0 &&
         ((_rowCount - 1) % (widget.rowsPerPage / 2)) == 0;
     if (onBoundary) {
       return pageCountExact.floor();
@@ -461,7 +470,6 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
       controller: scrollController,
       child: SingleChildScrollView(
         controller: scrollController,
-        key: GlobalKey(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisAlignment: MainAxisAlignment.start,
