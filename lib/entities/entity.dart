@@ -58,7 +58,11 @@ abstract class Entity {
   void addEntityTagsToTransaction<T extends TransactionBase>(T tx);
 }
 
-class EntityTransactionParseException implements Exception {}
+class EntityTransactionParseException implements Exception {
+  final String transactionId;
+
+  EntityTransactionParseException({required this.transactionId});
+}
 
 class EntityTransactionDataNetworkException implements Exception {
   final String transactionId;

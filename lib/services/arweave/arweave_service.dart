@@ -166,8 +166,19 @@ class ArweaveService {
         blockHistory.last.entities.add(entity);
 
         // If there are errors in parsing the entity, ignore it.
-      } on EntityTransactionParseException catch (_) {
-      } on EntityTransactionDataNetworkException catch (_) {}
+      } on EntityTransactionParseException catch (parseException) {
+        print(
+          'Failed to parse transaction '
+          'with id ${parseException.transactionId}',
+        );
+      } on EntityTransactionDataNetworkException catch (fetchException) {
+        print(
+          'Failed to fetch entity data '
+          'for transaction ${fetchException.transactionId}, '
+          'with status ${fetchException.statusCode} '
+          'and reason ${fetchException.reasonPhrase}',
+        );
+      }
     }
 
     // Sort the entities in each block by ascending commit time.
@@ -255,7 +266,12 @@ class ArweaveService {
         drivesWithKey[drive] = driveKey;
 
         // If there's an error parsing the drive entity, just ignore it.
-      } on EntityTransactionParseException catch (_) {}
+      } on EntityTransactionParseException catch (parseException) {
+        print(
+          'Failed to parse transaction '
+          'with id ${parseException.transactionId}',
+        );
+      }
     }
 
     return drivesWithKey;
@@ -297,7 +313,11 @@ class ArweaveService {
     try {
       return await DriveEntity.fromTransaction(
           fileTx, fileDataRes.bodyBytes, driveKey);
-    } on EntityTransactionParseException catch (_) {
+    } on EntityTransactionParseException catch (parseException) {
+      print(
+        'Failed to parse transaction '
+        'with id ${parseException.transactionId}',
+      );
       return null;
     }
   }
@@ -379,7 +399,11 @@ class ArweaveService {
         fileDataRes.bodyBytes,
         fileKey: fileKey,
       );
-    } on EntityTransactionParseException catch (_) {
+    } on EntityTransactionParseException catch (parseException) {
+      print(
+        'Failed to parse transaction '
+        'with id ${parseException.transactionId}',
+      );
       return null;
     }
   }
