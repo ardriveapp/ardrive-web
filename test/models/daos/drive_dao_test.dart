@@ -40,7 +40,7 @@ void main() {
       await db.close();
     });
     // Any empty string is a root path
-    test('watchFolder() with root path (' ') returns root folder', () async {
+    test("watchFolder() with root path ('') returns root folder", () async {
       final folderStream =
           driveDao.watchFolderContents(driveId, folderPath: rootPath);
 
@@ -130,7 +130,8 @@ void main() {
           everyElement(equals(0)));
     });
 
-    test('getRecursiveFolderCount returns the correct folder count', () async {
+    test('getRecursiveSubFolderCount returns the correct folder count',
+        () async {
       final treeRoot = await driveDao.getFolderTree(driveId, rootFolderId);
 
       expect(
