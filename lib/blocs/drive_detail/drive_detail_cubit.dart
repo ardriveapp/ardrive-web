@@ -104,6 +104,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 contentOrderBy: contentOrderBy,
                 contentOrderingMode: contentOrderingMode,
                 availableRowsPerPage: availableRowsPerPage,
+                rowsPerPage: availableRowsPerPage.contains(state.rowsPerPage)
+                    ? state.rowsPerPage
+                    : availableRowsPerPage.first,
               ),
             );
           } else {
