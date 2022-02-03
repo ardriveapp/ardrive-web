@@ -2,8 +2,8 @@ String fileAndFolderCountsToString({
   required int folderCount,
   required int fileCount,
 }) {
-  final folderSuffix = folderCount > 1 ? 'folders' : 'folder';
-  final fileSuffix = fileCount > 1 ? 'files' : 'file';
+  final folderSuffix = folderCount == 1 ? 'folder' : 'folders';
+  final fileSuffix = fileCount == 1 ? 'file' : 'files';
 
   return '$folderCount $folderSuffix, $fileCount $fileSuffix';
 }
