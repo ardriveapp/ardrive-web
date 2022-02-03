@@ -134,7 +134,9 @@ class ArweaveService {
         final entityResponse = responses[i];
 
         if (entityResponse.statusCode != 200) {
-          throw EntityTransactionDataNetworkException();
+          throw EntityTransactionDataNetworkException(
+            transactionId: transaction.id,
+          );
         }
 
         final rawEntityData = entityResponse.bodyBytes;

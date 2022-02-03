@@ -60,7 +60,11 @@ abstract class Entity {
 
 class EntityTransactionParseException implements Exception {}
 
-class EntityTransactionDataNetworkException implements Exception {}
+class EntityTransactionDataNetworkException implements Exception {
+  final String transactionId;
+
+  EntityTransactionDataNetworkException({required this.transactionId});
+}
 
 extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the app name, version, and the specified unix time.
