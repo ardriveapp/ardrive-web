@@ -17,7 +17,7 @@ class DataExportInProgress extends DataExportState {
 }
 
 class DataExportSuccess extends DataExportState {
-  final XFile file;
+  final PlatformFile file;
 
   DataExportSuccess({
     required this.file,

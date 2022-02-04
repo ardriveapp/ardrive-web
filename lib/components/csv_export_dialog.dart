@@ -5,10 +5,9 @@ import 'package:ardrive/blocs/data_export/data_export_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
-import 'package:file_selector/file_selector.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pedantic/pedantic.dart';
 
 import 'components.dart';
 
@@ -37,9 +36,9 @@ class FileDownloadDialog extends StatelessWidget {
       BlocConsumer<DataExportCubit, DataExportState>(
         listener: (context, state) async {
           if (state is DataExportSuccess) {
-            final savePath = await getSavePath();
+            final savePath = await FilePicker.platform.getDirectoryPath();
             if (savePath != null) {
-              unawaited(state.file.saveTo(savePath));
+              //TODO: Implement Save
             }
 
             Navigator.pop(context);

@@ -120,7 +120,12 @@ class UploadCubit extends Cubit<UploadState> {
       emit(UploadWalletMismatch());
       return;
     }
-    emit(UploadPreparationInProgress());
+
+    emit(
+      UploadPreparationInProgress(
+        isArConnect: await _profileCubit.isCurrentProfileArConnect(),
+      ),
+    );
     final sizeLimit = (_targetDrive.isPrivate
         ? privateFileSizeLimit
         : 1.25 * math.pow(10, 9)) as int;
@@ -252,7 +257,11 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
     if (_dataItemUploadHandles.isNotEmpty) {
-      emit(UploadBundlingInProgress());
+      emit(
+        UploadBundlingInProgress(
+          isArConnect: await _profileCubit.isCurrentProfileArConnect(),
+        ),
+      );
     }
 
     if (feeTx != null && _fileUploadHandles.isNotEmpty) {
@@ -264,14 +273,37 @@ class UploadCubit extends Cubit<UploadState> {
         maxBundleSize: bundleSizeLimit,
         maxDataItemCount: maxFilesPerBundle,
       ).packItems(_dataItemUploadHandles.values.toList());
+
       //Create bundles
       for (var uploadHandles in bundleItems) {
+        final dataBundle = DataBundle(
+          items: uploadHandles
+              .map((e) => e.asDataItems().toList())
+              .reduce((value, element) => value += element)
+              .toList(),
+        );
+
+        // Create bundle tx
+        final bundleTx =
+            await _arweave.prepareDataBundleTx(dataBundle, profile.wallet);
+
+        // Add tips to bundle tx
+        final bundleTip = await getPSTFee(bundleTx.reward);
+        bundleTx
+          ..addTag(TipType.tagName, TipType.dataUpload)
+          ..setTarget(await _pst.getWeightedPstHolder())
+          ..setQuantity(bundleTip);
+
+        await bundleTx.sign(profile.wallet);
+
         var uploadSize = 0;
         for (var uploadHandle in uploadHandles) {
           final fileEntity = uploadHandle.entity;
           if (uploadHandle.entityTx?.id != null) {
             fileEntity.txId = uploadHandle.entityTx!.id;
           }
+
+          fileEntity.bundledIn = bundleTx.id;
 
           await _driveDao.writeFileEntity(fileEntity, uploadHandle.path);
           await _driveDao.insertFileRevision(
@@ -286,23 +318,6 @@ class UploadCubit extends Cubit<UploadState> {
           uploadSize += uploadHandle.entity.size!;
         }
 
-        final dataBundle = DataBundle(
-          items: uploadHandles
-              .map((e) => e.asDataItems().toList())
-              .reduce((value, element) => value += element)
-              .toList(),
-        );
-        // Create bundle tx
-        final bundleTx =
-            await _arweave.prepareDataBundleTx(dataBundle, profile.wallet);
-
-        // Add tips to bundle tx
-        final bundleTip = await getPSTFee(bundleTx.reward);
-        bundleTx
-          ..addTag(TipType.tagName, TipType.dataUpload)
-          ..setTarget(await _pst.getWeightedPstHolder())
-          ..setQuantity(bundleTip);
-
         _multiFileUploadHandles.add(
           MultiFileUploadHandle(
             bundleTx,
@@ -310,7 +325,6 @@ class UploadCubit extends Cubit<UploadState> {
             uploadHandles.map((e) => e.entity).toList(),
           ),
         );
-        await bundleTx.sign(profile.wallet);
         uploadHandles.clear();
       }
 

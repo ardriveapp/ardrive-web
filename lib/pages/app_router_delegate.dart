@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/entities/constants.dart';
@@ -139,9 +140,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         );
                       }
                     },
-                    child: FloatingHelpButtonPortalEntry(
-                      child: AppShell(page: shellPage),
-                    ),
+                    child: AppShell(page: shellPage),
                   ),
                 );
               },
@@ -174,6 +173,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 BlocProvider(
                   create: (context) => SyncCubit(
                     profileCubit: context.read<ProfileCubit>(),
+                    activityCubit: context.read<ActivityCubit>(),
                     arweave: context.read<ArweaveService>(),
                     driveDao: context.read<DriveDao>(),
                     db: context.read<Database>(),

@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/activity/activity_cubit.dart';
+import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/main.dart';
@@ -10,6 +12,7 @@ import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 
@@ -18,23 +21,36 @@ import '../blocs.dart';
 part 'sync_state.dart';
 
 const kRequiredTxConfirmationCount = 15;
+const kRequiredTxConfirmationPendingThreshold = 60;
+
+const kSyncTimerDuration = 5;
+const kArConnectSyncTimerDuration = 2;
+
+typedef FolderID = String;
+typedef DriveID = String;
 
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.
 class SyncCubit extends Cubit<SyncState> {
   final ProfileCubit _profileCubit;
+  final ActivityCubit _activityCubit;
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final Database _db;
 
   StreamSubscription? _syncSub;
+  StreamSubscription? _arconnectSyncSub;
+
+  DateTime? _lastSync;
 
   SyncCubit({
     required ProfileCubit profileCubit,
+    required ActivityCubit activityCubit,
     required ArweaveService arweave,
     required DriveDao driveDao,
     required Database db,
   })  : _profileCubit = profileCubit,
+        _activityCubit = activityCubit,
         _arweave = arweave,
         _driveDao = driveDao,
         _db = db,
@@ -42,11 +58,14 @@ class SyncCubit extends Cubit<SyncState> {
     // Sync the user's drives on start and periodically.
     createSyncStream();
     restartSyncOnFocus();
+    // Sync ArConnect
+    createArConnectSyncStream();
+    restartArConnectSyncOnFocus();
   }
 
   void createSyncStream() {
     _syncSub?.cancel();
-    _syncSub = Stream.periodic(const Duration(minutes: 2))
+    _syncSub = Stream.periodic(const Duration(minutes: kSyncTimerDuration))
         // Do not start another sync until the previous sync has completed.
         .map((value) => Stream.fromFuture(startSync()))
         .listen((_) {});
@@ -54,18 +73,61 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void restartSyncOnFocus() {
-    whenBrowserTabIsUnhidden(() => Future.delayed(Duration(seconds: 2))
-        .then((value) => createSyncStream()));
+    whenBrowserTabIsUnhidden(() {
+      if (_lastSync != null &&
+          DateTime.now().difference(_lastSync!).inMinutes <
+              kSyncTimerDuration) {
+        return;
+      }
+      Future.delayed(Duration(seconds: 2)).then((value) => createSyncStream());
+    });
   }
+
+  void createArConnectSyncStream() {
+    _profileCubit.isCurrentProfileArConnect().then((isArConnect) {
+      if (isArConnect) {
+        _arconnectSyncSub?.cancel();
+        _arconnectSyncSub = Stream.periodic(
+                const Duration(minutes: kArConnectSyncTimerDuration))
+            // Do not start another sync until the previous sync has completed.
+            .map((value) => Stream.fromFuture(arconnectSync()))
+            .listen((_) {});
+        arconnectSync();
+      }
+    });
+  }
+
+  Future<void> arconnectSync() async {
+    if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
+      emit(SyncWalletMismatch());
+      return;
+    }
+  }
+
+  void restartArConnectSyncOnFocus() async {
+    if (await _profileCubit.isCurrentProfileArConnect()) {
+      whenBrowserTabIsUnhidden(() {
+        Future.delayed(Duration(seconds: 2))
+            .then((value) => createArConnectSyncStream());
+      });
+    }
+  }
+
+  final ghostFolders = <FolderID, GhostFolder>{};
+  final ghostFoldersByDrive =
+      <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
 
   Future<void> startSync() async {
     try {
       final profile = _profileCubit.state;
+      String? ownerAddress;
+
       print('Syncing...');
       emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
       if (profile is ProfileLoggedIn) {
         //Check if profile is ArConnect to skip sync while tab is hidden
+        ownerAddress = profile.walletAddress;
         final isArConnect = await _profileCubit.isCurrentProfileArConnect();
 
         if (isArConnect && isBrowserTabHidden()) {
@@ -74,16 +136,12 @@ class SyncCubit extends Cubit<SyncState> {
           return;
         }
 
-        if (_profileCubit.isOverlayOpen()) {
-          print('Overlay open, skipping sync...');
+        if (_activityCubit.state is ActivityInProgress) {
+          print('Uninterruptable activity in progress, skipping sync...');
           emit(SyncIdle());
           return;
         }
 
-        if (await _profileCubit.logoutIfWalletMismatch()) {
-          emit(SyncWalletMismatch());
-          return;
-        }
         // This syncs in the latest info on drives owned by the user and will be overwritten
         // below when the full sync process is ran.
         //
@@ -110,6 +168,8 @@ class SyncCubit extends Cubit<SyncState> {
             addError(error!);
           }));
       await Future.wait(driveSyncProcesses);
+      await createGhosts(ownerAddress: ownerAddress);
+      emit(SyncEmpty());
 
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
@@ -118,8 +178,56 @@ class SyncCubit extends Cubit<SyncState> {
     } catch (err) {
       addError(err);
     }
-
+    _lastSync = DateTime.now();
     emit(SyncIdle());
+  }
+
+  Future<void> createGhosts({String? ownerAddress}) async {
+    //Finalize missing parent list
+
+    for (final ghostFolder in ghostFolders.values) {
+      final folderExists = (await _driveDao
+              .folderById(
+                  driveId: ghostFolder.driveId, folderId: ghostFolder.folderId)
+              .getSingleOrNull()) !=
+          null;
+
+      if (folderExists) {
+        continue;
+      }
+
+      // Add to database
+      final drive =
+          await _driveDao.driveById(driveId: ghostFolder.driveId).getSingle();
+
+      // Dont create ghost folder if the ghost is a missing root folder
+      // Or if the drive doesn't belong to the user
+      final isReadOnlyDrive = drive.ownerAddress != ownerAddress;
+      final isRootFolderGhost = drive.rootFolderId == ghostFolder.folderId;
+
+      if (isReadOnlyDrive || isRootFolderGhost) {
+        continue;
+      }
+
+      final folderEntry = FolderEntry(
+        id: ghostFolder.folderId,
+        driveId: drive.id,
+        parentFolderId: drive.rootFolderId,
+        name: ghostFolder.folderId,
+        path: rootPath,
+        lastUpdated: DateTime.now(),
+        isGhost: true,
+        dateCreated: DateTime.now(),
+      );
+
+      await _driveDao.into(_driveDao.folderEntries).insert(folderEntry);
+      ghostFoldersByDrive.putIfAbsent(
+          drive.id, () => {folderEntry.id: folderEntry.toCompanion(false)});
+    }
+    await Future.wait([
+      ...ghostFoldersByDrive.entries
+          .map((entry) => generateFsEntryPaths(entry.key, entry.value, {})),
+    ]);
   }
 
   Future<void> _syncDrive(
@@ -162,7 +270,6 @@ class SyncCubit extends Cubit<SyncState> {
         lastBlockHeight: Value(currentBlockheight),
         syncCursor: Value(null),
       ));
-      emit(SyncEmpty());
       return;
     }
 
@@ -202,7 +309,6 @@ class SyncCubit extends Cubit<SyncState> {
       await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
     });
 
-    
     // If there are more results to process, recurse.
     await _syncDrive(
       driveId,
@@ -459,6 +565,11 @@ class SyncCubit extends Cubit<SyncState> {
       }
     }
 
+    Future<void> addMissingFolder(String folderId) async {
+      ghostFolders.putIfAbsent(
+          folderId, () => GhostFolder(folderId: folderId, driveId: driveId));
+    }
+
     Future<void> updateFolderTree(FolderNode node, String parentPath) async {
       final folderId = node.folder.id;
       // If this is the root folder, we should not include its name as part of the path.
@@ -498,7 +609,9 @@ class SyncCubit extends Cubit<SyncState> {
       if (parentPath != null) {
         await updateFolderTree(treeRoot, parentPath);
       } else {
-        print('Missing parent folder');
+        await addMissingFolder(
+          treeRoot.folder.parentFolderId!,
+        );
       }
     }
 
@@ -522,8 +635,9 @@ class SyncCubit extends Cubit<SyncState> {
               driveId: staleOrphanFile.driveId,
               path: Value(filePath)));
         } else {
-          print(
-              'Stale orphan file ${staleOrphanFile.id.value} parent folder ${staleOrphanFile.parentFolderId.value} could not be found.');
+          await addMissingFolder(
+            staleOrphanFile.parentFolderId.value,
+          );
         }
       }
     }
@@ -553,7 +667,7 @@ class SyncCubit extends Cubit<SyncState> {
           final abovePendingThreshold = DateTime.now()
                   .difference(pendingTxMap[txId]!.dateCreated)
                   .inMinutes >
-              45;
+              kRequiredTxConfirmationPendingThreshold;
           if (abovePendingThreshold) {
             txStatus = TransactionStatus.failed;
           }

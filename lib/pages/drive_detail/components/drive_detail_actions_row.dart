@@ -49,17 +49,14 @@ class DriveDetailActionRow extends StatelessWidget {
                   ),
                 ),
                 if (state.currentDrive.isPublic)
-                  Link(
-                    uri: state.selectedFilePreviewUrl,
-                    target: LinkTarget.blank,
-                    builder: (context, followLink) => IconButton(
-                      icon: const Icon(Icons.open_in_new),
-                      onPressed: followLink,
-                      tooltip: 'Preview',
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.open_in_new),
+                    onPressed: () =>
+                        launch(state.selectedFilePreviewUrl.toString()),
+                    tooltip: 'Preview',
                   ),
               },
-              if (state.hasWritePermissions) ...{
+              if (state.hasWritePermissions && !state.selectedItemIsGhost) ...{
                 IconButton(
                   icon: const Icon(Icons.drive_file_rename_outline),
                   onPressed: () {

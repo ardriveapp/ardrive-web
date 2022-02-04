@@ -4,7 +4,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
 import 'package:csv/csv.dart';
 import 'package:equatable/equatable.dart';
-import 'package:file_selector/file_selector.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:moor/moor.dart';
 
 part 'data_export_state.dart';
@@ -63,12 +63,10 @@ class DataExportCubit extends Cubit<DataExportState> {
     final dataBytes =
         utf8.encode((await getFilesInDriveAsCSV(driveId))) as Uint8List;
     emit(DataExportSuccess(
-      file: XFile.fromData(
-        dataBytes,
+      file: PlatformFile(
+        size: dataBytes.lengthInBytes,
         name: 'Export from $driveId ${DateTime.now().toString()}.csv',
-        mimeType: 'text/csv',
-        length: dataBytes.lengthInBytes,
-        lastModified: DateTime.now(),
+        bytes: dataBytes,
       ),
     ));
   }

@@ -16,6 +16,10 @@ abstract class Entity {
   @JsonKey(ignore: true)
   late String ownerAddress;
 
+  /// The bundle this entity is a part of.
+  @JsonKey(ignore: true)
+  String? bundledIn;
+
   /// The time this entity was created at ie. its `Unix-Time`.
   @JsonKey(ignore: true)
   DateTime createdAt = DateTime.now();

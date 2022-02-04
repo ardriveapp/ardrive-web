@@ -6,11 +6,23 @@ abstract class UploadState extends Equatable {
   List<Object?> get props => [];
 }
 
-class UploadPreparationInProgress extends UploadState {}
+class UploadPreparationInProgress extends UploadState {
+  final bool isArConnect;
+
+  UploadPreparationInProgress({this.isArConnect = false});
+  @override
+  List<Object> get props => [isArConnect];
+}
 
 class UploadPreparationFailure extends UploadState {}
 
-class UploadBundlingInProgress extends UploadState {}
+class UploadBundlingInProgress extends UploadState {
+  final bool isArConnect;
+
+  UploadBundlingInProgress({this.isArConnect = false});
+  @override
+  List<Object> get props => [isArConnect];
+}
 
 class UploadFileConflict extends UploadState {
   final List<String> conflictingFileNames;

@@ -1,13 +1,14 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
+import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:filesize/filesize.dart';
@@ -20,11 +21,15 @@ import 'package:moor/moor.dart' show OrderingMode;
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 import 'package:url_launcher/link.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import 'components/custom_paginated_data_table.dart';
 
 part 'components/drive_detail_actions_row.dart';
 part 'components/drive_detail_breadcrumb_row.dart';
 part 'components/drive_detail_data_list.dart';
 part 'components/drive_detail_data_table.dart';
+part 'components/drive_detail_data_table_source.dart';
 part 'components/drive_detail_folder_empty_card.dart';
 part 'components/fs_entry_side_sheet.dart';
 
@@ -40,12 +45,12 @@ class DriveDetailPage extends StatelessWidget {
                 desktop: Stack(
                   children: [
                     Row(
+                      key: ObjectKey(state.currentFolder.folder?.id),
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 32, horizontal: 24),
+                            padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -76,6 +81,8 @@ class DriveDetailPage extends StatelessWidget {
                                     state.currentFolder.files.isNotEmpty)
                                   Expanded(
                                     child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Expanded(
                                           child:
