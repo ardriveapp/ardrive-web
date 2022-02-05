@@ -8,7 +8,6 @@ import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart' as http;
 import 'package:moor/moor.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:pedantic/pedantic.dart';
 
 import '../services.dart';
 
@@ -41,7 +40,9 @@ class ArweaveService {
   }
 
   Future<BigInt> getPrice({required int byteSize}) {
-    return client.api.get('/price/$byteSize').then((res) => BigInt.parse(res.body));
+    return client.api
+        .get('/price/$byteSize')
+        .then((res) => BigInt.parse(res.body));
   }
 
   // Spread requests across time to avoid getting load balanced to the same gateway
@@ -472,7 +473,7 @@ class ArweaveService {
 
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
-    final bundleBlob = await bundle.asBlob();
+    final bundleBlob = bundle.blob;
     final packageInfo = await PackageInfo.fromPlatform();
 
     final bundleTx = await client.transactions.prepare(

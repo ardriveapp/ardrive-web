@@ -15,7 +15,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:pedantic/pedantic.dart';
 import 'package:uuid/uuid.dart';
 
 import '../blocs.dart';
@@ -276,7 +275,7 @@ class UploadCubit extends Cubit<UploadState> {
 
       //Create bundles
       for (var uploadHandles in bundleItems) {
-        final dataBundle = DataBundle(
+        final dataBundle = await DataBundle.fromDataItems(
           items: uploadHandles
               .map((e) => e.asDataItems().toList())
               .reduce((value, element) => value += element)

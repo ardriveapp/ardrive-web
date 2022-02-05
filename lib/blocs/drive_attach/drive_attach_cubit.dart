@@ -6,7 +6,6 @@ import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
-import 'package:pedantic/pedantic.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'drive_attach_state.dart';
@@ -89,7 +88,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       await _driveDao.writeDriveEntity(name: driveName, entity: driveEntity);
 
       _drivesBloc.selectDrive(driveId);
-      unawaited(_syncBloc.startSync());
+      _syncBloc.startSync();
     } catch (err) {
       addError(err);
     }
