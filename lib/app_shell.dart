@@ -93,16 +93,31 @@ class _AppShellState extends State<AppShell> {
                                     .isCurrentProfileArConnect(),
                                 builder: (BuildContext context,
                                     AsyncSnapshot snapshot) {
-                                  if (snapshot.data ?? false) {
-                                    return ProgressDialog(
-                                      title:
-                                          'Syncing... Please remain on this tab.',
-                                    );
-                                  } else {
-                                    return ProgressDialog(
-                                      title: 'Syncing... Please wait.',
-                                    );
-                                  }
+                                  return ProgressDialog(
+                                    title: snapshot.data ?? false
+                                        ? 'Syncing... Please remain on this tab.'
+                                        : 'Syncing... Please wait.',
+                                    child: syncState.driveName != null
+                                        ? Column(
+                                            children: [
+                                              const SizedBox(height: 16),
+                                              Text(
+                                                'Syncing Drive ${syncState.driveName}',
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Text(
+                                                '${syncState.lastBlockHeight} of ${syncState.maxBlockHeight} blocks',
+                                              ),
+                                              const SizedBox(height: 16),
+                                              LinearProgressIndicator(
+                                                value: syncState
+                                                        .lastBlockHeight! /
+                                                    syncState.maxBlockHeight!,
+                                              )
+                                            ],
+                                          )
+                                        : Container(),
+                                  );
                                 },
                               );
                             },

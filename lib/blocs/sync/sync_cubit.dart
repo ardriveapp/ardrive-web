@@ -234,6 +234,13 @@ class SyncCubit extends Cubit<SyncState> {
     String? syncCursor,
   }) async {
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+    emit(
+      SyncInProgress(
+        driveName: drive.name,
+        lastBlockHeight: lastBlockHeight,
+        maxBlockHeight: currentBlockheight,
+      ),
+    );
     final owner = await arweave.getOwnerForDriveEntityWithId(driveId);
     SecretKey? driveKey;
     if (drive.isPrivate) {
