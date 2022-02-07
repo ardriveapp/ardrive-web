@@ -122,7 +122,15 @@ DataRow _buildFolderRow({
         ),
       ),
       DataCell(Text('-')),
-      DataCell(Text('-')),
+      folder.isGhost
+          ? DataCell(
+              TextButton(
+                onPressed: () =>
+                    promptToReCreateFolder(context, ghostFolder: folder),
+                child: Text('Fix'),
+              ),
+            )
+          : DataCell(Text('-')),
     ],
   );
 }
