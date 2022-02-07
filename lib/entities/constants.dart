@@ -34,6 +34,8 @@ class Cipher {
   static const aes256 = 'AES256-GCM';
 }
 
+typedef DrivePrivacyValue = String;
+
 class DrivePrivacy {
   static const public = 'public';
   static const private = 'private';

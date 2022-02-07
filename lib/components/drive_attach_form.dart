@@ -75,6 +75,19 @@ class DriveAttachForm extends StatelessWidget {
                     validationMessages: (_) => kValidationMessages,
                   ),
                   const SizedBox(height: 16),
+                  if (state is DriveAttachPrivate)
+                    ReactiveTextField(
+                      formControlName: 'driveKey',
+                      autofocus: true,
+                      obscureText: true,
+                      decoration: InputDecoration(labelText: 'Drive Key'),
+                      validationMessages: (_) => kValidationMessages,
+                      onEditingComplete: () => context
+                          .read<DriveAttachCubit>()
+                          .form
+                          .updateValueAndValidity(),
+                    ),
+                  const SizedBox(height: 16),
                   ReactiveTextField(
                     formControlName: 'name',
                     decoration: InputDecoration(

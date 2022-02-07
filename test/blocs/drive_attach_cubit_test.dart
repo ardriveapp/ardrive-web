@@ -70,7 +70,7 @@ void main() {
     );
 
     blocTest<DriveAttachCubit, DriveAttachState>(
-      'set form "${AppValidationMessage.driveNotFound}" error when no valid drive could be found',
+      'set form "${AppValidationMessage.driveAttachDriveNotFound}" error when no valid drive could be found',
       build: () => driveAttachCubit,
       act: (bloc) {
         bloc.form.value = {

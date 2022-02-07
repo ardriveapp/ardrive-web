@@ -41,7 +41,9 @@ class ArweaveService {
   }
 
   Future<BigInt> getPrice({required int byteSize}) {
-    return client.api.get('/price/$byteSize').then((res) => BigInt.parse(res.body));
+    return client.api
+        .get('/price/$byteSize')
+        .then((res) => BigInt.parse(res.body));
   }
 
   // Spread requests across time to avoid getting load balanced to the same gateway
@@ -279,12 +281,50 @@ class ArweaveService {
 
     final fileTx = queryEdges.first.node;
     final fileDataRes = await client.api.get(fileTx.id);
-
     try {
       return await DriveEntity.fromTransaction(
           fileTx, fileDataRes.bodyBytes, driveKey);
     } on EntityTransactionParseException catch (_) {
       return null;
+    }
+  }
+
+  /// Gets the drive privacy of the latest drive entity with the provided id.
+  ///
+  /// This function first checks for the owner of the first instance of the [DriveEntity]
+  /// with the specified id and then queries for the latest instance of the [FileEntity]
+  /// by that owner.
+  ///
+  /// Returns `null` if no valid drive is found.
+  Future<DrivePrivacyValue?> getDrivePrivacyForId(String driveId) async {
+    final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
+        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
+
+    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    final driveOwner =
+        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
+
+    final latestDriveQuery = await _gql.execute(LatestDriveEntityWithIdQuery(
+        variables: LatestDriveEntityWithIdArguments(
+            driveId: driveId, owner: driveOwner)));
+
+    final queryEdges = latestDriveQuery.data!.transactions.edges;
+    if (queryEdges.isEmpty) {
+      return null;
+    }
+
+    final fileTx = queryEdges.first.node;
+
+    switch (fileTx.getTag(EntityTag.drivePrivacy)) {
+      case DrivePrivacy.public:
+        return DrivePrivacy.public;
+      case DrivePrivacy.private:
+        return DrivePrivacy.private;
+      default:
+        return null;
     }
   }
 
