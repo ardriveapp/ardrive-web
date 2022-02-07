@@ -124,9 +124,16 @@ DataRow _buildFolderRow({
       DataCell(Text('-')),
       folder.isGhost
           ? DataCell(
-              TextButton(
-                onPressed: () =>
-                    promptToReCreateFolder(context, ghostFolder: folder),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  primary: LightColors.kOnLightSurfaceMediumEmphasis,
+                  textStyle:
+                      TextStyle(color: LightColors.kOnDarkSurfaceHighEmphasis),
+                ),
+                onPressed: () => showCongestionDependentModalDialog(
+                  context,
+                  () => promptToReCreateFolder(context, ghostFolder: folder),
+                ),
                 child: Text('Fix'),
               ),
             )
