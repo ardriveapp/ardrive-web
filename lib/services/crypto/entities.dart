@@ -54,7 +54,8 @@ Future<Uint8List> decryptTransactionData(
 /// Creates a transaction with the provided entity's JSON data encrypted along with the appropriate cipher tags.
 Future<Transaction> createEncryptedEntityTransaction(
         Entity entity, SecretKey key) =>
-    createEncryptedTransaction(utf8.encode(json.encode(entity)) as Uint8List, key);
+    createEncryptedTransaction(
+        utf8.encode(json.encode(entity)) as Uint8List, key);
 
 /// Creates a data item with the provided entity's JSON data encrypted along with the appropriate cipher tags.
 Future<DataItem> createEncryptedEntityDataItem(Entity entity, SecretKey key) =>
