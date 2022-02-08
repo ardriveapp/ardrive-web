@@ -21,6 +21,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final AppConfig _config;
 
   StreamSubscription? _folderSubscription;
+  final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
 
   DriveDetailCubit({
     required this.driveId,
@@ -77,42 +78,88 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           // Emit the loading state as it can be a while between the drive being not found, then added,
           // and then the folders being loaded.
           emit(DriveDetailLoadInProgress());
-        }
-        final state = this.state is DriveDetailLoadSuccess
-            ? this.state as DriveDetailLoadSuccess
-            : null;
-        final profile = _profileCubit.state;
-        if (state != null) {
-          emit(
-            state.copyWith(
+        } else {
+          final state = this.state is DriveDetailLoadSuccess
+              ? this.state as DriveDetailLoadSuccess
+              : null;
+          final profile = _profileCubit.state;
+
+          FolderWithContents currentFolder;
+
+          var availableRowsPerPage = _defaultAvailableRowsPerPage;
+
+          if (folderContents.folder != null) {
+            currentFolder = folderContents;
+            availableRowsPerPage = calculateRowsPerPage(
+                currentFolder.files.length + currentFolder.subfolders.length);
+          }
+
+          if (state != null) {
+            emit(
+              state.copyWith(
+                currentDrive: drive,
+                hasWritePermissions: profile is ProfileLoggedIn &&
+                    drive.ownerAddress == profile.walletAddress,
+                currentFolder: folderContents,
+                contentOrderBy: contentOrderBy,
+                contentOrderingMode: contentOrderingMode,
+                availableRowsPerPage: availableRowsPerPage,
+                // In case sync hasn't populated the drive yet,
+                // set a default rows per page
+                rowsPerPage: availableRowsPerPage.contains(state.rowsPerPage)
+                    ? state.rowsPerPage
+                    : availableRowsPerPage.first,
+              ),
+            );
+          } else {
+            emit(DriveDetailLoadSuccess(
               currentDrive: drive,
               hasWritePermissions: profile is ProfileLoggedIn &&
                   drive.ownerAddress == profile.walletAddress,
               currentFolder: folderContents,
               contentOrderBy: contentOrderBy,
               contentOrderingMode: contentOrderingMode,
-            ),
-          );
-        } else {
-          emit(DriveDetailLoadSuccess(
-            currentDrive: drive,
-            hasWritePermissions: profile is ProfileLoggedIn &&
-                drive.ownerAddress == profile.walletAddress,
-            currentFolder: folderContents,
-            contentOrderBy: contentOrderBy,
-            contentOrderingMode: contentOrderingMode,
-          ));
+              rowsPerPage: availableRowsPerPage.first,
+              availableRowsPerPage: availableRowsPerPage,
+            ));
+          }
         }
       },
     ).listen((_) {});
   }
 
-  Future<void> selectItem(String itemId, {bool isFolder = false}) async {
+  List<int> calculateRowsPerPage(int totalEntries) {
+    List<int> availableRowsPerPage;
+    if (totalEntries < _defaultAvailableRowsPerPage.first) {
+      availableRowsPerPage = <int>[totalEntries];
+    } else {
+      availableRowsPerPage = _defaultAvailableRowsPerPage;
+    }
+    return availableRowsPerPage;
+  }
+
+  void setRowsPerPage(int rowsPerPage) {
+    switch (state.runtimeType) {
+      case DriveDetailLoadSuccess:
+        emit(
+          (state as DriveDetailLoadSuccess).copyWith(
+            rowsPerPage: rowsPerPage,
+          ),
+        );
+    }
+  }
+
+  Future<void> selectItem(
+    String itemId, {
+    bool isFolder = false,
+    bool isGhost = false,
+  }) async {
     var state = this.state as DriveDetailLoadSuccess;
 
     state = state.copyWith(
       selectedItemId: itemId,
       selectedItemIsFolder: isFolder,
+      selectedItemIsGhost: isGhost,
     );
 
     if (state.selectedItemId != null) {

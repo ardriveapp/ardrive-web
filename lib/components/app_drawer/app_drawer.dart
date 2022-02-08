@@ -74,6 +74,8 @@ class AppDrawer extends StatelessWidget {
                                         onPressed: () => context
                                             .read<DrivesCubit>()
                                             .selectDrive(d.id),
+                                        hasAlert: state.drivesWithAlerts
+                                            .contains(d.id),
                                       ),
                                     ),
                                   },
@@ -111,25 +113,44 @@ class AppDrawer extends StatelessWidget {
                       ],
                     ),
                   ),
-                  FutureBuilder(
-                    future: PackageInfo.fromPlatform(),
-                    builder: (BuildContext context,
-                        AsyncSnapshot<PackageInfo> snapshot) {
-                      if (snapshot.hasData) {
-                        return Padding(
+                  Container(
+                    padding: EdgeInsets.all(21),
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Version ${snapshot.data!.version}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .caption!
-                                .copyWith(color: Colors.grey),
+                          child: FloatingActionButton(
+                            elevation: 0,
+                            tooltip: 'Help',
+                            onPressed: () => launch(
+                                'https://ardrive.typeform.com/to/pGeAVvtg'),
+                            child: const Icon(Icons.help_outline),
                           ),
-                        );
-                      } else {
-                        return Container();
-                      }
-                    },
+                        ),
+                        FutureBuilder(
+                          future: PackageInfo.fromPlatform(),
+                          builder: (BuildContext context,
+                              AsyncSnapshot<PackageInfo> snapshot) {
+                            if (snapshot.hasData) {
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  'Version ${snapshot.data!.version}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .caption!
+                                      .copyWith(color: Colors.grey),
+                                ),
+                              );
+                            } else {
+                              return SizedBox(height: 32, width: 32);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

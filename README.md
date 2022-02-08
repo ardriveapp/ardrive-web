@@ -9,6 +9,9 @@ Have any questions? Join the ArDrive Discord channel for support, news and updat
 
 ## Setting up the Development Environment
 
+Install lefthook for your platform from the intructions [here](https://github.com/evilmartians/lefthook/blob/master/docs/other.md).
+This will enable the use of git hooks.
+
 If your environment is using homebrew, install the Flutter SDK with its cask as shown below. Alternatively, visit the [Flutter Installation Instructions][https://flutter.dev/docs/get-started/install] to get the Flutter SDK up and running for your OS / local setup.
 
 ```shell
