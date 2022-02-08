@@ -12,15 +12,22 @@ import 'package:pedantic/pedantic.dart';
 
 import '../services.dart';
 
+const byteCountPerChunk = 262144; // 256 KiB
+
 class ArweaveService {
   final Arweave client;
 
   final ArtemisClient _gql;
 
   int _mempoolSize = 0;
+
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     unawaited(initializeMempoolStream());
+  }
+
+  int bytesToChunks(int bytes) {
+    return (bytes / byteCountPerChunk).ceil();
   }
 
   /// Returns the onchain balance of the specified address.
@@ -510,7 +517,21 @@ class ArweaveService {
 
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
-    final bundleBlob = await bundle.asBlob();
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    final bundleTx = await client.transactions.prepare(
+      Transaction.withDataBundle(bundleBlob: bundle.blob)
+        ..addApplicationTags(version: packageInfo.version),
+      wallet,
+    );
+
+    await bundleTx.sign(wallet);
+
+    return bundleTx;
+  }
+
+  Future<Transaction> prepareDataBundleTxFromBlob(
+      Uint8List bundleBlob, Wallet wallet) async {
     final packageInfo = await PackageInfo.fromPlatform();
 
     final bundleTx = await client.transactions.prepare(

@@ -1,6 +1,4 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/upload/file_upload_handle.dart';
-import 'package:ardrive/blocs/upload/multi_file_upload_handle.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
@@ -83,7 +81,9 @@ class UploadForm extends StatelessWidget {
                   child: Text('CANCEL'),
                 ),
                 ElevatedButton(
-                  onPressed: () => context.read<UploadCubit>().prepareUpload(),
+                  onPressed: () => context
+                      .read<UploadCubit>()
+                      .prepareUploadPlanAndCostEstimates(),
                   child: Text('CONTINUE'),
                 ),
               ],
@@ -152,8 +152,16 @@ class UploadForm extends StatelessWidget {
               ],
             );
           } else if (state is UploadReady) {
+            final numberOfFilesInBundles =
+                state.uploadPlan.bundleUploadHandles.isNotEmpty
+                    ? state.uploadPlan.bundleUploadHandles
+                        .map((e) => e.numberOfFiles)
+                        .reduce((value, element) => value += element)
+                    : 0;
+            final numberOfV2Files = state.uploadPlan.v2FileUploadHandles.length;
             return AppDialog(
-              title: 'Upload ${state.files.length} file(s)',
+              title:
+                  'Upload ${numberOfFilesInBundles + numberOfV2Files} file(s)',
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -166,12 +174,23 @@ class UploadForm extends StatelessWidget {
                         child: ListView(
                           shrinkWrap: true,
                           children: [
-                            for (final file in state.files) ...{
+                            for (final file in state
+                                .uploadPlan.v2FileUploadHandles.values) ...{
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(file.entity.name!),
                                 subtitle: Text(filesize(file.size)),
                               ),
+                            },
+                            for (final bundle
+                                in state.uploadPlan.bundleUploadHandles) ...{
+                              for (final fileEntity in bundle.fileEntities) ...{
+                                ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(fileEntity.name!),
+                                  subtitle: Text(filesize(fileEntity.size)),
+                                ),
+                              },
                             },
                           ],
                         ),
@@ -182,11 +201,13 @@ class UploadForm extends StatelessWidget {
                     Text.rich(
                       TextSpan(
                         children: [
-                          TextSpan(text: 'Cost: ${state.arUploadCost} AR'),
-                          if (state.usdUploadCost != null)
+                          TextSpan(
+                            text: 'Cost: ${state.costEstimate.arUploadCost} AR',
+                          ),
+                          if (state.costEstimate.usdUploadCost != null)
                             TextSpan(
-                                text: state.usdUploadCost! >= 0.01
-                                    ? ' (~${state.usdUploadCost!.toStringAsFixed(2)} USD)'
+                                text: state.costEstimate.usdUploadCost! >= 0.01
+                                    ? ' (~${state.costEstimate.usdUploadCost!.toStringAsFixed(2)} USD)'
                                     : ' (< 0.01 USD)'),
                         ],
                         style: Theme.of(context).textTheme.bodyText1,
@@ -215,15 +236,19 @@ class UploadForm extends StatelessWidget {
                 ),
                 ElevatedButton(
                   onPressed: state.sufficientArBalance
-                      ? () => context.read<UploadCubit>().startUpload()
+                      ? () => context.read<UploadCubit>().startUpload(
+                            uploadPlan: state.uploadPlan,
+                            costEstimate: state.costEstimate,
+                          )
                       : null,
                   child: Text('UPLOAD'),
                 ),
               ],
             );
-          } else if (state is UploadBundlingInProgress) {
+          } else if (state is UploadSigningInProgress) {
             return AppDialog(
-              title: 'Bundling upload...',
+              title:
+                  '${state.uploadPlan.bundleUploadHandles.isNotEmpty ? 'Bundling and signing' : 'Signing'} upload...',
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -242,10 +267,17 @@ class UploadForm extends StatelessWidget {
               ),
             );
           } else if (state is UploadInProgress) {
+            final numberOfFilesInBundles =
+                state.uploadPlan.bundleUploadHandles.isNotEmpty
+                    ? state.uploadPlan.bundleUploadHandles
+                        .map((e) => e.numberOfFiles)
+                        .reduce((value, element) => value += element)
+                    : 0;
+            final numberOfV2Files = state.uploadPlan.v2FileUploadHandles.length;
             return AppDialog(
               dismissable: false,
               title:
-                  'Uploading ${state.files!.length} file(s) and bundle(s)...',
+                  'Uploading ${numberOfFilesInBundles + numberOfV2Files} file(s)...',
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: ConstrainedBox(
@@ -254,41 +286,41 @@ class UploadForm extends StatelessWidget {
                     child: ListView(
                       shrinkWrap: true,
                       children: [
-                        for (final file in state.files!) ...{
-                          file is FileUploadHandle
-                              ? ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: Text(file.entity.name!),
-                                  subtitle: Text(
-                                      '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
-                                  trailing: CircularProgressIndicator(
-                                      // Show an indeterminate progress indicator if the upload hasn't started yet as
-                                      // small uploads might never report a progress.
-                                      value: file.uploadProgress != 0
-                                          ? file.uploadProgress
-                                          : null),
-                                )
-                              : ListTile(
-                                  contentPadding: EdgeInsets.zero,
-                                  title: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      for (var fileEntity
-                                          in (file as MultiFileUploadHandle)
-                                              .fileEntities)
-                                        Text(fileEntity.name!)
-                                    ],
-                                  ),
-                                  subtitle: Text(
-                                      '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
-                                  trailing: CircularProgressIndicator(
-                                      // Show an indeterminate progress indicator if the upload hasn't started yet as
-                                      // small uploads might never report a progress.
-                                      value: file.uploadProgress != 0
-                                          ? file.uploadProgress
-                                          : null),
-                                ),
+                        for (final file
+                            in state.uploadPlan.v2FileUploadHandles.values) ...{
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(file.entity.name!),
+                            subtitle: Text(
+                                '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
+                            trailing: CircularProgressIndicator(
+                                // Show an indeterminate progress indicator if the upload hasn't started yet as
+                                // small uploads might never report a progress.
+                                value: file.uploadProgress != 0
+                                    ? file.uploadProgress
+                                    : null),
+                          ),
+                        },
+                        for (final bundle
+                            in state.uploadPlan.bundleUploadHandles) ...{
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (var fileEntity in bundle.fileEntities)
+                                  Text(fileEntity.name!)
+                              ],
+                            ),
+                            subtitle: Text(
+                                '${filesize(bundle.uploadedSize)}/${filesize(bundle.size)}'),
+                            trailing: CircularProgressIndicator(
+                                // Show an indeterminate progress indicator if the upload hasn't started yet as
+                                // small uploads might never report a progress.
+                                value: bundle.uploadProgress != 0
+                                    ? bundle.uploadProgress
+                                    : null),
+                          ),
                         },
                       ],
                     ),

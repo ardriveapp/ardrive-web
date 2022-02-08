@@ -1,8 +1,6 @@
 import 'package:ardrive/utils/bundles/sized_item.dart';
 
 abstract class UploadHandle implements SizedItem {
-  BigInt? get cost;
-
   /// The size of the file before it was encoded/encrypted for upload.
   @override
   int get size;
