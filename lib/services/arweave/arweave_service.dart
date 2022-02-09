@@ -12,15 +12,22 @@ import 'package:pedantic/pedantic.dart';
 
 import '../services.dart';
 
+const byteCountPerChunk = 262144; // 256 KiB
+
 class ArweaveService {
   final Arweave client;
 
   final ArtemisClient _gql;
 
   int _mempoolSize = 0;
+
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     unawaited(initializeMempoolStream());
+  }
+
+  int bytesToChunks(int bytes) {
+    return (bytes / byteCountPerChunk).ceil();
   }
 
   /// Returns the onchain balance of the specified address.
@@ -41,7 +48,9 @@ class ArweaveService {
   }
 
   Future<BigInt> getPrice({required int byteSize}) {
-    return client.api.get('/price/$byteSize').then((res) => BigInt.parse(res.body));
+    return client.api
+        .get('/price/$byteSize')
+        .then((res) => BigInt.parse(res.body));
   }
 
   // Spread requests across time to avoid getting load balanced to the same gateway
@@ -107,9 +116,9 @@ class ArweaveService {
     );
     final queryEdges = driveEntityHistoryQuery.data!.transactions.edges;
     final entityTxs = queryEdges.map((e) => e.node).toList();
-    final rawEntityData =
-        await Future.wait(entityTxs.map((e) => client.api.get(e.id)))
-            .then((rs) => rs.map((r) => r.bodyBytes).toList());
+    final responses = await Future.wait(
+      entityTxs.map((e) => client.api.get(e.id)),
+    );
 
     final blockHistory = <BlockEntities>[];
     for (var i = 0; i < entityTxs.length; i++) {
@@ -129,18 +138,29 @@ class ArweaveService {
 
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
+        final entityResponse = responses[i];
+
+        if (entityResponse.statusCode != 200) {
+          throw EntityTransactionDataNetworkException(
+            transactionId: transaction.id,
+            statusCode: entityResponse.statusCode,
+            reasonPhrase: entityResponse.reasonPhrase,
+          );
+        }
+
+        final rawEntityData = entityResponse.bodyBytes;
 
         Entity? entity;
         if (entityType == EntityType.drive) {
           entity = await DriveEntity.fromTransaction(
-              transaction, rawEntityData[i], driveKey);
+              transaction, rawEntityData, driveKey);
         } else if (entityType == EntityType.folder) {
           entity = await FolderEntity.fromTransaction(
-              transaction, rawEntityData[i], driveKey);
+              transaction, rawEntityData, driveKey);
         } else if (entityType == EntityType.file) {
           entity = await FileEntity.fromTransaction(
             transaction,
-            rawEntityData[i],
+            rawEntityData,
             driveKey: driveKey,
           );
         }
@@ -153,7 +173,19 @@ class ArweaveService {
         blockHistory.last.entities.add(entity);
 
         // If there are errors in parsing the entity, ignore it.
-      } on EntityTransactionParseException catch (_) {}
+      } on EntityTransactionParseException catch (parseException) {
+        print(
+          'Failed to parse transaction '
+          'with id ${parseException.transactionId}',
+        );
+      } on EntityTransactionDataNetworkException catch (fetchException) {
+        print(
+          'Failed to fetch entity data '
+          'for transaction ${fetchException.transactionId}, '
+          'with status ${fetchException.statusCode} '
+          'and reason ${fetchException.reasonPhrase}',
+        );
+      }
     }
 
     // Sort the entities in each block by ascending commit time.
@@ -241,7 +273,12 @@ class ArweaveService {
         drivesWithKey[drive] = driveKey;
 
         // If there's an error parsing the drive entity, just ignore it.
-      } on EntityTransactionParseException catch (_) {}
+      } on EntityTransactionParseException catch (parseException) {
+        print(
+          'Failed to parse transaction '
+          'with id ${parseException.transactionId}',
+        );
+      }
     }
 
     return drivesWithKey;
@@ -283,7 +320,11 @@ class ArweaveService {
     try {
       return await DriveEntity.fromTransaction(
           fileTx, fileDataRes.bodyBytes, driveKey);
-    } on EntityTransactionParseException catch (_) {
+    } on EntityTransactionParseException catch (parseException) {
+      print(
+        'Failed to parse transaction '
+        'with id ${parseException.transactionId}',
+      );
       return null;
     }
   }
@@ -365,7 +406,11 @@ class ArweaveService {
         fileDataRes.bodyBytes,
         fileKey: fileKey,
       );
-    } on EntityTransactionParseException catch (_) {
+    } on EntityTransactionParseException catch (parseException) {
+      print(
+        'Failed to parse transaction '
+        'with id ${parseException.transactionId}',
+      );
       return null;
     }
   }
@@ -472,7 +517,21 @@ class ArweaveService {
 
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
-    final bundleBlob = await bundle.asBlob();
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    final bundleTx = await client.transactions.prepare(
+      Transaction.withDataBundle(bundleBlob: bundle.blob)
+        ..addApplicationTags(version: packageInfo.version),
+      wallet,
+    );
+
+    await bundleTx.sign(wallet);
+
+    return bundleTx;
+  }
+
+  Future<Transaction> prepareDataBundleTxFromBlob(
+      Uint8List bundleBlob, Wallet wallet) async {
     final packageInfo = await PackageInfo.fromPlatform();
 
     final bundleTx = await client.transactions.prepare(

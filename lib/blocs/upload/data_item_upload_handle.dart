@@ -4,13 +4,15 @@ import 'package:ardrive/blocs/upload/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/bundles/fake_tags.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:moor/moor.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-class FileUploadHandle implements UploadHandle {
+class DataItemUploadHandle implements UploadHandle, DataItemHandle {
   final FileEntity entity;
   final XFile file;
   final String path;
@@ -31,19 +33,28 @@ class FileUploadHandle implements UploadHandle {
   @override
   double uploadProgress = 0;
 
-  late Transaction entityTx;
-  late Transaction dataTx;
+  late DataItem entityTx;
+  late DataItem dataTx;
 
-  FileUploadHandle({
+  ArweaveService arweave;
+  Wallet wallet;
+
+  DataItemUploadHandle({
     required this.entity,
     required this.path,
     required this.file,
     required this.revisionAction,
+    required this.arweave,
+    required this.wallet,
     this.driveKey,
     this.fileKey,
   });
 
-  Future<void> writeFileEntityToDatabase({required DriveDao driveDao}) async {
+  Future<void> writeFileEntityToDatabase({
+    required String bundledInTxId,
+    required DriveDao driveDao,
+  }) async {
+    entity.bundledIn = bundledInTxId;
     await driveDao.transaction(() async {
       await driveDao.writeFileEntity(entity, path);
       await driveDao.insertFileRevision(
@@ -52,17 +63,13 @@ class FileUploadHandle implements UploadHandle {
     });
   }
 
-  Future<void> prepareAndSignTransactions(
-      {required ArweaveService arweaveService, required Wallet wallet}) async {
+  Future<List<DataItem>> prepareAndSignDataItems() async {
     final packageInfo = await PackageInfo.fromPlatform();
-
     final fileData = await file.readAsBytes();
-    dataTx = await arweaveService.client.transactions.prepare(
-      isPrivate
-          ? await createEncryptedTransaction(fileData, fileKey!)
-          : Transaction.withBlobData(data: fileData),
-      wallet,
-    );
+    dataTx = isPrivate
+        ? await createEncryptedDataItem(fileData, fileKey!)
+        : DataItem.withBlobData(data: fileData);
+    dataTx.setOwner(await wallet.getOwner());
 
     dataTx.addApplicationTags(version: packageInfo.version);
 
@@ -77,15 +84,32 @@ class FileUploadHandle implements UploadHandle {
     await dataTx.sign(wallet);
 
     entity.dataTxId = dataTx.id;
-    entityTx = await arweaveService.prepareEntityTx(entity, wallet, fileKey);
+    entityTx = await arweave.prepareEntityDataItem(entity, wallet, fileKey);
+    await entityTx.sign(wallet);
     entity.txId = entityTx.id;
+
+    return [entityTx, dataTx];
   }
 
-  int getFileDataSize() {
-    return entity.size!;
+  Future<int> _estimateEntityDataItemSize() async {
+    final fakeTags = createFakeEntityTags(entity);
+    if (isPrivate) {
+      fakeTags.addAll(fakePrivateTags);
+    } else {
+      fakeTags.add(Tag(
+        EntityTag.contentType,
+        entity.dataContentType!,
+      ));
+    }
+    fakeTags.addAll(fakeApplicationTags);
+    return estimateDataItemSize(
+      fileDataSize: getEntityJSONSize(),
+      tags: fakeTags,
+      nonce: [],
+    );
   }
 
-  int getMetadataJSONSize() {
+  int getEntityJSONSize() {
     final entityFake = FileEntity(
       id: entity.id,
       dataContentType: entity.dataContentType,
@@ -99,18 +123,32 @@ class FileUploadHandle implements UploadHandle {
     return (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
   }
 
-  /// Uploads the file, emitting an event whenever the progress is updated.
-  Stream<Null> upload(ArweaveService arweave) async* {
-    await arweave.postTx(entityTx);
-
-    await for (final upload in arweave.client.transactions.upload(dataTx)) {
-      uploadProgress = upload.progress;
-      yield null;
+  Future<int> _estimatedataTxSize() async {
+    final fakeTags = <Tag>[];
+    if (isPrivate) {
+      fakeTags.addAll(fakePrivateTags);
+    } else {
+      fakeTags.add(Tag(
+        EntityTag.contentType,
+        entity.dataContentType!,
+      ));
     }
+    fakeTags.addAll(fakeApplicationTags);
+    return estimateDataItemSize(
+      fileDataSize: size,
+      tags: fakeTags,
+      nonce: [],
+    );
   }
 
-  void dispose() {
-    entityTx.setData(Uint8List(0));
-    dataTx.setData(Uint8List(0));
+  Future<int> estimateDataItemSizes() async {
+    return await _estimatedataTxSize() + await _estimateEntityDataItemSize();
+  }
+
+  @override
+  Future<List<DataItem>> createDataItemsFromFileHandle() async {
+    final dataItems = await prepareAndSignDataItems();
+    // Remove file data references
+    return dataItems;
   }
 }
