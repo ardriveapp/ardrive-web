@@ -36,37 +36,37 @@ class _DriveDataTableState extends State<DriveDataTable> {
       showFirstLastButtons: true,
       source: DriveDetailDataTableSource(
         context: context,
-        files: widget.driveDetailState.currentFolder.files
+        files: widget.driveDetailState.folderInView.files
             .map(
               (file) => DriveTableFile(
                 file: file,
-                selected: file.id == widget.driveDetailState.selectedItemId,
+                selected:
+                    file.id == widget.driveDetailState.maybeSelectedItem?.id,
                 onPressed: () async {
                   final bloc = context.read<DriveDetailCubit>();
-                  if (file.id == widget.driveDetailState.selectedItemId) {
+                  if (file.id ==
+                      widget.driveDetailState.maybeSelectedItem?.id) {
                     bloc.toggleSelectedItemDetails();
                   } else {
-                    await bloc.selectItem(file.id);
+                    await bloc.selectItem(SelectedFile(file: file));
                   }
                 },
               ),
             )
             .toList(),
-        folders: widget.driveDetailState.currentFolder.subfolders
+        folders: widget.driveDetailState.folderInView.subfolders
             .map(
               (folder) => DriveTableFolder(
                 folder: folder,
-                selected: folder.id == widget.driveDetailState.selectedItemId,
+                selected:
+                    folder.id == widget.driveDetailState.maybeSelectedItem?.id,
                 onPressed: () {
                   final bloc = context.read<DriveDetailCubit>();
-                  if (folder.id == widget.driveDetailState.selectedItemId) {
+                  if (folder.id ==
+                      widget.driveDetailState.maybeSelectedItem?.id) {
                     bloc.openFolder(path: folder.path);
                   } else {
-                    bloc.selectItem(
-                      folder.id,
-                      isFolder: true,
-                      isGhost: folder.isGhost,
-                    );
+                    bloc.selectItem(SelectedFolder(folder: folder));
                   }
                 },
               ),

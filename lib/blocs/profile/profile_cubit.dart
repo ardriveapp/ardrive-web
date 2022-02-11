@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';

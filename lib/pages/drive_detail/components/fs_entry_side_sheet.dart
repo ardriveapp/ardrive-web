@@ -2,23 +2,24 @@ part of '../drive_detail_page.dart';
 
 class FsEntrySideSheet extends StatelessWidget {
   final String driveId;
-  final String? folderId;
-  final String? fileId;
-
-  FsEntrySideSheet({required this.driveId, this.folderId, this.fileId});
+  final SelectedItem? maybeSelectedItem;
+  FsEntrySideSheet({
+    required this.driveId,
+    this.maybeSelectedItem,
+  });
 
   @override
   Widget build(BuildContext context) => Drawer(
         elevation: 1,
         child: BlocProvider<FsEntryInfoCubit>(
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
-          key: ValueKey(driveId +
-              ([folderId, fileId].firstWhere((e) => e != null,
-                  orElse: () => Random().nextInt(1000).toString())!)),
+          key: ValueKey(
+            driveId +
+                '${maybeSelectedItem?.id ?? Random().nextInt(1000).toString()}',
+          ),
           create: (context) => FsEntryInfoCubit(
             driveId: driveId,
-            folderId: folderId,
-            fileId: fileId,
+            maybeSelectedItem: maybeSelectedItem,
             driveDao: context.read<DriveDao>(),
           ),
           child: DefaultTabController(
@@ -79,6 +80,23 @@ class FsEntrySideSheet extends StatelessWidget {
         rows: [
           if (state is FsEntryInfoSuccess<Drive>) ...{
             DataRow(cells: [
+              DataCell(Text('Contains')),
+              DataCell(
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    fileAndFolderCountsToString(
+                        fileCount: (state as FsEntryDriveInfoSuccess)
+                            .rootFolderTree
+                            .getRecursiveFileCount(),
+                        folderCount:
+                            state.rootFolderTree.getRecursiveSubFolderCount()),
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ),
+            ]),
+            DataRow(cells: [
               DataCell(Text('Drive ID')),
               DataCell(
                 CopyIconButton(
@@ -91,20 +109,38 @@ class FsEntrySideSheet extends StatelessWidget {
               DataCell(Text('Privacy')),
               // Capitalise the privacy enums of drives for display.
               DataCell(
-                Text(
-                  state.entry.privacy == DrivePrivacy.private
-                      ? 'Private'
-                      : 'Public',
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    state.entry.privacy == DrivePrivacy.private
+                        ? 'Private'
+                        : 'Public',
+                  ),
                 ),
               )
             ]),
-          } else if (state is FsEntryInfoSuccess<FolderEntry>) ...{
+          } else if (state is FsEntryInfoSuccess<FolderNode>) ...{
+            DataRow(cells: [
+              DataCell(Text('Contains')),
+              DataCell(
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    fileAndFolderCountsToString(
+                      folderCount: state.entry.getRecursiveSubFolderCount(),
+                      fileCount: state.entry.getRecursiveFileCount(),
+                    ),
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ),
+            ]),
             DataRow(cells: [
               DataCell(Text('Folder ID')),
               DataCell(
                 CopyIconButton(
                   tooltip: 'Copy Folder ID',
-                  value: state.entry.id,
+                  value: state.entry.folder.id,
                 ),
               ),
             ]),
@@ -120,21 +156,46 @@ class FsEntrySideSheet extends StatelessWidget {
             ]),
             DataRow(cells: [
               DataCell(Text('Size')),
-              DataCell(Text(filesize(state.entry.size)))
+              DataCell(
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(filesize(state.entry.size)),
+                ),
+              )
             ]),
             DataRow(cells: [
               DataCell(Text('Last modified')),
               DataCell(
-                  Text(yMMdDateFormatter.format(state.entry.lastModifiedDate)))
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    yMMdDateFormatter.format(state.entry.lastModifiedDate),
+                  ),
+                ),
+              )
             ]),
           },
           DataRow(cells: [
             DataCell(Text('Last updated')),
-            DataCell(Text(yMMdDateFormatter.format(state.lastUpdated))),
+            DataCell(
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  yMMdDateFormatter.format(state.lastUpdated),
+                ),
+              ),
+            ),
           ]),
           DataRow(cells: [
             DataCell(Text('Date created')),
-            DataCell(Text(yMMdDateFormatter.format(state.dateCreated))),
+            DataCell(
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  yMMdDateFormatter.format(state.dateCreated),
+                ),
+              ),
+            ),
           ]),
         ],
       );
@@ -142,9 +203,8 @@ class FsEntrySideSheet extends StatelessWidget {
       BlocProvider(
         create: (context) => FsEntryActivityCubit(
           driveId: driveId,
-          folderId: folderId,
-          fileId: fileId,
           driveDao: context.read<DriveDao>(),
+          maybeSelectedItem: maybeSelectedItem,
         ),
         child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
           builder: (context, state) {
@@ -176,7 +236,7 @@ class FsEntrySideSheet extends StatelessWidget {
                         DataCell(
                           CopyIconButton(
                             tooltip: 'Copy Root Folder Tx ID',
-                            value: infoState.rootFolder.metadataTxId,
+                            value: infoState.rootFolderRevision.metadataTxId,
                           ),
                         ),
                       ]),
@@ -249,8 +309,7 @@ class FsEntrySideSheet extends StatelessWidget {
         child: BlocProvider(
           create: (context) => FsEntryActivityCubit(
             driveId: driveId,
-            folderId: folderId,
-            fileId: fileId,
+            maybeSelectedItem: maybeSelectedItem,
             driveDao: context.read<DriveDao>(),
           ),
           child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
@@ -389,9 +448,12 @@ class CopyIconButton extends StatelessWidget {
   CopyIconButton({required this.value, required this.tooltip});
 
   @override
-  Widget build(BuildContext context) => IconButton(
-        icon: Icon(Icons.copy, color: Colors.black54),
-        tooltip: tooltip,
-        onPressed: () => Clipboard.setData(ClipboardData(text: value)),
+  Widget build(BuildContext context) => Container(
+        alignment: Alignment.centerRight,
+        child: IconButton(
+          icon: Icon(Icons.copy, color: Colors.black54),
+          tooltip: tooltip,
+          onPressed: () => Clipboard.setData(ClipboardData(text: value)),
+        ),
       );
 }

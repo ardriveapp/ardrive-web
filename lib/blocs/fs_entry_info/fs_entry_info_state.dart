@@ -35,14 +35,16 @@ class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {
   final DateTime dateCreated;
 
   final Drive drive;
-  final FolderRevision rootFolder;
+  final FolderRevision rootFolderRevision;
+  final FolderNode rootFolderTree;
 
   FsEntryDriveInfoSuccess({
     required this.name,
     required this.lastUpdated,
     required this.dateCreated,
     required this.drive,
-    required this.rootFolder,
+    required this.rootFolderRevision,
+    required this.rootFolderTree,
   }) : super(
           name: name,
           lastUpdated: lastUpdated,
@@ -51,7 +53,13 @@ class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {
         );
 
   @override
-  List<Object> get props => [name, lastUpdated, dateCreated, rootFolder];
+  List<Object> get props => [
+        name,
+        lastUpdated,
+        dateCreated,
+        rootFolderRevision,
+        rootFolderTree,
+      ];
 }
 
 class FsEntryInfoFailure extends FsEntryInfoState {}

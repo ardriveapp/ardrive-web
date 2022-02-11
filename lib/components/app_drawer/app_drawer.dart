@@ -195,7 +195,7 @@ class AppDrawer extends StatelessWidget {
                             value: (context) => promptToCreateFolder(
                               context,
                               driveId: state.currentDrive.id,
-                              parentFolderId: state.currentFolder.folder!.id,
+                              parentFolderId: state.folderInView.folder.id,
                             ),
                             child: ListTile(
                               enabled: state.hasWritePermissions,
@@ -208,7 +208,7 @@ class AppDrawer extends StatelessWidget {
                             value: (context) => promptToUploadFile(
                               context,
                               driveId: state.currentDrive.id,
-                              folderId: state.currentFolder.folder!.id,
+                              folderId: state.folderInView.folder.id,
                             ),
                             child: ListTile(
                               enabled: state.hasWritePermissions,
