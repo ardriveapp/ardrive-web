@@ -46,8 +46,8 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
   Future<void> loadParentFolder() async {
     final state = this.state as FsEntryMoveFolderLoadSuccess;
-    if (state.viewingFolder.folder?.parentFolderId != null) {
-      return loadFolder(state.viewingFolder.folder!.parentFolderId!);
+    if (state.viewingFolder.folder.parentFolderId != null) {
+      return loadFolder(state.viewingFolder.folder.parentFolderId!);
     }
   }
 
@@ -58,7 +58,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
         _driveDao.watchFolderContents(driveId, folderId: folderId).listen(
               (f) => emit(
                 FsEntryMoveFolderLoadSuccess(
-                    viewingRootFolder: f.folder?.parentFolderId == null,
+                    viewingRootFolder: f.folder.parentFolderId == null,
                     viewingFolder: f,
                     isMovingFolder: _isMovingFolder,
                     movingEntryId: (this.folderId ?? fileId)!),
@@ -102,7 +102,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
         if (await entityNameExists(
           name: folder.name,
-          parentFolderId: parentFolder!.id,
+          parentFolderId: parentFolder.id,
         )) {
           emit(FsEntryMoveNameConflict(name: folder.name));
           return;
@@ -136,7 +136,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
             .fileById(driveId: driveId, fileId: fileId!)
             .getSingle();
         file = file.copyWith(
-            parentFolderId: parentFolder!.id,
+            parentFolderId: parentFolder.id,
             path: '${parentFolder.path}/${file.name}',
             lastUpdated: DateTime.now());
 

@@ -54,7 +54,7 @@ class DriveEntity extends Entity {
         ..bundledIn = transaction.bundledIn?.id
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
-      throw EntityTransactionParseException();
+      throw EntityTransactionParseException(transactionId: transaction.id);
     }
   }
 
