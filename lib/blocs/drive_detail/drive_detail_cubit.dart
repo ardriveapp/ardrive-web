@@ -8,7 +8,6 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
-import 'package:pedantic/pedantic.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../blocs.dart';
@@ -54,28 +53,33 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
   }
 
-  void openFolder(
-      {required String path,
-      DriveOrder contentOrderBy = DriveOrder.name,
-      OrderingMode contentOrderingMode = OrderingMode.asc}) {
+  void openFolder({
+    required String path,
+    DriveOrder contentOrderBy = DriveOrder.name,
+    OrderingMode contentOrderingMode = OrderingMode.asc,
+  }) async {
     emit(DriveDetailLoadInProgress());
 
-    unawaited(_folderSubscription?.cancel());
+    await _folderSubscription?.cancel();
+    // For attaching drives. If drive is not found, emit state to prompt drive attach
+    await _driveDao.driveById(driveId: driveId).getSingleOrNull().then((value) {
+      if (value == null) {
+        emit(DriveDetailLoadNotFound());
+        return;
+      }
+    });
 
     _folderSubscription =
-        Rx.combineLatest3<Drive?, FolderWithContents, ProfileState, void>(
-      _driveDao.driveById(driveId: driveId).watchSingleOrNull(),
-      _driveDao.watchFolderContents(driveId,
-          folderPath: path,
-          orderBy: contentOrderBy,
-          orderingMode: contentOrderingMode),
+        Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
+      _driveDao.driveById(driveId: driveId).watchSingle(),
+      _driveDao.watchFolderContents(
+        driveId,
+        folderPath: path,
+        orderBy: contentOrderBy,
+        orderingMode: contentOrderingMode,
+      ),
       _profileCubit.stream.startWith(ProfileCheckingAvailability()),
       (drive, folderContents, _) async {
-        if (drive == null) {
-          emit(DriveDetailLoadNotFound());
-          return;
-        }
-
         final state = this.state is DriveDetailLoadSuccess
             ? this.state as DriveDetailLoadSuccess
             : null;
