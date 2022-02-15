@@ -62,11 +62,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     await _folderSubscription?.cancel();
     // For attaching drives. If drive is not found, emit state to prompt drive attach
-    final drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
-    if (drive == null) {
-      emit(DriveDetailLoadNotFound());
-      return;
-    }
+    await _driveDao.driveById(driveId: driveId).getSingleOrNull().then((value) {
+      if (value == null) {
+        emit(DriveDetailLoadNotFound());
+        return;
+      }
+    });
+
     _folderSubscription =
         Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
       _driveDao.driveById(driveId: driveId).watchSingle(),
