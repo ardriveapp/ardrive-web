@@ -86,16 +86,16 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
   Future<void> checkForConflicts() async {
     final name = form.control('name').value;
-    final parentFolderId =
-        (state as CreateManifestFolderLoadSuccess).viewingFolder.folder.id;
+    final parentFolder =
+        (state as CreateManifestFolderLoadSuccess).viewingFolder.folder;
 
     final foldersWithName = await _driveDao
         .foldersInFolderWithName(
-            driveId: driveId, parentFolderId: parentFolderId, name: name)
+            driveId: driveId, parentFolderId: parentFolder.id, name: name)
         .get();
     final filesWithName = await _driveDao
         .filesInFolderWithName(
-            driveId: driveId, parentFolderId: parentFolderId, name: name)
+            driveId: driveId, parentFolderId: parentFolder.id, name: name)
         .get();
 
     final conflictingFiles =
@@ -105,6 +105,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       // Name conflicts with existing file or folder
       // Send user back to naming the manifest
       emit(CreateManifestNameConflict(name: name));
+      return;
     }
 
     final manifestRevisionId = filesWithName
@@ -112,19 +113,21 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         ?.id;
 
     if (manifestRevisionId != null) {
-      emit(CreateManifestRevisionConfirm(id: manifestRevisionId));
+      emit(CreateManifestRevisionConfirm(
+          id: manifestRevisionId, parentFolder: parentFolder));
+      return;
     }
 
-    await uploadManifest();
+    await uploadManifest(parentFolder: parentFolder);
   }
 
-  Future<void> uploadManifest({FileID? existingManifestFileId}) async {
+  Future<void> uploadManifest(
+      {FileID? existingManifestFileId,
+      required FolderEntry parentFolder}) async {
+    emit(CreateManifestUploadInProgress());
     try {
-      final profile = _profileCubit.state as ProfileLoggedIn;
-      final state = this.state as CreateManifestFolderLoadSuccess;
-
-      final String folderName = form.control('name').value;
-      final parentFolder = state.viewingFolder.folder;
+      final wallet = (_profileCubit.state as ProfileLoggedIn).wallet;
+      final String manifestName = form.control('name').value;
 
       if (await _profileCubit.logoutIfWalletMismatch()) {
         emit(CreateManifestWalletMismatch());

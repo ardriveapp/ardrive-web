@@ -66,7 +66,9 @@ class CreateManifestForm extends StatelessWidget {
               ElevatedButton(
                 onPressed: () => context
                     .read<CreateManifestCubit>()
-                    .uploadManifest(existingManifestFileId: state.id),
+                    .uploadManifest(
+                        existingManifestFileId: state.id,
+                        parentFolder: state.parentFolder),
                 child: Text('CONTINUE'),
               ),
             ],

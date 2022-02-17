@@ -36,9 +36,10 @@ class CreateManifestNameConflict extends CreateManifestState {
 
 class CreateManifestRevisionConfirm extends CreateManifestState {
   final FileID id;
-  CreateManifestRevisionConfirm({required this.id});
+  final FolderEntry parentFolder;
+  CreateManifestRevisionConfirm({required this.id, required this.parentFolder});
   @override
-  List<Object> get props => [id];
+  List<Object> get props => [id, parentFolder];
 }
 
 class CreateManifestUploadInProgress extends CreateManifestState {}
