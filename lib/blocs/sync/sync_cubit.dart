@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -24,9 +25,6 @@ const kRequiredTxConfirmationPendingThreshold = 60;
 
 const kSyncTimerDuration = 5;
 const kArConnectSyncTimerDuration = 2;
-
-typedef FolderID = String;
-typedef DriveID = String;
 
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.

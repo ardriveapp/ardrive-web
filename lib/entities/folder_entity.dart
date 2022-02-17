@@ -49,7 +49,7 @@ class FolderEntity extends Entity {
         ..ownerAddress = transaction.owner.address
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
-      throw EntityTransactionParseException();
+      throw EntityTransactionParseException(transactionId: transaction.id);
     }
   }
 

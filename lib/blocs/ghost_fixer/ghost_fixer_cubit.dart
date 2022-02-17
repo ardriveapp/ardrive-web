@@ -54,8 +54,8 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
   }
   Future<void> loadParentFolder() async {
     final state = this.state as GhostFixerFolderLoadSuccess;
-    if (state.viewingFolder.folder?.parentFolderId != null) {
-      return loadFolder(state.viewingFolder.folder!.parentFolderId!);
+    if (state.viewingFolder.folder.parentFolderId != null) {
+      return loadFolder(state.viewingFolder.folder.parentFolderId!);
     }
   }
 
@@ -67,7 +67,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
         .listen(
           (f) => emit(
             GhostFixerFolderLoadSuccess(
-              viewingRootFolder: f.folder?.parentFolderId == null,
+              viewingRootFolder: f.folder.parentFolderId == null,
               viewingFolder: f,
               movingEntryId: ghostFolder.id,
             ),
@@ -105,7 +105,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
       final state = this.state as GhostFixerFolderLoadSuccess;
 
       final String folderName = form.control('name').value;
-      final parentFolder = state.viewingFolder.folder!;
+      final parentFolder = state.viewingFolder.folder;
 
       if (await _profileCubit.logoutIfWalletMismatch()) {
         emit(GhostFixerWalletMismatch());
@@ -174,7 +174,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
 
     // Check that the parent folder does not already have a folder with the input name.
     final nameAlreadyExists = await entityNameExists(
-        name: folderName, parentFolderId: parentFolder!.id);
+        name: folderName, parentFolderId: parentFolder.id);
 
     if (nameAlreadyExists) {
       control.markAsTouched();

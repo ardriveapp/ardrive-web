@@ -58,7 +58,22 @@ abstract class Entity {
   void addEntityTagsToTransaction<T extends TransactionBase>(T tx);
 }
 
-class EntityTransactionParseException implements Exception {}
+class EntityTransactionParseException implements Exception {
+  final String transactionId;
+
+  EntityTransactionParseException({required this.transactionId});
+}
+
+class EntityTransactionDataNetworkException implements Exception {
+  final String transactionId;
+  final int statusCode;
+  final String? reasonPhrase;
+  EntityTransactionDataNetworkException({
+    required this.transactionId,
+    required this.statusCode,
+    required this.reasonPhrase,
+  });
+}
 
 extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the app name, version, and the specified unix time.
