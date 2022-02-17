@@ -149,5 +149,51 @@ void main() {
         equals(rootFolderFileCount + nestedFolderFileCount),
       );
     });
+
+    test('getRecursiveFiles returns all the correct files', () async {
+      final treeRoot = await driveDao.getFolderTree(driveId, rootFolderId);
+      final filesInFolderTree = treeRoot.getRecursiveFiles();
+
+      expect(filesInFolderTree.length, equals(10));
+      for (var i = 0; i < filesInFolderTree.length; i++) {
+        final file = filesInFolderTree[i];
+        expect(file.id, equals(expectedTreeResults[i][0]));
+        expect(file.path, equals(expectedTreeResults[i][1]));
+      }
+    });
+
+    //   test('getRecursiveFiles with a maxDepth of 1 returns the files in root',
+    //       () async {
+    //     final treeRoot = await driveDao.getFolderTree(driveId, rootFolderId);
+    //     final filesInFolderTree = treeRoot.getRecursiveFiles(maxDepth: 1);
+
+    //     expect(filesInFolderTree.length, equals(5));
+    //     for (var i = 0; i < filesInFolderTree.length; i++) {
+    //       final file = filesInFolderTree[i];
+    //       expect(file.id, equals(expectedTreeResults[i][0]));
+    //       expect(file.path, equals(expectedTreeResults[i][1]));
+    //     }
+    //   });
+
+    //   test('getRecursiveFiles with a maxDepth of 0 returns no files', () async {
+    //     final treeRoot = await driveDao.getFolderTree(driveId, rootFolderId);
+    //     final filesInFolderTree = treeRoot.getRecursiveFiles(maxDepth: 0);
+
+    //     expect(filesInFolderTree.length, equals(0));
+    //   });
   });
 }
+
+/// Expected entity IDs and paths from mocked DB setup
+final expectedTreeResults = [
+  ['root-folder-id4', '/root-folder-id4'],
+  ['root-folder-id2', '/root-folder-id2'],
+  ['root-folder-id3', '/root-folder-id3'],
+  ['root-folder-id1', '/root-folder-id1'],
+  ['root-folder-id0', '/root-folder-id0'],
+  ['nested-folder-id4', '/nested-folder-id/nested-folder-id4'],
+  ['nested-folder-id2', '/nested-folder-id/nested-folder-id2'],
+  ['nested-folder-id3', '/nested-folder-id/nested-folder-id3'],
+  ['nested-folder-id1', '/nested-folder-id/nested-folder-id1'],
+  ['nested-folder-id0', '/nested-folder-id/nested-folder-id0'],
+];
