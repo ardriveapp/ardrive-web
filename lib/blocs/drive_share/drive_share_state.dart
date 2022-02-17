@@ -26,3 +26,14 @@ class DriveShareLoadSuccess extends DriveShareState {
   @override
   List<Object> get props => [driveName, driveShareLink];
 }
+
+class DriveShareLoadFail extends DriveShareState {
+  final String message;
+
+  DriveShareLoadFail({
+    required this.message,
+  });
+
+  @override
+  List<Object> get props => [message];
+}

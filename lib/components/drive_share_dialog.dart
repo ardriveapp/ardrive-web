@@ -9,13 +9,13 @@ import 'components.dart';
 
 Future<void> promptToShareDrive({
   required BuildContext context,
-  required String driveId,
+  required Drive drive,
 }) =>
     showDialog(
       context: context,
       builder: (_) => BlocProvider(
         create: (_) => DriveShareCubit(
-          driveId: driveId,
+          drive: drive,
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),
         ),
@@ -34,12 +34,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
 
   @override
   Widget build(BuildContext context) =>
-      BlocConsumer<DriveShareCubit, DriveShareState>(
-        listener: (context, state) {
-          if (state is DriveShareLoadSuccess) {
-            shareLinkController.text = state.driveShareLink.toString();
-          }
-        },
+      BlocBuilder<DriveShareCubit, DriveShareState>(
         builder: (context, state) => AppDialog(
           title: 'Share drive with others',
           content: SizedBox(
@@ -85,10 +80,13 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Anyone can access this drive using the link above.',
+                    'Anyone can access this '
+                    '${context.read<DriveShareCubit>().drive.isPublic ? 'public' : 'private'} '
+                    'drive using the link above.',
                     style: Theme.of(context).textTheme.subtitle2,
                   ),
-                }
+                } else if (state is DriveShareLoadFail)
+                  Text(state.message)
               ],
             ),
           ),

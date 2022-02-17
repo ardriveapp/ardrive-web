@@ -104,7 +104,7 @@ class DriveDetailActionRow extends StatelessWidget {
                 icon: const Icon(Icons.share),
                 onPressed: () => promptToShareDrive(
                   context: context,
-                  driveId: state.currentDrive.id,
+                  drive: state.currentDrive,
                 ),
                 tooltip: 'Share Drive',
               ),
