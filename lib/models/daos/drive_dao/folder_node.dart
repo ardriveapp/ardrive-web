@@ -4,8 +4,8 @@ class FolderNode {
   final FolderEntry folder;
   final List<FolderNode> subfolders;
 
-  /// The names of the files in this folder, keyed by their id.
-  final Map<String, String> files;
+  /// The file entries this folder, keyed by their file id.
+  final Map<FileID, FileEntry> files;
 
   FolderNode({
     required this.folder,
