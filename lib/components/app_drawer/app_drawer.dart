@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/create_manifest_form.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
@@ -232,7 +233,17 @@ class AppDrawer extends StatelessWidget {
                               title: Text('Attach drive'),
                             ),
                           ),
-                        }
+                        },
+                        // TODO: Add isPrivate check, only public manifest for now
+                        if (state is DriveDetailLoadSuccess) ...{
+                          PopupMenuItem(
+                            value: (context) => promptToCreateManifest(context,
+                                driveId: state.currentDrive.id),
+                            child: ListTile(
+                              title: Text('Create manifest'),
+                            ),
+                          ),
+                        },
                       ],
                       child: SizedBox(
                         width: 164,
