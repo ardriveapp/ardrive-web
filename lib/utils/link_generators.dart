@@ -3,7 +3,7 @@ import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 
-Future<String> generateDriveShareLink(
+Future<Uri> generateDriveShareLink(
     {required Drive drive, SecretKey? driveKey}) async {
   // On web, link to the current origin the user is on.
   // Elsewhere, link to app.ardrive.io.
@@ -17,5 +17,5 @@ Future<String> generateDriveShareLink(
 
     driveShareLink = driveShareLink + '&driveKey=$driveKeyBase64';
   }
-  return driveShareLink;
+  return Uri.parse(driveShareLink);
 }
