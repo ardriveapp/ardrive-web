@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -7,11 +9,14 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:reactive_forms/reactive_forms.dart';
+import 'package:uuid/uuid.dart';
 
 part 'create_manifest_state.dart';
 
@@ -139,12 +144,66 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       final arweaveManifest =
           ManifestEntity.fromFolderNode(folderNode: folderNode);
 
-      print(arweaveManifest.toJson());
+      final manifestDataItem = DataItem.withBlobData(
+          data: utf8.encode(json.encode(arweaveManifest)) as Uint8List)
+        ..setOwner(await wallet.getOwner())
+        ..addApplicationTags(
+            version: (await PackageInfo.fromPlatform()).version)
+        ..addTag(EntityTag.contentType, ContentType.manifest);
 
-      // TODO: Upload this manifest as a data transaction
-      // TODO: Upload a meta data transaction for this manifest file entity
+      await manifestDataItem.sign(wallet);
 
-      emit(CreateManifestUploadInProgress());
+      final manifestByteCount =
+          (utf8.encode(json.encode(arweaveManifest)) as Uint8List)
+              .lengthInBytes;
+
+      /// Data JSON of the Metadata tx for the manifest
+      final manifestFileEntity = FileEntity(
+          size: manifestByteCount,
+          parentFolderId: parentFolder.id,
+          name: manifestName,
+          lastModifiedDate: DateTime.now(),
+          id: existingManifestFileId ?? Uuid().v4(),
+          driveId: driveId,
+          dataTxId: manifestDataItem.id,
+          dataContentType: ContentType.manifest);
+
+      final manifestMetaDataItem =
+          await _arweave.prepareEntityDataItem(manifestFileEntity, wallet);
+      await manifestMetaDataItem.sign(wallet);
+      manifestFileEntity.txId = manifestMetaDataItem.id;
+
+      final bundle = await DataBundle.fromDataItems(
+          items: [manifestDataItem, manifestMetaDataItem]);
+
+      final bundleTx = await _arweave.prepareDataBundleTxFromBlob(
+        bundle.blob,
+        wallet,
+      );
+
+      // Add tips to bundle tx
+      final bundleTip = await _pst.getPSTFee(bundleTx.reward);
+      bundleTx
+        ..addTag(TipType.tagName, TipType.dataUpload)
+        ..setTarget(await _pst.getWeightedPstHolder())
+        ..setQuantity(bundleTip);
+      await bundleTx.sign(wallet);
+
+      manifestFileEntity.bundledIn = bundleTx.id;
+
+      await _driveDao.transaction(() async {
+        await _driveDao.writeFileEntity(
+            manifestFileEntity, '${parentFolder.path}/$manifestName');
+        await _driveDao.insertFileRevision(
+          manifestFileEntity.toRevisionCompanion(
+              performedAction: existingManifestFileId == null
+                  ? RevisionAction.create
+                  : RevisionAction.uploadNewVersion),
+        );
+      });
+
+      await _arweave.client.transactions.upload(bundleTx).drain();
+
       emit(CreateManifestSuccess());
     } catch (err) {
       addError(err);
