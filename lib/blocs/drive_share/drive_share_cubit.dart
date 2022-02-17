@@ -25,7 +25,7 @@ class DriveShareCubit extends Cubit<DriveShareState> {
   }
 
   Future<void> loadDriveShareDetails() async {
-    late String driveShareLink;
+    late Uri driveShareLink;
     emit(DriveShareLoadInProgress());
 
     if (drive.isPrivate && !(_profileCubit.state is ProfileLoggedIn)) {
@@ -45,7 +45,7 @@ class DriveShareCubit extends Cubit<DriveShareState> {
     emit(
       DriveShareLoadSuccess(
         driveName: drive.name,
-        driveShareLink: Uri.parse(driveShareLink),
+        driveShareLink: driveShareLink,
       ),
     );
   }
