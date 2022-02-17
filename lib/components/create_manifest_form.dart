@@ -21,7 +21,7 @@ Future<void> promptToCreateManifest(BuildContext context,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
-          syncCubit: context.read<SyncCubit>()),
+          pst: context.read<PstService>()),
       child: CreateManifestForm(),
     ),
   );

@@ -24,7 +24,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
-  final SyncCubit _syncCubit;
+  final PstService _pst;
 
   StreamSubscription? _selectedFolderSubscription;
 
@@ -34,11 +34,11 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
     required DriveDao driveDao,
-    required SyncCubit syncCubit,
+    required PstService pst,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _driveDao = driveDao,
-        _syncCubit = syncCubit,
+        _pst = pst,
         super(CreateManifestInitial()) {
     form = FormGroup({
       'name': FormControl(
