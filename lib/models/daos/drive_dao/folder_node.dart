@@ -36,4 +36,18 @@ class FolderNode {
     }
     return totalFiles;
   }
+
+  // TODO: maxDepth
+  List<FileEntry> getRecursiveFiles(/*{maxDepth = 2000000}*/) {
+    // if (maxDepth == 0) {
+    //   return [];
+    // }
+
+    final totalFiles = files.values.toList();
+    for (final subfolder in subfolders) {
+      totalFiles
+          .addAll(subfolder.getRecursiveFiles(/*maxDepth: maxDepth - 1*/));
+    }
+    return totalFiles;
+  }
 }
