@@ -34,7 +34,7 @@ class ManifestPath {
   Map<String, dynamic> toJson() => _$ManifestPathToJson(this);
 }
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class ManifestEntity {
   @JsonKey()
   String manifest = 'arweave/paths';
