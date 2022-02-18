@@ -1,3 +1,4 @@
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/manifest_entity.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
@@ -115,10 +116,24 @@ void main() {
       id: 'file-in-child-2-entity-id',
       driveId: stubEntityId);
 
+  final stubManifestFileInChild = FileEntry(
+      dataTxId: stubTxId,
+      dateCreated: stubCurrentDate,
+      size: 10,
+      path: '/root-folder/parent-folder/child-folder/file-in-child-2',
+      name: 'manifest-file-in-child',
+      parentFolderId: stubEntityId,
+      lastUpdated: stubCurrentDate,
+      lastModifiedDate: stubCurrentDate,
+      id: 'manifest-file-in-child-entity-id',
+      driveId: stubEntityId,
+      dataContentType: ContentType.manifest);
+
   final stubChildFolderNode =
       FolderNode(folder: stubChildFolderEntry, subfolders: [], files: {
     stubFileInChild1.id: stubFileInChild1,
     stubFileInChild2.id: stubFileInChild2,
+    stubManifestFileInChild.id: stubManifestFileInChild
   });
 
   final stubParentFolderNode =
@@ -228,7 +243,7 @@ void main() {
             equals('application/x.arweave-manifest+json'));
 
         expect(dataItem.target, equals(''));
-        expect(dataItem.owner, equals(wallet.getOwner()));
+        expect(dataItem.owner, equals(await wallet.getOwner()));
 
         expect(dataItem.data, equals(expectedManifestData));
       });
