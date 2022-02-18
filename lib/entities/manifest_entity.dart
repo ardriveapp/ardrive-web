@@ -1,6 +1,12 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 part 'manifest_entity.g.dart';
 
@@ -43,6 +49,16 @@ class ManifestEntity {
 
   int get size => jsonData.lengthInBytes;
   Uint8List get jsonData => utf8.encode(json.encode(this)) as Uint8List;
+
+  Future<DataItem> asPreparedDataItem({required Wallet wallet}) async {
+    final manifestDataItem = DataItem.withBlobData(data: jsonData)
+      ..setOwner(await wallet.getOwner())
+      ..addApplicationTags(version: (await PackageInfo.fromPlatform()).version)
+      ..addTag(EntityTag.contentType, ContentType.manifest);
+
+    return manifestDataItem;
+  }
+
   static ManifestEntity fromFolderNode({required FolderNode folderNode}) {
     final fileList = folderNode.getRecursiveFiles();
 

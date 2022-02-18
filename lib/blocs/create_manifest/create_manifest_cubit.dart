@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -14,7 +12,6 @@ import 'package:bloc/bloc.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:uuid/uuid.dart';
 
@@ -108,7 +105,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
     if (foldersWithName.isNotEmpty || conflictingFiles.isNotEmpty) {
       // Name conflicts with existing file or folder
-      // Send user back to naming the manifest
+      // This is an error case, send user back to naming the manifest
       emit(CreateManifestNameConflict(name: name));
       return;
     }
@@ -144,22 +141,13 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       final arweaveManifest =
           ManifestEntity.fromFolderNode(folderNode: folderNode);
 
-      final manifestDataItem = DataItem.withBlobData(
-          data: utf8.encode(json.encode(arweaveManifest)) as Uint8List)
-        ..setOwner(await wallet.getOwner())
-        ..addApplicationTags(
-            version: (await PackageInfo.fromPlatform()).version)
-        ..addTag(EntityTag.contentType, ContentType.manifest);
-
+      final manifestDataItem =
+          await arweaveManifest.asPreparedDataItem(wallet: wallet);
       await manifestDataItem.sign(wallet);
-
-      final manifestByteCount =
-          (utf8.encode(json.encode(arweaveManifest)) as Uint8List)
-              .lengthInBytes;
 
       /// Data JSON of the Metadata tx for the manifest
       final manifestFileEntity = FileEntity(
-          size: manifestByteCount,
+          size: arweaveManifest.size,
           parentFolderId: parentFolder.id,
           name: manifestName,
           lastModifiedDate: DateTime.now(),
