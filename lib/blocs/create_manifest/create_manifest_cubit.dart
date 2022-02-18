@@ -126,26 +126,27 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   Future<void> uploadManifest(
       {FileID? existingManifestFileId,
       required FolderEntry parentFolder}) async {
+    if (await _profileCubit.logoutIfWalletMismatch()) {
+      emit(CreateManifestWalletMismatch());
+      return;
+    }
+
     emit(CreateManifestUploadInProgress());
+
     try {
-      final wallet = (_profileCubit.state as ProfileLoggedIn).wallet;
-      final String manifestName = form.control('name').value;
-
-      if (await _profileCubit.logoutIfWalletMismatch()) {
-        emit(CreateManifestWalletMismatch());
-        return;
-      }
-
       final folderNode =
           (await _driveDao.getFolderTree(driveId, parentFolder.id));
       final arweaveManifest =
           ManifestEntity.fromFolderNode(folderNode: folderNode);
 
+      final wallet = (_profileCubit.state as ProfileLoggedIn).wallet;
+      final String manifestName = form.control('name').value;
+
       final manifestDataItem =
           await arweaveManifest.asPreparedDataItem(wallet: wallet);
       await manifestDataItem.sign(wallet);
 
-      /// Data JSON of the Metadata tx for the manifest
+      /// Assemble data JSON of the metadata tx for the manifest
       final manifestFileEntity = FileEntity(
           size: arweaveManifest.size,
           parentFolderId: parentFolder.id,
@@ -158,6 +159,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
       final manifestMetaDataItem =
           await _arweave.prepareEntityDataItem(manifestFileEntity, wallet);
+
+      // Sign data item and preserve meta data tx ID on entity
       await manifestMetaDataItem.sign(wallet);
       manifestFileEntity.txId = manifestMetaDataItem.id;
 
@@ -175,10 +178,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         ..addTag(TipType.tagName, TipType.dataUpload)
         ..setTarget(await _pst.getWeightedPstHolder())
         ..setQuantity(bundleTip);
-      await bundleTx.sign(wallet);
 
+      // Sign bundle tx and preserve bundle tx ID on entity
+      await bundleTx.sign(wallet);
       manifestFileEntity.bundledIn = bundleTx.id;
 
+      // Write manifest file entity to the data base
       await _driveDao.transaction(() async {
         await _driveDao.writeFileEntity(
             manifestFileEntity, '${parentFolder.path}/$manifestName');
@@ -190,8 +195,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         );
       });
 
+      // Upload the bundle
       await _arweave.client.transactions.upload(bundleTx).drain();
-
       emit(CreateManifestSuccess());
     } catch (err) {
       addError(err);
