@@ -234,8 +234,8 @@ class AppDrawer extends StatelessWidget {
                             ),
                           ),
                         },
-                        // TODO: Add isPrivate check, only public manifest for now
-                        if (state is DriveDetailLoadSuccess) ...{
+                        if (state is DriveDetailLoadSuccess &&
+                            state.currentDrive.privacy == 'public') ...{
                           PopupMenuItem(
                             value: (context) => promptToCreateManifest(context,
                                 driveId: state.currentDrive.id),

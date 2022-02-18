@@ -42,6 +42,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         _driveDao = driveDao,
         _pst = pst,
         super(CreateManifestInitial()) {
+    if (drive.isPrivate) {
+      // Extra guardrail to prevent private drives from creating manifests
+      // Private manifests need more consideration and are currently unavailable
+      emit(CreateManifestFailure());
+    }
+
     form = FormGroup({
       'name': FormControl(
         validators: [
