@@ -60,7 +60,10 @@ class ManifestEntity {
   }
 
   static ManifestEntity fromFolderNode({required FolderNode folderNode}) {
-    final fileList = folderNode.getRecursiveFiles();
+    final fileList = folderNode
+        .getRecursiveFiles()
+        // We will not include any existing manifests in the new manifest
+        .where((f) => f.dataContentType != ContentType.manifest);
 
     final indexFile = () {
       final indexHtml = folderNode.files.values.firstWhereOrNull(
