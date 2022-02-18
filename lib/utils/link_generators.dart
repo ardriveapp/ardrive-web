@@ -1,3 +1,4 @@
+import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -9,7 +10,7 @@ Future<Uri> generateDriveShareLink({
 }) async {
   // On web, link to the current origin the user is on.
   // Elsewhere, link to app.ardrive.io.
-  final linkOrigin = kIsWeb ? Uri.base.origin : 'https://app.ardrive.io';
+  final linkOrigin = kIsWeb ? Uri.base.origin : linkOriginProduction;
   final driveName = drive.name;
 
   var driveShareLink = '$linkOrigin/#/drives/${drive.id}?name=' +

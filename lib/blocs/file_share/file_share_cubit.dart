@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:bloc/bloc.dart';
@@ -39,7 +40,7 @@ class FileShareCubit extends Cubit<FileShareState> {
 
     // On web, link to the current origin the user is on.
     // Elsewhere, link to app.ardrive.io.
-    final linkOrigin = kIsWeb ? Uri.base.origin : 'https://app.ardrive.io';
+    final linkOrigin = kIsWeb ? Uri.base.origin : linkOriginProduction;
     var fileShareLink = '$linkOrigin/#/file/${file.id}/view';
 
     if (!isPublicFile) {
