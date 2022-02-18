@@ -219,9 +219,6 @@ Widget _buildFileIcon(String status, String? dataContentType) {
       case 'audio':
         icon = const Icon(Icons.music_note);
         break;
-      case 'x.arweave-manifest+json':
-        icon = const Icon(Icons.account_tree_outlined);
-        break;
       default:
         icon = const Icon(Icons.insert_drive_file);
     }
