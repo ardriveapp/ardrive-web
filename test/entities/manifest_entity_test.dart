@@ -1,7 +1,12 @@
 import 'package:ardrive/entities/manifest_entity.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:arweave/utils.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:test/test.dart';
+
+import '../test_utils/utils.dart';
+import 'expected_manifest_data.dart';
 
 void main() {
   final stubEntityId = '00000000-0000-0000-0000-000000000000';
@@ -189,6 +194,43 @@ void main() {
                 }
               }
             }));
+      });
+    });
+
+    group('asPreparedDataItem method', () {
+      PackageInfo.setMockInitialValues(
+          version: '1.3.3.7',
+          packageName: 'ArDrive-Web-Test',
+          appName: 'ArDrive-Web-Test',
+          buildNumber: '420',
+          buildSignature: 'Test signature');
+      test('returns a DataItem with the expected tags, owner, and data',
+          () async {
+        final manifest =
+            ManifestEntity.fromFolderNode(folderNode: stubRootFolderNode);
+        final wallet = getTestWallet();
+
+        final dataItem = await manifest.asPreparedDataItem(wallet: wallet);
+
+        expect(dataItem.tags.length, equals(4));
+        expect(decodeBase64ToString(dataItem.tags[0].name), equals('App-Name'));
+        expect(decodeBase64ToString(dataItem.tags[0].value),
+            equals('ArDrive-Web'));
+        expect(
+            decodeBase64ToString(dataItem.tags[1].name), equals('App-Version'));
+        expect(decodeBase64ToString(dataItem.tags[1].value), equals('1.3.3.7'));
+        expect(
+            decodeBase64ToString(dataItem.tags[2].name), equals('Unix-Time'));
+        expect(decodeBase64ToString(dataItem.tags[2].value).length, equals(10));
+        expect(decodeBase64ToString(dataItem.tags[3].name),
+            equals('Content-Type'));
+        expect(decodeBase64ToString(dataItem.tags[3].value),
+            equals('application/x.arweave-manifest+json'));
+
+        expect(dataItem.target, equals(''));
+        expect(dataItem.owner, equals(wallet.getOwner()));
+
+        expect(dataItem.data, equals(expectedManifestData));
       });
     });
   });
