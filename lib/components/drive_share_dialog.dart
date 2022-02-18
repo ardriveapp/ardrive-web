@@ -52,7 +52,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                   const Center(child: CircularProgressIndicator())
                 else if (state is DriveShareLoadSuccess) ...{
                   ListTile(
-                    title: Text(state.driveName),
+                    title: Text(state.drive.name),
                     contentPadding: EdgeInsets.zero,
                   ),
                   Row(
@@ -85,8 +85,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Anyone can access this '
-                    '${context.read<DriveShareCubit>().drive.isPublic ? 'public' : 'private'} '
+                    'Anyone can access this ${state.drive.isPublic ? 'public' : 'private'} '
                     'drive using the link above.',
                     style: Theme.of(context).textTheme.subtitle2,
                   ),

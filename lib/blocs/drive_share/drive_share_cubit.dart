@@ -44,7 +44,7 @@ class DriveShareCubit extends Cubit<DriveShareState> {
 
     emit(
       DriveShareLoadSuccess(
-        driveName: drive.name,
+        drive: drive,
         driveShareLink: driveShareLink,
       ),
     );
