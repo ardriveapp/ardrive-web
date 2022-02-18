@@ -41,6 +41,8 @@ class ManifestEntity {
 
   ManifestEntity(this.index, this.paths);
 
+  int get size => jsonData.lengthInBytes;
+  Uint8List get jsonData => utf8.encode(json.encode(this)) as Uint8List;
   static ManifestEntity fromFolderNode({required FolderNode folderNode}) {
     final fileList = folderNode.getRecursiveFiles();
 
