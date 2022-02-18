@@ -39,9 +39,14 @@ void main() {
       test(
           'generateDriveShareLink generates the correct link for a private drive',
           () async {
-        final driveShareLink = await generateDriveShareLink(
+        final webShareUri = await generateDriveShareLink(
           drive: testPrivateDrive,
           driveKey: testPrivateDriveKey,
+        );
+        // Remove # delimiter as it messes with Uri parsing outside of app route
+        // information parser
+        final driveShareLink = Uri.parse(
+          webShareUri.toString().replaceAll('/#', ''),
         );
         final driveId = driveShareLink.pathSegments.last;
         final driveName = driveShareLink.queryParameters['name'];
@@ -54,8 +59,13 @@ void main() {
       test(
           'generateDriveShareLink generates the correct link for a public drive',
           () async {
-        final driveShareLink = await generateDriveShareLink(
+        final webShareUri = await generateDriveShareLink(
           drive: testPublicDrive,
+        );
+        // Remove # delimiter as it messes with Uri parsing outside of app route
+        // information parser
+        final driveShareLink = Uri.parse(
+          webShareUri.toString().replaceAll('/#', ''),
         );
         final driveId = driveShareLink.pathSegments.last;
         final driveName = driveShareLink.queryParameters['name'];
