@@ -1,5 +1,4 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/components/create_manifest_form.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
