@@ -1,9 +1,8 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:arweave/utils.dart' as utils;
+import 'package:ardrive/utils/link_generators.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -36,29 +35,25 @@ class FileShareCubit extends Cubit<FileShareState> {
     final file =
         await _driveDao.fileById(driveId: driveId, fileId: fileId).getSingle();
 
-    final isPublicFile = drive.isPublic;
+    late Uri fileShareLink;
+    SecretKey? fileKey;
 
-    // On web, link to the current origin the user is on.
-    // Elsewhere, link to app.ardrive.io.
-    final linkOrigin = kIsWeb ? Uri.base.origin : linkOriginProduction;
-    var fileShareLink = '$linkOrigin/#/file/${file.id}/view';
-
-    if (!isPublicFile) {
+    if (drive.isPrivate) {
       final profile = _profileCubit.state as ProfileLoggedIn;
-
-      final fileKey = (await _driveDao.getFileKey(
-          driveId, fileId, profile.cipherKey)) as SecretKey;
-      final fileKeyBase64 =
-          utils.encodeBytesToBase64(await fileKey.extractBytes());
-
-      fileShareLink = fileShareLink + '?fileKey=$fileKeyBase64';
+      fileKey = await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
     }
+
+    fileShareLink = await generateFileShareLink(
+      file: file,
+      drivePrivacy: drive.privacy,
+      fileKey: fileKey,
+    );
 
     emit(
       FileShareLoadSuccess(
         fileName: file.name,
-        fileShareLink: Uri.parse(fileShareLink),
-        isPublicFile: isPublicFile,
+        fileShareLink: fileShareLink,
+        isPublicFile: drive.isPrivate,
       ),
     );
   }

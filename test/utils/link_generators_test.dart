@@ -74,5 +74,62 @@ void main() {
         expect(driveName, equals(testPublicDrive.name));
       });
     });
+
+    group('file share link generator tests', () {
+      late FileEntry testFile;
+      late String testFileKeyBase64;
+      late SecretKey testFileKey;
+      setUp(() {
+        testFile = FileEntry(
+          id: 'testFileId',
+          driveId: 'driveId',
+          parentFolderId: 'parentFolderId',
+          name: 'testFile',
+          path: '/test/test',
+          dataTxId: 'Data',
+          size: 500,
+          dateCreated: DateTime.now(),
+          lastModifiedDate: DateTime.now(),
+          lastUpdated: DateTime.now(),
+          dataContentType: '',
+        );
+        testFileKeyBase64 = 'X123YZAB-CD4e5fgHIjKlmN6O7pqrStuVwxYzaBcd8E';
+        testFileKey = SecretKey(decodeBase64ToBytes(testFileKeyBase64));
+      });
+      test(
+          'generateFileShareLink generates the correct link for a private file',
+          () async {
+        final webShareUri = await generateFileShareLink(
+          file: testFile,
+          fileKey: testFileKey,
+          drivePrivacy: DrivePrivacy.private,
+        );
+        // Remove # delimiter as it messes with Uri parsing outside of app route
+        // information parser
+        final fileShareLink = Uri.parse(
+          webShareUri.toString().replaceAll('/#', ''),
+        );
+        final fileId = fileShareLink.pathSegments[1];
+        final fileKey = fileShareLink.queryParameters['fileKey'];
+
+        expect(fileId, equals(testFile.id));
+        expect(fileKey, equals(testFileKeyBase64));
+      });
+      test('generateFileShareLink generates the correct link for a public file',
+          () async {
+        final webShareUri = await generateFileShareLink(
+          file: testFile,
+          drivePrivacy: DrivePrivacy.public,
+        );
+        // Remove # delimiter as it messes with Uri parsing outside of app route
+        // information parser
+        final fileShareLink = Uri.parse(
+          webShareUri.toString().replaceAll('/#', ''),
+        );
+        final fileId = fileShareLink.pathSegments[1];
+        
+        expect(fileId, equals(testFile.id));
+      });
+    });
   });
 }
