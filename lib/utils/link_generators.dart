@@ -16,5 +16,5 @@ Future<Uri> generateDriveShareLink(
     params['driveKey'] = driveKeyBase64;
   }
 
-  return Uri.https(hostName, '/drives/${drive.id}', params);
+  return Uri.https(hostName, '/#/drives/${drive.id}', params);
 }

@@ -43,7 +43,7 @@ void main() {
           drive: testPrivateDrive,
           driveKey: testPrivateDriveKey,
         );
-        final driveId = driveShareLink.pathSegments[1];
+        final driveId = driveShareLink.pathSegments.last;
         final driveName = driveShareLink.queryParameters['name'];
         final driveKey = driveShareLink.queryParameters['driveKey'];
 
@@ -57,7 +57,7 @@ void main() {
         final driveShareLink = await generateDriveShareLink(
           drive: testPublicDrive,
         );
-        final driveId = driveShareLink.pathSegments[1];
+        final driveId = driveShareLink.pathSegments.last;
         final driveName = driveShareLink.queryParameters['name'];
 
         expect(driveId, equals(testPublicDrive.id));
