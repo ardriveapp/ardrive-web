@@ -237,7 +237,7 @@ class AppDrawer extends StatelessWidget {
                             state.currentDrive.privacy == 'public') ...{
                           PopupMenuItem(
                             value: (context) => promptToCreateManifest(context,
-                                driveId: state.currentDrive.id),
+                                drive: state.currentDrive),
                             child: ListTile(
                               title: Text('Create manifest'),
                             ),

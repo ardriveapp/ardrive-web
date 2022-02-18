@@ -20,9 +20,8 @@ part 'create_manifest_state.dart';
 class CreateManifestCubit extends Cubit<CreateManifestState> {
   late FormGroup form;
 
-  // final FolderEntry ghostFolder;
   final ProfileCubit _profileCubit;
-  final DriveID driveId;
+  final Drive drive;
 
   final ArweaveService _arweave;
   final DriveDao _driveDao;
@@ -31,8 +30,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   StreamSubscription? _selectedFolderSubscription;
 
   CreateManifestCubit({
-    // required this.ghostFolder,
-    required this.driveId,
+    required this.drive,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
     required DriveDao driveDao,
@@ -58,6 +56,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       ),
     });
   }
+
   Future<void> loadParentFolder() async {
     final state = this.state as CreateManifestFolderLoadSuccess;
     if (state.viewingFolder.folder.parentFolderId != null) {
@@ -71,17 +70,14 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       return;
     }
 
-    await _driveDao
-        .driveById(driveId: driveId)
-        .getSingle()
-        .then((d) => loadFolder(d.rootFolderId));
+    await loadFolder(drive.rootFolderId);
   }
 
   Future<void> loadFolder(String folderId) async {
     await _selectedFolderSubscription?.cancel();
 
     _selectedFolderSubscription =
-        _driveDao.watchFolderContents(driveId, folderId: folderId).listen(
+        _driveDao.watchFolderContents(drive.id, folderId: folderId).listen(
               (f) => emit(
                 CreateManifestFolderLoadSuccess(
                   viewingRootFolder: f.folder.parentFolderId == null,
@@ -99,11 +95,11 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
     final foldersWithName = await _driveDao
         .foldersInFolderWithName(
-            driveId: driveId, parentFolderId: parentFolder.id, name: name)
+            driveId: drive.id, parentFolderId: parentFolder.id, name: name)
         .get();
     final filesWithName = await _driveDao
         .filesInFolderWithName(
-            driveId: driveId, parentFolderId: parentFolder.id, name: name)
+            driveId: drive.id, parentFolderId: parentFolder.id, name: name)
         .get();
 
     final conflictingFiles =
@@ -141,7 +137,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
     try {
       final folderNode =
-          (await _driveDao.getFolderTree(driveId, parentFolder.id));
+          (await _driveDao.getFolderTree(drive.id, parentFolder.id));
       final arweaveManifest =
           ManifestEntity.fromFolderNode(folderNode: folderNode);
 
@@ -159,7 +155,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           name: manifestName,
           lastModifiedDate: DateTime.now(),
           id: existingManifestFileId ?? Uuid().v4(),
-          driveId: driveId,
+          driveId: drive.id,
           dataTxId: manifestDataItem.id,
           dataContentType: ContentType.manifest);
 

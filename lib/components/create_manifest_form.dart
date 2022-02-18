@@ -12,12 +12,12 @@ import 'package:reactive_forms/reactive_forms.dart';
 import 'components.dart';
 
 Future<void> promptToCreateManifest(BuildContext context,
-    {required DriveID driveId}) {
+    {required Drive drive}) {
   return showDialog(
     context: context,
     builder: (_) => BlocProvider(
       create: (context) => CreateManifestCubit(
-          driveId: driveId,
+          drive: drive,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
