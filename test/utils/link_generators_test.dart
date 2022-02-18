@@ -43,18 +43,26 @@ void main() {
           drive: testPrivateDrive,
           driveKey: testPrivateDriveKey,
         );
-        print(driveShareLink);
-        if (driveShareLink.pathSegments.length > 1) {
-          final driveId = driveShareLink.pathSegments[1];
-          final name = driveShareLink.queryParameters['name'];
-          final driveKey = driveShareLink.queryParameters['driveKey'];
+        final driveId = driveShareLink.pathSegments[1];
+        final driveName = driveShareLink.queryParameters['name'];
+        final driveKey = driveShareLink.queryParameters['driveKey'];
 
-          expect(driveId, equals(testPrivateDrive.id));
-        }
+        expect(driveId, equals(testPrivateDrive.id));
+        expect(driveName, equals(testPrivateDrive.name));
+        expect(driveKey, equals(testPrivateDriveKeyBase64));
       });
       test(
           'generateDriveShareLink generates the correct link for a public drive',
-          () {});
+          () async {
+        final driveShareLink = await generateDriveShareLink(
+          drive: testPublicDrive,
+        );
+        final driveId = driveShareLink.pathSegments[1];
+        final driveName = driveShareLink.queryParameters['name'];
+
+        expect(driveId, equals(testPublicDrive.id));
+        expect(driveName, equals(testPublicDrive.name));
+      });
     });
   });
 }

@@ -7,15 +7,16 @@ Future<Uri> generateDriveShareLink(
     {required Drive drive, SecretKey? driveKey}) async {
   // On web, link to the current origin the user is on.
   // Elsewhere, link to app.ardrive.io.
-  final linkOrigin = kIsWeb ? Uri.base.origin : 'https://app.ardrive.io';
+  final hostName = kIsWeb ? Uri.base.host : 'app.ardrive.io';
   final driveName = drive.name;
 
-  var driveShareLink = '$linkOrigin/#/drives/${drive.id}?name=' +
-      Uri.encodeQueryComponent(driveName);
+  final params = {'name': driveName};
   if (drive.isPrivate && driveKey != null) {
     final driveKeyBase64 = encodeBytesToBase64(await driveKey.extractBytes());
-
-    driveShareLink = driveShareLink + '&driveKey=$driveKeyBase64';
+    params['driveKey'] = driveKeyBase64;
   }
-  return Uri.parse(driveShareLink);
+
+  final uri = Uri.https(hostName, '/drives/${drive.id}', params);
+  print(uri.pathSegments);
+  return uri;
 }
