@@ -27,6 +27,7 @@ class DriveShareLoadSuccess extends DriveShareState {
   List<Object> get props => [driveName, driveShareLink];
 }
 
+/// [DriveShareLoadFail] shows failiure states in the UI.
 class DriveShareLoadFail extends DriveShareState {
   final String message;
 
