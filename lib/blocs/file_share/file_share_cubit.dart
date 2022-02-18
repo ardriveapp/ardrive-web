@@ -53,7 +53,7 @@ class FileShareCubit extends Cubit<FileShareState> {
       FileShareLoadSuccess(
         fileName: file.name,
         fileShareLink: fileShareLink,
-        isPublicFile: drive.isPrivate,
+        isPublicFile: drive.isPublic,
       ),
     );
   }
