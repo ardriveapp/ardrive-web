@@ -62,14 +62,14 @@ class CreateManifestForm extends StatelessWidget {
             title: 'Conflicting name was found',
             content: SizedBox(
               width: kMediumDialogWidth,
+              height: 200,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(height: 16),
                   Text(
                       'An entity with that name already exists at this location. Please choose a new name.'),
-                  SizedBox(height: 16),
                   manifestNameForm()
                 ],
               ),
