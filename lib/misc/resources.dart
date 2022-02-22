@@ -3,6 +3,8 @@ class R {
   static final insufficientARWarning = 'Insufficient Funds';
   static final arHelpLink =
       'https://ardrive.io/questions/where-do-i-get-additional-arweave-tokens/';
+  static final manifestLearnMoreLink =
+      ''; // TODO: Add create manifest learn more link
 }
 
 class Images {

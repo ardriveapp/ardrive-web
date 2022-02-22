@@ -1,13 +1,15 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
+import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'components.dart';
 
@@ -130,17 +132,38 @@ class CreateManifestForm extends StatelessWidget {
                 ),
               ],
               content: SizedBox(
-                width: kMediumDialogWidth,
+                width: kLargeDialogWidth,
                 height: 250,
                 child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text(
-                          'A manifest is a special kind of file that maps any number of Arweave transactions to friendly path names. (Learn More): TODO LINK',
+                        RichText(
+                          text: TextSpan(children: [
+                            TextSpan(
+                                text:
+                                    'A manifest is a special kind of file that maps any number of Arweave transactions to friendly path names.  ',
+                                style: Theme.of(context).textTheme.bodyText1),
+                            TextSpan(
+                                text: 'Learn More',
+                                style: TextStyle(
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodyText1
+                                        ?.color,
+                                    fontSize: Theme.of(context)
+                                        .textTheme
+                                        .bodyText1
+                                        ?.fontSize,
+                                    fontWeight: FontWeight.bold,
+                                    decoration: TextDecoration.underline),
+                                recognizer: TapGestureRecognizer()
+                                  ..onTap =
+                                      () => launch(R.manifestLearnMoreLink)),
+                          ]),
                         ),
                         manifestNameForm()
                       ],
