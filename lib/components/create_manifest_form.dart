@@ -36,12 +36,53 @@ class CreateManifestForm extends StatelessWidget {
           showProgressDialog(context, 'UPLOADING MANIFEST...');
         } else if (state is CreateManifestSuccess ||
             state is CreateManifestWalletMismatch ||
-            // TODO: Handle name conflict state instead of exiting AppDialog
-            state is CreateManifestNameConflict) {
+            state is CreateManifestFailure) {
           Navigator.pop(context);
           Navigator.pop(context);
         }
       }, builder: (context, state) {
+        ReactiveForm manifestNameForm() => ReactiveForm(
+            formGroup: context.watch<CreateManifestCubit>().form,
+            child: ReactiveTextField(
+              formControlName: 'name',
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Manifest name'),
+              showErrors: (control) => control.dirty && control.invalid,
+              validationMessages: (_) => kValidationMessages,
+            ));
+
+        if (state is CreateManifestNameConflict) {
+          return AppDialog(
+            title: 'Conflicting name was found',
+            content: SizedBox(
+              width: kMediumDialogWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 16),
+                  Text(
+                      'An entity with that name already exists at this location. Please choose a new name.'),
+                  SizedBox(height: 16),
+                  manifestNameForm()
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('CANCEL'),
+              ),
+              ElevatedButton(
+                onPressed: () => context
+                    .read<CreateManifestCubit>()
+                    .checkForConflicts(parentFolder: state.parentFolder),
+                child: Text('CONTINUE'),
+              ),
+            ],
+          );
+        }
+
         if (state is CreateManifestRevisionConfirm) {
           return AppDialog(
             title: 'Conflicting manifest was found',
@@ -101,18 +142,7 @@ class CreateManifestForm extends StatelessWidget {
                         Text(
                           'A manifest is a special kind of file that maps any number of Arweave transactions to friendly path names. (Learn More): TODO LINK',
                         ),
-                        ReactiveForm(
-                            formGroup:
-                                context.watch<CreateManifestCubit>().form,
-                            child: ReactiveTextField(
-                              formControlName: 'name',
-                              autofocus: true,
-                              decoration: const InputDecoration(
-                                  labelText: 'Manifest name'),
-                              showErrors: (control) =>
-                                  control.dirty && control.invalid,
-                              validationMessages: (_) => kValidationMessages,
-                            )),
+                        manifestNameForm()
                       ],
                     )),
               ));
@@ -127,8 +157,10 @@ class CreateManifestForm extends StatelessWidget {
                       context.read<CreateManifestCubit>().backToName(),
                   child: Text('BACK')),
               ElevatedButton(
-                onPressed: () =>
-                    context.read<CreateManifestCubit>().checkForConflicts(),
+                onPressed: () => context
+                    .read<CreateManifestCubit>()
+                    .checkForConflicts(
+                        parentFolder: state.viewingFolder.folder),
                 child: Text('CREATE'),
               ),
             ],

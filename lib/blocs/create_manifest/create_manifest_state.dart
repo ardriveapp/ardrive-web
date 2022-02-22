@@ -27,11 +27,10 @@ class CreateManifestFolderLoadSuccess extends CreateManifestState {
 
 class CreateManifestNameConflict extends CreateManifestState {
   final String name;
-  CreateManifestNameConflict({
-    required this.name,
-  });
+  final FolderEntry parentFolder;
+  CreateManifestNameConflict({required this.name, required this.parentFolder});
   @override
-  List<Object> get props => [name];
+  List<Object> get props => [name, parentFolder];
 }
 
 class CreateManifestRevisionConfirm extends CreateManifestState {

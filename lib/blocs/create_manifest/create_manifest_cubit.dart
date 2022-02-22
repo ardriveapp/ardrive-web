@@ -88,10 +88,10 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
             );
   }
 
-  Future<void> checkForConflicts() async {
+  Future<void> checkForConflicts({required FolderEntry parentFolder}) async {
+    await _selectedFolderSubscription?.cancel();
+
     final name = form.control('name').value;
-    final parentFolder =
-        (state as CreateManifestFolderLoadSuccess).viewingFolder.folder;
 
     final foldersWithName = await _driveDao
         .foldersInFolderWithName(
@@ -108,7 +108,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     if (foldersWithName.isNotEmpty || conflictingFiles.isNotEmpty) {
       // Name conflicts with existing file or folder
       // This is an error case, send user back to naming the manifest
-      emit(CreateManifestNameConflict(name: name));
+      emit(CreateManifestNameConflict(name: name, parentFolder: parentFolder));
       return;
     }
 
