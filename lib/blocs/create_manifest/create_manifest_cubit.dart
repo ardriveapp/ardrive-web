@@ -64,15 +64,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     }
   }
 
-  Future<void> chooseFolder() async {
-    if (form.invalid) {
-      // Chosen manifest name must be valid before proceeding
-      return;
-    }
-
-    await loadFolder(drive.rootFolderId);
-  }
-
   Future<void> loadFolder(String folderId) async {
     await _selectedFolderSubscription?.cancel();
 
