@@ -82,7 +82,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
                 CreateManifestFolderLoadSuccess(
                   viewingRootFolder: f.folder.parentFolderId == null,
                   viewingFolder: f,
-                  movingEntryId: f.folder.id,
                 ),
               ),
             );

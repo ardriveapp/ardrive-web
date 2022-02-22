@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
@@ -231,19 +232,22 @@ class CreateManifestForm extends StatelessWidget {
                                       .read<CreateManifestCubit>()
                                       .loadFolder(f.id),
                                   trailing: Icon(Icons.keyboard_arrow_right),
-                                  // Do not allow users to navigate into the folder they are currently trying to move.
-                                  enabled: f.id != state.movingEntryId,
                                 ),
                               ),
-                              ...state.viewingFolder.files.map(
-                                (f) => ListTile(
-                                  key: ValueKey(f.id),
-                                  leading: Icon(Icons.insert_drive_file),
-                                  title: Text(f.name),
-                                  enabled: false,
-                                  dense: true,
-                                ),
-                              ),
+                              ...state.viewingFolder.files
+                                  .where((f) =>
+                                      // New manifests will not include existing manifests
+                                      // So we will not display them to the user by filtering them out
+                                      f.dataContentType != ContentType.manifest)
+                                  .map(
+                                    (f) => ListTile(
+                                      key: ValueKey(f.id),
+                                      leading: Icon(Icons.insert_drive_file),
+                                      title: Text(f.name),
+                                      enabled: false,
+                                      dense: true,
+                                    ),
+                                  ),
                             ],
                           ),
                         ),
