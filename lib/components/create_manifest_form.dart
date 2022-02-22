@@ -38,7 +38,8 @@ class CreateManifestForm extends StatelessWidget {
           showProgressDialog(context, 'UPLOADING MANIFEST...');
         } else if (state is CreateManifestSuccess ||
             state is CreateManifestWalletMismatch ||
-            state is CreateManifestFailure) {
+            state is CreateManifestFailure ||
+            state is CreateManifestPrivacyMismatch) {
           Navigator.pop(context);
           Navigator.pop(context);
         }

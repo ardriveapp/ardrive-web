@@ -43,7 +43,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     if (drive.isPrivate) {
       // Extra guardrail to prevent private drives from creating manifests
       // Private manifests need more consideration and are currently unavailable
-      emit(CreateManifestFailure());
+      emit(CreateManifestPrivacyMismatch());
     }
 
     form = FormGroup({

@@ -43,7 +43,7 @@ class CreateManifestRevisionConfirm extends CreateManifestState {
 
 class CreateManifestUploadInProgress extends CreateManifestState {}
 
-class CreateManifestFailure extends CreateManifestState {}
+class CreateManifestPrivacyMismatch extends CreateManifestState {}
 
 class CreateManifestWalletMismatch extends CreateManifestState {}
 
