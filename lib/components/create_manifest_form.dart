@@ -45,6 +45,8 @@ class CreateManifestForm extends StatelessWidget {
           Navigator.pop(context);
         }
       }, builder: (context, state) {
+        final readCubitContext = context.read<CreateManifestCubit>();
+
         ReactiveForm manifestNameForm() => ReactiveForm(
             formGroup: context.watch<CreateManifestCubit>().form,
             child: ReactiveTextField(
@@ -109,11 +111,9 @@ class CreateManifestForm extends StatelessWidget {
                 child: Text('CANCEL'),
               ),
               ElevatedButton(
-                onPressed: () => context
-                    .read<CreateManifestCubit>()
-                    .uploadManifest(
-                        existingManifestFileId: state.id,
-                        parentFolder: state.parentFolder),
+                onPressed: () => readCubitContext.uploadManifest(
+                    existingManifestFileId: state.id,
+                    parentFolder: state.parentFolder),
                 child: Text('CONTINUE'),
               ),
             ],
@@ -128,8 +128,7 @@ class CreateManifestForm extends StatelessWidget {
                     onPressed: () => Navigator.pop(context),
                     child: Text('CANCEL')),
                 ElevatedButton(
-                  onPressed: () =>
-                      context.read<CreateManifestCubit>().chooseFolder(),
+                  onPressed: () => readCubitContext.chooseFolder(),
                   child: Text('NEXT'),
                 ),
               ],
@@ -178,14 +177,11 @@ class CreateManifestForm extends StatelessWidget {
             title: 'CREATE MANIFEST',
             actions: [
               TextButton(
-                  onPressed: () =>
-                      context.read<CreateManifestCubit>().backToName(),
+                  onPressed: () => readCubitContext.backToName(),
                   child: Text('BACK')),
               ElevatedButton(
-                onPressed: () => context
-                    .read<CreateManifestCubit>()
-                    .checkForConflicts(
-                        parentFolder: state.viewingFolder.folder),
+                onPressed: () => readCubitContext.checkForConflicts(
+                    parentFolder: state.viewingFolder.folder),
                 child: Text('CREATE'),
               ),
             ],
@@ -206,9 +202,8 @@ class CreateManifestForm extends StatelessWidget {
                                 textStyle:
                                     Theme.of(context).textTheme.subtitle2,
                                 padding: const EdgeInsets.all(16)),
-                            onPressed: () => context
-                                .read<CreateManifestCubit>()
-                                .loadParentFolder(),
+                            onPressed: () =>
+                                readCubitContext.loadParentFolder(),
                             child: ListTile(
                               dense: true,
                               leading: const Icon(Icons.arrow_back),
@@ -228,9 +223,8 @@ class CreateManifestForm extends StatelessWidget {
                                   dense: true,
                                   leading: const Icon(Icons.folder),
                                   title: Text(f.name),
-                                  onTap: () => context
-                                      .read<CreateManifestCubit>()
-                                      .loadFolder(f.id),
+                                  onTap: () =>
+                                      readCubitContext.loadFolder(f.id),
                                   trailing: Icon(Icons.keyboard_arrow_right),
                                 ),
                               ),
