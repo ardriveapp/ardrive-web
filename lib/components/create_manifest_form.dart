@@ -6,6 +6,7 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:filesize/filesize.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -37,9 +38,9 @@ class CreateManifestForm extends StatelessWidget {
           listener: (context, state) {
         if (state is CreateManifestUploadInProgress) {
           showProgressDialog(context, 'UPLOADING MANIFEST...');
+        } else if (state is CreateManifestPreparingManifest) {
+          showProgressDialog(context, 'PREPARING MANIFEST...');
         } else if (state is CreateManifestSuccess ||
-            state is CreateManifestWalletMismatch ||
-            state is CreateManifestFailure ||
             state is CreateManifestPrivacyMismatch) {
           Navigator.pop(context);
           Navigator.pop(context);
@@ -56,6 +57,46 @@ class CreateManifestForm extends StatelessWidget {
               showErrors: (control) => control.dirty && control.invalid,
               validationMessages: (_) => kValidationMessages,
             ));
+
+        AppDialog errorDialog({required String errorText}) => AppDialog(
+              title: 'FAILED TO CREATE MANIFEST',
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(height: 16),
+                    Text(errorText),
+                    SizedBox(height: 16),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('CONTINUE'),
+                ),
+              ],
+            );
+
+        if (state is CreateManifestWalletMismatch) {
+          return errorDialog(
+              errorText:
+                  'Provided wallet has unexpectedly changed during manifest creation...');
+        }
+
+        if (state is CreateManifestFailure) {
+          return errorDialog(
+              errorText:
+                  'Manifest transaction has unexpectedly failed to upload to the Arweave network...');
+        }
+
+        if (state is CreateManifestInsufficientBalance) {
+          return errorDialog(
+              errorText:
+                  'Provided wallet has insufficient balance for the manifest transaction...');
+        }
 
         if (state is CreateManifestNameConflict) {
           return AppDialog(
