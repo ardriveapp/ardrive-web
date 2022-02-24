@@ -8,6 +8,7 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
 import 'package:bloc/bloc.dart';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
@@ -112,18 +113,13 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       return;
     }
 
-    await uploadManifest(parentFolder: parentFolder);
+    await prepareManifestTx(parentFolder: parentFolder);
   }
 
-  Future<void> uploadManifest(
+  Future<void> prepareManifestTx(
       {FileID? existingManifestFileId,
       required FolderEntry parentFolder}) async {
-    if (await _profileCubit.logoutIfWalletMismatch()) {
-      emit(CreateManifestWalletMismatch());
-      return;
-    }
-
-    emit(CreateManifestUploadInProgress());
+    emit(CreateManifestPreparingManifest());
 
     try {
       final folderNode =
@@ -131,7 +127,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       final arweaveManifest =
           ManifestEntity.fromFolderNode(folderNode: folderNode);
 
-      final wallet = (_profileCubit.state as ProfileLoggedIn).wallet;
+      final profile = _profileCubit.state as ProfileLoggedIn;
+      final wallet = profile.wallet;
       final String manifestName = form.control('name').value;
 
       final manifestDataItem =
@@ -171,24 +168,56 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         ..setTarget(await _pst.getWeightedPstHolder())
         ..setQuantity(bundleTip);
 
+      final totalCost = bundleTx.reward + bundleTx.quantity;
+
+      if (profile.walletBalance < totalCost) {
+        emit(CreateManifestInsufficientBalance());
+        return;
+      }
+
+      final arUploadCost = winstonToAr(totalCost);
+      final usdUploadCost = await _arweave.getArUsdConversionRate().then(
+          (conversionRate) => double.parse(arUploadCost) * conversionRate);
+
       // Sign bundle tx and preserve bundle tx ID on entity
       await bundleTx.sign(wallet);
       manifestFileEntity.bundledIn = bundleTx.id;
 
-      // Write manifest file entity to the data base
-      await _driveDao.transaction(() async {
-        await _driveDao.writeFileEntity(
-            manifestFileEntity, '${parentFolder.path}/$manifestName');
-        await _driveDao.insertFileRevision(
-          manifestFileEntity.toRevisionCompanion(
-              performedAction: existingManifestFileId == null
-                  ? RevisionAction.create
-                  : RevisionAction.uploadNewVersion),
-        );
-      });
+      final uploadManifestParams = UploadManifestParams(
+          signedBundleTx: bundleTx,
+          addManifestToDatabase: _driveDao.transaction(() async {
+            await _driveDao.writeFileEntity(
+                manifestFileEntity, '${parentFolder.path}/$manifestName');
+            await _driveDao.insertFileRevision(
+              manifestFileEntity.toRevisionCompanion(
+                  performedAction: existingManifestFileId == null
+                      ? RevisionAction.create
+                      : RevisionAction.uploadNewVersion),
+            );
+          }));
 
-      // Upload the bundle
-      await _arweave.client.transactions.upload(bundleTx).drain();
+      emit(CreateManifestUploadConfirmation(
+          manifestSize: arweaveManifest.size,
+          manifestName: manifestName,
+          arUploadCost: arUploadCost,
+          usdUploadCost: usdUploadCost,
+          uploadManifestParams: uploadManifestParams));
+    } catch (err) {
+      addError(err);
+    }
+  }
+
+  Future<void> uploadManifest({required UploadManifestParams params}) async {
+    if (await _profileCubit.logoutIfWalletMismatch()) {
+      emit(CreateManifestWalletMismatch());
+      return;
+    }
+
+    emit(CreateManifestUploadInProgress());
+    try {
+      await _arweave.client.transactions.upload(params.signedBundleTx).drain();
+      await params.addManifestToDatabase;
+
       emit(CreateManifestSuccess());
     } catch (err) {
       addError(err);
@@ -212,4 +241,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
     print('Failed to create manifest: $error $stackTrace');
   }
+}
+
+class UploadManifestParams {
+  final Transaction signedBundleTx;
+  final Future<void> addManifestToDatabase;
+
+  UploadManifestParams(
+      {required this.signedBundleTx, required this.addManifestToDatabase});
 }

@@ -38,12 +38,47 @@ class CreateManifestNameConflict extends CreateManifestState {
 class CreateManifestRevisionConfirm extends CreateManifestState {
   final FileID id;
   final FolderEntry parentFolder;
+
   CreateManifestRevisionConfirm({required this.id, required this.parentFolder});
   @override
   List<Object> get props => [id, parentFolder];
 }
 
-/// Name conflicts have been resolved and uploading the manifest transaction has begun
+/// Conflicts have been resolved and we are preparing the manifest transaction
+class CreateManifestPreparingManifest extends CreateManifestState {}
+
+/// User does not have enough AR to cover the manifest transaction reward and tip
+class CreateManifestInsufficientBalance extends CreateManifestState {}
+
+/// Name conflicts have been resolved, prompt user to confirm price of the upload
+class CreateManifestUploadConfirmation extends CreateManifestState {
+  final int manifestSize;
+  final String manifestName;
+
+  final String arUploadCost;
+  final double usdUploadCost;
+
+  final UploadManifestParams uploadManifestParams;
+
+  CreateManifestUploadConfirmation({
+    required this.manifestSize,
+    required this.manifestName,
+    required this.arUploadCost,
+    required this.usdUploadCost,
+    required this.uploadManifestParams,
+  });
+
+  @override
+  List<Object> get props => [
+        manifestSize,
+        manifestName,
+        arUploadCost,
+        usdUploadCost,
+        uploadManifestParams,
+      ];
+}
+
+/// User has confirmed the upload and the manifest transaction upload has started
 class CreateManifestUploadInProgress extends CreateManifestState {}
 
 /// Private drive has been detected, create manifest must be aborted

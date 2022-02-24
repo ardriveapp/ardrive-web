@@ -112,7 +112,7 @@ class CreateManifestForm extends StatelessWidget {
                 child: Text('CANCEL'),
               ),
               ElevatedButton(
-                onPressed: () => readCubitContext.uploadManifest(
+                onPressed: () => readCubitContext.prepareManifestTx(
                     existingManifestFileId: state.id,
                     parentFolder: state.parentFolder),
                 child: Text('CONTINUE'),
@@ -176,9 +176,71 @@ class CreateManifestForm extends StatelessWidget {
               ));
         }
 
-        if (state is CreateManifestFolderLoadSuccess) {
+        if (state is CreateManifestUploadConfirmation) {
+          Navigator.pop(context);
           return AppDialog(
             title: 'CREATE MANIFEST',
+            content: SizedBox(
+              width: kMediumDialogWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 256),
+                    child: Scrollbar(
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: [
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(state.manifestName),
+                            subtitle: Text(filesize(state.manifestSize)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Divider(),
+                  const SizedBox(height: 16),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'Cost: ${state.arUploadCost} AR',
+                        ),
+                        TextSpan(
+                            text: state.usdUploadCost >= 0.01
+                                ? ' (~${state.usdUploadCost.toStringAsFixed(2)} USD)'
+                                : ' (< 0.01 USD)'),
+                      ],
+                      style: Theme.of(context).textTheme.bodyText1,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                      'Files uploaded here will be permanently viewable by anyone on the internet. Make sure you intend on making this data public.',
+                      style: Theme.of(context).textTheme.bodyText2),
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('CANCEL'),
+              ),
+              ElevatedButton(
+                onPressed: () => readCubitContext.uploadManifest(
+                    params: state.uploadManifestParams),
+                child: Text('CONFIRM'),
+              ),
+            ],
+          );
+        }
+
+        if (state is CreateManifestFolderLoadSuccess) {
+          return AppDialog(
+            title: 'CREATE MANIFEST FROM',
             actions: [
               TextButton(
                   onPressed: () => readCubitContext.backToName(),
