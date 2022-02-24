@@ -4,7 +4,7 @@ class R {
   static final arHelpLink =
       'https://ardrive.io/questions/where-do-i-get-additional-arweave-tokens/';
   static final manifestLearnMoreLink =
-      ''; // TODO: Add create manifest learn more link
+      'https://ardrive.atlassian.net/wiki/spaces/help/pages/359530513/Arweave+Manifests';
 }
 
 class Images {
