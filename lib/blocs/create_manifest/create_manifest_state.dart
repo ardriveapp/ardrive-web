@@ -47,10 +47,10 @@ class CreateManifestRevisionConfirm extends CreateManifestState {
 /// Conflicts have been resolved and we are preparing the manifest transaction
 class CreateManifestPreparingManifest extends CreateManifestState {}
 
-/// User does not have enough AR to cover the manifest transaction reward and tip
+/// User does not have enough AR to cover the manifest transaction reward and tip, create manifest must be aborted
 class CreateManifestInsufficientBalance extends CreateManifestState {}
 
-/// Name conflicts have been resolved, prompt user to confirm price of the upload
+/// Manifest transaction is prepared, prompt user to confirm price of the upload
 class CreateManifestUploadConfirmation extends CreateManifestState {
   final int manifestSize;
   final String manifestName;
