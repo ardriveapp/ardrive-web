@@ -81,8 +81,10 @@ class ManifestData {
     }();
 
     final rootFolderPath = folderNode.folder.path;
-    final index = ManifestIndex(prepareManifestPath(
-        filePath: indexFile.path, rootFolderPath: rootFolderPath));
+    final index = ManifestIndex(
+      prepareManifestPath(
+          filePath: indexFile.path, rootFolderPath: rootFolderPath),
+    );
 
     final paths = {
       for (final file in fileList)

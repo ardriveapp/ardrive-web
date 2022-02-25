@@ -156,9 +156,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         ?.id;
 
     if (manifestRevisionId != null) {
-      emit(CreateManifestRevisionConfirm(
+      emit(
+        CreateManifestRevisionConfirm(
           existingManifestFileId: manifestRevisionId,
-          parentFolder: parentFolder));
+          parentFolder: parentFolder,
+        ),
+      );
       return;
     }
     emit(CreateManifestPreparingManifest(parentFolder: parentFolder));
@@ -181,7 +184,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       final String manifestName = form.control('name').value;
 
       final manifestDataItem = await arweaveManifest.asPreparedDataItem(
-          owner: await wallet.getOwner());
+        owner: await wallet.getOwner(),
+      );
       await manifestDataItem.sign(wallet);
 
       /// Assemble data JSON of the metadata tx for the manifest
@@ -224,9 +228,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       final totalCost = bundleTx.reward + bundleTx.quantity;
 
       if (profile.walletBalance < totalCost) {
-        emit(CreateManifestInsufficientBalance(
+        emit(
+          CreateManifestInsufficientBalance(
             walletBalance: winstonToAr(profile.walletBalance),
-            totalCost: winstonToAr(totalCost)));
+            totalCost: winstonToAr(totalCost),
+          ),
+        );
         return;
       }
 
@@ -310,6 +317,8 @@ class UploadManifestParams {
   final Transaction signedBundleTx;
   final Future<void> addManifestToDatabase;
 
-  UploadManifestParams(
-      {required this.signedBundleTx, required this.addManifestToDatabase});
+  UploadManifestParams({
+    required this.signedBundleTx,
+    required this.addManifestToDatabase,
+  });
 }

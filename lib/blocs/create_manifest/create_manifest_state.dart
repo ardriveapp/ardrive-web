@@ -26,7 +26,9 @@ class CreateManifestFolderLoadSuccess extends CreateManifestState {
 /// User has selected a folder and we are checking for name conflicts
 class CreateManifestCheckingForConflicts extends CreateManifestState {
   final FolderEntry parentFolder;
+
   CreateManifestCheckingForConflicts({required this.parentFolder});
+
   @override
   List<Object> get props => [parentFolder];
 }
@@ -36,8 +38,12 @@ class CreateManifestCheckingForConflicts extends CreateManifestState {
 class CreateManifestNameConflict extends CreateManifestState {
   final String conflictingName;
   final FolderEntry parentFolder;
-  CreateManifestNameConflict(
-      {required this.conflictingName, required this.parentFolder});
+
+  CreateManifestNameConflict({
+    required this.conflictingName,
+    required this.parentFolder,
+  });
+
   @override
   List<Object> get props => [conflictingName, parentFolder];
 }
@@ -48,8 +54,11 @@ class CreateManifestRevisionConfirm extends CreateManifestState {
   final FileID existingManifestFileId;
   final FolderEntry parentFolder;
 
-  CreateManifestRevisionConfirm(
-      {required this.existingManifestFileId, required this.parentFolder});
+  CreateManifestRevisionConfirm({
+    required this.existingManifestFileId,
+    required this.parentFolder,
+  });
+
   @override
   List<Object> get props => [existingManifestFileId, parentFolder];
 }
@@ -59,6 +68,7 @@ class CreateManifestPreparingManifest extends CreateManifestState {
   final FolderEntry parentFolder;
 
   CreateManifestPreparingManifest({required this.parentFolder});
+
   @override
   List<Object> get props => [parentFolder];
 }
@@ -68,8 +78,11 @@ class CreateManifestInsufficientBalance extends CreateManifestState {
   final String walletBalance;
   final String totalCost;
 
-  CreateManifestInsufficientBalance(
-      {required this.walletBalance, required this.totalCost});
+  CreateManifestInsufficientBalance({
+    required this.walletBalance,
+    required this.totalCost,
+  });
+
   @override
   List<Object> get props => [walletBalance, totalCost];
 }

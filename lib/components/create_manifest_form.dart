@@ -82,20 +82,23 @@ class CreateManifestForm extends StatelessWidget {
 
         if (state is CreateManifestWalletMismatch) {
           return errorDialog(
-              errorText:
-                  'Provided wallet has unexpectedly changed during manifest creation...');
+            errorText:
+                'Provided wallet has unexpectedly changed during manifest creation...',
+          );
         }
 
         if (state is CreateManifestFailure) {
           return errorDialog(
-              errorText:
-                  'Manifest transaction has unexpectedly failed to upload to the Arweave network...');
+            errorText:
+                'Manifest transaction has unexpectedly failed to upload to the Arweave network...',
+          );
         }
 
         if (state is CreateManifestInsufficientBalance) {
           return errorDialog(
-              errorText:
-                  'Provided wallet balance of ${state.walletBalance} AR is not enough for this manifest transaction costing ${state.totalCost} AR...');
+            errorText:
+                'Provided wallet balance of ${state.walletBalance} AR is not enough for this manifest transaction costing ${state.totalCost} AR...',
+          );
         }
 
         if (state is CreateManifestNameConflict) {
@@ -110,7 +113,8 @@ class CreateManifestForm extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                      'An entity with that name already exists at this location. Please choose a new name.'),
+                    'An entity with that name already exists at this location. Please choose a new name.',
+                  ),
                   manifestNameForm()
                 ],
               ),
@@ -139,7 +143,8 @@ class CreateManifestForm extends StatelessWidget {
                 children: [
                   SizedBox(height: 16),
                   Text(
-                      'A manifest with the same name already exists at this location. Do you want to continue and upload this manifest as a new version?'),
+                    'A manifest with the same name already exists at this location. Do you want to continue and upload this manifest as a new version?',
+                  ),
                   SizedBox(height: 16),
                 ],
               ),
@@ -252,8 +257,9 @@ class CreateManifestForm extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                      'Files uploaded here will be permanently viewable by anyone on the internet. Make sure you intend on making this data public.',
-                      style: Theme.of(context).textTheme.bodyText2),
+                    'Files uploaded here will be permanently viewable by anyone on the internet. Make sure you intend on making this data public.',
+                    style: Theme.of(context).textTheme.bodyText2,
+                  ),
                 ],
               ),
             ),
@@ -295,17 +301,16 @@ class CreateManifestForm extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: TextButton(
-                            style: TextButton.styleFrom(
-                                textStyle:
-                                    Theme.of(context).textTheme.subtitle2,
-                                padding: const EdgeInsets.all(16)),
-                            onPressed: () =>
-                                readCubitContext.loadParentFolder(),
-                            child: ListTile(
-                              dense: true,
-                              leading: const Icon(Icons.arrow_back),
-                              title: Text('Back'),
-                            )),
+                          style: TextButton.styleFrom(
+                              textStyle: Theme.of(context).textTheme.subtitle2,
+                              padding: const EdgeInsets.all(16)),
+                          onPressed: () => readCubitContext.loadParentFolder(),
+                          child: ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.arrow_back),
+                            title: Text('Back'),
+                          ),
+                        ),
                       ),
                     Expanded(
                       child: Padding(
