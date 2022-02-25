@@ -99,7 +99,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     if (foldersWithName.isNotEmpty || conflictingFiles.isNotEmpty) {
       // Name conflicts with existing file or folder
       // This is an error case, send user back to naming the manifest
-      emit(CreateManifestNameConflict(name: name, parentFolder: parentFolder));
+      emit(
+        CreateManifestNameConflict(
+          name: name,
+          parentFolder: parentFolder,
+        ),
+      );
       return;
     }
 
@@ -137,24 +142,28 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
       /// Assemble data JSON of the metadata tx for the manifest
       final manifestFileEntity = FileEntity(
-          size: arweaveManifest.size,
-          parentFolderId: parentFolder.id,
-          name: manifestName,
-          lastModifiedDate: DateTime.now(),
-          id: existingManifestFileId ?? Uuid().v4(),
-          driveId: drive.id,
-          dataTxId: manifestDataItem.id,
-          dataContentType: ContentType.manifest);
+        size: arweaveManifest.size,
+        parentFolderId: parentFolder.id,
+        name: manifestName,
+        lastModifiedDate: DateTime.now(),
+        id: existingManifestFileId ?? Uuid().v4(),
+        driveId: drive.id,
+        dataTxId: manifestDataItem.id,
+        dataContentType: ContentType.manifest,
+      );
 
-      final manifestMetaDataItem =
-          await _arweave.prepareEntityDataItem(manifestFileEntity, wallet);
+      final manifestMetaDataItem = await _arweave.prepareEntityDataItem(
+        manifestFileEntity,
+        wallet,
+      );
 
       // Sign data item and preserve meta data tx ID on entity
       await manifestMetaDataItem.sign(wallet);
       manifestFileEntity.txId = manifestMetaDataItem.id;
 
       final bundle = await DataBundle.fromDataItems(
-          items: [manifestDataItem, manifestMetaDataItem]);
+        items: [manifestDataItem, manifestMetaDataItem],
+      );
 
       final bundleTx = await _arweave.prepareDataBundleTxFromBlob(
         bundle.blob,
@@ -184,24 +193,28 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       manifestFileEntity.bundledIn = bundleTx.id;
 
       final uploadManifestParams = UploadManifestParams(
-          signedBundleTx: bundleTx,
-          addManifestToDatabase: _driveDao.transaction(() async {
-            await _driveDao.writeFileEntity(
-                manifestFileEntity, '${parentFolder.path}/$manifestName');
-            await _driveDao.insertFileRevision(
-              manifestFileEntity.toRevisionCompanion(
-                  performedAction: existingManifestFileId == null
-                      ? RevisionAction.create
-                      : RevisionAction.uploadNewVersion),
-            );
-          }));
+        signedBundleTx: bundleTx,
+        addManifestToDatabase: _driveDao.transaction(() async {
+          await _driveDao.writeFileEntity(
+              manifestFileEntity, '${parentFolder.path}/$manifestName');
+          await _driveDao.insertFileRevision(
+            manifestFileEntity.toRevisionCompanion(
+                performedAction: existingManifestFileId == null
+                    ? RevisionAction.create
+                    : RevisionAction.uploadNewVersion),
+          );
+        }),
+      );
 
-      emit(CreateManifestUploadConfirmation(
+      emit(
+        CreateManifestUploadConfirmation(
           manifestSize: arweaveManifest.size,
           manifestName: manifestName,
           arUploadCost: arUploadCost,
           usdUploadCost: usdUploadCost,
-          uploadManifestParams: uploadManifestParams));
+          uploadManifestParams: uploadManifestParams,
+        ),
+      );
     } catch (err) {
       addError(err);
     }
