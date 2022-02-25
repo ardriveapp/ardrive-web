@@ -8,7 +8,7 @@ import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-part 'manifest_entity.g.dart';
+part 'manifest_data.g.dart';
 
 @JsonSerializable()
 class ManifestIndex {
@@ -94,8 +94,8 @@ class ManifestData {
   }
 
   factory ManifestData.fromJson(Map<String, dynamic> json) =>
-      _$ManifestEntityFromJson(json);
-  Map<String, dynamic> toJson() => _$ManifestEntityToJson(this);
+      _$ManifestDataFromJson(json);
+  Map<String, dynamic> toJson() => _$ManifestDataToJson(this);
 }
 
 /// Utility function to remove base path of the target folder and
