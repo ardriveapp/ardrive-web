@@ -121,8 +121,7 @@ class CreateManifestForm extends StatelessWidget {
                 child: Text('CANCEL'),
               ),
               ElevatedButton(
-                onPressed: () => readCubitContext.reCheckConflicts(
-                    parentFolder: state.parentFolder),
+                onPressed: () => readCubitContext.reCheckConflicts(),
                 child: Text('CONTINUE'),
               ),
             ],
@@ -151,9 +150,7 @@ class CreateManifestForm extends StatelessWidget {
                 child: Text('CANCEL'),
               ),
               ElevatedButton(
-                onPressed: () => readCubitContext.prepareManifestTx(
-                    existingManifestFileId: state.id,
-                    parentFolder: state.parentFolder),
+                onPressed: () => readCubitContext.confirmRevision(),
                 child: Text('CONTINUE'),
               ),
             ],
@@ -266,8 +263,7 @@ class CreateManifestForm extends StatelessWidget {
                 child: Text('CANCEL'),
               ),
               ElevatedButton(
-                onPressed: () => readCubitContext.uploadManifest(
-                    params: state.uploadManifestParams),
+                onPressed: () => readCubitContext.uploadManifest(),
                 child: Text('CONFIRM'),
               ),
             ],
@@ -282,8 +278,7 @@ class CreateManifestForm extends StatelessWidget {
                   onPressed: () => readCubitContext.backToName(),
                   child: Text('BACK')),
               ElevatedButton(
-                onPressed: () => readCubitContext.checkForConflicts(
-                    parentFolder: state.viewingFolder.folder),
+                onPressed: () => readCubitContext.checkForConflicts(),
                 child: Text('CREATE'),
               ),
             ],

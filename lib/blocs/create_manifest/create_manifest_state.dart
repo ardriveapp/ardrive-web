@@ -23,29 +23,45 @@ class CreateManifestFolderLoadSuccess extends CreateManifestState {
   List<Object> get props => [viewingRootFolder, viewingFolder];
 }
 
-/// User selected a folder, but there is an existing non-manifest FILE or FOLDER entity
-/// with a conflicting name. User must re-name the manifest or abort the action
+/// User has selected a folder and we are checking for name conflicts
+class CreateManifestCheckingForConflicts extends CreateManifestState {
+  final FolderEntry parentFolder;
+  CreateManifestCheckingForConflicts({required this.parentFolder});
+  @override
+  List<Object> get props => [parentFolder];
+}
+
+/// There is an existing non-manifest FILE or FOLDER entity with a
+/// conflicting name. User must re-name the manifest or abort the action
 class CreateManifestNameConflict extends CreateManifestState {
-  final String name;
+  final String conflictingName;
   final FolderEntry parentFolder;
-  CreateManifestNameConflict({required this.name, required this.parentFolder});
+  CreateManifestNameConflict(
+      {required this.conflictingName, required this.parentFolder});
   @override
-  List<Object> get props => [name, parentFolder];
+  List<Object> get props => [conflictingName, parentFolder];
 }
 
-/// User selected a folder, but there is an existing manifest with a conflicting name
-/// Prompt the user to confirm that this is a revision upload or abort the action
+/// There is an existing manifest with a conflicting name. Prompt the
+/// user to confirm that this is a revision upload or abort the action
 class CreateManifestRevisionConfirm extends CreateManifestState {
-  final FileID id;
+  final FileID existingManifestFileId;
   final FolderEntry parentFolder;
 
-  CreateManifestRevisionConfirm({required this.id, required this.parentFolder});
+  CreateManifestRevisionConfirm(
+      {required this.existingManifestFileId, required this.parentFolder});
   @override
-  List<Object> get props => [id, parentFolder];
+  List<Object> get props => [existingManifestFileId, parentFolder];
 }
 
-/// Conflicts have been resolved and we are preparing the manifest transaction
-class CreateManifestPreparingManifest extends CreateManifestState {}
+/// Conflicts have been resolved and we will now prepare the manifest transaction
+class CreateManifestPreparingManifest extends CreateManifestState {
+  final FolderEntry parentFolder;
+
+  CreateManifestPreparingManifest({required this.parentFolder});
+  @override
+  List<Object> get props => [parentFolder];
+}
 
 /// User does not have enough AR to cover the manifest transaction reward and tip, create manifest must be aborted
 class CreateManifestInsufficientBalance extends CreateManifestState {}

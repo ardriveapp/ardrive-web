@@ -66,12 +66,15 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     await loadFolder(drive.rootFolderId);
   }
 
-  /// User selected a new name due to name conflict, confirm that form is valid and check for conflicts again
-  Future<void> reCheckConflicts({required FolderEntry parentFolder}) async {
-    if (form.invalid) {
-      return;
-    }
-    await checkForConflicts(parentFolder: parentFolder);
+  /// User has confirmed that they would like to submit a manifest revision transaction
+  Future<void> confirmRevision() async {
+    final revisionConfirmationState = state as CreateManifestRevisionConfirm;
+    final parentFolder = revisionConfirmationState.parentFolder;
+    final existingManifestFileId =
+        revisionConfirmationState.existingManifestFileId;
+
+    emit(CreateManifestPreparingManifest(parentFolder: parentFolder));
+    await prepareManifestTx(existingManifestFileId: existingManifestFileId);
   }
 
   Future<void> loadParentFolder() async {
@@ -95,7 +98,31 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
             );
   }
 
-  Future<void> checkForConflicts({required FolderEntry parentFolder}) async {
+  /// User selected a new name due to name conflict, confirm that form is valid and check for conflicts again
+  Future<void> reCheckConflicts() async {
+    final conflictState = (state as CreateManifestNameConflict);
+    final parentFolder = conflictState.parentFolder;
+    final conflictingName = conflictState.conflictingName;
+
+    if (form.invalid || form.control('name').value == conflictingName) {
+      return;
+    }
+
+    emit(CreateManifestCheckingForConflicts(parentFolder: parentFolder));
+    await checkNameConflicts();
+  }
+
+  Future<void> checkForConflicts() async {
+    final parentFolder =
+        (state as CreateManifestFolderLoadSuccess).viewingFolder.folder;
+
+    emit(CreateManifestCheckingForConflicts(parentFolder: parentFolder));
+    await checkNameConflicts();
+  }
+
+  Future<void> checkNameConflicts() async {
+    final parentFolder =
+        (state as CreateManifestCheckingForConflicts).parentFolder;
     await _selectedFolderSubscription?.cancel();
 
     final name = form.control('name').value;
@@ -117,7 +144,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       // This is an error case, send user back to naming the manifest
       emit(
         CreateManifestNameConflict(
-          name: name,
+          conflictingName: name,
           parentFolder: parentFolder,
         ),
       );
@@ -130,19 +157,20 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
     if (manifestRevisionId != null) {
       emit(CreateManifestRevisionConfirm(
-          id: manifestRevisionId, parentFolder: parentFolder));
+          existingManifestFileId: manifestRevisionId,
+          parentFolder: parentFolder));
       return;
     }
-
-    await prepareManifestTx(parentFolder: parentFolder);
+    emit(CreateManifestPreparingManifest(parentFolder: parentFolder));
+    await prepareManifestTx();
   }
 
-  Future<void> prepareManifestTx(
-      {FileID? existingManifestFileId,
-      required FolderEntry parentFolder}) async {
-    emit(CreateManifestPreparingManifest());
-
+  Future<void> prepareManifestTx({
+    FileID? existingManifestFileId,
+  }) async {
     try {
+      final parentFolder =
+          (state as CreateManifestPreparingManifest).parentFolder;
       final folderNode =
           (await _driveDao.getFolderTree(drive.id, parentFolder.id));
       final arweaveManifest =
@@ -236,11 +264,14 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     }
   }
 
-  Future<void> uploadManifest({required UploadManifestParams params}) async {
+  Future<void> uploadManifest() async {
     if (await _profileCubit.logoutIfWalletMismatch()) {
       emit(CreateManifestWalletMismatch());
       return;
     }
+
+    final params =
+        (state as CreateManifestUploadConfirmation).uploadManifestParams;
 
     emit(CreateManifestUploadInProgress());
     try {
