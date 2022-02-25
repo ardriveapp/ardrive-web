@@ -162,7 +162,7 @@ void main() {
       }
     });
 
-    //   test('getRecursiveFiles with a maxDepth of 1 returns the files in root',
+    //   test('getRecursiveFiles with a maxDepth of 0 returns just the files in the root folder',
     //       () async {
     //     final treeRoot = await driveDao.getFolderTree(driveId, rootFolderId);
     //     final filesInFolderTree = treeRoot.getRecursiveFiles(maxDepth: 1);
@@ -175,9 +175,9 @@ void main() {
     //     }
     //   });
 
-    //   test('getRecursiveFiles with a maxDepth of 0 returns no files', () async {
+    //   test('getRecursiveFiles with a maxDepth of -1 returns no files', () async {
     //     final treeRoot = await driveDao.getFolderTree(driveId, rootFolderId);
-    //     final filesInFolderTree = treeRoot.getRecursiveFiles(maxDepth: 0);
+    //     final filesInFolderTree = treeRoot.getRecursiveFiles(maxDepth: -1);
 
     //     expect(filesInFolderTree.length, equals(0));
     //   });

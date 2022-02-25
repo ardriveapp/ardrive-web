@@ -39,7 +39,7 @@ class FolderNode {
 
   // TODO: maxDepth
   List<FileEntry> getRecursiveFiles(/*{maxDepth = 2000000}*/) {
-    // if (maxDepth == 0) {
+    // if (maxDepth == -1) {
     //   return [];
     // }
 
