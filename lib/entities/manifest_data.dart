@@ -35,7 +35,7 @@ class ManifestPath {
 }
 
 @JsonSerializable(explicitToJson: true)
-class ManifestEntity {
+class ManifestData {
   @JsonKey()
   String manifest = 'arweave/paths';
   @JsonKey()
@@ -45,7 +45,7 @@ class ManifestEntity {
   @JsonKey()
   final Map<String, ManifestPath> paths;
 
-  ManifestEntity(this.index, this.paths);
+  ManifestData(this.index, this.paths);
 
   int get size => jsonData.lengthInBytes;
   Uint8List get jsonData => utf8.encode(json.encode(this)) as Uint8List;
@@ -59,7 +59,7 @@ class ManifestEntity {
     return manifestDataItem;
   }
 
-  static ManifestEntity fromFolderNode({required FolderNode folderNode}) {
+  static ManifestData fromFolderNode({required FolderNode folderNode}) {
     final fileList = folderNode
         .getRecursiveFiles()
         // We will not include any existing manifests in the new manifest
@@ -90,10 +90,10 @@ class ManifestEntity {
             rootFolderLength: rootFolderLength): ManifestPath(file.dataTxId)
     };
 
-    return ManifestEntity(index, paths);
+    return ManifestData(index, paths);
   }
 
-  factory ManifestEntity.fromJson(Map<String, dynamic> json) =>
+  factory ManifestData.fromJson(Map<String, dynamic> json) =>
       _$ManifestEntityFromJson(json);
   Map<String, dynamic> toJson() => _$ManifestEntityToJson(this);
 }

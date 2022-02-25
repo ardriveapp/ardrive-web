@@ -1,5 +1,5 @@
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/manifest_entity.dart';
+import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:arweave/utils.dart';
@@ -157,7 +157,7 @@ void main() {
       test('returns a ManifestEntity with a valid expected manifest shape',
           () async {
         final manifest =
-            ManifestEntity.fromFolderNode(folderNode: stubRootFolderNode);
+            ManifestData.fromFolderNode(folderNode: stubRootFolderNode);
 
         expect(
             manifest.toJson(),
@@ -192,7 +192,7 @@ void main() {
           'returns a ManifestEntity with a valid expected manifest shape with a nested child folder',
           () async {
         final manifest =
-            ManifestEntity.fromFolderNode(folderNode: stubChildFolderNode);
+            ManifestData.fromFolderNode(folderNode: stubChildFolderNode);
 
         expect(
             manifest.toJson(),
@@ -222,7 +222,7 @@ void main() {
       test('returns a DataItem with the expected tags, owner, and data',
           () async {
         final manifest =
-            ManifestEntity.fromFolderNode(folderNode: stubRootFolderNode);
+            ManifestData.fromFolderNode(folderNode: stubRootFolderNode);
         final wallet = getTestWallet();
 
         final dataItem = await manifest.asPreparedDataItem(wallet: wallet);

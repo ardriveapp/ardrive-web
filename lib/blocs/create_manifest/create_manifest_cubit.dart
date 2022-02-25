@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/manifest_entity.dart';
+import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
@@ -174,7 +174,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       final folderNode =
           (await _driveDao.getFolderTree(drive.id, parentFolder.id));
       final arweaveManifest =
-          ManifestEntity.fromFolderNode(folderNode: folderNode);
+          ManifestData.fromFolderNode(folderNode: folderNode);
 
       final profile = _profileCubit.state as ProfileLoggedIn;
       final wallet = profile.wallet;
