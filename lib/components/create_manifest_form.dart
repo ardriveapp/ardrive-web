@@ -121,10 +121,8 @@ class CreateManifestForm extends StatelessWidget {
                 child: Text('CANCEL'),
               ),
               ElevatedButton(
-                onPressed: () => readCubitContext.form.invalid
-                    ? null
-                    : readCubitContext.checkForConflicts(
-                        parentFolder: state.parentFolder),
+                onPressed: () => readCubitContext.reCheckConflicts(
+                    parentFolder: state.parentFolder),
                 child: Text('CONTINUE'),
               ),
             ],
@@ -170,10 +168,7 @@ class CreateManifestForm extends StatelessWidget {
                     onPressed: () => Navigator.pop(context),
                     child: Text('CANCEL')),
                 ElevatedButton(
-                  onPressed: () => readCubitContext.form.invalid
-                      ? null
-                      : readCubitContext
-                          .loadFolder(readCubitContext.drive.rootFolderId),
+                  onPressed: () => readCubitContext.chooseTargetFolder(),
                   child: Text('NEXT'),
                 ),
               ],

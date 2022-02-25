@@ -58,6 +58,22 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     });
   }
 
+  /// Validate form before User begins choosing a target folder
+  Future<void> chooseTargetFolder() async {
+    if (form.invalid) {
+      return;
+    }
+    await loadFolder(drive.rootFolderId);
+  }
+
+  /// User selected a new name due to name conflict, confirm that form is valid and check for conflicts again
+  Future<void> reCheckConflicts({required FolderEntry parentFolder}) async {
+    if (form.invalid) {
+      return;
+    }
+    await checkForConflicts(parentFolder: parentFolder);
+  }
+
   Future<void> loadParentFolder() async {
     final state = this.state as CreateManifestFolderLoadSuccess;
     if (state.viewingFolder.folder.parentFolderId != null) {
