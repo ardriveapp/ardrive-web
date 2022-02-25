@@ -225,7 +225,8 @@ void main() {
             ManifestData.fromFolderNode(folderNode: stubRootFolderNode);
         final wallet = getTestWallet();
 
-        final dataItem = await manifest.asPreparedDataItem(wallet: wallet);
+        final dataItem =
+            await manifest.asPreparedDataItem(owner: await wallet.getOwner());
 
         expect(dataItem.tags.length, equals(4));
         expect(decodeBase64ToString(dataItem.tags[0].name), equals('App-Name'));

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
@@ -50,9 +51,9 @@ class ManifestData {
   int get size => jsonData.lengthInBytes;
   Uint8List get jsonData => utf8.encode(json.encode(this)) as Uint8List;
 
-  Future<DataItem> asPreparedDataItem({required Wallet wallet}) async {
+  Future<DataItem> asPreparedDataItem({required ArweaveAddress owner}) async {
     final manifestDataItem = DataItem.withBlobData(data: jsonData)
-      ..setOwner(await wallet.getOwner())
+      ..setOwner(owner)
       ..addApplicationTags(version: (await PackageInfo.fromPlatform()).version)
       ..addTag(EntityTag.contentType, ContentType.manifest);
 

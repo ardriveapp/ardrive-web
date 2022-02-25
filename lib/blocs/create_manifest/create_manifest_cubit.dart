@@ -180,8 +180,8 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       final wallet = profile.wallet;
       final String manifestName = form.control('name').value;
 
-      final manifestDataItem =
-          await arweaveManifest.asPreparedDataItem(wallet: wallet);
+      final manifestDataItem = await arweaveManifest.asPreparedDataItem(
+          owner: await wallet.getOwner());
       await manifestDataItem.sign(wallet);
 
       /// Assemble data JSON of the metadata tx for the manifest
