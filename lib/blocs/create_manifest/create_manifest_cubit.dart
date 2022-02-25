@@ -291,6 +291,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   }
 
   void backToName() {
+    form.reset();
     emit(CreateManifestInitial());
   }
 
