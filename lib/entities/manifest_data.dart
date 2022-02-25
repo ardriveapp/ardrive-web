@@ -79,15 +79,15 @@ class ManifestData {
       return fileList.first;
     }();
 
-    final rootFolderLength = folderNode.folder.path.length;
+    final rootFolderPath = folderNode.folder.path;
     final index = ManifestIndex(prepareManifestPath(
-        path: indexFile.path, rootFolderLength: rootFolderLength));
+        filePath: indexFile.path, rootFolderPath: rootFolderPath));
 
     final paths = {
       for (final file in fileList)
         prepareManifestPath(
-            path: file.path,
-            rootFolderLength: rootFolderLength): ManifestPath(file.dataTxId)
+            filePath: file.path,
+            rootFolderPath: rootFolderPath): ManifestPath(file.dataTxId)
     };
 
     return ManifestData(index, paths);
@@ -101,6 +101,6 @@ class ManifestData {
 /// Utility function to remove base path of the target folder and
 /// replace spaces with underscores for arweave.net URL compatibility
 String prepareManifestPath(
-    {required String path, required int rootFolderLength}) {
-  return path.substring(rootFolderLength + 1).replaceAll(' ', '_');
+    {required String filePath, required String rootFolderPath}) {
+  return filePath.substring(rootFolderPath.length + 1).replaceAll(' ', '_');
 }
