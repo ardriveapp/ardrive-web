@@ -95,7 +95,7 @@ class CreateManifestForm extends StatelessWidget {
         if (state is CreateManifestInsufficientBalance) {
           return errorDialog(
               errorText:
-                  'Provided wallet has insufficient balance for the manifest transaction...');
+                  'Provided wallet balance of ${state.walletBalance} AR is not enough for this manifest transaction costing ${state.totalCost} AR...');
         }
 
         if (state is CreateManifestNameConflict) {

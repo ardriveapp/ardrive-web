@@ -64,7 +64,15 @@ class CreateManifestPreparingManifest extends CreateManifestState {
 }
 
 /// User does not have enough AR to cover the manifest transaction reward and tip, create manifest must be aborted
-class CreateManifestInsufficientBalance extends CreateManifestState {}
+class CreateManifestInsufficientBalance extends CreateManifestState {
+  final String walletBalance;
+  final String totalCost;
+
+  CreateManifestInsufficientBalance(
+      {required this.walletBalance, required this.totalCost});
+  @override
+  List<Object> get props => [walletBalance, totalCost];
+}
 
 /// Manifest transaction is prepared, prompt user to confirm price of the upload
 class CreateManifestUploadConfirmation extends CreateManifestState {

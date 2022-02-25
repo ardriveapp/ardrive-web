@@ -224,7 +224,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       final totalCost = bundleTx.reward + bundleTx.quantity;
 
       if (profile.walletBalance < totalCost) {
-        emit(CreateManifestInsufficientBalance());
+        emit(CreateManifestInsufficientBalance(
+            walletBalance: winstonToAr(profile.walletBalance),
+            totalCost: winstonToAr(totalCost)));
         return;
       }
 
