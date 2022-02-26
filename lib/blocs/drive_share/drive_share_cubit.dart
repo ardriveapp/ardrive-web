@@ -30,7 +30,9 @@ class DriveShareCubit extends Cubit<DriveShareState> {
 
     if (drive.isPrivate && !(_profileCubit.state is ProfileLoggedIn)) {
       // Note: Should we even show the share drive link on attached private drive?
-      emit(DriveShareLoadFail(message: 'Please login to share private drive.'));
+      emit(
+        DriveShareLoadFail(message: 'Please log in to share private drive.'),
+      );
       return;
     } else if (drive.isPrivate) {
       final profileKey = (_profileCubit.state as ProfileLoggedIn).cipherKey;
