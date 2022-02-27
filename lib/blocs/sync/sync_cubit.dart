@@ -115,12 +115,10 @@ class SyncCubit extends Cubit<SyncState> {
       <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
 
   Future<void> startSync() async {
-    if (!(state is SyncInProgress)) {
-      await sync();
+    if (state is SyncInProgress) {
+      return;
     }
-  }
 
-  Future<void> sync() async {
     try {
       final profile = _profileCubit.state;
       String? ownerAddress;
