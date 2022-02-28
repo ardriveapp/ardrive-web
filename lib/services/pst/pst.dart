@@ -14,6 +14,7 @@ class PstService {
   Future<BigInt> getPSTFee(BigInt uploadCost) async {
     return await implementation
         .getPstFeePercentage()
+        .onError((error, stackTrace) => Future.value(0.15))
         .then((feePercentage) =>
             // Workaround [BigInt] percentage division problems
             // by first multiplying by the percentage * 100 and then dividing by 100.
