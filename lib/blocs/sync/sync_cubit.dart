@@ -23,7 +23,7 @@ part 'sync_state.dart';
 
 const kRequiredTxConfirmationCount = 15;
 const kRequiredTxConfirmationPendingThreshold = 60;
-const kSyncBlockheightBuffer = 40;
+const kSyncBlockheightBuffer = 60;
 
 const kSyncTimerDuration = 5;
 const kArConnectSyncTimerDuration = 2;
