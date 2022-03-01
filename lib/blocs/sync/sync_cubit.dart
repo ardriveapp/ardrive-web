@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
@@ -22,6 +23,7 @@ part 'sync_state.dart';
 
 const kRequiredTxConfirmationCount = 15;
 const kRequiredTxConfirmationPendingThreshold = 60;
+const kSyncBlockheightBuffer = 40;
 
 const kSyncTimerDuration = 5;
 const kArConnectSyncTimerDuration = 2;
@@ -252,7 +254,7 @@ class SyncCubit extends Cubit<SyncState> {
     }
     final entityHistory = await _arweave.getNewEntitiesForDrive(
       drive.id,
-      lastBlockHeight: lastBlockHeight - 10,
+      lastBlockHeight: max(lastBlockHeight - kSyncBlockheightBuffer, 0),
       after: syncCursor,
       driveKey: driveKey,
       owner: owner,
