@@ -27,7 +27,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart
-      ref: e80c198873358271131e406273eb4344228dc069
+      ref: 7f97a5498d6bc7c6b32bb97eec4c58fab6146923
   cryptography: ^2.0.1
   flutter_bloc: ^8.0.1
   flutter_portal: ^0.4.0
