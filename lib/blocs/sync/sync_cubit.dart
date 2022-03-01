@@ -312,7 +312,7 @@ class SyncCubit extends Cubit<SyncState> {
       await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
     });
     print(
-      'Synced drive $driveId from lastblockheight $lastBlockHeight on ${DateTime.now()}',
+      'Synced drive $driveId from lastblockheight $currentBlockheight on ${DateTime.now()}',
     );
 
     // If there are more results to process, recurse.
