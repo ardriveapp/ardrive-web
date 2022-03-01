@@ -252,7 +252,7 @@ class SyncCubit extends Cubit<SyncState> {
     }
     final entityHistory = await _arweave.getNewEntitiesForDrive(
       drive.id,
-      lastBlockHeight: lastBlockHeight,
+      lastBlockHeight: lastBlockHeight - 10,
       after: syncCursor,
       driveKey: driveKey,
       owner: owner,
