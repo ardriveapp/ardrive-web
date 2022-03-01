@@ -247,7 +247,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
       final uploadManifestParams = UploadManifestParams(
         signedBundleTx: bundleTx,
-        addManifestToDatabase: _driveDao.transaction(() async {
+        addManifestToDatabase: () => _driveDao.transaction(() async {
           await _driveDao.writeFileEntity(
               manifestFileEntity, '${parentFolder.path}/$manifestName');
           await _driveDao.insertFileRevision(
@@ -285,7 +285,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     emit(CreateManifestUploadInProgress());
     try {
       await _arweave.client.transactions.upload(params.signedBundleTx).drain();
-      await params.addManifestToDatabase;
+      await params.addManifestToDatabase();
 
       emit(CreateManifestSuccess());
     } catch (err) {
@@ -315,7 +315,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
 class UploadManifestParams {
   final Transaction signedBundleTx;
-  final Future<void> addManifestToDatabase;
+  final Future<void> Function() addManifestToDatabase;
 
   UploadManifestParams({
     required this.signedBundleTx,
