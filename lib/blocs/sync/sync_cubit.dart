@@ -180,6 +180,8 @@ class SyncCubit extends Cubit<SyncState> {
       addError(err);
     }
     _lastSync = DateTime.now();
+    print('Sync completed on ${DateTime.now()}');
+
     emit(SyncIdle());
   }
 
@@ -309,6 +311,9 @@ class SyncCubit extends Cubit<SyncState> {
 
       await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
     });
+    print(
+      'Synced drive $driveId from lastblockheight $lastBlockHeight on ${DateTime.now()}',
+    );
 
     // If there are more results to process, recurse.
     await _syncDrive(
