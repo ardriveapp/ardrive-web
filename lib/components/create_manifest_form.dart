@@ -281,8 +281,9 @@ class CreateManifestForm extends StatelessWidget {
             title: 'CREATE MANIFEST FROM',
             actions: [
               TextButton(
-                  onPressed: () => readCubitContext.backToName(),
-                  child: Text('BACK')),
+                onPressed: () => readCubitContext.backToName(),
+                child: Text('BACK'),
+              ),
               ElevatedButton(
                 onPressed: () => readCubitContext.checkForConflicts(),
                 child: Text('CREATE'),
@@ -302,8 +303,9 @@ class CreateManifestForm extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 8),
                         child: TextButton(
                           style: TextButton.styleFrom(
-                              textStyle: Theme.of(context).textTheme.subtitle2,
-                              padding: const EdgeInsets.all(16)),
+                            textStyle: Theme.of(context).textTheme.subtitle2,
+                            padding: const EdgeInsets.all(16),
+                          ),
                           onPressed: () => readCubitContext.loadParentFolder(),
                           child: ListTile(
                             dense: true,
