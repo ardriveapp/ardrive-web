@@ -176,7 +176,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     return null;
   }
 
-  Future<Map<String, dynamic>?> _drivKeyValidatorr(
+  Future<Map<String, dynamic>?> _driveKeyValidator(
       AbstractControl<dynamic> driveKeyControl) async {
     final driveId = form.control('driveId').value;
 
@@ -219,7 +219,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
               Validators.required,
             ],
             asyncValidatorsDebounceTime: 1000,
-            asyncValidators: [_drivKeyValidatorr],
+            asyncValidators: [_driveKeyValidator],
           ),
         });
 
