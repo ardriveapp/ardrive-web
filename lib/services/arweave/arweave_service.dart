@@ -358,14 +358,7 @@ class ArweaveService {
 
     final driveTx = queryEdges.first.node;
 
-    switch (driveTx.getTag(EntityTag.drivePrivacy)) {
-      case DrivePrivacy.public:
-        return DrivePrivacy.public;
-      case DrivePrivacy.private:
-        return DrivePrivacy.private;
-      default:
-        return null;
-    }
+    return driveTx.getTag(EntityTag.drivePrivacy);
   }
 
   /// Gets the owner of the drive sorted by blockheight.
