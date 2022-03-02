@@ -329,6 +329,45 @@ class ArweaveService {
     }
   }
 
+  /// Gets the drive privacy of the latest drive entity with the provided id.
+  ///
+  /// This function first checks for the owner of the first instance of the [DriveEntity]
+  /// with the specified id and then queries for the latest instance of the [DriveEntity]
+  /// by that owner.
+  ///
+  /// Returns `null` if no valid drive is found.
+  Future<String?> getDrivePrivacyForId(String driveId) async {
+    final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
+        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
+
+    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    final driveOwner =
+        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
+
+    final latestDriveQuery = await _gql.execute(LatestDriveEntityWithIdQuery(
+        variables: LatestDriveEntityWithIdArguments(
+            driveId: driveId, owner: driveOwner)));
+
+    final queryEdges = latestDriveQuery.data!.transactions.edges;
+    if (queryEdges.isEmpty) {
+      return null;
+    }
+
+    final driveTx = queryEdges.first.node;
+
+    switch (driveTx.getTag(EntityTag.drivePrivacy)) {
+      case DrivePrivacy.public:
+        return DrivePrivacy.public;
+      case DrivePrivacy.private:
+        return DrivePrivacy.private;
+      default:
+        return null;
+    }
+  }
+
   /// Gets the owner of the drive sorted by blockheight.
   /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
   Future<String?> getOwnerForDriveEntityWithId(String driveId) async {

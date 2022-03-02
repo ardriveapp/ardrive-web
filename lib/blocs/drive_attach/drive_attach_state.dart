@@ -8,6 +8,12 @@ abstract class DriveAttachState extends Equatable {
 
 class DriveAttachInitial extends DriveAttachState {}
 
+class DriveAttachPrivate extends DriveAttachState {}
+
+class DriveAttachPrivateNotLoggedIn extends DriveAttachState {}
+
+class DriveAttachDriveNotFound extends DriveAttachState {}
+
 class DriveAttachInProgress extends DriveAttachState {}
 
 class DriveAttachSuccess extends DriveAttachState {}

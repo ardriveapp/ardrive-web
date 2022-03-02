@@ -16,6 +16,7 @@ void main() {
     late DriveDao driveDao;
     late SyncCubit syncBloc;
     late DrivesCubit drivesBloc;
+    late ProfileCubit profileCubit;
     late DriveAttachCubit driveAttachCubit;
 
     const validDriveId = 'valid-drive-id';
@@ -32,18 +33,19 @@ void main() {
       driveDao = MockDriveDao();
       syncBloc = MockSyncBloc();
       drivesBloc = MockDrivesCubit();
-
+      profileCubit = MockProfileCubit();
       when(() => arweave.getLatestDriveEntityWithId(validDriveId))
           .thenAnswer((_) => Future.value(DriveEntity()));
 
       when(() => arweave.getLatestDriveEntityWithId(notFoundDriveId))
           .thenAnswer((_) => Future.value(null));
-
+      profileCubit.emit(ProfileLoggingOut());
       driveAttachCubit = DriveAttachCubit(
         arweave: arweave,
         driveDao: driveDao,
         syncBloc: syncBloc,
         drivesBloc: drivesBloc,
+        profileCubit: profileCubit,
       );
     });
 
@@ -68,7 +70,7 @@ void main() {
     );
 
     blocTest<DriveAttachCubit, DriveAttachState>(
-      'set form "${AppValidationMessage.driveNotFound}" error when no valid drive could be found',
+      'set form "${AppValidationMessage.driveAttachDriveNotFound}" error when no valid drive could be found',
       build: () => driveAttachCubit,
       act: (bloc) {
         bloc.form.value = {

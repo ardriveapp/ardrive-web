@@ -140,9 +140,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         }
                         attachDrive(
                           context: context,
-                          initialDriveId: driveId,
+                          driveId: driveId,
                           driveName: driveName,
-                          //sharedDriveKey: sharedDriveKey,
+                          driveKey: sharedDriveKey,
                         );
                       }
                     },
