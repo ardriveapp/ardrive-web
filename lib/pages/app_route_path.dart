@@ -10,6 +10,9 @@ class AppRoutePath {
   final String? driveName;
   final String? driveFolderId;
 
+  final SecretKey? sharedDriveKey;
+  final String? sharedRawDriveKey;
+
   final String? sharedFileId;
 
   /// The private key of the corresponding shared file.
@@ -23,6 +26,8 @@ class AppRoutePath {
     this.driveId,
     this.driveName,
     this.driveFolderId,
+    this.sharedDriveKey,
+    this.sharedRawDriveKey,
     this.sharedFileId,
     this.sharedFileKey,
     this.sharedRawFileKey,
@@ -32,9 +37,18 @@ class AppRoutePath {
   factory AppRoutePath.signIn() => AppRoutePath(signingIn: true);
 
   /// Creates a route that points to a particular drive.
-  factory AppRoutePath.driveDetail(
-          {required String driveId, String? driveName}) =>
-      AppRoutePath(driveId: driveId, driveName: driveName);
+  factory AppRoutePath.driveDetail({
+    required String driveId,
+    String? driveName,
+    SecretKey? sharedDrivePk,
+    String? sharedRawDriveKey,
+  }) =>
+      AppRoutePath(
+        driveId: driveId,
+        driveName: driveName,
+        sharedDriveKey: sharedDrivePk,
+        sharedRawDriveKey: sharedRawDriveKey,
+      );
 
   /// Creates a route that points to a folder in a particular drive.
   factory AppRoutePath.folderDetail({

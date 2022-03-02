@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'pages.dart';
 
 const fileKeyQueryParamName = 'fileKey';
+const driveKeyQueryParamName = 'driveKey';
 
 class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
   @override
@@ -24,7 +25,17 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
         if (uri.pathSegments.length > 1) {
           final driveId = uri.pathSegments[1];
           final name = uri.queryParameters['name'];
-          if (uri.pathSegments.length == 2) {
+          final driveKeyBase64 = uri.queryParameters[driveKeyQueryParamName];
+          if (driveKeyBase64 != null) {
+            final sharedDrivePkBytes =
+                utils.decodeBase64ToBytes(driveKeyBase64);
+            return AppRoutePath.driveDetail(
+              driveId: driveId,
+              driveName: name,
+              sharedDrivePk: SecretKey(sharedDrivePkBytes),
+              sharedRawDriveKey: driveKeyBase64,
+            );
+          } else if (uri.pathSegments.length == 2) {
             // Handle '/drives/:driveId'
             return AppRoutePath.driveDetail(driveId: driveId, driveName: name);
           } else if (uri.pathSegments.length == 4 &&
@@ -66,6 +77,13 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
     if (path.signingIn) {
       return RouteInformation(location: '/sign-in');
     } else if (path.driveId != null) {
+      if (path.driveName != null && path.sharedRawDriveKey != null) {
+        return RouteInformation(
+          location: '/drives/${path.driveId}?name=${path.driveName}'
+              '&$driveKeyQueryParamName=${path.sharedRawDriveKey}',
+        );
+      }
+
       return path.driveFolderId == null
           ? RouteInformation(location: '/drives/${path.driveId}')
           : RouteInformation(
