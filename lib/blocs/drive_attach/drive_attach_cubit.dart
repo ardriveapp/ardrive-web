@@ -142,7 +142,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         form.control('driveKey').setErrors({
           AppValidationMessage.driveAttachInvalidDriveKey: true,
         });
-        emit(DriveAttachFailure());
+        return null;
       }
     }
     return driveKey;
@@ -164,7 +164,33 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     final drive = await _arweave.getLatestDriveEntityWithId(driveId, driveKey);
 
     if (drive == null) {
+      if (driveKey != null) {
+        form.control('driveKey').markAsTouched();
+        return {AppValidationMessage.driveAttachInvalidDriveKey: true};
+      }
       return null;
+    }
+
+    form.control('name').updateValue(drive.name);
+
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> _drivKeyValidatorr(
+      AbstractControl<dynamic> driveKeyControl) async {
+    final driveId = form.control('driveId').value;
+
+    if (driveId == null) {
+      return null;
+    }
+
+    final driveKey = await getDriveKey();
+
+    final drive = await _arweave.getLatestDriveEntityWithId(driveId, driveKey);
+
+    if (drive == null) {
+      driveKeyControl.markAsTouched();
+      return {AppValidationMessage.driveAttachInvalidDriveKey: true};
     }
 
     form.control('name').updateValue(drive.name);
@@ -192,7 +218,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
             validators: [
               Validators.required,
             ],
-            asyncValidators: [_driveNameLoader],
+            asyncValidatorsDebounceTime: 1000,
+            asyncValidators: [_drivKeyValidatorr],
           ),
         });
 
