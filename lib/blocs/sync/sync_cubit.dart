@@ -21,7 +21,7 @@ import '../blocs.dart';
 part 'sync_state.dart';
 
 const kRequiredTxConfirmationCount = 15;
-const kRequiredTxConfirmationPendingThreshold = 60;
+const kRequiredTxConfirmationPendingThreshold = 240;
 
 const kSyncTimerDuration = 5;
 const kArConnectSyncTimerDuration = 2;
