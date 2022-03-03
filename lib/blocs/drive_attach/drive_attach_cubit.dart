@@ -24,7 +24,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   final DrivesCubit _drivesBloc;
   final ProfileCubit _profileCubit;
 
-  final SecretKey? _driveKey;
+  late SecretKey? _driveKey;
 
   DriveAttachCubit({
     String? driveId,
@@ -40,7 +40,6 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         _syncBloc = syncBloc,
         _drivesBloc = drivesBloc,
         _profileCubit = profileCubit,
-        _driveKey = driveKey,
         super(DriveAttachInitial()) {
     initializeForm(
       driveId: driveId,
@@ -54,10 +53,11 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     String? driveName,
     SecretKey? driveKey,
   }) async {
-    if (_driveKey != null && _profileCubit.state is! ProfileLoggedIn) {
+    if (driveKey != null && _profileCubit.state is! ProfileLoggedIn) {
       emit(DriveAttachPrivateNotLoggedIn());
       return;
     }
+    _driveKey = driveKey;
     form = FormGroup(
       {
         'driveId': FormControl<String>(
@@ -132,13 +132,16 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   }
 
   Future<SecretKey?> getDriveKey() async {
-    final String? driveKeyBytes = form.controls.containsKey('driveKey')
+    if (_driveKey != null) {
+      return _driveKey;
+    }
+    final String? driveKeyBase64 = form.controls.containsKey('driveKey')
         ? form.control('driveKey').value
         : null;
-    var driveKey = _driveKey;
-    if (driveKeyBytes != null) {
+    SecretKey? driveKey;
+    if (driveKeyBase64 != null) {
       try {
-        driveKey = SecretKey(decodeBase64ToBytes(driveKeyBytes));
+        driveKey = SecretKey(decodeBase64ToBytes(driveKeyBase64));
       } catch (e) {
         form.control('driveKey').setErrors({
           AppValidationMessage.driveAttachInvalidDriveKey: true,
