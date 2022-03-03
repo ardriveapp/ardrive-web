@@ -8,10 +8,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
 import '../test_utils/fakes.dart';
-import '../test_utils/mocks.dart';
+import '../test_utils/utils.dart';
 
 void main() {
   group('DriveAttachCubit', () {
+    late Database db;
     late ArweaveService arweave;
     late DriveDao driveDao;
     late SyncCubit syncBloc;
@@ -21,7 +22,8 @@ void main() {
 
     const validDriveId = 'valid-drive-id';
     const validDriveName = 'valid-drive-name';
-
+    const ownerAddress = 'owner-address';
+    const validRootFolderId = 'valid-root-folder-id';
     const notFoundDriveId = 'not-found-drive-id';
 
     setUp(() {
@@ -29,16 +31,30 @@ void main() {
       registerFallbackValue(ProfileStatefake());
       registerFallbackValue(DrivesStatefake());
 
+      db = getTestDb();
+      driveDao = db.driveDao;
+
       arweave = MockArweaveService();
-      driveDao = MockDriveDao();
       syncBloc = MockSyncBloc();
       drivesBloc = MockDrivesCubit();
       profileCubit = MockProfileCubit();
-      when(() => arweave.getLatestDriveEntityWithId(validDriveId))
-          .thenAnswer((_) => Future.value(DriveEntity()));
+      when(() => arweave.getLatestDriveEntityWithId(validDriveId)).thenAnswer(
+        (_) => Future.value(
+          DriveEntity(
+            id: validDriveId,
+            name: validDriveName,
+            privacy: DrivePrivacy.public,
+            rootFolderId: validRootFolderId,
+            authMode: DriveAuthMode.none,
+          )..ownerAddress = ownerAddress,
+        ),
+      );
 
       when(() => arweave.getLatestDriveEntityWithId(notFoundDriveId))
           .thenAnswer((_) => Future.value(null));
+      when(() => arweave.getDrivePrivacyForId(validDriveId))
+          .thenAnswer((_) => Future.value(DrivePrivacy.public));
+      when(() => syncBloc.startSync()).thenAnswer((_) => Future.value(null));
       profileCubit.emit(ProfileLoggingOut());
       driveAttachCubit = DriveAttachCubit(
         arweave: arweave,
@@ -52,6 +68,7 @@ void main() {
     blocTest<DriveAttachCubit, DriveAttachState>(
       'attach drive and trigger actions when given valid details',
       build: () => driveAttachCubit,
+      setUp: () {},
       act: (bloc) {
         bloc.form.value = {
           'driveId': validDriveId,
@@ -92,7 +109,6 @@ void main() {
       expect: () => [],
       verify: (_) {
         verifyZeroInteractions(arweave);
-        verifyZeroInteractions(driveDao);
         verifyZeroInteractions(syncBloc);
         verifyZeroInteractions(drivesBloc);
       },

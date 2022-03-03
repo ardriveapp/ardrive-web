@@ -93,7 +93,6 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     form.markAllAsTouched();
 
     if (form.invalid) {
-      emit(DriveAttachFailure());
       return;
     }
 
@@ -111,7 +110,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         form
             .control('driveId')
             .setErrors({AppValidationMessage.driveAttachDriveNotFound: true});
-        emit(DriveAttachFailure());
+        emit(DriveAttachInitial());
         return;
       }
 
@@ -119,7 +118,9 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         name: driveName,
         entity: driveEntity,
         driveKey: driveKey,
-        profileKey: (_profileCubit.state as ProfileLoggedIn).cipherKey,
+        profileKey: driveKey != null
+            ? (_profileCubit.state as ProfileLoggedIn).cipherKey
+            : null,
       );
 
       _drivesBloc.selectDrive(driveId);
