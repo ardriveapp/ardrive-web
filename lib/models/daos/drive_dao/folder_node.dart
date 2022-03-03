@@ -37,7 +37,7 @@ class FolderNode {
     return totalFiles;
   }
 
-  // TODO: maxDepth
+  // TODO: maxDepth slider in story ticket PE-1069
   List<FileEntry> getRecursiveFiles(/*{maxDepth = 2000000}*/) {
     // if (maxDepth == -1) {
     //   return [];
