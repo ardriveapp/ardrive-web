@@ -21,7 +21,7 @@ import '../blocs.dart';
 part 'sync_state.dart';
 
 const kRequiredTxConfirmationCount = 15;
-const kRequiredTxConfirmationPendingThreshold = 60;
+const kRequiredTxConfirmationPendingThreshold = 240;
 
 const kSyncTimerDuration = 5;
 const kArConnectSyncTimerDuration = 2;
@@ -115,6 +115,10 @@ class SyncCubit extends Cubit<SyncState> {
       <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
 
   Future<void> startSync() async {
+    if (state is SyncInProgress) {
+      return;
+    }
+
     try {
       final profile = _profileCubit.state;
       String? ownerAddress;
