@@ -37,10 +37,11 @@ void main() {
             SecretKey(decodeBase64ToBytes(testPrivateDriveKeyBase64));
       });
       test(
-          'generateDriveShareLink generates the correct link for a private drive',
+          'generatePrivateDriveShareLink generates the correct link for a private drive',
           () async {
-        final webShareUri = await generateDriveShareLink(
-          drive: testPrivateDrive,
+        final webShareUri = await generatePrivateDriveShareLink(
+          driveId: testPrivateDrive.id,
+          driveName: testPrivateDrive.name,
           driveKey: testPrivateDriveKey,
         );
         // Remove # delimiter as it messes with Uri parsing outside of app route
@@ -57,10 +58,11 @@ void main() {
         expect(driveKey, equals(testPrivateDriveKeyBase64));
       });
       test(
-          'generateDriveShareLink generates the correct link for a public drive',
+          'generatePublicDriveShareLink generates the correct link for a public drive',
           () async {
-        final webShareUri = await generateDriveShareLink(
-          drive: testPublicDrive,
+        final webShareUri = generatePublicDriveShareLink(
+          driveId: testPublicDrive.id,
+          driveName: testPublicDrive.name,
         );
         // Remove # delimiter as it messes with Uri parsing outside of app route
         // information parser
@@ -97,12 +99,11 @@ void main() {
         testFileKey = SecretKey(decodeBase64ToBytes(testFileKeyBase64));
       });
       test(
-          'generateFileShareLink generates the correct link for a private file',
+          'generatePrivateFileShareLink generates the correct link for a private file',
           () async {
-        final webShareUri = await generateFileShareLink(
-          file: testFile,
+        final webShareUri = await generatePrivateFileShareLink(
+          fileId: testFile.id,
           fileKey: testFileKey,
-          drivePrivacy: DrivePrivacy.private,
         );
         // Remove # delimiter as it messes with Uri parsing outside of app route
         // information parser
@@ -117,9 +118,8 @@ void main() {
       });
       test('generateFileShareLink generates the correct link for a public file',
           () async {
-        final webShareUri = await generateFileShareLink(
-          file: testFile,
-          drivePrivacy: DrivePrivacy.public,
+        final webShareUri = generatePublicFileShareLink(
+          fileId: testFile.id,
         );
         // Remove # delimiter as it messes with Uri parsing outside of app route
         // information parser
@@ -127,7 +127,7 @@ void main() {
           webShareUri.toString().replaceAll('/#', ''),
         );
         final fileId = fileShareLink.pathSegments[1];
-        
+
         expect(fileId, equals(testFile.id));
       });
     });

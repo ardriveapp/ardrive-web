@@ -41,13 +41,17 @@ class FileShareCubit extends Cubit<FileShareState> {
     if (drive.isPrivate) {
       final profile = _profileCubit.state as ProfileLoggedIn;
       fileKey = await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
+      if (fileKey != null) {
+        fileShareLink = await generatePrivateFileShareLink(
+          fileId: file.id,
+          fileKey: fileKey,
+        );
+      } else {
+        throw StateError('File key not found');
+      }
+    } else {
+      fileShareLink = generatePublicFileShareLink(fileId: file.id);
     }
-
-    fileShareLink = await generateFileShareLink(
-      file: file,
-      drivePrivacy: drive.privacy,
-      fileKey: fileKey,
-    );
 
     emit(
       FileShareLoadSuccess(
