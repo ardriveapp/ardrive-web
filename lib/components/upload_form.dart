@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
@@ -80,12 +81,21 @@ class UploadForm extends StatelessWidget {
                   onPressed: () => Navigator.of(context).pop(false),
                   child: Text('CANCEL'),
                 ),
+                if (!state.isAllFilesConflicting)
+                  ElevatedButton(
+                    onPressed: () => context
+                        .read<UploadCubit>()
+                        .prepareUploadPlanAndCostEstimates(
+                            conflictingFileAction: ConflictingFileActions.Skip),
+                    child: Text('SKIP'),
+                  ),
                 ElevatedButton(
-                  onPressed: () => context
-                      .read<UploadCubit>()
-                      .prepareUploadPlanAndCostEstimates(),
-                  child: Text('CONTINUE'),
-                ),
+                    onPressed: () => context
+                        .read<UploadCubit>()
+                        .prepareUploadPlanAndCostEstimates(
+                            conflictingFileAction:
+                                ConflictingFileActions.Replace),
+                    child: Text('REPLACE')),
               ],
             );
           } else if (state is UploadFileTooLarge) {
