@@ -157,6 +157,7 @@ void main() {
       final invalidDriveKey = SecretKey(
         decodeBase64ToBytes(invalidDriveKeyBase64),
       );
+
       setUp(() async {
         final keyBytes = Uint8List(32);
         fillBytesWithSecureRandom(keyBytes);
@@ -176,6 +177,7 @@ void main() {
               invalidDriveKey,
             )).thenAnswer((_) => Future.value(null));
       });
+
       blocTest<DriveAttachCubit, DriveAttachState>(
         'does nothing when submitted without valid drive key',
         build: () => driveAttachCubit,
@@ -197,6 +199,7 @@ void main() {
           verifyZeroInteractions(drivesBloc);
         },
       );
+
       blocTest<DriveAttachCubit, DriveAttachState>(
         'attach drive and trigger actions when given valid private drive details',
         build: () => DriveAttachCubit(
