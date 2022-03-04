@@ -27,7 +27,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/CDDelta/arweave-dart
-      ref: parallelized-chunk-uploads
+      ref: 17b16a06cba864d79e271db597ad0d0f8c80f111
   cryptography: ^2.0.1
   flutter_bloc: ^8.0.1
   flutter_portal: ^0.4.0

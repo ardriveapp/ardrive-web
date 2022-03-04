@@ -47,9 +47,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v2.0.1"
-      resolved-ref: "594732e73df2614e95d290e4478884950bf40159"
-      url: "https://github.com/ardriveapp/arweave-dart"
+      ref: "17b16a06cba864d79e271db597ad0d0f8c80f111"
+      resolved-ref: "17b16a06cba864d79e271db597ad0d0f8c80f111"
+      url: "https://github.com/CDDelta/arweave-dart"
     source: git
     version: "2.0.1"
   async:
@@ -775,6 +775,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.4.1"
+  retry:
+    dependency: transitive
+    description:
+      name: retry
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.1.0"
   rxdart:
     dependency: "direct main"
     description:
