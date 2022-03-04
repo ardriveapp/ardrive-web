@@ -15,7 +15,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
 import 'package:pedantic/pedantic.dart';
-import 'package:rx/rx.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
 
 import '../blocs.dart';
