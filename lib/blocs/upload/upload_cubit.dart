@@ -18,6 +18,7 @@ import 'package:pedantic/pedantic.dart';
 import 'package:uuid/uuid.dart';
 
 import '../blocs.dart';
+import 'enums/conflicting_files_actions.dart';
 import 'file_upload_handle.dart';
 
 part 'upload_state.dart';
@@ -93,13 +94,16 @@ class UploadCubit extends Cubit<UploadState> {
 
     if (conflictingFiles.isNotEmpty) {
       emit(UploadFileConflict(
+          isAllFilesConflicting: conflictingFiles.length == files.length,
           conflictingFileNames: conflictingFiles.keys.toList()));
     } else {
       await prepareUploadPlanAndCostEstimates();
     }
   }
 
-  Future<void> prepareUploadPlanAndCostEstimates() async {
+  /// If `conflictingFileAction` is null, means that had no conflict.
+  Future<void> prepareUploadPlanAndCostEstimates(
+      {ConflictingFileActions? conflictingFileAction}) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
     if (await _profileCubit.checkIfWalletMismatch()) {
@@ -114,6 +118,11 @@ class UploadCubit extends Cubit<UploadState> {
     );
     final sizeLimit =
         _targetDrive.isPrivate ? privateFileSizeLimit : publicFileSizeLimit;
+
+    if (conflictingFileAction == ConflictingFileActions.Skip) {
+      _removeConflictingFiles();
+    }
+
     final tooLargeFiles = [
       for (final file in files)
         if (await file.length() > sizeLimit) file.name
@@ -267,6 +276,10 @@ class UploadCubit extends Cubit<UploadState> {
       v2FileUploadHandles: _v2FileUploadHandles,
       dataItemUploadHandles: _dataItemUploadHandles,
     );
+  }
+
+  void _removeConflictingFiles() {
+    files.removeWhere((element) => conflictingFiles.containsKey(element.name));
   }
 
   @override
