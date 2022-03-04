@@ -32,10 +32,15 @@ class DriveShareCubit extends Cubit<DriveShareState> {
       if (_profileCubit.state is ProfileLoggedIn) {
         final profileKey = (_profileCubit.state as ProfileLoggedIn).cipherKey;
         final driveKey = await _driveDao.getDriveKey(drive.id, profileKey);
-        driveShareLink = await generateDriveShareLink(
-          drive: drive,
-          driveKey: driveKey,
-        );
+        if (driveKey != null) {
+          driveShareLink = await generatePrivateDriveShareLink(
+            driveId: drive.id,
+            driveName: drive.name,
+            driveKey: driveKey,
+          );
+        } else {
+          throw StateError('Drive key not found');
+        }
       } else {
         emit(
           DriveShareLoadFail(message: 'Please log in to share private drive.'),
@@ -43,7 +48,10 @@ class DriveShareCubit extends Cubit<DriveShareState> {
         return;
       }
     } else {
-      driveShareLink = await generateDriveShareLink(drive: drive);
+      driveShareLink = generatePublicDriveShareLink(
+        driveId: drive.id,
+        driveName: drive.name,
+      );
     }
 
     emit(
