@@ -35,15 +35,15 @@ void main() {
   const tEmptyNestedFolderCount = 5;
 
   late Database db;
-  late List<XFile> allConflictingFiles;
-  late List<XFile> someConflictingFiles;
-  late List<XFile> noConflictingFiles;
+  late List<XFile> tAllConflictingFiles;
+  late List<XFile> tSomeConflictingFiles;
+  late List<XFile> tNoConflictingFiles;
 
-  final wallet = getTestWallet();
-  String? walletAddress;
+  final tWallet = getTestWallet();
+  String? tWalletAddress;
 
-  final keyBytes = Uint8List(32);
-  fillBytesWithSecureRandom(keyBytes);
+  final tKeyBytes = Uint8List(32);
+  fillBytesWithSecureRandom(tKeyBytes);
 
   setUpAll(() {
     registerFallbackValue(SecretKey([]));
@@ -81,31 +81,30 @@ void main() {
   }
 
   setUp(() async {
+    tWalletAddress = await tWallet.getAddress();
+
     db = getTestDb();
 
-    final _testFile = XFile('assets/config/dev.json');
+    // We need a real file path because in the UploadCubit we needs the size of the file
+    // to know if the file is `tooLargeFiles`.
+    final _tRealPathFile = XFile('assets/config/dev.json');
 
-    // the `addTestFilesToDb` will generate files with this path and name.
-    final conflictingFile = XFile(tRootFolderId + '1');
+    // The `addTestFilesToDb` will generate files with this path and name, so it
+    // will be a confliting file.
+    final tConflictingFile = XFile(tRootFolderId + '1');
 
     // Contains only conflicting files.
-    allConflictingFiles = <XFile>[conflictingFile];
+    tAllConflictingFiles = <XFile>[tConflictingFile];
 
     /// This list contains conflicting and non conflicting files.
-    someConflictingFiles = <XFile>[conflictingFile, XFile('dumb_test_path')];
+    tSomeConflictingFiles = <XFile>[tConflictingFile, XFile('dumb_test_path')];
 
-    // This list doesn't has any conflicting files.
-    //
-    // We need a real file because in the UploadCubit we needs the size of the file.
-    // to know if the file is `tooLargeFiles`.
-    noConflictingFiles = <XFile>[_testFile];
+    tNoConflictingFiles = <XFile>[_tRealPathFile];
 
-    // Initialize mocks
     mockArweave = MockArweaveService();
     mockPst = MockPstService();
     mockDriveDao = db.driveDao;
     mockProfileCubit = MockProfileCubit();
-    walletAddress = await wallet.getAddress();
     mockUploadPlanUtils = MockUploadPlanUtils();
 
     // Setup mock drive.
@@ -126,10 +125,10 @@ void main() {
         ProfileLoggedIn(
           username: 'Test',
           password: '123',
-          wallet: wallet,
-          walletAddress: walletAddress!,
+          wallet: tWallet,
+          walletAddress: tWalletAddress!,
           walletBalance: BigInt.one,
-          cipherKey: SecretKey(keyBytes),
+          cipherKey: SecretKey(tKeyBytes),
         ),
       );
       when(() => mockProfileCubit!.checkIfWalletMismatch())
@@ -152,9 +151,9 @@ void main() {
     });
     blocTest<UploadCubit, UploadState>(
         'Should emit UploadFileConflict with correctly file names and'
-        'isAllFilesConflicting true',
+        ' isAllFilesConflicting true',
         build: () {
-          return getUploadCubitInstanceWith(allConflictingFiles);
+          return getUploadCubitInstanceWith(tAllConflictingFiles);
         },
         act: (cubit) async {
           await cubit.initializeCubit();
@@ -175,7 +174,7 @@ void main() {
         'Should emit UploadFileConflict with correctly file names '
         'and isAllFilesConflicting false',
         build: () {
-          return getUploadCubitInstanceWith(someConflictingFiles);
+          return getUploadCubitInstanceWith(tSomeConflictingFiles);
         },
         tearDown: () async {
           await db.close();
@@ -193,9 +192,10 @@ void main() {
             ]);
 
     blocTest<UploadCubit, UploadState>(
-        'Emits [UploadCubitInitialized,UploadPreparationInProgress, UploadReady] when there arent conflicting files.',
+        'Emits [UploadCubitInitialized,UploadPreparationInProgress, UploadReady]'
+        ' when there arent conflicting files.',
         build: () {
-          return getUploadCubitInstanceWith(noConflictingFiles);
+          return getUploadCubitInstanceWith(tNoConflictingFiles);
         },
         tearDown: () async {
           await db.close();
