@@ -84,7 +84,7 @@ Widget _buildFileListTile({
       ),
       title: Text(file.name),
       subtitle: Text(
-        AppLocalizations.of(context)!.lastModified(
+        AppLocalizations.of(context)!.lastModifiedDate(
             (file.lastUpdated.difference(DateTime.now()).inDays > 3
                 ? format(file.lastUpdated)
                 : yMMdDateFormatter.format(file.lastUpdated))),

@@ -27,14 +27,6 @@
   "fileID": "File ID",
   "folderID": "Folder ID",
   "size": "Size",
-  "metadataTxID": "Metadata Tx ID",
-  "dataTxID": "Data Tx ID",
-  "itemIsBeingProcessed": "This item is being processed",
-  "driveWasModified": "This drive was modified",
-  "fileWasModified": "This file was modified",
-  "folderWasModified": "This folder was modified",
-  "fileWasMoved": "This file was moved",
-  "folderWasMoved": "This folder was moved",
   "anyoneCanAccessDrive": "Anyone can access this drive using the link above.",
   "anyoneCanAccessFile": "Anyone can access this file using the link above.",
   "thisCanHappenIfFileUploadedRecently": "This can happen if the file was only uploaded recently. Please try again later.",
@@ -427,6 +419,138 @@
   },
   "lastModified": "Copy File ID",
   "@lastModified": {
+    "description": "File details"
+  },
+  "dateCreated": "Date created",
+  "@dateCreated": {
+    "description": "File details"
+  },
+  "driveTxID": "Drive Tx ID",
+  "@driveTxID": {
+    "description": "File details"
+  },
+  "copyDriveTxID": "Copy Drive Tx ID",
+  "@copyDriveTxID": {
+    "description": "File details"
+  },
+  "rootFolderTxID": "Root Folder Tx ID",
+  "@rootFolderTxID": {
+    "description": "File details"
+  },
+  "copyRootFolderTxID": "Copy Root folder Tx ID",
+  "@copyRootFolderTxID": {
+    "description": "File details"
+  },
+  "bundleTxID": "Bundle Tx ID",
+  "@bundleTxID": {
+    "description": "File details"
+  },
+  "copyBundleTxID": "Copy Bundle Tx ID",
+  "@copyBundleTxID": {
+    "description": "File details"
+  },
+  "metadataTxID": "Metadata Tx ID",
+  "@metadataTxID": {
+    "description": "File details"
+  },
+  "copyMetadataTxID": "Copy Metadata Tx ID",
+  "@copyMetadataTxID": {
+    "description": "File details"
+  },
+  "dataTxID": "Data Tx ID",
+  "@dataTxID": {
+    "description": "File details"
+  },
+  "copyDataTxID": "Copy Data Tx ID",
+  "@copyDataTxID": {
+    "description": "File details"
+  },
+  "itemIsBeingProcesed": "This item is being processed...",
+  "@itemIsBeingProcesed": {
+    "description": "File details"
+  },
+  "driveWasCreatedWithName": "This drive was created with the name {driveName}.",
+  "@driveWasCreatedWithName": {
+    "description": "Drive details",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "drive name"
+      }
+    }
+  },
+  "driveWasRenamed": "This drive was renamed to {driveName}.",
+  "@driveWasRenamed": {
+    "description": "Drive details",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "drive name"
+      }
+    }
+  },
+  "driveWasModified": "This drive was modified.",
+  "@driveWasModified": {
+    "description": "Drive details"
+  },
+  "folderWasCreatedWithName": "This folder was created with the name {folderName}.",
+  "@folderWasCreatedWithName": {
+    "description": "Folder details",
+    "placeholders": {
+      "folderName": {
+        "type": "String",
+        "example": "folder name"
+      }
+    }
+  },
+  "folderWasRenamed": "This folder was renamed to {folderName}.",
+  "@folderWasRenamed": {
+    "description": "Folder details",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "folder name"
+      }
+    }
+  },
+  "folderWasModified": "This folder was modified.",
+  "@folderWasModified": {
+    "description": "Folder details"
+  },
+  "folderWasMoved": "This folder was moved.",
+  "@folderWasMoved": {
+    "description": "Folder details"
+  },
+  "fileWasCreatedWithName": "This file was created with the name {fileName}.",
+  "@fileWasCreatedWithName": {
+    "description": "File details",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "file name"
+      }
+    }
+  },
+  "fileWasRenamed": "This file was renamed to {fileName}.",
+  "@fileWasRenamed": {
+    "description": "File details",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "file name"
+      }
+    }
+  },
+  "fileWasModified": "This file was modified.",
+  "@fileWasModified": {
+    "description": "File details"
+  },
+  "fileWasMoved": "This file was moved.",
+  "@fileWasMoved": {
+    "description": "File details"
+  },
+  "fileHadANewRevision": "A new version of this file was uploaded.",
+  "@fileHadANewRevision": {
     "description": "File details"
   }
 }
