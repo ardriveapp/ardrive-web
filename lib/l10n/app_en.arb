@@ -1,18 +1,11 @@
 {
-  "welcomeBack": "Welcome Back",
-  "letsGetStarted": "Let's get started",
+  "@@locale": "en",
   "cancel": "Cancel",
   "attach": "Attach",
-  "private": "Private",
-  "public": "Public",
   "create": "Create",
-  "rename": "Rename",
   "copyLink": "Copy Link",
   "done": "Done",
-  "ok": "OK",
-  "newString": "New",
   "close": "Close",
-  "upload": "Upload",
   "moveHere": "Move Here",
   "createFolder": "Create Folder",
   "continueString": "Continue",
@@ -34,8 +27,6 @@
   "fileID": "File ID",
   "folderID": "Folder ID",
   "size": "Size",
-  "lastModified": "Last Modified",
-  "lastUpdated": "Last Updated",
   "metadataTxID": "Metadata Tx ID",
   "dataTxID": "Data Tx ID",
   "itemIsBeingProcessed": "This item is being processed",
@@ -44,23 +35,6 @@
   "folderWasModified": "This folder was modified",
   "fileWasMoved": "This file was moved",
   "folderWasMoved": "This folder was moved",
-  "addProfile": "Add Profile",
-  "changeWallet": "Change Wallet",
-  "welcomeToThePermaweb": "Welcome to the PermaWeb",
-  "ardriveIsntJustAnotherCloudSyncApp": "ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.",
-  "anyFilesWillOutliveYou": "Any files you upload here will outlive you!",
-  "weDoAFewThingsDifferently": "That also means we do a few things differently.",
-  "payPerFile": "Pay per File",
-  "noSubscriptions": "No subscriptions are needed!",
-  "monthlyCharges": "Instead of another monthly charge for empty space you don’t use, pay a few cents once and store your files forever on ArDrive.",
-  "secondsFromForever": "Seconds From Forever",
-  "decentralizedPermanent": "Decentralized, permanent data storage doesn’t happen in an instant.",
-  "greenCheckMark": "When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.",
-  "totalPrivacyControl": "Total Privacy Control",
-  "yourChoice": "Your choice: make files public or private using the best encryption.",
-  "noOneWillSee": "No one will see what you don’t want them to.",
-  "neverDeleted": "Once uploaded, your data can’t be removed.",
-  "thinkTwice": "Think twice before uploading all your teenage love poetry...",
   "anyoneCanAccessDrive": "Anyone can access this drive using the link above.",
   "anyoneCanAccessFile": "Anyone can access this file using the link above.",
   "thisCanHappenIfFileUploadedRecently": "This can happen if the file was only uploaded recently. Please try again later.",
@@ -78,9 +52,381 @@
   "sync": "Sync",
   "failedToSyncDrive": "Failed to sync drive contents.",
   "tryAgain": "Try Again",
-  "driveRoot": "Drive Root",
-  "name": "Name",
-  "fileSize": "File Size",
   "nothingToSeeHere": "There's nothing to see here.",
-  "nothingToSeeHereClickToAdd": "There's nothing to see here. Click \"new\" to add some files."
+  "nothingToSeeHereClickToAdd": "There's nothing to see here. Click \"new\" to add some files.",
+  "welcomeTo_body": "Welcome to your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive",
+  "@welcomeTo_body": {
+    "description": "Welcomming message just after the ArDrive logo"
+  },
+  "welcomeTo_main": "Welcome to",
+  "@welcomeTo_main": {
+    "description": "Highly emphatized text on red giving the welcomming"
+  },
+  "welcomeTo_description": "your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive",
+  "@welcomeTo_description": {
+    "description": "Brief description of ArDrive as welcomming"
+  },
+  "selectWallet": "Select wallet",
+  "@selectWallet": {
+    "description": "The red button at the first screen which opens the file picker"
+  },
+  "useArconnect": "Use ArConnect",
+  "@useArconnect": {
+    "description": "Optional button that appears when the user has ArConnect installed on their browser"
+  },
+  "getAWallet": "Don't have a wallet? Get one here!",
+  "@getAWallet": {
+    "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
+  },
+  "welcomeToThePermaweb": "Welcome to the PermaWeb",
+  "@welcomeToThePermaweb": {
+    "description": "Welcomming message at the onboarding screen"
+  },
+  "ardriveIsntJustAnotherCloudSyncApp": "ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.",
+  "@ardriveIsntJustAnotherCloudSyncApp": {
+    "description": "Description of ArDrive"
+  },
+  "anyFilesWillOutliveYou": "Any files you upload here will outlive you!",
+  "@anyFilesWillOutliveYou": {
+    "description": "Description of ArDrive"
+  },
+  "weDoAFewThingsDifferently": "That also means we do a few things differently.",
+  "@weDoAFewThingsDifferently": {
+    "description": "Description of ArDrive"
+  },
+  "payPerFile": "Pay per File",
+  "@payPerFile": {
+    "description": "Description of ArDrive"
+  },
+  "noSubscriptions": "No subscriptions are needed!",
+  "@noSubscriptions": {
+    "description": "Description of ArDrive"
+  },
+  "monthlyCharges": "Instead of another monthly charge for empty space you don’t use, pay a few cents once and store your files forever on ArDrive.",
+  "@monthlyCharges": {
+    "description": "Description of ArDrive"
+  },
+  "secondsFromForever": "Seconds From Forever",
+  "@secondsFromForever": {
+    "description": "Description of ArDrive"
+  },
+  "decentralizedPermanent": "Decentralized, permanent data storage doesn’t happen in an instant.",
+  "@decentralizedPermanent": {
+    "description": "Description of ArDrive"
+  },
+  "greenCheckMark": "When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.",
+  "@greenCheckMark": {
+    "description": "Description of ArDrive"
+  },
+  "totalPrivacyControl": "Total Privacy Control",
+  "@totalPrivacyControl": {
+    "description": "Description of ArDrive"
+  },
+  "yourChoice": "Your choice: make files public or private using the best encryption.",
+  "@yourChoice": {
+    "description": "Description of ArDrive"
+  },
+  "noOneWillSee": "No one will see what you don’t want them to.",
+  "@noOneWillSee": {
+    "description": "Description of ArDrive"
+  },
+  "neverDeleted": "Never deleted",
+  "@neverDeleted": {
+    "description": "Description of ArDrive"
+  },
+  "noDeleteButton": "Remember: There is no delete button (for you or us)!",
+  "@noDeleteButton": {
+    "description": "Description of ArDrive"
+  },
+  "onceUploadedCantBeRemoved": "Once uploaded, your data can’t be removed.",
+  "@onceUploadedCantBeRemoved": {
+    "description": "Description of ArDrive"
+  },
+  "thinkTwiceBeforeUploading": "Think twice before uploading all your teenage love poetry...",
+  "@thinkTwiceBeforeUploading": {
+    "description": "Description of ArDrive"
+  },
+  "pleaseRemainOnThisTab": "Loading... Please remain on this tab.",
+  "@pleaseRemainOnThisTab": {
+    "description": "Circular progress indicator"
+  },
+  "loginFailed": "Login failed",
+  "@loginFailed": {
+    "description": "The user has provided wrong credentials"
+  },
+  "sorryLoginFailed": "Sorry, login failed. Please try again.",
+  "@sorryLoginFailed": {
+    "description": "The user has provided wrong credentials"
+  },
+  "login": "Log in",
+  "@login": {
+    "description": "The user has provided wrong credentials"
+  },
+  "welcomeBack": "Welcome Back",
+  "@welcomeBack": {
+    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+  },
+  "letsGetStarted": "Let's get started",
+  "@letsGetStarted": {
+    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+  },
+  "pleaseProvideSamePassword": "Please provide the same password as the one you used before.",
+  "@pleaseProvideSamePassword": {
+    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+  },
+  "passwordCanNeverBeChanged": "Your password can never be changed or recovered. Please keep it safe!",
+  "@passwordCanNeverBeChanged": {
+    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+  },
+  "password": "Password",
+  "@password": {
+    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+  },
+  "confirmPassword": "Confirm password",
+  "@confirmPassword": {
+    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+  },
+  "username": "Username",
+  "@username": {
+    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+  },
+  "passwordMismatch": "The confirmation password does not match.",
+  "@passwordMismatch": {
+    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+  },
+  "aggreeToTerms_body": "I agree to the ArDrive terms of service and privacy policy",
+  "@aggreeToTerms_body": {
+    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+  },
+  "aggreeToTerms_link": "ArDrive terms of service and privacy policy",
+  "@aggreeToTerms_link": {
+    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+  },
+  "addProfile": "Add profile",
+  "@addProfile": {
+    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+  },
+  "logOut": "Log out",
+  "@logOut": {
+    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+  },
+  "changeWallet": "Change wallet",
+  "@changeWallet": {
+    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+  },
+  "welcomeBackUser": "Welcome back, {username}",
+  "@welcomeBackUser": {
+    "description": "Unlock screen",
+    "placeholders": {
+      "username": {
+        "type": "String",
+        "example": "user"
+      }
+    }
+  },
+  "passwordUnlock": "Password",
+  "@passwordUnlock": {
+    "description": "Unlock screen"
+  },
+  "unlock": "Unlock",
+  "@unlock": {
+    "description": "Unlock screen"
+  },
+  "forgetWallet": "Forget wallet and change profile",
+  "@forgetWallet": {
+    "description": "Unlock screen"
+  },
+  "newString": "New",
+  "@newString": {
+    "description": "Button for creating a new drive"
+  },
+  "noDrives": "You have no personal or attached drives.\nClick the \"new\" button to add some!",
+  "@noDrives": {
+    "description": "No drives screen"
+  },
+  "rowsPerPage": "Rows Per Page",
+  "@rowsPerPage": {
+    "description": "Custom paginated data table"
+  },
+  "goToFirst": "Go to first",
+  "@goToFirst": {
+    "description": "Custom paginated data table"
+  },
+  "previous": "Previous",
+  "@previous": {
+    "description": "Custom paginated data table"
+  },
+  "next": "Next",
+  "@next": {
+    "description": "Custom paginated data table"
+  },
+  "goToLast": "Go to Last",
+  "@goToLast": {
+    "description": "Custom paginated data table"
+  },
+  "renameDrive": "Rename Drive",
+  "@renameDrive": {
+    "description": "Icon tooltip"
+  },
+  "exportDriveContents": "Export Drive Contents",
+  "@exportDriveContents": {
+    "description": "Icon tooltip"
+  },
+  "download": "Download",
+  "@download": {
+    "description": "Icon tooltip"
+  },
+  "shareFile": "Share File",
+  "@shareFile": {
+    "description": "Icon tooltip"
+  },
+  "preview": "Preview",
+  "@preview": {
+    "description": "Icon tooltip"
+  },
+  "rename": "Rename",
+  "@rename": {
+    "description": "Rename file or folder - Icon tooltip"
+  },
+  "move": "Move",
+  "@move": {
+    "description": "Move file or folder - Icon tooltip"
+  },
+  "shareDrive": "Share drive",
+  "@shareDrive": {
+    "description": "Icon tooltip"
+  },
+  "viewOnly": "View Only",
+  "@viewOnly": {
+    "description": "Icon tooltip"
+  },
+  "private": "Private",
+  "@private": {
+    "description": "Icon tooltip"
+  },
+  "public": "Public",
+  "@public": {
+    "description": "Icon tooltip"
+  },
+  "viewInfo": "View Info",
+  "@viewInfo": {
+    "description": "Icon tooltip"
+  },
+  "driveRoot": "Drive root",
+  "@driveRoot": {
+    "description": "Drive detail - Breadcrumb row"
+  },
+  "fix": "Fix",
+  "@fix": {
+    "description": "Fix orphan folder button"
+  },
+  "lastModifiedDate": "Last Modified {date}",
+  "@lastModifiedDate": {
+    "description": "Last modified date",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "pending": "Pending",
+  "@pending": {
+    "description": "File status tooltip for the orange color"
+  },
+  "confirmed": "Confirmed",
+  "@confirmed": {
+    "description": "File status tooltip for the green color"
+  },
+  "failed": "Failed",
+  "@failed": {
+    "description": "File status tooltip for the red color"
+  },
+  "name": "Name",
+  "@name": {
+    "description": "File info"
+  },
+  "fileSize": "File size",
+  "@fileSize": {
+    "description": "File info"
+  },
+  "lastUpdated": "Last updated",
+  "@lastUpdated": {
+    "description": "File info"
+  },
+  "addSomeFiles": "There's nothing to see here. Click \"new\" to add some files.",
+  "@addSomeFiles": {
+    "description": "Empty folder"
+  },
+  "noFiles": "There's nothing to see here.",
+  "@noFiles": {
+    "description": "Empty folder"
+  },
+  "errorDragAndDrop": "Error",
+  "@errorDragAndDrop": {
+    "description": "Drag and drop"
+  },
+  "errorDragAndDropFolder": "We do not currently support drag and drop with folders",
+  "@errorDragAndDropFolder": {
+    "description": "Drag and drop"
+  },
+  "okDragAndDrop": "OK",
+  "@okDragAndDrop": {
+    "description": "Drag and drop"
+  },
+  "uploadDragAndDrop": "Upload File",
+  "@uploadDragAndDrop": {
+    "description": "Drag and drop"
+  },
+  "itemDetails": "Details",
+  "@itemDetails": {
+    "description": "Item details"
+  },
+  "itemActivity": "Activity",
+  "@itemActivity": {
+    "description": "Item details"
+  },
+  "itemContains": "Contains",
+  "@itemContains": {
+    "description": "Folder children count"
+  },
+  "itemDriveID": "Drive ID",
+  "@itemDriveID": {
+    "description": "Item details"
+  },
+  "copyDriveID": "Copy Drive ID",
+  "@copyDriveID": {
+    "description": "Item details"
+  },
+  "privacy": "Privacy",
+  "@privacy": {
+    "description": "Item details"
+  },
+  "privateItem": "Private",
+  "@privateItem": {
+    "description": "Item details"
+  },
+  "publicItem": "Public",
+  "@publicItem": {
+    "description": "Item details"
+  },
+  "itemFolderID": "Folder ID",
+  "@itemFolderID": {
+    "description": "Folder details"
+  },
+  "copyFolderID": "Copy Folder ID",
+  "@copyFolderID": {
+    "description": "Folder details"
+  },
+  "itemFileID": "File ID",
+  "@itemFileID": {
+    "description": "File details"
+  },
+  "copyFileID": "Copy File ID",
+  "@copyFileID": {
+    "description": "File details"
+  },
+  "lastModified": "Copy File ID",
+  "@lastModified": {
+    "description": "File details"
+  }
 }

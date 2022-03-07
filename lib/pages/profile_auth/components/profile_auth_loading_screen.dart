@@ -1,5 +1,6 @@
 import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'profile_auth_shell.dart';
 
@@ -21,9 +22,8 @@ class ProfileAuthLoadingScreen extends StatelessWidget {
             if (isArConnect)
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: const Text(
-                  'Loading... Please remain on this tab.',
-                ),
+                child:
+                    Text(AppLocalizations.of(context)!.pleaseRemainOnThisTab),
               ),
             const Center(child: CircularProgressIndicator()),
           ],

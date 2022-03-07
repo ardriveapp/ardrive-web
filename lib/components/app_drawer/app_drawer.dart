@@ -242,7 +242,7 @@ class AppDrawer extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           label: Text(
-                            'NEW',
+                            'Nuevo',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                             ),

@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'profile_auth_shell.dart';
@@ -33,16 +34,16 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    'WELCOME TO THE PERMAWEB',
+                    AppLocalizations.of(context)!.welcomeToThePermaweb,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),
-                  Text(
-                      'ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.'),
+                  Text(AppLocalizations.of(context)!
+                      .ardriveIsntJustAnotherCloudSyncApp),
                   const SizedBox(height: 16),
-                  Text('Any files you upload here will outlive you!'),
+                  Text(AppLocalizations.of(context)!.anyFilesWillOutliveYou),
                   const SizedBox(height: 16),
-                  Text('That also means we do a few things differently.'),
+                  Text(AppLocalizations.of(context)!.weDoAFewThingsDifferently),
                 ],
               ),
             ),
@@ -65,14 +66,13 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    'PAY PER FILE',
+                    AppLocalizations.of(context)!.payPerFile,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),
-                  Text('No subscriptions are needed!'),
+                  Text(AppLocalizations.of(context)!.noSubscriptions),
                   const SizedBox(height: 16),
-                  Text(
-                      'Instead of another monthly charge for empty space you don’t use, pay a few cents once and store your files forever on ArDrive.'),
+                  Text(AppLocalizations.of(context)!.monthlyCharges),
                 ],
               ),
             ),
@@ -95,15 +95,13 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    'SECONDS FROM FOREVER',
+                    AppLocalizations.of(context)!.secondsFromForever,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),
-                  Text(
-                      'Decentralized, permanent data storage doesn’t happen in an instant.'),
+                  Text(AppLocalizations.of(context)!.decentralizedPermanent),
                   const SizedBox(height: 16),
-                  Text(
-                      'When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.'),
+                  Text(AppLocalizations.of(context)!.greenCheckMark),
                 ],
               ),
             ),
@@ -126,14 +124,13 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    'TOTAL PRIVACY CONTROL',
+                    AppLocalizations.of(context)!.totalPrivacyControl,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),
-                  Text(
-                      'Your choice: make files public or private using the best encryption.'),
+                  Text(AppLocalizations.of(context)!.yourChoice),
                   const SizedBox(height: 16),
-                  Text('No one will see what you don’t want them to.'),
+                  Text(AppLocalizations.of(context)!.noOneWillSee),
                 ],
               ),
             ),
@@ -156,16 +153,15 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    'NEVER DELETED',
+                    AppLocalizations.of(context)!.neverDeleted,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),
-                  Text('Remember: There is no delete button (for you or us)!'),
+                  Text(AppLocalizations.of(context)!.noDeleteButton),
                   const SizedBox(height: 16),
-                  Text('Once uploaded, your data can’t be removed.'),
+                  Text(AppLocalizations.of(context)!.onceUploadedCantBeRemoved),
                   const SizedBox(height: 16),
-                  Text(
-                      'Think twice before uploading all your teenage love poetry...'),
+                  Text(AppLocalizations.of(context)!.thinkTwiceBeforeUploading),
                 ],
               ),
             ),
