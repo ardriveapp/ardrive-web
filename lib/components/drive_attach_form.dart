@@ -26,9 +26,9 @@ Future<void> attachDrive({
         context: context,
         builder: (BuildContext context) => BlocProvider<DriveAttachCubit>(
           create: (context) => DriveAttachCubit(
-            driveId: driveId,
-            driveName: driveName,
-            driveKey: driveKey,
+            initialDriveId: driveId,
+            initialDriveName: driveName,
+            initialDriveKey: driveKey,
             arweave: context.read<ArweaveService>(),
             driveDao: context.read<DriveDao>(),
             syncBloc: context.read<SyncCubit>(),

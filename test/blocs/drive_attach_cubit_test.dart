@@ -101,7 +101,7 @@ void main() {
     });
 
     blocTest<DriveAttachCubit, DriveAttachState>(
-      'attach drive and trigger actions when given valid public drive details',
+      'attach drive, start sync and select the drive when given valid public drive details',
       build: () => driveAttachCubit,
       setUp: () {},
       act: (bloc) {
@@ -201,16 +201,16 @@ void main() {
       );
 
       blocTest<DriveAttachCubit, DriveAttachState>(
-        'attach drive and trigger actions when given valid private drive details',
+        'attach drive, start sync and select the drive when given valid private drive details',
         build: () => DriveAttachCubit(
           arweave: arweave,
           driveDao: driveDao,
           syncBloc: syncBloc,
           drivesBloc: drivesBloc,
           profileCubit: profileCubit,
-          driveId: validPrivateDriveId,
-          driveName: validDriveName,
-          driveKey: validPrivateDriveKey,
+          initialDriveId: validPrivateDriveId,
+          initialDriveName: validDriveName,
+          initialDriveKey: validPrivateDriveKey,
         ),
         expect: () => [
           DriveAttachInProgress(),

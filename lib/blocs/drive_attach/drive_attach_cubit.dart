@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
@@ -27,9 +28,9 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   late SecretKey? _driveKey;
 
   DriveAttachCubit({
-    String? driveId,
-    String? driveName,
-    SecretKey? driveKey,
+    DriveID? initialDriveId,
+    String? initialDriveName,
+    SecretKey? initialDriveKey,
     required ArweaveService arweave,
     required DriveDao driveDao,
     required SyncCubit syncBloc,
@@ -42,9 +43,9 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         _profileCubit = profileCubit,
         super(DriveAttachInitial()) {
     initializeForm(
-      driveId: driveId,
-      driveName: driveName,
-      driveKey: driveKey,
+      driveId: initialDriveId,
+      driveName: initialDriveName,
+      driveKey: initialDriveKey,
     );
   }
 
