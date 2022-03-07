@@ -7,6 +7,7 @@ import 'package:ardrive/blocs/upload/upload_plan.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
@@ -24,7 +25,8 @@ import 'file_upload_handle.dart';
 part 'upload_state.dart';
 
 final privateFileSizeLimit = 104857600;
-final publicFileSizeLimit = 1.25 * math.pow(10, 9) as int;
+// The tests fails when we try to parse to int
+final publicFileSizeLimit = 1.25 * math.pow(10, 9);
 final minimumPstTip = BigInt.from(10000000);
 
 class UploadCubit extends Cubit<UploadState> {
@@ -37,6 +39,7 @@ class UploadCubit extends Cubit<UploadState> {
   final DriveDao _driveDao;
   final ArweaveService _arweave;
   final PstService _pst;
+  final UploadPlanUtils _uploadPlanUtils;
 
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
@@ -46,27 +49,29 @@ class UploadCubit extends Cubit<UploadState> {
 
   bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
-  UploadCubit({
-    required this.driveId,
-    required this.folderId,
-    required this.files,
-    required ProfileCubit profileCubit,
-    required DriveDao driveDao,
-    required ArweaveService arweave,
-    required PstService pst,
-  })  : _profileCubit = profileCubit,
+  UploadCubit(
+      {required this.driveId,
+      required this.folderId,
+      required this.files,
+      required ProfileCubit profileCubit,
+      required DriveDao driveDao,
+      required ArweaveService arweave,
+      required PstService pst,
+      required UploadPlanUtils uploadPlanUtils})
+      : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
         _pst = pst,
-        super(UploadPreparationInProgress()) {
-    () async {
-      _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
-      _targetFolder = await _driveDao
-          .folderById(driveId: driveId, folderId: folderId)
-          .getSingle();
+        _uploadPlanUtils = uploadPlanUtils,
+        super(UploadPreparationInProgress());
 
-      unawaited(checkConflictingFiles());
-    }();
+  Future<void> initializeCubit() async {
+    _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
+    _targetFolder = await _driveDao
+        .folderById(driveId: driveId, folderId: folderId)
+        .getSingle();
+
+    emit(UploadCubitInitialized());
   }
 
   /// Tries to find a files that conflict with the files in the target folder.
@@ -135,11 +140,13 @@ class UploadCubit extends Cubit<UploadState> {
       ));
       return;
     }
-    final uploadPlan = await xfilesToUploadPlan(
-      files: files,
-      cipherKey: profile.cipherKey,
-      wallet: profile.wallet,
-    );
+    final uploadPlan = await _uploadPlanUtils.xfilesToUploadPlan(
+        folderEntry: _targetFolder,
+        targetDrive: _targetDrive,
+        files: files,
+        cipherKey: profile.cipherKey,
+        wallet: profile.wallet,
+        conflictingFiles: conflictingFiles);
     final costEstimate = await CostEstimate.create(
       uploadPlan: uploadPlan,
       arweaveService: _arweave,
