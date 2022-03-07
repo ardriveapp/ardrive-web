@@ -11,7 +11,6 @@ import 'package:equatable/equatable.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
-import 'package:uuid/uuid.dart';
 
 import '../blocs.dart';
 import 'enums/conflicting_files_actions.dart';
@@ -19,7 +18,6 @@ import 'enums/conflicting_files_actions.dart';
 part 'upload_state.dart';
 
 final privateFileSizeLimit = 104857600;
-// The tests fails when we try to parse to int
 final publicFileSizeLimit = 1.25 * math.pow(10, 9);
 final minimumPstTip = BigInt.from(10000000);
 
@@ -28,7 +26,6 @@ class UploadCubit extends Cubit<UploadState> {
   final String folderId;
   final List<XFile> files;
 
-  final _uuid = Uuid();
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
