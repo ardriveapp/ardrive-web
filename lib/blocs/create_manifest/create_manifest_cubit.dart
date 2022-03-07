@@ -284,7 +284,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
     emit(CreateManifestUploadInProgress());
     try {
-      await _arweave.client.transactions.upload(params.signedBundleTx).drain();
+      await _arweave.client.transactions
+          .upload(
+            params.signedBundleTx,
+            maxConcurrentUploadCount: maxConcurrentUploadCount,
+          )
+          .drain();
       await params.addManifestToDatabase();
 
       emit(CreateManifestSuccess());

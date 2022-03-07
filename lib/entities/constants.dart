@@ -46,3 +46,4 @@ class DriveAuthMode {
 }
 
 const String rootPath = '';
+const int maxConcurrentUploadCount = 32;
