@@ -4,6 +4,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,9 @@ Future<void> promptToUploadFile(
       context: context,
       builder: (_) => BlocProvider<UploadCubit>(
         create: (context) => UploadCubit(
+          uploadPlanUtils: UploadPlanUtils(
+              arweave: context.read<ArweaveService>(),
+              driveDao: context.read<DriveDao>()),
           driveId: driveId,
           folderId: folderId,
           files: selectedFiles,
@@ -33,7 +37,7 @@ Future<void> promptToUploadFile(
           arweave: context.read<ArweaveService>(),
           pst: context.read<PstService>(),
           driveDao: context.read<DriveDao>(),
-        ),
+        )..initializeCubit(),
         child: UploadForm(),
       ),
       barrierDismissible: false,
@@ -47,12 +51,15 @@ class UploadForm extends StatelessWidget {
         listener: (context, state) async {
           if (state is UploadComplete || state is UploadWalletMismatch) {
             Navigator.pop(context);
+          } else if (state is UploadCubitInitialized) {
+            await context.read<UploadCubit>().checkConflictingFiles();
           }
           if (state is UploadWalletMismatch) {
             Navigator.pop(context);
             await context.read<ProfileCubit>().logoutProfile();
           }
         },
+        // buildWhen: (_, currentState) => currentState is UploadCubitInitialized,
         builder: (context, state) {
           if (state is UploadFileConflict) {
             return AppDialog(

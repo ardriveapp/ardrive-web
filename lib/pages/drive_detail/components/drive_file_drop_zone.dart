@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -111,6 +112,9 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
           context: context,
           builder: (_) => BlocProvider<UploadCubit>(
             create: (context) => UploadCubit(
+              uploadPlanUtils: UploadPlanUtils(
+                  arweave: context.read<ArweaveService>(),
+                  driveDao: context.read<DriveDao>()),
               driveId: driveId,
               folderId: folderId,
               files: selectedFiles,
@@ -118,7 +122,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
               pst: context.read<PstService>(),
               profileCubit: context.read<ProfileCubit>(),
               driveDao: context.read<DriveDao>(),
-            ),
+            )..initializeCubit(),
             child: UploadForm(),
           ),
           barrierDismissible: false,
