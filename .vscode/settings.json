@@ -4,5 +4,10 @@
   },
   "bloc.newBlocTemplate": "equatable",
   "bloc.newCubitTemplate": "equatable",
-  "dart.additionalAnalyzerFileExtensions": ["moor"]
+  "dart.additionalAnalyzerFileExtensions": [
+    "moor"
+  ],
+  "conventionalCommits.scopes": [
+    "pst"
+  ]
 }
