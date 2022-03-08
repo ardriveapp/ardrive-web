@@ -250,8 +250,7 @@ class FsEntrySideSheet extends StatelessWidget {
                             ),
                           ),
                         ]),
-                    } else if (infoState
-                        is FsEntryInfoSuccess<FolderEntry>) ...{
+                    } else if (infoState is FsEntryInfoSuccess<FolderNode>) ...{
                       DataRow(cells: [
                         DataCell(Text('Metadata Tx ID')),
                         DataCell(
