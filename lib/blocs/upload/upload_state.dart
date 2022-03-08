@@ -14,7 +14,7 @@ class UploadPreparationInProgress extends UploadState {
   List<Object> get props => [isArConnect];
 }
 
-class UploadCubitInitialized extends UploadState {}
+class UploadPreparationInitialized extends UploadState {}
 
 class UploadPreparationFailure extends UploadState {}
 
