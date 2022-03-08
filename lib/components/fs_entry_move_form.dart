@@ -5,6 +5,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import 'components.dart';
@@ -60,9 +61,11 @@ class FsEntryMoveForm extends StatelessWidget {
       BlocConsumer<FsEntryMoveCubit, FsEntryMoveState>(
         listener: (context, state) {
           if (state is FolderEntryMoveInProgress) {
-            showProgressDialog(context, 'MOVING FOLDER...');
+            showProgressDialog(context,
+                AppLocalizations.of(context)!.movingFolder.toUpperCase());
           } else if (state is FileEntryMoveInProgress) {
-            showProgressDialog(context, 'MOVING FILE...');
+            showProgressDialog(context,
+                AppLocalizations.of(context)!.movingFile.toUpperCase());
           } else if (state is FolderEntryMoveSuccess ||
               state is FileEntryMoveSuccess) {
             Navigator.pop(context);
@@ -77,7 +80,7 @@ class FsEntryMoveForm extends StatelessWidget {
               context: context,
               builder: (BuildContext context) => AppDialog(
                 dismissable: true,
-                title: 'Name Conflict',
+                title: AppLocalizations.of(context)!.nameConflict,
                 content: SizedBox(
                   width: kSmallDialogWidth,
                   child: Column(
@@ -85,8 +88,8 @@ class FsEntryMoveForm extends StatelessWidget {
                     children: [
                       Center(
                         child: Text(
-                          'Entity with name ${state.name} already exists at move destination! '
-                          'Please rename the file or folder you are moving and try again.',
+                          AppLocalizations.of(context)!
+                              .entityAlreadyExists(state.name),
                         ),
                       ),
                     ],
@@ -95,7 +98,7 @@ class FsEntryMoveForm extends StatelessWidget {
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text('OK')),
+                      child: Text(AppLocalizations.of(context)!.okMoveEntity)),
                 ],
               ),
             );
@@ -106,10 +109,13 @@ class FsEntryMoveForm extends StatelessWidget {
                 children: [
                   TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text('CANCEL')),
+                      child: Text(AppLocalizations.of(context)!
+                          .cancelMoveEntity
+                          .toUpperCase())),
                   ElevatedButton(
                     onPressed: () => context.read<FsEntryMoveCubit>().submit(),
-                    child: Text('MOVE HERE'),
+                    child: Text(
+                        AppLocalizations.of(context)!.moveHere.toUpperCase()),
                   ),
                 ],
               );
@@ -117,7 +123,8 @@ class FsEntryMoveForm extends StatelessWidget {
             if (state is FsEntryMoveFolderLoadSuccess) {
               return TextButton.icon(
                 icon: const Icon(Icons.create_new_folder),
-                label: Text('CREATE FOLDER'),
+                label: Text(
+                    AppLocalizations.of(context)!.createFolder.toUpperCase()),
                 onPressed: () => showDialog(
                   context: context,
                   builder: (_) => BlocProvider(
@@ -138,7 +145,9 @@ class FsEntryMoveForm extends StatelessWidget {
           }
 
           return AppDialog(
-            title: state.isMovingFolder ? 'MOVE FOLDER' : 'MOVE FILE',
+            title: state.isMovingFolder
+                ? AppLocalizations.of(context)!.moveFolder.toUpperCase()
+                : AppLocalizations.of(context)!.moveFile.toUpperCase(),
             contentPadding: EdgeInsets.zero,
             content: state is FsEntryMoveFolderLoadSuccess
                 ? SizedBox(
@@ -163,8 +172,9 @@ class FsEntryMoveForm extends StatelessWidget {
                                 child: ListTile(
                                   dense: true,
                                   leading: const Icon(Icons.arrow_back),
-                                  title: Text(
-                                      'Back to "${state.viewingFolder.folder.name}" folder'),
+                                  title: Text(AppLocalizations.of(context)!
+                                      .backToFolder(
+                                          state.viewingFolder.folder.name)),
                                 )),
                           ),
                         Expanded(

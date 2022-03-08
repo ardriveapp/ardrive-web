@@ -2,12 +2,9 @@
   "@@locale": "en",
   "cancel": "Cancel",
   "attach": "Attach",
-  "create": "Create",
   "copyLink": "Copy Link",
   "done": "Done",
   "close": "Close",
-  "moveHere": "Move Here",
-  "createFolder": "Create Folder",
   "continueString": "Continue",
   "insufficientAR": "You do not have sufficient AR to create a drive.",
   "notLoggedIn": "You're not logged in",
@@ -19,17 +16,7 @@
   "tooLargeForUpload": "Too large for upload",
   "mayTakeAWhile": "This may take a while",
   "willBeUploadedPublicly": "These file(s) will be uploaded publicly",
-  "newFolder": "New Folder",
-  "uploadFiles": "Upload File(s)",
-  "newDrive": "New Drive",
-  "attachDrive": "Attach Drive",
-  "driveID": "Drive ID",
-  "fileID": "File ID",
-  "folderID": "Folder ID",
   "size": "Size",
-  "anyoneCanAccessDrive": "Anyone can access this drive using the link above.",
-  "anyoneCanAccessFile": "Anyone can access this file using the link above.",
-  "thisCanHappenIfFileUploadedRecently": "This can happen if the file was only uploaded recently. Please try again later.",
   "onlySupportsFileSize": "ArDrive on web currently only supports file uploads smaller than ",
   "hundredMBForPrivateDrives": "100 MB for private drives",
   "oneGigForPublicDrives": "1.25 GB for public drives",
@@ -37,11 +24,6 @@
   "failedToPrepareUpload": "Failed to prepare file upload",
   "errorOccuredPreparingUpload": "An error occured while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.",
   "insufficientARForUpload": "Insufficient AR for upload.",
-  "personalDrives": "Personal Drives",
-  "sharedDrives": "Shared Drives",
-  "version": "Version ",
-  "howDoIGEtAR": "How do I get AR?",
-  "sync": "Sync",
   "failedToSyncDrive": "Failed to sync drive contents.",
   "tryAgain": "Try Again",
   "nothingToSeeHere": "There's nothing to see here.",
@@ -256,10 +238,6 @@
   "@goToLast": {
     "description": "Custom paginated data table"
   },
-  "renameDrive": "Rename Drive",
-  "@renameDrive": {
-    "description": "Icon tooltip"
-  },
   "exportDriveContents": "Export Drive Contents",
   "@exportDriveContents": {
     "description": "Icon tooltip"
@@ -268,25 +246,13 @@
   "@download": {
     "description": "Icon tooltip"
   },
-  "shareFile": "Share File",
-  "@shareFile": {
-    "description": "Icon tooltip"
-  },
   "preview": "Preview",
   "@preview": {
     "description": "Icon tooltip"
   },
-  "rename": "Rename",
-  "@rename": {
-    "description": "Rename file or folder - Icon tooltip"
-  },
   "move": "Move",
   "@move": {
     "description": "Move file or folder - Icon tooltip"
-  },
-  "shareDrive": "Share drive",
-  "@shareDrive": {
-    "description": "Icon tooltip"
   },
   "viewOnly": "View Only",
   "@viewOnly": {
@@ -381,8 +347,8 @@
   "@itemContains": {
     "description": "Folder children count"
   },
-  "itemDriveID": "Drive ID",
-  "@itemDriveID": {
+  "driveID": "Drive ID",
+  "@driveID": {
     "description": "Item details"
   },
   "copyDriveID": "Copy Drive ID",
@@ -401,16 +367,16 @@
   "@publicItem": {
     "description": "Item details"
   },
-  "itemFolderID": "Folder ID",
-  "@itemFolderID": {
+  "folderID": "Folder ID",
+  "@folderID": {
     "description": "Folder details"
   },
   "copyFolderID": "Copy Folder ID",
   "@copyFolderID": {
     "description": "Folder details"
   },
-  "itemFileID": "File ID",
-  "@itemFileID": {
+  "fileID": "File ID",
+  "@fileID": {
     "description": "File details"
   },
   "copyFileID": "Copy File ID",
@@ -552,5 +518,271 @@
   "fileHadANewRevision": "A new version of this file was uploaded.",
   "@fileHadANewRevision": {
     "description": "File details"
+  },
+  "personalDrives": "Personal drives",
+  "@personalDrives": {
+    "description": "Drives list"
+  },
+  "sharedDrives": "Shared drives",
+  "@sharedDrives": {
+    "description": "Drives list"
+  },
+  "help": "Help",
+  "@help": {
+    "description": "Link to a form for collecting feedback from the user"
+  },
+  "appVersoin": "Version {version}.",
+  "@appVersoin": {
+    "description": "App version number",
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "0.0.0"
+      }
+    }
+  },
+  "newFolder": "New folder",
+  "@newFolder": {
+    "description": "Drive actions"
+  },
+  "uploadFiles": "Upload file(s)",
+  "@uploadFiles": {
+    "description": "Drive actions"
+  },
+  "newDrive": "New drive",
+  "@newDrive": {
+    "description": "Drive actions"
+  },
+  "attachDrive": "Attach drive",
+  "@attachDrive": {
+    "description": "Drive actions"
+  },
+  "howDoIGetAR": "How do I get AR?",
+  "@howDoIGetAR": {
+    "description": "Link to a help page"
+  },
+  "sync": "Sync",
+  "@sync": {
+    "description": "Sync button tooltip"
+  },
+  "driveIssuesDetected": "We have detected issues with this drive. Navigate into drive to resolve them.",
+  "@driveIssuesDetected": {
+    "description": "Sync button tooltip"
+  },
+  "downloadingCSV": "Downloading CSV...",
+  "@downloadingCSV": {
+    "description": "CSV export"
+  },
+  "cancelCSV": "Cancel",
+  "@cancelCSV": {
+    "description": "CSV export"
+  },
+  "okCSV": "OK",
+  "@okCSV": {
+    "description": "CSV export"
+  },
+  "exportingData": "Exporting your data, please wait.",
+  "@exportingData": {
+    "description": "CSV export"
+  },
+  "fileDownloadFailed": "File download failed",
+  "@fileDownloadFailed": {
+    "description": "CSV export"
+  },
+  "attachingDrive": "Attaching drive...",
+  "@attachingDrive": {
+    "description": "Drive attach form"
+  },
+  "creatingDrive": "Creating drive...",
+  "@creatingDrive": {
+    "description": "Drive create form"
+  },
+  "createDrive": "Create drive",
+  "@createDrive": {
+    "description": "Drive create form"
+  },
+  "insufficientARToCreateDrive": "You do not have sufficient AR to create a drive.",
+  "@insufficientARToCreateDrive": {
+    "description": "Drive create form"
+  },
+  "cancelDriveCreation": "You do not have sufficient AR to create a drive.",
+  "@cancelDriveCreation": {
+    "description": "Drive create form"
+  },
+  "create": "Create",
+  "@create": {
+    "description": "Drive create form"
+  },
+  "renamingDrive": "Renaming drive...",
+  "@renamingDrive": {
+    "description": "Drive rename form"
+  },
+  "renameDrive": "Rename drive",
+  "@renameDrive": {
+    "description": "Drive rename form"
+  },
+  "driveName": "Drive name",
+  "@driveName": {
+    "description": "Drive rename form"
+  },
+  "cancelDriveRename": "Cancel",
+  "@cancelDriveRename": {
+    "description": "Drive rename form"
+  },
+  "shareDrive": "Share drive with others",
+  "@shareDrive": {
+    "description": "Drive share dialog"
+  },
+  "copyDriveLink": "Copy link",
+  "@copyDriveLink": {
+    "description": "Drive share dialog"
+  },
+  "anyoneCanAccessThisDrive": "Anyone can access this drive using the link above.",
+  "@anyoneCanAccessThisDrive": {
+    "description": "Drive share dialog"
+  },
+  "doneDriveShare": "Done",
+  "@doneDriveShare": {
+    "description": "Drive share dialog"
+  },
+  "errorLog": "Error log",
+  "@errorLog": {
+    "description": "Error dialog"
+  },
+  "cancelErrorDialog": "Cancel",
+  "@cancelErrorDialog": {
+    "description": "Error dialog"
+  },
+  "downloadingFile": "Downloading file...",
+  "@downloadingFile": {
+    "description": "File download dialog"
+  },
+  "cancelFileDownload": "Cancel",
+  "@cancelFileDownload": {
+    "description": "File download dialog"
+  },
+  "fileFailedToDownload": "File download failed",
+  "@fileFailedToDownload": {
+    "description": "File download dialog"
+  },
+  "tryAgainDownloadingFile": "This can happen if the file was only uploaded recently. Please try again later.",
+  "@tryAgainDownloadingFile": {
+    "description": "File download dialog"
+  },
+  "okDownloadFailed": "OK",
+  "@okDownloadFailed": {
+    "description": "File download dialog"
+  },
+  "shareFile": "Share file with others",
+  "@shareFile": {
+    "description": "File share dialog"
+  },
+  "copyFileLink": "Share file with others",
+  "@copyFileLink": {
+    "description": "File share dialog"
+  },
+  "anyoneCanAccessThisFile": "Anyone can access this file using the link above.",
+  "@anyoneCanAccessThisFile": {
+    "description": "File share dialog"
+  },
+  "doneFileShare": "Done",
+  "@doneFileShare": {
+    "description": "File share dialog"
+  },
+  "creatingFolder": "Creating folder...",
+  "@creatingFolder": {
+    "description": "Folder create form"
+  },
+  "createFolder": "Create folder",
+  "@createFolder": {
+    "description": "Folder create form"
+  },
+  "folderName": "Folder name",
+  "@folderName": {
+    "description": "Folder create form"
+  },
+  "cancelFolderCreate": "Cancel",
+  "@cancelFolderCreate": {
+    "description": "Folder create form"
+  },
+  "movingFolder": "Moving folder...",
+  "@movingFolder": {
+    "description": "Folder/file move form"
+  },
+  "movingFile": "Moving file...",
+  "@movingFile": {
+    "description": "Folder/file move form"
+  },
+  "nameConflict": "Name conflict",
+  "@nameConflict": {
+    "description": "Folder/file move form"
+  },
+  "entityAlreadyExists": "Entity with name {entityName} already exists at move destination! Please rename the file or folder you are moving and try again.",
+  "@entityAlreadyExists": {
+    "description": "Folder/file move form",
+    "placeholders": {
+      "entityName": {
+        "type": "String",
+        "example": "entity name"
+      }
+    }
+  },
+  "okMoveEntity": "OK",
+  "@okMoveEntity": {
+    "description": "Folder/file move form"
+  },
+  "cancelMoveEntity": "Cancel",
+  "@cancelMoveEntity": {
+    "description": "Folder/file move form"
+  },
+  "moveHere": "Move here",
+  "@moveHere": {
+    "description": "Folder/file move form"
+  },
+  "moveFolder": "Move folder",
+  "@moveFolder": {
+    "description": "Folder/file move form"
+  },
+  "moveFile": "Move file",
+  "@moveFile": {
+    "description": "Folder/file move form"
+  },
+  "backToFolder": "Back to {entityName} folder",
+  "@backToFolder": {
+    "description": "Folder/file move form",
+    "placeholders": {
+      "entityName": {
+        "type": "String",
+        "example": "entity name"
+      }
+    }
+  },
+  "renamingFolder": "Renaming folder",
+  "@renamingFolder": {
+    "description": "Folder/file rename form"
+  },
+  "renamingFile": "Renaming file",
+  "@renamingFile": {
+    "description": "Folder/file rename form"
+  },
+  "renameFolder": "Rename folder",
+  "@renameFolder": {
+    "description": "Folder/file rename form"
+  },
+  "renameFile": "Rename file",
+  "@renameFile": {
+    "description": "Folder/file rename form"
+  },
+  "cancelRename": "Cancel",
+  "@cancelRename": {
+    "description": "Folder/file rename form"
+  },
+  "rename": "Rename",
+  "@rename": {
+    "description": "Folder/file rename form"
+  },
+  "fileName": "File name",
+  "@fileName": {
+    "description": "Folder/file rename form"
   }
 }

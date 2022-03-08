@@ -4,6 +4,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'components.dart';
 
@@ -40,7 +41,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
           }
         },
         builder: (context, state) => AppDialog(
-          title: 'Share drive with others',
+          title: AppLocalizations.of(context)!.shareDrive,
           content: SizedBox(
             width: kLargeDialogWidth,
             child: Column(
@@ -78,13 +79,14 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                           Clipboard.setData(
                               ClipboardData(text: shareLinkController.text));
                         },
-                        child: Text('Copy link'),
+                        child:
+                            Text(AppLocalizations.of(context)!.copyDriveLink),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Anyone can access this drive using the link above.',
+                    AppLocalizations.of(context)!.anyoneCanAccessThisDrive,
                     style: Theme.of(context).textTheme.subtitle2,
                   ),
                 }
@@ -95,7 +97,8 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
             if (state is DriveShareLoadSuccess)
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('DONE'),
+                child: Text(
+                    AppLocalizations.of(context)!.doneDriveShare.toUpperCase()),
               ),
           ],
         ),

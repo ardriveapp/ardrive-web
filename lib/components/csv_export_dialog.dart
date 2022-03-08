@@ -8,6 +8,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:pedantic/pedantic.dart';
 
 import 'components.dart';
@@ -49,7 +50,7 @@ class FileDownloadDialog extends StatelessWidget {
           if (state is FileDownloadStarting) {
             return AppDialog(
               dismissable: false,
-              title: 'Downloading CSV...',
+              title: AppLocalizations.of(context)!.downloadingCSV,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -59,20 +60,20 @@ class FileDownloadDialog extends StatelessWidget {
               actions: [
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel'),
+                  child: Text(AppLocalizations.of(context)!.cancelCSV),
                 ),
               ],
             );
           } else if (state is FileDownloadInProgress) {
             return AppDialog(
               dismissable: false,
-              title: 'Downloading CSV...',
+              title: AppLocalizations.of(context)!.downloadingCSV,
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(
-                    'Exporting your data, please wait.',
+                    AppLocalizations.of(context)!.exportingData,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -85,21 +86,21 @@ class FileDownloadDialog extends StatelessWidget {
                     context.read<FileDownloadCubit>().abortDownload();
                     Navigator.pop(context);
                   },
-                  child: Text('Cancel'),
+                  child: Text(AppLocalizations.of(context)!.cancelCSV),
                 ),
               ],
             );
           } else if (state is FileDownloadFailure) {
             return AppDialog(
               dismissable: false,
-              title: 'File download failed',
+              title: AppLocalizations.of(context)!.fileDownloadFailed,
               content: SizedBox(
                 width: kMediumDialogWidth,
               ),
               actions: [
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('OK'),
+                  child: Text(AppLocalizations.of(context)!.okCSV),
                 ),
               ],
             );

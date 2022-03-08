@@ -103,7 +103,7 @@ class FsEntrySideSheet extends StatelessWidget {
               ),
             ]),
             DataRow(cells: [
-              DataCell(Text(AppLocalizations.of(context)!.itemDriveID)),
+              DataCell(Text(AppLocalizations.of(context)!.driveID)),
               DataCell(
                 CopyIconButton(
                   tooltip: AppLocalizations.of(context)!.copyDriveID,
@@ -142,7 +142,7 @@ class FsEntrySideSheet extends StatelessWidget {
               ),
             ]),
             DataRow(cells: [
-              DataCell(Text(AppLocalizations.of(context)!.itemFolderID)),
+              DataCell(Text(AppLocalizations.of(context)!.folderID)),
               DataCell(
                 CopyIconButton(
                   tooltip: AppLocalizations.of(context)!.copyFolderID,
@@ -152,7 +152,7 @@ class FsEntrySideSheet extends StatelessWidget {
             ]),
           } else if (state is FsEntryInfoSuccess<FileEntry>) ...{
             DataRow(cells: [
-              DataCell(Text(AppLocalizations.of(context)!.itemFileID)),
+              DataCell(Text(AppLocalizations.of(context)!.fileID)),
               DataCell(
                 CopyIconButton(
                   tooltip: AppLocalizations.of(context)!.copyFileID,

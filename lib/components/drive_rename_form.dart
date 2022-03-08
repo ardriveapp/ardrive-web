@@ -7,6 +7,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
@@ -38,7 +39,8 @@ class DriveRenameForm extends StatelessWidget {
       BlocConsumer<DriveRenameCubit, DriveRenameState>(
         listener: (context, state) {
           if (state is DriveRenameInProgress) {
-            showProgressDialog(context, 'RENAMING DRIVE...');
+            showProgressDialog(context,
+                AppLocalizations.of(context)!.renamingDrive.toUpperCase());
           } else if (state is DriveRenameSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
@@ -47,7 +49,7 @@ class DriveRenameForm extends StatelessWidget {
           }
         },
         builder: (context, state) => AppDialog(
-          title: 'RENAME DRIVE',
+          title: AppLocalizations.of(context)!.renameDrive.toUpperCase(),
           content: state is! FsEntryRenameInitializing
               ? SizedBox(
                   width: kMediumDialogWidth,
@@ -56,7 +58,8 @@ class DriveRenameForm extends StatelessWidget {
                     child: ReactiveTextField(
                       formControlName: 'name',
                       autofocus: true,
-                      decoration: InputDecoration(labelText: 'Drive name'),
+                      decoration: InputDecoration(
+                          labelText: AppLocalizations.of(context)!.driveName),
                       showErrors: (control) => control.invalid,
                       validationMessages: (_) => kValidationMessages,
                     ),
@@ -66,11 +69,13 @@ class DriveRenameForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('CANCEL'),
+              child: Text(AppLocalizations.of(context)!
+                  .cancelDriveRename
+                  .toUpperCase()),
             ),
             ElevatedButton(
               onPressed: () => context.read<DriveRenameCubit>().submit(),
-              child: Text('RENAME'),
+              child: Text(AppLocalizations.of(context)!.rename.toUpperCase()),
             ),
           ],
         ),

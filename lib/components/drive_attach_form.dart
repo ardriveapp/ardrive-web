@@ -41,7 +41,9 @@ Future<void> attachDrive(
             },
             child: driveName != null
                 ? ProgressDialog(
-                    title: 'ATTACHING DRIVE...',
+                    title: AppLocalizations.of(context)!
+                        .attachingDrive
+                        .toUpperCase(),
                   )
                 : DriveAttachForm(),
           ),
@@ -55,7 +57,7 @@ class DriveAttachForm extends StatelessWidget {
   Widget build(BuildContext context) =>
       BlocBuilder<DriveAttachCubit, DriveAttachState>(
         builder: (context, state) => AppDialog(
-          title: 'ATTACH DRIVE',
+          title: AppLocalizations.of(context)!.attachDrive.toUpperCase(),
           content: SizedBox(
             width: kMediumDialogWidth,
             child: ReactiveForm(
@@ -66,14 +68,15 @@ class DriveAttachForm extends StatelessWidget {
                   ReactiveTextField(
                     formControlName: 'driveId',
                     autofocus: true,
-                    decoration: InputDecoration(labelText: 'Drive ID'),
+                    decoration: InputDecoration(
+                        labelText: AppLocalizations.of(context)!.driveID),
                     validationMessages: (_) => kValidationMessages,
                   ),
                   const SizedBox(height: 16),
                   ReactiveTextField(
                     formControlName: 'name',
                     decoration: InputDecoration(
-                      labelText: 'Name',
+                      labelText: AppLocalizations.of(context)!.name,
                       // Listen to `driveId` status changes to show an indicator for
                       // when the drive name is being loaded.
                       //
