@@ -1,9 +1,11 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -13,22 +15,26 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
 
-Future<void> attachDrive(
-        {required BuildContext context,
-        String? initialDriveId,
-        String? driveName}) =>
+Future<void> attachDrive({
+  required BuildContext context,
+  DriveID? driveId,
+  String? driveName,
+  SecretKey? driveKey,
+}) =>
     showModalDialog(
       context,
       () => showDialog(
         context: context,
         builder: (BuildContext context) => BlocProvider<DriveAttachCubit>(
           create: (context) => DriveAttachCubit(
-            initialDriveId: initialDriveId,
-            driveName: driveName,
+            initialDriveId: driveId,
+            initialDriveName: driveName,
+            initialDriveKey: driveKey,
             arweave: context.read<ArweaveService>(),
             driveDao: context.read<DriveDao>(),
             syncBloc: context.read<SyncCubit>(),
             drivesBloc: context.read<DrivesCubit>(),
+            profileCubit: context.read<ProfileCubit>(),
           ),
           child: BlocListener<DriveAttachCubit, DriveAttachState>(
             listener: (context, state) {
@@ -39,11 +45,7 @@ Future<void> attachDrive(
                 Navigator.pop(context);
               }
             },
-            child: driveName != null
-                ? ProgressDialog(
-                    title: 'ATTACHING DRIVE...',
-                  )
-                : DriveAttachForm(),
+            child: DriveAttachForm(),
           ),
         ),
       ),
@@ -52,9 +54,31 @@ Future<void> attachDrive(
 /// Depends on a provided [DriveAttachCubit] for business logic.
 class DriveAttachForm extends StatelessWidget {
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<DriveAttachCubit, DriveAttachState>(
-        builder: (context, state) => AppDialog(
+  Widget build(BuildContext context) {
+    return BlocBuilder<DriveAttachCubit, DriveAttachState>(
+      builder: (context, state) {
+        if (state is DriveAttachInProgress) {
+          return ProgressDialog(
+            title: 'ATTACHING DRIVE...',
+          );
+        }
+        if (state is DriveAttachPrivateNotLoggedIn) {
+          return AppDialog(
+            dismissable: false,
+            title: 'Drive attach failed',
+            content: SizedBox(
+              width: kMediumDialogWidth,
+              child: Text('Please log in to attach private drives.'),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('OK'),
+              ),
+            ],
+          );
+        }
+        return AppDialog(
           title: 'ATTACH DRIVE',
           content: SizedBox(
             width: kMediumDialogWidth,
@@ -69,6 +93,19 @@ class DriveAttachForm extends StatelessWidget {
                     decoration: InputDecoration(labelText: 'Drive ID'),
                     validationMessages: (_) => kValidationMessages,
                   ),
+                  const SizedBox(height: 16),
+                  if (state is DriveAttachPrivate)
+                    ReactiveTextField(
+                      formControlName: 'driveKey',
+                      autofocus: true,
+                      obscureText: true,
+                      decoration: InputDecoration(labelText: 'Drive Key'),
+                      validationMessages: (_) => kValidationMessages,
+                      onEditingComplete: () => context
+                          .read<DriveAttachCubit>()
+                          .form
+                          .updateValueAndValidity(),
+                    ),
                   const SizedBox(height: 16),
                   ReactiveTextField(
                     formControlName: 'name',
@@ -118,6 +155,8 @@ class DriveAttachForm extends StatelessWidget {
               child: Text(AppLocalizations.of(context)!.attach.toUpperCase()),
             ),
           ],
-        ),
-      );
+        );
+      },
+    );
+  }
 }

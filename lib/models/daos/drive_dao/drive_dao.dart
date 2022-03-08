@@ -111,10 +111,15 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeDriveEntity({
     required String name,
     required DriveEntity entity,
-  }) {
-    assert(entity.privacy == DrivePrivacy.public);
+    SecretKey? driveKey,
+    SecretKey? profileKey,
+  }) async {
+    if (driveKey != null && profileKey == null) {
+      //TODO: Support attaching private drives when not logged in
+      throw UnimplementedError();
+    }
 
-    final companion = DrivesCompanion.insert(
+    var companion = DrivesCompanion.insert(
       id: entity.id!,
       name: name,
       ownerAddress: entity.ownerAddress,
@@ -123,8 +128,14 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       dateCreated: Value(entity.createdAt),
       lastUpdated: Value(entity.createdAt),
     );
-
-    return into(drives).insert(
+    if (entity.privacy == DrivePrivacy.private) {
+      companion = await _addDriveKeyToDriveCompanion(
+        companion,
+        profileKey!,
+        driveKey!,
+      );
+    }
+    await into(drives).insert(
       companion,
       onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
     );
