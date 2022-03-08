@@ -210,7 +210,7 @@ class FsEntrySideSheet extends StatelessWidget {
           builder: (context, state) {
             if (state is FsEntryActivitySuccess) {
               if (state.revisions.isNotEmpty) {
-                final revision = state.revisions.last;
+                final revision = state.revisions.first;
                 return DataTable(
                   // Hide the data table header.
 
