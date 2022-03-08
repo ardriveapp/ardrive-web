@@ -56,13 +56,13 @@ class UploadCubit extends Cubit<UploadState> {
         _uploadPlanUtils = uploadPlanUtils,
         super(UploadPreparationInProgress());
 
-  Future<void> initializeCubit() async {
+  Future<void> getDriveInformation() async {
     _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
     _targetFolder = await _driveDao
         .folderById(driveId: driveId, folderId: folderId)
         .getSingle();
 
-    emit(UploadCubitInitialized());
+    emit(UploadPreparationInitialized());
   }
 
   /// Tries to find a files that conflict with the files in the target folder.
