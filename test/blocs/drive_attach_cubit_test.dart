@@ -101,7 +101,7 @@ void main() {
     });
 
     blocTest<DriveAttachCubit, DriveAttachState>(
-      'attach drive, start sync and select the drive when given valid public drive details',
+      'attach drive should start sync and should select the drive when given valid public drive details',
       build: () => driveAttachCubit,
       setUp: () {},
       act: (bloc) {
@@ -201,7 +201,7 @@ void main() {
       );
 
       blocTest<DriveAttachCubit, DriveAttachState>(
-        'attach drive, start sync and select the drive when given valid private drive details',
+        'attach drive should start sync and should select the drive when given valid private drive details',
         build: () => DriveAttachCubit(
           arweave: arweave,
           driveDao: driveDao,
