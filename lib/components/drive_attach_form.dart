@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
@@ -16,7 +17,7 @@ import 'components.dart';
 
 Future<void> attachDrive({
   required BuildContext context,
-  String? driveId,
+  DriveID? driveId,
   String? driveName,
   SecretKey? driveKey,
 }) =>
