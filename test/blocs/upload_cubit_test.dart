@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ardrive/blocs/blocs.dart';
@@ -14,7 +15,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/utils.dart';
 
-// TODO: Test prepareUploadPlanAndCostEstimates
+// TODO(thiagocarvalhodev): Test the case of remove files before download when pass ConflictingFileActions.SKIP.
 // TODO: Test startUpload
 void main() {
   // Mocks
@@ -45,7 +46,7 @@ void main() {
   final tKeyBytes = Uint8List(32);
   fillBytesWithSecureRandom(tKeyBytes);
 
-  setUpAll(() {
+  setUpAll(() async {
     registerFallbackValue(SecretKey([]));
     registerFallbackValue(Wallet());
     registerFallbackValue(FolderEntry(
@@ -66,21 +67,7 @@ void main() {
         dateCreated: DateTime.now(),
         lastUpdated: DateTime.now(),
         privacy: ''));
-  });
 
-  UploadCubit getUploadCubitInstanceWith(List<XFile> files) {
-    return UploadCubit(
-        uploadPlanUtils: mockUploadPlanUtils,
-        driveId: tDriveId,
-        folderId: tRootFolderId,
-        files: files,
-        profileCubit: mockProfileCubit!,
-        driveDao: mockDriveDao,
-        arweave: mockArweave,
-        pst: mockPst);
-  }
-
-  setUp(() async {
     tWalletAddress = await tWallet.getAddress();
 
     db = getTestDb();
@@ -119,6 +106,29 @@ void main() {
       nestedFolderFileCount: tNestedFolderFileCount,
     );
   });
+
+  UploadCubit getUploadCubitInstanceWith(List<XFile> files) {
+    return UploadCubit(
+        uploadPlanUtils: mockUploadPlanUtils,
+        driveId: tDriveId,
+        folderId: tRootFolderId,
+        files: files,
+        profileCubit: mockProfileCubit!,
+        driveDao: mockDriveDao,
+        arweave: mockArweave,
+        pst: mockPst);
+  }
+
+  void setDumbUploadPlan() => when(() => mockUploadPlanUtils.xfilesToUploadPlan(
+      files: any(named: 'files'),
+      cipherKey: any(named: 'cipherKey'),
+      wallet: any(named: 'wallet'),
+      conflictingFiles: any(named: 'conflictingFiles'),
+      targetDrive: any(named: 'targetDrive'),
+      folderEntry: any<FolderEntry>(
+          named: 'folderEntry'))).thenAnswer((invocation) => Future.value(
+      UploadPlan.create(v2FileUploadHandles: {}, dataItemUploadHandles: {})));
+
   group('Testing checkConflictingFiles', () {
     setUp(() {
       when(() => mockProfileCubit!.state).thenReturn(
@@ -139,15 +149,7 @@ void main() {
           .thenAnswer((invocation) => Future.value(BigInt.zero));
       when(() => mockArweave.getArUsdConversionRate())
           .thenAnswer((invocation) => Future.value(10));
-      when(() => mockUploadPlanUtils.xfilesToUploadPlan(
-              files: any(named: 'files'),
-              cipherKey: any(named: 'cipherKey'),
-              wallet: any(named: 'wallet'),
-              conflictingFiles: any(named: 'conflictingFiles'),
-              targetDrive: any(named: 'targetDrive'),
-              folderEntry: any<FolderEntry>(named: 'folderEntry')))
-          .thenAnswer((invocation) => Future.value(UploadPlan.create(
-              v2FileUploadHandles: {}, dataItemUploadHandles: {})));
+      setDumbUploadPlan();
     });
     blocTest<UploadCubit, UploadState>(
         'Should emit UploadFileConflict with correctly file names and'
@@ -156,14 +158,11 @@ void main() {
           return getUploadCubitInstanceWith(tAllConflictingFiles);
         },
         act: (cubit) async {
-          await cubit.initializeCubit();
+          await cubit.startUploadPreparation();
           await cubit.checkConflictingFiles();
         },
-        tearDown: () async {
-          await db.close();
-        },
         expect: () => <dynamic>[
-              TypeMatcher<UploadCubitInitialized>(),
+              TypeMatcher<UploadPreparationInitialized>(),
               TypeMatcher<UploadPreparationInProgress>(),
               UploadFileConflict(
                   isAllFilesConflicting: true,
@@ -176,15 +175,13 @@ void main() {
         build: () {
           return getUploadCubitInstanceWith(tSomeConflictingFiles);
         },
-        tearDown: () async {
-          await db.close();
-        },
+        tearDown: () {},
         act: (cubit) async {
-          await cubit.initializeCubit();
+          await cubit.startUploadPreparation();
           await cubit.checkConflictingFiles();
         },
         expect: () => <dynamic>[
-              TypeMatcher<UploadCubitInitialized>(),
+              TypeMatcher<UploadPreparationInitialized>(),
               TypeMatcher<UploadPreparationInProgress>(),
               UploadFileConflict(
                   isAllFilesConflicting: false,
@@ -197,17 +194,180 @@ void main() {
         build: () {
           return getUploadCubitInstanceWith(tNoConflictingFiles);
         },
-        tearDown: () async {
-          await db.close();
-        },
         act: (cubit) async {
-          await cubit.initializeCubit();
+          await cubit.startUploadPreparation();
           await cubit.checkConflictingFiles();
         },
         expect: () => <dynamic>[
-              TypeMatcher<UploadCubitInitialized>(),
+              TypeMatcher<UploadPreparationInitialized>(),
               TypeMatcher<UploadPreparationInProgress>(),
               TypeMatcher<UploadReady>()
             ]);
+  });
+
+  group('Testing prepareUploadPlanAndCostEstimates', () {
+    setUp(() {
+      when(() => mockProfileCubit!.state).thenReturn(
+        ProfileLoggedIn(
+          username: 'Test',
+          password: '123',
+          wallet: tWallet,
+          walletAddress: tWalletAddress!,
+          walletBalance: BigInt.one,
+          cipherKey: SecretKey(tKeyBytes),
+        ),
+      );
+    });
+    blocTest<UploadCubit, UploadState>(
+      'Should emit [UploadPreparationInitialized, UploadWalledMismatch]',
+      setUp: () async {
+        // wallet mismatch
+        when(() => mockProfileCubit!.checkIfWalletMismatch())
+            .thenAnswer((i) => Future.value(true));
+      },
+      build: () {
+        return getUploadCubitInstanceWith(tNoConflictingFiles);
+      },
+      act: (cubit) async {
+        await cubit.startUploadPreparation();
+        await cubit.prepareUploadPlanAndCostEstimates();
+      },
+      expect: () =>
+          <UploadState>[UploadPreparationInitialized(), UploadWalletMismatch()],
+    );
+
+    blocTest<UploadCubit, UploadState>(
+      'Should emit'
+      '[UploadPreparationInitialized, UploadPreparationInProgress(isArConnected: true), UploadReady]',
+      setUp: () async {
+        // wallet doesn't mismatch
+        when(() => mockProfileCubit!.checkIfWalletMismatch())
+            .thenAnswer((i) => Future.value(false));
+        // is ArConnect profile
+        when(() => mockProfileCubit!.isCurrentProfileArConnect())
+            .thenAnswer((i) => Future.value(true));
+        when(() => mockPst.getPSTFee(BigInt.zero))
+            .thenAnswer((invocation) => Future.value(BigInt.zero));
+        when(() => mockArweave.getArUsdConversionRate())
+            .thenAnswer((invocation) => Future.value(10));
+
+        when(() => mockUploadPlanUtils.xfilesToUploadPlan(
+                files: any(named: 'files'),
+                cipherKey: any(named: 'cipherKey'),
+                wallet: any(named: 'wallet'),
+                conflictingFiles: any(named: 'conflictingFiles'),
+                targetDrive: any(named: 'targetDrive'),
+                folderEntry: any<FolderEntry>(named: 'folderEntry')))
+            .thenAnswer((invocation) => Future.value(UploadPlan.create(
+                v2FileUploadHandles: {}, dataItemUploadHandles: {})));
+      },
+      build: () {
+        return getUploadCubitInstanceWith(tNoConflictingFiles);
+      },
+      act: (cubit) async {
+        await cubit.startUploadPreparation();
+        await cubit.prepareUploadPlanAndCostEstimates();
+      },
+      expect: () => <dynamic>[
+        UploadPreparationInitialized(),
+        UploadPreparationInProgress(isArConnect: true),
+        TypeMatcher<UploadReady>()
+      ],
+    );
+
+    blocTest<UploadCubit, UploadState>(
+      'Should emit'
+      ' [UploadPreparationInitialized, UploadPreparationInProgress(isArConnected: false), UploadReady]',
+      setUp: () async {
+        // wallet doesn't mismatch
+        when(() => mockProfileCubit!.checkIfWalletMismatch())
+            .thenAnswer((i) => Future.value(false));
+
+        // is not ArConnect profile
+        when(() => mockProfileCubit!.isCurrentProfileArConnect())
+            .thenAnswer((i) => Future.value(false));
+        when(() => mockPst.getPSTFee(BigInt.zero))
+            .thenAnswer((invocation) => Future.value(BigInt.zero));
+        when(() => mockArweave.getArUsdConversionRate())
+            .thenAnswer((invocation) => Future.value(10));
+
+        when(() => mockUploadPlanUtils.xfilesToUploadPlan(
+                files: any(named: 'files'),
+                cipherKey: any(named: 'cipherKey'),
+                wallet: any(named: 'wallet'),
+                conflictingFiles: any(named: 'conflictingFiles'),
+                targetDrive: any(named: 'targetDrive'),
+                folderEntry: any<FolderEntry>(named: 'folderEntry')))
+            .thenAnswer((invocation) => Future.value(UploadPlan.create(
+                v2FileUploadHandles: {}, dataItemUploadHandles: {})));
+      },
+      build: () {
+        return getUploadCubitInstanceWith(tNoConflictingFiles);
+      },
+      act: (cubit) async {
+        await cubit.startUploadPreparation();
+        await cubit.prepareUploadPlanAndCostEstimates();
+      },
+      tearDown: () {
+        getUploadCubitInstanceWith(tNoConflictingFiles).close();
+      },
+      expect: () => <dynamic>[
+        UploadPreparationInitialized(),
+        UploadPreparationInProgress(isArConnect: false),
+        TypeMatcher<UploadReady>()
+      ],
+    );
+
+    late XFile tTooLargeFile;
+    late List<XFile> tTooLargeFiles;
+
+    blocTest<UploadCubit, UploadState>(
+      'Should emit'
+      '[UploadPreparationInitialized, UploadPreparationInProgress(isArConnected: false), UploadFileTooLarge]',
+      setUp: () async {
+        final file = File('some_file.txt');
+
+        file.writeAsBytesSync(Uint8List(publicFileSizeLimit.toInt() + 1));
+
+        tTooLargeFile = XFile(file.path);
+
+        tTooLargeFiles = [tTooLargeFile];
+        // wallet doesn't mismatch
+        when(() => mockProfileCubit!.checkIfWalletMismatch())
+            .thenAnswer((i) => Future.value(false));
+        // is not ArConnect profile
+        when(() => mockProfileCubit!.isCurrentProfileArConnect())
+            .thenAnswer((i) => Future.value(false));
+        when(() => mockPst.getPSTFee(BigInt.zero))
+            .thenAnswer((invocation) => Future.value(BigInt.zero));
+        when(() => mockArweave.getArUsdConversionRate())
+            .thenAnswer((invocation) => Future.value(10));
+        when(() => mockUploadPlanUtils.xfilesToUploadPlan(
+                files: any(named: 'files'),
+                cipherKey: any(named: 'cipherKey'),
+                wallet: any(named: 'wallet'),
+                conflictingFiles: any(named: 'conflictingFiles'),
+                targetDrive: any(named: 'targetDrive'),
+                folderEntry: any<FolderEntry>(named: 'folderEntry')))
+            .thenAnswer((invocation) => Future.value(UploadPlan.create(
+                v2FileUploadHandles: {}, dataItemUploadHandles: {})));
+      },
+      build: () {
+        return getUploadCubitInstanceWith(tTooLargeFiles);
+      },
+      tearDown: () {
+        File('some_file.txt').deleteSync();
+      },
+      act: (cubit) async {
+        await cubit.startUploadPreparation();
+        await cubit.prepareUploadPlanAndCostEstimates();
+      },
+      expect: () => <dynamic>[
+        UploadPreparationInitialized(),
+        UploadPreparationInProgress(isArConnect: false),
+        UploadFileTooLarge(
+            tooLargeFileNames: [tTooLargeFiles.first.name], isPrivate: false)
+      ],
+    );
   });
 }

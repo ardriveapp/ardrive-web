@@ -56,12 +56,11 @@ class UploadCubit extends Cubit<UploadState> {
         _uploadPlanUtils = uploadPlanUtils,
         super(UploadPreparationInProgress());
 
-  Future<void> getDriveInformation() async {
+  Future<void> startUploadPreparation() async {
     _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
     _targetFolder = await _driveDao
         .folderById(driveId: driveId, folderId: folderId)
         .getSingle();
-
     emit(UploadPreparationInitialized());
   }
 

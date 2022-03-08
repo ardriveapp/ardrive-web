@@ -37,7 +37,7 @@ Future<void> promptToUploadFile(
           arweave: context.read<ArweaveService>(),
           pst: context.read<PstService>(),
           driveDao: context.read<DriveDao>(),
-        )..initializeCubit(),
+        )..startUploadPreparation(),
         child: UploadForm(),
       ),
       barrierDismissible: false,
@@ -51,7 +51,7 @@ class UploadForm extends StatelessWidget {
         listener: (context, state) async {
           if (state is UploadComplete || state is UploadWalletMismatch) {
             Navigator.pop(context);
-          } else if (state is UploadCubitInitialized) {
+          } else if (state is UploadPreparationInitialized) {
             await context.read<UploadCubit>().checkConflictingFiles();
           }
           if (state is UploadWalletMismatch) {
@@ -59,7 +59,6 @@ class UploadForm extends StatelessWidget {
             await context.read<ProfileCubit>().logoutProfile();
           }
         },
-        // buildWhen: (_, currentState) => currentState is UploadCubitInitialized,
         builder: (context, state) {
           if (state is UploadFileConflict) {
             return AppDialog(
@@ -132,7 +131,8 @@ class UploadForm extends StatelessWidget {
                 ),
               ],
             );
-          } else if (state is UploadPreparationInProgress) {
+          } else if (state is UploadPreparationInProgress ||
+              state is UploadPreparationInitialized) {
             return AppDialog(
               title: 'Preparing upload...',
               content: SizedBox(
@@ -142,7 +142,8 @@ class UploadForm extends StatelessWidget {
                   children: <Widget>[
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
-                    if (state.isArConnect)
+                    if (state is UploadPreparationInProgress &&
+                        state.isArConnect)
                       Text(
                         'CAUTION: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.',
                       )
