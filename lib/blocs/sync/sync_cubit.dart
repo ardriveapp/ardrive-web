@@ -261,8 +261,9 @@ class SyncCubit extends Cubit<SyncState> {
       } else {
         driveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
         if (driveKey == null) {
-          throw UnimplementedError('Drive Key not found in cache');
-          //TODO: Detach drive
+          print('Drive Key not found in cache');
+          await _driveDao.deleteDrive(drive.id);
+          return;
         }
       }
     }

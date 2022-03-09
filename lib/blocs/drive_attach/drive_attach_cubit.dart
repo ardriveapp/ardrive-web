@@ -49,9 +49,6 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     );
   }
 
-  Future<void> cleanUpKeylessDrives() async =>
-      await _driveDao.deleteAllKeylessPrivateDrives();
-
   Future<void> initializeForm({
     String? driveId,
     String? driveName,
@@ -95,7 +92,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     if (form.invalid) {
       return;
     }
-    await cleanUpKeylessDrives();
+
     emit(DriveAttachInProgress());
 
     try {
@@ -220,7 +217,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
             validators: [
               Validators.required,
             ],
-            asyncValidatorsDebounceTime: 1000,
+            asyncValidatorsDebounceTime: 500,
             asyncValidators: [_driveKeyValidator],
           ),
         });
