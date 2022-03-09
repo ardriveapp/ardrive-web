@@ -169,6 +169,21 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
+  Future<void> deleteAllKeylessPrivateDrives() async {
+    final privateDrives = await (select(drives)
+          ..where(
+            (drive) => drive.privacy.equals(DrivePrivacy.private),
+          ))
+        .get();
+
+    privateDrives.forEach((drive) async {
+      final driveKey = await getDriveKeyFromMemory(drive.id);
+      if (driveKey == null) {
+        delete(drives).where((d) => d.id.equals(drive.id));
+      }
+    });
+  }
+
   Future<DrivesCompanion> _addDriveKeyToDriveCompanion(
     DrivesCompanion drive,
     SecretKey profileKey,

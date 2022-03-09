@@ -54,6 +54,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     String? driveName,
     SecretKey? driveKey,
   }) async {
+    await _driveDao.deleteAllKeylessPrivateDrives();
     _driveKey = driveKey;
     form = FormGroup(
       {
