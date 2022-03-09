@@ -114,7 +114,9 @@ class DriveAttachForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(null),
-              child: Text(AppLocalizations.of(context)!.cancel.toUpperCase()),
+              child: Text(AppLocalizations.of(context)!
+                  .cancelDriveAttach
+                  .toUpperCase()),
             ),
             ElevatedButton(
               onPressed: () => context.read<DriveAttachCubit>().submit(),

@@ -1,25 +1,5 @@
 {
   "@@locale": "en",
-  "cancel": "Cancel",
-  "attach": "Attach",
-  "copyLink": "Copy Link",
-  "done": "Done",
-  "close": "Close",
-  "continueString": "Continue",
-  "insufficientAR": "You do not have sufficient AR to create a drive.",
-  "fileWithSameName": "A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?",
-  "filesWithSameName": "files with the same name already exists at this location. Do you want to continue and upload this file as a new version?",
-  "mayTakeAWhile": "This may take a while",
-  "willBeUploadedPublicly": "These file(s) will be uploaded publicly",
-  "size": "Size",
-  "onlySupportsFileSize": "ArDrive on web currently only supports file uploads smaller than ",
-  "hundredMBForPrivateDrives": "100 MB for private drives",
-  "oneGigForPublicDrives": "1.25 GB for public drives",
-  "failedToPrepareUpload": "Failed to prepare file upload",
-  "errorOccuredPreparingUpload": "An error occured while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.",
-  "tryAgain": "Try Again",
-  "nothingToSeeHere": "There's nothing to see here.",
-  "nothingToSeeHereClickToAdd": "There's nothing to see here. Click \"new\" to add some files.",
   "welcomeTo_body": "Welcome to your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive",
   "@welcomeTo_body": {
     "description": "Welcomming message just after the ArDrive logo"
@@ -580,6 +560,14 @@
   "attachingDrive": "Attaching drive...",
   "@attachingDrive": {
     "description": "Drive attach form"
+  },
+  "cancelDriveAttach": "Cancel",
+  "@cancelDriveAttach": {
+    "description": "Drive attach form"
+  },
+  "attach": "Attach",
+  "@attach": {
+    "description": "Drive attach"
   },
   "creatingDrive": "Creating drive...",
   "@creatingDrive": {
