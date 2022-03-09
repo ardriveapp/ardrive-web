@@ -30,25 +30,54 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
           .fileById(driveId: driveId, fileId: fileId)
           .getSingle();
 
-      emit(FileDownloadInProgress(
-          fileName: file.name, totalByteCount: file.size));
-      final dataRes = await http.get(Uri.parse(
-          _arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}'));
+      emit(
+        FileDownloadInProgress(
+          fileName: file.name,
+          totalByteCount: file.size,
+        ),
+      );
+      final dataRes = await http.get(
+        Uri.parse(
+          _arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}',
+        ),
+      );
+
       late Uint8List dataBytes;
 
-      if (drive.isPublic) {
-        dataBytes = dataRes.bodyBytes;
-      } else if (drive.isPrivate) {
-        final profile = _profileCubit.state as ProfileLoggedIn;
+      switch (drive.privacy) {
+        case DrivePrivacy.private:
+          final profile = _profileCubit.state;
+          SecretKey? driveKey;
 
-        final dataTx = await (_arweave.getTransactionDetails(file.dataTxId));
+          if (profile is ProfileLoggedIn) {
+            driveKey = await _driveDao.getDriveKey(
+              drive.id,
+              profile.cipherKey,
+            );
+          } else {
+            driveKey = await _driveDao.getDriveKeyFromMemory(driveId);
+          }
 
-        final fileKey =
-            await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
-        if (dataTx != null) {
-          dataBytes =
-              await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey!);
-        }
+          if (driveKey == null) {
+            throw StateError('Drive Key not found');
+          }
+
+          final fileKey = await _driveDao.getFileKey(fileId, driveKey);
+          final dataTx = await (_arweave.getTransactionDetails(file.dataTxId));
+
+          if (dataTx != null) {
+            dataBytes = await decryptTransactionData(
+              dataTx,
+              dataRes.bodyBytes,
+              fileKey,
+            );
+          }
+
+          break;
+        case DrivePrivacy.public:
+          dataBytes = dataRes.bodyBytes;
+          break;
+        default:
       }
 
       emit(
