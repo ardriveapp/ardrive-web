@@ -11,6 +11,7 @@ import 'package:equatable/equatable.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
+import 'package:rxdart/rxdart.dart';
 
 import '../blocs.dart';
 import 'enums/conflicting_files_actions.dart';
@@ -187,7 +188,9 @@ class UploadCubit extends Cubit<UploadState> {
         pstService: _pst,
         wallet: profile.wallet,
       );
-      await for (final _ in bundleHandle.upload(_arweave)) {
+      await for (final _ in bundleHandle
+          .upload(_arweave)
+          .debounceTime(Duration(milliseconds: 500))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       bundleHandle.dispose();
@@ -202,7 +205,9 @@ class UploadCubit extends Cubit<UploadState> {
       await uploadHandle.writeFileEntityToDatabase(
         driveDao: _driveDao,
       );
-      await for (final _ in uploadHandle.upload(_arweave)) {
+      await for (final _ in uploadHandle
+          .upload(_arweave)
+          .debounceTime(Duration(milliseconds: 500))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       uploadHandle.dispose();
