@@ -103,7 +103,10 @@ class FileUploadHandle implements UploadHandle {
   Stream<Null> upload(ArweaveService arweave) async* {
     await arweave.postTx(entityTx);
 
-    await for (final upload in arweave.client.transactions.upload(dataTx)) {
+    await for (final upload in arweave.client.transactions.upload(
+      dataTx,
+      maxConcurrentUploadCount: 32,
+    )) {
       uploadProgress = upload.progress;
       yield null;
     }

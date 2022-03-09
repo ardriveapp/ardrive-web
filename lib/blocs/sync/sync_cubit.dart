@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
@@ -21,10 +22,11 @@ import '../blocs.dart';
 part 'sync_state.dart';
 
 const kRequiredTxConfirmationCount = 15;
-const kRequiredTxConfirmationPendingThreshold = 60;
+const kRequiredTxConfirmationPendingThreshold = 60 * 8;
 
 const kSyncTimerDuration = 5;
 const kArConnectSyncTimerDuration = 2;
+const kBlockHeightLookBack = 240;
 
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.
@@ -115,6 +117,10 @@ class SyncCubit extends Cubit<SyncState> {
       <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
 
   Future<void> startSync() async {
+    if (state is SyncInProgress) {
+      return;
+    }
+
     try {
       final profile = _profileCubit.state;
       String? ownerAddress;
@@ -157,7 +163,9 @@ class SyncCubit extends Cubit<SyncState> {
 
       final driveSyncProcesses = drives.map((drive) => _syncDrive(
             drive.id,
-            lastBlockHeight: drive.lastBlockHeight!,
+            lastBlockHeight: calculateSyncLastBlockHeight(
+              drive.lastBlockHeight!,
+            ),
             currentBlockheight: currentBlockHeight,
           ).onError((error, stackTrace) {
             print('Error syncing drive with id ${drive.id}');
@@ -177,6 +185,14 @@ class SyncCubit extends Cubit<SyncState> {
     }
     _lastSync = DateTime.now();
     emit(SyncIdle());
+  }
+
+  int calculateSyncLastBlockHeight(int lastBlockHeight) {
+    if (_lastSync != null) {
+      return lastBlockHeight;
+    } else {
+      return max(lastBlockHeight - kBlockHeightLookBack, 0);
+    }
   }
 
   Future<void> createGhosts({String? ownerAddress}) async {
