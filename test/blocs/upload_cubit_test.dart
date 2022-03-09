@@ -129,7 +129,7 @@ void main() {
           named: 'folderEntry'))).thenAnswer((invocation) => Future.value(
       UploadPlan.create(v2FileUploadHandles: {}, dataItemUploadHandles: {})));
 
-  group('Testing checkConflictingFiles', () {
+  group('check if there are some conflicting file', () {
     setUp(() {
       when(() => mockProfileCubit!.state).thenReturn(
         ProfileLoggedIn(
@@ -152,8 +152,8 @@ void main() {
       setDumbUploadPlan();
     });
     blocTest<UploadCubit, UploadState>(
-        'Should emit UploadFileConflict with correctly file names and'
-        ' isAllFilesConflicting true',
+        'should found the conflicting files correctly and set isAllFilesConflicting to true'
+        ' when all files are conflicting',
         build: () {
           return getUploadCubitInstanceWith(tAllConflictingFiles);
         },
@@ -170,8 +170,8 @@ void main() {
             ]);
 
     blocTest<UploadCubit, UploadState>(
-        'Should emit UploadFileConflict with correctly file names '
-        'and isAllFilesConflicting false',
+        'should found the conflicting files correctly and set isAllFilesConflicting to false'
+        ' when there is at least one file that is not conflicting',
         build: () {
           return getUploadCubitInstanceWith(tSomeConflictingFiles);
         },
@@ -189,8 +189,7 @@ void main() {
             ]);
 
     blocTest<UploadCubit, UploadState>(
-        'Emits [UploadCubitInitialized,UploadPreparationInProgress, UploadReady]'
-        ' when there arent conflicting files.',
+        'should not found any conflicting file when there isnt any conflicting file to upload',
         build: () {
           return getUploadCubitInstanceWith(tNoConflictingFiles);
         },
@@ -205,8 +204,21 @@ void main() {
             ]);
   });
 
-  group('Testing prepareUploadPlanAndCostEstimates', () {
+  group('prepare upload plan and costs estimates', () {
+    late XFile tTooLargeFile;
+    late List<XFile> tTooLargeFiles;
+
     setUp(() {
+      when(() => mockProfileCubit!.state).thenReturn(
+        ProfileLoggedIn(
+          username: 'Test',
+          password: '123',
+          wallet: tWallet,
+          walletAddress: tWalletAddress!,
+          walletBalance: BigInt.one,
+          cipherKey: SecretKey(tKeyBytes),
+        ),
+      );
       when(() => mockProfileCubit!.checkIfWalletMismatch())
           .thenAnswer((i) => Future.value(false));
       when(() => mockPst.getPSTFee(BigInt.zero))
@@ -222,24 +234,13 @@ void main() {
               folderEntry: any<FolderEntry>(named: 'folderEntry')))
           .thenAnswer((invocation) => Future.value(UploadPlan.create(
               v2FileUploadHandles: {}, dataItemUploadHandles: {})));
+      when(() => mockProfileCubit!.isCurrentProfileArConnect())
+          .thenAnswer((i) => Future.value(true));
     });
+
     blocTest<UploadCubit, UploadState>(
-      'Should emit'
-      '[UploadPreparationInitialized, UploadPreparationInProgress(isArConnected: true), UploadReady]',
-      setUp: () async {
-        // is ArConnect profile
-        when(() => mockProfileCubit!.isCurrentProfileArConnect())
-            .thenAnswer((i) => Future.value(true));
-        when(() => mockUploadPlanUtils.xfilesToUploadPlan(
-                files: any(named: 'files'),
-                cipherKey: any(named: 'cipherKey'),
-                wallet: any(named: 'wallet'),
-                conflictingFiles: any(named: 'conflictingFiles'),
-                targetDrive: any(named: 'targetDrive'),
-                folderEntry: any<FolderEntry>(named: 'folderEntry')))
-            .thenAnswer((invocation) => Future.value(UploadPlan.create(
-                v2FileUploadHandles: {}, dataItemUploadHandles: {})));
-      },
+      'should set the isArconnect to true when user is ArConnect '
+      'and prepare the upload and set it to ready',
       build: () {
         return getUploadCubitInstanceWith(tNoConflictingFiles);
       },
@@ -253,12 +254,10 @@ void main() {
         TypeMatcher<UploadReady>()
       ],
     );
-
     blocTest<UploadCubit, UploadState>(
-      'Should emit'
-      ' [UploadPreparationInitialized, UploadPreparationInProgress(isArConnected: false), UploadReady]',
-      setUp: () async {
-        // is not ArConnect profile
+      'should set the isArconnect to false when user isnt ArConnect '
+      'and prepare the upload and set it to ready',
+      setUp: () {
         when(() => mockProfileCubit!.isCurrentProfileArConnect())
             .thenAnswer((i) => Future.value(false));
       },
@@ -269,9 +268,6 @@ void main() {
         await cubit.startUploadPreparation();
         await cubit.prepareUploadPlanAndCostEstimates();
       },
-      tearDown: () {
-        getUploadCubitInstanceWith(tNoConflictingFiles).close();
-      },
       expect: () => <dynamic>[
         UploadPreparationInitialized(),
         UploadPreparationInProgress(isArConnect: false),
@@ -279,12 +275,9 @@ void main() {
       ],
     );
 
-    late XFile tTooLargeFile;
-    late List<XFile> tTooLargeFiles;
-
     blocTest<UploadCubit, UploadState>(
-      'Should emit'
-      '[UploadPreparationInitialized, UploadPreparationInProgress(isArConnected: false), UploadFileTooLarge]',
+      'should emit UploadFileTooLarge when a file larger than publicFileSizeLimit'
+      ' is intended to upload',
       setUp: () async {
         final tFile = File('some_file.txt');
         tFile.writeAsBytesSync(Uint8List(publicFileSizeLimit.toInt() + 1));
@@ -303,31 +296,19 @@ void main() {
       },
       expect: () => <dynamic>[
         UploadPreparationInitialized(),
-        UploadPreparationInProgress(isArConnect: false),
+        TypeMatcher<UploadPreparationInProgress>(),
         UploadFileTooLarge(
             tooLargeFileNames: [tTooLargeFiles.first.name], isPrivate: false)
       ],
     );
-  });
 
-  group('Testing prepareUploadPlanAndCostEstimates with Wallet Mismatch ', () {
-    setUp(() {
-      when(() => mockProfileCubit!.state).thenReturn(
-        ProfileLoggedIn(
-          username: 'Test',
-          password: '123',
-          wallet: tWallet,
-          walletAddress: tWalletAddress!,
-          walletBalance: BigInt.one,
-          cipherKey: SecretKey(tKeyBytes),
-        ),
-      );
-      // wallet mismatch
-      when(() => mockProfileCubit!.checkIfWalletMismatch())
-          .thenAnswer((i) => Future.value(true));
-    });
     blocTest<UploadCubit, UploadState>(
-      'Should emit [UploadPreparationInitialized, UploadWalledMismatch]',
+      'should emit the upload wallet mismatch state and does nothing',
+      setUp: () {
+        // wallet mismatch
+        when(() => mockProfileCubit!.checkIfWalletMismatch())
+            .thenAnswer((i) => Future.value(true));
+      },
       build: () {
         return getUploadCubitInstanceWith(tNoConflictingFiles);
       },
