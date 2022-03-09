@@ -49,12 +49,14 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     );
   }
 
+  Future<void> cleanUpKeylessDrives() async =>
+      await _driveDao.deleteAllKeylessPrivateDrives();
+
   Future<void> initializeForm({
     String? driveId,
     String? driveName,
     SecretKey? driveKey,
   }) async {
-    await _driveDao.deleteAllKeylessPrivateDrives();
     _driveKey = driveKey;
     form = FormGroup(
       {
@@ -93,7 +95,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     if (form.invalid) {
       return;
     }
-
+    await cleanUpKeylessDrives();
     emit(DriveAttachInProgress());
 
     try {
