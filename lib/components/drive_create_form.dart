@@ -34,8 +34,8 @@ class DriveCreateForm extends StatelessWidget {
       BlocConsumer<DriveCreateCubit, DriveCreateState>(
         listener: (context, state) {
           if (state is DriveCreateInProgress) {
-            showProgressDialog(context,
-                AppLocalizations.of(context)!.creatingDrive.toUpperCase());
+            showProgressDialog(
+                context, AppLocalizations.of(context)!.creatingDriveEmphasized);
           } else if (state is DriveCreateSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
@@ -46,7 +46,7 @@ class DriveCreateForm extends StatelessWidget {
         builder: (context, state) {
           if (state is DriveCreateZeroBalance) {
             return AppDialog(
-              title: AppLocalizations.of(context)!.createDrive.toUpperCase(),
+              title: AppLocalizations.of(context)!.createDriveEmphasized,
               content: SizedBox(
                   width: kMediumDialogWidth,
                   child: Text(AppLocalizations.of(context)!
@@ -54,14 +54,14 @@ class DriveCreateForm extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child:
-                      Text(AppLocalizations.of(context)!.cancelDriveCreation),
+                  child: Text(AppLocalizations.of(context)!
+                      .cancelDriveCreationEmphasized),
                 ),
               ],
             );
           } else {
             return AppDialog(
-              title: AppLocalizations.of(context)!.createDrive.toUpperCase(),
+              title: AppLocalizations.of(context)!.createDriveEmphasized,
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: ReactiveForm(
@@ -106,12 +106,11 @@ class DriveCreateForm extends StatelessWidget {
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
                   child: Text(AppLocalizations.of(context)!
-                      .cancelDriveCreation
-                      .toUpperCase()),
+                      .cancelDriveCreationEmphasized),
                 ),
                 ElevatedButton(
                   onPressed: () => context.read<DriveCreateCubit>().submit(),
-                  child: Text(AppLocalizations.of(context)!.create),
+                  child: Text(AppLocalizations.of(context)!.createEmphasized),
                 ),
               ],
             );

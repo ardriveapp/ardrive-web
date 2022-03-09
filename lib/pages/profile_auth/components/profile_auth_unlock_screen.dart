@@ -45,7 +45,7 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                             children: [
                               Text(
                                 AppLocalizations.of(context)!
-                                    .welcomeBackUser(state.username!)
+                                    .welcomeBackUserEmphasized(state.username!)
                                     .toUpperCase(),
                                 textAlign: TextAlign.center,
                                 style: Theme.of(context).textTheme.headline5,
@@ -84,8 +84,7 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                       .read<ProfileUnlockCubit>()
                                       .submit(),
                                   child: Text(AppLocalizations.of(context)!
-                                      .unlock
-                                      .toUpperCase()),
+                                      .unlockEmphasized),
                                 ),
                               ),
                               const SizedBox(height: 16),

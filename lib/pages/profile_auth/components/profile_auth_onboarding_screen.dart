@@ -34,7 +34,8 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.welcomeToThePermaweb,
+                    AppLocalizations.of(context)!
+                        .welcomeToThePermawebEmphasized,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),
@@ -66,7 +67,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.payPerFile,
+                    AppLocalizations.of(context)!.payPerFileEmphasized,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),
@@ -95,7 +96,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.secondsFromForever,
+                    AppLocalizations.of(context)!.secondsFromForeverEmphasized,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),
@@ -124,7 +125,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.totalPrivacyControl,
+                    AppLocalizations.of(context)!.totalPrivacyControlEmphasized,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),
@@ -153,7 +154,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.neverDeleted,
+                    AppLocalizations.of(context)!.neverDeletedEmphasized,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),

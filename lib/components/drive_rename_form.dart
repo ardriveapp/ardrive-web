@@ -39,8 +39,8 @@ class DriveRenameForm extends StatelessWidget {
       BlocConsumer<DriveRenameCubit, DriveRenameState>(
         listener: (context, state) {
           if (state is DriveRenameInProgress) {
-            showProgressDialog(context,
-                AppLocalizations.of(context)!.renamingDrive.toUpperCase());
+            showProgressDialog(
+                context, AppLocalizations.of(context)!.renamingDriveEmphasized);
           } else if (state is DriveRenameSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
@@ -49,7 +49,7 @@ class DriveRenameForm extends StatelessWidget {
           }
         },
         builder: (context, state) => AppDialog(
-          title: AppLocalizations.of(context)!.renameDrive.toUpperCase(),
+          title: AppLocalizations.of(context)!.renameDriveEmphasized,
           content: state is! FsEntryRenameInitializing
               ? SizedBox(
                   width: kMediumDialogWidth,
@@ -69,13 +69,12 @@ class DriveRenameForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(AppLocalizations.of(context)!
-                  .cancelDriveRename
-                  .toUpperCase()),
+              child: Text(
+                  AppLocalizations.of(context)!.cancelDriveRenameEmphasized),
             ),
             ElevatedButton(
               onPressed: () => context.read<DriveRenameCubit>().submit(),
-              child: Text(AppLocalizations.of(context)!.rename.toUpperCase()),
+              child: Text(AppLocalizations.of(context)!.renameEmphasized),
             ),
           ],
         ),

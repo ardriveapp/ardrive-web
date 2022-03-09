@@ -80,13 +80,15 @@ class UploadForm extends StatelessWidget {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(AppLocalizations.of(context)!.cancelUpload),
+                  child: Text(
+                      AppLocalizations.of(context)!.cancelUploadEmphasized),
                 ),
                 ElevatedButton(
                   onPressed: () => context
                       .read<UploadCubit>()
                       .prepareUploadPlanAndCostEstimates(),
-                  child: Text(AppLocalizations.of(context)!.continueUpload),
+                  child: Text(
+                      AppLocalizations.of(context)!.continueUploadEmphasized),
                 ),
               ],
             );
@@ -240,7 +242,8 @@ class UploadForm extends StatelessWidget {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(AppLocalizations.of(context)!.cancelUpload),
+                  child: Text(
+                      AppLocalizations.of(context)!.cancelUploadEmphasized),
                 ),
                 ElevatedButton(
                   onPressed: state.sufficientArBalance

@@ -61,11 +61,11 @@ class FsEntryMoveForm extends StatelessWidget {
       BlocConsumer<FsEntryMoveCubit, FsEntryMoveState>(
         listener: (context, state) {
           if (state is FolderEntryMoveInProgress) {
-            showProgressDialog(context,
-                AppLocalizations.of(context)!.movingFolder.toUpperCase());
+            showProgressDialog(
+                context, AppLocalizations.of(context)!.movingFolderEmphasized);
           } else if (state is FileEntryMoveInProgress) {
-            showProgressDialog(context,
-                AppLocalizations.of(context)!.movingFile.toUpperCase());
+            showProgressDialog(
+                context, AppLocalizations.of(context)!.movingFileEmphasized);
           } else if (state is FolderEntryMoveSuccess ||
               state is FileEntryMoveSuccess) {
             Navigator.pop(context);
@@ -110,12 +110,11 @@ class FsEntryMoveForm extends StatelessWidget {
                   TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: Text(AppLocalizations.of(context)!
-                          .cancelMoveEntity
-                          .toUpperCase())),
+                          .cancelMoveEntityEmphasized)),
                   ElevatedButton(
                     onPressed: () => context.read<FsEntryMoveCubit>().submit(),
-                    child: Text(
-                        AppLocalizations.of(context)!.moveHere.toUpperCase()),
+                    child:
+                        Text(AppLocalizations.of(context)!.moveHereEmphasized),
                   ),
                 ],
               );
@@ -123,8 +122,8 @@ class FsEntryMoveForm extends StatelessWidget {
             if (state is FsEntryMoveFolderLoadSuccess) {
               return TextButton.icon(
                 icon: const Icon(Icons.create_new_folder),
-                label: Text(
-                    AppLocalizations.of(context)!.createFolder.toUpperCase()),
+                label:
+                    Text(AppLocalizations.of(context)!.createFolderEmphasized),
                 onPressed: () => showDialog(
                   context: context,
                   builder: (_) => BlocProvider(
@@ -146,8 +145,8 @@ class FsEntryMoveForm extends StatelessWidget {
 
           return AppDialog(
             title: state.isMovingFolder
-                ? AppLocalizations.of(context)!.moveFolder.toUpperCase()
-                : AppLocalizations.of(context)!.moveFile.toUpperCase(),
+                ? AppLocalizations.of(context)!.moveFolderEmphasized
+                : AppLocalizations.of(context)!.moveFileEmphasized,
             contentPadding: EdgeInsets.zero,
             content: state is FsEntryMoveFolderLoadSuccess
                 ? SizedBox(

@@ -63,10 +63,10 @@ class FsEntryRenameForm extends StatelessWidget {
         listener: (context, state) {
           if (state is FolderEntryRenameInProgress) {
             showProgressDialog(context,
-                AppLocalizations.of(context)!.renamingFolder.toUpperCase());
+                AppLocalizations.of(context)!.renamingFolderEmphasized);
           } else if (state is FileEntryRenameInProgress) {
-            showProgressDialog(context,
-                AppLocalizations.of(context)!.renamingFile.toUpperCase());
+            showProgressDialog(
+                context, AppLocalizations.of(context)!.renamingFileEmphasized);
           } else if (state is FolderEntryRenameSuccess ||
               state is FileEntryRenameSuccess) {
             Navigator.pop(context);
@@ -78,8 +78,8 @@ class FsEntryRenameForm extends StatelessWidget {
         },
         builder: (context, state) => AppDialog(
           title: state.isRenamingFolder
-              ? AppLocalizations.of(context)!.renameFolder.toUpperCase()
-              : AppLocalizations.of(context)!.renameFile.toUpperCase(),
+              ? AppLocalizations.of(context)!.renameFolderEmphasized
+              : AppLocalizations.of(context)!.renameFileEmphasized,
           content: state is! FsEntryRenameInitializing
               ? SizedBox(
                   width: kMediumDialogWidth,
@@ -101,12 +101,11 @@ class FsEntryRenameForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                  AppLocalizations.of(context)!.cancelRename.toUpperCase()),
+              child: Text(AppLocalizations.of(context)!.cancelRenameEmphasized),
             ),
             ElevatedButton(
               onPressed: () => context.read<FsEntryRenameCubit>().submit(),
-              child: Text(AppLocalizations.of(context)!.rename.toUpperCase()),
+              child: Text(AppLocalizations.of(context)!.renameEmphasized),
             ),
           ],
         ),

@@ -22,7 +22,7 @@ class ScreenNotSupportedPage extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 32),
-                Text(AppLocalizations.of(context)!.weReSorry,
+                Text(AppLocalizations.of(context)!.weReSorryEmphasized,
                     style: Theme.of(context).textTheme.headline5),
                 const SizedBox(height: 16),
                 Text(AppLocalizations.of(context)!

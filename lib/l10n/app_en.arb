@@ -12,21 +12,21 @@
   "@welcomeTo_description": {
     "description": "Brief description of ArDrive as welcomming"
   },
-  "selectWallet": "Select wallet",
-  "@selectWallet": {
-    "description": "The red button at the first screen which opens the file picker"
+  "selectWalletEmphasized": "SELECT WALLET",
+  "@selectWalletEmphasized": {
+    "description": "The red button at the first screen which opens the file picker. Emphasized with upper case"
   },
-  "useArconnect": "Use ArConnect",
-  "@useArconnect": {
-    "description": "Optional button that appears when the user has ArConnect installed on their browser"
+  "useArconnectEmphasized": "USE ARCONNECT",
+  "@useArconnectEmphasized": {
+    "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
   },
   "getAWallet": "Don't have a wallet? Get one here!",
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
-  "welcomeToThePermaweb": "Welcome to the PermaWeb",
-  "@welcomeToThePermaweb": {
-    "description": "Welcomming message at the onboarding screen"
+  "welcomeToThePermawebEmphasized": "WELCOME TO THE PERMAWEB",
+  "@welcomeToThePermawebEmphasized": {
+    "description": "Welcomming message at the onboarding screen. Emphasized with upper case"
   },
   "ardriveIsntJustAnotherCloudSyncApp": "ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.",
   "@ardriveIsntJustAnotherCloudSyncApp": {
@@ -40,9 +40,9 @@
   "@weDoAFewThingsDifferently": {
     "description": "Description of ArDrive"
   },
-  "payPerFile": "Pay per File",
-  "@payPerFile": {
-    "description": "Description of ArDrive"
+  "payPerFileEmphasized": "PAY PER FILE",
+  "@payPerFileEmphasized": {
+    "description": "Description of ArDrive. Emphasized with upper case"
   },
   "noSubscriptions": "No subscriptions are needed!",
   "@noSubscriptions": {
@@ -52,9 +52,9 @@
   "@monthlyCharges": {
     "description": "Description of ArDrive"
   },
-  "secondsFromForever": "Seconds From Forever",
-  "@secondsFromForever": {
-    "description": "Description of ArDrive"
+  "secondsFromForeverEmphasized": "SECONDS FROM FOREVER",
+  "@secondsFromForeverEmphasized": {
+    "description": "Description of ArDrive. Emphasized with upper case"
   },
   "decentralizedPermanent": "Decentralized, permanent data storage doesn’t happen in an instant.",
   "@decentralizedPermanent": {
@@ -64,9 +64,9 @@
   "@greenCheckMark": {
     "description": "Description of ArDrive"
   },
-  "totalPrivacyControl": "Total Privacy Control",
-  "@totalPrivacyControl": {
-    "description": "Description of ArDrive"
+  "totalPrivacyControlEmphasized": "TOTAL PRIVACY CONTROL",
+  "@totalPrivacyControlEmphasized": {
+    "description": "Description of ArDrive. Emphasized with upper case"
   },
   "yourChoice": "Your choice: make files public or private using the best encryption.",
   "@yourChoice": {
@@ -76,9 +76,9 @@
   "@noOneWillSee": {
     "description": "Description of ArDrive"
   },
-  "neverDeleted": "Never deleted",
-  "@neverDeleted": {
-    "description": "Description of ArDrive"
+  "neverDeletedEmphasized": "NEVER DELETED",
+  "@neverDeletedEmphasized": {
+    "description": "Description of ArDrive. Emphasized with upper case"
   },
   "noDeleteButton": "Remember: There is no delete button (for you or us)!",
   "@noDeleteButton": {
@@ -108,13 +108,13 @@
   "@logIn": {
     "description": "The user has provided wrong credentials"
   },
-  "welcomeBack": "Welcome Back",
-  "@welcomeBack": {
-    "description": "The user is adding a wallet that has some drives on it"
+  "welcomeBackEmphasized": "WELCOME BACK",
+  "@welcomeBackEmphasized": {
+    "description": "The user is adding a wallet that has some drives on it. Emphasized with upper case"
   },
-  "letsGetStarted": "Let's get started",
-  "@letsGetStarted": {
-    "description": "The user is adding a wallet that has some drives on it"
+  "letsGetStartedEmphasized": "LET'S GET STARTED",
+  "@letsGetStartedEmphasized": {
+    "description": "The user is adding a wallet that has some drives on it. Emphasized with upper case"
   },
   "pleaseProvideSamePassword": "Please provide the same password as the one you used before.",
   "@pleaseProvideSamePassword": {
@@ -148,21 +148,25 @@
   "@aggreeToTerms_link": {
     "description": "The user is adding a wallet that has some drives on it"
   },
-  "addProfile": "Add profile",
-  "@addProfile": {
-    "description": "The user is adding a wallet that has some drives on it"
+  "addProfileEmphasized": "ADD PROFILE",
+  "@addProfileEmphasized": {
+    "description": "The user is adding a wallet that has some drives on it. Emphasized with upper case"
   },
   "logOut": "Log out",
   "@logOut": {
     "description": "The user is adding a wallet that has some drives on it"
   },
+  "logOutEmphasized": "LOG OUT",
+  "@logOutEmphasized": {
+    "description": "The user is adding a wallet that has some drives on it. Emphasized with upper case"
+  },
   "changeWallet": "Change wallet",
   "@changeWallet": {
     "description": "The user is adding a wallet that has some drives on it"
   },
-  "welcomeBackUser": "Welcome back, {username}",
-  "@welcomeBackUser": {
-    "description": "Unlock screen",
+  "welcomeBackUserEmphasized": "WELCOME BACK, {username}",
+  "@welcomeBackUserEmphasized": {
+    "description": "Unlock screen. Emphasized with upper case",
     "placeholders": {
       "username": {
         "type": "String",
@@ -174,9 +178,9 @@
   "@passwordUnlock": {
     "description": "Unlock screen"
   },
-  "unlock": "Unlock",
-  "@unlock": {
-    "description": "Unlock screen"
+  "unlockEmphasized": "UNLOCK",
+  "@unlockEmphasized": {
+    "description": "Unlock screen. EMphasized with upper case"
   },
   "forgetWallet": "Forget wallet and change profile",
   "@forgetWallet": {
@@ -185,6 +189,10 @@
   "newString": "New",
   "@newString": {
     "description": "New entity (folder, file, drive, attached drive)"
+  },
+  "newStringEmphasized": "NEW",
+  "@newStringEmphasized": {
+    "description": "New entity (folder, file, drive, attached drive). Emphasized with upper case"
   },
   "noDrives": "You have no personal or attached drives.\nClick the \"new\" button to add some!",
   "@noDrives": {
@@ -307,13 +315,13 @@
   "@uploadDragAndDrop": {
     "description": "Drag and drop"
   },
-  "itemDetails": "Details",
-  "@itemDetails": {
-    "description": "Item details such as dates, transaction IDs and entity IDs"
+  "itemDetailsEmphasized": "DETAILS",
+  "@itemDetailsEmphasized": {
+    "description": "Item details such as dates, transaction IDs and entity IDs. Emphasized with upper case"
   },
-  "itemActivity": "Activity",
-  "@itemActivity": {
-    "description": "The journal of the entity (created, renamed, moved, revision uploaded)"
+  "itemActivityEmphasized": "ACTIVITY",
+  "@itemActivityEmphasized": {
+    "description": "The journal of the entity (created, renamed, moved, revision uploaded). Emphasized with upper case"
   },
   "itemContains": "Contains",
   "@itemContains": {
@@ -479,13 +487,13 @@
   "@fileHadANewRevision": {
     "description": "File activity (journal)"
   },
-  "personalDrives": "Personal drives",
+  "personalDrivesEmphasized": "PERSONAL DRIVES",
   "@personalDrives": {
-    "description": "Drives list"
+    "description": "Drives list. Emphasized with upper case"
   },
-  "sharedDrives": "Shared drives",
+  "sharedDrivesEmphasized": "SHARED DRIVES",
   "@sharedDrives": {
-    "description": "Drives list"
+    "description": "Drives list. Emphasized with upper case"
   },
   "help": "Help",
   "@help": {
@@ -516,6 +524,10 @@
   "attachDrive": "Attach drive",
   "@attachDrive": {
     "description": "Attach a shared drive"
+  },
+  "attachDriveEmphasized": "ATTACH DRIVE",
+  "@attachDriveEmphasized": {
+    "description": "Attach a shared drive. Emphasized with upper case"
   },
   "howDoIGetAR": "How do I get AR?",
   "@howDoIGetAR": {
@@ -549,53 +561,61 @@
   "@fileDownloadFailed": {
     "description": "CSV export"
   },
-  "attachingDrive": "Attaching drive...",
-  "@attachingDrive": {
+  "attachingDriveEmphasized": "ATTACHING DRIVE...",
+  "@attachingDriveEmphasized": {
+    "description": "Drive attach form. Emphasized with upper case"
+  },
+  "cancelDriveAttachEmphasized": "CANCEL",
+  "@cancelDriveAttachEmphasized": {
     "description": "Drive attach form"
   },
-  "cancelDriveAttach": "Cancel",
-  "@cancelDriveAttach": {
-    "description": "Drive attach form"
+  "attachEmphasized": "ATTACH",
+  "@attachEmphasized": {
+    "description": "Drive attach. Emphasized with upper case"
   },
-  "attach": "Attach",
-  "@attach": {
-    "description": "Drive attach"
+  "creatingDriveEmphasized": "CREATING DRIVE...",
+  "@creatingDriveEmphasized": {
+    "description": "Drive create form. Emphasized with upper case"
   },
-  "creatingDrive": "Creating drive...",
-  "@creatingDrive": {
-    "description": "Drive create form"
-  },
-  "createDrive": "Create drive",
-  "@createDrive": {
-    "description": "Drive create form"
+  "createDriveEmphasized": "CREATE DRIVE",
+  "@createDriveEmphasized": {
+    "description": "Drive create form. Emphasizeed with upper case"
   },
   "insufficientARToCreateDrive": "You do not have sufficient AR to create a drive.",
   "@insufficientARToCreateDrive": {
     "description": "Drive create form"
   },
-  "cancelDriveCreation": "You do not have sufficient AR to create a drive.",
-  "@cancelDriveCreation": {
-    "description": "Drive create form"
+  "cancelDriveCreationEmphasized": "CANCEL",
+  "@cancelDriveCreationEmphasized": {
+    "description": "Drive create form. Emphasized with upper case"
   },
   "create": "Create",
   "@create": {
     "description": "Drive create form"
   },
-  "renamingDrive": "Renaming drive...",
-  "@renamingDrive": {
-    "description": "Drive rename form"
+  "createEmphasized": "CREATE",
+  "@createEmphasized": {
+    "description": "Drive create form. Emphasized with upper case"
+  },
+  "renamingDriveEmphasized": "RENAMING DRIVE...",
+  "@renamingDriveEmphasized": {
+    "description": "Drive rename form. Emphasized with upper case"
   },
   "renameDrive": "Rename drive",
   "@renameDrive": {
     "description": "Drive rename form"
   },
+  "renameDriveEmphasized": "RENAME DRIVE",
+  "@renameDriveEmphasized": {
+    "description": "Drive rename form. Emphasized with upper case"
+  },
   "driveName": "Drive name",
   "@driveName": {
     "description": "Drive rename form"
   },
-  "cancelDriveRename": "Cancel",
-  "@cancelDriveRename": {
-    "description": "Drive rename form"
+  "cancelDriveRenameEmphasized": "CANCEL",
+  "@cancelDriveRenameEmphasized": {
+    "description": "Drive rename form. Emphasized with upper case"
   },
   "shareDrive": "Share drive with others",
   "@shareDrive": {
@@ -609,17 +629,17 @@
   "@anyoneCanAccessThisDrive": {
     "description": "Drive share dialog"
   },
-  "doneDriveShare": "Done",
-  "@doneDriveShare": {
-    "description": "Drive share dialog"
+  "doneDriveShareEmphasized": "DONE",
+  "@doneDriveShareEmphasized": {
+    "description": "Drive share dialog. Emphasized with upper case"
   },
   "errorLog": "Error log",
   "@errorLog": {
     "description": "Error dialog"
   },
-  "cancelErrorDialog": "Cancel",
-  "@cancelErrorDialog": {
-    "description": "Error dialog"
+  "cancelErrorDialogEmphasized": "CANCEL",
+  "@cancelErrorDialogEmphasized": {
+    "description": "Error dialog. EMphasized with upper case"
   },
   "downloadingFile": "Downloading file...",
   "@downloadingFile": {
@@ -653,33 +673,33 @@
   "@anyoneCanAccessThisFile": {
     "description": "File share dialog"
   },
-  "doneFileShare": "Done",
-  "@doneFileShare": {
-    "description": "File share dialog"
+  "doneFileShareEmphasized": "DONE",
+  "@doneFileShareEmphasized": {
+    "description": "File share dialog. Emphasized with upper case"
   },
-  "creatingFolder": "Creating folder...",
-  "@creatingFolder": {
-    "description": "Folder create form"
+  "creatingFolderEmphasized": "CREATING FOLDER...",
+  "@creatingFolderEmphasized": {
+    "description": "Folder create form. Emphasized with upper case"
   },
-  "createFolder": "Create folder",
-  "@createFolder": {
-    "description": "Folder create form"
+  "createFolderEmphasized": "CREATE FOLDER",
+  "@createFolderEmphasized": {
+    "description": "Folder create form. Emphasized with upper case"
   },
   "folderName": "Folder name",
   "@folderName": {
     "description": "Folder create form"
   },
-  "cancelFolderCreate": "Cancel",
-  "@cancelFolderCreate": {
-    "description": "Folder create form"
+  "cancelFolderCreateEmphasized": "CANCEL",
+  "@cancelFolderCreateEmphasized": {
+    "description": "Folder create form. Emphasized with upper case"
   },
-  "movingFolder": "Moving folder...",
-  "@movingFolder": {
-    "description": "Folder/file move form"
+  "movingFolderEmphasized": "MOVING FOLDER...",
+  "@movingFolderEmphasized": {
+    "description": "Folder/file move form. Emphasized with upper case"
   },
-  "movingFile": "Moving file...",
-  "@movingFile": {
-    "description": "Folder/file move form"
+  "movingFileEmphasized": "MOVING FILE...",
+  "@movingFileEmphasized": {
+    "description": "Folder/file move form. Emphasized with upper case"
   },
   "nameConflict": "Name conflict",
   "@nameConflict": {
@@ -699,21 +719,21 @@
   "@okMoveEntity": {
     "description": "Folder/file move form"
   },
-  "cancelMoveEntity": "Cancel",
-  "@cancelMoveEntity": {
-    "description": "Folder/file move form"
+  "cancelMoveEntityEmphasized": "CANCEL",
+  "@cancelMoveEntityEmphasized": {
+    "description": "Folder/file move form. Emphasized with upper case"
   },
-  "moveHere": "Move here",
-  "@moveHere": {
-    "description": "Folder/file move form"
+  "moveHereEmphasized": "MOVE HERE",
+  "@moveHereEmphasized": {
+    "description": "Folder/file move form. Emphasized with upper case"
   },
-  "moveFolder": "Move folder",
-  "@moveFolder": {
-    "description": "Folder/file move form"
+  "moveFolderEmphasized": "MOVE FOLDER",
+  "@moveFolderEmphasized": {
+    "description": "Folder/file move form. Emphasized with upper case"
   },
-  "moveFile": "Move file",
-  "@moveFile": {
-    "description": "Folder/file move form"
+  "moveFileEmphasized": "MOVE FILE",
+  "@moveFileEmphasized": {
+    "description": "Folder/file move form. EMphasized with upper case"
   },
   "backToFolder": "Back to {entityName} folder",
   "@backToFolder": {
@@ -725,53 +745,61 @@
       }
     }
   },
-  "renamingFolder": "Renaming folder...",
-  "@renamingFolder": {
-    "description": "Folder/file rename form"
+  "renamingFolderEmphasized": "RENAMING FOLDER...",
+  "@renamingFolderEmphasized": {
+    "description": "Folder/file rename form. Emphasized with upper case"
   },
-  "renamingFile": "Renaming file...",
-  "@renamingFile": {
-    "description": "Folder/file rename form"
+  "renamingFileEmphasized": "RENAMING FILE...",
+  "@renamingFileEmphasized": {
+    "description": "Folder/file rename form. Emphasized with upper case"
   },
-  "renameFolder": "Rename folder",
-  "@renameFolder": {
-    "description": "Folder/file rename form"
+  "renameFolderEmphasized": "RENAME FOLDER",
+  "@renameFolderEmphasized": {
+    "description": "Folder/file rename form. Emphasized with upper case"
   },
-  "renameFile": "Rename file",
-  "@renameFile": {
-    "description": "Folder/file rename form"
+  "renameFileEmphasized": "RENAME FILE",
+  "@renameFileEmphasized": {
+    "description": "Folder/file rename form. Emphasized with upper case"
   },
-  "cancelRename": "Cancel",
-  "@cancelRename": {
-    "description": "Folder/file rename form"
+  "cancelRenameEmphasized": "CANCEL",
+  "@cancelRenameEmphasized": {
+    "description": "Folder/file rename form. Emphasized wuth upper case"
   },
   "rename": "Rename",
   "@rename": {
     "description": "Folder/file rename form"
   },
+  "renameEmphasized": "RENAME",
+  "@renameEmphasized": {
+    "description": "Folder/file rename form. Emphasized with upper case"
+  },
   "fileName": "File name",
   "@fileName": {
     "description": "Folder/file rename form"
   },
-  "recreateFolder": "Recreate folder",
-  "@recreateFolder": {
+  "recreateFolderEmphasized": "RECREATE FOLDER",
+  "@recreateFolderEmphasized": {
     "description": "Ghost folder fixer"
   },
-  "recreatingFolder": "Recreating folder...",
-  "@recreatingFolder": {
-    "description": "Ghost folder fixer"
+  "recreatingFolderEmphasized": "RECREATING FOLDER...",
+  "@recreatingFolderEmphasized": {
+    "description": "Ghost folder fixer. Emphasized with upper case"
   },
-  "cancelFolderRecreate": "Cancel",
-  "@cancelFolderRecreate": {
+  "cancelFolderRecreateEmphasized": "CANCEL",
+  "@cancelFolderRecreateEmphasized": {
     "description": "Ghost folder fixer"
   },
   "fix": "Fix",
   "@fix": {
     "description": "Fix an orphan item"
   },
-  "targetFolder": "Target folder",
-  "@targetFolder": {
-    "description": "The nonexistent parent folder of orphan files"
+  "fixEmphasized": "FIX",
+  "@fixEmphasized": {
+    "description": "Fix an orphan item. Emphasized with upper case"
+  },
+  "targetFolderEmphasized": "TARGET FOLDER",
+  "@targetFolderEmphasized": {
+    "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
   },
   "back": "Back",
   "@back": {
@@ -823,17 +851,17 @@
   "@conflictingFiles": {
     "description": "Files being in conflict with already existing items"
   },
-  "cancelUpload": "Cancel",
-  "@cancelUpload": {
-    "description": "Upload form"
+  "cancelUploadEmphasized": "CANCEL",
+  "@cancelUploadEmphasized": {
+    "description": "Upload form. Emphasized with upper case"
   },
   "upload": "Upload",
   "@upload": {
     "description": "Upload form"
   },
-  "continueUpload": "Continue",
-  "@continueUpload": {
-    "description": "Upload form"
+  "continueUploadEmphasized": "CONTINUE",
+  "@continueUploadEmphasized": {
+    "description": "Upload form. Emphasized with upper case"
   },
   "filesTooLarge": "{numberOfFiles} file(s) too large",
   "@filesTooLarge": {
@@ -942,9 +970,9 @@
   "@walletChangeDetected": {
     "description": "Wallet switch dialog"
   },
-  "weReSorry": "We're sorry!",
-  "@weReSorry": {
-    "description": "Screen not supported page"
+  "weReSorryEmphasized": "WE'RE SORRY!",
+  "@weReSorryEmphasized": {
+    "description": "Screen not supported page. Emphasized with upper case"
   },
   "ardriveIsOptimizedForLargeScreens": "ArDrive is currently only optimized for larger screens.",
   "@ardriveIsOptimizedForLargeScreens": {
@@ -970,25 +998,25 @@
   "@failedToSyncDrive": {
     "description": "Router delegate"
   },
-  "tryAgainRouterDelegate": "Try again",
-  "@tryAgainRouterDelegate": {
-    "description": "Router delegate"
+  "tryAgainEmphasized": "TRY AGAIN",
+  "@tryAgainEmphasized": {
+    "description": "Router delegate. Emphasized with upper case"
   },
-  "warning": "Warning",
-  "@warning": {
-    "description": "Congestion warning"
+  "warningEmphasized": "WARNING",
+  "@warningEmphasized": {
+    "description": "Congestion warning. Emphasized with upper case"
   },
   "congestionWarning": "Arweave is currently experiencing heavy congestion. It's not likely that your upload will succeed right now.",
   "@congestionWarning": {
     "description": "Congestion warning"
   },
-  "tryLaterCongestion": "Try later",
-  "@tryLaterCongestion": {
-    "description": "Congestion warning"
+  "tryLaterCongestionEmphasized": "TRY LATER",
+  "@tryLaterCongestionEmphasized": {
+    "description": "Congestion warning. Emphasized with upper case"
   },
-  "proceedCongestion": "Proceed",
-  "@proceedCongestion": {
-    "description": "Congestion warning"
+  "proceedCongestionEmphasized": "PROCEED",
+  "@proceedCongestionEmphasized": {
+    "description": "Congestion warning. Empasized with upper case"
   },
   "profile": "Profile",
   "@profile": {

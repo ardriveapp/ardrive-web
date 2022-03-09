@@ -17,7 +17,7 @@ Future<void> showCongestionDependentModalDialog(
       final shouldShowDialog = await showDialog(
         context: context,
         builder: (_) => AppDialog(
-          title: AppLocalizations.of(context)!.warning,
+          title: AppLocalizations.of(context)!.warningEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
             child: Column(
@@ -51,13 +51,15 @@ Future<void> showCongestionDependentModalDialog(
               onPressed: () {
                 Navigator.of(context).pop(false);
               },
-              child: Text(AppLocalizations.of(context)!.tryLaterCongestion),
+              child: Text(
+                  AppLocalizations.of(context)!.tryLaterCongestionEmphasized),
             ),
             ElevatedButton(
               onPressed: () async {
                 Navigator.of(context).pop(true);
               },
-              child: Text(AppLocalizations.of(context)!.proceedCongestion),
+              child: Text(
+                  AppLocalizations.of(context)!.proceedCongestionEmphasized),
             ),
           ],
         ),

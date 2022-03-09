@@ -99,8 +99,8 @@ class _FileShareDialogState extends State<FileShareDialog> {
             if (state is FileShareLoadSuccess)
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(
-                    AppLocalizations.of(context)!.doneFileShare.toUpperCase()),
+                child:
+                    Text(AppLocalizations.of(context)!.doneFileShareEmphasized),
               ),
           ],
         ),

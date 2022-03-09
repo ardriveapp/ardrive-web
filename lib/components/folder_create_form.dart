@@ -59,7 +59,7 @@ class FolderCreateForm extends StatelessWidget {
         listener: (context, state) {
           if (state is FolderCreateInProgress) {
             showProgressDialog(context,
-                AppLocalizations.of(context)!.creatingFolder.toUpperCase());
+                AppLocalizations.of(context)!.creatingFolderEmphasized);
           } else if (state is FolderCreateSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
@@ -68,7 +68,7 @@ class FolderCreateForm extends StatelessWidget {
           }
         },
         builder: (context, state) => AppDialog(
-          title: AppLocalizations.of(context)!.createFolder.toUpperCase(),
+          title: AppLocalizations.of(context)!.createFolderEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
             child: ReactiveForm(
@@ -86,13 +86,12 @@ class FolderCreateForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(null),
-              child: Text(AppLocalizations.of(context)!
-                  .cancelFolderCreate
-                  .toUpperCase()),
+              child: Text(
+                  AppLocalizations.of(context)!.cancelFolderCreateEmphasized),
             ),
             ElevatedButton(
               onPressed: () => context.read<FolderCreateCubit>().submit(),
-              child: Text(AppLocalizations.of(context)!.create.toUpperCase()),
+              child: Text(AppLocalizations.of(context)!.createEmphasized),
             ),
           ],
         ),

@@ -41,9 +41,8 @@ Future<void> attachDrive(
             },
             child: driveName != null
                 ? ProgressDialog(
-                    title: AppLocalizations.of(context)!
-                        .attachingDrive
-                        .toUpperCase(),
+                    title:
+                        AppLocalizations.of(context)!.attachingDriveEmphasized,
                   )
                 : DriveAttachForm(),
           ),
@@ -57,7 +56,7 @@ class DriveAttachForm extends StatelessWidget {
   Widget build(BuildContext context) =>
       BlocBuilder<DriveAttachCubit, DriveAttachState>(
         builder: (context, state) => AppDialog(
-          title: AppLocalizations.of(context)!.attachDrive.toUpperCase(),
+          title: AppLocalizations.of(context)!.attachDriveEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
             child: ReactiveForm(
@@ -114,13 +113,12 @@ class DriveAttachForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(null),
-              child: Text(AppLocalizations.of(context)!
-                  .cancelDriveAttach
-                  .toUpperCase()),
+              child: Text(
+                  AppLocalizations.of(context)!.cancelDriveAttachEmphasized),
             ),
             ElevatedButton(
               onPressed: () => context.read<DriveAttachCubit>().submit(),
-              child: Text(AppLocalizations.of(context)!.attach.toUpperCase()),
+              child: Text(AppLocalizations.of(context)!.attachEmphasized),
             ),
           ],
         ),

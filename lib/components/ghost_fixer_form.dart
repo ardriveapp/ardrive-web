@@ -40,7 +40,7 @@ class GhostFixerForm extends StatelessWidget {
           listener: (context, state) {
         if (state is GhostFixerRepairInProgress) {
           showProgressDialog(context,
-              AppLocalizations.of(context)!.recreatingFolder.toUpperCase());
+              AppLocalizations.of(context)!.recreatingFolderEmphasized);
         } else if (state is GhostFixerSuccess) {
           Navigator.pop(context);
           Navigator.pop(context);
@@ -53,11 +53,10 @@ class GhostFixerForm extends StatelessWidget {
                 TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: Text(AppLocalizations.of(context)!
-                        .cancelFolderRecreate
-                        .toUpperCase())),
+                        .cancelFolderRecreateEmphasized)),
                 ElevatedButton(
                   onPressed: () => context.read<GhostFixerCubit>().submit(),
-                  child: Text(AppLocalizations.of(context)!.fix.toUpperCase()),
+                  child: Text(AppLocalizations.of(context)!.fixEmphasized),
                 ),
               ],
             );
@@ -65,8 +64,7 @@ class GhostFixerForm extends StatelessWidget {
           if (state is GhostFixerFolderLoadSuccess) {
             return TextButton.icon(
               icon: const Icon(Icons.create_new_folder),
-              label: Text(
-                  AppLocalizations.of(context)!.createFolder.toUpperCase()),
+              label: Text(AppLocalizations.of(context)!.createFolderEmphasized),
               onPressed: () => promptToCreateFolderWithoutCongestionWarning(
                 context,
                 driveId: state.viewingFolder.folder.driveId,
@@ -79,7 +77,7 @@ class GhostFixerForm extends StatelessWidget {
         }
 
         return AppDialog(
-          title: AppLocalizations.of(context)!.recreateFolder.toUpperCase(),
+          title: AppLocalizations.of(context)!.recreateFolderEmphasized,
           content: SizedBox(
             width: kLargeDialogWidth,
             height: 400,
@@ -102,9 +100,8 @@ class GhostFixerForm extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Text(AppLocalizations.of(context)!
-                          .targetFolder
-                          .toUpperCase()),
+                      Text(
+                          AppLocalizations.of(context)!.targetFolderEmphasized),
                       if (!state.viewingRootFolder)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8),

@@ -18,8 +18,8 @@ Future<void> showErrorDialog({
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(null),
-            child: Text(
-                AppLocalizations.of(context)!.cancelErrorDialog.toUpperCase()),
+            child:
+                Text(AppLocalizations.of(context)!.cancelErrorDialogEmphasized),
           ),
         ],
       ),

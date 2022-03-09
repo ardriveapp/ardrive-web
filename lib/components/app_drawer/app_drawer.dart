@@ -58,8 +58,7 @@ class AppDrawer extends StatelessWidget {
                                       dense: true,
                                       title: Text(
                                         AppLocalizations.of(context)!
-                                            .personalDrives
-                                            .toUpperCase(),
+                                            .personalDrivesEmphasized,
                                         textAlign: TextAlign.start,
                                         style: Theme.of(context)
                                             .textTheme
@@ -87,8 +86,7 @@ class AppDrawer extends StatelessWidget {
                                       dense: true,
                                       title: Text(
                                         AppLocalizations.of(context)!
-                                            .sharedDrives
-                                            .toUpperCase(),
+                                            .sharedDrivesEmphasized,
                                         textAlign: TextAlign.start,
                                         style: Theme.of(context)
                                             .textTheme
@@ -251,9 +249,7 @@ class AppDrawer extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           label: Text(
-                            AppLocalizations.of(context)!
-                                .newString
-                                .toUpperCase(),
+                            AppLocalizations.of(context)!.newStringEmphasized,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                             ),
@@ -274,9 +270,7 @@ class AppDrawer extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10)),
                             label: Text(
-                              AppLocalizations.of(context)!
-                                  .newString
-                                  .toUpperCase(),
+                              AppLocalizations.of(context)!.newStringEmphasized,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -337,7 +331,7 @@ class AppDrawer extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
                     label: Text(
-                      AppLocalizations.of(context)!.newString.toUpperCase(),
+                      AppLocalizations.of(context)!.newStringEmphasized,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                       ),

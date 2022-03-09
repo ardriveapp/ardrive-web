@@ -197,9 +197,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                           AppLocalizations.of(context)!.failedToSyncDrive,
                         ),
                         action: SnackBarAction(
-                          label: AppLocalizations.of(context)!
-                              .tryAgainRouterDelegate
-                              .toUpperCase(),
+                          label:
+                              AppLocalizations.of(context)!.tryAgainEmphasized,
                           onPressed: () =>
                               context.read<SyncCubit>().startSync(),
                         ),

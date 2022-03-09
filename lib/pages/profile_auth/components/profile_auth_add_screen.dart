@@ -29,11 +29,9 @@ class ProfileAuthAddScreen extends StatelessWidget {
                         Text(
                           state.isExistingUser
                               ? AppLocalizations.of(context)!
-                                  .welcomeBack
-                                  .toUpperCase()
+                                  .welcomeBackEmphasized
                               : AppLocalizations.of(context)!
-                                  .letsGetStarted
-                                  .toUpperCase(),
+                                  .letsGetStartedEmphasized,
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.headline5,
                         ),
@@ -132,8 +130,8 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           child: ElevatedButton(
                             onPressed: () =>
                                 context.read<ProfileAddCubit>().submit(),
-                            child:
-                                Text(AppLocalizations.of(context)!.addProfile),
+                            child: Text(AppLocalizations.of(context)!
+                                .addProfileEmphasized),
                           ),
                         ),
                         const SizedBox(height: 16),

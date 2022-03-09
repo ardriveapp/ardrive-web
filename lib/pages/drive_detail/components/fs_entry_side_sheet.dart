@@ -44,12 +44,10 @@ class FsEntrySideSheet extends StatelessWidget {
                           tabs: [
                             Tab(
                                 text: AppLocalizations.of(context)!
-                                    .itemDetails
-                                    .toUpperCase()),
+                                    .itemDetailsEmphasized),
                             Tab(
                                 text: AppLocalizations.of(context)!
-                                    .itemActivity
-                                    .toUpperCase())
+                                    .itemActivityEmphasized)
                           ],
                         ),
                         Expanded(
