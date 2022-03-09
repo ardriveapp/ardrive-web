@@ -1,6 +1,7 @@
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -68,7 +69,7 @@ class _AppShellState extends State<AppShell> {
                         child: const Icon(Icons.account_circle),
                       ),
                     ),
-                    tooltip: 'Profile',
+                    tooltip: AppLocalizations.of(context)!.profile,
                     onPressed: () => toggleProfileOverlay(),
                   ),
                 ],
@@ -95,12 +96,13 @@ class _AppShellState extends State<AppShell> {
                                     AsyncSnapshot snapshot) {
                                   if (snapshot.data ?? false) {
                                     return ProgressDialog(
-                                      title:
-                                          'Syncing... Please remain on this tab.',
+                                      title: AppLocalizations.of(context)!
+                                          .syncingPleaseRemainOnThisTab,
                                     );
                                   } else {
                                     return ProgressDialog(
-                                      title: 'Syncing... Please wait.',
+                                      title: AppLocalizations.of(context)!
+                                          .syncingPleaseWait,
                                     );
                                   }
                                 },

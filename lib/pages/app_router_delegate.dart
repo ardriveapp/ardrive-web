@@ -8,6 +8,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../app_shell.dart';
 
@@ -193,10 +194,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Failed to sync drive contents.',
+                          AppLocalizations.of(context)!.failedToSyncDrive,
                         ),
                         action: SnackBarAction(
-                          label: 'TRY AGAIN',
+                          label: AppLocalizations.of(context)!
+                              .tryAgainRouterDelegate
+                              .toUpperCase(),
                           onPressed: () =>
                               context.read<SyncCubit>().startSync(),
                         ),

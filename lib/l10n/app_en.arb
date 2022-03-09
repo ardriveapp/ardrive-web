@@ -17,7 +17,6 @@
   "oneGigForPublicDrives": "1.25 GB for public drives",
   "failedToPrepareUpload": "Failed to prepare file upload",
   "errorOccuredPreparingUpload": "An error occured while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.",
-  "failedToSyncDrive": "Failed to sync drive contents.",
   "tryAgain": "Try Again",
   "nothingToSeeHere": "There's nothing to see here.",
   "nothingToSeeHereClickToAdd": "There's nothing to see here. Click \"new\" to add some files.",
@@ -959,8 +958,68 @@
   "@walletSwitch": {
     "description": "Wallet switch dialog"
   },
-  "walletChangeDetected": "Wallet Switch",
+  "walletChangeDetected": "Wallet change detected. Please log out and log in again",
   "@walletChangeDetected": {
     "description": "Wallet switch dialog"
+  },
+  "weReSorry": "We're sorry!",
+  "@weReSorry": {
+    "description": "Screen not supported page"
+  },
+  "ardriveIsOptimizedForLargeScreens": "ArDrive is currently only optimized for larger screens.",
+  "@ardriveIsOptimizedForLargeScreens": {
+    "description": "Screen not supported page"
+  },
+  "tryOnAnotherDevice": "Please try on another device or stay updated for our upcoming mobile app by subscribing to our newsletter below.",
+  "@tryOnAnotherDevice": {
+    "description": "Screen not supported page"
+  },
+  "subscribeNewsletter": "Subscribe",
+  "@subscribeNewsletter": {
+    "description": "Screen not supported page"
+  },
+  "downloadSharedFile": "Download",
+  "@downloadSharedFile": {
+    "description": "Shared file page"
+  },
+  "specifiedFileDoesNotExist": "The specified file does not exist.",
+  "@specifiedFileDoesNotExist": {
+    "description": "Shared file page"
+  },
+  "failedToSyncDrive": "Failed to sync drive contents.",
+  "@failedToSyncDrive": {
+    "description": "Router delegate"
+  },
+  "tryAgainRouterDelegate": "Try again",
+  "@tryAgainRouterDelegate": {
+    "description": "Router delegate"
+  },
+  "warning": "Warning",
+  "@warning": {
+    "description": "Congestion warning"
+  },
+  "congestionWarning": "Arweave is currently experiencing heavy congestion. It's not likely that your upload will succeed right now.",
+  "@congestionWarning": {
+    "description": "Congestion warning"
+  },
+  "tryLaterCongestion": "Try later",
+  "@tryLaterCongestion": {
+    "description": "Congestion warning"
+  },
+  "proceedCongestion": "Proceed",
+  "@proceedCongestion": {
+    "description": "Congestion warning"
+  },
+  "profile": "Profile",
+  "@profile": {
+    "description": "App shell"
+  },
+  "syncingPleaseRemainOnThisTab": "Syncing... Please remain on this tab.",
+  "@syncingPleaseRemainOnThisTab": {
+    "description": "App shell"
+  },
+  "syncingPleaseWait": "Syncing... Please wait.",
+  "@syncingPleaseWait": {
+    "description": "App shell"
   }
 }

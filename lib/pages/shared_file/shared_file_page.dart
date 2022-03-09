@@ -5,6 +5,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// [SharedFilePage] displays details of a shared file and controls for downloading and previewing it
@@ -47,7 +48,8 @@ class SharedFilePage extends StatelessWidget {
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
                       icon: Icon(Icons.file_download),
-                      label: Text('Download'),
+                      label: Text(
+                          AppLocalizations.of(context)!.downloadSharedFile),
                       onPressed: () => promptToDownloadSharedFile(
                         context: context,
                         fileId: state.file.id!,
@@ -60,7 +62,7 @@ class SharedFilePage extends StatelessWidget {
                     const Icon(Icons.error_outline, size: 36),
                     const SizedBox(height: 16),
                     Text(
-                      'The specified file does not exist.',
+                      AppLocalizations.of(context)!.specifiedFileDoesNotExist,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
