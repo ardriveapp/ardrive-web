@@ -6,6 +6,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -38,7 +39,8 @@ class GhostFixerForm extends StatelessWidget {
       BlocConsumer<GhostFixerCubit, GhostFixerState>(
           listener: (context, state) {
         if (state is GhostFixerRepairInProgress) {
-          showProgressDialog(context, 'RECREATING FOLDER...');
+          showProgressDialog(context,
+              AppLocalizations.of(context)!.recreatingFolder.toUpperCase());
         } else if (state is GhostFixerSuccess) {
           Navigator.pop(context);
           Navigator.pop(context);
@@ -50,10 +52,12 @@ class GhostFixerForm extends StatelessWidget {
               children: [
                 TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text('CANCEL')),
+                    child: Text(AppLocalizations.of(context)!
+                        .cancelFolderRecreate
+                        .toUpperCase())),
                 ElevatedButton(
                   onPressed: () => context.read<GhostFixerCubit>().submit(),
-                  child: Text('FIX'),
+                  child: Text(AppLocalizations.of(context)!.fix.toUpperCase()),
                 ),
               ],
             );
@@ -61,7 +65,8 @@ class GhostFixerForm extends StatelessWidget {
           if (state is GhostFixerFolderLoadSuccess) {
             return TextButton.icon(
               icon: const Icon(Icons.create_new_folder),
-              label: Text('CREATE FOLDER'),
+              label: Text(
+                  AppLocalizations.of(context)!.createFolder.toUpperCase()),
               onPressed: () => promptToCreateFolderWithoutCongestionWarning(
                 context,
                 driveId: state.viewingFolder.folder.driveId,
@@ -74,7 +79,7 @@ class GhostFixerForm extends StatelessWidget {
         }
 
         return AppDialog(
-          title: 'RECREATE FOLDER',
+          title: AppLocalizations.of(context)!.recreateFolder.toUpperCase(),
           content: SizedBox(
             width: kLargeDialogWidth,
             height: 400,
@@ -88,15 +93,18 @@ class GhostFixerForm extends StatelessWidget {
                         child: ReactiveTextField(
                           formControlName: 'name',
                           autofocus: true,
-                          decoration:
-                              const InputDecoration(labelText: 'Folder name'),
+                          decoration: InputDecoration(
+                              labelText:
+                                  AppLocalizations.of(context)!.folderName),
                           showErrors: (control) =>
                               control.dirty && control.invalid,
                           validationMessages: (_) => kValidationMessages,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Text('TARGET FOLDER'),
+                      Text(AppLocalizations.of(context)!
+                          .targetFolder
+                          .toUpperCase()),
                       if (!state.viewingRootFolder)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8),
@@ -111,7 +119,7 @@ class GhostFixerForm extends StatelessWidget {
                               child: ListTile(
                                 dense: true,
                                 leading: const Icon(Icons.arrow_back),
-                                title: Text('Back'),
+                                title: Text(AppLocalizations.of(context)!.back),
                               )),
                         ),
                       Expanded(

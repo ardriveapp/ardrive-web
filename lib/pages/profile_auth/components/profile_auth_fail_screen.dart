@@ -36,7 +36,7 @@ class ProfileAuthFailScreen extends StatelessWidget {
                 triggerHTMLPageReload();
                 context.read<ProfileAddCubit>().promptForWallet();
               },
-              child: Text(AppLocalizations.of(context)!.login),
+              child: Text(AppLocalizations.of(context)!.logIn),
             ),
           ],
         ),

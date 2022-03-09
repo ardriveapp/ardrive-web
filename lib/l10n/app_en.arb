@@ -7,12 +7,8 @@
   "close": "Close",
   "continueString": "Continue",
   "insufficientAR": "You do not have sufficient AR to create a drive.",
-  "notLoggedIn": "You're not logged in",
-  "logInToExperience": "Log in to experience all of ArDrive's features!",
   "fileWithSameName": "A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?",
   "filesWithSameName": "files with the same name already exists at this location. Do you want to continue and upload this file as a new version?",
-  "conflictingFiles": "Conflicting Files",
-  "conflictingFilesFound": "conflicting files(s) found",
   "tooLargeForUpload": "Too large for upload",
   "mayTakeAWhile": "This may take a while",
   "willBeUploadedPublicly": "These file(s) will be uploaded publicly",
@@ -23,7 +19,6 @@
   "preparingUpload": "Preparing Upload ... ",
   "failedToPrepareUpload": "Failed to prepare file upload",
   "errorOccuredPreparingUpload": "An error occured while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.",
-  "insufficientARForUpload": "Insufficient AR for upload.",
   "failedToSyncDrive": "Failed to sync drive contents.",
   "tryAgain": "Try Again",
   "nothingToSeeHere": "There's nothing to see here.",
@@ -132,8 +127,8 @@
   "@sorryLoginFailed": {
     "description": "The user has provided wrong credentials"
   },
-  "login": "Log in",
-  "@login": {
+  "logIn": "Log in",
+  "@logIn": {
     "description": "The user has provided wrong credentials"
   },
   "welcomeBack": "Welcome Back",
@@ -273,10 +268,6 @@
   "driveRoot": "Drive root",
   "@driveRoot": {
     "description": "Drive detail - Breadcrumb row"
-  },
-  "fix": "Fix",
-  "@fix": {
-    "description": "Fix orphan folder button"
   },
   "lastModifiedDate": "Last Modified {date}",
   "@lastModifiedDate": {
@@ -784,5 +775,186 @@
   "fileName": "File name",
   "@fileName": {
     "description": "Folder/file rename form"
+  },
+  "recreateFolder": "Recreate folder",
+  "@recreateFolder": {
+    "description": "Ghost folder fixer"
+  },
+  "recreatingFolder": "Recreating folder...",
+  "@recreatingFolder": {
+    "description": "Ghost folder fixer"
+  },
+  "cancelFolderRecreate": "Cancel",
+  "@cancelFolderRecreate": {
+    "description": "Ghost folder fixer"
+  },
+  "fix": "Fix",
+  "@fix": {
+    "description": "Ghost folder fixer"
+  },
+  "targetFolder": "Target folder",
+  "@targetFolder": {
+    "description": "Ghost folder fixer"
+  },
+  "back": "Back",
+  "@back": {
+    "description": "Ghost folder fixer"
+  },
+  "logout": "Logout",
+  "@logout": {
+    "description": "Profile overlay"
+  },
+  "notLoggedIn": "You're not logged in",
+  "@notLoggedIn": {
+    "description": "Profile overlay"
+  },
+  "loginToExperienceFeatures": "Log in to experience all of ArDrive's features!",
+  "@loginToExperienceFeatures": {
+    "description": "Profile overlay"
+  },
+  "login": "Login",
+  "@login": {
+    "description": "Profile overlay"
+  },
+  "conflictingFilesFound": "{numberOfConflicts} conflicting file(s) found",
+  "@conflictingFilesFound": {
+    "description": "Upload form",
+    "placeholders": {
+      "numberOfConflicts": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "aFileWithSameNameAlreadyExists": "A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?",
+  "@aFileWithSameNameAlreadyExists": {
+    "description": "Upload form"
+  },
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?",
+  "@filesWithTheSameNameAlreadyExists": {
+    "description": "Upload form",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "conflictingFiles": "Conflicting files:",
+  "@conflictingFiles": {
+    "description": "Upload form"
+  },
+  "cancelUpload": "Cancel",
+  "@cancelUpload": {
+    "description": "Upload form"
+  },
+  "upload": "Upload",
+  "@upload": {
+    "description": "Upload form"
+  },
+  "continueUpload": "Continue",
+  "@continueUpload": {
+    "description": "Upload form"
+  },
+  "filesTooLarge": "{numberOfFiles} file(s) too large",
+  "@filesTooLarge": {
+    "description": "Upload form",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "filesTooLargeExplanationPrivate": "ArDrive on web currently only supports file uploads smaller than 100 MB for private drives",
+  "@filesTooLargeExplanationPrivate": {
+    "description": "Upload form"
+  },
+  "filesTooLargeExplanationPublic": "ArDrive on web currently only supports file uploads smaller than 1.25 GB for public drives",
+  "@filesTooLargeExplanationPublic": {
+    "description": "Upload form"
+  },
+  "tooLargeForUpload": "Too large for upload:",
+  "@tooLargeForUpload": {
+    "description": "Upload form"
+  },
+  "okUpload": "OK",
+  "@okUpload": {
+    "description": "Upload form"
+  },
+  "preparingUpload": "Preparing upload...",
+  "@preparingUpload": {
+    "description": "Upload form"
+  },
+  "arConnectremainOnThisTab": "CAUTION: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.",
+  "@arConnectremainOnThisTab": {
+    "description": "Upload form"
+  },
+  "thisMayTakeAWhile": "This may take a while...",
+  "@thisMayTakeAWhile": {
+    "description": "Upload form"
+  },
+  "failedToPrepareFileUpload": "Failed to prepare file upload",
+  "@failedToPrepareFileUpload": {
+    "description": "Upload form"
+  },
+  "failedToPrepareFileUploadExplanation": "An error occured while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.",
+  "@failedToPrepareFileUploadExplanation": {
+    "description": "Upload form"
+  },
+  "closeUploadForm": "Close",
+  "@closeUploadForm": {
+    "description": "Upload form"
+  },
+  "uploadNFiles": "Upload {numberOfFiles} file(s)",
+  "@uploadNFiles": {
+    "description": "Upload form",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "uploadingNFiles": "Upload {numberOfFiles} file(s)",
+  "@uploadingNFiles": {
+    "description": "Upload form",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "cost": "Cost: {arPrice} AR",
+  "@cost": {
+    "description": "Upload form",
+    "placeholders": {
+      "arPrice": {
+        "type": "String",
+        "example": "0"
+      }
+    }
+  },
+  "filesWillBeUploadedPublicly": "'These file(s) will be uploaded publicly.",
+  "@filesWillBeUploadedPublicly": {
+    "description": "Upload form"
+  },
+  "insufficientARForUpload": "Insufficient AR for upload.",
+  "@insufficientARForUpload": {
+    "description": "Upload form"
+  },
+  "bundlingAndSigning": "Bundling and signing upload",
+  "@bundlingAndSigning": {
+    "description": "Upload form"
+  },
+  "signing": "Signing upload",
+  "@signing": {
+    "description": "Upload form"
   }
 }

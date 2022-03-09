@@ -3,6 +3,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileOverlay extends StatelessWidget {
@@ -45,19 +46,20 @@ class ProfileOverlay extends StatelessWidget {
                           ),
                           trailing: IconButton(
                             icon: const Icon(Icons.logout),
-                            tooltip: 'Logout',
+                            tooltip: AppLocalizations.of(context)!.logout,
                             onPressed: () =>
                                 context.read<ProfileCubit>().logoutProfile(),
                           ),
                         )
                       : ListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: Text('You\'re not logged in'),
-                          subtitle: Text(
-                              'Log in to experience all of ArDrive\'s features!'),
+                          title:
+                              Text(AppLocalizations.of(context)!.notLoggedIn),
+                          subtitle: Text(AppLocalizations.of(context)!
+                              .loginToExperienceFeatures),
                           trailing: IconButton(
                             icon: const Icon(Icons.login),
-                            tooltip: 'Login',
+                            tooltip: AppLocalizations.of(context)!.login,
                             onPressed: () => launch(
                               Uri(
                                 path: '/',
