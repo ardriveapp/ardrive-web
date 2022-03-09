@@ -259,7 +259,11 @@ class SyncCubit extends Cubit<SyncState> {
       if (profile is ProfileLoggedIn) {
         driveKey = await _driveDao.getDriveKey(drive.id, profile.cipherKey);
       } else {
-        return;
+        driveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
+        if (driveKey == null) {
+          throw UnimplementedError('Drive Key not found in cache');
+          //TODO: Detach drive
+        }
       }
     }
     final entityHistory = await _arweave.getNewEntitiesForDrive(

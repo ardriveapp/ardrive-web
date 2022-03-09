@@ -23,7 +23,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   final DriveDao _driveDao;
   final SyncCubit _syncBloc;
   final DrivesCubit _drivesBloc;
-  final ProfileCubit _profileCubit;
+  final SecretKey? _profileKey;
 
   late SecretKey? _driveKey;
 
@@ -31,16 +31,16 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     DriveID? initialDriveId,
     String? initialDriveName,
     SecretKey? initialDriveKey,
+    SecretKey? profileKey,
     required ArweaveService arweave,
     required DriveDao driveDao,
     required SyncCubit syncBloc,
     required DrivesCubit drivesBloc,
-    required ProfileCubit profileCubit,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _syncBloc = syncBloc,
         _drivesBloc = drivesBloc,
-        _profileCubit = profileCubit,
+        _profileKey = profileKey,
         super(DriveAttachInitial()) {
     initializeForm(
       driveId: initialDriveId,
@@ -54,10 +54,6 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     String? driveName,
     SecretKey? driveKey,
   }) async {
-    if (driveKey != null && _profileCubit.state is! ProfileLoggedIn) {
-      emit(DriveAttachPrivateNotLoggedIn());
-      return;
-    }
     _driveKey = driveKey;
     form = FormGroup(
       {
@@ -119,9 +115,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         name: driveName,
         entity: driveEntity,
         driveKey: driveKey,
-        profileKey: driveKey != null
-            ? (_profileCubit.state as ProfileLoggedIn).cipherKey
-            : null,
+        profileKey: _profileKey,
       );
 
       _drivesBloc.selectDrive(driveId);
