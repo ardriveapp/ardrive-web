@@ -34,9 +34,8 @@ class ScreenNotSupportedPage extends StatelessWidget {
                   onPressed: () => launch(
                     'https://ardrive.io/about/newsletter/',
                   ),
-                  child: Text(AppLocalizations.of(context)!
-                      .subscribeNewsletter
-                      .toUpperCase()),
+                  child:
+                      Text(AppLocalizations.of(context)!.subscribeEmphasized),
                 ),
               ],
             ),

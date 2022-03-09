@@ -910,9 +910,9 @@
   "@failedToPrepareFileUploadExplanation": {
     "description": "Upload form"
   },
-  "closeUploadForm": "Close",
-  "@closeUploadForm": {
-    "description": "Upload form"
+  "closeUploadFormEmphasized": "CLOSE",
+  "@closeUploadFormEmphasized": {
+    "description": "Upload form. Emphasized with upper case"
   },
   "uploadNFiles": "Upload {numberOfFiles} file(s)",
   "@uploadNFiles": {
@@ -982,9 +982,9 @@
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
   },
-  "subscribeNewsletter": "Subscribe",
-  "@subscribeNewsletter": {
-    "description": "Screen not supported page"
+  "subscribeEmphasized": "SUBSCRIBE",
+  "@subscribeEmphasized": {
+    "description": "Screen not supported page. Emphasized with upper case"
   },
   "downloadSharedFile": "Download",
   "@downloadSharedFile": {

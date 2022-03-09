@@ -155,7 +155,8 @@ class UploadForm extends StatelessWidget {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(AppLocalizations.of(context)!.closeUploadForm),
+                  child: Text(
+                      AppLocalizations.of(context)!.closeUploadFormEmphasized),
                 ),
               ],
             );

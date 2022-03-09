@@ -141,7 +141,8 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           child: context
                                   .read<ProfileAddCubit>()
                                   .isArconnectInstalled()
-                              ? Text(AppLocalizations.of(context)!.logOut)
+                              ? Text(AppLocalizations.of(context)!
+                                  .logOutEmphasized)
                               : Text(
                                   AppLocalizations.of(context)!.changeWallet),
                         ),
