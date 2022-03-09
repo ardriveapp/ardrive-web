@@ -1021,5 +1021,19 @@
   "syncingPleaseWait": "Syncing... Please wait.",
   "@syncingPleaseWait": {
     "description": "App shell"
+  },
+  "exportFromCSV": "Export from {driveId} {timestamp}.csv",
+  "@exportFromCSV": {
+    "description": "Filename of the CSV data export",
+    "placeholders": {
+      "driveId": {
+        "type": "String",
+        "example": "362cbfee-feae-4835-b3fc-d5ed513eec7a"
+      },
+      "timestamp": {
+        "type": "String",
+        "example": "1646828373148"
+      }
+    }
   }
 }
