@@ -90,13 +90,11 @@ class DriveCreateForm extends StatelessWidget {
                         items: [
                           DropdownMenuItem(
                             value: 'public',
-                            child:
-                                Text(AppLocalizations.of(context)!.publicItem),
+                            child: Text(AppLocalizations.of(context)!.public),
                           ),
                           DropdownMenuItem(
                             value: 'private',
-                            child:
-                                Text(AppLocalizations.of(context)!.privateItem),
+                            child: Text(AppLocalizations.of(context)!.private),
                           )
                         ],
                       ),

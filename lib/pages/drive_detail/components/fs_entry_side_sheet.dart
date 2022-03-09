@@ -119,8 +119,8 @@ class FsEntrySideSheet extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: Text(
                     state.entry.privacy == DrivePrivacy.private
-                        ? AppLocalizations.of(context)!.privateItem
-                        : AppLocalizations.of(context)!.publicItem,
+                        ? AppLocalizations.of(context)!.private
+                        : AppLocalizations.of(context)!.public,
                   ),
                 ),
               )

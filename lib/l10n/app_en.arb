@@ -110,55 +110,55 @@
   },
   "welcomeBack": "Welcome Back",
   "@welcomeBack": {
-    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+    "description": "The user is adding a wallet that has some drives on it"
   },
   "letsGetStarted": "Let's get started",
   "@letsGetStarted": {
-    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+    "description": "The user is adding a wallet that has some drives on it"
   },
   "pleaseProvideSamePassword": "Please provide the same password as the one you used before.",
   "@pleaseProvideSamePassword": {
-    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+    "description": "The user is adding a wallet that has some drives on it"
   },
   "passwordCanNeverBeChanged": "Your password can never be changed or recovered. Please keep it safe!",
   "@passwordCanNeverBeChanged": {
-    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+    "description": "The user is adding a wallet that has some drives on it"
   },
   "password": "Password",
   "@password": {
-    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+    "description": "The user is adding a wallet that has some drives on it"
   },
   "confirmPassword": "Confirm password",
   "@confirmPassword": {
-    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+    "description": "The user is adding a wallet that has some drives on it"
   },
   "username": "Username",
   "@username": {
-    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+    "description": "The user is adding a wallet that has some drives on it"
   },
   "passwordMismatch": "The confirmation password does not match.",
   "@passwordMismatch": {
-    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+    "description": "The user is adding a wallet that has some drives on it"
   },
   "aggreeToTerms_body": "I agree to the ArDrive terms of service and privacy policy",
   "@aggreeToTerms_body": {
-    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+    "description": "The user is adding a wallet that has some drives on it"
   },
   "aggreeToTerms_link": "ArDrive terms of service and privacy policy",
   "@aggreeToTerms_link": {
-    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+    "description": "The user is adding a wallet that has some drives on it"
   },
   "addProfile": "Add profile",
   "@addProfile": {
-    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+    "description": "The user is adding a wallet that has some drives on it"
   },
   "logOut": "Log out",
   "@logOut": {
-    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+    "description": "The user is adding a wallet that has some drives on it"
   },
   "changeWallet": "Change wallet",
   "@changeWallet": {
-    "description": "User is back to login. Credentials will be asked to unlock the wallet"
+    "description": "The user is adding a wallet that has some drives on it"
   },
   "welcomeBackUser": "Welcome back, {username}",
   "@welcomeBackUser": {
@@ -184,7 +184,7 @@
   },
   "newString": "New",
   "@newString": {
-    "description": "Button for creating a new drive"
+    "description": "New entity (folder, file, drive, attached drive)"
   },
   "noDrives": "You have no personal or attached drives.\nClick the \"new\" button to add some!",
   "@noDrives": {
@@ -212,43 +212,47 @@
   },
   "exportDriveContents": "Export Drive Contents",
   "@exportDriveContents": {
-    "description": "Icon tooltip"
+    "description": "Export the data of a drive into a CSV file"
   },
   "download": "Download",
   "@download": {
-    "description": "Icon tooltip"
+    "description": "Download a file"
   },
   "preview": "Preview",
   "@preview": {
-    "description": "Icon tooltip"
+    "description": "Preview a file"
   },
   "move": "Move",
   "@move": {
-    "description": "Move file or folder - Icon tooltip"
+    "description": "Move file or folder"
   },
   "viewOnly": "View Only",
   "@viewOnly": {
-    "description": "Icon tooltip"
+    "description": "The user has no permission to edit, only view"
+  },
+  "privacy": "Privacy",
+  "@privacy": {
+    "description": "The privacy attribute of entities (e.g.: private drive, public folder)"
   },
   "private": "Private",
   "@private": {
-    "description": "Icon tooltip"
+    "description": "A private entity"
   },
   "public": "Public",
   "@public": {
-    "description": "Icon tooltip"
+    "description": "A public entity"
   },
   "viewInfo": "View Info",
   "@viewInfo": {
-    "description": "Icon tooltip"
+    "description": "View the activity and details of the entity"
   },
   "driveRoot": "Drive root",
   "@driveRoot": {
-    "description": "Drive detail - Breadcrumb row"
+    "description": "The folder entity that is at the top of the folder hierarchy"
   },
   "lastModifiedDate": "Last Modified {date}",
   "@lastModifiedDate": {
-    "description": "Last modified date",
+    "description": "Last modified date of the file in the local disk",
     "placeholders": {
       "date": {
         "type": "String"
@@ -269,15 +273,15 @@
   },
   "name": "Name",
   "@name": {
-    "description": "File info"
+    "description": "Name of certain entity"
   },
   "fileSize": "File size",
   "@fileSize": {
-    "description": "File info"
+    "description": "The size of a file"
   },
   "lastUpdated": "Last updated",
   "@lastUpdated": {
-    "description": "File info"
+    "description": "The timestamp of the transaction"
   },
   "addSomeFiles": "There's nothing to see here. Click \"new\" to add some files.",
   "@addSomeFiles": {
@@ -305,11 +309,11 @@
   },
   "itemDetails": "Details",
   "@itemDetails": {
-    "description": "Item details"
+    "description": "Item details such as dates, transaction IDs and entity IDs"
   },
   "itemActivity": "Activity",
   "@itemActivity": {
-    "description": "Item details"
+    "description": "The journal of the entity (created, renamed, moved, revision uploaded)"
   },
   "itemContains": "Contains",
   "@itemContains": {
@@ -317,95 +321,83 @@
   },
   "driveID": "Drive ID",
   "@driveID": {
-    "description": "Item details"
+    "description": "The Drive-ID tag"
   },
   "copyDriveID": "Copy Drive ID",
   "@copyDriveID": {
-    "description": "Item details"
-  },
-  "privacy": "Privacy",
-  "@privacy": {
-    "description": "Item details"
-  },
-  "privateItem": "Private",
-  "@privateItem": {
-    "description": "Item details"
-  },
-  "publicItem": "Public",
-  "@publicItem": {
-    "description": "Item details"
+    "description": "Tooltip of the copy icon for the Drive ID"
   },
   "folderID": "Folder ID",
   "@folderID": {
-    "description": "Folder details"
+    "description": "The Entity-ID tag of folders"
   },
   "copyFolderID": "Copy Folder ID",
   "@copyFolderID": {
-    "description": "Folder details"
+    "description": "Tooltip of the copy icon for the Folder ID"
   },
   "fileID": "File ID",
   "@fileID": {
-    "description": "File details"
+    "description": "The Entity-ID tag of files"
   },
   "copyFileID": "Copy File ID",
   "@copyFileID": {
-    "description": "File details"
+    "description": "Tooltip of the copy icon for the File ID"
   },
-  "lastModified": "Copy File ID",
+  "lastModified": "Last modified",
   "@lastModified": {
-    "description": "File details"
+    "description": "Last modified date of the file in the local disk"
   },
   "dateCreated": "Date created",
   "@dateCreated": {
-    "description": "File details"
+    "description": "Creation time of the entity revision"
   },
   "driveTxID": "Drive Tx ID",
   "@driveTxID": {
-    "description": "File details"
+    "description": "The transaction ID of the drive"
   },
   "copyDriveTxID": "Copy Drive Tx ID",
   "@copyDriveTxID": {
-    "description": "File details"
+    "description": "Copy transaction ID of Drive tooltip"
   },
   "rootFolderTxID": "Root Folder Tx ID",
   "@rootFolderTxID": {
-    "description": "File details"
+    "description": "The transaction ID of the Root Folder entity"
   },
   "copyRootFolderTxID": "Copy Root folder Tx ID",
   "@copyRootFolderTxID": {
-    "description": "File details"
+    "description": "Copy transaction ID of Root Folder tooltip"
   },
   "bundleTxID": "Bundle Tx ID",
   "@bundleTxID": {
-    "description": "File details"
+    "description": "The bundle transaction ID of the bundled item"
   },
   "copyBundleTxID": "Copy Bundle Tx ID",
   "@copyBundleTxID": {
-    "description": "File details"
+    "description": "Copy transaction ID of the Bundle transaction"
   },
   "metadataTxID": "Metadata Tx ID",
   "@metadataTxID": {
-    "description": "File details"
+    "description": "The transaction ID of the entity Metadata transaction"
   },
   "copyMetadataTxID": "Copy Metadata Tx ID",
   "@copyMetadataTxID": {
-    "description": "File details"
+    "description": "Copy the transaction ID of the Metadata transaction"
   },
   "dataTxID": "Data Tx ID",
   "@dataTxID": {
-    "description": "File details"
+    "description": "The transaction ID of the entity Data transaction"
   },
   "copyDataTxID": "Copy Data Tx ID",
   "@copyDataTxID": {
-    "description": "File details"
+    "description": "Copy the transaction ID of the Data transaction"
   },
   "itemIsBeingProcesed": "This item is being processed...",
   "@itemIsBeingProcesed": {
-    "description": "File details"
+    "description": "The entity is being processed, no details to display yet"
   },
   "driveWasCreatedWithName": "This drive was created with the name {driveName}.",
   "@driveWasCreatedWithName": {
-    "description": "Drive details",
+    "description": "Drive activity (journal)",
     "placeholders": {
       "driveName": {
         "type": "String",
@@ -415,7 +407,7 @@
   },
   "driveWasRenamed": "This drive was renamed to {driveName}.",
   "@driveWasRenamed": {
-    "description": "Drive details",
+    "description": "Drive activity (journal)",
     "placeholders": {
       "driveName": {
         "type": "String",
@@ -425,11 +417,11 @@
   },
   "driveWasModified": "This drive was modified.",
   "@driveWasModified": {
-    "description": "Drive details"
+    "description": "Drive activity (journal)"
   },
   "folderWasCreatedWithName": "This folder was created with the name {folderName}.",
   "@folderWasCreatedWithName": {
-    "description": "Folder details",
+    "description": "Folder activity (journal)",
     "placeholders": {
       "folderName": {
         "type": "String",
@@ -439,7 +431,7 @@
   },
   "folderWasRenamed": "This folder was renamed to {folderName}.",
   "@folderWasRenamed": {
-    "description": "Folder details",
+    "description": "Folder activity (journal)",
     "placeholders": {
       "driveName": {
         "type": "String",
@@ -449,15 +441,15 @@
   },
   "folderWasModified": "This folder was modified.",
   "@folderWasModified": {
-    "description": "Folder details"
+    "description": "Folder activity (journal)"
   },
   "folderWasMoved": "This folder was moved.",
   "@folderWasMoved": {
-    "description": "Folder details"
+    "description": "Folder activity (journal)"
   },
   "fileWasCreatedWithName": "This file was created with the name {fileName}.",
   "@fileWasCreatedWithName": {
-    "description": "File details",
+    "description": "File activity (journal)",
     "placeholders": {
       "fileName": {
         "type": "String",
@@ -467,7 +459,7 @@
   },
   "fileWasRenamed": "This file was renamed to {fileName}.",
   "@fileWasRenamed": {
-    "description": "File details",
+    "description": "File activity (journal)",
     "placeholders": {
       "driveName": {
         "type": "String",
@@ -477,15 +469,15 @@
   },
   "fileWasModified": "This file was modified.",
   "@fileWasModified": {
-    "description": "File details"
+    "description": "File activity (journal)"
   },
   "fileWasMoved": "This file was moved.",
   "@fileWasMoved": {
-    "description": "File details"
+    "description": "File activity (journal)"
   },
   "fileHadANewRevision": "A new version of this file was uploaded.",
   "@fileHadANewRevision": {
-    "description": "File details"
+    "description": "File activity (journal)"
   },
   "personalDrives": "Personal drives",
   "@personalDrives": {
@@ -511,19 +503,19 @@
   },
   "newFolder": "New folder",
   "@newFolder": {
-    "description": "Drive actions"
+    "description": "Create a new folder entity"
   },
   "uploadFiles": "Upload file(s)",
   "@uploadFiles": {
-    "description": "Drive actions"
+    "description": "Upload files to the Weave"
   },
   "newDrive": "New drive",
   "@newDrive": {
-    "description": "Drive actions"
+    "description": "Create a new drive entity"
   },
   "attachDrive": "Attach drive",
   "@attachDrive": {
-    "description": "Drive actions"
+    "description": "Attach a shared drive"
   },
   "howDoIGetAR": "How do I get AR?",
   "@howDoIGetAR": {
@@ -643,7 +635,7 @@
   },
   "tryAgainDownloadingFile": "This can happen if the file was only uploaded recently. Please try again later.",
   "@tryAgainDownloadingFile": {
-    "description": "File download dialog"
+    "description": "The data is still being replicated between nodes of the network and it's yet not available"
   },
   "okDownloadFailed": "OK",
   "@okDownloadFailed": {
@@ -653,7 +645,7 @@
   "@shareFile": {
     "description": "File share dialog"
   },
-  "copyFileLink": "Share file with others",
+  "copyFileLink": "Copy Link",
   "@copyFileLink": {
     "description": "File share dialog"
   },
@@ -725,7 +717,7 @@
   },
   "backToFolder": "Back to {entityName} folder",
   "@backToFolder": {
-    "description": "Folder/file move form",
+    "description": "Go back to folder",
     "placeholders": {
       "entityName": {
         "type": "String",
@@ -733,11 +725,11 @@
       }
     }
   },
-  "renamingFolder": "Renaming folder",
+  "renamingFolder": "Renaming folder...",
   "@renamingFolder": {
     "description": "Folder/file rename form"
   },
-  "renamingFile": "Renaming file",
+  "renamingFile": "Renaming file...",
   "@renamingFile": {
     "description": "Folder/file rename form"
   },
@@ -775,11 +767,11 @@
   },
   "fix": "Fix",
   "@fix": {
-    "description": "Ghost folder fixer"
+    "description": "Fix an orphan item"
   },
   "targetFolder": "Target folder",
   "@targetFolder": {
-    "description": "Ghost folder fixer"
+    "description": "The nonexistent parent folder of orphan files"
   },
   "back": "Back",
   "@back": {
@@ -829,7 +821,7 @@
   },
   "conflictingFiles": "Conflicting files:",
   "@conflictingFiles": {
-    "description": "Upload form"
+    "description": "Files being in conflict with already existing items"
   },
   "cancelUpload": "Cancel",
   "@cancelUpload": {
@@ -845,7 +837,7 @@
   },
   "filesTooLarge": "{numberOfFiles} file(s) too large",
   "@filesTooLarge": {
-    "description": "Upload form",
+    "description": "A single or many files are too large to upload",
     "placeholders": {
       "numberOfFiles": {
         "type": "int",
@@ -864,7 +856,7 @@
   },
   "tooLargeForUpload": "Too large for upload:",
   "@tooLargeForUpload": {
-    "description": "Upload form"
+    "description": "Files too large for upload"
   },
   "okUpload": "OK",
   "@okUpload": {
@@ -896,7 +888,7 @@
   },
   "uploadNFiles": "Upload {numberOfFiles} file(s)",
   "@uploadNFiles": {
-    "description": "Upload form",
+    "description": "Upload a single or many files",
     "placeholders": {
       "numberOfFiles": {
         "type": "int",
@@ -905,9 +897,9 @@
       }
     }
   },
-  "uploadingNFiles": "Upload {numberOfFiles} file(s)",
+  "uploadingNFiles": "Uploading {numberOfFiles} file(s)...",
   "@uploadingNFiles": {
-    "description": "Upload form",
+    "description": "Uploading a single or many files",
     "placeholders": {
       "numberOfFiles": {
         "type": "int",
@@ -918,7 +910,7 @@
   },
   "cost": "Cost: {arPrice} AR",
   "@cost": {
-    "description": "Upload form",
+    "description": "The total cost estimation of the upload quoted in AR",
     "placeholders": {
       "arPrice": {
         "type": "String",
@@ -926,7 +918,7 @@
       }
     }
   },
-  "filesWillBeUploadedPublicly": "'These file(s) will be uploaded publicly.",
+  "filesWillBeUploadedPublicly": "These file(s) will be uploaded publicly.",
   "@filesWillBeUploadedPublicly": {
     "description": "Upload form"
   },
@@ -944,7 +936,7 @@
   },
   "walletSwitch": "Wallet Switch",
   "@walletSwitch": {
-    "description": "Wallet switch dialog"
+    "description": "The wallet has changed. The user must log in again"
   },
   "walletChangeDetected": "Wallet change detected. Please log out and log in again",
   "@walletChangeDetected": {
@@ -1000,15 +992,15 @@
   },
   "profile": "Profile",
   "@profile": {
-    "description": "App shell"
+    "description": "The user profile: user name, wallet address and wallet balance"
   },
   "syncingPleaseRemainOnThisTab": "Syncing... Please remain on this tab.",
   "@syncingPleaseRemainOnThisTab": {
-    "description": "App shell"
+    "description": "Syncing drives"
   },
   "syncingPleaseWait": "Syncing... Please wait.",
   "@syncingPleaseWait": {
-    "description": "App shell"
+    "description": "Syncing drives"
   },
   "exportFromCSV": "Export from {driveId} {timestamp}.csv",
   "@exportFromCSV": {
