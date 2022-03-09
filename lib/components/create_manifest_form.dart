@@ -81,6 +81,7 @@ class CreateManifestForm extends StatelessWidget {
             );
 
         if (state is CreateManifestWalletMismatch) {
+          Navigator.pop(context);
           return errorDialog(
             errorText:
                 'Provided wallet has unexpectedly changed during manifest creation...',
@@ -88,6 +89,7 @@ class CreateManifestForm extends StatelessWidget {
         }
 
         if (state is CreateManifestFailure) {
+          Navigator.pop(context);
           return errorDialog(
             errorText:
                 'Manifest transaction has unexpectedly failed to upload to the Arweave network...',
@@ -95,6 +97,7 @@ class CreateManifestForm extends StatelessWidget {
         }
 
         if (state is CreateManifestInsufficientBalance) {
+          Navigator.pop(context);
           return errorDialog(
             errorText:
                 'Provided wallet balance of ${state.walletBalance} AR is not enough for this manifest transaction costing ${state.totalCost} AR...',
