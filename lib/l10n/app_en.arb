@@ -9,14 +9,12 @@
   "insufficientAR": "You do not have sufficient AR to create a drive.",
   "fileWithSameName": "A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?",
   "filesWithSameName": "files with the same name already exists at this location. Do you want to continue and upload this file as a new version?",
-  "tooLargeForUpload": "Too large for upload",
   "mayTakeAWhile": "This may take a while",
   "willBeUploadedPublicly": "These file(s) will be uploaded publicly",
   "size": "Size",
   "onlySupportsFileSize": "ArDrive on web currently only supports file uploads smaller than ",
   "hundredMBForPrivateDrives": "100 MB for private drives",
   "oneGigForPublicDrives": "1.25 GB for public drives",
-  "preparingUpload": "Preparing Upload ... ",
   "failedToPrepareUpload": "Failed to prepare file upload",
   "errorOccuredPreparingUpload": "An error occured while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.",
   "failedToSyncDrive": "Failed to sync drive contents.",
@@ -956,5 +954,13 @@
   "signing": "Signing upload",
   "@signing": {
     "description": "Upload form"
+  },
+  "walletSwitch": "Wallet Switch",
+  "@walletSwitch": {
+    "description": "Wallet switch dialog"
+  },
+  "walletChangeDetected": "Wallet Switch",
+  "@walletChangeDetected": {
+    "description": "Wallet switch dialog"
   }
 }
