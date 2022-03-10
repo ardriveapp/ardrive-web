@@ -35,6 +35,27 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     _driveKeyVault = store.vault<SecretKey>(name: 'driveKeyVault');
   }
 
+  Future<void> deleteSharedPrivateDrives(String? owner) async {
+    final drives = (await allDrives().get()).where(
+      (drive) =>
+          drive.ownerAddress != owner && drive.privacy == DrivePrivacy.private,
+    );
+    drives.forEach((drive) async {
+      await detachDrive(drive.id);
+    });
+  }
+
+  Future<void> detachDrive(String driveId) async {
+    return db.transaction(() async {
+      await deleteDriveById(driveId: driveId);
+      await deleteAllDriveRevisionsByDriveId(driveId: driveId);
+      await deleteFoldersByDriveId(driveId: driveId);
+      await deleteFolderRevisionsByDriveId(driveId: driveId);
+      await deleteFilesForDriveId(driveId: driveId);
+      await deleteFileRevisionsByDriveId(driveId: driveId);
+    });
+  }
+
   Future<SecretKey?> getDriveKeyFromMemory(DriveID driveID) async {
     return await _driveKeyVault.get(driveID);
   }
@@ -101,34 +122,38 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   /// Adds or updates the user's drives with the provided drive entities.
   Future<void> updateUserDrives(
-          Map<DriveEntity, SecretKey?> driveEntities, SecretKey? profileKey) =>
-      db.batch((b) async {
-        for (final entry in driveEntities.entries) {
-          final entity = entry.key;
+    Map<DriveEntity, SecretKey?> driveEntities,
+    SecretKey? profileKey,
+  ) =>
+      db.batch(
+        (b) async {
+          for (final entry in driveEntities.entries) {
+            final entity = entry.key;
 
-          var driveCompanion = DrivesCompanion.insert(
-            id: entity.id!,
-            name: entity.name!,
-            ownerAddress: entity.ownerAddress,
-            rootFolderId: entity.rootFolderId!,
-            privacy: entity.privacy!,
-            dateCreated: Value(entity.createdAt),
-            lastUpdated: Value(entity.createdAt),
-          );
+            var driveCompanion = DrivesCompanion.insert(
+              id: entity.id!,
+              name: entity.name!,
+              ownerAddress: entity.ownerAddress,
+              rootFolderId: entity.rootFolderId!,
+              privacy: entity.privacy!,
+              dateCreated: Value(entity.createdAt),
+              lastUpdated: Value(entity.createdAt),
+            );
 
-          if (entity.privacy == DrivePrivacy.private) {
-            driveCompanion = await _addDriveKeyToDriveCompanion(
-                driveCompanion, profileKey!, entry.value!);
+            if (entity.privacy == DrivePrivacy.private) {
+              driveCompanion = await _addDriveKeyToDriveCompanion(
+                  driveCompanion, profileKey!, entry.value!);
+            }
+
+            b.insert(
+              drives,
+              driveCompanion,
+              onConflict: DoUpdate(
+                  (dynamic _) => driveCompanion.copyWith(dateCreated: null)),
+            );
           }
-
-          b.insert(
-            drives,
-            driveCompanion,
-            onConflict: DoUpdate(
-                (dynamic _) => driveCompanion.copyWith(dateCreated: null)),
-          );
-        }
-      });
+        },
+      );
 
   Future<void> writeDriveEntity({
     required String name,
@@ -167,10 +192,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       companion,
       onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
     );
-  }
-
-  Future<void> deleteDrive(DriveID driveID) async {
-    return delete(drives).where((d) => d.id.equals(driveID));
   }
 
   Future<DrivesCompanion> _addDriveKeyToDriveCompanion(
@@ -223,11 +244,13 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeToDrive(Insertable<Drive> drive) =>
       (update(drives)..whereSamePrimaryKey(drive)).write(drive);
 
-  Stream<FolderWithContents> watchFolderContents(String driveId,
-      {String? folderId,
-      String? folderPath,
-      DriveOrder orderBy = DriveOrder.name,
-      OrderingMode orderingMode = OrderingMode.asc}) {
+  Stream<FolderWithContents> watchFolderContents(
+    String driveId, {
+    String? folderId,
+    String? folderPath,
+    DriveOrder orderBy = DriveOrder.name,
+    OrderingMode orderingMode = OrderingMode.asc,
+  }) {
     assert(folderId != null || folderPath != null);
     final folderStream = (folderId != null
             ? folderById(driveId: driveId, folderId: folderId)
