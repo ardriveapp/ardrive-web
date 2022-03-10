@@ -68,7 +68,10 @@ class BundleUploadHandle implements UploadHandle {
 
   /// Uploads the bundle, emitting an event whenever the progress is updated.
   Stream<Null> upload(ArweaveService arweave) async* {
-    await for (final upload in arweave.client.transactions.upload(bundleTx)) {
+    await for (final upload in arweave.client.transactions.upload(
+      bundleTx,
+      maxConcurrentUploadCount: 32,
+    )) {
       uploadProgress = upload.progress;
       yield null;
     }
