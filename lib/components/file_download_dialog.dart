@@ -9,9 +9,9 @@ import 'package:file_selector/file_selector.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:pedantic/pedantic.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToDownloadProfileFile({
@@ -68,7 +68,7 @@ class FileDownloadDialog extends StatelessWidget {
           if (state is FileDownloadStarting) {
             return AppDialog(
               dismissable: false,
-              title: AppLocalizations.of(context)!.downloadingFile,
+              title: appLocalizationsOf(context).downloadingFile,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -78,14 +78,14 @@ class FileDownloadDialog extends StatelessWidget {
               actions: [
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(AppLocalizations.of(context)!.cancelFileDownload),
+                  child: Text(appLocalizationsOf(context).cancelFileDownload),
                 ),
               ],
             );
           } else if (state is FileDownloadInProgress) {
             return AppDialog(
               dismissable: false,
-              title: AppLocalizations.of(context)!.downloadingFile,
+              title: appLocalizationsOf(context).downloadingFile,
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: ListTile(
@@ -105,23 +105,23 @@ class FileDownloadDialog extends StatelessWidget {
                     context.read<FileDownloadCubit>().abortDownload();
                     Navigator.pop(context);
                   },
-                  child: Text(AppLocalizations.of(context)!.cancelFileDownload),
+                  child: Text(appLocalizationsOf(context).cancelFileDownload),
                 ),
               ],
             );
           } else if (state is FileDownloadFailure) {
             return AppDialog(
               dismissable: false,
-              title: AppLocalizations.of(context)!.fileFailedToDownload,
+              title: appLocalizationsOf(context).fileFailedToDownload,
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child:
-                    Text(AppLocalizations.of(context)!.tryAgainDownloadingFile),
+                    Text(appLocalizationsOf(context).tryAgainDownloadingFile),
               ),
               actions: [
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(AppLocalizations.of(context)!.okDownloadFailed),
+                  child: Text(appLocalizationsOf(context).okDownloadFailed),
                 ),
               ],
             );

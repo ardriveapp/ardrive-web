@@ -6,9 +6,9 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToCreateFolder(
@@ -58,8 +58,8 @@ class FolderCreateForm extends StatelessWidget {
       BlocConsumer<FolderCreateCubit, FolderCreateState>(
         listener: (context, state) {
           if (state is FolderCreateInProgress) {
-            showProgressDialog(context,
-                AppLocalizations.of(context)!.creatingFolderEmphasized);
+            showProgressDialog(
+                context, appLocalizationsOf(context).creatingFolderEmphasized);
           } else if (state is FolderCreateSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
@@ -68,7 +68,7 @@ class FolderCreateForm extends StatelessWidget {
           }
         },
         builder: (context, state) => AppDialog(
-          title: AppLocalizations.of(context)!.createFolderEmphasized,
+          title: appLocalizationsOf(context).createFolderEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
             child: ReactiveForm(
@@ -77,7 +77,7 @@ class FolderCreateForm extends StatelessWidget {
                 formControlName: 'name',
                 autofocus: true,
                 decoration: InputDecoration(
-                    labelText: AppLocalizations.of(context)!.folderName),
+                    labelText: appLocalizationsOf(context).folderName),
                 showErrors: (control) => control.dirty && control.invalid,
                 validationMessages: (_) => kValidationMessages,
               ),
@@ -87,11 +87,11 @@ class FolderCreateForm extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.of(context).pop(null),
               child: Text(
-                  AppLocalizations.of(context)!.cancelFolderCreateEmphasized),
+                  appLocalizationsOf(context).cancelFolderCreateEmphasized),
             ),
             ElevatedButton(
               onPressed: () => context.read<FolderCreateCubit>().submit(),
-              child: Text(AppLocalizations.of(context)!.createEmphasized),
+              child: Text(appLocalizationsOf(context).createEmphasized),
             ),
           ],
         ),

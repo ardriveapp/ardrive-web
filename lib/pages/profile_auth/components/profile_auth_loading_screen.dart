@@ -1,7 +1,7 @@
 import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'profile_auth_shell.dart';
 
 class ProfileAuthLoadingScreen extends StatelessWidget {
@@ -22,8 +22,7 @@ class ProfileAuthLoadingScreen extends StatelessWidget {
             if (isArConnect)
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child:
-                    Text(AppLocalizations.of(context)!.pleaseRemainOnThisTab),
+                child: Text(appLocalizationsOf(context).pleaseRemainOnThisTab),
               ),
             const Center(child: CircularProgressIndicator()),
           ],

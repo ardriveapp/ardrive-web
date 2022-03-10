@@ -6,8 +6,8 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import '../../congestion_warning_wrapper.dart';
 
 class DriveFileDropZone extends StatefulWidget {
@@ -91,14 +91,14 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
         await showDialog(
           context: context,
           builder: (_) => AlertDialog(
-            title: Text(AppLocalizations.of(context)!.errorDragAndDrop),
+            title: Text(appLocalizationsOf(context).errorDragAndDrop),
             content: Text(
-              AppLocalizations.of(context)!.errorDragAndDropFolder,
+              appLocalizationsOf(context).errorDragAndDropFolder,
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(AppLocalizations.of(context)!.okDragAndDrop),
+                child: Text(appLocalizationsOf(context).okDragAndDrop),
               ),
             ],
           ),
@@ -156,7 +156,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
                 width: 16,
               ),
               Text(
-                AppLocalizations.of(context)!.uploadDragAndDrop,
+                appLocalizationsOf(context).uploadDragAndDrop,
                 style: Theme.of(context).textTheme.headline2,
               ),
             ],

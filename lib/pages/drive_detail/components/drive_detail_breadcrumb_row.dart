@@ -35,7 +35,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
                           .read<DriveDetailCubit>()
                           .openFolder(path: rootPath),
                       child: Text(
-                        AppLocalizations.of(context)!.driveRoot,
+                        appLocalizationsOf(context).driveRoot,
                       ),
                     ),
                   ),
@@ -89,7 +89,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
               onPressed: () =>
                   context.read<DriveDetailCubit>().openFolder(path: rootPath),
               child: Text(
-                AppLocalizations.of(context)!.driveRoot,
+                appLocalizationsOf(context).driveRoot,
               ),
             ),
             if (_pathSegments.isNotEmpty)

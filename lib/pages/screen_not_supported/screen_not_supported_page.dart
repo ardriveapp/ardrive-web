@@ -1,7 +1,8 @@
 import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../../../utils/app_localizations_wrapper.dart';
 
 class ScreenNotSupportedPage extends StatelessWidget {
   @override
@@ -22,20 +23,19 @@ class ScreenNotSupportedPage extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 32),
-                Text(AppLocalizations.of(context)!.weReSorryEmphasized,
+                Text(appLocalizationsOf(context).weReSorryEmphasized,
                     style: Theme.of(context).textTheme.headline5),
                 const SizedBox(height: 16),
-                Text(AppLocalizations.of(context)!
+                Text(appLocalizationsOf(context)
                     .ardriveIsOptimizedForLargeScreens),
                 const SizedBox(height: 8),
-                Text(AppLocalizations.of(context)!.tryOnAnotherDevice),
+                Text(appLocalizationsOf(context).tryOnAnotherDevice),
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () => launch(
                     'https://ardrive.io/about/newsletter/',
                   ),
-                  child:
-                      Text(AppLocalizations.of(context)!.subscribeEmphasized),
+                  child: Text(appLocalizationsOf(context).subscribeEmphasized),
                 ),
               ],
             ),

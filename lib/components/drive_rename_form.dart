@@ -7,9 +7,9 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToRenameDrive(
@@ -40,7 +40,7 @@ class DriveRenameForm extends StatelessWidget {
         listener: (context, state) {
           if (state is DriveRenameInProgress) {
             showProgressDialog(
-                context, AppLocalizations.of(context)!.renamingDriveEmphasized);
+                context, appLocalizationsOf(context).renamingDriveEmphasized);
           } else if (state is DriveRenameSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
@@ -49,7 +49,7 @@ class DriveRenameForm extends StatelessWidget {
           }
         },
         builder: (context, state) => AppDialog(
-          title: AppLocalizations.of(context)!.renameDriveEmphasized,
+          title: appLocalizationsOf(context).renameDriveEmphasized,
           content: state is! FsEntryRenameInitializing
               ? SizedBox(
                   width: kMediumDialogWidth,
@@ -59,7 +59,7 @@ class DriveRenameForm extends StatelessWidget {
                       formControlName: 'name',
                       autofocus: true,
                       decoration: InputDecoration(
-                          labelText: AppLocalizations.of(context)!.driveName),
+                          labelText: appLocalizationsOf(context).driveName),
                       showErrors: (control) => control.invalid,
                       validationMessages: (_) => kValidationMessages,
                     ),
@@ -69,12 +69,12 @@ class DriveRenameForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                  AppLocalizations.of(context)!.cancelDriveRenameEmphasized),
+              child:
+                  Text(appLocalizationsOf(context).cancelDriveRenameEmphasized),
             ),
             ElevatedButton(
               onPressed: () => context.read<DriveRenameCubit>().submit(),
-              child: Text(AppLocalizations.of(context)!.renameEmphasized),
+              child: Text(appLocalizationsOf(context).renameEmphasized),
             ),
           ],
         ),

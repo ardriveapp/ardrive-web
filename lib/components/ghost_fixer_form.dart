@@ -6,10 +6,10 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToReCreateFolder(BuildContext context,
@@ -39,8 +39,8 @@ class GhostFixerForm extends StatelessWidget {
       BlocConsumer<GhostFixerCubit, GhostFixerState>(
           listener: (context, state) {
         if (state is GhostFixerRepairInProgress) {
-          showProgressDialog(context,
-              AppLocalizations.of(context)!.recreatingFolderEmphasized);
+          showProgressDialog(
+              context, appLocalizationsOf(context).recreatingFolderEmphasized);
         } else if (state is GhostFixerSuccess) {
           Navigator.pop(context);
           Navigator.pop(context);
@@ -52,11 +52,11 @@ class GhostFixerForm extends StatelessWidget {
               children: [
                 TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text(AppLocalizations.of(context)!
+                    child: Text(appLocalizationsOf(context)
                         .cancelFolderRecreateEmphasized)),
                 ElevatedButton(
                   onPressed: () => context.read<GhostFixerCubit>().submit(),
-                  child: Text(AppLocalizations.of(context)!.fixEmphasized),
+                  child: Text(appLocalizationsOf(context).fixEmphasized),
                 ),
               ],
             );
@@ -64,7 +64,7 @@ class GhostFixerForm extends StatelessWidget {
           if (state is GhostFixerFolderLoadSuccess) {
             return TextButton.icon(
               icon: const Icon(Icons.create_new_folder),
-              label: Text(AppLocalizations.of(context)!.createFolderEmphasized),
+              label: Text(appLocalizationsOf(context).createFolderEmphasized),
               onPressed: () => promptToCreateFolderWithoutCongestionWarning(
                 context,
                 driveId: state.viewingFolder.folder.driveId,
@@ -77,7 +77,7 @@ class GhostFixerForm extends StatelessWidget {
         }
 
         return AppDialog(
-          title: AppLocalizations.of(context)!.recreateFolderEmphasized,
+          title: appLocalizationsOf(context).recreateFolderEmphasized,
           content: SizedBox(
             width: kLargeDialogWidth,
             height: 400,
@@ -93,15 +93,14 @@ class GhostFixerForm extends StatelessWidget {
                           autofocus: true,
                           decoration: InputDecoration(
                               labelText:
-                                  AppLocalizations.of(context)!.folderName),
+                                  appLocalizationsOf(context).folderName),
                           showErrors: (control) =>
                               control.dirty && control.invalid,
                           validationMessages: (_) => kValidationMessages,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                          AppLocalizations.of(context)!.targetFolderEmphasized),
+                      Text(appLocalizationsOf(context).targetFolderEmphasized),
                       if (!state.viewingRootFolder)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8),
@@ -116,7 +115,7 @@ class GhostFixerForm extends StatelessWidget {
                               child: ListTile(
                                 dense: true,
                                 leading: const Icon(Icons.arrow_back),
-                                title: Text(AppLocalizations.of(context)!.back),
+                                title: Text(appLocalizationsOf(context).back),
                               )),
                         ),
                       Expanded(

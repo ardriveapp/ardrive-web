@@ -3,8 +3,8 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'profile_auth_shell.dart';
 
 class ProfileAuthFailScreen extends StatelessWidget {
@@ -19,13 +19,13 @@ class ProfileAuthFailScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              AppLocalizations.of(context)!.loginFailed,
+              appLocalizationsOf(context).loginFailed,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headline5,
             ),
             const SizedBox(height: 32),
             Text(
-              AppLocalizations.of(context)!.sorryLoginFailed,
+              appLocalizationsOf(context).sorryLoginFailed,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headline6,
             ),
@@ -36,7 +36,7 @@ class ProfileAuthFailScreen extends StatelessWidget {
                 triggerHTMLPageReload();
                 context.read<ProfileAddCubit>().promptForWallet();
               },
-              child: Text(AppLocalizations.of(context)!.logIn),
+              child: Text(appLocalizationsOf(context).logIn),
             ),
           ],
         ),

@@ -6,9 +6,9 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToRenameFolder(
@@ -62,11 +62,11 @@ class FsEntryRenameForm extends StatelessWidget {
       BlocConsumer<FsEntryRenameCubit, FsEntryRenameState>(
         listener: (context, state) {
           if (state is FolderEntryRenameInProgress) {
-            showProgressDialog(context,
-                AppLocalizations.of(context)!.renamingFolderEmphasized);
+            showProgressDialog(
+                context, appLocalizationsOf(context).renamingFolderEmphasized);
           } else if (state is FileEntryRenameInProgress) {
             showProgressDialog(
-                context, AppLocalizations.of(context)!.renamingFileEmphasized);
+                context, appLocalizationsOf(context).renamingFileEmphasized);
           } else if (state is FolderEntryRenameSuccess ||
               state is FileEntryRenameSuccess) {
             Navigator.pop(context);
@@ -78,8 +78,8 @@ class FsEntryRenameForm extends StatelessWidget {
         },
         builder: (context, state) => AppDialog(
           title: state.isRenamingFolder
-              ? AppLocalizations.of(context)!.renameFolderEmphasized
-              : AppLocalizations.of(context)!.renameFileEmphasized,
+              ? appLocalizationsOf(context).renameFolderEmphasized
+              : appLocalizationsOf(context).renameFileEmphasized,
           content: state is! FsEntryRenameInitializing
               ? SizedBox(
                   width: kMediumDialogWidth,
@@ -90,8 +90,8 @@ class FsEntryRenameForm extends StatelessWidget {
                       autofocus: true,
                       decoration: InputDecoration(
                           labelText: state.isRenamingFolder
-                              ? AppLocalizations.of(context)!.folderName
-                              : AppLocalizations.of(context)!.fileName),
+                              ? appLocalizationsOf(context).folderName
+                              : appLocalizationsOf(context).fileName),
                       showErrors: (control) => control.invalid,
                       validationMessages: (_) => kValidationMessages,
                     ),
@@ -101,11 +101,11 @@ class FsEntryRenameForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(AppLocalizations.of(context)!.cancelRenameEmphasized),
+              child: Text(appLocalizationsOf(context).cancelRenameEmphasized),
             ),
             ElevatedButton(
               onPressed: () => context.read<FsEntryRenameCubit>().submit(),
-              child: Text(AppLocalizations.of(context)!.renameEmphasized),
+              child: Text(appLocalizationsOf(context).renameEmphasized),
             ),
           ],
         ),

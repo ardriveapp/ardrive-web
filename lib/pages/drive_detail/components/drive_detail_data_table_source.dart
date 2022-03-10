@@ -134,7 +134,7 @@ DataRow _buildFolderRow({
                   context,
                   () => promptToReCreateFolder(context, ghostFolder: folder),
                 ),
-                child: Text(AppLocalizations.of(context)!.fix),
+                child: Text(appLocalizationsOf(context).fix),
               ),
             )
           : DataCell(Text('-')),

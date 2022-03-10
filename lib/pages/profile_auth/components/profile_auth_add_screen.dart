@@ -3,10 +3,10 @@ import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'profile_auth_shell.dart';
 
 class ProfileAuthAddScreen extends StatelessWidget {
@@ -28,9 +28,9 @@ class ProfileAuthAddScreen extends StatelessWidget {
                       children: [
                         Text(
                           state.isExistingUser
-                              ? AppLocalizations.of(context)!
+                              ? appLocalizationsOf(context)
                                   .welcomeBackEmphasized
-                              : AppLocalizations.of(context)!
+                              : appLocalizationsOf(context)
                                   .letsGetStartedEmphasized,
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.headline5,
@@ -38,12 +38,12 @@ class ProfileAuthAddScreen extends StatelessWidget {
                         const SizedBox(height: 32),
                         if (state.isExistingUser)
                           Text(
-                              AppLocalizations.of(context)!
+                              appLocalizationsOf(context)
                                   .pleaseProvideSamePassword,
                               textAlign: TextAlign.center)
                         else
                           Text(
-                              AppLocalizations.of(context)!
+                              appLocalizationsOf(context)
                                   .passwordCanNeverBeChanged,
                               textAlign: TextAlign.center),
                         const SizedBox(height: 16),
@@ -52,7 +52,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           autofocus: true,
                           autofillHints: [AutofillHints.username],
                           decoration: InputDecoration(
-                            labelText: AppLocalizations.of(context)!.username,
+                            labelText: appLocalizationsOf(context).username,
                             prefixIcon: const Icon(Icons.person),
                           ),
                           onSubmitted: () =>
@@ -64,7 +64,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           formControlName: 'password',
                           obscureText: true,
                           decoration: InputDecoration(
-                            labelText: AppLocalizations.of(context)!.password,
+                            labelText: appLocalizationsOf(context).password,
                             prefixIcon: const Icon(Icons.lock),
                           ),
                           autofillHints: [AutofillHints.password],
@@ -79,15 +79,15 @@ class ProfileAuthAddScreen extends StatelessWidget {
                             obscureText: true,
                             decoration: InputDecoration(
                               labelText:
-                                  AppLocalizations.of(context)!.confirmPassword,
+                                  appLocalizationsOf(context).confirmPassword,
                               prefixIcon: const Icon(Icons.lock),
                             ),
                             onSubmitted: () =>
                                 context.read<ProfileAddCubit>().submit(),
                             validationMessages: (_) => {
                               ...kValidationMessages,
-                              'mustMatch': AppLocalizations.of(context)!
-                                  .passwordMismatch,
+                              'mustMatch':
+                                  appLocalizationsOf(context).passwordMismatch,
                             },
                           ),
                           const SizedBox(height: 16),
@@ -130,7 +130,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           child: ElevatedButton(
                             onPressed: () =>
                                 context.read<ProfileAddCubit>().submit(),
-                            child: Text(AppLocalizations.of(context)!
+                            child: Text(appLocalizationsOf(context)
                                 .addProfileEmphasized),
                           ),
                         ),
@@ -141,10 +141,9 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           child: context
                                   .read<ProfileAddCubit>()
                                   .isArconnectInstalled()
-                              ? Text(AppLocalizations.of(context)!
-                                  .logOutEmphasized)
-                              : Text(
-                                  AppLocalizations.of(context)!.changeWallet),
+                              ? Text(
+                                  appLocalizationsOf(context).logOutEmphasized)
+                              : Text(appLocalizationsOf(context).changeWallet),
                         ),
                       ],
                     ),

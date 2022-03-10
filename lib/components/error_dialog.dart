@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> showErrorDialog({
@@ -11,7 +11,7 @@ Future<void> showErrorDialog({
     showDialog(
       context: context,
       builder: (BuildContext context) => AppDialog(
-        title: AppLocalizations.of(context)!.errorLog,
+        title: appLocalizationsOf(context).errorLog,
         content: Column(
           children: [Text(stackTrace.toString())],
         ),
@@ -19,7 +19,7 @@ Future<void> showErrorDialog({
           TextButton(
             onPressed: () => Navigator.of(context).pop(null),
             child:
-                Text(AppLocalizations.of(context)!.cancelErrorDialogEmphasized),
+                Text(appLocalizationsOf(context).cancelErrorDialogEmphasized),
           ),
         ],
       ),

@@ -7,8 +7,8 @@ import 'package:file_selector/file_selector.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToUploadFile(
@@ -56,7 +56,7 @@ class UploadForm extends StatelessWidget {
         builder: (context, state) {
           if (state is UploadFileConflict) {
             return AppDialog(
-              title: AppLocalizations.of(context)!
+              title: appLocalizationsOf(context)
                   .conflictingFilesFound(state.conflictingFileNames.length),
               content: SizedBox(
                 width: kMediumDialogWidth,
@@ -65,13 +65,13 @@ class UploadForm extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(state.conflictingFileNames.length == 1
-                        ? AppLocalizations.of(context)!
+                        ? appLocalizationsOf(context)
                             .aFileWithSameNameAlreadyExists
-                        : AppLocalizations.of(context)!
+                        : appLocalizationsOf(context)
                             .filesWithTheSameNameAlreadyExists(
                                 state.conflictingFileNames.length)),
                     const SizedBox(height: 16),
-                    Text(AppLocalizations.of(context)!.conflictingFiles),
+                    Text(appLocalizationsOf(context).conflictingFiles),
                     const SizedBox(height: 8),
                     Text(state.conflictingFileNames.join(', ')),
                   ],
@@ -80,21 +80,21 @@ class UploadForm extends StatelessWidget {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(
-                      AppLocalizations.of(context)!.cancelUploadEmphasized),
+                  child:
+                      Text(appLocalizationsOf(context).cancelUploadEmphasized),
                 ),
                 ElevatedButton(
                   onPressed: () => context
                       .read<UploadCubit>()
                       .prepareUploadPlanAndCostEstimates(),
                   child: Text(
-                      AppLocalizations.of(context)!.continueUploadEmphasized),
+                      appLocalizationsOf(context).continueUploadEmphasized),
                 ),
               ],
             );
           } else if (state is UploadFileTooLarge) {
             return AppDialog(
-              title: AppLocalizations.of(context)!
+              title: appLocalizationsOf(context)
                   .filesTooLarge(state.tooLargeFileNames.length),
               content: SizedBox(
                 width: kMediumDialogWidth,
@@ -104,13 +104,13 @@ class UploadForm extends StatelessWidget {
                   children: [
                     Text(
                       state.isPrivate
-                          ? AppLocalizations.of(context)!
+                          ? appLocalizationsOf(context)
                               .filesTooLargeExplanationPrivate
-                          : AppLocalizations.of(context)!
+                          : appLocalizationsOf(context)
                               .filesTooLargeExplanationPublic,
                     ),
                     const SizedBox(height: 16),
-                    Text(AppLocalizations.of(context)!.tooLargeForUpload),
+                    Text(appLocalizationsOf(context).tooLargeForUpload),
                     const SizedBox(height: 8),
                     Text(state.tooLargeFileNames.join(', ')),
                   ],
@@ -119,13 +119,13 @@ class UploadForm extends StatelessWidget {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(AppLocalizations.of(context)!.okUpload),
+                  child: Text(appLocalizationsOf(context).okUpload),
                 ),
               ],
             );
           } else if (state is UploadPreparationInProgress) {
             return AppDialog(
-              title: AppLocalizations.of(context)!.preparingUpload,
+              title: appLocalizationsOf(context).preparingUpload,
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -134,21 +134,20 @@ class UploadForm extends StatelessWidget {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
                     if (state.isArConnect)
-                      Text(AppLocalizations.of(context)!
-                          .arConnectremainOnThisTab)
+                      Text(appLocalizationsOf(context).arConnectremainOnThisTab)
                     else
-                      Text(AppLocalizations.of(context)!.thisMayTakeAWhile)
+                      Text(appLocalizationsOf(context).thisMayTakeAWhile)
                   ],
                 ),
               ),
             );
           } else if (state is UploadPreparationFailure) {
             return AppDialog(
-              title: AppLocalizations.of(context)!.failedToPrepareFileUpload,
+              title: appLocalizationsOf(context).failedToPrepareFileUpload,
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Text(
-                  AppLocalizations.of(context)!
+                  appLocalizationsOf(context)
                       .failedToPrepareFileUploadExplanation,
                 ),
               ),
@@ -156,7 +155,7 @@ class UploadForm extends StatelessWidget {
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
                   child: Text(
-                      AppLocalizations.of(context)!.closeUploadFormEmphasized),
+                      appLocalizationsOf(context).closeUploadFormEmphasized),
                 ),
               ],
             );
@@ -169,7 +168,7 @@ class UploadForm extends StatelessWidget {
                     : 0;
             final numberOfV2Files = state.uploadPlan.v2FileUploadHandles.length;
             return AppDialog(
-              title: AppLocalizations.of(context)!
+              title: appLocalizationsOf(context)
                   .uploadNFiles(numberOfFilesInBundles + numberOfV2Files),
               content: SizedBox(
                 width: kMediumDialogWidth,
@@ -211,7 +210,7 @@ class UploadForm extends StatelessWidget {
                       TextSpan(
                         children: [
                           TextSpan(
-                            text: AppLocalizations.of(context)!
+                            text: appLocalizationsOf(context)
                                 .cost(state.costEstimate.arUploadCost),
                           ),
                           if (state.costEstimate.usdUploadCost != null)
@@ -225,13 +224,13 @@ class UploadForm extends StatelessWidget {
                     ),
                     if (state.uploadIsPublic) ...{
                       const SizedBox(height: 8),
-                      Text(AppLocalizations.of(context)!
+                      Text(appLocalizationsOf(context)
                           .filesWillBeUploadedPublicly),
                     },
                     if (!state.sufficientArBalance) ...{
                       const SizedBox(height: 8),
                       Text(
-                        AppLocalizations.of(context)!.insufficientARForUpload,
+                        appLocalizationsOf(context).insufficientARForUpload,
                         style: DefaultTextStyle.of(context)
                             .style
                             .copyWith(color: Theme.of(context).errorColor),
@@ -243,8 +242,8 @@ class UploadForm extends StatelessWidget {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(
-                      AppLocalizations.of(context)!.cancelUploadEmphasized),
+                  child:
+                      Text(appLocalizationsOf(context).cancelUploadEmphasized),
                 ),
                 ElevatedButton(
                   onPressed: state.sufficientArBalance
@@ -260,8 +259,8 @@ class UploadForm extends StatelessWidget {
           } else if (state is UploadSigningInProgress) {
             return AppDialog(
               title: state.uploadPlan.bundleUploadHandles.isNotEmpty
-                  ? AppLocalizations.of(context)!.bundlingAndSigning
-                  : AppLocalizations.of(context)!.signing,
+                  ? appLocalizationsOf(context).bundlingAndSigning
+                  : appLocalizationsOf(context).signing,
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -270,10 +269,9 @@ class UploadForm extends StatelessWidget {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
                     if (state.isArConnect)
-                      Text(AppLocalizations.of(context)!
-                          .arConnectremainOnThisTab)
+                      Text(appLocalizationsOf(context).arConnectremainOnThisTab)
                     else
-                      Text(AppLocalizations.of(context)!.thisMayTakeAWhile)
+                      Text(appLocalizationsOf(context).thisMayTakeAWhile)
                   ],
                 ),
               ),
@@ -288,7 +286,7 @@ class UploadForm extends StatelessWidget {
             final numberOfV2Files = state.uploadPlan.v2FileUploadHandles.length;
             return AppDialog(
               dismissable: false,
-              title: AppLocalizations.of(context)!
+              title: appLocalizationsOf(context)
                   .uploadingNFiles(numberOfFilesInBundles + numberOfV2Files),
               content: SizedBox(
                 width: kMediumDialogWidth,

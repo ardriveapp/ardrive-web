@@ -4,8 +4,8 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToShareFile({
@@ -44,7 +44,7 @@ class _FileShareDialogState extends State<FileShareDialog> {
           }
         },
         builder: (context, state) => AppDialog(
-          title: AppLocalizations.of(context)!.shareFile,
+          title: appLocalizationsOf(context).shareFile,
           content: SizedBox(
             width: kLargeDialogWidth,
             child: Column(
@@ -82,13 +82,13 @@ class _FileShareDialogState extends State<FileShareDialog> {
                           Clipboard.setData(
                               ClipboardData(text: shareLinkController.text));
                         },
-                        child: Text(AppLocalizations.of(context)!.copyFileLink),
+                        child: Text(appLocalizationsOf(context).copyFileLink),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    AppLocalizations.of(context)!.anyoneCanAccessThisFile,
+                    appLocalizationsOf(context).anyoneCanAccessThisFile,
                     style: Theme.of(context).textTheme.subtitle2,
                   ),
                 }
@@ -100,7 +100,7 @@ class _FileShareDialogState extends State<FileShareDialog> {
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 child:
-                    Text(AppLocalizations.of(context)!.doneFileShareEmphasized),
+                    Text(appLocalizationsOf(context).doneFileShareEmphasized),
               ),
           ],
         ),

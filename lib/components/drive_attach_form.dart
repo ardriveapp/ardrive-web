@@ -6,11 +6,11 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 // ignore: unused_import
 import 'package:meta/meta.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> attachDrive(
@@ -41,8 +41,7 @@ Future<void> attachDrive(
             },
             child: driveName != null
                 ? ProgressDialog(
-                    title:
-                        AppLocalizations.of(context)!.attachingDriveEmphasized,
+                    title: appLocalizationsOf(context).attachingDriveEmphasized,
                   )
                 : DriveAttachForm(),
           ),
@@ -56,7 +55,7 @@ class DriveAttachForm extends StatelessWidget {
   Widget build(BuildContext context) =>
       BlocBuilder<DriveAttachCubit, DriveAttachState>(
         builder: (context, state) => AppDialog(
-          title: AppLocalizations.of(context)!.attachDriveEmphasized,
+          title: appLocalizationsOf(context).attachDriveEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
             child: ReactiveForm(
@@ -68,14 +67,14 @@ class DriveAttachForm extends StatelessWidget {
                     formControlName: 'driveId',
                     autofocus: true,
                     decoration: InputDecoration(
-                        labelText: AppLocalizations.of(context)!.driveID),
+                        labelText: appLocalizationsOf(context).driveID),
                     validationMessages: (_) => kValidationMessages,
                   ),
                   const SizedBox(height: 16),
                   ReactiveTextField(
                     formControlName: 'name',
                     decoration: InputDecoration(
-                      labelText: AppLocalizations.of(context)!.name,
+                      labelText: appLocalizationsOf(context).name,
                       // Listen to `driveId` status changes to show an indicator for
                       // when the drive name is being loaded.
                       //
@@ -113,12 +112,12 @@ class DriveAttachForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(null),
-              child: Text(
-                  AppLocalizations.of(context)!.cancelDriveAttachEmphasized),
+              child:
+                  Text(appLocalizationsOf(context).cancelDriveAttachEmphasized),
             ),
             ElevatedButton(
               onPressed: () => context.read<DriveAttachCubit>().submit(),
-              child: Text(AppLocalizations.of(context)!.attachEmphasized),
+              child: Text(appLocalizationsOf(context).attachEmphasized),
             ),
           ],
         ),

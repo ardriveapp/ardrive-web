@@ -1,7 +1,8 @@
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+import '../../../utils/app_localizations_wrapper.dart';
 
 class DriveListTile extends StatelessWidget {
   final Drive drive;
@@ -23,7 +24,7 @@ class DriveListTile extends StatelessWidget {
           minLeadingWidth: 12,
           leading: hasAlert
               ? Tooltip(
-                  message: AppLocalizations.of(context)!.driveIssuesDetected,
+                  message: appLocalizationsOf(context).driveIssuesDetected,
                   child: const Icon(
                     Icons.info,
                     color: Color(kPrimaryValue),

@@ -18,13 +18,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:moor/moor.dart' show OrderingMode;
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components/custom_paginated_data_table.dart';
 
 part 'components/drive_detail_actions_row.dart';

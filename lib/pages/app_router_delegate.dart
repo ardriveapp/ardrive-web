@@ -8,8 +8,8 @@ import 'package:ardrive/services/services.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import '../app_shell.dart';
 
 class AppRouterDelegate extends RouterDelegate<AppRoutePath>
@@ -194,11 +194,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          AppLocalizations.of(context)!.failedToSyncDrive,
+                          appLocalizationsOf(context).failedToSyncDrive,
                         ),
                         action: SnackBarAction(
-                          label:
-                              AppLocalizations.of(context)!.tryAgainEmphasized,
+                          label: appLocalizationsOf(context).tryAgainEmphasized,
                           onPressed: () =>
                               context.read<SyncCubit>().startSync(),
                         ),

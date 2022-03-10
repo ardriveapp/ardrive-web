@@ -5,7 +5,8 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
+import '../../../utils/app_localizations_wrapper.dart';
 
 Future<void> showCongestionDependentModalDialog(
     BuildContext context, Function() showAppDialog) async {
@@ -17,7 +18,7 @@ Future<void> showCongestionDependentModalDialog(
       final shouldShowDialog = await showDialog(
         context: context,
         builder: (_) => AppDialog(
-          title: AppLocalizations.of(context)!.warningEmphasized,
+          title: appLocalizationsOf(context).warningEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
             child: Column(
@@ -34,7 +35,7 @@ Future<void> showCongestionDependentModalDialog(
                         TextSpan(
                           children: [
                             TextSpan(
-                                text: AppLocalizations.of(context)!
+                                text: appLocalizationsOf(context)
                                     .congestionWarning),
                           ],
                           style: Theme.of(context).textTheme.bodyText1,
@@ -52,14 +53,14 @@ Future<void> showCongestionDependentModalDialog(
                 Navigator.of(context).pop(false);
               },
               child: Text(
-                  AppLocalizations.of(context)!.tryLaterCongestionEmphasized),
+                  appLocalizationsOf(context).tryLaterCongestionEmphasized),
             ),
             ElevatedButton(
               onPressed: () async {
                 Navigator.of(context).pop(true);
               },
-              child: Text(
-                  AppLocalizations.of(context)!.proceedCongestionEmphasized),
+              child:
+                  Text(appLocalizationsOf(context).proceedCongestionEmphasized),
             ),
           ],
         ),

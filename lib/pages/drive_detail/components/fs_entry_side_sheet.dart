@@ -43,10 +43,10 @@ class FsEntrySideSheet extends StatelessWidget {
                         TabBar(
                           tabs: [
                             Tab(
-                                text: AppLocalizations.of(context)!
+                                text: appLocalizationsOf(context)
                                     .itemDetailsEmphasized),
                             Tab(
-                                text: AppLocalizations.of(context)!
+                                text: appLocalizationsOf(context)
                                     .itemActivityEmphasized)
                           ],
                         ),
@@ -84,7 +84,7 @@ class FsEntrySideSheet extends StatelessWidget {
         rows: [
           if (state is FsEntryInfoSuccess<Drive>) ...{
             DataRow(cells: [
-              DataCell(Text(AppLocalizations.of(context)!.itemContains)),
+              DataCell(Text(appLocalizationsOf(context).itemContains)),
               DataCell(
                 Align(
                   alignment: Alignment.centerRight,
@@ -101,31 +101,31 @@ class FsEntrySideSheet extends StatelessWidget {
               ),
             ]),
             DataRow(cells: [
-              DataCell(Text(AppLocalizations.of(context)!.driveID)),
+              DataCell(Text(appLocalizationsOf(context).driveID)),
               DataCell(
                 CopyIconButton(
-                  tooltip: AppLocalizations.of(context)!.copyDriveID,
+                  tooltip: appLocalizationsOf(context).copyDriveID,
                   value: state.entry.id,
                 ),
               ),
             ]),
             DataRow(cells: [
-              DataCell(Text(AppLocalizations.of(context)!.privacy)),
+              DataCell(Text(appLocalizationsOf(context).privacy)),
               // Capitalise the privacy enums of drives for display.
               DataCell(
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
                     state.entry.privacy == DrivePrivacy.private
-                        ? AppLocalizations.of(context)!.private
-                        : AppLocalizations.of(context)!.public,
+                        ? appLocalizationsOf(context).private
+                        : appLocalizationsOf(context).public,
                   ),
                 ),
               )
             ]),
           } else if (state is FsEntryInfoSuccess<FolderNode>) ...{
             DataRow(cells: [
-              DataCell(Text(AppLocalizations.of(context)!.itemContains)),
+              DataCell(Text(appLocalizationsOf(context).itemContains)),
               DataCell(
                 Align(
                   alignment: Alignment.centerRight,
@@ -140,26 +140,26 @@ class FsEntrySideSheet extends StatelessWidget {
               ),
             ]),
             DataRow(cells: [
-              DataCell(Text(AppLocalizations.of(context)!.folderID)),
+              DataCell(Text(appLocalizationsOf(context).folderID)),
               DataCell(
                 CopyIconButton(
-                  tooltip: AppLocalizations.of(context)!.copyFolderID,
+                  tooltip: appLocalizationsOf(context).copyFolderID,
                   value: state.entry.folder.id,
                 ),
               ),
             ]),
           } else if (state is FsEntryInfoSuccess<FileEntry>) ...{
             DataRow(cells: [
-              DataCell(Text(AppLocalizations.of(context)!.fileID)),
+              DataCell(Text(appLocalizationsOf(context).fileID)),
               DataCell(
                 CopyIconButton(
-                  tooltip: AppLocalizations.of(context)!.copyFileID,
+                  tooltip: appLocalizationsOf(context).copyFileID,
                   value: state.entry.id,
                 ),
               ),
             ]),
             DataRow(cells: [
-              DataCell(Text(AppLocalizations.of(context)!.fileSize)),
+              DataCell(Text(appLocalizationsOf(context).fileSize)),
               DataCell(
                 Align(
                   alignment: Alignment.centerRight,
@@ -168,7 +168,7 @@ class FsEntrySideSheet extends StatelessWidget {
               )
             ]),
             DataRow(cells: [
-              DataCell(Text(AppLocalizations.of(context)!.lastModified)),
+              DataCell(Text(appLocalizationsOf(context).lastModified)),
               DataCell(
                 Align(
                   alignment: Alignment.centerRight,
@@ -180,7 +180,7 @@ class FsEntrySideSheet extends StatelessWidget {
             ]),
           },
           DataRow(cells: [
-            DataCell(Text(AppLocalizations.of(context)!.lastUpdated)),
+            DataCell(Text(appLocalizationsOf(context).lastUpdated)),
             DataCell(
               Align(
                 alignment: Alignment.centerRight,
@@ -191,7 +191,7 @@ class FsEntrySideSheet extends StatelessWidget {
             ),
           ]),
           DataRow(cells: [
-            DataCell(Text(AppLocalizations.of(context)!.dateCreated)),
+            DataCell(Text(appLocalizationsOf(context).dateCreated)),
             DataCell(
               Align(
                 alignment: Alignment.centerRight,
@@ -227,22 +227,21 @@ class FsEntrySideSheet extends StatelessWidget {
                   rows: [
                     if (infoState is FsEntryDriveInfoSuccess) ...{
                       DataRow(cells: [
-                        DataCell(Text(AppLocalizations.of(context)!.driveTxID)),
+                        DataCell(Text(appLocalizationsOf(context).driveTxID)),
                         DataCell(
                           CopyIconButton(
-                            tooltip:
-                                AppLocalizations.of(context)!.copyDriveTxID,
+                            tooltip: appLocalizationsOf(context).copyDriveTxID,
                             value: revision.metadataTx.id,
                           ),
                         ),
                       ]),
                       DataRow(cells: [
                         DataCell(
-                            Text(AppLocalizations.of(context)!.rootFolderTxID)),
+                            Text(appLocalizationsOf(context).rootFolderTxID)),
                         DataCell(
                           CopyIconButton(
-                            tooltip: AppLocalizations.of(context)!
-                                .copyRootFolderTxID,
+                            tooltip:
+                                appLocalizationsOf(context).copyRootFolderTxID,
                             value: infoState.rootFolderRevision.metadataTxId,
                           ),
                         ),
@@ -250,11 +249,11 @@ class FsEntrySideSheet extends StatelessWidget {
                       if (revision.bundledIn != null)
                         DataRow(cells: [
                           DataCell(
-                              Text(AppLocalizations.of(context)!.bundleTxID)),
+                              Text(appLocalizationsOf(context).bundleTxID)),
                           DataCell(
                             CopyIconButton(
                               tooltip:
-                                  AppLocalizations.of(context)!.copyBundleTxID,
+                                  appLocalizationsOf(context).copyBundleTxID,
                               value: revision.bundledIn,
                             ),
                           ),
@@ -263,11 +262,11 @@ class FsEntrySideSheet extends StatelessWidget {
                         is FsEntryInfoSuccess<FolderEntry>) ...{
                       DataRow(cells: [
                         DataCell(
-                            Text(AppLocalizations.of(context)!.metadataTxID)),
+                            Text(appLocalizationsOf(context).metadataTxID)),
                         DataCell(
                           CopyIconButton(
                             tooltip:
-                                AppLocalizations.of(context)!.copyMetadataTxID,
+                                appLocalizationsOf(context).copyMetadataTxID,
                             value: revision.metadataTx.id,
                           ),
                         ),
@@ -275,20 +274,20 @@ class FsEntrySideSheet extends StatelessWidget {
                     } else if (infoState is FsEntryInfoSuccess<FileEntry>) ...{
                       DataRow(cells: [
                         DataCell(
-                            Text(AppLocalizations.of(context)!.metadataTxID)),
+                            Text(appLocalizationsOf(context).metadataTxID)),
                         DataCell(
                           CopyIconButton(
                             tooltip:
-                                AppLocalizations.of(context)!.copyMetadataTxID,
+                                appLocalizationsOf(context).copyMetadataTxID,
                             value: revision.metadataTx.id,
                           ),
                         ),
                       ]),
                       DataRow(cells: [
-                        DataCell(Text(AppLocalizations.of(context)!.dataTxID)),
+                        DataCell(Text(appLocalizationsOf(context).dataTxID)),
                         DataCell(
                           CopyIconButton(
-                            tooltip: AppLocalizations.of(context)!.copyDataTxID,
+                            tooltip: appLocalizationsOf(context).copyDataTxID,
                             value: revision.dataTx.id,
                           ),
                         ),
@@ -296,11 +295,11 @@ class FsEntrySideSheet extends StatelessWidget {
                       if (revision.bundledIn != null)
                         DataRow(cells: [
                           DataCell(
-                              Text(AppLocalizations.of(context)!.bundleTxID)),
+                              Text(appLocalizationsOf(context).bundleTxID)),
                           DataCell(
                             CopyIconButton(
                               tooltip:
-                                  AppLocalizations.of(context)!.copyBundleTxID,
+                                  appLocalizationsOf(context).copyBundleTxID,
                               value: revision.bundledIn,
                             ),
                           ),
@@ -310,8 +309,8 @@ class FsEntrySideSheet extends StatelessWidget {
                 );
               } else {
                 return Center(
-                    child: Text(
-                        AppLocalizations.of(context)!.itemIsBeingProcesed));
+                    child:
+                        Text(appLocalizationsOf(context).itemIsBeingProcesed));
               }
             } else {
               return const Center(child: CircularProgressIndicator());
@@ -344,16 +343,16 @@ class FsEntrySideSheet extends StatelessWidget {
                       if (revision is DriveRevisionWithTransaction) {
                         switch (revision.action) {
                           case RevisionAction.create:
-                            content = Text(AppLocalizations.of(context)!
+                            content = Text(appLocalizationsOf(context)
                                 .driveWasCreatedWithName(revision.name));
                             break;
                           case RevisionAction.rename:
-                            content = Text(AppLocalizations.of(context)!
+                            content = Text(appLocalizationsOf(context)
                                 .driveWasRenamed(revision.name));
                             break;
                           default:
                             content = Text(
-                                AppLocalizations.of(context)!.driveWasModified);
+                                appLocalizationsOf(context).driveWasModified);
                         }
 
                         dateCreatedSubtitle = Text(
@@ -364,20 +363,20 @@ class FsEntrySideSheet extends StatelessWidget {
                       } else if (revision is FolderRevisionWithTransaction) {
                         switch (revision.action) {
                           case RevisionAction.create:
-                            content = Text(AppLocalizations.of(context)!
+                            content = Text(appLocalizationsOf(context)
                                 .folderWasCreatedWithName(revision.name));
                             break;
                           case RevisionAction.rename:
-                            content = Text(AppLocalizations.of(context)!
+                            content = Text(appLocalizationsOf(context)
                                 .folderWasRenamed(revision.name));
                             break;
                           case RevisionAction.move:
                             content = Text(
-                                AppLocalizations.of(context)!.folderWasMoved);
+                                appLocalizationsOf(context).folderWasMoved);
                             break;
                           default:
-                            content = Text(AppLocalizations.of(context)!
-                                .folderWasModified);
+                            content = Text(
+                                appLocalizationsOf(context).folderWasModified);
                         }
 
                         dateCreatedSubtitle = Text(
@@ -388,24 +387,24 @@ class FsEntrySideSheet extends StatelessWidget {
                       } else if (revision is FileRevisionWithTransactions) {
                         switch (revision.action) {
                           case RevisionAction.create:
-                            content = Text(AppLocalizations.of(context)!
+                            content = Text(appLocalizationsOf(context)
                                 .fileWasCreatedWithName(revision.name));
                             break;
                           case RevisionAction.rename:
-                            content = Text(AppLocalizations.of(context)!
+                            content = Text(appLocalizationsOf(context)
                                 .fileWasRenamed(revision.name));
                             break;
                           case RevisionAction.move:
-                            content = Text(
-                                AppLocalizations.of(context)!.fileWasMoved);
+                            content =
+                                Text(appLocalizationsOf(context).fileWasMoved);
                             break;
                           case RevisionAction.uploadNewVersion:
-                            content = Text(AppLocalizations.of(context)!
+                            content = Text(appLocalizationsOf(context)
                                 .fileHadANewRevision);
                             break;
                           default:
                             content = Text(
-                                AppLocalizations.of(context)!.fileWasModified);
+                                appLocalizationsOf(context).fileWasModified);
                         }
 
                         dateCreatedSubtitle = Text(
@@ -419,19 +418,19 @@ class FsEntrySideSheet extends StatelessWidget {
                       if (revisionConfirmationStatus ==
                           TransactionStatus.pending) {
                         statusIcon = Tooltip(
-                          message: AppLocalizations.of(context)!.pending,
+                          message: appLocalizationsOf(context).pending,
                           child: const Icon(Icons.pending),
                         );
                       } else if (revisionConfirmationStatus ==
                           TransactionStatus.confirmed) {
                         statusIcon = Tooltip(
-                          message: AppLocalizations.of(context)!.confirmed,
+                          message: appLocalizationsOf(context).confirmed,
                           child: const Icon(Icons.check),
                         );
                       } else if (revisionConfirmationStatus ==
                           TransactionStatus.failed) {
                         statusIcon = Tooltip(
-                          message: AppLocalizations.of(context)!.failed,
+                          message: appLocalizationsOf(context).failed,
                           child: const Icon(Icons.error_outline),
                         );
                       }
@@ -454,7 +453,7 @@ class FsEntrySideSheet extends StatelessWidget {
                 } else {
                   return Center(
                       child: Text(
-                          AppLocalizations.of(context)!.itemIsBeingProcesed));
+                          appLocalizationsOf(context).itemIsBeingProcesed));
                 }
               } else {
                 return const Center(child: CircularProgressIndicator());

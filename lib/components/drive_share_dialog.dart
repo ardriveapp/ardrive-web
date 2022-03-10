@@ -4,8 +4,8 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToShareDrive({
@@ -41,7 +41,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
           }
         },
         builder: (context, state) => AppDialog(
-          title: AppLocalizations.of(context)!.shareDrive,
+          title: appLocalizationsOf(context).shareDrive,
           content: SizedBox(
             width: kLargeDialogWidth,
             child: Column(
@@ -79,14 +79,13 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                           Clipboard.setData(
                               ClipboardData(text: shareLinkController.text));
                         },
-                        child:
-                            Text(AppLocalizations.of(context)!.copyDriveLink),
+                        child: Text(appLocalizationsOf(context).copyDriveLink),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    AppLocalizations.of(context)!.anyoneCanAccessThisDrive,
+                    appLocalizationsOf(context).anyoneCanAccessThisDrive,
                     style: Theme.of(context).textTheme.subtitle2,
                   ),
                 }
@@ -97,8 +96,8 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
             if (state is DriveShareLoadSuccess)
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(
-                    AppLocalizations.of(context)!.doneDriveShareEmphasized),
+                child:
+                    Text(appLocalizationsOf(context).doneDriveShareEmphasized),
               ),
           ],
         ),

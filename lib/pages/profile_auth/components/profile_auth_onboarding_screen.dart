@@ -1,9 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'profile_auth_shell.dart';
 
 class ProfileAuthOnboarding extends StatefulWidget {
@@ -34,17 +34,16 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    AppLocalizations.of(context)!
-                        .welcomeToThePermawebEmphasized,
+                    appLocalizationsOf(context).welcomeToThePermawebEmphasized,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),
-                  Text(AppLocalizations.of(context)!
+                  Text(appLocalizationsOf(context)
                       .ardriveIsntJustAnotherCloudSyncApp),
                   const SizedBox(height: 16),
-                  Text(AppLocalizations.of(context)!.anyFilesWillOutliveYou),
+                  Text(appLocalizationsOf(context).anyFilesWillOutliveYou),
                   const SizedBox(height: 16),
-                  Text(AppLocalizations.of(context)!.weDoAFewThingsDifferently),
+                  Text(appLocalizationsOf(context).weDoAFewThingsDifferently),
                 ],
               ),
             ),
@@ -67,13 +66,13 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.payPerFileEmphasized,
+                    appLocalizationsOf(context).payPerFileEmphasized,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),
-                  Text(AppLocalizations.of(context)!.noSubscriptions),
+                  Text(appLocalizationsOf(context).noSubscriptions),
                   const SizedBox(height: 16),
-                  Text(AppLocalizations.of(context)!.monthlyCharges),
+                  Text(appLocalizationsOf(context).monthlyCharges),
                 ],
               ),
             ),
@@ -96,13 +95,13 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.secondsFromForeverEmphasized,
+                    appLocalizationsOf(context).secondsFromForeverEmphasized,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),
-                  Text(AppLocalizations.of(context)!.decentralizedPermanent),
+                  Text(appLocalizationsOf(context).decentralizedPermanent),
                   const SizedBox(height: 16),
-                  Text(AppLocalizations.of(context)!.greenCheckMark),
+                  Text(appLocalizationsOf(context).greenCheckMark),
                 ],
               ),
             ),
@@ -125,13 +124,13 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.totalPrivacyControlEmphasized,
+                    appLocalizationsOf(context).totalPrivacyControlEmphasized,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),
-                  Text(AppLocalizations.of(context)!.yourChoice),
+                  Text(appLocalizationsOf(context).yourChoice),
                   const SizedBox(height: 16),
-                  Text(AppLocalizations.of(context)!.noOneWillSee),
+                  Text(appLocalizationsOf(context).noOneWillSee),
                 ],
               ),
             ),
@@ -154,15 +153,15 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               builder: (context) => Column(
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.neverDeletedEmphasized,
+                    appLocalizationsOf(context).neverDeletedEmphasized,
                     style: Theme.of(context).textTheme.headline5,
                   ),
                   const SizedBox(height: 32),
-                  Text(AppLocalizations.of(context)!.noDeleteButton),
+                  Text(appLocalizationsOf(context).noDeleteButton),
                   const SizedBox(height: 16),
-                  Text(AppLocalizations.of(context)!.onceUploadedCantBeRemoved),
+                  Text(appLocalizationsOf(context).onceUploadedCantBeRemoved),
                   const SizedBox(height: 16),
-                  Text(AppLocalizations.of(context)!.thinkTwiceBeforeUploading),
+                  Text(appLocalizationsOf(context).thinkTwiceBeforeUploading),
                 ],
               ),
             ),
