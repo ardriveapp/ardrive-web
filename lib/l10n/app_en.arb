@@ -1067,5 +1067,85 @@
         "example": "2"
       }
     }
+  },
+  "zeroFoldersAndFile": "{folderCount} folders, {fileCount} file",
+  "@zeroFoldersAndFile": {
+    "description": "Zero folders, one single file",
+    "placeholders": {
+      "folderCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      },
+      "fileCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      }
+    }
+  },
+  "folderAndZeroFiles": "{folderCount} folder, {fileCount} files",
+  "@folderAndZeroFiles": {
+    "description": "One single folder, zero files",
+    "placeholders": {
+      "folderCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      },
+      "fileCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "zeroFoldersAndZeroFiles": "{folderCount} folders, {fileCount} files",
+  "@zeroFoldersAndZeroFiles": {
+    "description": "Zero folders, zero files",
+    "placeholders": {
+      "folderCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      },
+      "fileCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "foldersAndZeroFiles": "{folderCount} folders, {fileCount} files",
+  "@foldersAndZeroFiles": {
+    "description": "Multiple folders, zero files",
+    "placeholders": {
+      "folderCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      },
+      "fileCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "zeroFoldersAndFiles": "{folderCount} folders, {fileCount} files",
+  "@zeroFoldersAndFiles": {
+    "description": "Zero folders, multiple files",
+    "placeholders": {
+      "folderCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      },
+      "fileCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      }
+    }
   }
 }

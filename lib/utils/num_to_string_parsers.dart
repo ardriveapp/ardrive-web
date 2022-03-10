@@ -6,16 +6,31 @@ String fileAndFolderCountsToString({
   required AppLocalizations localizations,
 }) {
   if (folderCount == 1 && fileCount == 1) {
-    // Both singular
+    // 1-1
     return localizations.folderAndFile(folderCount, fileCount);
-  } else if (folderCount == 1 && fileCount != 1) {
-    // Folder singular, files plural
+  } else if (folderCount == 1 && fileCount > 1) {
+    // 1-N
     return localizations.folderAndFiles(folderCount, fileCount);
-  } else if (folderCount != 1 && fileCount == 1) {
-    // Folders plural, file singular
+  } else if (folderCount > 1 && fileCount == 1) {
+    // N-1
     return localizations.foldersAndFile(folderCount, fileCount);
-  } else {
-    // Both plural
+  } else if (folderCount > 1 && fileCount > 1) {
+    // N-N
     return localizations.foldersAndFiles(folderCount, fileCount);
+  } else if (folderCount == 0 && fileCount == 1) {
+    // 0-1
+    return localizations.zeroFoldersAndFile(folderCount, fileCount);
+  } else if (folderCount == 1 && fileCount == 0) {
+    // 1-0
+    return localizations.folderAndZeroFiles(folderCount, fileCount);
+  } else if (folderCount == 0 && fileCount == 0) {
+    // 0-0
+    return localizations.zeroFoldersAndZeroFiles(folderCount, fileCount);
+  } else if (folderCount > 1 && fileCount == 0) {
+    // N-0
+    return localizations.foldersAndZeroFiles(folderCount, fileCount);
+  } else {
+    // 0-N
+    return localizations.zeroFoldersAndFiles(folderCount, fileCount);
   }
 }
