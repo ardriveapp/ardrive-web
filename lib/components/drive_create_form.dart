@@ -54,8 +54,7 @@ class DriveCreateForm extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text(appLocalizationsOf(context)
-                      .cancelDriveCreationEmphasized),
+                  child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
               ],
             );
@@ -105,8 +104,7 @@ class DriveCreateForm extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text(appLocalizationsOf(context)
-                      .cancelDriveCreationEmphasized),
+                  child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
                 ElevatedButton(
                   onPressed: () => context.read<DriveCreateCubit>().submit(),

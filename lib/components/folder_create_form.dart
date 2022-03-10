@@ -86,8 +86,7 @@ class FolderCreateForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(null),
-              child: Text(
-                  appLocalizationsOf(context).cancelFolderCreateEmphasized),
+              child: Text(appLocalizationsOf(context).cancelEmphasized),
             ),
             ElevatedButton(
               onPressed: () => context.read<FolderCreateCubit>().submit(),

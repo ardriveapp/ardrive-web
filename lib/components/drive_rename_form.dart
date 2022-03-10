@@ -69,8 +69,7 @@ class DriveRenameForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child:
-                  Text(appLocalizationsOf(context).cancelDriveRenameEmphasized),
+              child: Text(appLocalizationsOf(context).cancelEmphasized),
             ),
             ElevatedButton(
               onPressed: () => context.read<DriveRenameCubit>().submit(),

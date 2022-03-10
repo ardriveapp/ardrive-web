@@ -60,7 +60,7 @@ class FileDownloadDialog extends StatelessWidget {
               actions: [
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(appLocalizationsOf(context).cancelCSV),
+                  child: Text(appLocalizationsOf(context).cancel),
                 ),
               ],
             );
@@ -86,7 +86,7 @@ class FileDownloadDialog extends StatelessWidget {
                     context.read<FileDownloadCubit>().abortDownload();
                     Navigator.pop(context);
                   },
-                  child: Text(appLocalizationsOf(context).cancelCSV),
+                  child: Text(appLocalizationsOf(context).cancel),
                 ),
               ],
             );
@@ -100,7 +100,7 @@ class FileDownloadDialog extends StatelessWidget {
               actions: [
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text(appLocalizationsOf(context).okCSV),
+                  child: Text(appLocalizationsOf(context).ok),
                 ),
               ],
             );

@@ -98,7 +98,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(appLocalizationsOf(context).okDragAndDrop),
+                child: Text(appLocalizationsOf(context).ok),
               ),
             ],
           ),

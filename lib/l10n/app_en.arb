@@ -307,9 +307,13 @@
   "@errorDragAndDropFolder": {
     "description": "Drag and drop"
   },
-  "okDragAndDrop": "OK",
-  "@okDragAndDrop": {
-    "description": "Drag and drop"
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button"
+  },
+  "okEmphasized": "OK",
+  "@okEmphasized": {
+    "description": "OK button. Emphasized in upper case"
   },
   "uploadDragAndDrop": "Upload File",
   "@uploadDragAndDrop": {
@@ -545,13 +549,9 @@
   "@downloadingCSV": {
     "description": "CSV export"
   },
-  "cancelCSV": "Cancel",
-  "@cancelCSV": {
-    "description": "CSV export"
-  },
-  "okCSV": "OK",
-  "@okCSV": {
-    "description": "CSV export"
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button"
   },
   "exportingData": "Exporting your data, please wait.",
   "@exportingData": {
@@ -565,9 +565,9 @@
   "@attachingDriveEmphasized": {
     "description": "Drive attach form. Emphasized with upper case"
   },
-  "cancelDriveAttachEmphasized": "CANCEL",
-  "@cancelDriveAttachEmphasized": {
-    "description": "Drive attach form"
+  "cancelEmphasized": "CANCEL",
+  "@cancelEmphasized": {
+    "description": "Cancel export. Emphatized with upper case"
   },
   "attachEmphasized": "ATTACH",
   "@attachEmphasized": {
@@ -584,10 +584,6 @@
   "insufficientARToCreateDrive": "You do not have sufficient AR to create a drive.",
   "@insufficientARToCreateDrive": {
     "description": "Drive create form"
-  },
-  "cancelDriveCreationEmphasized": "CANCEL",
-  "@cancelDriveCreationEmphasized": {
-    "description": "Drive create form. Emphasized with upper case"
   },
   "create": "Create",
   "@create": {
@@ -613,10 +609,6 @@
   "@driveName": {
     "description": "Drive rename form"
   },
-  "cancelDriveRenameEmphasized": "CANCEL",
-  "@cancelDriveRenameEmphasized": {
-    "description": "Drive rename form. Emphasized with upper case"
-  },
   "shareDrive": "Share drive with others",
   "@shareDrive": {
     "description": "Drive share dialog"
@@ -637,16 +629,8 @@
   "@errorLog": {
     "description": "Error dialog"
   },
-  "cancelErrorDialogEmphasized": "CANCEL",
-  "@cancelErrorDialogEmphasized": {
-    "description": "Error dialog. EMphasized with upper case"
-  },
   "downloadingFile": "Downloading file...",
   "@downloadingFile": {
-    "description": "File download dialog"
-  },
-  "cancelFileDownload": "Cancel",
-  "@cancelFileDownload": {
     "description": "File download dialog"
   },
   "fileFailedToDownload": "File download failed",
@@ -656,10 +640,6 @@
   "tryAgainDownloadingFile": "This can happen if the file was only uploaded recently. Please try again later.",
   "@tryAgainDownloadingFile": {
     "description": "The data is still being replicated between nodes of the network and it's yet not available"
-  },
-  "okDownloadFailed": "OK",
-  "@okDownloadFailed": {
-    "description": "File download dialog"
   },
   "shareFile": "Share file with others",
   "@shareFile": {
@@ -689,10 +669,6 @@
   "@folderName": {
     "description": "Folder create form"
   },
-  "cancelFolderCreateEmphasized": "CANCEL",
-  "@cancelFolderCreateEmphasized": {
-    "description": "Folder create form. Emphasized with upper case"
-  },
   "movingFolderEmphasized": "MOVING FOLDER...",
   "@movingFolderEmphasized": {
     "description": "Folder/file move form. Emphasized with upper case"
@@ -714,14 +690,6 @@
         "example": "entity name"
       }
     }
-  },
-  "okMoveEntity": "OK",
-  "@okMoveEntity": {
-    "description": "Folder/file move form"
-  },
-  "cancelMoveEntityEmphasized": "CANCEL",
-  "@cancelMoveEntityEmphasized": {
-    "description": "Folder/file move form. Emphasized with upper case"
   },
   "moveHereEmphasized": "MOVE HERE",
   "@moveHereEmphasized": {
@@ -761,10 +729,6 @@
   "@renameFileEmphasized": {
     "description": "Folder/file rename form. Emphasized with upper case"
   },
-  "cancelRenameEmphasized": "CANCEL",
-  "@cancelRenameEmphasized": {
-    "description": "Folder/file rename form. Emphasized wuth upper case"
-  },
   "rename": "Rename",
   "@rename": {
     "description": "Folder/file rename form"
@@ -784,10 +748,6 @@
   "recreatingFolderEmphasized": "RECREATING FOLDER...",
   "@recreatingFolderEmphasized": {
     "description": "Ghost folder fixer. Emphasized with upper case"
-  },
-  "cancelFolderRecreateEmphasized": "CANCEL",
-  "@cancelFolderRecreateEmphasized": {
-    "description": "Ghost folder fixer"
   },
   "fix": "Fix",
   "@fix": {

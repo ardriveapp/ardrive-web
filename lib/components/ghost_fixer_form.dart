@@ -52,8 +52,7 @@ class GhostFixerForm extends StatelessWidget {
               children: [
                 TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text(appLocalizationsOf(context)
-                        .cancelFolderRecreateEmphasized)),
+                    child: Text(appLocalizationsOf(context).cancelEmphasized)),
                 ElevatedButton(
                   onPressed: () => context.read<GhostFixerCubit>().submit(),
                   child: Text(appLocalizationsOf(context).fixEmphasized),

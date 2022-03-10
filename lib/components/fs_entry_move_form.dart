@@ -98,7 +98,7 @@ class FsEntryMoveForm extends StatelessWidget {
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text(appLocalizationsOf(context).okMoveEntity)),
+                      child: Text(appLocalizationsOf(context).ok)),
                 ],
               ),
             );
@@ -109,8 +109,8 @@ class FsEntryMoveForm extends StatelessWidget {
                 children: [
                   TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text(appLocalizationsOf(context)
-                          .cancelMoveEntityEmphasized)),
+                      child:
+                          Text(appLocalizationsOf(context).cancelEmphasized)),
                   ElevatedButton(
                     onPressed: () => context.read<FsEntryMoveCubit>().submit(),
                     child: Text(appLocalizationsOf(context).moveHereEmphasized),
