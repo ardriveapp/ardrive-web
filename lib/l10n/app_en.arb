@@ -1043,5 +1043,69 @@
         "example": "1646828373148"
       }
     }
+  },
+  "folderAndFile": "{folderCount} folder, {fileCount} file",
+  "@folderAndFile": {
+    "description": "One single folder, one single file",
+    "placeholders": {
+      "folderCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      },
+      "fileCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      }
+    }
+  },
+  "foldersAndFile": "{folderCount} folders, {fileCount} file",
+  "@foldersAndFile": {
+    "description": "Multiple folders, one single file",
+    "placeholders": {
+      "folderCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      },
+      "fileCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      }
+    }
+  },
+  "folderAndFiles": "{folderCount} folder, {fileCount} files",
+  "@folderAndFiles": {
+    "description": "One single folder, multiple files",
+    "placeholders": {
+      "folderCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      },
+      "fileCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      }
+    }
+  },
+  "foldersAndFiles": "{folderCount} folders, {fileCount} files",
+  "@foldersAndFiles": {
+    "description": "Multiple folders, multiple files",
+    "placeholders": {
+      "folderCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      },
+      "fileCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      }
+    }
   }
 }

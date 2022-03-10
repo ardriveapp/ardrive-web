@@ -90,11 +90,13 @@ class FsEntrySideSheet extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: Text(
                     fileAndFolderCountsToString(
-                        fileCount: (state as FsEntryDriveInfoSuccess)
-                            .rootFolderTree
-                            .getRecursiveFileCount(),
-                        folderCount:
-                            state.rootFolderTree.getRecursiveSubFolderCount()),
+                      fileCount: (state as FsEntryDriveInfoSuccess)
+                          .rootFolderTree
+                          .getRecursiveFileCount(),
+                      folderCount:
+                          state.rootFolderTree.getRecursiveSubFolderCount(),
+                      localizations: appLocalizationsOf(context),
+                    ),
                     textAlign: TextAlign.end,
                   ),
                 ),
@@ -133,6 +135,7 @@ class FsEntrySideSheet extends StatelessWidget {
                     fileAndFolderCountsToString(
                       folderCount: state.entry.getRecursiveSubFolderCount(),
                       fileCount: state.entry.getRecursiveFileCount(),
+                      localizations: appLocalizationsOf(context),
                     ),
                     textAlign: TextAlign.end,
                   ),
