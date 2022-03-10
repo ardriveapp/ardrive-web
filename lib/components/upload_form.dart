@@ -28,8 +28,9 @@ Future<void> promptToUploadFile(
       builder: (_) => BlocProvider<UploadCubit>(
         create: (context) => UploadCubit(
           uploadPlanUtils: UploadPlanUtils(
-              arweave: context.read<ArweaveService>(),
-              driveDao: context.read<DriveDao>()),
+            arweave: context.read<ArweaveService>(),
+            driveDao: context.read<DriveDao>(),
+          ),
           driveId: driveId,
           folderId: folderId,
           files: selectedFiles,
