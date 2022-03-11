@@ -1004,47 +1004,21 @@
       }
     }
   },
-  "folderAndFile": "{folderCount} folder, {fileCount} file",
-  "@folderAndFile": {
-    "description": "One single folder, one single file",
+  "folderCount": "{folderCount,plural, =0{No folders} =1{1 folder} other{{folderCount} folders}",
+  "@folderCount": {
+    "description": "Plurals for the folder count",
     "placeholders": {
       "folderCount": {
         "type": "int",
         "format": "decimalPattern",
-        "example": "1"
-      },
-      "fileCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "1"
+        "example": "0"
       }
     }
   },
-  "foldersAndFile": "{folderCount} folders, {fileCount} file",
-  "@foldersAndFile": {
-    "description": "Multiple folders, one single file",
+  "fileCount": "{fileCount,plural, =0{no files} =1{1 file} other{{fileCount} files}}",
+  "@fileCount": {
+    "description": "Plurals for the file count",
     "placeholders": {
-      "folderCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "2"
-      },
-      "fileCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "1"
-      }
-    }
-  },
-  "folderAndFiles": "{folderCount} folder, {fileCount} files",
-  "@folderAndFiles": {
-    "description": "One single folder, multiple files",
-    "placeholders": {
-      "folderCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "1"
-      },
       "fileCount": {
         "type": "int",
         "format": "decimalPattern",
@@ -1052,98 +1026,16 @@
       }
     }
   },
-  "foldersAndFiles": "{folderCount} folders, {fileCount} files",
-  "@foldersAndFiles": {
-    "description": "Multiple folders, multiple files",
+  "folderAndFileCountComposite": "{folderCountString}, {fileCountString}",
+  "@folderAndFileCountComposite": {
+    "description": "Composite of the folder and file counts. Comma separated for English",
     "placeholders": {
-      "folderCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "2"
-      },
-      "fileCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "2"
-      }
-    }
-  },
-  "zeroFoldersAndFile": "{folderCount} folders, {fileCount} file",
-  "@zeroFoldersAndFile": {
-    "description": "Zero folders, one single file",
-    "placeholders": {
-      "folderCount": {
-        "type": "int",
-        "format": "decimalPattern",
+      "folderCountString": {
+        "type": "String",
         "example": "0"
       },
-      "fileCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "1"
-      }
-    }
-  },
-  "folderAndZeroFiles": "{folderCount} folder, {fileCount} files",
-  "@folderAndZeroFiles": {
-    "description": "One single folder, zero files",
-    "placeholders": {
-      "folderCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "1"
-      },
-      "fileCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "0"
-      }
-    }
-  },
-  "zeroFoldersAndZeroFiles": "{folderCount} folders, {fileCount} files",
-  "@zeroFoldersAndZeroFiles": {
-    "description": "Zero folders, zero files",
-    "placeholders": {
-      "folderCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "0"
-      },
-      "fileCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "0"
-      }
-    }
-  },
-  "foldersAndZeroFiles": "{folderCount} folders, {fileCount} files",
-  "@foldersAndZeroFiles": {
-    "description": "Multiple folders, zero files",
-    "placeholders": {
-      "folderCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "2"
-      },
-      "fileCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "0"
-      }
-    }
-  },
-  "zeroFoldersAndFiles": "{folderCount} folders, {fileCount} files",
-  "@zeroFoldersAndFiles": {
-    "description": "Zero folders, multiple files",
-    "placeholders": {
-      "folderCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "0"
-      },
-      "fileCount": {
-        "type": "int",
-        "format": "decimalPattern",
+      "fileCountString": {
+        "type": "String",
         "example": "2"
       }
     }
