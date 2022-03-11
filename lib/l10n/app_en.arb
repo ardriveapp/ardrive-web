@@ -14,7 +14,7 @@
   },
   "selectWalletEmphasized": "SELECT WALLET",
   "@selectWalletEmphasized": {
-    "description": "The red button at the first screen which opens the file picker. Emphasized with upper case"
+    "description": "The button at the first screen which opens the file picker to choose the wallet file. Emphasized with upper case"
   },
   "useArconnectEmphasized": "USE ARCONNECT",
   "@useArconnectEmphasized": {
@@ -98,15 +98,15 @@
   },
   "loginFailed": "Login failed",
   "@loginFailed": {
-    "description": "The user has provided wrong credentials"
+    "description": "Text for when the user tried to login with wrong credentials"
   },
   "sorryLoginFailed": "Sorry, login failed. Please try again.",
   "@sorryLoginFailed": {
-    "description": "The user has provided wrong credentials"
+    "description": "Text for when the user tried to login with wrong credentials"
   },
   "logIn": "Log in",
   "@logIn": {
-    "description": "The user has provided wrong credentials"
+    "description": "The action of logging in. Imperative form"
   },
   "welcomeBackEmphasized": "WELCOME BACK",
   "@welcomeBackEmphasized": {
