@@ -1011,7 +1011,7 @@
       "folderCount": {
         "type": "int",
         "format": "decimalPattern",
-        "example": "0"
+        "example": "2"
       }
     }
   },
@@ -1032,11 +1032,11 @@
     "placeholders": {
       "folderCountString": {
         "type": "String",
-        "example": "0"
+        "example": "10 folders"
       },
       "fileCountString": {
         "type": "String",
-        "example": "2"
+        "example": "10 files"
       }
     }
   }
