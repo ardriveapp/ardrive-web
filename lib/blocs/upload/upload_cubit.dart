@@ -184,7 +184,8 @@ class UploadCubit extends Cubit<UploadState> {
       );
       await for (final _ in bundleHandle
           .upload(_arweave)
-          .debounceTime(Duration(milliseconds: 500))) {
+          .debounceTime(Duration(milliseconds: 500))
+          .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       bundleHandle.dispose();
@@ -201,7 +202,8 @@ class UploadCubit extends Cubit<UploadState> {
       );
       await for (final _ in uploadHandle
           .upload(_arweave)
-          .debounceTime(Duration(milliseconds: 500))) {
+          .debounceTime(Duration(milliseconds: 500))
+          .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       uploadHandle.dispose();

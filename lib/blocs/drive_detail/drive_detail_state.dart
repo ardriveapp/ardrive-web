@@ -27,6 +27,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
 
   final int rowsPerPage;
   final List<int> availableRowsPerPage;
+  final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
 
   DriveDetailLoadSuccess({
     required this.currentDrive,
@@ -79,6 +80,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         rowsPerPage,
         availableRowsPerPage,
         maybeSelectedItem,
+        _equatableBust,
       ];
 
   bool isViewingRootFolder() =>
