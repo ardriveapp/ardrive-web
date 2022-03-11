@@ -28,6 +28,8 @@ const kSyncTimerDuration = 5;
 const kArConnectSyncTimerDuration = 2;
 const kBlockHeightLookBack = 240;
 
+const _pendingWaitTime = Duration(days: 1);
+
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.
 class SyncCubit extends Cubit<SyncState> {
@@ -368,6 +370,8 @@ class SyncCubit extends Cubit<SyncState> {
           newRevisions
               .map(
                 (rev) => NetworkTransactionsCompanion.insert(
+                  // TODO(thiagocarvalhodev): understand: hasnt the lastUpdate
+                  dateTransactionCreated: rev.dateCreated,
                   id: rev.metadataTxId.value,
                   status: Value(TransactionStatus.confirmed),
                 ),
@@ -420,6 +424,7 @@ class SyncCubit extends Cubit<SyncState> {
           newRevisions
               .map(
                 (rev) => NetworkTransactionsCompanion.insert(
+                  dateTransactionCreated: rev.dateCreated,
                   id: rev.metadataTxId.value,
                   status: Value(TransactionStatus.confirmed),
                 ),
@@ -476,12 +481,14 @@ class SyncCubit extends Cubit<SyncState> {
               .expand(
                 (rev) => [
                   NetworkTransactionsCompanion.insert(
+                    dateTransactionCreated: rev.lastModifiedDate,
                     id: rev.metadataTxId.value,
                     status: Value(TransactionStatus.confirmed),
                   ),
                   // We cannot be sure that the data tx of files have been mined
                   // so we'll mark it as pending initially.
                   NetworkTransactionsCompanion.insert(
+                    dateTransactionCreated: rev.lastModifiedDate,
                     id: rev.dataTxId.value,
                     status: Value(TransactionStatus.pending),
                   ),
@@ -674,7 +681,11 @@ class SyncCubit extends Cubit<SyncState> {
 
         if (txConfirmed) {
           txStatus = TransactionStatus.confirmed;
+        } else if (_isOverThePedingTime(
+            pendingTxMap[txId]!.dateTransactionCreated)) {
+          txStatus = TransactionStatus.failed;
         } else if (txNotFound) {
+          // TODO(thiagocarvalhodev): Understand if we need it once we implemented the new rule about failed transactions
           // Only mark transactions as failed if they are unconfirmed for over 45 minutes
           // as the transaction might not be queryable for right after it was created.
           final abovePendingThreshold = DateTime.now()
@@ -685,10 +696,11 @@ class SyncCubit extends Cubit<SyncState> {
             txStatus = TransactionStatus.failed;
           }
         }
-
         if (txStatus != null) {
           await _driveDao.writeToTransaction(
             NetworkTransactionsCompanion(
+              dateTransactionCreated:
+                  Value(pendingTxMap[txId]!.dateTransactionCreated),
               id: Value(txId),
               status: Value(txStatus),
             ),
@@ -696,6 +708,14 @@ class SyncCubit extends Cubit<SyncState> {
         }
       }
     });
+  }
+
+  bool _isOverThePedingTime(DateTime? transactionCreatedDate) {
+    // TODO(thiagocarvalhodev): Understand more how to handle it.
+    if (transactionCreatedDate == null) {
+      return false;
+    }
+    return DateTime.now().isAfter(transactionCreatedDate.add(_pendingWaitTime));
   }
 
   @override
