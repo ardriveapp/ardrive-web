@@ -2,15 +2,15 @@
   "@@locale": "en",
   "welcomeTo_body": "Welcome to your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive",
   "@welcomeTo_body": {
-    "description": "Welcomming message just after the ArDrive logo"
+    "description": "Welcoming message just after the ArDrive logo"
   },
   "welcomeTo_main": "Welcome to",
   "@welcomeTo_main": {
-    "description": "Highly emphatized text on red giving the welcomming"
+    "description": "Highly emphasized text giving welcome"
   },
   "welcomeTo_description": "your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive",
   "@welcomeTo_description": {
-    "description": "Brief description of ArDrive as welcomming"
+    "description": "Brief description of ArDrive as welcoming"
   },
   "selectWalletEmphasized": "SELECT WALLET",
   "@selectWalletEmphasized": {
@@ -26,7 +26,7 @@
   },
   "welcomeToThePermawebEmphasized": "WELCOME TO THE PERMAWEB",
   "@welcomeToThePermawebEmphasized": {
-    "description": "Welcomming message at the onboarding screen. Emphasized with upper case"
+    "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
   },
   "ardriveIsntJustAnotherCloudSyncApp": "ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.",
   "@ardriveIsntJustAnotherCloudSyncApp": {
