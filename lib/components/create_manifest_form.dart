@@ -281,7 +281,7 @@ class CreateManifestForm extends StatelessWidget {
 
         if (state is CreateManifestFolderLoadSuccess) {
           return AppDialog(
-            title: 'CREATE MANIFEST FROM',
+            title: 'CREATE MANIFEST',
             actions: [
               TextButton(
                 onPressed: () => readCubitContext.backToName(),
@@ -289,7 +289,7 @@ class CreateManifestForm extends StatelessWidget {
               ),
               ElevatedButton(
                 onPressed: () => readCubitContext.checkForConflicts(),
-                child: Text('CREATE'),
+                child: Text('CREATE HERE'),
               ),
             ],
             content: SizedBox(
