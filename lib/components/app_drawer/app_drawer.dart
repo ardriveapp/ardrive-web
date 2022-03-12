@@ -240,6 +240,7 @@ class AppDrawer extends StatelessWidget {
                                 drive: state.currentDrive),
                             child: ListTile(
                               title: Text('Create manifest'),
+                              enabled: state.driveIsEmpty,
                             ),
                           ),
                         },
