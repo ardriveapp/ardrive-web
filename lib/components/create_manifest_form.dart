@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
@@ -280,6 +281,13 @@ class CreateManifestForm extends StatelessWidget {
         }
 
         if (state is CreateManifestFolderLoadSuccess) {
+          /// Returns false if a folder does not contain any file entities
+          bool isFolderEmpty(FolderID folderId) {
+            final folderNode =
+                readCubitContext.rootFolderNode.searchForFolder(folderId)!;
+            return folderNode.getRecursiveFileCount() == 0;
+          }
+
           return AppDialog(
             title: 'CREATE MANIFEST',
             actions: [
@@ -333,6 +341,7 @@ class CreateManifestForm extends StatelessWidget {
                                   onTap: () =>
                                       readCubitContext.loadFolder(f.id),
                                   trailing: Icon(Icons.keyboard_arrow_right),
+                                  enabled: isFolderEmpty(f.id),
                                 ),
                               ),
                               ...state.viewingFolder.files
