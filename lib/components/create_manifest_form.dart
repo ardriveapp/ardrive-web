@@ -341,7 +341,7 @@ class CreateManifestForm extends StatelessWidget {
                                   onTap: () =>
                                       readCubitContext.loadFolder(f.id),
                                   trailing: Icon(Icons.keyboard_arrow_right),
-                                  enabled: isFolderEmpty(f.id),
+                                  enabled: !isFolderEmpty(f.id),
                                 ),
                               ),
                               ...state.viewingFolder.files
