@@ -2,7 +2,6 @@ part of '../drive_detail_page.dart';
 
 Widget _buildDataTable(BuildContext context, DriveDetailLoadSuccess state) {
   return DriveDataTable(
-    key: ObjectKey(state),
     driveDetailState: state,
     context: context,
   );
@@ -25,6 +24,7 @@ class _DriveDataTableState extends State<DriveDataTable> {
   @override
   Widget build(BuildContext context) {
     return CustomPaginatedDataTable(
+      tableKey: ObjectKey(widget.driveDetailState.folderInView),
       columns: _buildTableColumns(context),
       sortColumnIndex:
           DriveOrder.values.indexOf(widget.driveDetailState.contentOrderBy),
