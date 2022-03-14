@@ -15,8 +15,13 @@ class FolderNode {
 
   FolderNode? searchForFolder(String folderId) {
     if (folder.id == folderId) return this;
+
     for (final subfolder in subfolders) {
-      return subfolder.searchForFolder(folderId);
+      final foundFolder = subfolder.searchForFolder(folderId);
+
+      if (foundFolder != null) {
+        return foundFolder;
+      }
     }
     return null;
   }
