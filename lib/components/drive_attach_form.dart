@@ -41,10 +41,8 @@ Future<void> attachDrive({
         ),
         child: BlocListener<DriveAttachCubit, DriveAttachState>(
           listener: (context, state) {
-            if (state is DriveAttachFailure) {
-              // Close the progress dialog if the drive attachment fails.
-              Navigator.pop(context);
-            } else if (state is DriveAttachSuccess) {
+            if (state is DriveAttachFailure || state is DriveAttachSuccess) {
+              // Close the progress dialog if the drive attachment fails or succeeds.
               Navigator.pop(context);
             }
           },

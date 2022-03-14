@@ -161,6 +161,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     SecretKey? driveKey,
     SecretKey? profileKey,
   }) async {
+    
     var companion = DrivesCompanion.insert(
       id: entity.id!,
       name: name,
@@ -170,22 +171,20 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       dateCreated: Value(entity.createdAt),
       lastUpdated: Value(entity.createdAt),
     );
-    switch (entity.privacy) {
-      case DrivePrivacy.private:
-        if (profileKey != null) {
-          companion = await _addDriveKeyToDriveCompanion(
-            companion,
-            profileKey,
-            driveKey!,
-          );
-        } else {
-          await putDriveKeyInMemory(
-            driveID: entity.id!,
-            driveKey: driveKey!,
-          );
-        }
-        break;
-      default:
+
+    if (entity.privacy == DrivePrivacy.private) {
+      if (profileKey != null) {
+        companion = await _addDriveKeyToDriveCompanion(
+          companion,
+          profileKey,
+          driveKey!,
+        );
+      } else {
+        await putDriveKeyInMemory(
+          driveID: entity.id!,
+          driveKey: driveKey!,
+        );
+      }
     }
 
     await into(drives).insert(
