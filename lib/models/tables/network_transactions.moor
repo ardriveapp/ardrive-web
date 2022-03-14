@@ -5,5 +5,5 @@ CREATE TABLE network_transactions (
 
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
 
-    dateTransactionCreated DATETIME
+    transactionDateCreated DATETIME
 );

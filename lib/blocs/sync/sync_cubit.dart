@@ -370,8 +370,7 @@ class SyncCubit extends Cubit<SyncState> {
           newRevisions
               .map(
                 (rev) => NetworkTransactionsCompanion.insert(
-                  // TODO(thiagocarvalhodev): understand: hasnt the lastUpdate
-                  dateTransactionCreated: rev.dateCreated,
+                  transactionDateCreated: rev.dateCreated,
                   id: rev.metadataTxId.value,
                   status: Value(TransactionStatus.confirmed),
                 ),
@@ -424,7 +423,7 @@ class SyncCubit extends Cubit<SyncState> {
           newRevisions
               .map(
                 (rev) => NetworkTransactionsCompanion.insert(
-                  dateTransactionCreated: rev.dateCreated,
+                  transactionDateCreated: rev.dateCreated,
                   id: rev.metadataTxId.value,
                   status: Value(TransactionStatus.confirmed),
                 ),
@@ -481,14 +480,14 @@ class SyncCubit extends Cubit<SyncState> {
               .expand(
                 (rev) => [
                   NetworkTransactionsCompanion.insert(
-                    dateTransactionCreated: rev.lastModifiedDate,
+                    transactionDateCreated: rev.dateCreated,
                     id: rev.metadataTxId.value,
                     status: Value(TransactionStatus.confirmed),
                   ),
                   // We cannot be sure that the data tx of files have been mined
                   // so we'll mark it as pending initially.
                   NetworkTransactionsCompanion.insert(
-                    dateTransactionCreated: rev.lastModifiedDate,
+                    transactionDateCreated: rev.dateCreated,
                     id: rev.dataTxId.value,
                     status: Value(TransactionStatus.pending),
                   ),
@@ -682,7 +681,7 @@ class SyncCubit extends Cubit<SyncState> {
         if (txConfirmed) {
           txStatus = TransactionStatus.confirmed;
         } else if (_isOverThePedingTime(
-            pendingTxMap[txId]!.dateTransactionCreated)) {
+            pendingTxMap[txId]!.transactionDateCreated)) {
           txStatus = TransactionStatus.failed;
         } else if (txNotFound) {
           // TODO(thiagocarvalhodev): Understand if we need it once we implemented the new rule about failed transactions
@@ -699,8 +698,8 @@ class SyncCubit extends Cubit<SyncState> {
         if (txStatus != null) {
           await _driveDao.writeToTransaction(
             NetworkTransactionsCompanion(
-              dateTransactionCreated:
-                  Value(pendingTxMap[txId]!.dateTransactionCreated),
+              transactionDateCreated:
+                  Value(pendingTxMap[txId]!.transactionDateCreated),
               id: Value(txId),
               status: Value(txStatus),
             ),
