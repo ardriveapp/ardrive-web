@@ -82,7 +82,7 @@ class _FileShareDialogState extends State<FileShareDialog> {
                           Clipboard.setData(
                               ClipboardData(text: shareLinkController.text));
                         },
-                        child: Text(appLocalizationsOf(context).copyFileLink),
+                        child: Text(appLocalizationsOf(context).copyLink),
                       ),
                     ],
                   ),
@@ -99,8 +99,7 @@ class _FileShareDialogState extends State<FileShareDialog> {
             if (state is FileShareLoadSuccess)
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child:
-                    Text(appLocalizationsOf(context).doneFileShareEmphasized),
+                child: Text(appLocalizationsOf(context).doneEmphasized),
               ),
           ],
         ),

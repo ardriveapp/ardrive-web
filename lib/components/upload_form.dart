@@ -80,15 +80,13 @@ class UploadForm extends StatelessWidget {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child:
-                      Text(appLocalizationsOf(context).cancelUploadEmphasized),
+                  child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
                 ElevatedButton(
                   onPressed: () => context
                       .read<UploadCubit>()
                       .prepareUploadPlanAndCostEstimates(),
-                  child: Text(
-                      appLocalizationsOf(context).continueUploadEmphasized),
+                  child: Text(appLocalizationsOf(context).continueEmphasized),
                 ),
               ],
             );
@@ -119,7 +117,7 @@ class UploadForm extends StatelessWidget {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(appLocalizationsOf(context).okUpload),
+                  child: Text(appLocalizationsOf(context).ok),
                 ),
               ],
             );
@@ -154,8 +152,7 @@ class UploadForm extends StatelessWidget {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(
-                      appLocalizationsOf(context).closeUploadFormEmphasized),
+                  child: Text(appLocalizationsOf(context).closeEmphasized),
                 ),
               ],
             );
@@ -242,8 +239,7 @@ class UploadForm extends StatelessWidget {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child:
-                      Text(appLocalizationsOf(context).cancelUploadEmphasized),
+                  child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
                 ElevatedButton(
                   onPressed: state.sufficientArBalance

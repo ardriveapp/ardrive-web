@@ -68,8 +68,8 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                 obscureText: true,
                                 autofillHints: [AutofillHints.password],
                                 decoration: InputDecoration(
-                                  labelText: appLocalizationsOf(context)
-                                      .passwordUnlock,
+                                  labelText:
+                                      appLocalizationsOf(context).password,
                                   prefixIcon: const Icon(Icons.lock),
                                 ),
                                 validationMessages: (_) => kValidationMessages,

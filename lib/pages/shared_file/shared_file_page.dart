@@ -49,8 +49,7 @@ class SharedFilePage extends StatelessWidget {
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
                       icon: Icon(Icons.file_download),
-                      label:
-                          Text(appLocalizationsOf(context).downloadSharedFile),
+                      label: Text(appLocalizationsOf(context).download),
                       onPressed: () => promptToDownloadSharedFile(
                         context: context,
                         fileId: state.file.id!,

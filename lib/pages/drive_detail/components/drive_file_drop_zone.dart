@@ -91,7 +91,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
         await showDialog(
           context: context,
           builder: (_) => AlertDialog(
-            title: Text(appLocalizationsOf(context).errorDragAndDrop),
+            title: Text(appLocalizationsOf(context).error),
             content: Text(
               appLocalizationsOf(context).errorDragAndDropFolder,
             ),

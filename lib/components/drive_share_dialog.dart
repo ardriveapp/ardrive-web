@@ -79,7 +79,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                           Clipboard.setData(
                               ClipboardData(text: shareLinkController.text));
                         },
-                        child: Text(appLocalizationsOf(context).copyDriveLink),
+                        child: Text(appLocalizationsOf(context).copyLink),
                       ),
                     ],
                   ),
@@ -96,8 +96,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
             if (state is DriveShareLoadSuccess)
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child:
-                    Text(appLocalizationsOf(context).doneDriveShareEmphasized),
+                child: Text(appLocalizationsOf(context).doneEmphasized),
               ),
           ],
         ),
