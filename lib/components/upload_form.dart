@@ -53,6 +53,23 @@ class UploadForm extends StatelessWidget {
           }
         },
         builder: (context, state) {
+          if (state is UploadFailure) {
+            return AppDialog(
+              title: 'Failed to Upload',
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Text(
+                  '${state.error}\n Please try again.',
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('CLOSE'),
+                ),
+              ],
+            );
+          }
           if (state is UploadFileConflict) {
             return AppDialog(
               title:

@@ -75,28 +75,39 @@ class UploadCubit extends Cubit<UploadState> {
   /// If there isn't one, prepare to upload the file.
   Future<void> checkConflictingFiles() async {
     emit(UploadPreparationInProgress());
+    try {
+      for (final file in files) {
+        final fileName = file.name;
+        final existingFileId = await _driveDao
+            .filesInFolderWithName(
+              driveId: _targetDrive.id,
+              parentFolderId: _targetFolder.id,
+              name: fileName,
+            )
+            .map((f) => f.id)
+            .getSingleOrNull();
 
-    for (final file in files) {
-      final fileName = file.name;
-      final existingFileId = await _driveDao
-          .filesInFolderWithName(
-            driveId: _targetDrive.id,
-            parentFolderId: _targetFolder.id,
-            name: fileName,
-          )
-          .map((f) => f.id)
-          .getSingleOrNull();
-
-      if (existingFileId != null) {
-        conflictingFiles[fileName] = existingFileId;
+        if (existingFileId != null) {
+          conflictingFiles[fileName] = existingFileId;
+        }
       }
+    } catch (e) {
+      print(e);
+      emit(UploadFailure('Filed to fetch conflicting files.'));
+      return;
     }
 
     if (conflictingFiles.isNotEmpty) {
       emit(UploadFileConflict(
           conflictingFileNames: conflictingFiles.keys.toList()));
     } else {
-      await prepareUploadPlanAndCostEstimates();
+      try {
+        await prepareUploadPlanAndCostEstimates();
+      } catch (e) {
+        print(e);
+        emit(UploadFailure('Failed to prepare upload.'));
+        return;
+      }
     }
   }
 
@@ -173,45 +184,54 @@ class UploadCubit extends Cubit<UploadState> {
     if (costEstimate.v2FilesFeeTx != null) {
       await _arweave.postTx(costEstimate.v2FilesFeeTx!);
     }
-
-    // Upload Bundles
-    for (var bundleHandle in uploadPlan.bundleUploadHandles) {
-      await bundleHandle.prepareAndSignBundleTransaction(
-        arweaveService: _arweave,
-        driveDao: _driveDao,
-        pstService: _pst,
-        wallet: profile.wallet,
-      );
-      await for (final _ in bundleHandle
-          .upload(_arweave)
-          .debounceTime(Duration(milliseconds: 500))
-          .handleError((_) => addError('Fatal upload error.'))) {
-        emit(UploadInProgress(uploadPlan: uploadPlan));
+    try {
+      // Upload Bundles
+      for (var bundleHandle in uploadPlan.bundleUploadHandles) {
+        await bundleHandle.prepareAndSignBundleTransaction(
+          arweaveService: _arweave,
+          driveDao: _driveDao,
+          pstService: _pst,
+          wallet: profile.wallet,
+        );
+        await for (final _ in bundleHandle
+            .upload(_arweave)
+            .debounceTime(Duration(milliseconds: 500))
+            .handleError((_) => addError('Fatal upload error.'))) {
+          emit(UploadInProgress(uploadPlan: uploadPlan));
+        }
+        bundleHandle.dispose();
       }
-      bundleHandle.dispose();
+    } catch (e) {
+      print(e);
+      emit(UploadFailure('Failed to sign and upload bundles.'));
+      return;
     }
-
-    // Upload V2 Files
-    for (final uploadHandle in uploadPlan.v2FileUploadHandles.values) {
-      await uploadHandle.prepareAndSignTransactions(
-        arweaveService: _arweave,
-        wallet: profile.wallet,
-      );
-      await uploadHandle.writeFileEntityToDatabase(
-        driveDao: _driveDao,
-      );
-      await for (final _ in uploadHandle
-          .upload(_arweave)
-          .debounceTime(Duration(milliseconds: 500))
-          .handleError((_) => addError('Fatal upload error.'))) {
-        emit(UploadInProgress(uploadPlan: uploadPlan));
+    try {
+      // Upload V2 Files
+      for (final uploadHandle in uploadPlan.v2FileUploadHandles.values) {
+        await uploadHandle.prepareAndSignTransactions(
+          arweaveService: _arweave,
+          wallet: profile.wallet,
+        );
+        await uploadHandle.writeFileEntityToDatabase(
+          driveDao: _driveDao,
+        );
+        await for (final _ in uploadHandle
+            .upload(_arweave)
+            .debounceTime(Duration(milliseconds: 500))
+            .handleError((_) => addError('Fatal upload error.'))) {
+          emit(UploadInProgress(uploadPlan: uploadPlan));
+        }
+        uploadHandle.dispose();
       }
-      uploadHandle.dispose();
+    } catch (e) {
+      print(e);
+      emit(UploadFailure('Failed to sign and upload v2 Files.'));
+      return;
     }
-
-    unawaited(_profileCubit.refreshBalance());
 
     emit(UploadComplete());
+    unawaited(_profileCubit.refreshBalance());
   }
 
   Future<UploadPlan> xfilesToUploadPlan({
@@ -278,7 +298,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(UploadFailure());
+    emit(UploadFailure(error.toString()));
     super.onError(error, stackTrace);
 
     print('Failed to upload file: $error $stackTrace');

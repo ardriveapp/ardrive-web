@@ -83,7 +83,13 @@ class UploadInProgress extends UploadState {
   List<Object?> get props => [uploadPlan, _equatableBust];
 }
 
-class UploadFailure extends UploadState {}
+class UploadFailure extends UploadState {
+  final String error;
+
+  UploadFailure(this.error);
+  @override
+  List<Object> get props => [error];
+}
 
 class UploadComplete extends UploadState {}
 
