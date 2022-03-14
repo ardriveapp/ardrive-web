@@ -178,10 +178,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     try {
       final parentFolder =
           (state as CreateManifestPreparingManifest).parentFolder;
-      final folderNode = rootFolderNode.searchForFolder(parentFolder.id)!;
+      final folderNode = rootFolderNode.searchForFolder(parentFolder.id) ??
+          await _driveDao.getFolderTree(drive.id, parentFolder.id);
 
-      final arweaveManifest =
-          ManifestData.fromFolderNode(folderNode: folderNode);
+      final arweaveManifest = ManifestData.fromFolderNode(
+        folderNode: folderNode,
+      );
 
       final profile = _profileCubit.state as ProfileLoggedIn;
       final wallet = profile.wallet;

@@ -284,7 +284,12 @@ class CreateManifestForm extends StatelessWidget {
           /// Returns false if a folder does not contain any file entities
           bool isFolderEmpty(FolderID folderId) {
             final folderNode =
-                readCubitContext.rootFolderNode.searchForFolder(folderId)!;
+                readCubitContext.rootFolderNode.searchForFolder(folderId);
+
+            if (folderNode == null) {
+              return true;
+            }
+
             return folderNode.getRecursiveFileCount() == 0;
           }
 
