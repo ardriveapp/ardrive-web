@@ -41,6 +41,15 @@ class ProfileOverlay extends StatelessWidget {
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
+                              const SizedBox(height: 4),
+                              SwitchListTile(
+                                  title: Text('Use bundles for upload'),
+                                  value: state.enableBundles,
+                                  onChanged: (_) {
+                                    context
+                                        .read<ProfileCubit>()
+                                        .toggleEnableBundles();
+                                  })
                             ],
                           ),
                           trailing: IconButton(

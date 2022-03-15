@@ -35,6 +35,7 @@ class ProfileLoggedIn extends ProfileAvailable {
 
   final SecretKey cipherKey;
   final arconnect = ArConnectService();
+  final bool enableBundles;
 
   ProfileLoggedIn({
     required this.username,
@@ -43,16 +44,17 @@ class ProfileLoggedIn extends ProfileAvailable {
     required this.walletAddress,
     required this.walletBalance,
     required this.cipherKey,
+    this.enableBundles = true,
   });
 
-  ProfileLoggedIn copyWith({
-    String? username,
-    String? password,
-    Wallet? wallet,
-    String? walletAddress,
-    BigInt? walletBalance,
-    SecretKey? cipherKey,
-  }) =>
+  ProfileLoggedIn copyWith(
+          {String? username,
+          String? password,
+          Wallet? wallet,
+          String? walletAddress,
+          BigInt? walletBalance,
+          SecretKey? cipherKey,
+          bool? enableBundles}) =>
       ProfileLoggedIn(
         username: username ?? this.username,
         password: password ?? this.password,
@@ -60,6 +62,7 @@ class ProfileLoggedIn extends ProfileAvailable {
         walletAddress: walletAddress ?? this.walletAddress,
         walletBalance: walletBalance ?? this.walletBalance,
         cipherKey: cipherKey ?? this.cipherKey,
+        enableBundles: enableBundles ?? this.enableBundles,
       );
 
   @override
@@ -70,6 +73,7 @@ class ProfileLoggedIn extends ProfileAvailable {
         walletAddress,
         walletBalance,
         cipherKey,
+        enableBundles,
       ];
 }
 

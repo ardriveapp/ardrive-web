@@ -100,6 +100,11 @@ class ProfileCubit extends Cubit<ProfileState> {
     return false;
   }
 
+  Future<void> toggleEnableBundles() async {
+    final profile = state as ProfileLoggedIn;
+    emit(profile.copyWith(enableBundles: !profile.enableBundles));
+  }
+
   /// Returns true if a logout flow is initiated as a result of a detected wallet or permissions change
   Future<bool> logoutIfWalletMismatch() async {
     final isMismatch = await checkIfWalletMismatch();

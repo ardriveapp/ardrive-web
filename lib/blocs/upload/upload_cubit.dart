@@ -131,6 +131,7 @@ class UploadCubit extends Cubit<UploadState> {
       files: files,
       cipherKey: profile.cipherKey,
       wallet: profile.wallet,
+      useBundles: profile.enableBundles,
     );
     final costEstimate = await CostEstimate.create(
       uploadPlan: uploadPlan,
@@ -218,6 +219,7 @@ class UploadCubit extends Cubit<UploadState> {
     required List<XFile> files,
     required SecretKey cipherKey,
     required Wallet wallet,
+    required bool useBundles,
   }) async {
     final _dataItemUploadHandles = <String, DataItemUploadHandle>{};
     final _v2FileUploadHandles = <String, FileUploadHandle>{};
@@ -248,7 +250,7 @@ class UploadCubit extends Cubit<UploadState> {
           ? RevisionAction.create
           : RevisionAction.uploadNewVersion;
 
-      if (fileSize < bundleSizeLimit) {
+      if (fileSize < bundleSizeLimit && useBundles) {
         _dataItemUploadHandles[fileEntity.id!] = DataItemUploadHandle(
           entity: fileEntity,
           path: filePath,
