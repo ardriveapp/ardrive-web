@@ -15,6 +15,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:meta/meta.dart';
 import 'package:mime/mime.dart';
 import 'package:pedantic/pedantic.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:uuid/uuid.dart';
 
 import '../blocs.dart';
@@ -181,7 +182,10 @@ class UploadCubit extends Cubit<UploadState> {
         pstService: _pst,
         wallet: profile.wallet,
       );
-      await for (final _ in bundleHandle.upload(_arweave)) {
+      await for (final _ in bundleHandle
+          .upload(_arweave)
+          .debounceTime(Duration(milliseconds: 500))
+          .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       bundleHandle.dispose();
@@ -196,7 +200,10 @@ class UploadCubit extends Cubit<UploadState> {
       await uploadHandle.writeFileEntityToDatabase(
         driveDao: _driveDao,
       );
-      await for (final _ in uploadHandle.upload(_arweave)) {
+      await for (final _ in uploadHandle
+          .upload(_arweave)
+          .debounceTime(Duration(milliseconds: 500))
+          .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       uploadHandle.dispose();

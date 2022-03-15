@@ -2,6 +2,7 @@ part of '../drive_detail_page.dart';
 
 Widget _buildDataTable(BuildContext context, DriveDetailLoadSuccess state) {
   return DriveDataTable(
+    key: ObjectKey(state),
     driveDetailState: state,
     context: context,
   );
