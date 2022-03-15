@@ -170,15 +170,18 @@ class ProfileCubit extends Cubit<ProfileState> {
       }
     }
 
+    await deleteTables();
     emit(ProfileLoggingOut());
 
+    unawaited(promptToAuthenticate());
+  }
+
+  Future<void> deleteTables() async {
     // Delete all table data.
     await _db.transaction(() async {
       for (final table in _db.allTables) {
         await _db.delete(table).go();
       }
     });
-
-    unawaited(promptToAuthenticate());
   }
 }

@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/link_generators.dart';
 import 'package:bloc/bloc.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
@@ -29,23 +30,21 @@ class DriveShareCubit extends Cubit<DriveShareState> {
     emit(DriveShareLoadInProgress());
 
     if (drive.isPrivate) {
+      SecretKey? driveKey;
       if (_profileCubit.state is ProfileLoggedIn) {
         final profileKey = (_profileCubit.state as ProfileLoggedIn).cipherKey;
-        final driveKey = await _driveDao.getDriveKey(drive.id, profileKey);
-        if (driveKey != null) {
-          driveShareLink = await generatePrivateDriveShareLink(
-            driveId: drive.id,
-            driveName: drive.name,
-            driveKey: driveKey,
-          );
-        } else {
-          throw StateError('Drive key not found');
-        }
+        driveKey = await _driveDao.getDriveKey(drive.id, profileKey);
       } else {
-        emit(
-          DriveShareLoadFail(message: 'Please log in to share private drive.'),
+        driveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
+      }
+      if (driveKey != null) {
+        driveShareLink = await generatePrivateDriveShareLink(
+          driveId: drive.id,
+          driveName: drive.name,
+          driveKey: driveKey,
         );
-        return;
+      } else {
+        throw StateError('Drive key not found');
       }
     } else {
       driveShareLink = generatePublicDriveShareLink(

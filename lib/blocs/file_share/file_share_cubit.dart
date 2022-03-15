@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/link_generators.dart';
 import 'package:bloc/bloc.dart';
@@ -38,19 +39,33 @@ class FileShareCubit extends Cubit<FileShareState> {
     late Uri fileShareLink;
     SecretKey? fileKey;
 
-    if (drive.isPrivate) {
-      final profile = _profileCubit.state as ProfileLoggedIn;
-      fileKey = await _driveDao.getFileKey(driveId, fileId, profile.cipherKey);
-      if (fileKey != null) {
+    switch (drive.privacy) {
+      case DrivePrivacy.private:
+        final profile = _profileCubit.state;
+        SecretKey? driveKey;
+
+        if (profile is ProfileLoggedIn) {
+          driveKey = await _driveDao.getDriveKey(drive.id, profile.cipherKey);
+        } else {
+          driveKey = await _driveDao.getDriveKeyFromMemory(driveId);
+        }
+
+        if (driveKey == null) {
+          throw StateError('Drive Key not found');
+        }
+
+        fileKey = await _driveDao.getFileKey(fileId, driveKey);
+
         fileShareLink = await generatePrivateFileShareLink(
           fileId: file.id,
           fileKey: fileKey,
         );
-      } else {
-        throw StateError('File key not found');
-      }
-    } else {
-      fileShareLink = generatePublicFileShareLink(fileId: file.id);
+
+        break;
+      case DrivePrivacy.public:
+        fileShareLink = generatePublicFileShareLink(fileId: file.id);
+        break;
+      default:
     }
 
     emit(

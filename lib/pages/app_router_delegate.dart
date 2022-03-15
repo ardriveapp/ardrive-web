@@ -75,6 +75,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             signingIn = false;
             notifyListeners();
           }
+          // Cleans up any shared drives from previous sessions
+          // TODO: Find a better place to do this
+          final lastLoggedInUser =
+              state is ProfileLoggedIn ? state.walletAddress : null;
+          context.read<DriveDao>().deleteSharedPrivateDrives(lastLoggedInUser);
         },
         builder: (context, state) {
           Widget? shell;

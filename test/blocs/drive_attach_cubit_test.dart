@@ -23,7 +23,6 @@ void main() {
     late DriveDao driveDao;
     late SyncCubit syncBloc;
     late DrivesCubit drivesBloc;
-    late ProfileCubit profileCubit;
     late DriveAttachCubit driveAttachCubit;
 
     const validPrivateDriveId = 'valid-private-drive-id';
@@ -32,6 +31,10 @@ void main() {
     final validPrivateDriveKey = SecretKey(
       decodeBase64ToBytes(validPrivateDriveKeyBase64),
     );
+
+    final keyBytes = Uint8List(32);
+    fillBytesWithSecureRandom(keyBytes);
+    final profileKey = SecretKey(keyBytes);
 
     const validDriveId = 'valid-drive-id';
     const validDriveName = 'valid-drive-name';
@@ -50,7 +53,6 @@ void main() {
       arweave = MockArweaveService();
       syncBloc = MockSyncBloc();
       drivesBloc = MockDrivesCubit();
-      profileCubit = MockProfileCubit();
       when(() => arweave.getLatestDriveEntityWithId(validDriveId)).thenAnswer(
         (_) => Future.value(
           DriveEntity(
@@ -89,14 +91,13 @@ void main() {
           .thenAnswer((_) => Future.value(DrivePrivacy.private));
 
       when(() => syncBloc.startSync()).thenAnswer((_) => Future.value(null));
-      when(() => profileCubit.state).thenAnswer((_) => ProfilePromptAdd());
 
       driveAttachCubit = DriveAttachCubit(
         arweave: arweave,
         driveDao: driveDao,
         syncBloc: syncBloc,
         drivesBloc: drivesBloc,
-        profileCubit: profileCubit,
+        profileKey: profileKey,
       );
     });
 
@@ -136,21 +137,6 @@ void main() {
         expect(bloc.form.contains('driveKey'), isTrue);
       },
     );
-    blocTest<DriveAttachCubit, DriveAttachState>(
-      'initializeForm on attaching private drive while logged out emits correct states',
-      build: () => driveAttachCubit,
-      setUp: () {
-        when(() => profileCubit.state).thenAnswer((_) => ProfilePromptAdd());
-      },
-      act: (bloc) async {
-        await bloc.initializeForm(
-          driveId: validPrivateDriveId,
-          driveKey: validPrivateDriveKey,
-          driveName: validDriveName,
-        );
-      },
-      expect: () => [DriveAttachPrivateNotLoggedIn()],
-    );
 
     group('attach private drive while logged in', () {
       final invalidDriveKeyBase64 = base64Encode(Uint8List(32));
@@ -159,19 +145,6 @@ void main() {
       );
 
       setUp(() async {
-        final keyBytes = Uint8List(32);
-        fillBytesWithSecureRandom(keyBytes);
-        final wallet = getTestWallet();
-        when(() => profileCubit.state).thenReturn(
-          ProfileLoggedIn(
-            username: '',
-            password: '123',
-            wallet: wallet,
-            cipherKey: SecretKey(keyBytes),
-            walletAddress: await wallet.getAddress(),
-            walletBalance: BigInt.one,
-          ),
-        );
         when(() => arweave.getLatestDriveEntityWithId(
               validPrivateDriveId,
               invalidDriveKey,
@@ -207,7 +180,7 @@ void main() {
           driveDao: driveDao,
           syncBloc: syncBloc,
           drivesBloc: drivesBloc,
-          profileCubit: profileCubit,
+          profileKey: profileKey,
           initialDriveId: validPrivateDriveId,
           initialDriveName: validDriveName,
           initialDriveKey: validPrivateDriveKey,

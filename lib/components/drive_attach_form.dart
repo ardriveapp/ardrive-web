@@ -20,36 +20,38 @@ Future<void> attachDrive({
   DriveID? driveId,
   String? driveName,
   SecretKey? driveKey,
-}) =>
-    showModalDialog(
-      context,
-      () => showDialog(
-        context: context,
-        builder: (BuildContext context) => BlocProvider<DriveAttachCubit>(
-          create: (context) => DriveAttachCubit(
-            initialDriveId: driveId,
-            initialDriveName: driveName,
-            initialDriveKey: driveKey,
-            arweave: context.read<ArweaveService>(),
-            driveDao: context.read<DriveDao>(),
-            syncBloc: context.read<SyncCubit>(),
-            drivesBloc: context.read<DrivesCubit>(),
-            profileCubit: context.read<ProfileCubit>(),
-          ),
-          child: BlocListener<DriveAttachCubit, DriveAttachState>(
-            listener: (context, state) {
-              if (state is DriveAttachFailure) {
-                // Close the progress dialog if the drive attachment fails.
-                Navigator.pop(context);
-              } else if (state is DriveAttachSuccess) {
-                Navigator.pop(context);
-              }
-            },
-            child: DriveAttachForm(),
-          ),
+}) {
+  final profileState = context.read<ProfileCubit>().state;
+  final profileKey =
+      profileState is ProfileLoggedIn ? profileState.cipherKey : null;
+  return showModalDialog(
+    context,
+    () => showDialog(
+      context: context,
+      builder: (BuildContext context) => BlocProvider<DriveAttachCubit>(
+        create: (context) => DriveAttachCubit(
+          initialDriveId: driveId,
+          initialDriveName: driveName,
+          initialDriveKey: driveKey,
+          arweave: context.read<ArweaveService>(),
+          driveDao: context.read<DriveDao>(),
+          syncBloc: context.read<SyncCubit>(),
+          drivesBloc: context.read<DrivesCubit>(),
+          profileKey: profileKey,
+        ),
+        child: BlocListener<DriveAttachCubit, DriveAttachState>(
+          listener: (context, state) {
+            if (state is DriveAttachFailure || state is DriveAttachSuccess) {
+              // Close the progress dialog if the drive attachment fails or succeeds.
+              Navigator.pop(context);
+            }
+          },
+          child: DriveAttachForm(),
         ),
       ),
-    );
+    ),
+  );
+}
 
 /// Depends on a provided [DriveAttachCubit] for business logic.
 class DriveAttachForm extends StatelessWidget {
@@ -62,22 +64,7 @@ class DriveAttachForm extends StatelessWidget {
             title: 'ATTACHING DRIVE...',
           );
         }
-        if (state is DriveAttachPrivateNotLoggedIn) {
-          return AppDialog(
-            dismissable: false,
-            title: 'Drive attach failed',
-            content: SizedBox(
-              width: kMediumDialogWidth,
-              child: Text('Please log in to attach private drives.'),
-            ),
-            actions: [
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('OK'),
-              ),
-            ],
-          );
-        }
+
         return AppDialog(
           title: 'ATTACH DRIVE',
           content: SizedBox(
