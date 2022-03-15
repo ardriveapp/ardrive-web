@@ -58,7 +58,7 @@
   },
   "decentralizedPermanent": "Decentralized, permanent data storage doesn’t happen in an instant.",
   "@decentralizedPermanent": {
-    "description": "Permanence requires pacience"
+    "description": "Permanence requires patience"
   },
   "greenCheckMark": "When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.",
   "@greenCheckMark": {
@@ -70,7 +70,7 @@
   },
   "yourChoice": "Your choice: make files public or private using the best encryption.",
   "@yourChoice": {
-    "description": "User can choose wether or not to make the content public"
+    "description": "User can choose whether or not to make the content public"
   },
   "noOneWillSee": "No one will see what you don’t want them to.",
   "@noOneWillSee": {
@@ -269,7 +269,7 @@
   },
   "confirmed": "Confirmed",
   "@confirmed": {
-    "description": "Status tooltip for transactions confirmed by the network"
+    "description": "Status tooltip for transactions that are confirmed by the network"
   },
   "failed": "Failed",
   "@failed": {
@@ -489,11 +489,11 @@
   },
   "personalDrivesEmphasized": "PERSONAL DRIVES",
   "@personalDrives": {
-    "description": "Drives list. Emphasized with upper case"
+    "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
   "sharedDrivesEmphasized": "SHARED DRIVES",
   "@sharedDrives": {
-    "description": "Drives list. Emphasized with upper case"
+    "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
   "help": "Help",
   "@help": {
@@ -531,7 +531,7 @@
   },
   "howDoIGetAR": "How do I get AR?",
   "@howDoIGetAR": {
-    "description": "Link to a help page"
+    "description": "Link to a help page explaining how to get Arweave tokens"
   },
   "sync": "Sync",
   "@sync": {
@@ -575,7 +575,7 @@
   },
   "createDriveEmphasized": "CREATE DRIVE",
   "@createDriveEmphasized": {
-    "description": "Actio -n of creating a new drive. Emphasizeed with upper case"
+    "description": "Action of creating a new drive. Emphasized with upper case"
   },
   "insufficientARToCreateDrive": "You do not have sufficient AR to create a drive.",
   "@insufficientARToCreateDrive": {
@@ -675,7 +675,7 @@
   },
   "entityAlreadyExists": "Entity with name {entityName} already exists at move destination! Please rename the file or folder you are moving and try again.",
   "@entityAlreadyExists": {
-    "description": "A conflict of names between two entities",
+    "description": "Message warning the user that the given entity name already exists. Then requests that the user to choose a new name for the entity.",
     "placeholders": {
       "entityName": {
         "type": "String",
