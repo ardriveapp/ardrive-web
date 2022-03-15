@@ -153,3 +153,20 @@ latestFileRevisionsByFileIdWithTransactions AS FileRevisionWithTransactions:
 pendingTransactions:
     SELECT * FROM network_transactions
     WHERE status = 'pending';
+
+deleteDriveById: DELETE FROM drives WHERE id = :driveId;
+deleteAllDriveRevisionsByDriveId:
+    DELETE FROM drive_revisions
+    WHERE driveId = :driveId;
+deleteFoldersByDriveId:
+    DELETE FROM folder_entries
+    WHERE driveId = :driveId;
+deleteFolderRevisionsByDriveId:
+    DELETE FROM folder_revisions
+    WHERE driveId = :driveId;
+deleteFilesForDriveId:
+    DELETE FROM file_entries
+    WHERE driveId = :driveId;
+deleteFileRevisionsByDriveId:
+    DELETE FROM file_revisions
+    WHERE driveId = :driveId;

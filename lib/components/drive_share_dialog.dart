@@ -9,14 +9,15 @@ import 'components.dart';
 
 Future<void> promptToShareDrive({
   required BuildContext context,
-  required String driveId,
+  required Drive drive,
 }) =>
     showDialog(
       context: context,
       builder: (_) => BlocProvider(
         create: (_) => DriveShareCubit(
-          driveId: driveId,
+          drive: drive,
           driveDao: context.read<DriveDao>(),
+          profileCubit: context.read<ProfileCubit>(),
         ),
         child: DriveShareDialog(),
       ),
@@ -51,7 +52,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                   const Center(child: CircularProgressIndicator())
                 else if (state is DriveShareLoadSuccess) ...{
                   ListTile(
-                    title: Text(state.driveName),
+                    title: Text(state.drive.name),
                     contentPadding: EdgeInsets.zero,
                   ),
                   Row(
@@ -84,10 +85,12 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Anyone can access this drive using the link above.',
+                    'Anyone can access this ${state.drive.isPublic ? 'public' : 'private'} '
+                    'drive using the link above.',
                     style: Theme.of(context).textTheme.subtitle2,
                   ),
-                }
+                } else if (state is DriveShareLoadFail)
+                  Text(state.message)
               ],
             ),
           ),

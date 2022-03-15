@@ -123,6 +123,10 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       if (form.invalid) {
         return;
       }
+
+      // Clean up any data from previous sessions
+      await _profileCubit.deleteTables();
+
       if (_profileType == ProfileType.ArConnect &&
           (_lastKnownWalletAddress != await arconnect.getWalletAddress() ||
               !(await arconnect.checkPermissions()))) {
