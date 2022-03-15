@@ -184,11 +184,11 @@
   },
   "newString": "New",
   "@newString": {
-    "description": "New entity (folder, file, drive, attached drive)"
+    "description": "New entity (folder, file, drive, manifest, attached drive)"
   },
   "newStringEmphasized": "NEW",
   "@newStringEmphasized": {
-    "description": "New entity (folder, file, drive, attached drive). Emphasized with upper case"
+    "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
   },
   "noDrives": "You have no personal or attached drives.\nClick the \"new\" button to add some!",
   "@noDrives": {
