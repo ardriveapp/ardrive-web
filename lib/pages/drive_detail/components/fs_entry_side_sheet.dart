@@ -210,7 +210,7 @@ class FsEntrySideSheet extends StatelessWidget {
           builder: (context, state) {
             if (state is FsEntryActivitySuccess) {
               if (state.revisions.isNotEmpty) {
-                final revision = state.revisions.last;
+                final revision = state.revisions.first;
                 return DataTable(
                   // Hide the data table header.
 
@@ -250,8 +250,7 @@ class FsEntrySideSheet extends StatelessWidget {
                             ),
                           ),
                         ]),
-                    } else if (infoState
-                        is FsEntryInfoSuccess<FolderEntry>) ...{
+                    } else if (infoState is FsEntryInfoSuccess<FolderNode>) ...{
                       DataRow(cells: [
                         DataCell(Text('Metadata Tx ID')),
                         DataCell(

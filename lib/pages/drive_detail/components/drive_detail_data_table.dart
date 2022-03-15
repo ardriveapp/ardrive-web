@@ -24,6 +24,10 @@ class _DriveDataTableState extends State<DriveDataTable> {
   @override
   Widget build(BuildContext context) {
     return CustomPaginatedDataTable(
+      // The key is used to rerender the data table whenever the folderInView is
+      // updated. This includes revisions on the containing files and folders,
+      // transaction status updates, renames and moves.
+      tableKey: ObjectKey(widget.driveDetailState.folderInView),
       columns: _buildTableColumns(context),
       sortColumnIndex:
           DriveOrder.values.indexOf(widget.driveDetailState.contentOrderBy),

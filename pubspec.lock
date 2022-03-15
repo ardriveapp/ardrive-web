@@ -47,8 +47,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v3.0.0"
-      resolved-ref: "77e70189f15b03138097839ac363076cb68ed4d0"
+      ref: "v3.0.1"
+      resolved-ref: e74024d267687f40edd4139b15c54aea427596e0
       url: "https://github.com/ardriveapp/arweave-dart"
     source: git
     version: "3.0.0"
@@ -871,6 +871,20 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.10.0"
+  stash:
+    dependency: transitive
+    description:
+      name: stash
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "4.0.1"
+  stash_memory:
+    dependency: "direct main"
+    description:
+      name: stash_memory
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "4.0.1"
   stream_channel:
     dependency: transitive
     description:
@@ -1061,5 +1075,5 @@ packages:
     source: hosted
     version: "3.1.0"
 sdks:
-  dart: ">=2.14.0 <3.0.0"
+  dart: ">=2.15.0 <3.0.0"
   flutter: ">=2.2.0"
