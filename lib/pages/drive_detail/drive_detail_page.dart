@@ -47,7 +47,6 @@ class DriveDetailPage extends StatelessWidget {
                 desktop: Stack(
                   children: [
                     Row(
-                      key: ObjectKey(state.folderInView.folder.id),
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(

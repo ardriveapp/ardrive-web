@@ -613,8 +613,12 @@
   "@copyLink": {
     "description": "Copy the link for sharing an entity"
   },
-  "anyoneCanAccessThisDrive": "Anyone can access this drive using the link above.",
-  "@anyoneCanAccessThisDrive": {
+  "anyoneCanAccessThisDrivePublic": "Anyone can access this public drive using the link above.",
+  "@anyoneCanAccessThisDrivePublic": {
+    "description": "Warning for the user that is about to share a drive"
+  },
+  "anyoneCanAccessThisDrivePrivate": "Anyone can access this private drive using the link above.",
+  "@anyoneCanAccessThisDrivePrivate": {
     "description": "Warning for the user that is about to share a drive"
   },
   "doneEmphasized": "DONE",

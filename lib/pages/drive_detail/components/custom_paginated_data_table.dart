@@ -30,6 +30,7 @@ class CustomPaginatedDataTable extends StatefulWidget {
     this.arrowHeadColor,
     required this.source,
     this.checkboxHorizontalMargin,
+    this.tableKey,
   })  : assert(columns.isNotEmpty),
         assert(sortColumnIndex == null ||
             (sortColumnIndex >= 0 && sortColumnIndex < columns.length)),
@@ -49,6 +50,8 @@ class CustomPaginatedDataTable extends StatefulWidget {
   ///
   /// See [DataTable.sortColumnIndex].
   final int? sortColumnIndex;
+
+  final Key? tableKey;
 
   /// Whether the column mentioned in [sortColumnIndex], if any, is sorted
   /// in ascending order.
@@ -278,8 +281,6 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
       !_rowCountApproximate &&
       (_firstRowIndex + widget.rowsPerPage >= _rowCount);
 
-  final GlobalKey _tableKey = GlobalKey();
-
   final pageButtonStyle = TextButton.styleFrom(
     padding: EdgeInsets.zero,
     minimumSize: Size(10, 10),
@@ -479,7 +480,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
             ConstrainedBox(
               constraints: BoxConstraints(minWidth: double.infinity),
               child: DataTable(
-                key: _tableKey,
+                key: widget.tableKey,
                 columns: widget.columns,
                 showCheckboxColumn: false,
                 sortColumnIndex: widget.sortColumnIndex,
