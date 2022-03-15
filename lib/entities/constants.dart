@@ -47,3 +47,4 @@ class DriveAuthMode {
 
 const String rootPath = '';
 const int maxConcurrentUploadCount = 32;
+const String linkOriginProduction = 'https://app.ardrive.io';
