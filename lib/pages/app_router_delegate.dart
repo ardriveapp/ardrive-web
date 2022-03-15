@@ -19,6 +19,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String? driveName;
   String? driveFolderId;
 
+  SecretKey? sharedDriveKey;
+  String? sharedRawDriveKey;
+
   String? sharedFileId;
   SecretKey? sharedFileKey;
   String? sharedRawFileKey;
@@ -26,6 +29,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   bool canAnonymouslyShowDriveDetail(ProfileState profileState) =>
       profileState is ProfileUnavailable && tryingToViewDrive;
   bool get tryingToViewDrive => driveId != null;
+  bool get tryingToViewSharedPrivateDrive => sharedDriveKey != null;
   bool get isViewingSharedFile => sharedFileId != null;
 
   @override
@@ -33,6 +37,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         signingIn: signingIn,
         driveId: driveId,
         driveName: driveName,
+        sharedDriveKey: sharedDriveKey,
+        sharedRawDriveKey: sharedRawDriveKey,
         driveFolderId: driveFolderId,
         sharedFileId: sharedFileId,
         sharedFileKey: sharedFileKey,
@@ -69,6 +75,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             signingIn = false;
             notifyListeners();
           }
+          // Cleans up any shared drives from previous sessions
+          // TODO: Find a better place to do this
+          final lastLoggedInUser =
+              state is ProfileLoggedIn ? state.walletAddress : null;
+          context.read<DriveDao>().deleteSharedPrivateDrives(lastLoggedInUser);
         },
         builder: (context, state) {
           Widget? shell;
@@ -132,11 +143,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                           clearState();
                           return;
                         }
-
                         attachDrive(
                           context: context,
-                          initialDriveId: driveId,
+                          driveId: driveId,
                           driveName: driveName,
+                          driveKey: sharedDriveKey,
                         );
                       }
                     },
@@ -219,6 +230,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveId = path.driveId;
     driveName = path.driveName;
     driveFolderId = path.driveFolderId;
+    sharedDriveKey = path.sharedDriveKey;
+    sharedRawDriveKey = path.sharedRawDriveKey;
     sharedFileId = path.sharedFileId;
     sharedFileKey = path.sharedFileKey;
     sharedRawFileKey = path.sharedRawFileKey;
@@ -229,6 +242,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveId = null;
     driveName = null;
     driveFolderId = null;
+    sharedDriveKey = null;
+    sharedRawDriveKey = null;
     sharedFileId = null;
     sharedFileKey = null;
     sharedRawFileKey = null;
