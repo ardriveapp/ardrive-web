@@ -34,7 +34,7 @@
   },
   "anyFilesWillOutliveYou": "Any files you upload here will outlive you!",
   "@anyFilesWillOutliveYou": {
-    "description": "Longevity of files"
+    "description": "Files on the Weave will exist there forever"
   },
   "weDoAFewThingsDifferently": "That also means we do a few things differently.",
   "@weDoAFewThingsDifferently": {
