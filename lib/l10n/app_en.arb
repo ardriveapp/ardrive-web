@@ -769,8 +769,8 @@
   "@notLoggedIn": {
     "description": "User has not logged in"
   },
-  "loginToExperienceFeatures": "Log in to experience all of ArDrive's features!",
-  "@loginToExperienceFeatures": {
+  "logInToExperienceFeatures": "Log in to experience all of ArDrive's features!",
+  "@logInToExperienceFeatures": {
     "description": "User must login to use the features of ArDrive"
   },
   "login": "Login",

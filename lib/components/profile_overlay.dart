@@ -56,7 +56,7 @@ class ProfileOverlay extends StatelessWidget {
                           contentPadding: EdgeInsets.zero,
                           title: Text(appLocalizationsOf(context).notLoggedIn),
                           subtitle: Text(appLocalizationsOf(context)
-                              .loginToExperienceFeatures),
+                              .logInToExperienceFeatures),
                           trailing: IconButton(
                             icon: const Icon(Icons.login),
                             tooltip: appLocalizationsOf(context).login,
