@@ -64,7 +64,7 @@ class UploadForm extends StatelessWidget {
           if (state is UploadFileConflict) {
             return AppDialog(
               title:
-                  '${state.conflictingFileNames.length} conflicting file(s) found',
+                  '${state.conflictingFileNames.length} duplicate file(s) detected',
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -72,10 +72,7 @@ class UploadForm extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      state.conflictingFileNames.length == 1
-                          ? 'A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?'
-                          : '${state.conflictingFileNames.length} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?',
-                    ),
+                        '${state.conflictingFileNames.length} file(s) with the same name already exists at destination. Do you want to continue and replace them with new revisions?'),
                     const SizedBox(height: 16),
                     Text('Conflicting files:'),
                     const SizedBox(height: 8),
@@ -84,19 +81,19 @@ class UploadForm extends StatelessWidget {
                 ),
               ),
               actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text('CANCEL'),
-                ),
                 if (!state.isAllFilesConflicting)
-                  ElevatedButton(
+                  TextButton(
                     onPressed: () => context
                         .read<UploadCubit>()
                         .prepareUploadPlanAndCostEstimates(
                             conflictingFileAction: ConflictingFileActions.Skip),
                     child: Text('SKIP'),
                   ),
-                ElevatedButton(
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('CANCEL'),
+                ),
+                TextButton(
                     onPressed: () => context
                         .read<UploadCubit>()
                         .prepareUploadPlanAndCostEstimates(
