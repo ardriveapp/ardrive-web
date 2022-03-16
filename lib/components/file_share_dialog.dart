@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToShareFile({
@@ -43,7 +44,7 @@ class _FileShareDialogState extends State<FileShareDialog> {
           }
         },
         builder: (context, state) => AppDialog(
-          title: 'Share file with others',
+          title: appLocalizationsOf(context).shareFileWithOthers,
           content: SizedBox(
             width: kLargeDialogWidth,
             child: Column(
@@ -81,13 +82,13 @@ class _FileShareDialogState extends State<FileShareDialog> {
                           Clipboard.setData(
                               ClipboardData(text: shareLinkController.text));
                         },
-                        child: Text('Copy link'),
+                        child: Text(appLocalizationsOf(context).copyLink),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Anyone can access this file using the link above.',
+                    appLocalizationsOf(context).anyoneCanAccessThisFile,
                     style: Theme.of(context).textTheme.subtitle2,
                   ),
                 }
@@ -98,7 +99,7 @@ class _FileShareDialogState extends State<FileShareDialog> {
             if (state is FileShareLoadSuccess)
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('DONE'),
+                child: Text(appLocalizationsOf(context).doneEmphasized),
               ),
           ],
         ),

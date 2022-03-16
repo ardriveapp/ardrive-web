@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'profile_auth_fail_screen.dart';
 import 'profile_auth_shell.dart';
 
@@ -43,7 +44,9 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'WELCOME BACK, ${state.username!.toUpperCase()}',
+                                appLocalizationsOf(context)
+                                    .welcomeBackUserEmphasized(state.username!)
+                                    .toUpperCase(),
                                 textAlign: TextAlign.center,
                                 style: Theme.of(context).textTheme.headline5,
                               ),
@@ -65,7 +68,8 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                 obscureText: true,
                                 autofillHints: [AutofillHints.password],
                                 decoration: InputDecoration(
-                                  labelText: 'Password',
+                                  labelText:
+                                      appLocalizationsOf(context).password,
                                   prefixIcon: const Icon(Icons.lock),
                                 ),
                                 validationMessages: (_) => kValidationMessages,
@@ -79,7 +83,8 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                   onPressed: () => context
                                       .read<ProfileUnlockCubit>()
                                       .submit(),
-                                  child: Text('UNLOCK'),
+                                  child: Text(appLocalizationsOf(context)
+                                      .unlockEmphasized),
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -88,7 +93,7 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                     .read<ProfileCubit>()
                                     .logoutProfile(),
                                 child: Text(
-                                  'Forget wallet and change profile',
+                                  appLocalizationsOf(context).forgetWallet,
                                   textAlign: TextAlign.center,
                                 ),
                               ),

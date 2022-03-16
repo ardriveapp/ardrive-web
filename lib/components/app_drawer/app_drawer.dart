@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import '../components.dart';
 import 'drive_list_tile.dart';
 
@@ -56,7 +57,8 @@ class AppDrawer extends StatelessWidget {
                                     ListTile(
                                       dense: true,
                                       title: Text(
-                                        'PERSONAL DRIVES',
+                                        appLocalizationsOf(context)
+                                            .personalDrivesEmphasized,
                                         textAlign: TextAlign.start,
                                         style: Theme.of(context)
                                             .textTheme
@@ -83,7 +85,8 @@ class AppDrawer extends StatelessWidget {
                                     ListTile(
                                       dense: true,
                                       title: Text(
-                                        'SHARED DRIVES',
+                                        appLocalizationsOf(context)
+                                            .sharedDrivesEmphasized,
                                         textAlign: TextAlign.start,
                                         style: Theme.of(context)
                                             .textTheme
@@ -123,7 +126,7 @@ class AppDrawer extends StatelessWidget {
                           padding: const EdgeInsets.all(8.0),
                           child: FloatingActionButton(
                             elevation: 0,
-                            tooltip: 'Help',
+                            tooltip: appLocalizationsOf(context).help,
                             onPressed: () => launch(
                                 'https://ardrive.typeform.com/to/pGeAVvtg'),
                             child: const Icon(Icons.help_outline),
@@ -199,7 +202,8 @@ class AppDrawer extends StatelessWidget {
                             ),
                             child: ListTile(
                               enabled: state.hasWritePermissions,
-                              title: Text('New folder'),
+                              title:
+                                  Text(appLocalizationsOf(context).newFolder),
                             ),
                           ),
                           PopupMenuDivider(),
@@ -212,7 +216,8 @@ class AppDrawer extends StatelessWidget {
                             ),
                             child: ListTile(
                               enabled: state.hasWritePermissions,
-                              title: Text('Upload file(s)'),
+                              title:
+                                  Text(appLocalizationsOf(context).uploadFiles),
                             ),
                           ),
                           PopupMenuDivider(),
@@ -223,13 +228,14 @@ class AppDrawer extends StatelessWidget {
                             value: (context) => promptToCreateDrive(context),
                             child: ListTile(
                               enabled: drivesState.canCreateNewDrive,
-                              title: Text('New drive'),
+                              title: Text(appLocalizationsOf(context).newDrive),
                             ),
                           ),
                           PopupMenuItem(
                             value: (context) => attachDrive(context: context),
                             child: ListTile(
-                              title: Text('Attach drive'),
+                              title:
+                                  Text(appLocalizationsOf(context).attachDrive),
                             ),
                           ),
                         }
@@ -242,7 +248,7 @@ class AppDrawer extends StatelessWidget {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10)),
                           label: Text(
-                            'NEW',
+                            appLocalizationsOf(context).newStringEmphasized,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                             ),
@@ -263,7 +269,7 @@ class AppDrawer extends StatelessWidget {
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10)),
                             label: Text(
-                              'NEW',
+                              appLocalizationsOf(context).newStringEmphasized,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -283,7 +289,7 @@ class AppDrawer extends StatelessWidget {
                         TextButton(
                           onPressed: () => launch(R.arHelpLink),
                           child: Text(
-                            'How do I get AR?',
+                            appLocalizationsOf(context).howDoIGetAR,
                             style: TextStyle(
                               color: Colors.grey,
                               decoration: TextDecoration.underline,
@@ -311,7 +317,7 @@ class AppDrawer extends StatelessWidget {
                     PopupMenuItem(
                       value: (context) => attachDrive(context: context),
                       child: ListTile(
-                        title: Text('Attach drive'),
+                        title: Text(appLocalizationsOf(context).attachDrive),
                       ),
                     ),
                   }
@@ -324,7 +330,7 @@ class AppDrawer extends StatelessWidget {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
                     label: Text(
-                      'NEW',
+                      appLocalizationsOf(context).newStringEmphasized,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                       ),
@@ -341,7 +347,7 @@ class AppDrawer extends StatelessWidget {
         builder: (context, syncState) => IconButton(
           icon: const Icon(Icons.refresh),
           onPressed: () => context.read<SyncCubit>().startSync(),
-          tooltip: 'Sync',
+          tooltip: appLocalizationsOf(context).sync,
         ),
       );
 }

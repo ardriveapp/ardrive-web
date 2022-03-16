@@ -4,6 +4,8 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:intersperse/src/intersperse_extensions.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
+
 class CustomPaginatedDataTable extends StatefulWidget {
   CustomPaginatedDataTable({
     Key? key,
@@ -390,7 +392,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
           width: 14.0,
         ),
         Text(
-          'Rows Per Page',
+          appLocalizationsOf(context).rowsPerPage,
         ),
         ConstrainedBox(
           constraints: const BoxConstraints(minWidth: 56.0),
@@ -426,7 +428,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
           ),
           constraints: BoxConstraints(maxWidth: 20),
           padding: EdgeInsets.zero,
-          tooltip: 'Go to first',
+          tooltip: appLocalizationsOf(context).goToFirst,
           onPressed: _firstRowIndex <= 0 ? null : _handleFirst,
         ),
       IconButton(
@@ -437,7 +439,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
         ),
         constraints: BoxConstraints(maxWidth: 20),
         padding: EdgeInsets.zero,
-        tooltip: 'Previous',
+        tooltip: appLocalizationsOf(context).previous,
         onPressed: _firstRowIndex <= 0 ? null : _handlePrevious,
       ),
       pageRow(_pagesToShow),
@@ -449,7 +451,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
         ),
         constraints: BoxConstraints(maxWidth: 20),
         padding: EdgeInsets.zero,
-        tooltip: 'Next',
+        tooltip: appLocalizationsOf(context).next,
         onPressed: _isNextPageUnavailable() ? null : _handleNext,
       ),
       if (widget.showFirstLastButtons)
@@ -461,7 +463,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
           ),
           constraints: BoxConstraints(maxWidth: 20),
           padding: EdgeInsets.zero,
-          tooltip: 'Go to Last',
+          tooltip: appLocalizationsOf(context).goToLast,
           onPressed: _isNextPageUnavailable() ? null : _handleLast,
         ),
       Container(width: 14.0),

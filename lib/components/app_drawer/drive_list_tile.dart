@@ -2,6 +2,8 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
+
 class DriveListTile extends StatelessWidget {
   final Drive drive;
   final bool selected;
@@ -22,8 +24,7 @@ class DriveListTile extends StatelessWidget {
           minLeadingWidth: 12,
           leading: hasAlert
               ? Tooltip(
-                  message:
-                      'We have detected issues with this drive. Navigate into drive to resolve them.',
+                  message: appLocalizationsOf(context).driveIssuesDetected,
                   child: const Icon(
                     Icons.info,
                     color: Color(kPrimaryValue),
