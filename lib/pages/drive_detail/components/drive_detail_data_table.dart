@@ -91,19 +91,19 @@ List<DataColumn> _buildTableColumns(BuildContext context) {
   return [
     DataColumn(
         label: Text(
-          appLocalizationsOf(context).name,
+          'Name',
           overflow: TextOverflow.ellipsis,
         ),
         onSort: onSort),
     DataColumn(
         label: Text(
-          appLocalizationsOf(context).fileSize,
+          'File size',
           overflow: TextOverflow.ellipsis,
         ),
         onSort: onSort),
     DataColumn(
         label: Text(
-          appLocalizationsOf(context).lastUpdated,
+          'Last updated',
           overflow: TextOverflow.ellipsis,
         ),
         onSort: onSort),

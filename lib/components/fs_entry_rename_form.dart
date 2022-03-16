@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToRenameFolder(
@@ -62,11 +61,9 @@ class FsEntryRenameForm extends StatelessWidget {
       BlocConsumer<FsEntryRenameCubit, FsEntryRenameState>(
         listener: (context, state) {
           if (state is FolderEntryRenameInProgress) {
-            showProgressDialog(
-                context, appLocalizationsOf(context).renamingFolderEmphasized);
+            showProgressDialog(context, 'RENAMING FOLDER...');
           } else if (state is FileEntryRenameInProgress) {
-            showProgressDialog(
-                context, appLocalizationsOf(context).renamingFileEmphasized);
+            showProgressDialog(context, 'RENAMING FILE...');
           } else if (state is FolderEntryRenameSuccess ||
               state is FileEntryRenameSuccess) {
             Navigator.pop(context);
@@ -77,9 +74,7 @@ class FsEntryRenameForm extends StatelessWidget {
           }
         },
         builder: (context, state) => AppDialog(
-          title: state.isRenamingFolder
-              ? appLocalizationsOf(context).renameFolderEmphasized
-              : appLocalizationsOf(context).renameFileEmphasized,
+          title: state.isRenamingFolder ? 'RENAME FOLDER' : 'RENAME FILE',
           content: state is! FsEntryRenameInitializing
               ? SizedBox(
                   width: kMediumDialogWidth,
@@ -90,8 +85,8 @@ class FsEntryRenameForm extends StatelessWidget {
                       autofocus: true,
                       decoration: InputDecoration(
                           labelText: state.isRenamingFolder
-                              ? appLocalizationsOf(context).folderName
-                              : appLocalizationsOf(context).fileName),
+                              ? 'Folder name'
+                              : 'File name'),
                       showErrors: (control) => control.invalid,
                       validationMessages: (_) => kValidationMessages,
                     ),
@@ -101,11 +96,11 @@ class FsEntryRenameForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(appLocalizationsOf(context).cancelEmphasized),
+              child: Text('CANCEL'),
             ),
             ElevatedButton(
               onPressed: () => context.read<FsEntryRenameCubit>().submit(),
-              child: Text(appLocalizationsOf(context).renameEmphasized),
+              child: Text('RENAME'),
             ),
           ],
         ),

@@ -19,13 +19,13 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                   if (promptToAddFiles)
                     Expanded(
                       child: Text(
-                        appLocalizationsOf(context).addSomeFiles,
+                        'There\'s nothing to see here. Click "new" to add some files.',
                         style: Theme.of(context).textTheme.headline6,
                       ),
                     )
                   else
                     Text(
-                      appLocalizationsOf(context).noFiles,
+                      'There\'s nothing to see here.',
                       style: Theme.of(context).textTheme.headline6,
                     ),
                 ],

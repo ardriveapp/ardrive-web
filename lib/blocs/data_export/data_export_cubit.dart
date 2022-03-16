@@ -65,8 +65,6 @@ class DataExportCubit extends Cubit<DataExportState> {
     emit(DataExportSuccess(
       file: XFile.fromData(
         dataBytes,
-        // FIXME: context is not available here. Internationalization cannot be applied
-        // name: appLocalizationsOf(context).exportFromCSV(driveId, DateTime.now().toString()),
         name: 'Export from $driveId ${DateTime.now().toString()}.csv',
         mimeType: 'text/csv',
         length: dataBytes.lengthInBytes,

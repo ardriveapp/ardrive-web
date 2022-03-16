@@ -8,7 +8,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'blocs/blocs.dart';
 import 'components/components.dart';
 import 'components/wallet_switch_dialog.dart';
-import 'utils/app_localizations_wrapper.dart';
 
 class AppShell extends StatefulWidget {
   final Widget page;
@@ -69,7 +68,7 @@ class _AppShellState extends State<AppShell> {
                         child: const Icon(Icons.account_circle),
                       ),
                     ),
-                    tooltip: appLocalizationsOf(context).profile,
+                    tooltip: 'Profile',
                     onPressed: () => toggleProfileOverlay(),
                   ),
                 ],
@@ -96,13 +95,12 @@ class _AppShellState extends State<AppShell> {
                                     AsyncSnapshot snapshot) {
                                   if (snapshot.data ?? false) {
                                     return ProgressDialog(
-                                      title: appLocalizationsOf(context)
-                                          .syncingPleaseRemainOnThisTab,
+                                      title:
+                                          'Syncing... Please remain on this tab.',
                                     );
                                   } else {
                                     return ProgressDialog(
-                                      title: appLocalizationsOf(context)
-                                          .syncingPleaseWait,
+                                      title: 'Syncing... Please wait.',
                                     );
                                   }
                                 },
