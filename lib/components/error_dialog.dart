@@ -18,8 +18,7 @@ Future<void> showErrorDialog({
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(null),
-            child:
-                Text(appLocalizationsOf(context).cancelErrorDialogEmphasized),
+            child: Text(appLocalizationsOf(context).cancelEmphasized),
           ),
         ],
       ),
