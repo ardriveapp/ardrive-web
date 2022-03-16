@@ -14,7 +14,7 @@
   },
   "selectWalletEmphasized": "SELECT WALLET",
   "@selectWalletEmphasized": {
-    "description": "The button at the first screen which opens the file picker to choose the wallet file. Emphasized with upper case"
+    "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
   "useArconnectEmphasized": "USE ARCONNECT",
   "@useArconnectEmphasized": {
