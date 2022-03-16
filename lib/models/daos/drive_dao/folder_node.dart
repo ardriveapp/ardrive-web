@@ -55,4 +55,9 @@ class FolderNode {
     }
     return totalFiles;
   }
+
+  /// Returns true when the folder node does not contain any file entities
+  bool isEmpty() {
+    return getRecursiveFileCount() == 0;
+  }
 }

@@ -281,18 +281,6 @@ class CreateManifestForm extends StatelessWidget {
         }
 
         if (state is CreateManifestFolderLoadSuccess) {
-          /// Returns false if a folder does not contain any file entities
-          bool isFolderEmpty(FolderID folderId) {
-            final folderNode =
-                readCubitContext.rootFolderNode.searchForFolder(folderId);
-
-            if (folderNode == null) {
-              return true;
-            }
-
-            return folderNode.getRecursiveFileCount() == 0;
-          }
-
           return AppDialog(
             title: 'CREATE MANIFEST',
             actions: [
@@ -346,7 +334,10 @@ class CreateManifestForm extends StatelessWidget {
                                   onTap: () =>
                                       readCubitContext.loadFolder(f.id),
                                   trailing: Icon(Icons.keyboard_arrow_right),
-                                  enabled: !isFolderEmpty(f.id),
+                                  enabled: !_isFolderEmpty(
+                                    f.id,
+                                    readCubitContext.rootFolderNode,
+                                  ),
                                 ),
                               ),
                               ...state.viewingFolder.files
@@ -374,4 +365,14 @@ class CreateManifestForm extends StatelessWidget {
         }
         return SizedBox();
       });
+
+  bool _isFolderEmpty(FolderID folderId, FolderNode rootFolderNode) {
+    final folderNode = rootFolderNode.searchForFolder(folderId);
+
+    if (folderNode == null) {
+      return true;
+    }
+
+    return folderNode.isEmpty();
+  }
 }
