@@ -781,7 +781,7 @@
   "@login": {
     "description": "The login process"
   },
-  "conflictingFilesFound": "{numberOfConflicts} conflicting file(s) found",
+  "conflictingFilesFound": "{numberOfConflicts,plural, =0{No conflicting files found} =1{A conflicting file found} =other{{numberOfConflicts} conflicting files found}}",
   "@conflictingFilesFound": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -819,7 +819,7 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
-  "filesTooLarge": "{numberOfFiles} file(s) too large",
+  "filesTooLarge": "{numberOfFiles,plural, =1{1 file too large} =other{{numberOfFiles} files too large}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
     "placeholders": {
@@ -866,7 +866,7 @@
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
-  "uploadNFiles": "Upload {numberOfFiles} file(s)",
+  "uploadNFiles": "{numberOfFiles,plural, =1{Upload 1 file} =other{Upload {numberOfFiles} files}}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",
     "placeholders": {
@@ -877,7 +877,7 @@
       }
     }
   },
-  "uploadingNFiles": "Uploading {numberOfFiles} file(s)...",
+  "uploadingNFiles": "{numberOfFiles,plural, =1{Uploading 1 file...} =other{Uploading {numberOfFiles} files...}}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
@@ -898,8 +898,12 @@
       }
     }
   },
-  "filesWillBeUploadedPublicly": "These file(s) will be uploaded publicly.",
+  "filesWillBeUploadedPublicly": "These files will be uploaded publicly.",
   "@filesWillBeUploadedPublicly": {
+    "description": "Warning for files that will be public after uploaded"
+  },
+  "fileWillBeUploadedPublicly": "This file will be uploaded publicly.",
+  "@fileWillBeUploadedPublicly": {
     "description": "Warning for files that will be public after uploaded"
   },
   "insufficientARForUpload": "Insufficient AR for upload.",
