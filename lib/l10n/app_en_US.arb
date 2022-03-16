@@ -1,5 +1,5 @@
 {
-  "@@locale": "en",
+  "@@locale": "en_US",
   "welcomeTo_body": "WELCOME TO Your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive",
   "@welcomeTo_body": {
     "description": "Welcoming message just after the ArDrive logo"

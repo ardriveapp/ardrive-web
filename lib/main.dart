@@ -74,8 +74,8 @@ class _AppState extends State<App> {
               GlobalWidgetsLocalizations.delegate,
             ],
             supportedLocales: [
-              const Locale('en', ''), // English, no country code
-              //const Locale('es', ''), // Spanish, no country code
+              const Locale('en', 'US'), // English, no country code
+              const Locale('es', 'ES'), // Spanish, no country code
             ],
             builder: (context, child) => ListTileTheme(
               textColor: kOnSurfaceBodyTextColor,
