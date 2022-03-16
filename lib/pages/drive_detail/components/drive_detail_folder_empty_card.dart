@@ -25,7 +25,7 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
                     )
                   else
                     Text(
-                      appLocalizationsOf(context).addSomeFiles,
+                      appLocalizationsOf(context).noFiles,
                       style: Theme.of(context).textTheme.headline6,
                     ),
                 ],
