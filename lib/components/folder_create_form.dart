@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToCreateFolder(
@@ -57,7 +58,8 @@ class FolderCreateForm extends StatelessWidget {
       BlocConsumer<FolderCreateCubit, FolderCreateState>(
         listener: (context, state) {
           if (state is FolderCreateInProgress) {
-            showProgressDialog(context, 'CREATING FOLDER...');
+            showProgressDialog(
+                context, appLocalizationsOf(context).creatingFolderEmphasized);
           } else if (state is FolderCreateSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
@@ -66,7 +68,7 @@ class FolderCreateForm extends StatelessWidget {
           }
         },
         builder: (context, state) => AppDialog(
-          title: 'CREATE FOLDER',
+          title: appLocalizationsOf(context).createFolderEmphasized,
           content: SizedBox(
             width: kMediumDialogWidth,
             child: ReactiveForm(
@@ -74,7 +76,8 @@ class FolderCreateForm extends StatelessWidget {
               child: ReactiveTextField(
                 formControlName: 'name',
                 autofocus: true,
-                decoration: const InputDecoration(labelText: 'Folder name'),
+                decoration: InputDecoration(
+                    labelText: appLocalizationsOf(context).folderName),
                 showErrors: (control) => control.dirty && control.invalid,
                 validationMessages: (_) => kValidationMessages,
               ),
@@ -83,11 +86,11 @@ class FolderCreateForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(null),
-              child: Text('CANCEL'),
+              child: Text(appLocalizationsOf(context).cancelEmphasized),
             ),
             ElevatedButton(
               onPressed: () => context.read<FolderCreateCubit>().submit(),
-              child: Text('CREATE'),
+              child: Text(appLocalizationsOf(context).createEmphasized),
             ),
           ],
         ),

@@ -9,6 +9,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import '../app_shell.dart';
 
 class AppRouterDelegate extends RouterDelegate<AppRoutePath>
@@ -204,10 +205,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Failed to sync drive contents.',
+                          appLocalizationsOf(context).failedToSyncDrive,
                         ),
                         action: SnackBarAction(
-                          label: 'TRY AGAIN',
+                          label: appLocalizationsOf(context).tryAgainEmphasized,
                           onPressed: () =>
                               context.read<SyncCubit>().startSync(),
                         ),

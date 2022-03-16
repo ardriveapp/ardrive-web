@@ -61,7 +61,7 @@ Widget _buildFolderListTile({
                 context,
                 () => promptToReCreateFolder(context, ghostFolder: folder),
               ),
-              child: Text('Fix'),
+              child: Text(appLocalizationsOf(context).fix),
             )
           : null,
     );
@@ -84,9 +84,9 @@ Widget _buildFileListTile({
       ),
       title: Text(file.name),
       subtitle: Text(
-        'Last Modified ' +
+        appLocalizationsOf(context).lastModifiedDate(
             (file.lastUpdated.difference(DateTime.now()).inDays > 3
                 ? format(file.lastUpdated)
-                : yMMdDateFormatter.format(file.lastUpdated)),
+                : yMMdDateFormatter.format(file.lastUpdated))),
       ),
     );
