@@ -902,12 +902,12 @@
   "@insufficientARForUpload": {
     "description": "The wallet has no enough balance"
   },
-  "bundlingAndSigning": "Bundling and signing upload",
-  "@bundlingAndSigning": {
+  "bundlingAndSigningUpload": "Bundling and signing upload",
+  "@bundlingAndSigningUpload": {
     "description": "The app is bundling together and signing the transactions"
   },
-  "signing": "Signing upload",
-  "@signing": {
+  "signingUpload": "Signing upload",
+  "@signingUpload": {
     "description": "The app is signing the transations"
   },
   "walletSwitch": "Wallet Switch",

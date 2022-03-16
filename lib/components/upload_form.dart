@@ -255,8 +255,8 @@ class UploadForm extends StatelessWidget {
           } else if (state is UploadSigningInProgress) {
             return AppDialog(
               title: state.uploadPlan.bundleUploadHandles.isNotEmpty
-                  ? appLocalizationsOf(context).bundlingAndSigning
-                  : appLocalizationsOf(context).signing,
+                  ? appLocalizationsOf(context).bundlingAndSigningUpload
+                  : appLocalizationsOf(context).signingUpload,
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
