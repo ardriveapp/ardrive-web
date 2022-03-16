@@ -132,7 +132,7 @@ class UploadForm extends StatelessWidget {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
                     if (state.isArConnect)
-                      Text(appLocalizationsOf(context).arConnectremainOnThisTab)
+                      Text(appLocalizationsOf(context).arConnectRemainOnThisTab)
                     else
                       Text(appLocalizationsOf(context).thisMayTakeAWhile)
                   ],
@@ -265,7 +265,7 @@ class UploadForm extends StatelessWidget {
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
                     if (state.isArConnect)
-                      Text(appLocalizationsOf(context).arConnectremainOnThisTab)
+                      Text(appLocalizationsOf(context).arConnectRemainOnThisTab)
                     else
                       Text(appLocalizationsOf(context).thisMayTakeAWhile)
                   ],

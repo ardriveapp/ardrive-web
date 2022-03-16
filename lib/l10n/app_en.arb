@@ -842,8 +842,8 @@
   "@preparingUpload": {
     "description": "The upload is being processed"
   },
-  "arConnectremainOnThisTab": "CAUTION: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.",
-  "@arConnectremainOnThisTab": {
+  "arConnectRemainOnThisTab": "CAUTION: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.",
+  "@arConnectRemainOnThisTab": {
     "description": "Warning for te user to do not leave the tab"
   },
   "thisMayTakeAWhile": "This may take a while...",
