@@ -645,9 +645,13 @@
   "@tryAgainDownloadingFile": {
     "description": "The data is still being replicated between nodes of the network and it's yet not available"
   },
-  "shareFile": "Share file with others",
+  "shareFile": "Share File",
   "@shareFile": {
     "description": "The action of sharing a file link"
+  },
+  "shareFileWithOthers": "Share file with others",
+  "@shareFileWithOthers": {
+    "description": "To share a file link"
   },
   "anyoneCanAccessThisFile": "Anyone can access this file using the link above.",
   "@anyoneCanAccessThisFile": {

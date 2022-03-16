@@ -44,7 +44,7 @@ class _FileShareDialogState extends State<FileShareDialog> {
           }
         },
         builder: (context, state) => AppDialog(
-          title: appLocalizationsOf(context).shareFile,
+          title: appLocalizationsOf(context).shareFileWithOthers,
           content: SizedBox(
             width: kLargeDialogWidth,
             child: Column(
