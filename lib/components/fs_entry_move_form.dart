@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToMoveFolder(
@@ -61,11 +60,9 @@ class FsEntryMoveForm extends StatelessWidget {
       BlocConsumer<FsEntryMoveCubit, FsEntryMoveState>(
         listener: (context, state) {
           if (state is FolderEntryMoveInProgress) {
-            showProgressDialog(
-                context, appLocalizationsOf(context).movingFolderEmphasized);
+            showProgressDialog(context, 'MOVING FOLDER...');
           } else if (state is FileEntryMoveInProgress) {
-            showProgressDialog(
-                context, appLocalizationsOf(context).movingFileEmphasized);
+            showProgressDialog(context, 'MOVING FILE...');
           } else if (state is FolderEntryMoveSuccess ||
               state is FileEntryMoveSuccess) {
             Navigator.pop(context);
@@ -80,7 +77,7 @@ class FsEntryMoveForm extends StatelessWidget {
               context: context,
               builder: (BuildContext context) => AppDialog(
                 dismissable: true,
-                title: appLocalizationsOf(context).nameConflict,
+                title: 'Name Conflict',
                 content: SizedBox(
                   width: kSmallDialogWidth,
                   child: Column(
@@ -88,8 +85,8 @@ class FsEntryMoveForm extends StatelessWidget {
                     children: [
                       Center(
                         child: Text(
-                          appLocalizationsOf(context)
-                              .entityAlreadyExists(state.name),
+                          'Entity with name ${state.name} already exists at move destination! '
+                          'Please rename the file or folder you are moving and try again.',
                         ),
                       ),
                     ],
@@ -98,7 +95,7 @@ class FsEntryMoveForm extends StatelessWidget {
                 actions: [
                   TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text(appLocalizationsOf(context).ok)),
+                      child: Text('OK')),
                 ],
               ),
             );
@@ -109,11 +106,10 @@ class FsEntryMoveForm extends StatelessWidget {
                 children: [
                   TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child:
-                          Text(appLocalizationsOf(context).cancelEmphasized)),
+                      child: Text('CANCEL')),
                   ElevatedButton(
                     onPressed: () => context.read<FsEntryMoveCubit>().submit(),
-                    child: Text(appLocalizationsOf(context).moveHereEmphasized),
+                    child: Text('MOVE HERE'),
                   ),
                 ],
               );
@@ -121,7 +117,7 @@ class FsEntryMoveForm extends StatelessWidget {
             if (state is FsEntryMoveFolderLoadSuccess) {
               return TextButton.icon(
                 icon: const Icon(Icons.create_new_folder),
-                label: Text(appLocalizationsOf(context).createFolderEmphasized),
+                label: Text('CREATE FOLDER'),
                 onPressed: () => showDialog(
                   context: context,
                   builder: (_) => BlocProvider(
@@ -142,9 +138,7 @@ class FsEntryMoveForm extends StatelessWidget {
           }
 
           return AppDialog(
-            title: state.isMovingFolder
-                ? appLocalizationsOf(context).moveFolderEmphasized
-                : appLocalizationsOf(context).moveFileEmphasized,
+            title: state.isMovingFolder ? 'MOVE FOLDER' : 'MOVE FILE',
             contentPadding: EdgeInsets.zero,
             content: state is FsEntryMoveFolderLoadSuccess
                 ? SizedBox(
@@ -169,9 +163,8 @@ class FsEntryMoveForm extends StatelessWidget {
                                 child: ListTile(
                                   dense: true,
                                   leading: const Icon(Icons.arrow_back),
-                                  title: Text(appLocalizationsOf(context)
-                                      .backToFolder(
-                                          state.viewingFolder.folder.name)),
+                                  title: Text(
+                                      'Back to "${state.viewingFolder.folder.name}" folder'),
                                 )),
                           ),
                         Expanded(

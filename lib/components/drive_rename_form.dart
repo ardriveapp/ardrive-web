@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToRenameDrive(
@@ -39,8 +38,7 @@ class DriveRenameForm extends StatelessWidget {
       BlocConsumer<DriveRenameCubit, DriveRenameState>(
         listener: (context, state) {
           if (state is DriveRenameInProgress) {
-            showProgressDialog(
-                context, appLocalizationsOf(context).renamingDriveEmphasized);
+            showProgressDialog(context, 'RENAMING DRIVE...');
           } else if (state is DriveRenameSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
@@ -49,7 +47,7 @@ class DriveRenameForm extends StatelessWidget {
           }
         },
         builder: (context, state) => AppDialog(
-          title: appLocalizationsOf(context).renameDriveEmphasized,
+          title: 'RENAME DRIVE',
           content: state is! FsEntryRenameInitializing
               ? SizedBox(
                   width: kMediumDialogWidth,
@@ -58,8 +56,7 @@ class DriveRenameForm extends StatelessWidget {
                     child: ReactiveTextField(
                       formControlName: 'name',
                       autofocus: true,
-                      decoration: InputDecoration(
-                          labelText: appLocalizationsOf(context).driveName),
+                      decoration: InputDecoration(labelText: 'Drive name'),
                       showErrors: (control) => control.invalid,
                       validationMessages: (_) => kValidationMessages,
                     ),
@@ -69,11 +66,11 @@ class DriveRenameForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(appLocalizationsOf(context).cancelEmphasized),
+              child: Text('CANCEL'),
             ),
             ElevatedButton(
               onPressed: () => context.read<DriveRenameCubit>().submit(),
-              child: Text(appLocalizationsOf(context).renameEmphasized),
+              child: Text('RENAME'),
             ),
           ],
         ),

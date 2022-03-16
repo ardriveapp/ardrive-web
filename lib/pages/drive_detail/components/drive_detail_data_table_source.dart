@@ -134,7 +134,7 @@ DataRow _buildFolderRow({
                   context,
                   () => promptToReCreateFolder(context, ghostFolder: folder),
                 ),
-                child: Text(appLocalizationsOf(context).fix),
+                child: Text('Fix'),
               ),
             )
           : DataCell(Text('-')),
@@ -187,8 +187,6 @@ Widget _buildFileIcon(String status, String? dataContentType) {
   String tooltipMessage;
   Color indicatorColor;
   Widget icon;
-
-  // FIXME: context is not available here. Internationalization cannot be applied
 
   switch (status) {
     case TransactionStatus.pending:

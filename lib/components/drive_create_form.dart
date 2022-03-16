@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToCreateDrive(BuildContext context) =>
@@ -34,8 +33,7 @@ class DriveCreateForm extends StatelessWidget {
       BlocConsumer<DriveCreateCubit, DriveCreateState>(
         listener: (context, state) {
           if (state is DriveCreateInProgress) {
-            showProgressDialog(
-                context, appLocalizationsOf(context).creatingDriveEmphasized);
+            showProgressDialog(context, 'CREATING DRIVE...');
           } else if (state is DriveCreateSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
@@ -46,21 +44,21 @@ class DriveCreateForm extends StatelessWidget {
         builder: (context, state) {
           if (state is DriveCreateZeroBalance) {
             return AppDialog(
-              title: appLocalizationsOf(context).createDriveEmphasized,
+              title: 'CREATE DRIVE',
               content: SizedBox(
                   width: kMediumDialogWidth,
-                  child: Text(
-                      appLocalizationsOf(context).insufficientARToCreateDrive)),
+                  child:
+                      Text('You do not have sufficient AR to create a drive.')),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text(appLocalizationsOf(context).cancelEmphasized),
+                  child: Text('CANCEL'),
                 ),
               ],
             );
           } else {
             return AppDialog(
-              title: appLocalizationsOf(context).createDriveEmphasized,
+              title: 'CREATE DRIVE',
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: ReactiveForm(
@@ -72,8 +70,7 @@ class DriveCreateForm extends StatelessWidget {
                         formControlName: 'name',
                         autofocus: true,
                         textCapitalization: TextCapitalization.words,
-                        decoration: InputDecoration(
-                            labelText: appLocalizationsOf(context).name),
+                        decoration: const InputDecoration(labelText: 'Name'),
                         showErrors: (control) =>
                             control.dirty && control.invalid,
                         validationMessages: (_) => kValidationMessages,
@@ -81,19 +78,18 @@ class DriveCreateForm extends StatelessWidget {
                       const SizedBox(height: 16),
                       ReactiveDropdownField(
                         formControlName: 'privacy',
-                        decoration: InputDecoration(
-                            labelText: appLocalizationsOf(context).privacy),
+                        decoration: const InputDecoration(labelText: 'Privacy'),
                         showErrors: (control) =>
                             control.dirty && control.invalid,
                         validationMessages: (_) => kValidationMessages,
-                        items: [
+                        items: const [
                           DropdownMenuItem(
                             value: 'public',
-                            child: Text(appLocalizationsOf(context).public),
+                            child: Text('Public'),
                           ),
                           DropdownMenuItem(
                             value: 'private',
-                            child: Text(appLocalizationsOf(context).private),
+                            child: Text('Private'),
                           )
                         ],
                       ),
@@ -104,11 +100,11 @@ class DriveCreateForm extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text(appLocalizationsOf(context).cancelEmphasized),
+                  child: Text('CANCEL'),
                 ),
                 ElevatedButton(
                   onPressed: () => context.read<DriveCreateCubit>().submit(),
-                  child: Text(appLocalizationsOf(context).createEmphasized),
+                  child: Text('CREATE'),
                 ),
               ],
             );

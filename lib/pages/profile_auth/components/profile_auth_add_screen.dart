@@ -1,12 +1,13 @@
-import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/l11n/l11n.dart';
-import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../utils/app_localizations_wrapper.dart';
+import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/l11n/l11n.dart';
+import 'package:ardrive/misc/misc.dart';
+
 import 'profile_auth_shell.dart';
 
 class ProfileAuthAddScreen extends StatelessWidget {
@@ -28,23 +29,23 @@ class ProfileAuthAddScreen extends StatelessWidget {
                       children: [
                         Text(
                           state.isExistingUser
-                              ? appLocalizationsOf(context)
-                                  .welcomeBackEmphasized
-                              : appLocalizationsOf(context)
-                                  .letsGetStartedEmphasized,
+                              ? AppLocalizations.of(context)!
+                                  .welcomeBack
+                                  .toUpperCase()
+                              : AppLocalizations.of(context)!
+                                  .letsGetStarted
+                                  .toUpperCase(),
                           textAlign: TextAlign.center,
                           style: Theme.of(context).textTheme.headline5,
                         ),
                         const SizedBox(height: 32),
                         if (state.isExistingUser)
                           Text(
-                              appLocalizationsOf(context)
-                                  .pleaseProvideSamePassword,
+                              'Please provide the same password as the one you used before.',
                               textAlign: TextAlign.center)
                         else
                           Text(
-                              appLocalizationsOf(context)
-                                  .passwordCanNeverBeChanged,
+                              'Your password can never be changed or recovered. Please keep it safe!',
                               textAlign: TextAlign.center),
                         const SizedBox(height: 16),
                         ReactiveTextField(
@@ -52,7 +53,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           autofocus: true,
                           autofillHints: [AutofillHints.username],
                           decoration: InputDecoration(
-                            labelText: appLocalizationsOf(context).username,
+                            labelText: 'Username',
                             prefixIcon: const Icon(Icons.person),
                           ),
                           onSubmitted: () =>
@@ -64,7 +65,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           formControlName: 'password',
                           obscureText: true,
                           decoration: InputDecoration(
-                            labelText: appLocalizationsOf(context).password,
+                            labelText: 'Password',
                             prefixIcon: const Icon(Icons.lock),
                           ),
                           autofillHints: [AutofillHints.password],
@@ -78,16 +79,15 @@ class ProfileAuthAddScreen extends StatelessWidget {
                             formControlName: 'passwordConfirmation',
                             obscureText: true,
                             decoration: InputDecoration(
-                              labelText:
-                                  appLocalizationsOf(context).confirmPassword,
+                              labelText: 'Confirm Password',
                               prefixIcon: const Icon(Icons.lock),
                             ),
                             onSubmitted: () =>
                                 context.read<ProfileAddCubit>().submit(),
-                            validationMessages: (_) => {
+                            validationMessages: (_) => const {
                               ...kValidationMessages,
                               'mustMatch':
-                                  appLocalizationsOf(context).passwordMismatch,
+                                  'The confirmation password does not match.',
                             },
                           ),
                           const SizedBox(height: 16),
@@ -130,8 +130,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           child: ElevatedButton(
                             onPressed: () =>
                                 context.read<ProfileAddCubit>().submit(),
-                            child: Text(appLocalizationsOf(context)
-                                .addProfileEmphasized),
+                            child: Text('ADD PROFILE'),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -141,9 +140,8 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           child: context
                                   .read<ProfileAddCubit>()
                                   .isArconnectInstalled()
-                              ? Text(
-                                  appLocalizationsOf(context).logOutEmphasized)
-                              : Text(appLocalizationsOf(context).changeWallet),
+                              ? Text('LOG OUT')
+                              : Text('Change wallet'),
                         ),
                       ],
                     ),

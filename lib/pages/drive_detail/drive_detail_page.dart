@@ -24,7 +24,6 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../utils/app_localizations_wrapper.dart';
 import 'components/custom_paginated_data_table.dart';
 
 part 'components/drive_detail_actions_row.dart';

@@ -6,8 +6,6 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../utils/app_localizations_wrapper.dart';
-
 Future<void> showCongestionDependentModalDialog(
     BuildContext context, Function() showAppDialog) async {
   final warnAboutCongestion =
@@ -18,7 +16,7 @@ Future<void> showCongestionDependentModalDialog(
       final shouldShowDialog = await showDialog(
         context: context,
         builder: (_) => AppDialog(
-          title: appLocalizationsOf(context).warningEmphasized,
+          title: 'WARNING',
           content: SizedBox(
             width: kMediumDialogWidth,
             child: Column(
@@ -35,8 +33,9 @@ Future<void> showCongestionDependentModalDialog(
                         TextSpan(
                           children: [
                             TextSpan(
-                                text: appLocalizationsOf(context)
-                                    .congestionWarning),
+                                text:
+                                    'Arweave is currently experiencing heavy congestion. '
+                                    'It\'s not likely that your upload will succeed right now.'),
                           ],
                           style: Theme.of(context).textTheme.bodyText1,
                         ),
@@ -52,15 +51,13 @@ Future<void> showCongestionDependentModalDialog(
               onPressed: () {
                 Navigator.of(context).pop(false);
               },
-              child: Text(
-                  appLocalizationsOf(context).tryLaterCongestionEmphasized),
+              child: Text('TRY LATER'),
             ),
             ElevatedButton(
               onPressed: () async {
                 Navigator.of(context).pop(true);
               },
-              child:
-                  Text(appLocalizationsOf(context).proceedCongestionEmphasized),
+              child: Text('PROCEED'),
             ),
           ],
         ),

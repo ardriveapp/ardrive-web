@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
 
-import '../../../utils/app_localizations_wrapper.dart';
 import '../../congestion_warning_wrapper.dart';
 
 class DriveFileDropZone extends StatefulWidget {
@@ -91,14 +90,14 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
         await showDialog(
           context: context,
           builder: (_) => AlertDialog(
-            title: Text(appLocalizationsOf(context).error),
+            title: Text('Error'),
             content: Text(
-              appLocalizationsOf(context).errorDragAndDropFolder,
+              'We do not currently support drag and drop with folders',
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(appLocalizationsOf(context).ok),
+                child: Text('OK'),
               ),
             ],
           ),
@@ -156,7 +155,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
                 width: 16,
               ),
               Text(
-                appLocalizationsOf(context).uploadDragAndDrop,
+                'Upload File',
                 style: Theme.of(context).textTheme.headline2,
               ),
             ],

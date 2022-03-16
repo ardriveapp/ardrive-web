@@ -16,17 +16,18 @@ class DriveDetailActionRow extends StatelessWidget {
                 onPressed: () {
                   promptToRenameDrive(context, driveId: state.currentDrive.id);
                 },
-                tooltip: appLocalizationsOf(context).renameDrive,
+                tooltip: 'Rename Drive',
               ),
             ],
             if (selectedItem == null)
               IconButton(
-                  icon: const Icon(Icons.table_chart),
-                  onPressed: () {
-                    promptToExportCSVData(
-                        context: context, driveId: state.currentDrive.id);
-                  },
-                  tooltip: appLocalizationsOf(context).exportDriveContents),
+                icon: const Icon(Icons.table_chart),
+                onPressed: () {
+                  promptToExportCSVData(
+                      context: context, driveId: state.currentDrive.id);
+                },
+                tooltip: 'Export Drive Contents',
+              ),
             // A folder/file is selected.
             if (selectedItem != null) ...{
               if (selectedItem is SelectedFile) ...{
@@ -37,11 +38,11 @@ class DriveDetailActionRow extends StatelessWidget {
                     driveId: state.currentDrive.id,
                     fileId: selectedItem.id,
                   ),
-                  tooltip: appLocalizationsOf(context).download,
+                  tooltip: 'Download',
                 ),
                 IconButton(
                   icon: const Icon(Icons.share),
-                  tooltip: appLocalizationsOf(context).shareFile,
+                  tooltip: 'Share File',
                   onPressed: () => promptToShareFile(
                     context: context,
                     driveId: state.currentDrive.id,
@@ -53,7 +54,7 @@ class DriveDetailActionRow extends StatelessWidget {
                     icon: const Icon(Icons.open_in_new),
                     onPressed: () =>
                         launch(state.selectedFilePreviewUrl.toString()),
-                    tooltip: appLocalizationsOf(context).preview,
+                    tooltip: 'Preview',
                   ),
               },
               if (state.hasWritePermissions) ...{
@@ -75,7 +76,7 @@ class DriveDetailActionRow extends StatelessWidget {
                       );
                     }
                   },
-                  tooltip: appLocalizationsOf(context).rename,
+                  tooltip: 'Rename',
                 ),
                 IconButton(
                   icon: const Icon(Icons.drive_file_move),
@@ -94,7 +95,7 @@ class DriveDetailActionRow extends StatelessWidget {
                       );
                     }
                   },
-                  tooltip: appLocalizationsOf(context).move,
+                  tooltip: 'Move',
                 ),
               },
               // Nothing is selected.
@@ -105,7 +106,7 @@ class DriveDetailActionRow extends StatelessWidget {
                   context: context,
                   drive: state.currentDrive,
                 ),
-                tooltip: appLocalizationsOf(context).shareDrive,
+                tooltip: 'Share Drive',
               ),
             }
           ];
@@ -119,24 +120,24 @@ class DriveDetailActionRow extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.remove_red_eye),
                   onPressed: () => bloc.toggleSelectedItemDetails(),
-                  tooltip: appLocalizationsOf(context).viewOnly,
+                  tooltip: 'View Only',
                 ),
               state.currentDrive.isPrivate
                   ? IconButton(
                       icon: const Icon(Icons.lock),
                       onPressed: () => bloc.toggleSelectedItemDetails(),
-                      tooltip: appLocalizationsOf(context).private,
+                      tooltip: 'Private',
                     )
                   : IconButton(
                       icon: const Icon(Icons.public),
                       onPressed: () => bloc.toggleSelectedItemDetails(),
-                      tooltip: appLocalizationsOf(context).public,
+                      tooltip: 'Public',
                     ),
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.info),
                 onPressed: () => bloc.toggleSelectedItemDetails(),
-                tooltip: appLocalizationsOf(context).viewInfo,
+                tooltip: 'View Info',
               ),
             ],
           );

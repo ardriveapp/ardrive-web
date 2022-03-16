@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToShareDrive({
@@ -42,7 +41,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
           }
         },
         builder: (context, state) => AppDialog(
-          title: appLocalizationsOf(context).shareDriveWithOthers,
+          title: 'Share drive with others',
           content: SizedBox(
             width: kLargeDialogWidth,
             child: Column(
@@ -80,17 +79,14 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                           Clipboard.setData(
                               ClipboardData(text: shareLinkController.text));
                         },
-                        child: Text(appLocalizationsOf(context).copyLink),
+                        child: Text('Copy link'),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    state.drive.isPublic
-                        ? appLocalizationsOf(context)
-                            .anyoneCanAccessThisDrivePublic
-                        : appLocalizationsOf(context)
-                            .anyoneCanAccessThisDrivePrivate,
+                    'Anyone can access this ${state.drive.isPublic ? 'public' : 'private'} '
+                    'drive using the link above.',
                     style: Theme.of(context).textTheme.subtitle2,
                   ),
                 } else if (state is DriveShareLoadFail)
@@ -102,7 +98,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
             if (state is DriveShareLoadSuccess)
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(appLocalizationsOf(context).doneEmphasized),
+                child: Text('DONE'),
               ),
           ],
         ),
