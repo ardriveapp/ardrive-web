@@ -42,7 +42,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
           }
         },
         builder: (context, state) => AppDialog(
-          title: appLocalizationsOf(context).shareDrive,
+          title: appLocalizationsOf(context).shareDriveWithOthers,
           content: SizedBox(
             width: kLargeDialogWidth,
             child: Column(

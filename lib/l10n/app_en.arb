@@ -605,8 +605,12 @@
   "@driveName": {
     "description": "The name of certain drive"
   },
-  "shareDrive": "Share drive with others",
+  "shareDrive": "Share Drive",
   "@shareDrive": {
+    "description": "The action of sharing a drive link"
+  },
+  "shareDriveWithOthers": "Share drive with others",
+  "@shareDriveWithOthers": {
     "description": "The action of sharing a drive link"
   },
   "copyLink": "Copy link",
