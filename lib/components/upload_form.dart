@@ -222,11 +222,8 @@ class UploadForm extends StatelessWidget {
                     if (state.uploadIsPublic) ...{
                       const SizedBox(height: 8),
                       Text(
-                        (numberOfFilesInBundles + numberOfV2Files) == 1
-                            ? appLocalizationsOf(context)
-                                .fileWillBeUploadedPublicly
-                            : appLocalizationsOf(context)
-                                .filesWillBeUploadedPublicly,
+                        appLocalizationsOf(context).filesWillBeUploadedPublicly(
+                            numberOfFilesInBundles + numberOfV2Files),
                       ),
                     },
                     if (!state.sufficientArBalance) ...{
