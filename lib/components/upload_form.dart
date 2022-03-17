@@ -76,7 +76,11 @@ class UploadForm extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text('Conflicting files:'),
                     const SizedBox(height: 8),
-                    Text(state.conflictingFileNames.join(', ')),
+                    ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 320),
+                        child: SingleChildScrollView(
+                            child:
+                                Text(state.conflictingFileNames.join(', ')))),
                   ],
                 ),
               ),
