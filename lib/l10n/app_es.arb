@@ -898,13 +898,16 @@
       }
     }
   },
-  "filesWillBeUploadedPublicly": "Estos ficheros serán subidos públicamente.",
+  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{Este fichero será subidos públicamente.} =other{Estos ficheros serán subidos públicamente.}}",
   "@filesWillBeUploadedPublicly": {
-    "description": "Warning for files that will be public after uploaded"
-  },
-  "fileWillBeUploadedPublicly": "Este fichero será subido públicamente.",
-  "@fileWillBeUploadedPublicly": {
-    "description": "Warning for files that will be public after uploaded"
+    "description": "Warning for files that will be public after uploaded",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      }
+    }
   },
   "insufficientARForUpload": "Insufficiente AR para la subida.",
   "@insufficientARForUpload": {
