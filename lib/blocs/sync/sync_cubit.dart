@@ -684,29 +684,26 @@ class SyncCubit extends Cubit<SyncState> {
           final transactionDateCreated =
               pendingTxMap[txId]!.transactionDateCreated ??
                   await _getDateCreatedByDataTx(txId);
+          // TODO(thiagocarvalhodev): Understand if we need it once we implemented the new rule about failed transactions
+          // Only mark transactions as failed if they are unconfirmed for over 45 minutes
+          // as the transaction might not be queryable for right after it was created.
+          final abovePendingThreshold = DateTime.now()
+                  .difference(pendingTxMap[txId]!.dateCreated)
+                  .inMinutes >
+              kRequiredTxConfirmationPendingThreshold;
 
-          if (_isOverThePedingTime(transactionDateCreated)) {
-            // TODO(thiagocarvalhodev): think a way to remove failed tx from database.
+          // Assume that data tx that weren't mined up to a maximum of
+          // `_pendingWaitTime` failed.
+          if (abovePendingThreshold ||
+              _isOverThePedingTime(transactionDateCreated)) {
             txStatus = TransactionStatus.failed;
-          } else {
-            // TODO(thiagocarvalhodev): Understand if we need it once we implemented the new rule about failed transactions
-            // Only mark transactions as failed if they are unconfirmed for over 45 minutes
-            // as the transaction might not be queryable for right after it was created.
-            final abovePendingThreshold = DateTime.now()
-                    .difference(pendingTxMap[txId]!.dateCreated)
-                    .inMinutes >
-                kRequiredTxConfirmationPendingThreshold;
-            if (abovePendingThreshold) {
-              txStatus = TransactionStatus.failed;
-            }
           }
         }
         if (txStatus != null) {
           await _driveDao.writeToTransaction(
             NetworkTransactionsCompanion(
-              transactionDateCreated: Value(
-                  pendingTxMap[txId]!.transactionDateCreated ??
-                      await _getDateCreatedByDataTx(pendingTxMap[txId]!.id)),
+              transactionDateCreated:
+                  Value(pendingTxMap[txId]!.transactionDateCreated),
               id: Value(txId),
               status: Value(txStatus),
             ),
@@ -717,22 +714,22 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   bool _isOverThePedingTime(DateTime? transactionCreatedDate) {
+    // 
     if (transactionCreatedDate == null) {
-      return true;
+      return false;
     }
 
     return DateTime.now().isAfter(transactionCreatedDate.add(_pendingWaitTime));
   }
 
-  Future<DateTime?> _getDateCreatedByDataTx(String tx) async {
-    print('Calling _getDateCreatedByDataTx');
-    final rev = await _driveDao.fileByDataTx(tx: tx).get();
+  Future<DateTime?> _getDateCreatedByDataTx(String dataTx) async {
+    final rev = await _driveDao.fileByDataTx(tx: dataTx).get();
 
+    // no file found
     if (rev.isEmpty) {
       return null;
     }
 
-    print('Getting the date created by transaction: $tx');
     return rev.first.dateCreated;
   }
 
