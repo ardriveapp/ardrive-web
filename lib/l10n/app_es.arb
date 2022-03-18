@@ -267,11 +267,11 @@
   "@pending": {
     "description": "Status tooltip for transactions which are waiting to be minted"
   },
-  "confirmed": "Confirmado",
+  "confirmed": "Confirmada",
   "@confirmed": {
     "description": "Status tooltip for transactions that are confirmed by the network"
   },
-  "failed": "Fallido",
+  "failed": "Fallida",
   "@failed": {
     "description": "Status tooltip for failed transactions"
   },
@@ -283,7 +283,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "lastUpdated": "Última vez actualizado",
+  "lastUpdated": "Última vez actualizada",
   "@lastUpdated": {
     "description": "The timestamp of the transaction"
   },
