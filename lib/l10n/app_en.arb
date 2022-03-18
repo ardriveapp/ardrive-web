@@ -819,6 +819,10 @@
   "@upload": {
     "description": "The action of uploading certain item"
   },
+  "uploadEmphasized": "UPLOAD",
+  "@uploadEmphasized": {
+    "description": "The action of uploading certain item"
+  },
   "continueEmphasized": "CONTINUE",
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
@@ -1113,5 +1117,13 @@
   "confirmEmphasized": "CONFIRM",
   "@confirmEmphasized": {
     "description": "Confirm the prompted question"
+  },
+  "skipEmphasized": "SKIP",
+  "@skipEmphasized": {
+    "description": "Example: to SKIP a conflict"
+  },
+  "replaceEmphasized": "REPLACE",
+  "@replaceEmphasized": {
+    "description": "Example: to REPLACE an entity"
   }
 }
