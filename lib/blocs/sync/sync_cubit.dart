@@ -684,7 +684,6 @@ class SyncCubit extends Cubit<SyncState> {
           final transactionDateCreated =
               pendingTxMap[txId]!.transactionDateCreated ??
                   await _getDateCreatedByDataTx(txId);
-          // TODO(thiagocarvalhodev): Understand if we need it once we implemented the new rule about failed transactions
           // Only mark transactions as failed if they are unconfirmed for over 45 minutes
           // as the transaction might not be queryable for right after it was created.
           final abovePendingThreshold = DateTime.now()
@@ -693,7 +692,7 @@ class SyncCubit extends Cubit<SyncState> {
               kRequiredTxConfirmationPendingThreshold;
 
           // Assume that data tx that weren't mined up to a maximum of
-          // `_pendingWaitTime` failed.
+          // `_pendingWaitTime` is failed.
           if (abovePendingThreshold ||
               _isOverThePedingTime(transactionDateCreated)) {
             txStatus = TransactionStatus.failed;
@@ -714,7 +713,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   bool _isOverThePedingTime(DateTime? transactionCreatedDate) {
-    // 
+    // If don't have the date information we cannot assume that is over the pending time
     if (transactionCreatedDate == null) {
       return false;
     }
