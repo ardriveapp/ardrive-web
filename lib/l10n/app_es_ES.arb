@@ -549,7 +549,7 @@
   "@cancel": {
     "description": "Cancel button"
   },
-  "exportingData": "Exporting your data, please wait.",
+  "exportingData": "Exportando tu información, por favor espera.",
   "@exportingData": {
     "description": "The drive data is being procesed"
   },
@@ -925,7 +925,7 @@
   "@walletSwitch": {
     "description": "The wallet has changed. The user must log in again"
   },
-  "walletChangeDetected": "Wallet change detected. Please log out and log in again",
+  "walletChangeDetected": "Se detectó el cambio de cartera. Por favor cierra la sesión y vuelve a ingresar nuevamente",
   "@walletChangeDetected": {
     "description": "The wallet has changed. The user must log in again"
   },
