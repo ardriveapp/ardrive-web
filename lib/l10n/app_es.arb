@@ -12,7 +12,7 @@
   "@welcomeTo_description": {
     "description": "Brief description of ArDrive as welcoming"
   },
-  "selectWalletEmphasized": "SELECCIONAR CARTERA",
+  "selectWalletEmphasized": "SELECCIONAR BILLETERA",
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
@@ -20,7 +20,7 @@
   "@useArconnectEmphasized": {
     "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
   },
-  "getAWallet": "¿No tienes una cartera? ¡Obtén una aquí!",
+  "getAWallet": "¿No tienes una billetera? ¡Obtén una aquí!",
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
@@ -160,7 +160,7 @@
   "@logOutEmphasized": {
     "description": "The action of logging out. Emphasized with upper case"
   },
-  "changeWallet": "Cambiar cartera",
+  "changeWallet": "Cambiar billetera",
   "@changeWallet": {
     "description": "To use a different wallet"
   },
@@ -846,7 +846,7 @@
   "@preparingUpload": {
     "description": "The upload is being processed"
   },
-  "arConnectRemainOnThisTab": "PRECAUCIÓN: Tu cartera WEB3 está firmando tus transacciones. Por favor mantente en esta pestaña hasta que finalice.",
+  "arConnectRemainOnThisTab": "PRECAUCIÓN: Tu billetera WEB3 está firmando tus transacciones. Por favor mantente en esta pestaña hasta que finalice.",
   "@arConnectRemainOnThisTab": {
     "description": "Warning for te user to do not leave the tab"
   },
@@ -921,7 +921,7 @@
   "@signingUpload": {
     "description": "The app is signing the transations"
   },
-  "walletSwitch": "Cambio de cartera",
+  "walletSwitch": "Cambio de billetera",
   "@walletSwitch": {
     "description": "The wallet has changed. The user must log in again"
   },
