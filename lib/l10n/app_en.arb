@@ -785,8 +785,8 @@
   "@login": {
     "description": "The login process"
   },
-  "conflictingFilesFound": "{numberOfConflicts} conflicting file(s) found",
-  "@conflictingFilesFound": {
+  "duplicateFiles": "{numberOfConflicts,plural, =1{1 duplicate file found} =other{{numberOfConflicts} duplicate files found}",
+  "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
       "numberOfConflicts": {
