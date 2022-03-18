@@ -24,7 +24,7 @@
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
-  "welcomeToThePermawebEmphasized": "BIENVENIDOS A LA PERMAWEB",
+  "welcomeToThePermawebEmphasized": "BIENVENIDO/A A LA PERMAWEB",
   "@welcomeToThePermawebEmphasized": {
     "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
   },
