@@ -64,7 +64,7 @@
   "@greenCheckMark": {
     "description": "Describes the indicator of the status of uploaded files"
   },
-  "totalPrivacyControlEmphasized": "CONTROL DE PRIVACIDAD TOTAL",
+  "totalPrivacyControlEmphasized": "TOTAL CONTROL DE TU PRIVACIDAD",
   "@totalPrivacyControlEmphasized": {
     "description": "Title for talking about privacy. Emphasized with upper case"
   },
@@ -230,7 +230,7 @@
   "@move": {
     "description": "Action of moving certain file or folder"
   },
-  "viewOnly": "Sólo lectura",
+  "viewOnly": "Sólo vista",
   "@viewOnly": {
     "description": "The user has no permission to edit, only to view"
   },
@@ -303,11 +303,11 @@
   "@errorDragAndDropFolder": {
     "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
   },
-  "ok": "Bien",
+  "ok": "Vale",
   "@ok": {
     "description": "OK button"
   },
-  "okEmphasized": "BIEN",
+  "okEmphasized": "VALE",
   "@okEmphasized": {
     "description": "OK button. Emphasized in upper case"
   },
@@ -475,11 +475,11 @@
       }
     }
   },
-  "fileWasModified": "El archivo fue modificado.",
+  "fileWasModified": "El fichero fue modificado.",
   "@fileWasModified": {
     "description": "File activity (journal): modified"
   },
-  "fileWasMoved": "El archivo fue modificado.",
+  "fileWasMoved": "El fichero fue modificado.",
   "@fileWasMoved": {
     "description": "File activity (journal): moved"
   },
@@ -513,7 +513,7 @@
   "@newFolder": {
     "description": "Create a new folder entity"
   },
-  "uploadFiles": "Subir archivo(s)",
+  "uploadFiles": "Subir fichero(s)",
   "@uploadFiles": {
     "description": "Upload files to the Weave"
   },
@@ -807,7 +807,7 @@
       }
     }
   },
-  "conflictingFiles": "Archivos conflictivos:",
+  "conflictingFiles": "Ficheros conflictivos:",
   "@conflictingFiles": {
     "description": "Files being in conflict with already existing items"
   },
@@ -854,7 +854,7 @@
   "@thisMayTakeAWhile": {
     "description": "Uploading may take a while"
   },
-  "failedToPrepareFileUpload": "Falló la preparación de la subida de archivos",
+  "failedToPrepareFileUpload": "Falló la preparación de la subida de ficheros",
   "@failedToPrepareFileUpload": {
     "description": "Error message for when it failed to prepare the upload"
   },
@@ -937,7 +937,7 @@
   "@ardriveIsOptimizedForLargeScreens": {
     "description": "Screen not supported page"
   },
-  "tryOnAnotherDevice": "Por favor inténtalo en otro dispositivo o mantente actualizado sobre la próxima APP móvil suscribiéndote a nuestro boletín informativo.",
+  "tryOnAnotherDevice": "Por favor inténtalo en otro dispositivo o mantente actualizado sobre la próxima aplicación móvil suscribiéndote a nuestro boletín informativo.",
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
   },
