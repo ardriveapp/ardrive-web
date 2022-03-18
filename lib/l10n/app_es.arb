@@ -64,7 +64,7 @@
   "@greenCheckMark": {
     "description": "Describes the indicator of the status of uploaded files"
   },
-  "totalPrivacyControlEmphasized": "CONTROL DE PRIVACIDAD TOTAL",
+  "totalPrivacyControlEmphasized": "TOTAL CONTROL DE TU PRIVACIDAD",
   "@totalPrivacyControlEmphasized": {
     "description": "Title for talking about privacy. Emphasized with upper case"
   },
@@ -190,7 +190,7 @@
   "@newStringEmphasized": {
     "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
   },
-  "noDrives": "No tienes ningún disco personal o adjunto.\n¡Pincha el botón \"nuevo\" para añadir alguno!",
+  "noDrives": "No tienes ningún disco personal o adjunto.\n¡Cliquea el botón \"nuevo\" para añadir alguno!",
   "@noDrives": {
     "description": "Text for when the wallet has no on-chain drives to display"
   },
@@ -279,7 +279,7 @@
   "@name": {
     "description": "Name of certain entity"
   },
-  "fileSize": "Tamaño del fichero",
+  "fileSize": "Tamaño del archivo",
   "@fileSize": {
     "description": "The size of a file"
   },
@@ -299,7 +299,7 @@
   "@error": {
     "description": "Indicates that something went wrong"
   },
-  "errorDragAndDropFolder": "Actualmente no se puede arrastrar y soltar directorios",
+  "errorDragAndDropFolder": "Actualmente no se puede arrastrar y soltar carpetas",
   "@errorDragAndDropFolder": {
     "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
   },
@@ -335,19 +335,19 @@
   "@copyDriveID": {
     "description": "Tooltip of the copy icon for the Drive ID"
   },
-  "folderID": "ID del directorio",
+  "folderID": "ID de la carpeta",
   "@folderID": {
     "description": "The Entity-ID tag of folders"
   },
-  "copyFolderID": "Copiar la ID del directorio",
+  "copyFolderID": "Copiar la ID de la carpeta",
   "@copyFolderID": {
     "description": "Tooltip of the copy icon for the Folder ID"
   },
-  "fileID": "ID del fichero",
+  "fileID": "ID del archivo",
   "@fileID": {
     "description": "The Entity-ID tag of files"
   },
-  "copyFileID": "Copiar la ID del fichero",
+  "copyFileID": "Copiar la ID del archivo",
   "@copyFileID": {
     "description": "Tooltip of the copy icon for the File ID"
   },
@@ -367,11 +367,11 @@
   "@copyDriveTxID": {
     "description": "Copy transaction ID of Drive tooltip"
   },
-  "rootFolderTxID": "Tx ID del directorio raíz",
+  "rootFolderTxID": "Tx ID de la carpeta raíz",
   "@rootFolderTxID": {
     "description": "The transaction ID of the Root Folder entity"
   },
-  "copyRootFolderTxID": "Copiar la Tx ID del directorio raíz",
+  "copyRootFolderTxID": "Copiar la Tx ID de la carpeta raíz",
   "@copyRootFolderTxID": {
     "description": "Copy transaction ID of Root Folder tooltip"
   },
@@ -447,11 +447,11 @@
       }
     }
   },
-  "folderWasModified": "El directorio fue modificado.",
+  "folderWasModified": "La carpeta fue modificada.",
   "@folderWasModified": {
     "description": "Folder activity (journal): modified"
   },
-  "folderWasMoved": "El directorio fue modificado.",
+  "folderWasMoved": "La carpeta fue modificada.",
   "@folderWasMoved": {
     "description": "Folder activity (journal): moved"
   },
@@ -509,7 +509,7 @@
       }
     }
   },
-  "newFolder": "Nuevo directorio",
+  "newFolder": "Nueva carpeta",
   "@newFolder": {
     "description": "Create a new folder entity"
   },
@@ -553,7 +553,7 @@
   "@exportingData": {
     "description": "The drive data is being procesed"
   },
-  "fileDownloadFailed": "La descarga del fichero falló",
+  "fileDownloadFailed": "La descarga del archivo falló",
   "@fileDownloadFailed": {
     "description": "Could not export the CSV data"
   },
@@ -633,47 +633,47 @@
   "@errorLog": {
     "description": "Error dialog"
   },
-  "downloadingFile": "Descargando fichero...",
+  "downloadingFile": "Descargando archivo...",
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
-  "fileFailedToDownload": "La descarga del fichero falló",
+  "fileFailedToDownload": "Falló la descarga del archivo",
   "@fileFailedToDownload": {
     "description": "Error message for failed downloads"
   },
-  "tryAgainDownloadingFile": "Ésto puede suceder si el fichero fue subido recientemente. Por favor inténtalo nuevamente luego.",
+  "tryAgainDownloadingFile": "Ésto puede suceder si el archivo fue subido recientemente. Por favor inténtalo nuevamente luego.",
   "@tryAgainDownloadingFile": {
     "description": "The data is still being replicated between nodes of the network and it's yet not available"
   },
-  "shareFile": "Compartir fichero",
+  "shareFile": "Compartir archivo",
   "@shareFile": {
     "description": "The action of sharing a file link"
   },
-  "shareFileWithOthers": "Compartir el fichero con otros",
+  "shareFileWithOthers": "Compartir el archivo con otros",
   "@shareFileWithOthers": {
     "description": "To share a file link"
   },
-  "anyoneCanAccessThisFile": "Cualquiera puede acceder a este fichero usando el enlace de arriba.",
+  "anyoneCanAccessThisFile": "Cualquiera puede acceder a este archivo usando el enlace de arriba.",
   "@anyoneCanAccessThisFile": {
     "description": "Warning for the user that is about to share a file"
   },
-  "creatingFolderEmphasized": "CREANDO DIRECTORIO...",
+  "creatingFolderEmphasized": "CREANDO CARPETA...",
   "@creatingFolderEmphasized": {
     "description": "Folder is being created. Emphasized with upper case"
   },
-  "createFolderEmphasized": "CREAR DIRECTORIO",
+  "createFolderEmphasized": "CREAR CARPETA",
   "@createFolderEmphasized": {
     "description": "The action of creating a folder. Emphasized with upper case"
   },
-  "folderName": "Nombre del directorio",
+  "folderName": "Nombre de la carpeta",
   "@folderName": {
     "description": "The name of certain folder"
   },
-  "movingFolderEmphasized": "MOVIENDO DIRECTORIO...",
+  "movingFolderEmphasized": "MOVIENDO CARPETA...",
   "@movingFolderEmphasized": {
     "description": "The action of moving a folder. Emphasized with upper case"
   },
-  "movingFileEmphasized": "MOVIENDO FICHERO...",
+  "movingFileEmphasized": "MOVIENDO ARCHIVO...",
   "@movingFileEmphasized": {
     "description": "The action of moving a file. Emphasized with upper case"
   },
@@ -695,11 +695,11 @@
   "@moveHereEmphasized": {
     "description": "Move the entity to the current folder. Emphasized with upper case"
   },
-  "moveFolderEmphasized": "MOVER DIRECTORIO",
+  "moveFolderEmphasized": "MOVER CARPETA",
   "@moveFolderEmphasized": {
     "description": "The action of moving a folder. Emphasized with upper case"
   },
-  "moveFileEmphasized": "MOVER FICHERO",
+  "moveFileEmphasized": "MOVER ARCHIVO",
   "@moveFileEmphasized": {
     "description": "The action of moving a file. EMphasized with upper case"
   },
@@ -713,19 +713,19 @@
       }
     }
   },
-  "renamingFolderEmphasized": "RENOMBRANDO DIRECTORIO...",
+  "renamingFolderEmphasized": "RENOMBRANDO CARPETA...",
   "@renamingFolderEmphasized": {
     "description": "Folder is being renamed. Emphasized with upper case"
   },
-  "renamingFileEmphasized": "RENOMBRANDO FICHERO...",
+  "renamingFileEmphasized": "RENOMBRANDO ARCHIVO...",
   "@renamingFileEmphasized": {
     "description": "File is being renamed. Emphasized with upper case"
   },
-  "renameFolderEmphasized": "RENOMBRAR DIRECTORIO",
+  "renameFolderEmphasized": "RENOMBRAR CARPETA",
   "@renameFolderEmphasized": {
     "description": "The action of renaming a folder. Emphasized with upper case"
   },
-  "renameFileEmphasized": "RENOMBRAR FICHERO",
+  "renameFileEmphasized": "RENOMBRAR ARCHIVO",
   "@renameFileEmphasized": {
     "description": "The action of renaming a file. Emphasized with upper case"
   },
@@ -737,15 +737,15 @@
   "@renameEmphasized": {
     "description": "The action of renaming; imperative form. Emphasized with upper case"
   },
-  "fileName": "Nombre del fichero",
+  "fileName": "Nombre del archivo",
   "@fileName": {
     "description": "The name of certain file"
   },
-  "recreateFolderEmphasized": "RECREAR DIRECTORIO",
+  "recreateFolderEmphasized": "RECREAR CARPETA",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"
   },
-  "recreatingFolderEmphasized": "RECREANDO DIRECTORIO...",
+  "recreatingFolderEmphasized": "RECREANDO CARPETA...",
   "@recreatingFolderEmphasized": {
     "description": "Folder is being recreated. Emphasized with upper case"
   },
@@ -757,7 +757,7 @@
   "@fixEmphasized": {
     "description": "Fix an orphan item. Emphasized with upper case"
   },
-  "targetFolderEmphasized": "DIRECTORIO OBJETIVO",
+  "targetFolderEmphasized": "CARPETA OBJETIVO",
   "@targetFolderEmphasized": {
     "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
   },
@@ -781,7 +781,7 @@
   "@login": {
     "description": "The login process"
   },
-  "conflictingFilesFound": "{numberOfConflicts,plural, =0{No se encontró ningún fichero conflictivo} =1{Se encontró un fichero conflictivo} =other{Se encontraron {numberOfConflicts} ficheros conflictivos}}",
+  "conflictingFilesFound": "{numberOfConflicts,plural, =0{No se encontró ningún archivo conflictivo} =1{Se encontró un archivo conflictivo} =other{Se encontraron {numberOfConflicts} archivos conflictivos}}",
   "@conflictingFilesFound": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -819,7 +819,7 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
-  "filesTooLarge": "{numberOfFiles,plural, =1{1 fichero demasiado grande} =other{{numberOfFiles} ficheros demasiado grande}}",
+  "filesTooLarge": "{numberOfFiles,plural, =1{1 archivo demasiado grande} =other{{numberOfFiles} archivos demasiado grande}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
     "placeholders": {
@@ -830,11 +830,11 @@
       }
     }
   },
-  "filesTooLargeExplanationPrivate": "ArDrive en WEB actualmente soporta únicamente ficheros más pequeños que 100 MB para discos privados",
+  "filesTooLargeExplanationPrivate": "ArDrive en WEB actualmente soporta únicamente archivos más pequeños que 100 MB para discos privados",
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "ArDrive en WEB actualmente soporta únicamente ficheros más pequeños que 1.25 GB para discos públicos",
+  "filesTooLargeExplanationPublic": "ArDrive en WEB actualmente soporta únicamente archivos más pequeños que 1.25 GB para discos públicos",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
@@ -866,7 +866,7 @@
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
-  "uploadNFiles": "{numberOfFiles,plural, =1{Subir 1 fichero} =other{Subir {numberOfFiles} ficheros}}",
+  "uploadNFiles": "{numberOfFiles,plural, =1{Subir 1 archivo} =other{Subir {numberOfFiles} archivos}}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",
     "placeholders": {
@@ -877,7 +877,7 @@
       }
     }
   },
-  "uploadingNFiles": "{numberOfFiles,plural, =1{Subiendo 1 fichero...} =other{Subiendo {numberOfFiles} ficheros...}}",
+  "uploadingNFiles": "{numberOfFiles,plural, =1{Subiendo 1 archivo...} =other{Subiendo {numberOfFiles} archivos...}}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
@@ -898,7 +898,7 @@
       }
     }
   },
-  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{Este fichero será subidos públicamente.} =other{Estos ficheros serán subidos públicamente.}}",
+  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{Este archivo será subido públicamente.} =other{Estos archivos serán subidos públicamente.}}",
   "@filesWillBeUploadedPublicly": {
     "description": "Warning for files that will be public after uploaded",
     "placeholders": {
@@ -933,11 +933,11 @@
   "@weReSorryEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
   },
-  "ardriveIsOptimizedForLargeScreens": "ArDrive está optimizado solo para pantallas grandes.",
+  "ardriveIsOptimizedForLargeScreens": "ArDrive está optimizado unicamente para pantallas grandes.",
   "@ardriveIsOptimizedForLargeScreens": {
     "description": "Screen not supported page"
   },
-  "tryOnAnotherDevice": "Por favor inténtalo en otro dispositivo o mantente actualizado sobre la próxima APP móvil suscribiéndote a nuestro boletín informativo.",
+  "tryOnAnotherDevice": "Por favor inténtalo en otro dispositivo o mantente actualizado sobre la próxima aplicación móvil suscribiéndote a nuestro boletín informativo.",
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
   },
@@ -949,7 +949,7 @@
   "@specifiedFileDoesNotExist": {
     "description": "The shared file the user is trying to access does not exist"
   },
-  "failedToSyncDrive": "Falló la sincronización del contenido del disco.",
+  "failedToSyncDrive": "No se pudo sincronizar el contenido del disco.",
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
   },
@@ -965,7 +965,7 @@
   "@congestionWarning": {
     "description": "Congestion warning"
   },
-  "tryLaterCongestionEmphasized": "INTENTAR LUEGO",
+  "tryLaterCongestionEmphasized": "INTENTAR MÁS TARDE",
   "@tryLaterCongestionEmphasized": {
     "description": "Try to upload later. Emphasized with upper case"
   },
@@ -999,7 +999,7 @@
       }
     }
   },
-  "folderCount": "{folderCount,plural, =0{Ningún directorio} =1{1 directorio} other{{folderCount} directorios}",
+  "folderCount": "{folderCount,plural, =0{Ninguna carpeta} =1{1 carpeta} other{{folderCount} carpetas}",
   "@folderCount": {
     "description": "Plurals for the folder count",
     "placeholders": {
@@ -1010,7 +1010,7 @@
       }
     }
   },
-  "fileCount": "{fileCount,plural, =0{ningún fichero} =1{1 fichero} other{{fileCount} ficheros}}",
+  "fileCount": "{fileCount,plural, =0{ningún archivo} =1{1 archivo} other{{fileCount} archivos}}",
   "@fileCount": {
     "description": "Plurals for the file count",
     "placeholders": {
