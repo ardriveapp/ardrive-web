@@ -36,7 +36,7 @@
   "@anyFilesWillOutliveYou": {
     "description": "Files on the Weave will exist there forever"
   },
-  "weDoAFewThingsDifferently": "Eso también significa que hacems algunas cosas diferente.",
+  "weDoAFewThingsDifferently": "Eso también significa que hacemos algunas cosas diferente.",
   "@weDoAFewThingsDifferently": {
     "description": "What ArDrive does differently"
   },
@@ -48,7 +48,7 @@
   "@noSubscriptions": {
     "description": "Payment philosophy"
   },
-  "monthlyCharges": "En vez de pagar mensualmente por espacio vacío que no usas, paga una única vez y almacena tusficheros por siempre en ArDrive.",
+  "monthlyCharges": "En vez de pagar mensualmente por espacio vacío que no usas, paga una única vez y almacena tus ficheros por siempre en ArDrive.",
   "@monthlyCharges": {
     "description": "Payment philosophy"
   },
@@ -961,7 +961,7 @@
   "@warningEmphasized": {
     "description": "Congestion warning. Emphasized with upper case"
   },
-  "congestionWarning": "Actualmente Arweave est[a experienciando congestión pesada. Posiblemente tu subida falle en este momento.",
+  "congestionWarning": "Actualmente Arweave está experienciando congestión pesada. Posiblemente tu subida falle en este momento.",
   "@congestionWarning": {
     "description": "Congestion warning"
   },
