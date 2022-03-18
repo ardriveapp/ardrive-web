@@ -342,7 +342,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
               .get()
               .asStream()
               .expand((f) => f))
-            f.id: f.name
+            f.id: f
         },
       );
     }
