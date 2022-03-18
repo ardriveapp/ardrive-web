@@ -413,7 +413,7 @@
       }
     }
   },
-  "driveWasRenamed": "El disco fue renombrado a {driveName}.",
+  "driveWasRenamed": "El disco fue renombrado a: \"{driveName}\".",
   "@driveWasRenamed": {
     "description": "Drive activity (journal) entry: renamed",
     "placeholders": {
@@ -427,7 +427,7 @@
   "@driveWasModified": {
     "description": "Drive activity (journal) entry: modified"
   },
-  "folderWasCreatedWithName": "El directorio fue creado con el nombre {folderName}.",
+  "folderWasCreatedWithName": "El directorio fue creado con el nombre: \"{folderName}\".",
   "@folderWasCreatedWithName": {
     "description": "Folder activity (journal) entry: created",
     "placeholders": {
@@ -437,7 +437,7 @@
       }
     }
   },
-  "folderWasRenamed": "El directorio fue renombrado a {folderName}.",
+  "folderWasRenamed": "El directorio fue renombrado a: \"{folderName}\".",
   "@folderWasRenamed": {
     "description": "Folder activity (journal): renamed",
     "placeholders": {
@@ -455,7 +455,7 @@
   "@folderWasMoved": {
     "description": "Folder activity (journal): moved"
   },
-  "fileWasCreatedWithName": "El fichero fue creado con el nombre {fileName}.",
+  "fileWasCreatedWithName": "El fichero fue creado con el nombre: \"{fileName}\".",
   "@fileWasCreatedWithName": {
     "description": "File activity (journal): created",
     "placeholders": {
@@ -465,7 +465,7 @@
       }
     }
   },
-  "fileWasRenamed": "El fichero fue renombrado a {fileName}.",
+  "fileWasRenamed": "El fichero fue renombrado a: \"{fileName}\".",
   "@fileWasRenamed": {
     "description": "File activity (journal): renamed",
     "placeholders": {
@@ -681,7 +681,7 @@
   "@nameConflict": {
     "description": "A conflict of names between two entities"
   },
-  "entityAlreadyExists": "¡La entidad con el nombre {entityName} ya existe en el destino! Por favor renombra el fichero o directorio que estás moviendo e inténtalo nuevamente.",
+  "entityAlreadyExists": "¡La entidad con el nombre: \"{entityName}\" ya existe en el destino! Por favor renombra el fichero o directorio que estás moviendo e inténtalo nuevamente.",
   "@entityAlreadyExists": {
     "description": "Message warning the user that the given entity name already exists. Then requests that the user to choose a new name for the entity.",
     "placeholders": {
@@ -703,7 +703,7 @@
   "@moveFileEmphasized": {
     "description": "The action of moving a file. EMphasized with upper case"
   },
-  "backToFolder": "Volver al directorio {entityName}",
+  "backToFolder": "Volver al directorio: \"{entityName}\"",
   "@backToFolder": {
     "description": "Go back to folder",
     "placeholders": {
