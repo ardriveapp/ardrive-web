@@ -254,7 +254,7 @@
   "@driveRoot": {
     "description": "The folder entity that is at the top of the folder hierarchy"
   },
-  "lastModifiedDate": "Última vez modificado {date}",
+  "lastModifiedDate": "Última vez modificada {date}",
   "@lastModifiedDate": {
     "description": "Last modified date of the file in the local disk",
     "placeholders": {
@@ -267,11 +267,11 @@
   "@pending": {
     "description": "Status tooltip for transactions which are waiting to be minted"
   },
-  "confirmed": "Confirmado",
+  "confirmed": "Confirmada",
   "@confirmed": {
     "description": "Status tooltip for transactions that are confirmed by the network"
   },
-  "failed": "Fallido",
+  "failed": "Fallida",
   "@failed": {
     "description": "Status tooltip for failed transactions"
   },
