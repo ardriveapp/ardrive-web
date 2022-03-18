@@ -692,7 +692,7 @@ class SyncCubit extends Cubit<SyncState> {
               kRequiredTxConfirmationPendingThreshold;
 
           // Assume that data tx that weren't mined up to a maximum of
-          // `_pendingWaitTime` is failed.
+          // `_pendingWaitTime` was failed.
           if (abovePendingThreshold ||
               _isOverThePedingTime(transactionDateCreated)) {
             txStatus = TransactionStatus.failed;
