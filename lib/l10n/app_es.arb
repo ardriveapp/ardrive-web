@@ -792,11 +792,7 @@
       }
     }
   },
-  "aFileWithSameNameAlreadyExists": "Ya existe un fichero con el mismo nombre en ese lugar. ¿Quieres continuar y subirlo como una nueva versión?",
-  "@aFileWithSameNameAlreadyExists": {
-    "description": "Asks the user what to do with the items conflicting name"
-  },
-  "filesWithTheSameNameAlreadyExists": "Hay {numberOfFiles} ficheros con el mismo nombre en ese lugar. ¿Quieres continuar y subirlos como una nueva versión?",
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{Ya existe un fichero con el mismo nombre en ese lugar. ¿Quieres continuar y subirlo como una nueva versión?} =other{Hay {numberOfFiles} ficheros con el mismo nombre en ese lugar. ¿Quieres continuar y subirlos como una nueva versión?}}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
