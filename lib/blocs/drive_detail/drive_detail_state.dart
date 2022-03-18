@@ -11,6 +11,7 @@ class DriveDetailLoadInProgress extends DriveDetailState {}
 class DriveDetailLoadSuccess extends DriveDetailState {
   final Drive currentDrive;
   final bool hasWritePermissions;
+  final bool driveIsEmpty;
 
   final FolderWithContents folderInView;
 
@@ -40,6 +41,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     this.maybeSelectedItem,
     this.showSelectedItemDetails = false,
     this.selectedFilePreviewUrl,
+    required this.driveIsEmpty,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -53,6 +55,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     Uri? selectedFilePreviewUrl,
     int? rowsPerPage,
     List<int>? availableRowsPerPage,
+    bool? driveIsEmpty,
   }) =>
       DriveDetailLoadSuccess(
         currentDrive: currentDrive ?? this.currentDrive,
@@ -67,6 +70,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
             selectedFilePreviewUrl ?? this.selectedFilePreviewUrl,
         availableRowsPerPage: availableRowsPerPage ?? this.availableRowsPerPage,
         rowsPerPage: rowsPerPage ?? this.rowsPerPage,
+        driveIsEmpty: driveIsEmpty ?? this.driveIsEmpty,
       );
 
   @override
@@ -81,6 +85,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         availableRowsPerPage,
         maybeSelectedItem,
         _equatableBust,
+        driveIsEmpty,
       ];
 
   bool isViewingRootFolder() =>

@@ -20,6 +20,7 @@ part 'create_manifest_state.dart';
 
 class CreateManifestCubit extends Cubit<CreateManifestState> {
   late FormGroup form;
+  late FolderNode rootFolderNode;
 
   final ProfileCubit _profileCubit;
   final Drive drive;
@@ -63,6 +64,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     if (form.invalid) {
       return;
     }
+    rootFolderNode =
+        await _driveDao.getFolderTree(drive.id, drive.rootFolderId);
+
     await loadFolder(drive.rootFolderId);
   }
 
@@ -174,10 +178,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     try {
       final parentFolder =
           (state as CreateManifestPreparingManifest).parentFolder;
-      final folderNode =
-          (await _driveDao.getFolderTree(drive.id, parentFolder.id));
-      final arweaveManifest =
-          ManifestData.fromFolderNode(folderNode: folderNode);
+      final folderNode = rootFolderNode.searchForFolder(parentFolder.id) ??
+          await _driveDao.getFolderTree(drive.id, parentFolder.id);
+
+      final arweaveManifest = ManifestData.fromFolderNode(
+        folderNode: folderNode,
+      );
 
       final profile = _profileCubit.state as ProfileLoggedIn;
       final wallet = profile.wallet;

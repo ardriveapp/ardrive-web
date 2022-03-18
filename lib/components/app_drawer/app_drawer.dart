@@ -238,8 +238,10 @@ class AppDrawer extends StatelessWidget {
                           PopupMenuItem(
                             value: (context) => promptToCreateManifest(context,
                                 drive: state.currentDrive),
+                            enabled: !state.driveIsEmpty,
                             child: ListTile(
                               title: Text('Create manifest'),
+                              enabled: !state.driveIsEmpty,
                             ),
                           ),
                         },

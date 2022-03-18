@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
@@ -281,7 +282,7 @@ class CreateManifestForm extends StatelessWidget {
 
         if (state is CreateManifestFolderLoadSuccess) {
           return AppDialog(
-            title: 'CREATE MANIFEST FROM',
+            title: 'CREATE MANIFEST',
             actions: [
               TextButton(
                 onPressed: () => readCubitContext.backToName(),
@@ -289,7 +290,7 @@ class CreateManifestForm extends StatelessWidget {
               ),
               ElevatedButton(
                 onPressed: () => readCubitContext.checkForConflicts(),
-                child: Text('CREATE'),
+                child: Text('CREATE HERE'),
               ),
             ],
             content: SizedBox(
@@ -333,6 +334,10 @@ class CreateManifestForm extends StatelessWidget {
                                   onTap: () =>
                                       readCubitContext.loadFolder(f.id),
                                   trailing: Icon(Icons.keyboard_arrow_right),
+                                  enabled: !_isFolderEmpty(
+                                    f.id,
+                                    readCubitContext.rootFolderNode,
+                                  ),
                                 ),
                               ),
                               ...state.viewingFolder.files
@@ -360,4 +365,14 @@ class CreateManifestForm extends StatelessWidget {
         }
         return SizedBox();
       });
+
+  bool _isFolderEmpty(FolderID folderId, FolderNode rootFolderNode) {
+    final folderNode = rootFolderNode.searchForFolder(folderId);
+
+    if (folderNode == null) {
+      return true;
+    }
+
+    return folderNode.isEmpty();
+  }
 }
