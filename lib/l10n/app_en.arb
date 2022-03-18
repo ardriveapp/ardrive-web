@@ -765,6 +765,10 @@
   "@back": {
     "description": "Go back"
   },
+  "backEmphasized": "BACK",
+  "@backEmphasized": {
+    "description": "Go back. Emphasized with upper case"
+  },
   "logout": "Logout",
   "@logout": {
     "description": "The logout process"
@@ -1027,5 +1031,87 @@
         "example": "10 files"
       }
     }
+  },
+  "uploadingManifestEmphasized": "UPLOADING MANIFEST...",
+  "@uploadingManifestEmphasized": {
+    "description": "The manifest is being uploaded"
+  },
+  "preparingManifestEmphasized": "PREPARING MANIFEST...",
+  "@preparingManifestEmphasized": {
+    "description": "The manifest is being prepared for the upload"
+  },
+  "manifestName": "Manifest name",
+  "@manifestName": {
+    "description": "The name of the manifest"
+  },
+  "failedToCreateManifestEmphasized": "FAILED TO CREATE MANIFEST",
+  "@failedToCreateManifestEmphasized": {
+    "description": "The manifest could not be created"
+  },
+  "walletChangedDuringManifestCreation": "Provided wallet has unexpectedly changed during manifest creation...",
+  "@walletChangedDuringManifestCreation": {
+    "description": "The wallet has been changed while the creation of the manifest was in process"
+  },
+  "manifestTransactionUnexpectedlyFailed": "Manifest transaction has unexpectedly failed to upload to the Arweave network...",
+  "@manifestTransactionUnexpectedlyFailed": {
+    "description": "The manifest transaction did not succeed being uploaded"
+  },
+  "insufficientBalanceForManifest": "Provided wallet balance of {walletBalance} AR is not enough for this manifest transaction costing {totalCost} AR...",
+  "@insufficientBalanceForManifest": {
+    "description": "The ammount of AR the wallet has is not enough to upload the manifest transaction",
+    "placeholders": {
+      "walletBalance": {
+        "type": "String",
+        "example": "0"
+      },
+      "totalCost": {
+        "type": "String",
+        "example": "1.2"
+      }
+    }
+  },
+  "conflictingNameFound": "Conflicting name was found",
+  "@conflictingNameFound": {
+    "description": "There is a non-manifest entity with the same name"
+  },
+  "conflictingNameFoundChooseNewName": "An entity with that name already exists at this location. Please choose a new name.",
+  "@conflictingNameFoundChooseNewName": {
+    "description": "The user must type a non-conflicting name"
+  },
+  "conflictingManifestFound": "Conflicting manifest was found",
+  "@conflictingManifestFound": {
+    "description": "There is an on-chain entity with the same name"
+  },
+  "conflictingManifestFoundChooseNewName": "A manifest with the same name already exists at this location. Do you want to continue and upload this manifest as a new version?",
+  "@conflictingManifestFoundChooseNewName": {
+    "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
+  },
+  "addnewManifestEmphasized": "ADD NEW MANIFEST",
+  "@addnewManifestEmphasized": {
+    "description": "There is a non-manifest entity with the same name"
+  },
+  "aManifestIsASpecialKindOfFile": "A manifest is a special kind of file that maps any number of Arweave transactions to friendly path names.",
+  "@aManifestIsASpecialKindOfFile": {
+    "description": "Simple explanation of what a manifest is"
+  },
+  "learnMore": "Learn More",
+  "@learnMore": {
+    "description": "Link to a document explaining manifests in detail"
+  },
+  "createManifestEmphasized": "CREATE MANIFEST",
+  "@createManifestEmphasized": {
+    "description": "To create a manifest"
+  },
+  "filesWillBePermanentlyPublicWarning": "Files uploaded here will be permanently viewable by anyone on the internet. Make sure you intend on making this data public.",
+  "@filesWillBePermanentlyPublicWarning": {
+    "description": "Make the user aware that it is uploading permanent data publicly"
+  },
+  "createHereEmphasized": "CREATE HERE",
+  "@createHereEmphasized": {
+    "description": "Create the manifest in the current selected folder"
+  },
+  "confirmEmphasized": "CONFIRM",
+  "@confirmEmphasized": {
+    "description": "Confirm the prompted question"
   }
 }
