@@ -32,7 +32,7 @@
   "@ardriveIsntJustAnotherCloudSyncApp": {
     "description": "Description about the permanence and uniqueness of ArDrive"
   },
-  "anyFilesWillOutliveYou": "¡Cualquier fichero que subas aquí existirá mas que tú!",
+  "anyFilesWillOutliveYou": "¡Cualquier archivo que subas aquí existirá mas que tú!",
   "@anyFilesWillOutliveYou": {
     "description": "Files on the Weave will exist there forever"
   },
@@ -40,7 +40,7 @@
   "@weDoAFewThingsDifferently": {
     "description": "What ArDrive does differently"
   },
-  "payPerFileEmphasized": "PAGA POR FICHERO",
+  "payPerFileEmphasized": "PAGA POR ARCHIVO",
   "@payPerFileEmphasized": {
     "description": "Payment philosophy. Emphasized with upper case"
   },
@@ -48,7 +48,7 @@
   "@noSubscriptions": {
     "description": "Payment philosophy"
   },
-  "monthlyCharges": "En vez de pagar mensualmente por espacio vacío que no usas, paga una única vez y almacena tus ficheros por siempre en ArDrive.",
+  "monthlyCharges": "En vez de pagar mensualmente por espacio vacío que no usas, paga una única vez y almacena tus archivos por siempre en ArDrive.",
   "@monthlyCharges": {
     "description": "Payment philosophy"
   },
@@ -60,7 +60,7 @@
   "@decentralizedPermanent": {
     "description": "Permanence requires patience"
   },
-  "greenCheckMark": "Cuando la marca verde aparece al lado de tu fichero, es cuando ha sido subido a la Permaweb.",
+  "greenCheckMark": "Cuando la marca verde aparece al lado de tu archivo, es cuando ha sido subido a la Permaweb.",
   "@greenCheckMark": {
     "description": "Describes the indicator of the status of uploaded files"
   },
@@ -68,7 +68,7 @@
   "@totalPrivacyControlEmphasized": {
     "description": "Title for talking about privacy. Emphasized with upper case"
   },
-  "yourChoice": "Es tu elección: haz tus ficheros públicos o privados usando la mejor encriptación.",
+  "yourChoice": "Es tu elección: haz tus archivos públicos o privados usando la mejor encriptación.",
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
@@ -287,7 +287,7 @@
   "@lastUpdated": {
     "description": "The timestamp of the transaction"
   },
-  "addSomeFiles": "Nada qué ver aquí. Pincha en \"nuevo\" para añadir agunos ficheross.",
+  "addSomeFiles": "Nada qué ver aquí. Pincha en \"nuevo\" para añadir agunos archivos.",
   "@addSomeFiles": {
     "description": "Empty folder"
   },
@@ -311,7 +311,7 @@
   "@okEmphasized": {
     "description": "OK button. Emphasized in upper case"
   },
-  "uploadDragAndDrop": "Subir fichero",
+  "uploadDragAndDrop": "Subir archivo",
   "@uploadDragAndDrop": {
     "description": "The action of uploading a file"
   },
@@ -483,7 +483,7 @@
   "@fileWasMoved": {
     "description": "File activity (journal): moved"
   },
-  "fileHadANewRevision": "Se subió una nueva versión del fichero.",
+  "fileHadANewRevision": "Se subió una nueva versión del archivo.",
   "@fileHadANewRevision": {
     "description": "File activity (journal): new revision"
   },
@@ -792,7 +792,7 @@
       }
     }
   },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{Ya existe un fichero con el mismo nombre en ese lugar. ¿Quieres continuar y subirlo como una nueva versión?} =other{Hay {numberOfFiles} ficheros con el mismo nombre en ese lugar. ¿Quieres continuar y subirlos como una nueva versión?}}",
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{Ya existe un archivo con el mismo nombre en ese lugar. ¿Quieres continuar y subirlo como una nueva versión?} =other{Hay {numberOfFiles} archivos con el mismo nombre en ese lugar. ¿Quieres continuar y subirlos como una nueva versión?}}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
@@ -854,7 +854,7 @@
   "@failedToPrepareFileUpload": {
     "description": "Error message for when it failed to prepare the upload"
   },
-  "failedToPrepareFileUploadExplanation": "Ocurrió un error mientras se preparaba la subida de tus ficheros. Por favor utiliza la aplicación de escritorio o intenta con un fichero más pequeño.",
+  "failedToPrepareFileUploadExplanation": "Ocurrió un error mientras se preparaba la subida de tus archivos. Por favor utiliza la aplicación de escritorio o intenta con un archivo más pequeño.",
   "@failedToPrepareFileUploadExplanation": {
     "description": "Error message for when it failed to prepare the upload"
   },
@@ -941,7 +941,7 @@
   "@subscribeEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
   },
-  "specifiedFileDoesNotExist": "El fichero especificado no existe.",
+  "specifiedFileDoesNotExist": "El archivo especificado no existe.",
   "@specifiedFileDoesNotExist": {
     "description": "The shared file the user is trying to access does not exist"
   },
