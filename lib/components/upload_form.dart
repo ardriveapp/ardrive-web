@@ -1,8 +1,10 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +27,10 @@ Future<void> promptToUploadFile(
       context: context,
       builder: (_) => BlocProvider<UploadCubit>(
         create: (context) => UploadCubit(
+          uploadPlanUtils: UploadPlanUtils(
+            arweave: context.read<ArweaveService>(),
+            driveDao: context.read<DriveDao>(),
+          ),
           driveId: driveId,
           folderId: folderId,
           files: selectedFiles,
@@ -32,7 +38,7 @@ Future<void> promptToUploadFile(
           arweave: context.read<ArweaveService>(),
           pst: context.read<PstService>(),
           driveDao: context.read<DriveDao>(),
-        ),
+        )..startUploadPreparation(),
         child: UploadForm(),
       ),
       barrierDismissible: false,
@@ -46,6 +52,8 @@ class UploadForm extends StatelessWidget {
         listener: (context, state) async {
           if (state is UploadComplete || state is UploadWalletMismatch) {
             Navigator.pop(context);
+          } else if (state is UploadPreparationInitialized) {
+            await context.read<UploadCubit>().checkConflictingFiles();
           }
           if (state is UploadWalletMismatch) {
             Navigator.pop(context);
@@ -56,7 +64,7 @@ class UploadForm extends StatelessWidget {
           if (state is UploadFileConflict) {
             return AppDialog(
               title:
-                  '${state.conflictingFileNames.length} conflicting file(s) found',
+                  '${state.conflictingFileNames.length} duplicate file(s) detected',
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -64,28 +72,47 @@ class UploadForm extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      state.conflictingFileNames.length == 1
-                          ? 'A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?'
-                          : '${state.conflictingFileNames.length} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?',
-                    ),
+                        '${state.conflictingFileNames.length} file(s) with the same name already exists at destination. Do you want to continue and replace them with new revisions?'),
                     const SizedBox(height: 16),
                     Text('Conflicting files:'),
                     const SizedBox(height: 8),
-                    Text(state.conflictingFileNames.join(', ')),
+                    ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 320),
+                        child: SingleChildScrollView(
+                            child:
+                                Text(state.conflictingFileNames.join(', ')))),
                   ],
                 ),
               ),
               actions: <Widget>[
+                if (!state.isAllFilesConflicting)
+                  TextButton(
+                    style: ButtonStyle(
+                        fixedSize:
+                            MaterialStateProperty.all(Size.fromWidth(140))),
+                    onPressed: () => context
+                        .read<UploadCubit>()
+                        .prepareUploadPlanAndCostEstimates(
+                            conflictingFileAction: ConflictingFileActions.Skip),
+                    child: Text('SKIP'),
+                  ),
                 TextButton(
+                  style: ButtonStyle(
+                      fixedSize:
+                          MaterialStateProperty.all(Size.fromWidth(140))),
                   onPressed: () => Navigator.of(context).pop(false),
                   child: Text('CANCEL'),
                 ),
-                ElevatedButton(
-                  onPressed: () => context
-                      .read<UploadCubit>()
-                      .prepareUploadPlanAndCostEstimates(),
-                  child: Text('CONTINUE'),
-                ),
+                TextButton(
+                    style: ButtonStyle(
+                        fixedSize:
+                            MaterialStateProperty.all(Size.fromWidth(140))),
+                    onPressed: () => context
+                        .read<UploadCubit>()
+                        .prepareUploadPlanAndCostEstimates(
+                            conflictingFileAction:
+                                ConflictingFileActions.Replace),
+                    child: Text('REPLACE')),
               ],
             );
           } else if (state is UploadFileTooLarge) {
@@ -115,7 +142,8 @@ class UploadForm extends StatelessWidget {
                 ),
               ],
             );
-          } else if (state is UploadPreparationInProgress) {
+          } else if (state is UploadPreparationInProgress ||
+              state is UploadPreparationInitialized) {
             return AppDialog(
               title: 'Preparing upload...',
               content: SizedBox(
@@ -125,7 +153,8 @@ class UploadForm extends StatelessWidget {
                   children: <Widget>[
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
-                    if (state.isArConnect)
+                    if (state is UploadPreparationInProgress &&
+                        state.isArConnect)
                       Text(
                         'CAUTION: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.',
                       )
