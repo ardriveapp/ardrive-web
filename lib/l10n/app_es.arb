@@ -549,7 +549,7 @@
   "@cancel": {
     "description": "Cancel button"
   },
-  "exportingData": "Exporting your data, please wait.",
+  "exportingData": "Exportando tu informacón, por favor espera.",
   "@exportingData": {
     "description": "The drive data is being procesed"
   },
@@ -577,7 +577,7 @@
   "@createDriveEmphasized": {
     "description": "Action of creating a new drive. Emphasized with upper case"
   },
-  "insufficientARToCreateDrive": "You do not have sufficient AR to create a drive.",
+  "insufficientARToCreateDrive": "Tienes insuficiente AR para crear un disco.",
   "@insufficientARToCreateDrive": {
     "description": "Not enough balance"
   },
@@ -925,7 +925,7 @@
   "@walletSwitch": {
     "description": "The wallet has changed. The user must log in again"
   },
-  "walletChangeDetected": "Wallet change detected. Please log out and log in again",
+  "walletChangeDetected": "Se detectó el cambio de billetera. Por favor desloguéate y vuelve a ingresar nuevamente",
   "@walletChangeDetected": {
     "description": "The wallet has changed. The user must log in again"
   },
