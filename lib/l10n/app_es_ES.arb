@@ -1,14 +1,14 @@
 {
   "@@locale": "es_ES",
-  "welcomeTo_body": "BIENVENIDOS A Vuestro disco duro privado y seguro, decentralizado, de pago por uso, resistente a la censura y permanente",
+  "welcomeTo_body": "BIENVENIDO/A A Tu disco duro privado y seguro, decentralizado, de pago por uso, resistente a la censura y permanente",
   "@welcomeTo_body": {
     "description": "Welcoming message just after the ArDrive logo"
   },
-  "welcomeTo_main": "BIENVENIDOS A",
+  "welcomeTo_main": "BIENVENIDO/A A",
   "@welcomeTo_main": {
     "description": "Highly emphasized text giving welcome"
   },
-  "welcomeTo_description": "Vuestro disco duro privado y seguro, decentralizado, de pago por uso, resistente a la censura y permanente",
+  "welcomeTo_description": "Tu disco duro privado y seguro, decentralizado, de pago por uso, resistente a la censura y permanente",
   "@welcomeTo_description": {
     "description": "Brief description of ArDrive as welcoming"
   },
@@ -24,7 +24,7 @@
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
-  "welcomeToThePermawebEmphasized": "BIENVENIDOS A LA PERMAWEB",
+  "welcomeToThePermawebEmphasized": "BIENVENIDO/A A LA PERMAWEB",
   "@welcomeToThePermawebEmphasized": {
     "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
   },
