@@ -77,8 +77,8 @@ fileById:
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND id = :fileId;
 
-fileByDataTx:
-    SELECT * FROM file_entries
+fileRevisionByDataTex:
+    SELECT * FROM file_revisions
     WHERE dataTxId = :tx;
 
 filesInFolder ($order = ''):

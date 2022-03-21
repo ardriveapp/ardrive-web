@@ -681,9 +681,15 @@ class SyncCubit extends Cubit<SyncState> {
         if (txConfirmed) {
           txStatus = TransactionStatus.confirmed;
         } else if (txNotFound) {
-          final transactionDateCreated =
-              pendingTxMap[txId]!.transactionDateCreated ??
-                  await _getDateCreatedByDataTx(txId);
+          late DateTime transactionDateCreated;
+
+          if (pendingTxMap[txId]!.transactionDateCreated != null) {
+            transactionDateCreated =
+                pendingTxMap[txId]!.transactionDateCreated!;
+          } else {
+            transactionDateCreated = await _getDateCreatedByDataTx(txId) ??
+                pendingTxMap[txId]!.dateCreated;
+          }
           // Only mark transactions as failed if they are unconfirmed for over 45 minutes
           // as the transaction might not be queryable for right after it was created.
           final abovePendingThreshold = DateTime.now()
@@ -722,7 +728,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<DateTime?> _getDateCreatedByDataTx(String dataTx) async {
-    final rev = await _driveDao.fileByDataTx(tx: dataTx).get();
+    final rev = await _driveDao.fileRevisionByDataTex(tx: dataTx).get();
 
     // no file found
     if (rev.isEmpty) {
