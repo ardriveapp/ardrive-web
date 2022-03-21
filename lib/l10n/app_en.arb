@@ -210,6 +210,10 @@
   "@next": {
     "description": "Action of going to the next page"
   },
+  "nextEmphasized": "NEXT",
+  "@nextEmphasized": {
+    "description": "Next strep"
+  },
   "goToLast": "Go to Last",
   "@goToLast": {
     "description": "Action of going to the latest page"
