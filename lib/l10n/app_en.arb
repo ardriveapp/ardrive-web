@@ -212,7 +212,7 @@
   },
   "nextEmphasized": "NEXT",
   "@nextEmphasized": {
-    "description": "Next strep"
+    "description": "Next step"
   },
   "goToLast": "Go to Last",
   "@goToLast": {
