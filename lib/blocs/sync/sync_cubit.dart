@@ -716,7 +716,7 @@ class SyncCubit extends Cubit<SyncState> {
     });
   }
 
-  bool _isOverThePedingTime(DateTime? transactionCreatedDate) {
+  bool _isOverThePendingTime(DateTime? transactionCreatedDate) {
     // If don't have the date information we cannot assume that is over the pending time
     if (transactionCreatedDate == null) {
       return false;
