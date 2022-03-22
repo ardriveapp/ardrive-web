@@ -94,8 +94,8 @@ class CreateManifestForm extends StatelessWidget {
         if (state is CreateManifestWalletMismatch) {
           Navigator.pop(context);
           return errorDialog(
-            errorText: appLocalizationsOf(context)
-                .manifestTransactionUnexpectedlyFailed,
+            errorText:
+                appLocalizationsOf(context).walletChangedDuringManifestCreation,
           );
         }
 
@@ -189,7 +189,7 @@ class CreateManifestForm extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () => readCubitContext.chooseTargetFolder(),
                   child: Text(
-                    appLocalizationsOf(context).continueEmphasized,
+                    appLocalizationsOf(context).nextEmphasized,
                   ),
                 ),
               ],
