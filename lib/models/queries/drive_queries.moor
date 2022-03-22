@@ -77,7 +77,7 @@ fileById:
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND id = :fileId;
 
-fileRevisionByDataTex:
+fileRevisionByDataTx:
     SELECT * FROM file_revisions
     WHERE dataTxId = :tx;
 

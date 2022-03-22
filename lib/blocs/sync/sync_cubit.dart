@@ -699,7 +699,7 @@ class SyncCubit extends Cubit<SyncState> {
           // Assume that data tx that weren't mined up to a maximum of
           // `_pendingWaitTime` was failed.
           if (abovePendingThreshold ||
-              _isOverThePedingTime(transactionDateCreated)) {
+              _isOverThePendingTime(transactionDateCreated)) {
             txStatus = TransactionStatus.failed;
           }
         }
@@ -726,7 +726,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<DateTime?> _getDateCreatedByDataTx(String dataTx) async {
-    final rev = await _driveDao.fileRevisionByDataTex(tx: dataTx).get();
+    final rev = await _driveDao.fileRevisionByDataTx(tx: dataTx).get();
 
     // no file found
     if (rev.isEmpty) {
