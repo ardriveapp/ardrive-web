@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/widgets.dart';
@@ -29,3 +30,7 @@ class MockProfileCubit extends MockCubit<ProfileState> implements ProfileCubit {
 }
 
 class MockUploadBloc extends MockCubit<UploadState> implements UploadCubit {}
+
+class MockPstService extends Mock implements PstService {}
+
+class MockUploadPlanUtils extends Mock implements UploadPlanUtils {}

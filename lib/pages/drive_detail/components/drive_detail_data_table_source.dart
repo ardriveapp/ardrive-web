@@ -205,19 +205,23 @@ Widget _buildFileIcon(String status, String? dataContentType) {
       throw ArgumentError();
   }
 
-  final fileType = dataContentType?.split('/').first;
-  switch (fileType) {
-    case 'image':
-      icon = const Icon(Icons.image);
-      break;
-    case 'video':
-      icon = const Icon(Icons.ondemand_video);
-      break;
-    case 'audio':
-      icon = const Icon(Icons.music_note);
-      break;
-    default:
-      icon = const Icon(Icons.insert_drive_file);
+  if (dataContentType == ContentType.manifest) {
+    icon = const Icon(Icons.account_tree_outlined);
+  } else {
+    final fileType = dataContentType?.split('/').first;
+    switch (fileType) {
+      case 'image':
+        icon = const Icon(Icons.image);
+        break;
+      case 'video':
+        icon = const Icon(Icons.ondemand_video);
+        break;
+      case 'audio':
+        icon = const Icon(Icons.music_note);
+        break;
+      default:
+        icon = const Icon(Icons.insert_drive_file);
+    }
   }
 
   return Tooltip(
