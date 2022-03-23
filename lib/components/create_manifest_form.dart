@@ -65,7 +65,8 @@ class CreateManifestForm extends StatelessWidget {
                 labelText: appLocalizationsOf(context).manifestName,
               ),
               showErrors: (control) => control.dirty && control.invalid,
-              validationMessages: (_) => kValidationMessages(context),
+              validationMessages: (_) =>
+                  kValidationMessages(appLocalizationsOf(context)),
             ));
 
         AppDialog errorDialog({required String errorText}) => AppDialog(

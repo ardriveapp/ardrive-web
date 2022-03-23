@@ -58,7 +58,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           onSubmitted: () =>
                               context.read<ProfileAddCubit>().submit(),
                           validationMessages: (_) =>
-                              kValidationMessages(context),
+                              kValidationMessages(appLocalizationsOf(context)),
                         ),
                         const SizedBox(height: 16),
                         ReactiveTextField(
@@ -72,7 +72,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           onSubmitted: () =>
                               context.read<ProfileAddCubit>().submit(),
                           validationMessages: (_) =>
-                              kValidationMessages(context),
+                              kValidationMessages(appLocalizationsOf(context)),
                         ),
                         if (!state.isExistingUser) ...[
                           const SizedBox(height: 16),
@@ -87,7 +87,8 @@ class ProfileAuthAddScreen extends StatelessWidget {
                             onSubmitted: () =>
                                 context.read<ProfileAddCubit>().submit(),
                             validationMessages: (_) => {
-                              ...kValidationMessages(context),
+                              ...kValidationMessages(
+                                  appLocalizationsOf(context)),
                               'mustMatch':
                                   appLocalizationsOf(context).passwordMismatch,
                             },

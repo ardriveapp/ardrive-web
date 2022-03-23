@@ -1,25 +1,24 @@
-import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-Map<String, String> kValidationMessages(BuildContext context) {
+Map<String, String> kValidationMessages(AppLocalizations localizations) {
   return {
-    ValidationMessage.required: appLocalizationsOf(context).validationRequired,
-    ValidationMessage.pattern: appLocalizationsOf(context).validationInvalid,
+    ValidationMessage.required: localizations.validationRequired,
+    ValidationMessage.pattern: localizations.validationInvalid,
     AppValidationMessage.passwordIncorrect:
-        appLocalizationsOf(context).validationPasswordIncorrect,
+        localizations.validationPasswordIncorrect,
     AppValidationMessage.driveAttachDriveNotFound:
-        appLocalizationsOf(context).validationAttachDriveCouldNotBeFound,
+        localizations.validationAttachDriveCouldNotBeFound,
     AppValidationMessage.driveAttachInvalidDriveKey:
-        appLocalizationsOf(context).validationInvalidKey,
+        localizations.validationInvalidKey,
     AppValidationMessage.driveAttachUserLoggedOut:
-        appLocalizationsOf(context).validationAttachUserLoggedOut,
+        localizations.validationAttachUserLoggedOut,
     AppValidationMessage.fsEntryNameAlreadyPresent:
-        appLocalizationsOf(context).validationEntityNameAlreadyPresent,
+        localizations.validationEntityNameAlreadyPresent,
     AppValidationMessage.driveNameAlreadyPresent:
-        appLocalizationsOf(context).validationDriveNameAlreadyPresent,
+        localizations.validationDriveNameAlreadyPresent,
     AppValidationMessage.fsEntryNameUnchanged:
-        appLocalizationsOf(context).validationNameUnchanged,
+        localizations.validationNameUnchanged,
   };
 }
 

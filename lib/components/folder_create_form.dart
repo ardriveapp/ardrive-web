@@ -79,7 +79,8 @@ class FolderCreateForm extends StatelessWidget {
                 decoration: InputDecoration(
                     labelText: appLocalizationsOf(context).folderName),
                 showErrors: (control) => control.dirty && control.invalid,
-                validationMessages: (_) => kValidationMessages(context),
+                validationMessages: (_) =>
+                    kValidationMessages(appLocalizationsOf(context)),
               ),
             ),
           ),
