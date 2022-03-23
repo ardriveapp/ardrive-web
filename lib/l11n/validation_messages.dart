@@ -1,21 +1,26 @@
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-const kValidationMessages = {
-  ValidationMessage.required: 'This field is required.',
-  ValidationMessage.pattern: 'This field is invalid.',
-  AppValidationMessage.passwordIncorrect: 'This password is incorrect.',
-  AppValidationMessage.driveAttachDriveNotFound:
-      'The specified drive could not be found.',
-  AppValidationMessage.driveAttachInvalidDriveKey: 'Invalid drive key.',
-  AppValidationMessage.driveAttachUserLoggedOut:
-      'You need to be signed in to attach private drives.',
-  AppValidationMessage.fsEntryNameAlreadyPresent:
-      'A folder/file with this name is already present here.',
-  AppValidationMessage.driveNameAlreadyPresent:
-      'A drive with this name is already present.',
-  AppValidationMessage.fsEntryNameUnchanged:
-      'This name is identical to the current name.',
-};
+Map<String, String> kValidationMessages(AppLocalizations localizations) {
+  return {
+    ValidationMessage.required: localizations.validationRequired,
+    ValidationMessage.pattern: localizations.validationInvalid,
+    AppValidationMessage.passwordIncorrect:
+        localizations.validationPasswordIncorrect,
+    AppValidationMessage.driveAttachDriveNotFound:
+        localizations.validationAttachDriveCouldNotBeFound,
+    AppValidationMessage.driveAttachInvalidDriveKey:
+        localizations.validationInvalidKey,
+    AppValidationMessage.driveAttachUserLoggedOut:
+        localizations.validationAttachUserLoggedOut,
+    AppValidationMessage.fsEntryNameAlreadyPresent:
+        localizations.validationEntityNameAlreadyPresent,
+    AppValidationMessage.driveNameAlreadyPresent:
+        localizations.validationDriveNameAlreadyPresent,
+    AppValidationMessage.fsEntryNameUnchanged:
+        localizations.validationNameUnchanged,
+  };
+}
 
 class AppValidationMessage {
   static const String passwordIncorrect = 'password-incorrect';

@@ -14,6 +14,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToCreateManifest(BuildContext context,
@@ -38,9 +39,15 @@ class CreateManifestForm extends StatelessWidget {
       BlocConsumer<CreateManifestCubit, CreateManifestState>(
           listener: (context, state) {
         if (state is CreateManifestUploadInProgress) {
-          showProgressDialog(context, 'UPLOADING MANIFEST...');
+          showProgressDialog(
+            context,
+            appLocalizationsOf(context).uploadingManifestEmphasized,
+          );
         } else if (state is CreateManifestPreparingManifest) {
-          showProgressDialog(context, 'PREPARING MANIFEST...');
+          showProgressDialog(
+            context,
+            appLocalizationsOf(context).preparingManifestEmphasized,
+          );
         } else if (state is CreateManifestSuccess ||
             state is CreateManifestPrivacyMismatch) {
           Navigator.pop(context);
@@ -54,13 +61,17 @@ class CreateManifestForm extends StatelessWidget {
             child: ReactiveTextField(
               formControlName: 'name',
               autofocus: true,
-              decoration: const InputDecoration(labelText: 'Manifest name'),
+              decoration: InputDecoration(
+                labelText: appLocalizationsOf(context).manifestName,
+              ),
               showErrors: (control) => control.dirty && control.invalid,
-              validationMessages: (_) => kValidationMessages,
+              validationMessages: (_) =>
+                  kValidationMessages(appLocalizationsOf(context)),
             ));
 
         AppDialog errorDialog({required String errorText}) => AppDialog(
-              title: 'FAILED TO CREATE MANIFEST',
+              title:
+                  appLocalizationsOf(context).failedToCreateManifestEmphasized,
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -76,7 +87,7 @@ class CreateManifestForm extends StatelessWidget {
               actions: <Widget>[
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('CONTINUE'),
+                  child: Text(appLocalizationsOf(context).continueEmphasized),
                 ),
               ],
             );
@@ -85,29 +96,30 @@ class CreateManifestForm extends StatelessWidget {
           Navigator.pop(context);
           return errorDialog(
             errorText:
-                'Provided wallet has unexpectedly changed during manifest creation...',
+                appLocalizationsOf(context).walletChangedDuringManifestCreation,
           );
         }
 
         if (state is CreateManifestFailure) {
           Navigator.pop(context);
           return errorDialog(
-            errorText:
-                'Manifest transaction has unexpectedly failed to upload to the Arweave network...',
+            errorText: appLocalizationsOf(context)
+                .manifestTransactionUnexpectedlyFailed,
           );
         }
 
         if (state is CreateManifestInsufficientBalance) {
           Navigator.pop(context);
           return errorDialog(
-            errorText:
-                'Provided wallet balance of ${state.walletBalance} AR is not enough for this manifest transaction costing ${state.totalCost} AR...',
+            errorText: appLocalizationsOf(context)
+                .insufficientBalanceForManifest(
+                    state.walletBalance, state.totalCost),
           );
         }
 
         if (state is CreateManifestNameConflict) {
           return AppDialog(
-            title: 'Conflicting name was found',
+            title: appLocalizationsOf(context).conflictingNameFound,
             content: SizedBox(
               width: kMediumDialogWidth,
               height: 200,
@@ -117,7 +129,8 @@ class CreateManifestForm extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    'An entity with that name already exists at this location. Please choose a new name.',
+                    appLocalizationsOf(context)
+                        .conflictingManifestFoundChooseNewName,
                   ),
                   manifestNameForm()
                 ],
@@ -126,11 +139,11 @@ class CreateManifestForm extends StatelessWidget {
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text('CANCEL'),
+                child: Text(appLocalizationsOf(context).cancelEmphasized),
               ),
               ElevatedButton(
                 onPressed: () => readCubitContext.reCheckConflicts(),
-                child: Text('CONTINUE'),
+                child: Text(appLocalizationsOf(context).continueEmphasized),
               ),
             ],
           );
@@ -138,7 +151,7 @@ class CreateManifestForm extends StatelessWidget {
 
         if (state is CreateManifestRevisionConfirm) {
           return AppDialog(
-            title: 'Conflicting manifest was found',
+            title: appLocalizationsOf(context).conflictingManifestFound,
             content: SizedBox(
               width: kMediumDialogWidth,
               child: Column(
@@ -147,7 +160,8 @@ class CreateManifestForm extends StatelessWidget {
                 children: [
                   SizedBox(height: 16),
                   Text(
-                    'A manifest with the same name already exists at this location. Do you want to continue and upload this manifest as a new version?',
+                    appLocalizationsOf(context)
+                        .conflictingManifestFoundChooseNewName,
                   ),
                   SizedBox(height: 16),
                 ],
@@ -156,11 +170,11 @@ class CreateManifestForm extends StatelessWidget {
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text('CANCEL'),
+                child: Text(appLocalizationsOf(context).cancelEmphasized),
               ),
               ElevatedButton(
                 onPressed: () => readCubitContext.confirmRevision(),
-                child: Text('CONTINUE'),
+                child: Text(appLocalizationsOf(context).continueEmphasized),
               ),
             ],
           );
@@ -168,14 +182,16 @@ class CreateManifestForm extends StatelessWidget {
 
         if (state is CreateManifestInitial) {
           return AppDialog(
-              title: 'ADD NEW MANIFEST',
+              title: appLocalizationsOf(context).addnewManifestEmphasized,
               actions: [
                 TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: Text('CANCEL')),
+                    child: Text(appLocalizationsOf(context).cancelEmphasized)),
                 ElevatedButton(
                   onPressed: () => readCubitContext.chooseTargetFolder(),
-                  child: Text('NEXT'),
+                  child: Text(
+                    appLocalizationsOf(context).nextEmphasized,
+                  ),
                 ),
               ],
               content: SizedBox(
@@ -191,11 +207,11 @@ class CreateManifestForm extends StatelessWidget {
                         RichText(
                           text: TextSpan(children: [
                             TextSpan(
-                                text:
-                                    'A manifest is a special kind of file that maps any number of Arweave transactions to friendly path names.  ',
+                                text: appLocalizationsOf(context)
+                                    .aManifestIsASpecialKindOfFile, // trimmed spaces
                                 style: Theme.of(context).textTheme.bodyText1),
                             TextSpan(
-                                text: 'Learn More',
+                                text: appLocalizationsOf(context).learnMore,
                                 style: TextStyle(
                                     color: Theme.of(context)
                                         .textTheme
@@ -221,7 +237,7 @@ class CreateManifestForm extends StatelessWidget {
         if (state is CreateManifestUploadConfirmation) {
           Navigator.pop(context);
           return AppDialog(
-            title: 'CREATE MANIFEST',
+            title: appLocalizationsOf(context).createManifestEmphasized,
             content: SizedBox(
               width: kMediumDialogWidth,
               child: Column(
@@ -249,7 +265,8 @@ class CreateManifestForm extends StatelessWidget {
                     TextSpan(
                       children: [
                         TextSpan(
-                          text: 'Cost: ${state.arUploadCost} AR',
+                          text: appLocalizationsOf(context)
+                              .cost(state.arUploadCost),
                         ),
                         TextSpan(
                             text: state.usdUploadCost >= 0.01
@@ -261,7 +278,7 @@ class CreateManifestForm extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Files uploaded here will be permanently viewable by anyone on the internet. Make sure you intend on making this data public.',
+                    appLocalizationsOf(context).filesWillBeUploadedPublicly,
                     style: Theme.of(context).textTheme.bodyText2,
                   ),
                 ],
@@ -270,11 +287,11 @@ class CreateManifestForm extends StatelessWidget {
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text('CANCEL'),
+                child: Text(appLocalizationsOf(context).cancelEmphasized),
               ),
               ElevatedButton(
                 onPressed: () => readCubitContext.uploadManifest(),
-                child: Text('CONFIRM'),
+                child: Text(appLocalizationsOf(context).confirmEmphasized),
               ),
             ],
           );
@@ -282,15 +299,15 @@ class CreateManifestForm extends StatelessWidget {
 
         if (state is CreateManifestFolderLoadSuccess) {
           return AppDialog(
-            title: 'CREATE MANIFEST',
+            title: appLocalizationsOf(context).createManifestEmphasized,
             actions: [
               TextButton(
                 onPressed: () => readCubitContext.backToName(),
-                child: Text('BACK'),
+                child: Text(appLocalizationsOf(context).backEmphasized),
               ),
               ElevatedButton(
                 onPressed: () => readCubitContext.checkForConflicts(),
-                child: Text('CREATE HERE'),
+                child: Text(appLocalizationsOf(context).createHereEmphasized),
               ),
             ],
             content: SizedBox(
@@ -301,7 +318,7 @@ class CreateManifestForm extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text('TARGET FOLDER'),
+                    Text(appLocalizationsOf(context).targetFolderEmphasized),
                     if (!state.viewingRootFolder)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
@@ -314,7 +331,7 @@ class CreateManifestForm extends StatelessWidget {
                           child: ListTile(
                             dense: true,
                             leading: const Icon(Icons.arrow_back),
-                            title: Text('Back'),
+                            title: Text(appLocalizationsOf(context).back),
                           ),
                         ),
                       ),
