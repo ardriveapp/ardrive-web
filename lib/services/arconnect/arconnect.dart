@@ -1,4 +1,3 @@
-
 import 'dart:typed_data';
 
 import 'implementations/arconnect_web.dart'
@@ -32,4 +31,8 @@ class ArConnectService {
   /// Takes a message and returns the signature
   Future<Uint8List> getSignature(Uint8List message) async =>
       await implementation.getSignature(message);
+
+  /// Takes a message and returns the signature
+  Future<String> signTransaction(String transaction) async =>
+      await implementation.signTransaction(transaction);
 }

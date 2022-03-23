@@ -29,6 +29,9 @@ external String _getPublicKey();
 @JS('getSignature')
 external Uint8List _getSignature(Uint8List message);
 
+@JS('signTransaction')
+external String _signTransaction(String transaction);
+
 Future<void> connect() {
   return promiseToFuture(_connect());
 }
@@ -55,4 +58,8 @@ Future<String> getPublicKey() async {
 
 Future<Uint8List> getSignature(Uint8List message) async {
   return await promiseToFuture<Uint8List>(_getSignature(message));
+}
+
+Future<String> signTransaction(String transaction) async {
+  return await promiseToFuture<String>(_signTransaction(transaction));
 }

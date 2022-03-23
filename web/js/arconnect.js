@@ -16,7 +16,7 @@ async function connect() {
 
 async function checkPermissions() {
   var acceptedPermissions = await window.arweaveWallet.getPermissions();
-  return permissions.every(i => acceptedPermissions.includes(i));
+  return permissions.every((i) => acceptedPermissions.includes(i));
 }
 
 async function disconnect() {
@@ -45,4 +45,13 @@ async function getSignature(message) {
   });
   var array = Uint8Array.from(Object.values(response));
   return array;
+}
+
+async function signTransaction(transaction) {
+  var input = JSON.parse(transaction);
+  var response = await window.arweaveWallet.sign(input, {
+    name: 'RSA-PSS',
+    saltLength: 0,
+  });
+  return response.signature;
 }

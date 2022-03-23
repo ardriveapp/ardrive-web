@@ -35,7 +35,7 @@ Future<SecretKey> deriveDriveKey(
 ) async {
   final message =
       Uint8List.fromList(utf8.encode('drive') + Uuid.parse(driveId));
-  final walletSignature = await wallet.sign(message);
+  final walletSignature = await wallet.signMessage(message);
   return hkdf.deriveKey(
     secretKey: SecretKey(walletSignature),
     info: utf8.encode(password),
