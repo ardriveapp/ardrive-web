@@ -1129,5 +1129,41 @@
   "replaceEmphasized": "REPLACE",
   "@replaceEmphasized": {
     "description": "Example: to REPLACE an entity"
+  },
+  "validationRequired": "This field is required.",
+  "@validationRequired": {
+    "description": "Input validation error: the field is empty, but it's required"
+  },
+  "validationInvalid": "This field is invalid.",
+  "@validationInvalid": {
+    "description": "Input validation error: the field has invalid data"
+  },
+  "validationPasswordIncorrect": "This password is incorrect.",
+  "@validationPasswordIncorrect": {
+    "description": "Input validation error: the given password is wrong"
+  },
+  "validationAttachDriveCouldNotBeFound": "The specified drive could not be found.",
+  "@validationAttachDriveCouldNotBeFound": {
+    "description": "Input validation error: The given drive ID does not exist"
+  },
+  "validationInvalidKey": "Invalid drive key.",
+  "@validationInvalidKey": {
+    "description": "Input validation error: The given drive key is wrong"
+  },
+  "validationAttachUserLoggedOut": "You need to be signed in to attach private drives.",
+  "@validationAttachUserLoggedOut": {
+    "description": "Input validation error: the user cannot attach a drive when not logged in"
+  },
+  "validationEntityNameAlreadyPresent": "A folder/file with this name is already present here.",
+  "@validationEntityNameAlreadyPresent": {
+    "description": "Input validation error: The given name is already in use by some exising entity"
+  },
+  "validationDriveNameAlreadyPresent": "A drive with this name is already present.",
+  "@validationDriveNameAlreadyPresent": {
+    "description": "Input validation error: The given name is already in use by some exising drive"
+  },
+  "validationNameUnchanged": "This name is identical to the current name",
+  "@validationNameUnchanged": {
+    "description": "Input validation error: The given name is exactly the same"
   }
 }

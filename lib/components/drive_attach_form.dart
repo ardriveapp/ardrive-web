@@ -79,7 +79,7 @@ class DriveAttachForm extends StatelessWidget {
                     autofocus: true,
                     decoration: InputDecoration(
                         labelText: appLocalizationsOf(context).driveID),
-                    validationMessages: (_) => kValidationMessages,
+                    validationMessages: (_) => kValidationMessages(context),
                   ),
                   const SizedBox(height: 16),
                   if (state is DriveAttachPrivate)
@@ -88,7 +88,7 @@ class DriveAttachForm extends StatelessWidget {
                       autofocus: true,
                       obscureText: true,
                       decoration: InputDecoration(labelText: 'Drive Key'),
-                      validationMessages: (_) => kValidationMessages,
+                      validationMessages: (_) => kValidationMessages(context),
                       onEditingComplete: () => context
                           .read<DriveAttachCubit>()
                           .form
@@ -127,7 +127,7 @@ class DriveAttachForm extends StatelessWidget {
                       suffixIconConstraints:
                           const BoxConstraints.tightFor(width: 32, height: 24),
                     ),
-                    validationMessages: (_) => kValidationMessages,
+                    validationMessages: (_) => kValidationMessages(context),
                   ),
                 ],
               ),

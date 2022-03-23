@@ -95,7 +95,8 @@ class GhostFixerForm extends StatelessWidget {
                                   appLocalizationsOf(context).folderName),
                           showErrors: (control) =>
                               control.dirty && control.invalid,
-                          validationMessages: (_) => kValidationMessages,
+                          validationMessages: (_) =>
+                              kValidationMessages(context),
                         ),
                       ),
                       const SizedBox(height: 16),

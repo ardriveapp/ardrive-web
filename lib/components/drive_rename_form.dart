@@ -61,7 +61,7 @@ class DriveRenameForm extends StatelessWidget {
                       decoration: InputDecoration(
                           labelText: appLocalizationsOf(context).driveName),
                       showErrors: (control) => control.invalid,
-                      validationMessages: (_) => kValidationMessages,
+                      validationMessages: (_) => kValidationMessages(context),
                     ),
                   ),
                 )

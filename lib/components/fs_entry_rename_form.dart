@@ -93,7 +93,7 @@ class FsEntryRenameForm extends StatelessWidget {
                               ? appLocalizationsOf(context).folderName
                               : appLocalizationsOf(context).fileName),
                       showErrors: (control) => control.invalid,
-                      validationMessages: (_) => kValidationMessages,
+                      validationMessages: (_) => kValidationMessages(context),
                     ),
                   ),
                 )

@@ -1,21 +1,27 @@
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:flutter/widgets.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-const kValidationMessages = {
-  ValidationMessage.required: 'This field is required.',
-  ValidationMessage.pattern: 'This field is invalid.',
-  AppValidationMessage.passwordIncorrect: 'This password is incorrect.',
-  AppValidationMessage.driveAttachDriveNotFound:
-      'The specified drive could not be found.',
-  AppValidationMessage.driveAttachInvalidDriveKey: 'Invalid drive key.',
-  AppValidationMessage.driveAttachUserLoggedOut:
-      'You need to be signed in to attach private drives.',
-  AppValidationMessage.fsEntryNameAlreadyPresent:
-      'A folder/file with this name is already present here.',
-  AppValidationMessage.driveNameAlreadyPresent:
-      'A drive with this name is already present.',
-  AppValidationMessage.fsEntryNameUnchanged:
-      'This name is identical to the current name.',
-};
+Map<String, String> kValidationMessages(BuildContext context) {
+  return {
+    ValidationMessage.required: appLocalizationsOf(context).validationRequired,
+    ValidationMessage.pattern: appLocalizationsOf(context).validationInvalid,
+    AppValidationMessage.passwordIncorrect:
+        appLocalizationsOf(context).validationPasswordIncorrect,
+    AppValidationMessage.driveAttachDriveNotFound:
+        appLocalizationsOf(context).validationAttachDriveCouldNotBeFound,
+    AppValidationMessage.driveAttachInvalidDriveKey:
+        appLocalizationsOf(context).validationInvalidKey,
+    AppValidationMessage.driveAttachUserLoggedOut:
+        appLocalizationsOf(context).validationAttachUserLoggedOut,
+    AppValidationMessage.fsEntryNameAlreadyPresent:
+        appLocalizationsOf(context).validationEntityNameAlreadyPresent,
+    AppValidationMessage.driveNameAlreadyPresent:
+        appLocalizationsOf(context).validationDriveNameAlreadyPresent,
+    AppValidationMessage.fsEntryNameUnchanged:
+        appLocalizationsOf(context).validationNameUnchanged,
+  };
+}
 
 class AppValidationMessage {
   static const String passwordIncorrect = 'password-incorrect';
