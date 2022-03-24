@@ -77,6 +77,10 @@ fileById:
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND id = :fileId;
 
+fileRevisionByDataTx:
+    SELECT * FROM file_revisions
+    WHERE dataTxId = :tx;
+
 filesInFolder ($order = ''):
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId
