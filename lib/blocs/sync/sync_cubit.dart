@@ -598,7 +598,7 @@ class SyncCubit extends Cubit<SyncState> {
           .write(FolderEntriesCompanion(path: Value(folderPath)));
 
       for (final staleFileId in node.files.keys) {
-        final filePath = folderPath + '/' + node.files[staleFileId]!;
+        final filePath = folderPath + '/' + node.files[staleFileId]!.name;
 
         await _driveDao
             .updateFileById(driveId, staleFileId)

@@ -72,7 +72,8 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                       appLocalizationsOf(context).password,
                                   prefixIcon: const Icon(Icons.lock),
                                 ),
-                                validationMessages: (_) => kValidationMessages,
+                                validationMessages: (_) => kValidationMessages(
+                                    appLocalizationsOf(context)),
                                 onSubmitted: () =>
                                     context.read<ProfileUnlockCubit>().submit(),
                               ),

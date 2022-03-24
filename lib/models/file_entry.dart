@@ -11,5 +11,6 @@ extension FileEntryExtensions on FileEntry {
         dataTxId: dataTxId,
         size: size,
         lastModifiedDate: lastModifiedDate,
+        dataContentType: dataContentType,
       );
 }

@@ -215,7 +215,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
         children: [
           TextButton.icon(
             icon: const Icon(Icons.chevron_left),
-            label: Text('BACK'),
+            label: Text(appLocalizationsOf(context).backEmphasized),
             onPressed: () {
               if (_onboardingStepIndex > 0) {
                 setState(() => _onboardingStepIndex--);
@@ -236,7 +236,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('NEXT'),
+                Text(appLocalizationsOf(context).nextEmphasized),
                 const SizedBox(width: 8),
                 const Icon(Icons.chevron_right),
               ],
