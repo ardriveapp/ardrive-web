@@ -44,6 +44,7 @@ class ArweaveService {
         .listen((mempoolSize) {
       _mempoolSize = mempoolSize;
     });
+
     _mempoolSize = await getMempoolAverage();
   }
 
