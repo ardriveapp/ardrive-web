@@ -2,29 +2,24 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:ardrive/blocs/upload/cost_estimate.dart';
-import 'package:ardrive/blocs/upload/data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_plan.dart';
-import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:arweave/arweave.dart';
+import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:bloc/bloc.dart';
-import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:meta/meta.dart';
-import 'package:mime/mime.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:uuid/uuid.dart';
 
 import '../blocs.dart';
-import 'file_upload_handle.dart';
+import 'enums/conflicting_files_actions.dart';
 
 part 'upload_state.dart';
 
 final privateFileSizeLimit = 104857600;
-final publicFileSizeLimit = 1.25 * math.pow(10, 9) as int;
+final publicFileSizeLimit = 1.25 * math.pow(10, 9);
 final minimumPstTip = BigInt.from(10000000);
 
 class UploadCubit extends Cubit<UploadState> {
@@ -32,11 +27,11 @@ class UploadCubit extends Cubit<UploadState> {
   final String folderId;
   final List<XFile> files;
 
-  final _uuid = Uuid();
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
   final PstService _pst;
+  final UploadPlanUtils _uploadPlanUtils;
 
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
@@ -46,27 +41,28 @@ class UploadCubit extends Cubit<UploadState> {
 
   bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
-  UploadCubit({
-    required this.driveId,
-    required this.folderId,
-    required this.files,
-    required ProfileCubit profileCubit,
-    required DriveDao driveDao,
-    required ArweaveService arweave,
-    required PstService pst,
-  })  : _profileCubit = profileCubit,
+  UploadCubit(
+      {required this.driveId,
+      required this.folderId,
+      required this.files,
+      required ProfileCubit profileCubit,
+      required DriveDao driveDao,
+      required ArweaveService arweave,
+      required PstService pst,
+      required UploadPlanUtils uploadPlanUtils})
+      : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
         _pst = pst,
-        super(UploadPreparationInProgress()) {
-    () async {
-      _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
-      _targetFolder = await _driveDao
-          .folderById(driveId: driveId, folderId: folderId)
-          .getSingle();
+        _uploadPlanUtils = uploadPlanUtils,
+        super(UploadPreparationInProgress());
 
-      unawaited(checkConflictingFiles());
-    }();
+  Future<void> startUploadPreparation() async {
+    _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
+    _targetFolder = await _driveDao
+        .folderById(driveId: driveId, folderId: folderId)
+        .getSingle();
+    emit(UploadPreparationInitialized());
   }
 
   /// Tries to find a files that conflict with the files in the target folder.
@@ -94,13 +90,16 @@ class UploadCubit extends Cubit<UploadState> {
 
     if (conflictingFiles.isNotEmpty) {
       emit(UploadFileConflict(
+          isAllFilesConflicting: conflictingFiles.length == files.length,
           conflictingFileNames: conflictingFiles.keys.toList()));
     } else {
       await prepareUploadPlanAndCostEstimates();
     }
   }
 
-  Future<void> prepareUploadPlanAndCostEstimates() async {
+  /// If `conflictingFileAction` is null, means that had no conflict.
+  Future<void> prepareUploadPlanAndCostEstimates(
+      {ConflictingFileActions? conflictingFileAction}) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
     if (await _profileCubit.checkIfWalletMismatch()) {
@@ -115,6 +114,11 @@ class UploadCubit extends Cubit<UploadState> {
     );
     final sizeLimit =
         _targetDrive.isPrivate ? privateFileSizeLimit : publicFileSizeLimit;
+
+    if (conflictingFileAction == ConflictingFileActions.Skip) {
+      _removeConflictingFiles();
+    }
+
     final tooLargeFiles = [
       for (final file in files)
         if (await file.length() > sizeLimit) file.name
@@ -127,11 +131,13 @@ class UploadCubit extends Cubit<UploadState> {
       ));
       return;
     }
-    final uploadPlan = await xfilesToUploadPlan(
-      files: files,
-      cipherKey: profile.cipherKey,
-      wallet: profile.wallet,
-    );
+    final uploadPlan = await _uploadPlanUtils.xfilesToUploadPlan(
+        folderEntry: _targetFolder,
+        targetDrive: _targetDrive,
+        files: files,
+        cipherKey: profile.cipherKey,
+        wallet: profile.wallet,
+        conflictingFiles: conflictingFiles);
     final costEstimate = await CostEstimate.create(
       uploadPlan: uploadPlan,
       arweaveService: _arweave,
@@ -184,7 +190,8 @@ class UploadCubit extends Cubit<UploadState> {
       );
       await for (final _ in bundleHandle
           .upload(_arweave)
-          .debounceTime(Duration(milliseconds: 500))) {
+          .debounceTime(Duration(milliseconds: 500))
+          .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       bundleHandle.dispose();
@@ -201,7 +208,8 @@ class UploadCubit extends Cubit<UploadState> {
       );
       await for (final _ in uploadHandle
           .upload(_arweave)
-          .debounceTime(Duration(milliseconds: 500))) {
+          .debounceTime(Duration(milliseconds: 500))
+          .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       uploadHandle.dispose();
@@ -212,66 +220,8 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
-  Future<UploadPlan> xfilesToUploadPlan({
-    required List<XFile> files,
-    required SecretKey cipherKey,
-    required Wallet wallet,
-  }) async {
-    final _dataItemUploadHandles = <String, DataItemUploadHandle>{};
-    final _v2FileUploadHandles = <String, FileUploadHandle>{};
-    for (var file in files) {
-      final fileName = file.name;
-      final filePath = '${_targetFolder.path}/$fileName';
-      final fileSize = await file.length();
-      final fileEntity = FileEntity(
-        driveId: _targetDrive.id,
-        name: fileName,
-        size: fileSize,
-        lastModifiedDate: await file.lastModified(),
-        parentFolderId: _targetFolder.id,
-        dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
-      );
-
-      // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
-      fileEntity.id = conflictingFiles[fileName] ?? _uuid.v4();
-
-      final private = _targetDrive.isPrivate;
-      final driveKey = private
-          ? await _driveDao.getDriveKey(_targetDrive.id, cipherKey)
-          : null;
-      final fileKey =
-          private ? await deriveFileKey(driveKey!, fileEntity.id!) : null;
-
-      final revisionAction = !conflictingFiles.containsKey(file.name)
-          ? RevisionAction.create
-          : RevisionAction.uploadNewVersion;
-
-      if (fileSize < bundleSizeLimit) {
-        _dataItemUploadHandles[fileEntity.id!] = DataItemUploadHandle(
-          entity: fileEntity,
-          path: filePath,
-          file: file,
-          driveKey: driveKey,
-          fileKey: fileKey,
-          arweave: _arweave,
-          wallet: wallet,
-          revisionAction: revisionAction,
-        );
-      } else {
-        _v2FileUploadHandles[fileEntity.id!] = FileUploadHandle(
-          entity: fileEntity,
-          path: filePath,
-          file: file,
-          driveKey: driveKey,
-          fileKey: fileKey,
-          revisionAction: revisionAction,
-        );
-      }
-    }
-    return UploadPlan.create(
-      v2FileUploadHandles: _v2FileUploadHandles,
-      dataItemUploadHandles: _dataItemUploadHandles,
-    );
+  void _removeConflictingFiles() {
+    files.removeWhere((element) => conflictingFiles.containsKey(element.name));
   }
 
   @override

@@ -232,7 +232,19 @@ class AppDrawer extends StatelessWidget {
                               title: Text('Attach drive'),
                             ),
                           ),
-                        }
+                        },
+                        if (state is DriveDetailLoadSuccess &&
+                            state.currentDrive.privacy == 'public') ...{
+                          PopupMenuItem(
+                            value: (context) => promptToCreateManifest(context,
+                                drive: state.currentDrive),
+                            enabled: !state.driveIsEmpty,
+                            child: ListTile(
+                              title: Text('Create manifest'),
+                              enabled: !state.driveIsEmpty,
+                            ),
+                          ),
+                        },
                       ],
                       child: SizedBox(
                         width: 164,

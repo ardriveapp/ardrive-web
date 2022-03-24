@@ -96,6 +96,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           folderContents.files.length + folderContents.subfolders.length,
         );
 
+        final rootFolderNode =
+            await _driveDao.getFolderTree(driveId, drive.rootFolderId);
+
         if (state != null) {
           emit(state.copyWith(
             currentDrive: drive,
@@ -119,6 +122,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             rowsPerPage: availableRowsPerPage.first,
             availableRowsPerPage: availableRowsPerPage,
             maybeSelectedItem: maybeSelectedItem,
+            driveIsEmpty: rootFolderNode.isEmpty(),
           ));
         }
       },

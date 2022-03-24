@@ -261,7 +261,10 @@ class SyncCubit extends Cubit<SyncState> {
       if (profile is ProfileLoggedIn) {
         driveKey = await _driveDao.getDriveKey(drive.id, profile.cipherKey);
       } else {
-        return;
+        driveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
+        if (driveKey == null) {
+          throw StateError('Drive key not found');
+        }
       }
     }
     final entityHistory = await _arweave.getNewEntitiesForDrive(
@@ -601,7 +604,7 @@ class SyncCubit extends Cubit<SyncState> {
           .write(FolderEntriesCompanion(path: Value(folderPath)));
 
       for (final staleFileId in node.files.keys) {
-        final filePath = folderPath + '/' + node.files[staleFileId]!;
+        final filePath = folderPath + '/' + node.files[staleFileId]!.name;
 
         await _driveDao
             .updateFileById(driveId, staleFileId)

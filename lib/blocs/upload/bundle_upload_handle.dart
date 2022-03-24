@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/upload/data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handle.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/services.dart';
@@ -70,7 +71,7 @@ class BundleUploadHandle implements UploadHandle {
   Stream<Null> upload(ArweaveService arweave) async* {
     await for (final upload in arweave.client.transactions.upload(
       bundleTx,
-      maxConcurrentUploadCount: 32,
+      maxConcurrentUploadCount: maxConcurrentUploadCount,
     )) {
       uploadProgress = upload.progress;
       yield null;

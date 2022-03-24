@@ -14,6 +14,8 @@ class UploadPreparationInProgress extends UploadState {
   List<Object> get props => [isArConnect];
 }
 
+class UploadPreparationInitialized extends UploadState {}
+
 class UploadPreparationFailure extends UploadState {}
 
 class UploadSigningInProgress extends UploadState {
@@ -27,8 +29,12 @@ class UploadSigningInProgress extends UploadState {
 
 class UploadFileConflict extends UploadState {
   final List<String> conflictingFileNames;
+  final bool isAllFilesConflicting;
 
-  UploadFileConflict({required this.conflictingFileNames});
+  UploadFileConflict({
+    required this.conflictingFileNames,
+    required this.isAllFilesConflicting,
+  });
 
   @override
   List<Object> get props => [conflictingFileNames];
