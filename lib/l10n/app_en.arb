@@ -789,11 +789,11 @@
   "@login": {
     "description": "The login process"
   },
-  "duplicateFiles": "{numberOfConflicts,plural, =1{1 duplicate file found} =other{{numberOfConflicts} duplicate files found}",
+  "duplicateFiles": "{numberOfDuplicateFiles,plural, =0{No duplicate files found} =1{A duplicate file found} =other{{numberOfDuplicateFiles} duplicate files found}}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
-      "numberOfConflicts": {
+      "numberOfDuplicateFiles": {
         "type": "int",
         "format": "decimalPattern",
         "example": "0"
@@ -831,7 +831,7 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
-  "filesTooLarge": "{numberOfFiles} file(s) too large",
+  "filesTooLarge": "{numberOfFiles,plural, =1{1 file too large} =other{{numberOfFiles} files too large}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
     "placeholders": {
@@ -878,7 +878,7 @@
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
-  "uploadNFiles": "Upload {numberOfFiles} file(s)",
+  "uploadNFiles": "{numberOfFiles,plural, =1{Upload 1 file} =other{Upload {numberOfFiles} files}}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",
     "placeholders": {
@@ -889,7 +889,7 @@
       }
     }
   },
-  "uploadingNFiles": "Uploading {numberOfFiles} file(s)...",
+  "uploadingNFiles": "{numberOfFiles,plural, =1{Uploading 1 file...} =other{Uploading {numberOfFiles} files...}}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
@@ -910,9 +910,16 @@
       }
     }
   },
-  "filesWillBeUploadedPublicly": "These file(s) will be uploaded publicly.",
+  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{This file will be uploaded publicly.} =other{These files will be uploaded publicly.}}",
   "@filesWillBeUploadedPublicly": {
-    "description": "Warning for files that will be public after uploaded"
+    "description": "Warning for files that will be public after uploaded",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      }
+    }
   },
   "insufficientARForUpload": "Insufficient AR for upload.",
   "@insufficientARForUpload": {

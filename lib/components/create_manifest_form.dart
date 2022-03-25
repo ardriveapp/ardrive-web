@@ -278,7 +278,8 @@ class CreateManifestForm extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    appLocalizationsOf(context).filesWillBeUploadedPublicly,
+                    appLocalizationsOf(context)
+                        .filesWillBePermanentlyPublicWarning,
                     style: Theme.of(context).textTheme.bodyText2,
                   ),
                 ],
