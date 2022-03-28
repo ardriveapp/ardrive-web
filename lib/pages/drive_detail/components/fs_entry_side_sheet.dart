@@ -367,8 +367,32 @@ class FsEntrySideSheet extends StatelessWidget {
                       } else if (revision is FileRevisionWithTransactions) {
                         switch (revision.action) {
                           case RevisionAction.create:
-                            content = Text(
-                                'This file was created with the name ${revision.name}.');
+                            content = RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: 'This file ',
+                                    style: TextStyle(
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () {
+                                        promptToDownloadProfileFile(
+                                          context: context,
+                                          driveId: driveId,
+                                          fileId: revision.fileId,
+                                          dataTxId: revision.dataTxId,
+                                        );
+                                      },
+                                  ),
+                                  TextSpan(
+                                    text:
+                                        'was created with the name ${revision.name}.',
+                                  ),
+                                ],
+                              ),
+                            );
+
                             break;
                           case RevisionAction.rename:
                             content = Text(
@@ -378,8 +402,33 @@ class FsEntrySideSheet extends StatelessWidget {
                             content = Text('This file was moved.');
                             break;
                           case RevisionAction.uploadNewVersion:
-                            content = Text(
-                                'A new version of this file was uploaded.');
+                            content = RichText(
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: 'A ',
+                                  ),
+                                  TextSpan(
+                                    text: 'new version ',
+                                    style: TextStyle(
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                    recognizer: TapGestureRecognizer()
+                                      ..onTap = () {
+                                        promptToDownloadProfileFile(
+                                          context: context,
+                                          driveId: driveId,
+                                          fileId: revision.fileId,
+                                          dataTxId: revision.dataTxId,
+                                        );
+                                      },
+                                  ),
+                                  TextSpan(
+                                    text: 'of this file was uploaded. ',
+                                  ),
+                                ],
+                              ),
+                            );
                             break;
                           default:
                             content = Text('This file was modified');

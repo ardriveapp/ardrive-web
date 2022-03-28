@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -15,8 +16,9 @@ import 'components.dart';
 
 Future<void> promptToDownloadProfileFile({
   required BuildContext context,
-  required String driveId,
-  required String fileId,
+  required DriveID driveId,
+  required FileID fileId,
+  required String dataTxId,
 }) =>
     showDialog(
       context: context,
@@ -24,6 +26,7 @@ Future<void> promptToDownloadProfileFile({
         create: (_) => ProfileFileDownloadCubit(
           driveId: driveId,
           fileId: fileId,
+          dataTxId: dataTxId,
           profileCubit: context.read<ProfileCubit>(),
           driveDao: context.read<DriveDao>(),
           arweave: context.read<ArweaveService>(),

@@ -15,6 +15,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
