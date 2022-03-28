@@ -371,7 +371,7 @@ class FsEntrySideSheet extends StatelessWidget {
                               text: TextSpan(
                                 children: [
                                   TextSpan(
-                                    text: 'This file ',
+                                    text: 'This file',
                                     style: TextStyle(
                                       decoration: TextDecoration.underline,
                                     ),
@@ -387,7 +387,7 @@ class FsEntrySideSheet extends StatelessWidget {
                                   ),
                                   TextSpan(
                                     text:
-                                        'was created with the name ${revision.name}.',
+                                        ' was created with the name ${revision.name}.',
                                   ),
                                 ],
                               ),
@@ -409,7 +409,7 @@ class FsEntrySideSheet extends StatelessWidget {
                                     text: 'A ',
                                   ),
                                   TextSpan(
-                                    text: 'new version ',
+                                    text: 'new version',
                                     style: TextStyle(
                                       decoration: TextDecoration.underline,
                                     ),
@@ -424,7 +424,7 @@ class FsEntrySideSheet extends StatelessWidget {
                                       },
                                   ),
                                   TextSpan(
-                                    text: 'of this file was uploaded. ',
+                                    text: ' of this file was uploaded. ',
                                   ),
                                 ],
                               ),
