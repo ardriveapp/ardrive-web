@@ -1,9 +1,12 @@
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 String fileAndFolderCountsToString({
   required int folderCount,
   required int fileCount,
+  required AppLocalizations localizations,
 }) {
-  final folderSuffix = folderCount == 1 ? 'folder' : 'folders';
-  final fileSuffix = fileCount == 1 ? 'file' : 'files';
-
-  return '$folderCount $folderSuffix, $fileCount $fileSuffix';
+  final folderCountString = localizations.folderCount(folderCount);
+  final fileCountString = localizations.fileCount(fileCount);
+  return localizations.folderAndFileCountComposite(
+      folderCountString, fileCountString);
 }

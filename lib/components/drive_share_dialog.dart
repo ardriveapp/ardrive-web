@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToShareDrive({
@@ -36,7 +37,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
   Widget build(BuildContext context) =>
       BlocBuilder<DriveShareCubit, DriveShareState>(
         builder: (context, state) => AppDialog(
-          title: 'Share drive with others',
+          title: appLocalizationsOf(context).shareDriveWithOthers,
           content: SizedBox(
             width: kLargeDialogWidth,
             child: Column(
@@ -75,14 +76,17 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                           Clipboard.setData(
                               ClipboardData(text: shareLinkController.text));
                         },
-                        child: Text('Copy link'),
+                        child: Text(appLocalizationsOf(context).copyLink),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Anyone can access this ${state.drive.isPublic ? 'public' : 'private'} '
-                    'drive using the link above.',
+                    state.drive.isPublic
+                        ? appLocalizationsOf(context)
+                            .anyoneCanAccessThisDrivePublic
+                        : appLocalizationsOf(context)
+                            .anyoneCanAccessThisDrivePrivate,
                     style: Theme.of(context).textTheme.subtitle2,
                   ),
                 } else if (state is DriveShareLoadFail)
@@ -94,7 +98,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
             if (state is DriveShareLoadSuccess)
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('DONE'),
+                child: Text(appLocalizationsOf(context).doneEmphasized),
               ),
           ],
         ),
