@@ -5,7 +5,7 @@ part of 'file_download_cubit.dart';
 class ProfileFileDownloadCubit extends FileDownloadCubit {
   final DriveID driveId;
   final FileID fileId;
-  final String dataTxId;
+  final TxID dataTxId;
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;

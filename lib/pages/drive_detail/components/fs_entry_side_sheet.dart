@@ -2,9 +2,11 @@ part of '../drive_detail_page.dart';
 
 class FsEntrySideSheet extends StatelessWidget {
   final String driveId;
+  final Privacy drivePrivacy;
   final SelectedItem? maybeSelectedItem;
   FsEntrySideSheet({
     required this.driveId,
+    required this.drivePrivacy,
     this.maybeSelectedItem,
   });
 
@@ -377,11 +379,10 @@ class FsEntrySideSheet extends StatelessWidget {
                                     ),
                                     recognizer: TapGestureRecognizer()
                                       ..onTap = () {
-                                        promptToDownloadProfileFile(
+                                        downloadOrPreviewRevision(
+                                          drivePrivacy: drivePrivacy,
                                           context: context,
-                                          driveId: driveId,
-                                          fileId: revision.fileId,
-                                          dataTxId: revision.dataTxId,
+                                          revision: revision,
                                         );
                                       },
                                   ),
@@ -415,11 +416,10 @@ class FsEntrySideSheet extends StatelessWidget {
                                     ),
                                     recognizer: TapGestureRecognizer()
                                       ..onTap = () {
-                                        promptToDownloadProfileFile(
+                                        downloadOrPreviewRevision(
+                                          drivePrivacy: drivePrivacy,
                                           context: context,
-                                          driveId: driveId,
-                                          fileId: revision.fileId,
-                                          dataTxId: revision.dataTxId,
+                                          revision: revision,
                                         );
                                       },
                                   ),
@@ -487,6 +487,28 @@ class FsEntrySideSheet extends StatelessWidget {
           ),
         ),
       );
+}
+
+void downloadOrPreviewRevision({
+  required String drivePrivacy,
+  required BuildContext context,
+  required FileRevisionWithTransactions revision,
+}) {
+  final revisionConfirmationStatus =
+      fileStatusFromTransactions(revision.metadataTx, revision.dataTx);
+  if(revisionConfirmationStatus != TransactionStatus.confirmed){
+    
+  }
+  if (drivePrivacy == DrivePrivacy.private) {
+    promptToDownloadProfileFile(
+      context: context,
+      driveId: revision.driveId,
+      fileId: revision.fileId,
+      dataTxId: revision.dataTxId,
+    );
+  } else {
+    context.read<DriveDetailCubit>().launchPreview(revision.dataTxId);
+  }
 }
 
 class CopyIconButton extends StatelessWidget {

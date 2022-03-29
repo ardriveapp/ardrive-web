@@ -18,7 +18,7 @@ Future<void> promptToDownloadProfileFile({
   required BuildContext context,
   required DriveID driveId,
   required FileID fileId,
-  required String dataTxId,
+  required TxID dataTxId,
 }) =>
     showDialog(
       context: context,
