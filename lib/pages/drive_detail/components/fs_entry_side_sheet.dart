@@ -494,11 +494,6 @@ void downloadOrPreviewRevision({
   required BuildContext context,
   required FileRevisionWithTransactions revision,
 }) {
-  final revisionConfirmationStatus =
-      fileStatusFromTransactions(revision.metadataTx, revision.dataTx);
-  if(revisionConfirmationStatus != TransactionStatus.confirmed){
-    
-  }
   if (drivePrivacy == DrivePrivacy.private) {
     promptToDownloadProfileFile(
       context: context,
