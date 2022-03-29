@@ -2,170 +2,212 @@
   "@@locale": "en",
   "welcomeTo_body": "Welcome to your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive",
   "@welcomeTo_body": {
+    "source_text": "Welcome to your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive",
     "description": "Welcoming message just after the ArDrive logo"
   },
   "welcomeTo_main": "Welcome to",
   "@welcomeTo_main": {
+    "source_text": "Welcome to",
     "description": "Highly emphasized text giving welcome"
   },
   "welcomeTo_description": "your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive",
   "@welcomeTo_description": {
+    "source_text": "your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive",
     "description": "Brief description of ArDrive as welcoming"
   },
   "selectWalletEmphasized": "SELECT WALLET",
   "@selectWalletEmphasized": {
+    "source_text": "SELECT WALLET",
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
   "useArconnectEmphasized": "USE ARCONNECT",
   "@useArconnectEmphasized": {
+    "source_text": "USE ARCONNECT",
     "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
   },
   "getAWallet": "Don't have a wallet? Get one here!",
   "@getAWallet": {
+    "source_text": "Don't have a wallet? Get one here!",
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
   "welcomeToThePermawebEmphasized": "WELCOME TO THE PERMAWEB",
   "@welcomeToThePermawebEmphasized": {
+    "source_text": "WELCOME TO THE PERMAWEB",
     "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
   },
   "ardriveIsntJustAnotherCloudSyncApp": "ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.",
   "@ardriveIsntJustAnotherCloudSyncApp": {
+    "source_text": "ArDrive isn’t just another cloud sync app. It’s the beginning of a permanent hard drive.",
     "description": "Description about the permanence and uniqueness of ArDrive"
   },
   "anyFilesWillOutliveYou": "Any files you upload here will outlive you!",
   "@anyFilesWillOutliveYou": {
+    "source_text": "Any files you upload here will outlive you!",
     "description": "Files on the Weave will exist there forever"
   },
   "weDoAFewThingsDifferently": "That also means we do a few things differently.",
   "@weDoAFewThingsDifferently": {
+    "source_text": "That also means we do a few things differently.",
     "description": "What ArDrive does differently"
   },
   "payPerFileEmphasized": "PAY PER FILE",
   "@payPerFileEmphasized": {
+    "source_text": "PAY PER FILE",
     "description": "Payment philosophy. Emphasized with upper case"
   },
   "noSubscriptions": "No subscriptions are needed!",
   "@noSubscriptions": {
+    "source_text": "No subscriptions are needed!",
     "description": "Payment philosophy"
   },
   "monthlyCharges": "Instead of another monthly charge for empty space you don’t use, pay a few cents once and store your files forever on ArDrive.",
   "@monthlyCharges": {
+    "source_text": "Instead of another monthly charge for empty space you don’t use, pay a few cents once and store your files forever on ArDrive.",
     "description": "Payment philosophy"
   },
   "secondsFromForeverEmphasized": "SECONDS FROM FOREVER",
   "@secondsFromForeverEmphasized": {
+    "source_text": "SECONDS FROM FOREVER",
     "description": "Shows how close you are from permanence. Emphasized with upper case"
   },
   "decentralizedPermanent": "Decentralized, permanent data storage doesn’t happen in an instant.",
   "@decentralizedPermanent": {
+    "source_text": "Decentralized, permanent data storage doesn’t happen in an instant.",
     "description": "Permanence requires patience"
   },
   "greenCheckMark": "When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.",
   "@greenCheckMark": {
+    "source_text": "When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.",
     "description": "Describes the indicator of the status of uploaded files"
   },
   "totalPrivacyControlEmphasized": "TOTAL PRIVACY CONTROL",
   "@totalPrivacyControlEmphasized": {
+    "source_text": "TOTAL PRIVACY CONTROL",
     "description": "Title for talking about privacy. Emphasized with upper case"
   },
   "yourChoice": "Your choice: make files public or private using the best encryption.",
   "@yourChoice": {
+    "source_text": "Your choice: make files public or private using the best encryption.",
     "description": "User can choose whether or not to make the content public"
   },
   "noOneWillSee": "No one will see what you don’t want them to.",
   "@noOneWillSee": {
+    "source_text": "No one will see what you don’t want them to.",
     "description": "Indicates that private content won't reach to the wrong hands"
   },
   "neverDeletedEmphasized": "NEVER DELETED",
   "@neverDeletedEmphasized": {
+    "source_text": "NEVER DELETED",
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
   },
   "noDeleteButton": "Remember: There is no delete button (for you or us)!",
   "@noDeleteButton": {
+    "source_text": "Remember: There is no delete button (for you or us)!",
     "description": "Uploaded items cannot be deleted"
   },
   "onceUploadedCantBeRemoved": "Once uploaded, your data can’t be removed.",
   "@onceUploadedCantBeRemoved": {
+    "source_text": "Once uploaded, your data can’t be removed.",
     "description": "Uploaded items cannot be deleted"
   },
   "thinkTwiceBeforeUploading": "Think twice before uploading all your teenage love poetry...",
   "@thinkTwiceBeforeUploading": {
+    "source_text": "Think twice before uploading all your teenage love poetry...",
     "description": "Uploaded items cannot be deleted"
   },
   "pleaseRemainOnThisTab": "Loading... Please remain on this tab.",
   "@pleaseRemainOnThisTab": {
+    "source_text": "Loading... Please remain on this tab.",
     "description": "Circular progress indicator"
   },
   "loginFailed": "Login failed",
   "@loginFailed": {
+    "source_text": "Login failed",
     "description": "Text for when the user tried to login with wrong credentials"
   },
   "sorryLoginFailed": "Sorry, login failed. Please try again.",
   "@sorryLoginFailed": {
+    "source_text": "Sorry, login failed. Please try again.",
     "description": "Text for when the user tried to login with wrong credentials"
   },
   "logIn": "Log in",
   "@logIn": {
+    "source_text": "Log in",
     "description": "The action of logging in. Imperative form"
   },
   "welcomeBackEmphasized": "WELCOME BACK",
   "@welcomeBackEmphasized": {
+    "source_text": "WELCOME BACK",
     "description": "Welcoming for an existing user. Emphasized with upper case"
   },
   "letsGetStartedEmphasized": "LET'S GET STARTED",
   "@letsGetStartedEmphasized": {
+    "source_text": "LET'S GET STARTED",
     "description": "Let's start setting up the account. Emphasized with upper case"
   },
   "pleaseProvideSamePassword": "Please provide the same password as the one you used before.",
   "@pleaseProvideSamePassword": {
+    "source_text": "Please provide the same password as the one you used before.",
     "description": "Asks for the wallet password"
   },
   "passwordCanNeverBeChanged": "Your password can never be changed or recovered. Please keep it safe!",
   "@passwordCanNeverBeChanged": {
+    "source_text": "Your password can never be changed or recovered. Please keep it safe!",
     "description": "Explains that the password cannot be changed as it is the one of the wallet"
   },
   "password": "Password",
   "@password": {
+    "source_text": "Password",
     "description": "Label for the 'password' input"
   },
   "confirmPassword": "Confirm password",
   "@confirmPassword": {
+    "source_text": "Confirm password",
     "description": "Label for repeating the password again"
   },
   "username": "Username",
   "@username": {
+    "source_text": "Username",
     "description": "Label for the username"
   },
   "passwordMismatch": "The confirmation password does not match.",
   "@passwordMismatch": {
+    "source_text": "The confirmation password does not match.",
     "description": "Error message for when the confirmation password don't match the actual pass"
   },
   "aggreeToTerms_body": "I agree to the ArDrive terms of service and privacy policy",
   "@aggreeToTerms_body": {
+    "source_text": "I agree to the ArDrive terms of service and privacy policy",
     "description": "Checkbox for agreeing the terms of of service and privacy policy"
   },
   "aggreeToTerms_link": "ArDrive terms of service and privacy policy",
   "@aggreeToTerms_link": {
+    "source_text": "ArDrive terms of service and privacy policy",
     "description": "Segment of text representing a link to the legal documents"
   },
   "addProfileEmphasized": "ADD PROFILE",
   "@addProfileEmphasized": {
+    "source_text": "ADD PROFILE",
     "description": "Add a wallet. Emphasized with upper case"
   },
   "logOut": "Log out",
   "@logOut": {
+    "source_text": "Log out",
     "description": "The action of logging out"
   },
   "logOutEmphasized": "LOG OUT",
   "@logOutEmphasized": {
+    "source_text": "LOG OUT",
     "description": "The action of logging out. Emphasized with upper case"
   },
   "changeWallet": "Change wallet",
   "@changeWallet": {
+    "source_text": "Change wallet",
     "description": "To use a different wallet"
   },
   "welcomeBackUserEmphasized": "WELCOME BACK, {username}",
   "@welcomeBackUserEmphasized": {
+    "source_text": "WELCOME BACK, {username}",
     "description": "Welcoming to the user. Emphasized with upper case",
     "placeholders": {
       "username": {
@@ -176,86 +218,107 @@
   },
   "unlockEmphasized": "UNLOCK",
   "@unlockEmphasized": {
+    "source_text": "UNLOCK",
     "description": "Unlock the wallet with its password. EMphasized with upper case"
   },
   "forgetWallet": "Forget wallet and change profile",
   "@forgetWallet": {
+    "source_text": "Forget wallet and change profile",
     "description": "Use a different wallet by forgetting the current one"
   },
   "newString": "New",
   "@newString": {
+    "source_text": "New",
     "description": "New entity (folder, file, drive, manifest, attached drive)"
   },
   "newStringEmphasized": "NEW",
   "@newStringEmphasized": {
+    "source_text": "NEW",
     "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
   },
   "noDrives": "You have no personal or attached drives.\nClick the \"new\" button to add some!",
   "@noDrives": {
+    "source_text": "You have no personal or attached drives.\nClick the \"new\" button to add some!",
     "description": "Text for when the wallet has no on-chain drives to display"
   },
   "rowsPerPage": "Rows Per Page",
   "@rowsPerPage": {
+    "source_text": "Rows Per Page",
     "description": "How many rows per page to use"
   },
   "goToFirst": "Go to first",
   "@goToFirst": {
+    "source_text": "Go to first",
     "description": "Action of going to the first page"
   },
   "previous": "Previous",
   "@previous": {
+    "source_text": "Previous",
     "description": "Action of going to the previous page"
   },
   "next": "Next",
   "@next": {
+    "source_text": "Next",
     "description": "Action of going to the next page"
   },
   "goToLast": "Go to Last",
   "@goToLast": {
+    "source_text": "Go to Last",
     "description": "Action of going to the latest page"
   },
   "exportDriveContents": "Export Drive Contents",
   "@exportDriveContents": {
+    "source_text": "Export Drive Contents",
     "description": "Export the data of a drive into a CSV file"
   },
   "download": "Download",
   "@download": {
+    "source_text": "Download",
     "description": "Action of downloading a file"
   },
   "preview": "Preview",
   "@preview": {
+    "source_text": "Preview",
     "description": "Action of previewing a file"
   },
   "move": "Move",
   "@move": {
+    "source_text": "Move",
     "description": "Action of moving certain file or folder"
   },
   "viewOnly": "View Only",
   "@viewOnly": {
+    "source_text": "View Only",
     "description": "The user has no permission to edit, only to view"
   },
   "privacy": "Privacy",
   "@privacy": {
+    "source_text": "Privacy",
     "description": "The privacy attribute of entities (e.g.: private drive, public folder)"
   },
   "private": "Private",
   "@private": {
+    "source_text": "Private",
     "description": "A private entity"
   },
   "public": "Public",
   "@public": {
+    "source_text": "Public",
     "description": "A public entity"
   },
   "viewInfo": "View Info",
   "@viewInfo": {
+    "source_text": "View Info",
     "description": "View the activity and details of the entity"
   },
   "driveRoot": "Drive root",
   "@driveRoot": {
+    "source_text": "Drive root",
     "description": "The folder entity that is at the top of the folder hierarchy"
   },
   "lastModifiedDate": "Last Modified {date}",
   "@lastModifiedDate": {
+    "source_text": "Last Modified {date}",
     "description": "Last modified date of the file in the local disk",
     "placeholders": {
       "date": {
@@ -265,146 +328,182 @@
   },
   "pending": "Pending",
   "@pending": {
+    "source_text": "Pending",
     "description": "Status tooltip for transactions which are waiting to be minted"
   },
   "confirmed": "Confirmed",
   "@confirmed": {
+    "source_text": "Confirmed",
     "description": "Status tooltip for transactions that are confirmed by the network"
   },
   "failed": "Failed",
   "@failed": {
+    "source_text": "Failed",
     "description": "Status tooltip for failed transactions"
   },
   "name": "Name",
   "@name": {
+    "source_text": "Name",
     "description": "Name of certain entity"
   },
   "fileSize": "File size",
   "@fileSize": {
+    "source_text": "File size",
     "description": "The size of a file"
   },
   "lastUpdated": "Last updated",
   "@lastUpdated": {
+    "source_text": "Last updated",
     "description": "The timestamp of the transaction"
   },
   "addSomeFiles": "There's nothing to see here. Click \"new\" to add some files.",
   "@addSomeFiles": {
+    "source_text": "There's nothing to see here. Click \"new\" to add some files.",
     "description": "Empty folder"
   },
   "noFiles": "There's nothing to see here.",
   "@noFiles": {
+    "source_text": "There's nothing to see here.",
     "description": "Empty folder"
   },
   "error": "Error",
   "@error": {
+    "source_text": "Error",
     "description": "Indicates that something went wrong"
   },
   "errorDragAndDropFolder": "We do not currently support drag and drop with folders",
   "@errorDragAndDropFolder": {
+    "source_text": "We do not currently support drag and drop with folders",
     "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
   },
   "ok": "OK",
   "@ok": {
+    "source_text": "OK",
     "description": "OK button"
   },
   "okEmphasized": "OK",
   "@okEmphasized": {
+    "source_text": "OK",
     "description": "OK button. Emphasized in upper case"
   },
   "uploadDragAndDrop": "Upload File",
   "@uploadDragAndDrop": {
+    "source_text": "Upload File",
     "description": "The action of uploading a file"
   },
   "itemDetailsEmphasized": "DETAILS",
   "@itemDetailsEmphasized": {
+    "source_text": "DETAILS",
     "description": "Item details such as dates, transaction IDs and entity IDs. Emphasized with upper case"
   },
   "itemActivityEmphasized": "ACTIVITY",
   "@itemActivityEmphasized": {
+    "source_text": "ACTIVITY",
     "description": "The journal of the entity (created, renamed, moved, revision uploaded). Emphasized with upper case"
   },
   "itemContains": "Contains",
   "@itemContains": {
+    "source_text": "Contains",
     "description": "Used like so: 'Contains 15 folders, 10 files'"
   },
   "driveID": "Drive ID",
   "@driveID": {
+    "source_text": "Drive ID",
     "description": "The Drive-ID tag"
   },
   "copyDriveID": "Copy Drive ID",
   "@copyDriveID": {
+    "source_text": "Copy Drive ID",
     "description": "Tooltip of the copy icon for the Drive ID"
   },
   "folderID": "Folder ID",
   "@folderID": {
+    "source_text": "Folder ID",
     "description": "The Entity-ID tag of folders"
   },
   "copyFolderID": "Copy Folder ID",
   "@copyFolderID": {
+    "source_text": "Copy Folder ID",
     "description": "Tooltip of the copy icon for the Folder ID"
   },
   "fileID": "File ID",
   "@fileID": {
+    "source_text": "File ID",
     "description": "The Entity-ID tag of files"
   },
   "copyFileID": "Copy File ID",
   "@copyFileID": {
+    "source_text": "Copy File ID",
     "description": "Tooltip of the copy icon for the File ID"
   },
   "lastModified": "Last modified",
   "@lastModified": {
+    "source_text": "Last modified",
     "description": "Last modified date of the file in the local disk"
   },
   "dateCreated": "Date created",
   "@dateCreated": {
+    "source_text": "Date created",
     "description": "Creation time of the entity revision"
   },
   "driveTxID": "Drive Tx ID",
   "@driveTxID": {
+    "source_text": "Drive Tx ID",
     "description": "The transaction ID of the drive"
   },
   "copyDriveTxID": "Copy Drive Tx ID",
   "@copyDriveTxID": {
+    "source_text": "Copy Drive Tx ID",
     "description": "Copy transaction ID of Drive tooltip"
   },
   "rootFolderTxID": "Root Folder Tx ID",
   "@rootFolderTxID": {
+    "source_text": "Root Folder Tx ID",
     "description": "The transaction ID of the Root Folder entity"
   },
   "copyRootFolderTxID": "Copy Root folder Tx ID",
   "@copyRootFolderTxID": {
+    "source_text": "Copy Root folder Tx ID",
     "description": "Copy transaction ID of Root Folder tooltip"
   },
   "bundleTxID": "Bundle Tx ID",
   "@bundleTxID": {
+    "source_text": "Bundle Tx ID",
     "description": "The bundle transaction ID of the bundled item"
   },
   "copyBundleTxID": "Copy Bundle Tx ID",
   "@copyBundleTxID": {
+    "source_text": "Copy Bundle Tx ID",
     "description": "Copy transaction ID of the Bundle transaction"
   },
   "metadataTxID": "Metadata Tx ID",
   "@metadataTxID": {
+    "source_text": "Metadata Tx ID",
     "description": "The transaction ID of the entity Metadata transaction"
   },
   "copyMetadataTxID": "Copy Metadata Tx ID",
   "@copyMetadataTxID": {
+    "source_text": "Copy Metadata Tx ID",
     "description": "Copy the transaction ID of the Metadata transaction"
   },
   "dataTxID": "Data Tx ID",
   "@dataTxID": {
+    "source_text": "Data Tx ID",
     "description": "The transaction ID of the entity Data transaction"
   },
   "copyDataTxID": "Copy Data Tx ID",
   "@copyDataTxID": {
+    "source_text": "Copy Data Tx ID",
     "description": "Copy the transaction ID of the Data transaction"
   },
   "itemIsBeingProcesed": "This item is being processed...",
   "@itemIsBeingProcesed": {
+    "source_text": "This item is being processed...",
     "description": "The entity is being processed, no details to display yet"
   },
   "driveWasCreatedWithName": "This drive was created with the name {driveName}.",
   "@driveWasCreatedWithName": {
+    "source_text": "This drive was created with the name {driveName}.",
     "description": "Drive activity (journal) entry: created",
     "placeholders": {
       "driveName": {
@@ -415,6 +514,7 @@
   },
   "driveWasRenamed": "This drive was renamed to {driveName}.",
   "@driveWasRenamed": {
+    "source_text": "This drive was renamed to {driveName}.",
     "description": "Drive activity (journal) entry: renamed",
     "placeholders": {
       "driveName": {
@@ -425,10 +525,12 @@
   },
   "driveWasModified": "This drive was modified.",
   "@driveWasModified": {
+    "source_text": "This drive was modified.",
     "description": "Drive activity (journal) entry: modified"
   },
   "folderWasCreatedWithName": "This folder was created with the name {folderName}.",
   "@folderWasCreatedWithName": {
+    "source_text": "This folder was created with the name {folderName}.",
     "description": "Folder activity (journal) entry: created",
     "placeholders": {
       "folderName": {
@@ -439,6 +541,7 @@
   },
   "folderWasRenamed": "This folder was renamed to {folderName}.",
   "@folderWasRenamed": {
+    "source_text": "This folder was renamed to {folderName}.",
     "description": "Folder activity (journal): renamed",
     "placeholders": {
       "driveName": {
@@ -449,14 +552,17 @@
   },
   "folderWasModified": "This folder was modified.",
   "@folderWasModified": {
+    "source_text": "This folder was modified.",
     "description": "Folder activity (journal): modified"
   },
   "folderWasMoved": "This folder was moved.",
   "@folderWasMoved": {
+    "source_text": "This folder was moved.",
     "description": "Folder activity (journal): moved"
   },
   "fileWasCreatedWithName": "This file was created with the name {fileName}.",
   "@fileWasCreatedWithName": {
+    "source_text": "This file was created with the name {fileName}.",
     "description": "File activity (journal): created",
     "placeholders": {
       "fileName": {
@@ -467,6 +573,7 @@
   },
   "fileWasRenamed": "This file was renamed to {fileName}.",
   "@fileWasRenamed": {
+    "source_text": "This file was renamed to {fileName}.",
     "description": "File activity (journal): renamed",
     "placeholders": {
       "driveName": {
@@ -477,30 +584,37 @@
   },
   "fileWasModified": "This file was modified.",
   "@fileWasModified": {
+    "source_text": "This file was modified.",
     "description": "File activity (journal): modified"
   },
   "fileWasMoved": "This file was moved.",
   "@fileWasMoved": {
+    "source_text": "This file was moved.",
     "description": "File activity (journal): moved"
   },
   "fileHadANewRevision": "A new version of this file was uploaded.",
   "@fileHadANewRevision": {
+    "source_text": "A new version of this file was uploaded.",
     "description": "File activity (journal): new revision"
   },
   "personalDrivesEmphasized": "PERSONAL DRIVES",
   "@personalDrives": {
+    "source_text": "PERSONAL DRIVES",
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
   "sharedDrivesEmphasized": "SHARED DRIVES",
   "@sharedDrives": {
+    "source_text": "SHARED DRIVES",
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
   "help": "Help",
   "@help": {
+    "source_text": "Help",
     "description": "Link to a form for collecting feedback from the user"
   },
   "appVersoin": "Version {version}.",
   "@appVersoin": {
+    "source_text": "Version {version}.",
     "description": "App version number",
     "placeholders": {
       "version": {
@@ -511,178 +625,222 @@
   },
   "newFolder": "New folder",
   "@newFolder": {
+    "source_text": "New folder",
     "description": "Create a new folder entity"
   },
   "uploadFiles": "Upload file(s)",
   "@uploadFiles": {
+    "source_text": "Upload file(s)",
     "description": "Upload files to the Weave"
   },
   "newDrive": "New drive",
   "@newDrive": {
+    "source_text": "New drive",
     "description": "Create a new drive entity"
   },
   "attachDrive": "Attach drive",
   "@attachDrive": {
+    "source_text": "Attach drive",
     "description": "Attach a shared drive"
   },
   "attachDriveEmphasized": "ATTACH DRIVE",
   "@attachDriveEmphasized": {
+    "source_text": "ATTACH DRIVE",
     "description": "Attach a shared drive. Emphasized with upper case"
   },
   "howDoIGetAR": "How do I get AR?",
   "@howDoIGetAR": {
+    "source_text": "How do I get AR?",
     "description": "Link to a help page explaining how to get Arweave tokens"
   },
   "sync": "Sync",
   "@sync": {
+    "source_text": "Sync",
     "description": "Sync button tooltip"
   },
   "driveIssuesDetected": "We have detected issues with this drive. Navigate into drive to resolve them.",
   "@driveIssuesDetected": {
+    "source_text": "We have detected issues with this drive. Navigate into drive to resolve them.",
     "description": "Orphan folders detected, the user must navigate through the contents to reach them"
   },
   "downloadingCSV": "Downloading CSV...",
   "@downloadingCSV": {
+    "source_text": "Downloading CSV...",
     "description": "The CSV file is being downloaded"
   },
   "cancel": "Cancel",
   "@cancel": {
+    "source_text": "Cancel",
     "description": "Cancel button"
   },
   "exportingData": "Exporting your data, please wait.",
   "@exportingData": {
+    "source_text": "Exporting your data, please wait.",
     "description": "The drive data is being procesed"
   },
   "fileDownloadFailed": "File download failed",
   "@fileDownloadFailed": {
+    "source_text": "File download failed",
     "description": "Could not export the CSV data"
   },
   "attachingDriveEmphasized": "ATTACHING DRIVE...",
   "@attachingDriveEmphasized": {
+    "source_text": "ATTACHING DRIVE...",
     "description": "Drive attach form. Emphasized with upper case"
   },
   "cancelEmphasized": "CANCEL",
   "@cancelEmphasized": {
+    "source_text": "CANCEL",
     "description": "Cancel button. Emphatized with upper case"
   },
   "attachEmphasized": "ATTACH",
   "@attachEmphasized": {
+    "source_text": "ATTACH",
     "description": "The action of attaching a drive. Emphasized with upper case"
   },
   "creatingDriveEmphasized": "CREATING DRIVE...",
   "@creatingDriveEmphasized": {
+    "source_text": "CREATING DRIVE...",
     "description": "The drive is being created. Emphasized with upper case"
   },
   "createDriveEmphasized": "CREATE DRIVE",
   "@createDriveEmphasized": {
+    "source_text": "CREATE DRIVE",
     "description": "Action of creating a new drive. Emphasized with upper case"
   },
   "insufficientARToCreateDrive": "You do not have sufficient AR to create a drive.",
   "@insufficientARToCreateDrive": {
+    "source_text": "You do not have sufficient AR to create a drive.",
     "description": "Not enough balance"
   },
   "create": "Create",
   "@create": {
+    "source_text": "Create",
     "description": "Create an drive"
   },
   "createEmphasized": "CREATE",
   "@createEmphasized": {
+    "source_text": "CREATE",
     "description": "Create a drive. Emphasized with upper case"
   },
   "renamingDriveEmphasized": "RENAMING DRIVE...",
   "@renamingDriveEmphasized": {
+    "source_text": "RENAMING DRIVE...",
     "description": "The drive is being renamed. Emphasized with upper case"
   },
   "renameDrive": "Rename drive",
   "@renameDrive": {
+    "source_text": "Rename drive",
     "description": "The action of renaming a drive"
   },
   "renameDriveEmphasized": "RENAME DRIVE",
   "@renameDriveEmphasized": {
+    "source_text": "RENAME DRIVE",
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
   "driveName": "Drive name",
   "@driveName": {
+    "source_text": "Drive name",
     "description": "The name of certain drive"
   },
   "shareDrive": "Share Drive",
   "@shareDrive": {
+    "source_text": "Share Drive",
     "description": "The action of sharing a drive link"
   },
   "shareDriveWithOthers": "Share drive with others",
   "@shareDriveWithOthers": {
+    "source_text": "Share drive with others",
     "description": "The action of sharing a drive link"
   },
   "copyLink": "Copy link",
   "@copyLink": {
+    "source_text": "Copy link",
     "description": "Copy the link for sharing an entity"
   },
   "anyoneCanAccessThisDrivePublic": "Anyone can access this public drive using the link above.",
   "@anyoneCanAccessThisDrivePublic": {
+    "source_text": "Anyone can access this public drive using the link above.",
     "description": "Warning for the user that is about to share a drive"
   },
   "anyoneCanAccessThisDrivePrivate": "Anyone can access this private drive using the link above.",
   "@anyoneCanAccessThisDrivePrivate": {
+    "source_text": "Anyone can access this private drive using the link above.",
     "description": "Warning for the user that is about to share a drive"
   },
   "doneEmphasized": "DONE",
   "@doneEmphaseized": {
+    "source_text": "DONE",
     "description": "Done, no more to do here. Emphasized with upper case"
   },
   "errorLog": "Error log",
   "@errorLog": {
+    "source_text": "Error log",
     "description": "Error dialog"
   },
   "downloadingFile": "Downloading file...",
   "@downloadingFile": {
+    "source_text": "Downloading file...",
     "description": "File is being downloaded"
   },
   "fileFailedToDownload": "File download failed",
   "@fileFailedToDownload": {
+    "source_text": "File download failed",
     "description": "Error message for failed downloads"
   },
   "tryAgainDownloadingFile": "This can happen if the file was only uploaded recently. Please try again later.",
   "@tryAgainDownloadingFile": {
+    "source_text": "This can happen if the file was only uploaded recently. Please try again later.",
     "description": "The data is still being replicated between nodes of the network and it's yet not available"
   },
   "shareFile": "Share File",
   "@shareFile": {
+    "source_text": "Share File",
     "description": "The action of sharing a file link"
   },
   "shareFileWithOthers": "Share file with others",
   "@shareFileWithOthers": {
+    "source_text": "Share file with others",
     "description": "To share a file link"
   },
   "anyoneCanAccessThisFile": "Anyone can access this file using the link above.",
   "@anyoneCanAccessThisFile": {
+    "source_text": "Anyone can access this file using the link above.",
     "description": "Warning for the user that is about to share a file"
   },
   "creatingFolderEmphasized": "CREATING FOLDER...",
   "@creatingFolderEmphasized": {
+    "source_text": "CREATING FOLDER...",
     "description": "Folder is being created. Emphasized with upper case"
   },
   "createFolderEmphasized": "CREATE FOLDER",
   "@createFolderEmphasized": {
+    "source_text": "CREATE FOLDER",
     "description": "The action of creating a folder. Emphasized with upper case"
   },
   "folderName": "Folder name",
   "@folderName": {
+    "source_text": "Folder name",
     "description": "The name of certain folder"
   },
   "movingFolderEmphasized": "MOVING FOLDER...",
   "@movingFolderEmphasized": {
+    "source_text": "MOVING FOLDER...",
     "description": "The action of moving a folder. Emphasized with upper case"
   },
   "movingFileEmphasized": "MOVING FILE...",
   "@movingFileEmphasized": {
+    "source_text": "MOVING FILE...",
     "description": "The action of moving a file. Emphasized with upper case"
   },
   "nameConflict": "Name conflict",
   "@nameConflict": {
+    "source_text": "Name conflict",
     "description": "A conflict of names between two entities"
   },
   "entityAlreadyExists": "Entity with name {entityName} already exists at move destination! Please rename the file or folder you are moving and try again.",
   "@entityAlreadyExists": {
+    "source_text": "Entity with name {entityName} already exists at move destination! Please rename the file or folder you are moving and try again.",
     "description": "Message warning the user that the given entity name already exists. Then requests that the user to choose a new name for the entity.",
     "placeholders": {
       "entityName": {
@@ -693,18 +851,22 @@
   },
   "moveHereEmphasized": "MOVE HERE",
   "@moveHereEmphasized": {
+    "source_text": "MOVE HERE",
     "description": "Move the entity to the current folder. Emphasized with upper case"
   },
   "moveFolderEmphasized": "MOVE FOLDER",
   "@moveFolderEmphasized": {
+    "source_text": "MOVE FOLDER",
     "description": "The action of moving a folder. Emphasized with upper case"
   },
   "moveFileEmphasized": "MOVE FILE",
   "@moveFileEmphasized": {
+    "source_text": "MOVE FILE",
     "description": "The action of moving a file. EMphasized with upper case"
   },
   "backToFolder": "Back to {entityName} folder",
   "@backToFolder": {
+    "source_text": "Back to {entityName} folder",
     "description": "Go back to folder",
     "placeholders": {
       "entityName": {
@@ -715,74 +877,92 @@
   },
   "renamingFolderEmphasized": "RENAMING FOLDER...",
   "@renamingFolderEmphasized": {
+    "source_text": "RENAMING FOLDER...",
     "description": "Folder is being renamed. Emphasized with upper case"
   },
   "renamingFileEmphasized": "RENAMING FILE...",
   "@renamingFileEmphasized": {
+    "source_text": "RENAMING FILE...",
     "description": "File is being renamed. Emphasized with upper case"
   },
   "renameFolderEmphasized": "RENAME FOLDER",
   "@renameFolderEmphasized": {
+    "source_text": "RENAME FOLDER",
     "description": "The action of renaming a folder. Emphasized with upper case"
   },
   "renameFileEmphasized": "RENAME FILE",
   "@renameFileEmphasized": {
+    "source_text": "RENAME FILE",
     "description": "The action of renaming a file. Emphasized with upper case"
   },
   "rename": "Rename",
   "@rename": {
+    "source_text": "Rename",
     "description": "The action of renaming; imperative form"
   },
   "renameEmphasized": "RENAME",
   "@renameEmphasized": {
+    "source_text": "RENAME",
     "description": "The action of renaming; imperative form. Emphasized with upper case"
   },
   "fileName": "File name",
   "@fileName": {
+    "source_text": "File name",
     "description": "The name of certain file"
   },
   "recreateFolderEmphasized": "RECREATE FOLDER",
   "@recreateFolderEmphasized": {
+    "source_text": "RECREATE FOLDER",
     "description": "Recreate a folder that failed to be minted"
   },
   "recreatingFolderEmphasized": "RECREATING FOLDER...",
   "@recreatingFolderEmphasized": {
+    "source_text": "RECREATING FOLDER...",
     "description": "Folder is being recreated. Emphasized with upper case"
   },
   "fix": "Fix",
   "@fix": {
+    "source_text": "Fix",
     "description": "Fix an orphan item"
   },
   "fixEmphasized": "FIX",
   "@fixEmphasized": {
+    "source_text": "FIX",
     "description": "Fix an orphan item. Emphasized with upper case"
   },
   "targetFolderEmphasized": "TARGET FOLDER",
   "@targetFolderEmphasized": {
+    "source_text": "TARGET FOLDER",
     "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
   },
   "back": "Back",
   "@back": {
+    "source_text": "Back",
     "description": "Go back"
   },
   "logout": "Logout",
   "@logout": {
+    "source_text": "Logout",
     "description": "The logout process"
   },
   "notLoggedIn": "You're not logged in",
   "@notLoggedIn": {
+    "source_text": "You're not logged in",
     "description": "User has not logged in"
   },
   "logInToExperienceFeatures": "Log in to experience all of ArDrive's features!",
   "@logInToExperienceFeatures": {
+    "source_text": "Log in to experience all of ArDrive's features!",
     "description": "User must login to use the features of ArDrive"
   },
   "login": "Login",
   "@login": {
+    "source_text": "Login",
     "description": "The login process"
   },
   "conflictingFilesFound": "{numberOfConflicts} conflicting file(s) found",
   "@conflictingFilesFound": {
+    "source_text": "{numberOfConflicts} conflicting file(s) found",
     "description": "Count of conflicting items",
     "placeholders": {
       "numberOfConflicts": {
@@ -794,10 +974,12 @@
   },
   "aFileWithSameNameAlreadyExists": "A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?",
   "@aFileWithSameNameAlreadyExists": {
+    "source_text": "A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?",
     "description": "Asks the user what to do with the items conflicting name"
   },
   "filesWithTheSameNameAlreadyExists": "{numberOfFiles} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?",
   "@filesWithTheSameNameAlreadyExists": {
+    "source_text": "{numberOfFiles} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?",
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
       "numberOfFiles": {
@@ -809,18 +991,22 @@
   },
   "conflictingFiles": "Conflicting files:",
   "@conflictingFiles": {
+    "source_text": "Conflicting files:",
     "description": "Files being in conflict with already existing items"
   },
   "upload": "Upload",
   "@upload": {
+    "source_text": "Upload",
     "description": "The action of uploading certain item"
   },
   "continueEmphasized": "CONTINUE",
   "@continueEmphasized": {
+    "source_text": "CONTINUE",
     "description": "To go ahead. Emphasized with upper case"
   },
   "filesTooLarge": "{numberOfFiles} file(s) too large",
   "@filesTooLarge": {
+    "source_text": "{numberOfFiles} file(s) too large",
     "description": "A single or many files are too large to upload",
     "placeholders": {
       "numberOfFiles": {
@@ -832,42 +1018,52 @@
   },
   "filesTooLargeExplanationPrivate": "ArDrive on web currently only supports file uploads smaller than 100 MB for private drives",
   "@filesTooLargeExplanationPrivate": {
+    "source_text": "ArDrive on web currently only supports file uploads smaller than 100 MB for private drives",
     "description": "Limit of size to upload"
   },
   "filesTooLargeExplanationPublic": "ArDrive on web currently only supports file uploads smaller than 1.25 GB for public drives",
   "@filesTooLargeExplanationPublic": {
+    "source_text": "ArDrive on web currently only supports file uploads smaller than 1.25 GB for public drives",
     "description": "Limit of size to upload"
   },
   "tooLargeForUpload": "Too large for upload:",
   "@tooLargeForUpload": {
+    "source_text": "Too large for upload:",
     "description": "Files too large for upload"
   },
   "preparingUpload": "Preparing upload...",
   "@preparingUpload": {
+    "source_text": "Preparing upload...",
     "description": "The upload is being processed"
   },
   "arConnectRemainOnThisTab": "CAUTION: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.",
   "@arConnectRemainOnThisTab": {
+    "source_text": "CAUTION: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.",
     "description": "Warning for te user to do not leave the tab"
   },
   "thisMayTakeAWhile": "This may take a while...",
   "@thisMayTakeAWhile": {
+    "source_text": "This may take a while...",
     "description": "Uploading may take a while"
   },
   "failedToPrepareFileUpload": "Failed to prepare file upload",
   "@failedToPrepareFileUpload": {
+    "source_text": "Failed to prepare file upload",
     "description": "Error message for when it failed to prepare the upload"
   },
   "failedToPrepareFileUploadExplanation": "An error occured while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.",
   "@failedToPrepareFileUploadExplanation": {
+    "source_text": "An error occured while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.",
     "description": "Error message for when it failed to prepare the upload"
   },
   "closeEmphasized": "CLOSE",
   "@closeEmphasized": {
+    "source_text": "CLOSE",
     "description": "Close modal. Emphasized with upper case"
   },
   "uploadNFiles": "Upload {numberOfFiles} file(s)",
   "@uploadNFiles": {
+    "source_text": "Upload {numberOfFiles} file(s)",
     "description": "Upload a single or many files",
     "placeholders": {
       "numberOfFiles": {
@@ -879,6 +1075,7 @@
   },
   "uploadingNFiles": "Uploading {numberOfFiles} file(s)...",
   "@uploadingNFiles": {
+    "source_text": "Uploading {numberOfFiles} file(s)...",
     "description": "Uploading a single or many files",
     "placeholders": {
       "numberOfFiles": {
@@ -890,6 +1087,7 @@
   },
   "cost": "Cost: {arPrice} AR",
   "@cost": {
+    "source_text": "Cost: {arPrice} AR",
     "description": "The total cost estimation of the upload quoted in AR",
     "placeholders": {
       "arPrice": {
@@ -900,86 +1098,107 @@
   },
   "filesWillBeUploadedPublicly": "These file(s) will be uploaded publicly.",
   "@filesWillBeUploadedPublicly": {
+    "source_text": "These file(s) will be uploaded publicly.",
     "description": "Warning for files that will be public after uploaded"
   },
   "insufficientARForUpload": "Insufficient AR for upload.",
   "@insufficientARForUpload": {
+    "source_text": "Insufficient AR for upload.",
     "description": "The wallet has no enough balance"
   },
   "bundlingAndSigningUpload": "Bundling and signing upload",
   "@bundlingAndSigningUpload": {
+    "source_text": "Bundling and signing upload",
     "description": "The app is bundling together and signing the transactions"
   },
   "signingUpload": "Signing upload",
   "@signingUpload": {
+    "source_text": "Signing upload",
     "description": "The app is signing the transations"
   },
   "walletSwitch": "Wallet Switch",
   "@walletSwitch": {
+    "source_text": "Wallet Switch",
     "description": "The wallet has changed. The user must log in again"
   },
   "walletChangeDetected": "Wallet change detected. Please log out and log in again",
   "@walletChangeDetected": {
+    "source_text": "Wallet change detected. Please log out and log in again",
     "description": "The wallet has changed. The user must log in again"
   },
   "weReSorryEmphasized": "WE'RE SORRY!",
   "@weReSorryEmphasized": {
+    "source_text": "WE'RE SORRY!",
     "description": "Screen not supported page. Emphasized with upper case"
   },
   "ardriveIsOptimizedForLargeScreens": "ArDrive is currently only optimized for larger screens.",
   "@ardriveIsOptimizedForLargeScreens": {
+    "source_text": "ArDrive is currently only optimized for larger screens.",
     "description": "Screen not supported page"
   },
   "tryOnAnotherDevice": "Please try on another device or stay updated for our upcoming mobile app by subscribing to our newsletter below.",
   "@tryOnAnotherDevice": {
+    "source_text": "Please try on another device or stay updated for our upcoming mobile app by subscribing to our newsletter below.",
     "description": "Screen not supported page"
   },
   "subscribeEmphasized": "SUBSCRIBE",
   "@subscribeEmphasized": {
+    "source_text": "SUBSCRIBE",
     "description": "Screen not supported page. Emphasized with upper case"
   },
   "specifiedFileDoesNotExist": "The specified file does not exist.",
   "@specifiedFileDoesNotExist": {
+    "source_text": "The specified file does not exist.",
     "description": "The shared file the user is trying to access does not exist"
   },
   "failedToSyncDrive": "Failed to sync drive contents.",
   "@failedToSyncDrive": {
+    "source_text": "Failed to sync drive contents.",
     "description": "The app wasn't able to sync the drive"
   },
   "tryAgainEmphasized": "TRY AGAIN",
   "@tryAgainEmphasized": {
+    "source_text": "TRY AGAIN",
     "description": "Try it again. Emphasized with upper case"
   },
   "warningEmphasized": "WARNING",
   "@warningEmphasized": {
+    "source_text": "WARNING",
     "description": "Congestion warning. Emphasized with upper case"
   },
   "congestionWarning": "Arweave is currently experiencing heavy congestion. It's not likely that your upload will succeed right now.",
   "@congestionWarning": {
+    "source_text": "Arweave is currently experiencing heavy congestion. It's not likely that your upload will succeed right now.",
     "description": "Congestion warning"
   },
   "tryLaterCongestionEmphasized": "TRY LATER",
   "@tryLaterCongestionEmphasized": {
+    "source_text": "TRY LATER",
     "description": "Try to upload later. Emphasized with upper case"
   },
   "proceedCongestionEmphasized": "PROCEED",
   "@proceedCongestionEmphasized": {
+    "source_text": "PROCEED",
     "description": "Proceed being aware of the network congestion. Empasized with upper case"
   },
   "profile": "Profile",
   "@profile": {
+    "source_text": "Profile",
     "description": "The user profile: user name, wallet address and wallet balance"
   },
   "syncingPleaseRemainOnThisTab": "Syncing... Please remain on this tab.",
   "@syncingPleaseRemainOnThisTab": {
+    "source_text": "Syncing... Please remain on this tab.",
     "description": "Syncing drives"
   },
   "syncingPleaseWait": "Syncing... Please wait.",
   "@syncingPleaseWait": {
+    "source_text": "Syncing... Please wait.",
     "description": "Syncing drives"
   },
   "exportFromCSV": "Export from {driveId} {timestamp}.csv",
   "@exportFromCSV": {
+    "source_text": "Export from {driveId} {timestamp}.csv",
     "description": "Filename of the CSV data export",
     "placeholders": {
       "driveId": {
@@ -994,6 +1213,7 @@
   },
   "folderCount": "{folderCount,plural, =0{No folders} =1{1 folder} other{{folderCount} folders}",
   "@folderCount": {
+    "source_text": "{folderCount,plural, =0{No folders} =1{1 folder} other{{folderCount} folders}",
     "description": "Plurals for the folder count",
     "placeholders": {
       "folderCount": {
@@ -1005,6 +1225,7 @@
   },
   "fileCount": "{fileCount,plural, =0{no files} =1{1 file} other{{fileCount} files}}",
   "@fileCount": {
+    "source_text": "{fileCount,plural, =0{no files} =1{1 file} other{{fileCount} files}}",
     "description": "Plurals for the file count",
     "placeholders": {
       "fileCount": {
@@ -1016,6 +1237,7 @@
   },
   "folderAndFileCountComposite": "{folderCountString}, {fileCountString}",
   "@folderAndFileCountComposite": {
+    "source_text": "{folderCountString}, {fileCountString}",
     "description": "Composite of the folder and file counts. Comma separated for English",
     "placeholders": {
       "folderCountString": {
