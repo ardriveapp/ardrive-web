@@ -65,7 +65,7 @@ class UploadForm extends StatelessWidget {
           if (state is UploadFileConflict) {
             return AppDialog(
                 title: appLocalizationsOf(context)
-                    .conflictingFilesFound(state.conflictingFileNames.length),
+                    .duplicateFiles(state.conflictingFileNames.length),
                 content: SizedBox(
                   width: kMediumDialogWidth,
                   child: Column(
@@ -100,7 +100,7 @@ class UploadForm extends StatelessWidget {
                           .prepareUploadPlanAndCostEstimates(
                               conflictingFileAction:
                                   ConflictingFileActions.Skip),
-                      child: Text('SKIP'),
+                      child: Text(appLocalizationsOf(context).skipEmphasized),
                     ),
                   TextButton(
                     style: ButtonStyle(
@@ -118,7 +118,7 @@ class UploadForm extends StatelessWidget {
                         .prepareUploadPlanAndCostEstimates(
                             conflictingFileAction:
                                 ConflictingFileActions.Replace),
-                    child: Text(appLocalizationsOf(context).continueEmphasized),
+                    child: Text(appLocalizationsOf(context).replaceEmphasized),
                   ),
                 ]);
           } else if (state is UploadFileTooLarge) {
@@ -254,8 +254,10 @@ class UploadForm extends StatelessWidget {
                     ),
                     if (state.uploadIsPublic) ...{
                       const SizedBox(height: 8),
-                      Text(appLocalizationsOf(context)
-                          .filesWillBeUploadedPublicly),
+                      Text(
+                        appLocalizationsOf(context).filesWillBeUploadedPublicly(
+                            numberOfFilesInBundles + numberOfV2Files),
+                      ),
                     },
                     if (!state.sufficientArBalance) ...{
                       const SizedBox(height: 8),
@@ -281,7 +283,7 @@ class UploadForm extends StatelessWidget {
                             costEstimate: state.costEstimate,
                           )
                       : null,
-                  child: Text('UPLOAD'),
+                  child: Text(appLocalizationsOf(context).uploadEmphasized),
                 ),
               ],
             );
