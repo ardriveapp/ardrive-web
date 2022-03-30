@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pedantic/pedantic.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToDownloadProfileFile({
@@ -70,7 +71,7 @@ class FileDownloadDialog extends StatelessWidget {
           if (state is FileDownloadStarting) {
             return AppDialog(
               dismissable: false,
-              title: 'Downloading file...',
+              title: appLocalizationsOf(context).downloadingFile,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -80,14 +81,14 @@ class FileDownloadDialog extends StatelessWidget {
               actions: [
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel'),
+                  child: Text(appLocalizationsOf(context).cancel),
                 ),
               ],
             );
           } else if (state is FileDownloadInProgress) {
             return AppDialog(
               dismissable: false,
-              title: 'Downloading file...',
+              title: appLocalizationsOf(context).downloadingFile,
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: ListTile(
@@ -107,23 +108,23 @@ class FileDownloadDialog extends StatelessWidget {
                     context.read<FileDownloadCubit>().abortDownload();
                     Navigator.pop(context);
                   },
-                  child: Text('Cancel'),
+                  child: Text(appLocalizationsOf(context).cancel),
                 ),
               ],
             );
           } else if (state is FileDownloadFailure) {
             return AppDialog(
               dismissable: false,
-              title: 'File download failed',
+              title: appLocalizationsOf(context).fileFailedToDownload,
               content: SizedBox(
                 width: kMediumDialogWidth,
-                child: Text(
-                    'This can happen if the file was only uploaded recently. Please try again later.'),
+                child:
+                    Text(appLocalizationsOf(context).tryAgainDownloadingFile),
               ),
               actions: [
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('OK'),
+                  child: Text(appLocalizationsOf(context).ok),
                 ),
               ],
             );
