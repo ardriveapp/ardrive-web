@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pedantic/pedantic.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToExportCSVData({
@@ -49,7 +50,7 @@ class FileDownloadDialog extends StatelessWidget {
           if (state is FileDownloadStarting) {
             return AppDialog(
               dismissable: false,
-              title: 'Downloading CSV...',
+              title: appLocalizationsOf(context).downloadingCSV,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -59,20 +60,20 @@ class FileDownloadDialog extends StatelessWidget {
               actions: [
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel'),
+                  child: Text(appLocalizationsOf(context).cancel),
                 ),
               ],
             );
           } else if (state is FileDownloadInProgress) {
             return AppDialog(
               dismissable: false,
-              title: 'Downloading CSV...',
+              title: appLocalizationsOf(context).downloadingCSV,
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(
-                    'Exporting your data, please wait.',
+                    appLocalizationsOf(context).exportingData,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -85,21 +86,21 @@ class FileDownloadDialog extends StatelessWidget {
                     context.read<FileDownloadCubit>().abortDownload();
                     Navigator.pop(context);
                   },
-                  child: Text('Cancel'),
+                  child: Text(appLocalizationsOf(context).cancel),
                 ),
               ],
             );
           } else if (state is FileDownloadFailure) {
             return AppDialog(
               dismissable: false,
-              title: 'File download failed',
+              title: appLocalizationsOf(context).fileDownloadFailed,
               content: SizedBox(
                 width: kMediumDialogWidth,
               ),
               actions: [
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('OK'),
+                  child: Text(appLocalizationsOf(context).ok),
                 ),
               ],
             );

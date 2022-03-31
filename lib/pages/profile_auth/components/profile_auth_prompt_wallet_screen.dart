@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'profile_auth_shell.dart';
 
 class ProfileAuthPromptWalletScreen extends StatelessWidget {
@@ -32,20 +33,20 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () => _pickWallet(context),
-              child: Text('SELECT WALLET'),
+              child: Text(appLocalizationsOf(context).selectWalletEmphasized),
             ),
             if (context.read<ProfileAddCubit>().isArconnectInstalled()) ...[
               const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: () => _pickWalletArconnect(context),
-                child: Text('USE ARCONNECT'),
+                child: Text(appLocalizationsOf(context).useArconnectEmphasized),
               ),
             ],
             const SizedBox(height: 16),
             TextButton(
               onPressed: () => launch('https://tokens.arweave.org'),
               child: Text(
-                'Don\'t have a wallet? Get one here!',
+                appLocalizationsOf(context).getAWallet,
                 textAlign: TextAlign.center,
               ),
             ),
