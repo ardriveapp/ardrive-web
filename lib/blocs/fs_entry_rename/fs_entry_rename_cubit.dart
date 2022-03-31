@@ -154,16 +154,14 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
       return {AppValidationMessage.fsEntryNameUnchanged: true};
     }
 
-    // Check that the current folder does not already have a folder with the target file name.
-    final foldersWithName = await _driveDao
-        .foldersInFolderWithName(
-            driveId: driveId,
-            parentFolderId: folder.parentFolderId,
-            name: newFolderName)
-        .get();
-    final nameAlreadyExists = foldersWithName.isNotEmpty;
+    final entityWithSameNameExists = await _driveDao.doesEntityWithNameExist(
+      name: folder.name,
+      driveId: driveId,
+      // Will never be null since you can't rename root folder
+      parentFolderId: folder.parentFolderId!,
+    );
 
-    if (nameAlreadyExists) {
+    if (entityWithSameNameExists) {
       control.markAsTouched();
       return {AppValidationMessage.fsEntryNameAlreadyPresent: true};
     }
@@ -182,16 +180,13 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
       return {AppValidationMessage.fsEntryNameUnchanged: true};
     }
 
-    // Check that the current folder does not already have a file with the target file name.
-    final filesWithName = await _driveDao
-        .filesInFolderWithName(
-            driveId: driveId,
-            parentFolderId: file.parentFolderId,
-            name: newFileName)
-        .get();
-    final nameAlreadyExists = filesWithName.isNotEmpty;
+    final entityWithSameNameExists = await _driveDao.doesEntityWithNameExist(
+      name: file.name,
+      driveId: driveId,
+      parentFolderId: file.parentFolderId,
+    );
 
-    if (nameAlreadyExists) {
+    if (entityWithSameNameExists) {
       control.markAsTouched();
       return {AppValidationMessage.fsEntryNameAlreadyPresent: true};
     }

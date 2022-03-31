@@ -89,9 +89,12 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     if (conflictingFiles.isNotEmpty) {
-      emit(UploadFileConflict(
+      emit(
+        UploadFileConflict(
           isAllFilesConflicting: conflictingFiles.length == files.length,
-          conflictingFileNames: conflictingFiles.keys.toList()));
+          conflictingFileNames: conflictingFiles.keys.toList(),
+        ),
+      );
     } else {
       await prepareUploadPlanAndCostEstimates();
     }
@@ -131,23 +134,28 @@ class UploadCubit extends Cubit<UploadState> {
       ));
       return;
     }
+
     final uploadPlan = await _uploadPlanUtils.xfilesToUploadPlan(
-        folderEntry: _targetFolder,
-        targetDrive: _targetDrive,
-        files: files,
-        cipherKey: profile.cipherKey,
-        wallet: profile.wallet,
-        conflictingFiles: conflictingFiles);
+      folderEntry: _targetFolder,
+      targetDrive: _targetDrive,
+      files: files,
+      cipherKey: profile.cipherKey,
+      wallet: profile.wallet,
+      conflictingFiles: conflictingFiles,
+    );
+
     final costEstimate = await CostEstimate.create(
       uploadPlan: uploadPlan,
       arweaveService: _arweave,
       pstService: _pst,
       wallet: profile.wallet,
     );
+
     if (await _profileCubit.checkIfWalletMismatch()) {
       emit(UploadWalletMismatch());
       return;
     }
+
     emit(
       UploadReady(
         costEstimate: costEstimate,
