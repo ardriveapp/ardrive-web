@@ -93,7 +93,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           profile.wallet,
           driveKey,
         );
-
+        assert(await folderTx.verify() == true);
         await _arweave.postTx(folderTx);
         folderEntity.txId = folderTx.id;
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(

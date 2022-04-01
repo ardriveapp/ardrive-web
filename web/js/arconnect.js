@@ -53,5 +53,6 @@ async function signTransaction(transaction) {
     name: 'RSA-PSS',
     saltLength: 0,
   });
+  console.log(response);
   return response.signature;
 }

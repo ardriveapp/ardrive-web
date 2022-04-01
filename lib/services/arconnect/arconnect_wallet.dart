@@ -25,9 +25,14 @@ class ArConnectWallet extends Wallet {
 
   @override
   Future<Uint8List> sign(TransactionBase transaction) async {
+    print(json.encode(transaction.toUnsignedJson()));
     final signature = await arConnectService.signTransaction(
       json.encode(transaction.toUnsignedJson()),
     );
+    print("message \n" +
+        encodeBytesToBase64(
+            await signMessage(await transaction.getSignatureData())));
+    print("sign \n" + signature);
     return decodeBase64ToBytes(signature);
   }
 }
