@@ -90,7 +90,7 @@ class UploadForm extends StatelessWidget {
                   ),
                 ),
                 actions: <Widget>[
-                  if (!state.isAllFilesConflicting)
+                  if (!state.areAllFilesConflicting)
                     TextButton(
                       style: ButtonStyle(
                           fixedSize:
