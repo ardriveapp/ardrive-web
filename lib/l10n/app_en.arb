@@ -499,8 +499,8 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
-  "appVersoin": "Version {version}.",
-  "@appVersoin": {
+  "appVersion": "Version {version}.",
+  "@appVersion": {
     "description": "App version number",
     "placeholders": {
       "version": {

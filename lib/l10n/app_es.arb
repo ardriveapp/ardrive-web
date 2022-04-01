@@ -1,6 +1,6 @@
 {
   "@@locale": "es",
-  "welcomeTo_body": "BIENVENIDO/A A Tu disco duro privado y seguro, decentralizado, de pago por uso, resistente a la censura y permanente",
+  "welcomeTo_body": "BIENVENIDO/A A Tu disco duro privado y seguro, decentralizado, sin suscripciones, resistente a la censura y permanente",
   "@welcomeTo_body": {
     "description": "Welcoming message just after the ArDrive logo"
   },
@@ -8,11 +8,11 @@
   "@welcomeTo_main": {
     "description": "Highly emphasized text giving welcome"
   },
-  "welcomeTo_description": "Tu disco duro privado y seguro, decentralizado, de pago por uso, resistente a la censura y permanente",
+  "welcomeTo_description": "Tu disco duro privado y seguro, decentralizado, sin suscripciones, resistente a la censura y permanente",
   "@welcomeTo_description": {
     "description": "Brief description of ArDrive as welcoming"
   },
-  "selectWalletEmphasized": "SELECCIONAR BILLETERA",
+  "selectWalletEmphasized": "SELECCIONAR MONEDERO",
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
@@ -20,7 +20,7 @@
   "@useArconnectEmphasized": {
     "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
   },
-  "getAWallet": "¿No tienes una billetera? ¡Obtén una aquí!",
+  "getAWallet": "¿No tienes un monedero? ¡Obtén uno aquí!",
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
@@ -28,11 +28,11 @@
   "@welcomeToThePermawebEmphasized": {
     "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
   },
-  "ardriveIsntJustAnotherCloudSyncApp": "ArDrive no es sólo otra aplicacion de sincronizacion en la nube. Es el comienzo de un disco duro permanente.",
+  "ardriveIsntJustAnotherCloudSyncApp": "ArDrive no es sólo otra aplicacion de almacenamiento en la nube. Es el comienzo de un disco duro permanente.",
   "@ardriveIsntJustAnotherCloudSyncApp": {
     "description": "Description about the permanence and uniqueness of ArDrive"
   },
-  "anyFilesWillOutliveYou": "¡Cualquier archivo que subas aquí existirá mas que tú!",
+  "anyFilesWillOutliveYou": "¡Los archivos que subas aquí existirán para siempre!",
   "@anyFilesWillOutliveYou": {
     "description": "Files on the Weave will exist there forever"
   },
@@ -40,19 +40,19 @@
   "@weDoAFewThingsDifferently": {
     "description": "What ArDrive does differently"
   },
-  "payPerFileEmphasized": "PAGA POR ARCHIVO",
+  "payPerFileEmphasized": "PAGA SOLO POR LO QUE SUBES",
   "@payPerFileEmphasized": {
     "description": "Payment philosophy. Emphasized with upper case"
   },
-  "noSubscriptions": "¡No necesitas suscribite!",
+  "noSubscriptions": "¡No necesitas suscripciones!",
   "@noSubscriptions": {
     "description": "Payment philosophy"
   },
-  "monthlyCharges": "En vez de pagar mensualmente por espacio vacío que no usas, paga una única vez y almacena tus archivos por siempre en ArDrive.",
+  "monthlyCharges": "En vez de pagar mensualmente por almacenamiento que no usas, paga una única vez y almacena tus archivos por siempre en ArDrive.",
   "@monthlyCharges": {
     "description": "Payment philosophy"
   },
-  "secondsFromForeverEmphasized": "A SEGUNDOS DE PARA SIEMPRE",
+  "secondsFromForeverEmphasized": "A SEGUNDOS DE LA ETERNIDAD",
   "@secondsFromForeverEmphasized": {
     "description": "Shows how close you are from permanence. Emphasized with upper case"
   },
@@ -60,15 +60,15 @@
   "@decentralizedPermanent": {
     "description": "Permanence requires patience"
   },
-  "greenCheckMark": "Cuando la marca verde aparece al lado de tu archivo, es cuando ha sido subido a la Permaweb.",
+  "greenCheckMark": "Cuando el punto verde aparece al lado de tu archivo, es cuando ha sido cargado a la PermaWeb.",
   "@greenCheckMark": {
     "description": "Describes the indicator of the status of uploaded files"
   },
-  "totalPrivacyControlEmphasized": "TOTAL CONTROL DE TU PRIVACIDAD",
+  "totalPrivacyControlEmphasized": "CONTROL TOTAL DE TU PRIVACIDAD",
   "@totalPrivacyControlEmphasized": {
     "description": "Title for talking about privacy. Emphasized with upper case"
   },
-  "yourChoice": "Es tu elección: haz tus archivos públicos o privados usando la mejor encriptación.",
+  "yourChoice": "Es tu elección: haz tus archivos públicos o privados usando el mejor cifrado.",
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
@@ -76,39 +76,39 @@
   "@noOneWillSee": {
     "description": "Indicates that private content won't reach to the wrong hands"
   },
-  "neverDeletedEmphasized": "NUNCA SE BORRA",
+  "neverDeletedEmphasized": "NUNCA SE BORRARÁ",
   "@neverDeletedEmphasized": {
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
   },
-  "noDeleteButton": "Recuerda: ¡No hay botón para borrar (ni para tí ni para nosotros)!",
+  "noDeleteButton": "Recuerda: ¡No hay botón de borrar (ni para tí ni para nosotros)!",
   "@noDeleteButton": {
     "description": "Uploaded items cannot be deleted"
   },
-  "onceUploadedCantBeRemoved": "Una vez subida, tu información no se puede borrar.",
+  "onceUploadedCantBeRemoved": "Una vez cargada, tu información no se podrá borrar.",
   "@onceUploadedCantBeRemoved": {
     "description": "Uploaded items cannot be deleted"
   },
-  "thinkTwiceBeforeUploading": "Piénsalo dos veces antes de subir toda tu poesía de adolescente...",
+  "thinkTwiceBeforeUploading": "Piénsalo dos veces antes de cargar toda tu poesía de adolescente...",
   "@thinkTwiceBeforeUploading": {
     "description": "Uploaded items cannot be deleted"
   },
-  "pleaseRemainOnThisTab": "Cargando... Por favor mantente en esta pestaña.",
+  "pleaseRemainOnThisTab": "Cargando... Por favor, permanece en esta pestaña.",
   "@pleaseRemainOnThisTab": {
     "description": "Circular progress indicator"
   },
-  "loginFailed": "No se pudo ingresar",
+  "loginFailed": "No se pudo iniciar sesión",
   "@loginFailed": {
     "description": "Text for when the user tried to login with wrong credentials"
   },
-  "sorryLoginFailed": "Lo sentimos, falló la autenticación. Por favor, inténtalo nuevamente.",
+  "sorryLoginFailed": "Lo sentimos, no se ha podido iniciar sesion. Por favor, inténtalo nuevamente.",
   "@sorryLoginFailed": {
     "description": "Text for when the user tried to login with wrong credentials"
   },
-  "logIn": "Ingresar",
+  "logIn": "Iniciar sesión",
   "@logIn": {
     "description": "The action of logging in. Imperative form"
   },
-  "welcomeBackEmphasized": "BIENVENIDO/A NUEVAMENTE",
+  "welcomeBackEmphasized": "BIENVENIDO/A DE NUEVO",
   "@welcomeBackEmphasized": {
     "description": "Welcoming for an existing user. Emphasized with upper case"
   },
@@ -116,11 +116,11 @@
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
   },
-  "pleaseProvideSamePassword": "Por favor proporciona la misma contraseña que usaste anteriormente.",
+  "pleaseProvideSamePassword": "Por favor ingresa la misma contraseña que utilizaste anteriormente.",
   "@pleaseProvideSamePassword": {
     "description": "Asks for the wallet password"
   },
-  "passwordCanNeverBeChanged": "Tu contraseña no se puede cambiar ni recuperar. Por favor, ¡mantenla segura!",
+  "passwordCanNeverBeChanged": "No puedes modificiar ni recuperar tu contraseña. ¡Asegurate de mantenerla segura!",
   "@passwordCanNeverBeChanged": {
     "description": "Explains that the password cannot be changed as it is the one of the wallet"
   },
@@ -152,19 +152,19 @@
   "@addProfileEmphasized": {
     "description": "Add a wallet. Emphasized with upper case"
   },
-  "logOut": "Salir",
+  "logOut": "Cerrar sesión",
   "@logOut": {
     "description": "The action of logging out"
   },
-  "logOutEmphasized": "SALIR",
+  "logOutEmphasized": "CERRAR SESIÓN",
   "@logOutEmphasized": {
     "description": "The action of logging out. Emphasized with upper case"
   },
-  "changeWallet": "Cambiar billetera",
+  "changeWallet": "Cambiar monedero",
   "@changeWallet": {
     "description": "To use a different wallet"
   },
-  "welcomeBackUserEmphasized": "BIENVENIDO/A DE VUELTA, {username}",
+  "welcomeBackUserEmphasized": "BIENVENIDO/A DE NUEVO, {username}",
   "@welcomeBackUserEmphasized": {
     "description": "Welcoming to the user. Emphasized with upper case",
     "placeholders": {
@@ -178,7 +178,7 @@
   "@unlockEmphasized": {
     "description": "Unlock the wallet with its password. EMphasized with upper case"
   },
-  "forgetWallet": "Olvidar la cartera y cambiar de perfil",
+  "forgetWallet": "Olvidar monedero y cambiar de perfil",
   "@forgetWallet": {
     "description": "Use a different wallet by forgetting the current one"
   },
@@ -190,7 +190,7 @@
   "@newStringEmphasized": {
     "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
   },
-  "noDrives": "No tienes ningún disco personal o adjunto.\n¡Cliquea el botón \"nuevo\" para añadir alguno!",
+  "noDrives": "No tienes ningúna unidad de almacenamiento.\n¡Haz clic en el botón \"NUEVO\" para crear o vincular una!",
   "@noDrives": {
     "description": "Text for when the wallet has no on-chain drives to display"
   },
@@ -198,7 +198,7 @@
   "@rowsPerPage": {
     "description": "How many rows per page to use"
   },
-  "goToFirst": "Ir al principio",
+  "goToFirst": "Ir al comienzo",
   "@goToFirst": {
     "description": "Action of going to the first page"
   },
@@ -214,7 +214,7 @@
   "@goToLast": {
     "description": "Action of going to the latest page"
   },
-  "exportDriveContents": "Exportar los contenidos del disco",
+  "exportDriveContents": "Exportar el contenido de la unidad",
   "@exportDriveContents": {
     "description": "Export the data of a drive into a CSV file"
   },
@@ -230,7 +230,7 @@
   "@move": {
     "description": "Action of moving certain file or folder"
   },
-  "viewOnly": "Sólo ver",
+  "viewOnly": "Sólo lectura",
   "@viewOnly": {
     "description": "The user has no permission to edit, only to view"
   },
@@ -246,15 +246,15 @@
   "@public": {
     "description": "A public entity"
   },
-  "viewInfo": "Ver información",
+  "viewInfo": "Más información",
   "@viewInfo": {
     "description": "View the activity and details of the entity"
   },
-  "driveRoot": "Raíz del disco",
+  "driveRoot": "Carpeta raíz",
   "@driveRoot": {
     "description": "The folder entity that is at the top of the folder hierarchy"
   },
-  "lastModifiedDate": "Última vez modificado {date}",
+  "lastModifiedDate": "Última modificación {date}",
   "@lastModifiedDate": {
     "description": "Last modified date of the file in the local disk",
     "placeholders": {
@@ -267,11 +267,11 @@
   "@pending": {
     "description": "Status tooltip for transactions which are waiting to be minted"
   },
-  "confirmed": "Confirmada",
+  "confirmed": "Confirmado",
   "@confirmed": {
     "description": "Status tooltip for transactions that are confirmed by the network"
   },
-  "failed": "Fallida",
+  "failed": "Fallido",
   "@failed": {
     "description": "Status tooltip for failed transactions"
   },
@@ -283,15 +283,15 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "lastUpdated": "Última vez actualizada",
+  "lastUpdated": "Última actualización",
   "@lastUpdated": {
     "description": "The timestamp of the transaction"
   },
-  "addSomeFiles": "Nada qué ver aquí. Pincha en \"nuevo\" para añadir agunos archivos.",
+  "addSomeFiles": "No hay nada aquí. Cliquea en \"NUEVO\" para añadir archivos.",
   "@addSomeFiles": {
     "description": "Empty folder"
   },
-  "noFiles": "Nada qué ver aquí.",
+  "noFiles": "No hay nada aquí.",
   "@noFiles": {
     "description": "Empty folder"
   },
@@ -299,7 +299,7 @@
   "@error": {
     "description": "Indicates that something went wrong"
   },
-  "errorDragAndDropFolder": "Actualmente no se puede arrastrar y soltar carpetas",
+  "errorDragAndDropFolder": "Actualmente no es posible arrastrar y soltar carpetas",
   "@errorDragAndDropFolder": {
     "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
   },
@@ -311,7 +311,7 @@
   "@okEmphasized": {
     "description": "OK button. Emphasized in upper case"
   },
-  "uploadDragAndDrop": "Subir archivo",
+  "uploadDragAndDrop": "Cargar archivo",
   "@uploadDragAndDrop": {
     "description": "The action of uploading a file"
   },
@@ -327,11 +327,11 @@
   "@itemContains": {
     "description": "Used like so: 'Contains 15 folders, 10 files'"
   },
-  "driveID": "ID del disco",
+  "driveID": "ID de la unidad",
   "@driveID": {
     "description": "The Drive-ID tag"
   },
-  "copyDriveID": "Copiar la ID del disco",
+  "copyDriveID": "Copiar la ID de la unidad",
   "@copyDriveID": {
     "description": "Tooltip of the copy icon for the Drive ID"
   },
@@ -351,7 +351,7 @@
   "@copyFileID": {
     "description": "Tooltip of the copy icon for the File ID"
   },
-  "lastModified": "Última vez modificado",
+  "lastModified": "Última modificación",
   "@lastModified": {
     "description": "Last modified date of the file in the local disk"
   },
@@ -359,11 +359,11 @@
   "@dateCreated": {
     "description": "Creation time of the entity revision"
   },
-  "driveTxID": "Tx ID del disco",
+  "driveTxID": "Tx ID de la unidad",
   "@driveTxID": {
     "description": "The transaction ID of the drive"
   },
-  "copyDriveTxID": "Copiar la Tx ID del disco",
+  "copyDriveTxID": "Copiar la ID de la transacción del disco",
   "@copyDriveTxID": {
     "description": "Copy transaction ID of Drive tooltip"
   },
@@ -371,15 +371,15 @@
   "@rootFolderTxID": {
     "description": "The transaction ID of the Root Folder entity"
   },
-  "copyRootFolderTxID": "Copiar la Tx ID de la carpeta raíz",
+  "copyRootFolderTxID": "Copiar la ID de la transacción de la carpeta raíz",
   "@copyRootFolderTxID": {
     "description": "Copy transaction ID of Root Folder tooltip"
   },
-  "bundleTxID": "Tx ID del Bundle",
+  "bundleTxID": "Tx ID del empaquetado",
   "@bundleTxID": {
     "description": "The bundle transaction ID of the bundled item"
   },
-  "copyBundleTxID": "Copiar la Tx ID del Bundle",
+  "copyBundleTxID": "Copiar la ID de la transacción del empaquetado",
   "@copyBundleTxID": {
     "description": "Copy transaction ID of the Bundle transaction"
   },
@@ -387,15 +387,15 @@
   "@metadataTxID": {
     "description": "The transaction ID of the entity Metadata transaction"
   },
-  "copyMetadataTxID": "Copiar la Tx ID de la metadata",
+  "copyMetadataTxID": "Copiar la ID de la transacción de la metadata",
   "@copyMetadataTxID": {
     "description": "Copy the transaction ID of the Metadata transaction"
   },
-  "dataTxID": "Tx ID de la data",
+  "dataTxID": "Tx ID de los datos",
   "@dataTxID": {
     "description": "The transaction ID of the entity Data transaction"
   },
-  "copyDataTxID": "Copiar la Tx ID de la data",
+  "copyDataTxID": "Copiar la ID de la transacción de los datos",
   "@copyDataTxID": {
     "description": "Copy the transaction ID of the Data transaction"
   },
@@ -403,7 +403,7 @@
   "@itemIsBeingProcesed": {
     "description": "The entity is being processed, no details to display yet"
   },
-  "driveWasCreatedWithName": "El disco fue creado con el nombre {driveName}.",
+  "driveWasCreatedWithName": "La unidad fue creada con el nombre: \"{driveName}\".",
   "@driveWasCreatedWithName": {
     "description": "Drive activity (journal) entry: created",
     "placeholders": {
@@ -413,7 +413,7 @@
       }
     }
   },
-  "driveWasRenamed": "El disco fue renombrado a: \"{driveName}\".",
+  "driveWasRenamed": "La unidad fue renombrada como: \"{driveName}\".",
   "@driveWasRenamed": {
     "description": "Drive activity (journal) entry: renamed",
     "placeholders": {
@@ -423,7 +423,7 @@
       }
     }
   },
-  "driveWasModified": "El disco fue modificado.",
+  "driveWasModified": "La unidad fue modificada.",
   "@driveWasModified": {
     "description": "Drive activity (journal) entry: modified"
   },
@@ -437,7 +437,7 @@
       }
     }
   },
-  "folderWasRenamed": "La carpeta fue renombrada a: \"{folderName}\".",
+  "folderWasRenamed": "La carpeta fue renombrada como: \"{folderName}\".",
   "@folderWasRenamed": {
     "description": "Folder activity (journal): renamed",
     "placeholders": {
@@ -451,7 +451,7 @@
   "@folderWasModified": {
     "description": "Folder activity (journal): modified"
   },
-  "folderWasMoved": "La carpeta fue modificada.",
+  "folderWasMoved": "La carpeta fue movida.",
   "@folderWasMoved": {
     "description": "Folder activity (journal): moved"
   },
@@ -479,19 +479,19 @@
   "@fileWasModified": {
     "description": "File activity (journal): modified"
   },
-  "fileWasMoved": "El archivo fue modificado.",
+  "fileWasMoved": "El archivo fue movido.",
   "@fileWasMoved": {
     "description": "File activity (journal): moved"
   },
-  "fileHadANewRevision": "Se subió una nueva versión del archivo.",
+  "fileHadANewRevision": "Una nueva revisión del archivo fue cargada.",
   "@fileHadANewRevision": {
     "description": "File activity (journal): new revision"
   },
-  "personalDrivesEmphasized": "DISCOS PERSONALES",
+  "personalDrivesEmphasized": "UNIDADES PERSONALES",
   "@personalDrives": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
-  "sharedDrivesEmphasized": "DISCOS COMPARTIDOS",
+  "sharedDrivesEmphasized": "UNIDADES COMPARTIDOS",
   "@sharedDrives": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
@@ -499,8 +499,8 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
-  "appVersoin": "Versión {version}.",
-  "@appVersoin": {
+  "appVersion": "Versión {version}.",
+  "@appVersion": {
     "description": "App version number",
     "placeholders": {
       "version": {
@@ -513,23 +513,23 @@
   "@newFolder": {
     "description": "Create a new folder entity"
   },
-  "uploadFiles": "Subir archivo(s)",
+  "uploadFiles": "Cargar archivo(s)",
   "@uploadFiles": {
     "description": "Upload files to the Weave"
   },
-  "newDrive": "Nuevo disco",
+  "newDrive": "Nueva unidad",
   "@newDrive": {
     "description": "Create a new drive entity"
   },
-  "attachDrive": "Adjuntar disco",
+  "attachDrive": "Vincular unidad",
   "@attachDrive": {
     "description": "Attach a shared drive"
   },
-  "attachDriveEmphasized": "ADJUNTAR DISCO",
+  "attachDriveEmphasized": "VINCULAR UNIDAD",
   "@attachDriveEmphasized": {
     "description": "Attach a shared drive. Emphasized with upper case"
   },
-  "howDoIGetAR": "Cómo consigo AR?",
+  "howDoIGetAR": "¿Cómo consigo AR?",
   "@howDoIGetAR": {
     "description": "Link to a help page explaining how to get Arweave tokens"
   },
@@ -537,7 +537,7 @@
   "@sync": {
     "description": "Sync button tooltip"
   },
-  "driveIssuesDetected": "Hemos detectado problemas con este disco. Navega el disco para repararlos.",
+  "driveIssuesDetected": "Hemos detectado inconvenientes con esta unidad. Navégala para solucionarlos.",
   "@driveIssuesDetected": {
     "description": "Orphan folders detected, the user must navigate through the contents to reach them"
   },
@@ -549,15 +549,15 @@
   "@cancel": {
     "description": "Cancel button"
   },
-  "exportingData": "Exportando tu informacón, por favor espera.",
+  "exportingData": "Exportando informacón. Por favor, espera.",
   "@exportingData": {
     "description": "The drive data is being procesed"
   },
-  "fileDownloadFailed": "La descarga del archivo falló",
+  "fileDownloadFailed": "La descarga del archivo ha fallado",
   "@fileDownloadFailed": {
     "description": "Could not export the CSV data"
   },
-  "attachingDriveEmphasized": "ADJUNTANDO DISCO...",
+  "attachingDriveEmphasized": "VINCULANDO UNIDAD...",
   "@attachingDriveEmphasized": {
     "description": "Drive attach form. Emphasized with upper case"
   },
@@ -565,19 +565,19 @@
   "@cancelEmphasized": {
     "description": "Cancel button. Emphatized with upper case"
   },
-  "attachEmphasized": "ADJUNTAR",
+  "attachEmphasized": "VINCULAR",
   "@attachEmphasized": {
     "description": "The action of attaching a drive. Emphasized with upper case"
   },
-  "creatingDriveEmphasized": "CREANDO DISCO...",
+  "creatingDriveEmphasized": "CREANDO UNIDAD...",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"
   },
-  "createDriveEmphasized": "CREAR DISCO",
+  "createDriveEmphasized": "CREAR UNIDAD",
   "@createDriveEmphasized": {
     "description": "Action of creating a new drive. Emphasized with upper case"
   },
-  "insufficientARToCreateDrive": "Tienes insuficiente AR para crear un disco.",
+  "insufficientARToCreateDrive": "Balance insuficiente para crear la unidad.",
   "@insufficientARToCreateDrive": {
     "description": "Not enough balance"
   },
@@ -589,27 +589,27 @@
   "@createEmphasized": {
     "description": "Create a drive. Emphasized with upper case"
   },
-  "renamingDriveEmphasized": "RENOMBRANDO DISCO...",
+  "renamingDriveEmphasized": "RENOMBRANDO UNIDAD...",
   "@renamingDriveEmphasized": {
     "description": "The drive is being renamed. Emphasized with upper case"
   },
-  "renameDrive": "Renombrar disco",
+  "renameDrive": "Renombrar unidad",
   "@renameDrive": {
     "description": "The action of renaming a drive"
   },
-  "renameDriveEmphasized": "RENOMBRAR DISCO",
+  "renameDriveEmphasized": "RENOMBRAR UNIDAD",
   "@renameDriveEmphasized": {
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
-  "driveName": "Nombre del disco",
+  "driveName": "Nombre la unidad",
   "@driveName": {
     "description": "The name of certain drive"
   },
-  "shareDrive": "Compartir disco",
+  "shareDrive": "Compartir unidad",
   "@shareDrive": {
     "description": "The action of sharing a drive link"
   },
-  "shareDriveWithOthers": "Compartir el disco con otros",
+  "shareDriveWithOthers": "Compartir la unidad con otros",
   "@shareDriveWithOthers": {
     "description": "The action of sharing a drive link"
   },
@@ -617,15 +617,15 @@
   "@copyLink": {
     "description": "Copy the link for sharing an entity"
   },
-  "anyoneCanAccessThisDrivePublic": "Cualquiera puede acceder a este disco público usando el enlace de arriba.",
+  "anyoneCanAccessThisDrivePublic": "Cualquiera puede acceder a esta unidad pública usando este enlace.",
   "@anyoneCanAccessThisDrivePublic": {
     "description": "Warning for the user that is about to share a drive"
   },
-  "anyoneCanAccessThisDrivePrivate": "Cualquiera puede acceder al disco privado usando el enlace de arriba.",
+  "anyoneCanAccessThisDrivePrivate": "Cualquiera puede acceder a esta unidad privada usando este enlace.",
   "@anyoneCanAccessThisDrivePrivate": {
     "description": "Warning for the user that is about to share a drive"
   },
-  "doneEmphasized": "LISTO",
+  "doneEmphasized": "HECHO",
   "@doneEmphaseized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
@@ -637,11 +637,11 @@
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
-  "fileFailedToDownload": "Falló la descarga del archivo",
+  "fileFailedToDownload": "La descarga del archivo ha fallado",
   "@fileFailedToDownload": {
     "description": "Error message for failed downloads"
   },
-  "tryAgainDownloadingFile": "Ésto puede suceder si el archivo fue subido recientemente. Por favor inténtalo nuevamente luego.",
+  "tryAgainDownloadingFile": "Ésto puede suceder si el archivo fue cargado recientemente. Por favor, inténtalo nuevamente luego.",
   "@tryAgainDownloadingFile": {
     "description": "The data is still being replicated between nodes of the network and it's yet not available"
   },
@@ -653,7 +653,7 @@
   "@shareFileWithOthers": {
     "description": "To share a file link"
   },
-  "anyoneCanAccessThisFile": "Cualquiera puede acceder a este archivo usando el enlace de arriba.",
+  "anyoneCanAccessThisFile": "Cualquiera puede acceder al archivo usando este enlace.",
   "@anyoneCanAccessThisFile": {
     "description": "Warning for the user that is about to share a file"
   },
@@ -677,7 +677,7 @@
   "@movingFileEmphasized": {
     "description": "The action of moving a file. Emphasized with upper case"
   },
-  "nameConflict": "Conflicto de nombres",
+  "nameConflict": "Hay un conflicto",
   "@nameConflict": {
     "description": "A conflict of names between two entities"
   },
@@ -757,7 +757,7 @@
   "@fixEmphasized": {
     "description": "Fix an orphan item. Emphasized with upper case"
   },
-  "targetFolderEmphasized": "CARPETA OBJETIVO",
+  "targetFolderEmphasized": "CARPETA DE DESTINO",
   "@targetFolderEmphasized": {
     "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
   },
@@ -765,7 +765,7 @@
   "@back": {
     "description": "Go back"
   },
-  "logout": "Desloguearse",
+  "logout": "Cerrar sesión",
   "@logout": {
     "description": "The logout process"
   },
@@ -773,15 +773,15 @@
   "@notLoggedIn": {
     "description": "User has not logged in"
   },
-  "logInToExperienceFeatures": "¡Ingresa para acceder a todas las características de ArDrive!",
+  "logInToExperienceFeatures": "¡Inicia sesión para acceder a todas las características de ArDrive!",
   "@logInToExperienceFeatures": {
     "description": "User must login to use the features of ArDrive"
   },
-  "login": "Ingresar",
+  "login": "Iniciar sesión",
   "@login": {
     "description": "The login process"
   },
-  "conflictingFilesFound": "{numberOfConflicts,plural, =0{No se encontró ningún archivo conflictivo} =1{Se encontró un archivo conflictivo} =other{Se encontraron {numberOfConflicts} archivos conflictivos}}",
+  "conflictingFilesFound": "{numberOfConflicts,plural, =0{No se encontró ningún conflicto} =1{Se encontró un conflicto} =other{Se encontraron {numberOfConflicts} conflictos}}",
   "@conflictingFilesFound": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -792,7 +792,7 @@
       }
     }
   },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{Ya existe un archivo con el mismo nombre en ese lugar. ¿Quieres continuar y subirlo como una nueva versión?} =other{Hay {numberOfFiles} archivos con el mismo nombre en ese lugar. ¿Quieres continuar y subirlos como una nueva versión?}}",
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{Ya existe un archivo con el mismo nombre en este lugar. ¿Quieres continuar y cargarlo como una nueva revisión?} =other{Hay {numberOfFiles} archivos con el mismo nombre en ese lugar. ¿Quieres continuar y cargarlo como una nueva revisión?}}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
@@ -803,11 +803,11 @@
       }
     }
   },
-  "conflictingFiles": "Archivos conflictivos:",
+  "conflictingFiles": "Archivos con conflictos:",
   "@conflictingFiles": {
     "description": "Files being in conflict with already existing items"
   },
-  "upload": "Subir",
+  "upload": "Cargar",
   "@upload": {
     "description": "The action of uploading certain item"
   },
@@ -815,7 +815,7 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
-  "filesTooLarge": "{numberOfFiles,plural, =1{1 archivo demasiado grande} =other{{numberOfFiles} archivos demasiado grande}}",
+  "filesTooLarge": "{numberOfFiles,plural, =1{El archivo es demasiado grande} =other{{numberOfFiles} archivos son demasiado grande}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
     "placeholders": {
@@ -826,23 +826,23 @@
       }
     }
   },
-  "filesTooLargeExplanationPrivate": "ArDrive en WEB actualmente soporta únicamente archivos más pequeños que 100 MB para discos privados",
+  "filesTooLargeExplanationPrivate": "Actualmente, las unidades privadas en ArDrive Web soportan archivos de hasta 100 MB",
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "ArDrive en WEB actualmente soporta únicamente archivos más pequeños que 1.25 GB para discos públicos",
+  "filesTooLargeExplanationPublic": "Actualmente, las unidades públicas en ArDrive WEB soportan archivos de hasta 1.25 GB",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
-  "tooLargeForUpload": "Demasiado grande para subir:",
+  "tooLargeForUpload": "Archivos demasiado grande para cargar:",
   "@tooLargeForUpload": {
     "description": "Files too large for upload"
   },
-  "preparingUpload": "Preparando subida...",
+  "preparingUpload": "Preparando la carga...",
   "@preparingUpload": {
     "description": "The upload is being processed"
   },
-  "arConnectRemainOnThisTab": "PRECAUCIÓN: Tu billetera WEB3 está firmando tus transacciones. Por favor mantente en esta pestaña hasta que finalice.",
+  "arConnectRemainOnThisTab": "PRECAUCIÓN: Tu monedero WEB3 está firmando las transacciones. Por favor mantente en esta pestaña hasta completar el proceso.",
   "@arConnectRemainOnThisTab": {
     "description": "Warning for te user to do not leave the tab"
   },
@@ -850,11 +850,11 @@
   "@thisMayTakeAWhile": {
     "description": "Uploading may take a while"
   },
-  "failedToPrepareFileUpload": "Falló la preparación de la subida de archivos",
+  "failedToPrepareFileUpload": "La preparación de archivos falló",
   "@failedToPrepareFileUpload": {
     "description": "Error message for when it failed to prepare the upload"
   },
-  "failedToPrepareFileUploadExplanation": "Ocurrió un error mientras se preparaba la subida de tus archivos. Por favor utiliza la aplicación de escritorio o intenta con un archivo más pequeño.",
+  "failedToPrepareFileUploadExplanation": "Ocurrió un error mientras se preparaba la carga de tus archivos. Por favor utiliza la aplicación de escritorio o intenta con un archivo más pequeño.",
   "@failedToPrepareFileUploadExplanation": {
     "description": "Error message for when it failed to prepare the upload"
   },
@@ -862,7 +862,7 @@
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
-  "uploadNFiles": "{numberOfFiles,plural, =1{Subir 1 archivo} =other{Subir {numberOfFiles} archivos}}",
+  "uploadNFiles": "{numberOfFiles,plural, =1{Cargar 1 archivo} =other{Cargar {numberOfFiles} archivos}}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",
     "placeholders": {
@@ -873,7 +873,7 @@
       }
     }
   },
-  "uploadingNFiles": "{numberOfFiles,plural, =1{Subiendo 1 archivo...} =other{Subiendo {numberOfFiles} archivos...}}",
+  "uploadingNFiles": "{numberOfFiles,plural, =1{Cargando 1 archivo...} =other{Cargando {numberOfFiles} archivos...}}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
@@ -884,7 +884,7 @@
       }
     }
   },
-  "cost": "Coste: {arPrice} AR",
+  "cost": "Costo: {arPrice} AR",
   "@cost": {
     "description": "The total cost estimation of the upload quoted in AR",
     "placeholders": {
@@ -894,7 +894,7 @@
       }
     }
   },
-  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{Este archivo será subido públicamente.} =other{Estos archivos serán subidos públicamente.}}",
+  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{Este archivo será cargado públicamente.} =other{Estos archivos serán cargados públicamente.}}",
   "@filesWillBeUploadedPublicly": {
     "description": "Warning for files that will be public after uploaded",
     "placeholders": {
@@ -905,23 +905,23 @@
       }
     }
   },
-  "insufficientARForUpload": "Insufficiente AR para la subida.",
+  "insufficientARForUpload": "AR insufficiente para la carga.",
   "@insufficientARForUpload": {
     "description": "The wallet has no enough balance"
   },
-  "bundlingAndSigningUpload": "Empaquetando y firmando la subida",
+  "bundlingAndSigningUpload": "Empaquetando y firmando las transacciones",
   "@bundlingAndSigningUpload": {
     "description": "The app is bundling together and signing the transactions"
   },
-  "signingUpload": "Firmando la subida",
+  "signingUpload": "Firmando las transacciones",
   "@signingUpload": {
     "description": "The app is signing the transations"
   },
-  "walletSwitch": "Cambio de billetera",
+  "walletSwitch": "Cambio de monedero",
   "@walletSwitch": {
     "description": "The wallet has changed. The user must log in again"
   },
-  "walletChangeDetected": "Se detectó el cambio de billetera. Por favor desloguéate y vuelve a ingresar nuevamente",
+  "walletChangeDetected": "Se detectó un cambio de monedero. Por favor, vuelve a ingresar nuevamente",
   "@walletChangeDetected": {
     "description": "The wallet has changed. The user must log in again"
   },
@@ -933,7 +933,7 @@
   "@ardriveIsOptimizedForLargeScreens": {
     "description": "Screen not supported page"
   },
-  "tryOnAnotherDevice": "Por favor inténtalo en otro dispositivo o mantente actualizado sobre la próxima aplicación móvil suscribiéndote a nuestro boletín informativo.",
+  "tryOnAnotherDevice": "Por favor inténtalo en otro dispositivo y mantente actualizado sobre la próxima aplicación móvil suscribiéndote a nuestro boletín informativo.",
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
   },
@@ -945,7 +945,7 @@
   "@specifiedFileDoesNotExist": {
     "description": "The shared file the user is trying to access does not exist"
   },
-  "failedToSyncDrive": "No se pudo sincronizar el contenido del disco.",
+  "failedToSyncDrive": "No se pudo sincronizar el contenido de la unidad.",
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
   },
@@ -957,7 +957,7 @@
   "@warningEmphasized": {
     "description": "Congestion warning. Emphasized with upper case"
   },
-  "congestionWarning": "Actualmente Arweave está experienciando congestión pesada. Posiblemente tu subida falle en este momento.",
+  "congestionWarning": "Actualmente Arweave está experimentando mucho trafico. Posiblemente tu carga no sea exitosa en este momento.",
   "@congestionWarning": {
     "description": "Congestion warning"
   },
@@ -973,7 +973,7 @@
   "@profile": {
     "description": "The user profile: user name, wallet address and wallet balance"
   },
-  "syncingPleaseRemainOnThisTab": "Sincronizando... Pro favor mantente en esta pestaña.",
+  "syncingPleaseRemainOnThisTab": "Sincronizando... Por favor, permanece en esta pestaña.",
   "@syncingPleaseRemainOnThisTab": {
     "description": "Syncing drives"
   },
