@@ -437,11 +437,11 @@
       }
     }
   },
-  "folderWasRenamed": "This folder was renamed to {driveName}.",
+  "folderWasRenamed": "This folder was renamed to {folderName}.",
   "@folderWasRenamed": {
     "description": "Folder activity (journal): renamed",
     "placeholders": {
-      "driveName": {
+      "folderName": {
         "type": "String",
         "example": "folder name"
       }
@@ -465,11 +465,11 @@
       }
     }
   },
-  "fileWasRenamed": "This file was renamed to {driveName}.",
+  "fileWasRenamed": "This file was renamed to {fileName}.",
   "@fileWasRenamed": {
     "description": "File activity (journal): renamed",
     "placeholders": {
-      "driveName": {
+      "fileName": {
         "type": "String",
         "example": "file name"
       }
