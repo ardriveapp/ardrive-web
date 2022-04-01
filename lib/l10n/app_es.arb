@@ -32,7 +32,7 @@
   "@ardriveIsntJustAnotherCloudSyncApp": {
     "description": "Description about the permanence and uniqueness of ArDrive"
   },
-  "anyFilesWillOutliveYou": "¡Los archivos que subas aquí existirán para siempre!",
+  "anyFilesWillOutliveYou": "¡Los archivos que cargues aquí existirán para siempre!",
   "@anyFilesWillOutliveYou": {
     "description": "Files on the Weave will exist there forever"
   },
@@ -40,7 +40,7 @@
   "@weDoAFewThingsDifferently": {
     "description": "What ArDrive does differently"
   },
-  "payPerFileEmphasized": "PAGA SOLO POR LO QUE SUBES",
+  "payPerFileEmphasized": "PAGA SOLO POR LO QUE SUBAS",
   "@payPerFileEmphasized": {
     "description": "Payment philosophy. Emphasized with upper case"
   },
