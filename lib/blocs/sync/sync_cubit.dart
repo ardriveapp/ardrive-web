@@ -28,6 +28,8 @@ const kSyncTimerDuration = 5;
 const kArConnectSyncTimerDuration = 2;
 const kBlockHeightLookBack = 240;
 
+const _pendingWaitTime = Duration(days: 1);
+
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.
 class SyncCubit extends Cubit<SyncState> {
@@ -371,6 +373,7 @@ class SyncCubit extends Cubit<SyncState> {
           newRevisions
               .map(
                 (rev) => NetworkTransactionsCompanion.insert(
+                  transactionDateCreated: rev.dateCreated,
                   id: rev.metadataTxId.value,
                   status: Value(TransactionStatus.confirmed),
                 ),
@@ -423,6 +426,7 @@ class SyncCubit extends Cubit<SyncState> {
           newRevisions
               .map(
                 (rev) => NetworkTransactionsCompanion.insert(
+                  transactionDateCreated: rev.dateCreated,
                   id: rev.metadataTxId.value,
                   status: Value(TransactionStatus.confirmed),
                 ),
@@ -479,12 +483,14 @@ class SyncCubit extends Cubit<SyncState> {
               .expand(
                 (rev) => [
                   NetworkTransactionsCompanion.insert(
+                    transactionDateCreated: rev.dateCreated,
                     id: rev.metadataTxId.value,
                     status: Value(TransactionStatus.confirmed),
                   ),
                   // We cannot be sure that the data tx of files have been mined
                   // so we'll mark it as pending initially.
                   NetworkTransactionsCompanion.insert(
+                    transactionDateCreated: rev.dateCreated,
                     id: rev.dataTxId.value,
                     status: Value(TransactionStatus.pending),
                   ),
@@ -598,7 +604,7 @@ class SyncCubit extends Cubit<SyncState> {
           .write(FolderEntriesCompanion(path: Value(folderPath)));
 
       for (final staleFileId in node.files.keys) {
-        final filePath = folderPath + '/' + node.files[staleFileId]!;
+        final filePath = folderPath + '/' + node.files[staleFileId]!.name;
 
         await _driveDao
             .updateFileById(driveId, staleFileId)
@@ -675,6 +681,14 @@ class SyncCubit extends Cubit<SyncState> {
 
         var txStatus;
 
+        DateTime? transactionDateCreated;
+
+        if (pendingTxMap[txId]!.transactionDateCreated != null) {
+          transactionDateCreated = pendingTxMap[txId]!.transactionDateCreated!;
+        } else {
+          transactionDateCreated = await _getDateCreatedByDataTx(txId);
+        }
+
         if (txConfirmed) {
           txStatus = TransactionStatus.confirmed;
         } else if (txNotFound) {
@@ -684,14 +698,18 @@ class SyncCubit extends Cubit<SyncState> {
                   .difference(pendingTxMap[txId]!.dateCreated)
                   .inMinutes >
               kRequiredTxConfirmationPendingThreshold;
-          if (abovePendingThreshold) {
+
+          // Assume that data tx that weren't mined up to a maximum of
+          // `_pendingWaitTime` was failed.
+          if (abovePendingThreshold ||
+              _isOverThePendingTime(transactionDateCreated)) {
             txStatus = TransactionStatus.failed;
           }
         }
-
         if (txStatus != null) {
           await _driveDao.writeToTransaction(
             NetworkTransactionsCompanion(
+              transactionDateCreated: Value(transactionDateCreated),
               id: Value(txId),
               status: Value(txStatus),
             ),
@@ -699,6 +717,26 @@ class SyncCubit extends Cubit<SyncState> {
         }
       }
     });
+  }
+
+  bool _isOverThePendingTime(DateTime? transactionCreatedDate) {
+    // If don't have the date information we cannot assume that is over the pending time
+    if (transactionCreatedDate == null) {
+      return false;
+    }
+
+    return DateTime.now().isAfter(transactionCreatedDate.add(_pendingWaitTime));
+  }
+
+  Future<DateTime?> _getDateCreatedByDataTx(String dataTx) async {
+    final rev = await _driveDao.fileRevisionByDataTx(tx: dataTx).get();
+
+    // no file found
+    if (rev.isEmpty) {
+      return null;
+    }
+
+    return rev.first.dateCreated;
   }
 
   @override

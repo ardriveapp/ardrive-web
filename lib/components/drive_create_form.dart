@@ -76,7 +76,8 @@ class DriveCreateForm extends StatelessWidget {
                             labelText: appLocalizationsOf(context).name),
                         showErrors: (control) =>
                             control.dirty && control.invalid,
-                        validationMessages: (_) => kValidationMessages,
+                        validationMessages: (_) =>
+                            kValidationMessages(appLocalizationsOf(context)),
                       ),
                       const SizedBox(height: 16),
                       ReactiveDropdownField(
@@ -85,7 +86,8 @@ class DriveCreateForm extends StatelessWidget {
                             labelText: appLocalizationsOf(context).privacy),
                         showErrors: (control) =>
                             control.dirty && control.invalid,
-                        validationMessages: (_) => kValidationMessages,
+                        validationMessages: (_) =>
+                            kValidationMessages(appLocalizationsOf(context)),
                         items: [
                           DropdownMenuItem(
                             value: 'public',

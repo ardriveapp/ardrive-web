@@ -35,12 +35,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
 
   @override
   Widget build(BuildContext context) =>
-      BlocConsumer<DriveShareCubit, DriveShareState>(
-        listener: (context, state) {
-          if (state is DriveShareLoadSuccess) {
-            shareLinkController.text = state.driveShareLink.toString();
-          }
-        },
+      BlocBuilder<DriveShareCubit, DriveShareState>(
         builder: (context, state) => AppDialog(
           title: appLocalizationsOf(context).shareDriveWithOthers,
           content: SizedBox(
@@ -61,7 +56,8 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                     children: [
                       Expanded(
                         child: TextField(
-                          controller: shareLinkController,
+                          controller: shareLinkController
+                            ..text = state.driveShareLink.toString(),
                           readOnly: true,
                         ),
                       ),
