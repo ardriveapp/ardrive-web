@@ -997,7 +997,7 @@
   },
   "folderCount": "{folderCount,plural, =0{Ninguna carpeta} =1{1 carpeta} other{{folderCount} carpetas}",
   "@folderCount": {
-    "description": "Plurals for the folder count",
+    "description": "Plurals for the folder count. First character capitalized",
     "placeholders": {
       "folderCount": {
         "type": "int",
@@ -1008,7 +1008,7 @@
   },
   "fileCount": "{fileCount,plural, =0{ningún archivo} =1{1 archivo} other{{fileCount} archivos}}",
   "@fileCount": {
-    "description": "Plurals for the file count",
+    "description": "Plurals for the file count. First character in lower case",
     "placeholders": {
       "fileCount": {
         "type": "int",
