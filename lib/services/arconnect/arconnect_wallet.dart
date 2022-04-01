@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:arweave/arweave.dart';
-import 'package:arweave/utils.dart';
 
 class ArConnectWallet extends Wallet {
   ArConnectService arConnectService = ArConnectService();
@@ -24,15 +23,15 @@ class ArConnectWallet extends Wallet {
   }
 
   @override
-  Future<Uint8List> sign(TransactionBase transaction) async {
-    print(json.encode(transaction.toUnsignedJson()));
-    final signature = await arConnectService.signTransaction(
+  Future<TransactionBase> sign(TransactionBase transaction) async {
+    final signedTransaction = await arConnectService.signTransaction(
       json.encode(transaction.toUnsignedJson()),
     );
-    print("message \n" +
-        encodeBytesToBase64(
-            await signMessage(await transaction.getSignatureData())));
-    print("sign \n" + signature);
-    return decodeBase64ToBytes(signature);
+    
+    if (transaction is DataItem) {
+      return DataItem.fromJson(json.decode(signedTransaction));
+    } else {
+      return Transaction.fromJson(json.decode(signedTransaction));
+    }
   }
 }

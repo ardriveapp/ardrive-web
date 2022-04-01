@@ -104,12 +104,6 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await rootFolderDataItem.sign(profile.wallet);
       await driveDataItem.sign(profile.wallet);
 
-      print(driveDataItem.id);
-      print(driveDataItem.signature);
-
-      assert(await driveDataItem.verify() == true);
-      assert(await rootFolderDataItem.verify() == true);
-
       final driveBundle = await DataBundle.fromDataItems(
         items: [driveDataItem, rootFolderDataItem],
       );
@@ -118,8 +112,6 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
         driveBundle,
         profile.wallet,
       );
-
-      assert(await createTx.verify() == true);
 
       await _arweave.postTx(createTx);
       rootFolderEntity.txId = rootFolderDataItem.id;
