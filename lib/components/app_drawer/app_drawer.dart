@@ -140,7 +140,8 @@ class AppDrawer extends StatelessWidget {
                               return Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: Text(
-                                  'Version ${snapshot.data!.version}',
+                                  appLocalizationsOf(context)
+                                      .appVersion(snapshot.data!.version),
                                   style: Theme.of(context)
                                       .textTheme
                                       .caption!
