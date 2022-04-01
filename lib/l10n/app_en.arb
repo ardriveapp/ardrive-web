@@ -437,7 +437,7 @@
       }
     }
   },
-  "folderWasRenamed": "This folder was renamed to {folderName}.",
+  "folderWasRenamed": "This folder was renamed to {driveName}.",
   "@folderWasRenamed": {
     "description": "Folder activity (journal): renamed",
     "placeholders": {
@@ -465,7 +465,7 @@
       }
     }
   },
-  "fileWasRenamed": "This file was renamed to {fileName}.",
+  "fileWasRenamed": "This file was renamed to {driveName}.",
   "@fileWasRenamed": {
     "description": "File activity (journal): renamed",
     "placeholders": {
