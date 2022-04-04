@@ -819,21 +819,7 @@
   "@duplicateFolders": {
     "description": "Folder name conflict dialog title"
   },
-  "aFolderWithSameNameAlreadyExists": "A folder with the same name already exists at this location. Please rename it and try uploading again.",
-  "@aFfolderWithSameNameAlreadyExists": {
-    "description": "Asks the user what to do on folder and file name conflict"
-  },
-  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders} folders with the same name already exist at this location. Please rename them and try uploading again.",
-  "@foldersWithTheSameNameAlreadyExists": {
-    "description": "Asks the user what to do on folder and file name conflict",
-    "placeholders": {
-      "numberOfFolders": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "0"
-      }
-    }
-  },
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{A folder with the same name already exists at this location. Please rename it and try uploading again.}  =other{{numberOfFolders} folders with the same name already exist at this location. Please rename them and try uploading again.}}",
   "conflictingFiles": "Conflicting files:",
   "@conflictingFiles": {
     "description": "Files being in conflict with already existing items"
