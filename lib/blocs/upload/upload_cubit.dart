@@ -42,16 +42,16 @@ class UploadCubit extends Cubit<UploadState> {
 
   bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
-  UploadCubit(
-      {required this.driveId,
-      required this.folderId,
-      required this.files,
-      required ProfileCubit profileCubit,
-      required DriveDao driveDao,
-      required ArweaveService arweave,
-      required PstService pst,
-      required UploadPlanUtils uploadPlanUtils})
-      : _profileCubit = profileCubit,
+  UploadCubit({
+    required this.driveId,
+    required this.folderId,
+    required this.files,
+    required ProfileCubit profileCubit,
+    required DriveDao driveDao,
+    required ArweaveService arweave,
+    required PstService pst,
+    required UploadPlanUtils uploadPlanUtils,
+  })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
         _pst = pst,
