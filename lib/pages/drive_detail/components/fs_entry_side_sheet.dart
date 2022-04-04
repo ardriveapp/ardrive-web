@@ -2,9 +2,11 @@ part of '../drive_detail_page.dart';
 
 class FsEntrySideSheet extends StatelessWidget {
   final String driveId;
+  final Privacy drivePrivacy;
   final SelectedItem? maybeSelectedItem;
   FsEntrySideSheet({
     required this.driveId,
+    required this.drivePrivacy,
     this.maybeSelectedItem,
   });
 
@@ -387,10 +389,46 @@ class FsEntrySideSheet extends StatelessWidget {
                         revisionConfirmationStatus =
                             revision.confirmationStatus;
                       } else if (revision is FileRevisionWithTransactions) {
+                        final previewOrDownloadButton = InkWell(
+                          onTap: () {
+                            downloadOrPreviewRevision(
+                              drivePrivacy: drivePrivacy,
+                              context: context,
+                              revision: revision,
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: drivePrivacy == DrivePrivacy.private
+                                  ? [
+                                      Text(
+                                          appLocalizationsOf(context).download),
+                                      SizedBox(width: 4),
+                                      Icon(Icons.download),
+                                    ]
+                                  : [
+                                      Text(appLocalizationsOf(context).preview),
+                                      SizedBox(width: 4),
+                                      Icon(Icons.open_in_new)
+                                    ],
+                            ),
+                          ),
+                        );
+
                         switch (revision.action) {
                           case RevisionAction.create:
-                            content = Text(appLocalizationsOf(context)
-                                .fileWasCreatedWithName(revision.name));
+                            content = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  appLocalizationsOf(context)
+                                      .fileWasCreatedWithName(revision.name),
+                                ),
+                                previewOrDownloadButton,
+                              ],
+                            );
                             break;
                           case RevisionAction.rename:
                             content = Text(appLocalizationsOf(context)
@@ -401,8 +439,14 @@ class FsEntrySideSheet extends StatelessWidget {
                                 Text(appLocalizationsOf(context).fileWasMoved);
                             break;
                           case RevisionAction.uploadNewVersion:
-                            content = Text(appLocalizationsOf(context)
-                                .fileHadANewRevision);
+                            content = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(appLocalizationsOf(context)
+                                    .fileHadANewRevision),
+                                previewOrDownloadButton,
+                              ],
+                            );
                             break;
                           default:
                             content = Text(
@@ -464,6 +508,23 @@ class FsEntrySideSheet extends StatelessWidget {
           ),
         ),
       );
+}
+
+void downloadOrPreviewRevision({
+  required String drivePrivacy,
+  required BuildContext context,
+  required FileRevisionWithTransactions revision,
+}) {
+  if (drivePrivacy == DrivePrivacy.private) {
+    promptToDownloadProfileFile(
+      context: context,
+      driveId: revision.driveId,
+      fileId: revision.fileId,
+      dataTxId: revision.dataTxId,
+    );
+  } else {
+    context.read<DriveDetailCubit>().launchPreview(revision.dataTxId);
+  }
 }
 
 class CopyIconButton extends StatelessWidget {

@@ -445,7 +445,7 @@
   "@folderWasRenamed": {
     "description": "Folder activity (journal): renamed",
     "placeholders": {
-      "driveName": {
+      "folderName": {
         "type": "String",
         "example": "folder name"
       }
@@ -473,7 +473,7 @@
   "@fileWasRenamed": {
     "description": "File activity (journal): renamed",
     "placeholders": {
-      "driveName": {
+      "fileName": {
         "type": "String",
         "example": "file name"
       }
