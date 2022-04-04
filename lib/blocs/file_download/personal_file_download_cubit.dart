@@ -3,8 +3,9 @@ part of 'file_download_cubit.dart';
 /// [ProfileFileDownloadCubit] includes logic to allow a user to download files
 /// that they have attached to their profile.
 class ProfileFileDownloadCubit extends FileDownloadCubit {
-  final String driveId;
-  final String fileId;
+  final DriveID driveId;
+  final FileID fileId;
+  final TxID dataTxId;
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
@@ -13,6 +14,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   ProfileFileDownloadCubit({
     required this.driveId,
     required this.fileId,
+    required this.dataTxId,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required ArweaveService arweave,
@@ -38,7 +40,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       );
       final dataRes = await http.get(
         Uri.parse(
-          _arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}',
+          _arweave.client.api.gatewayUrl.origin + '/$dataTxId',
         ),
       );
 
