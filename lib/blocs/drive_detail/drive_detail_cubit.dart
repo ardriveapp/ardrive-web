@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/entities/constants.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
@@ -9,6 +10,7 @@ import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../blocs.dart';
 
@@ -166,6 +168,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
 
     emit(state);
+  }
+
+  Future<void> launchPreview(TxID dataTxId) {
+    return launch('${_config.defaultArweaveGatewayUrl}/$dataTxId');
   }
 
   void sortFolder(
