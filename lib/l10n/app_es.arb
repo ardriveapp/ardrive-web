@@ -214,7 +214,7 @@
   "@next": {
     "description": "Action of going to the next page"
   },
-  "nextEmphasized": "NEXT",
+  "nextEmphasized": "SIGUIENTE",
   "@nextEmphasized": {
     "description": "Next step"
   },
@@ -773,7 +773,7 @@
   "@back": {
     "description": "Go back"
   },
-  "backEmphasized": "BACK",
+  "backEmphasized": "ANTERIOR",
   "@backEmphasized": {
     "description": "Go back. Emphasized with upper case"
   },
