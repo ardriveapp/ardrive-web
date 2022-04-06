@@ -5,7 +5,6 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
@@ -105,7 +104,8 @@ class FsEntryMoveForm extends StatelessWidget {
           }
         },
         builder: (context, state) {
-          Widget _buildButtonBar() => ButtonBar(
+          Widget _buildButtonBar() => Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   TextButton(
                       onPressed: () => Navigator.pop(context),
@@ -146,6 +146,15 @@ class FsEntryMoveForm extends StatelessWidget {
                 ? appLocalizationsOf(context).moveFolderEmphasized
                 : appLocalizationsOf(context).moveFileEmphasized,
             contentPadding: EdgeInsets.zero,
+            actions: [
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                children: [
+                  _buildCreateFolderButton(),
+                  Expanded(child: _buildButtonBar()),
+                ],
+              ),
+            ],
             content: state is FsEntryMoveFolderLoadSuccess
                 ? SizedBox(
                     width: kLargeDialogWidth,
@@ -211,25 +220,6 @@ class FsEntryMoveForm extends StatelessWidget {
                           ),
                         ),
                         Divider(),
-                        Padding(
-                            padding: const EdgeInsets.only(right: 16),
-                            child: ScreenTypeLayout(
-                              desktop: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _buildCreateFolderButton(),
-                                  _buildButtonBar(),
-                                ],
-                              ),
-                              mobile: Wrap(
-                                alignment: WrapAlignment.spaceBetween,
-                                children: [
-                                  _buildCreateFolderButton(),
-                                  _buildButtonBar(),
-                                ],
-                              ),
-                            )),
                       ],
                     ),
                   )
