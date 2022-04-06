@@ -5,21 +5,6 @@ on:
       - gh-pages
       - master
 jobs:
-  # test:
-  #  runs-on: ubuntu-latest
-  #  steps:
-  #    - uses: actions/checkout@v2
-  #      with:
-  #        persist-credentials: false
-  #    - uses: subosito/flutter-action@v1
-  #      with:
-  #        channel: 'stable'
-  #    - name: Prepare app
-  #      run: |
-  #        flutter pub get
-  #        flutter pub run build_runner build
-  #    - name: Run tests
-  #      run: flutter test
   deploy-preview:
     runs-on: ubuntu-latest
     steps:
@@ -35,6 +20,10 @@ jobs:
           flutter pub run build_runner build
           flutter config --enable-web
           flutter build web --profile
+      - name: main.dart.js cache invalidation
+        run: |
+          git_revision=$(git rev-parse --short HEAD)
+          sed -i 's/main.dart.js/main.dart.js?version='"$git_revision"'/' build/web/index.html
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
