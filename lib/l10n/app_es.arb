@@ -823,7 +823,7 @@
   "@upload": {
     "description": "The action of uploading certain item"
   },
-  "uploadEmphasized": "UPLOAD",
+  "uploadEmphasized": "CARGAR",
   "@uploadEmphasized": {
     "description": "The action of uploading certain item"
   },
