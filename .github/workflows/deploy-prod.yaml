@@ -29,8 +29,7 @@ jobs:
           flutter build web
       - name: main.dart.js cache invalidation
         run: |
-          git_revision=$(git rev-parse --short HEAD)
-          sed -i 's/main.dart.js/main.dart.js?version='"$git_revision"'/' build/web/index.html
+          sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
