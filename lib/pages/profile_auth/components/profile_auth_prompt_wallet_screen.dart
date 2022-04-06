@@ -20,13 +20,15 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'WELCOME TO',
+              // TODO replace at PE-1125
+              appLocalizationsOf(context).welcomeTo_main,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headline5,
             ),
             const SizedBox(height: 32),
             Text(
-              'Your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive.',
+              // TODO replace at PE-1125
+              appLocalizationsOf(context).welcomeTo_description,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headline6,
             ),
