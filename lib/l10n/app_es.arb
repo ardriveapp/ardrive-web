@@ -28,7 +28,7 @@
   "@welcomeToThePermawebEmphasized": {
     "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
   },
-  "ardriveIsntJustAnotherCloudSyncApp": "ArDrive no es sólo otra aplicacion de almacenamiento en la nube. Es el comienzo de un disco duro permanente.",
+  "ardriveIsntJustAnotherCloudSyncApp": "ArDrive no es sólo otra aplicación de almacenamiento en la nube. Es el comienzo de un disco duro permanente.",
   "@ardriveIsntJustAnotherCloudSyncApp": {
     "description": "Description about the permanence and uniqueness of ArDrive"
   },
@@ -144,6 +144,10 @@
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing the terms of of service and privacy policy"
   },
+  "aggreeToTerms_main": "Acepto ",
+  "@aggreeToTerms_main": {
+    "description": "Checkbox for agreeing the terms of of service and privacy policy"
+  },
   "aggreeToTerms_link": "los términos de servicio y la política de privacidad de ArDrive",
   "@aggreeToTerms_link": {
     "description": "Segment of text representing a link to the legal documents"
@@ -209,6 +213,10 @@
   "next": "Siguiente",
   "@next": {
     "description": "Action of going to the next page"
+  },
+  "nextEmphasized": "NEXT",
+  "@nextEmphasized": {
+    "description": "Next step"
   },
   "goToLast": "Ir al final",
   "@goToLast": {
@@ -441,7 +449,7 @@
   "@folderWasRenamed": {
     "description": "Folder activity (journal): renamed",
     "placeholders": {
-      "driveName": {
+      "folderName": {
         "type": "String",
         "example": "folder name"
       }
@@ -469,7 +477,7 @@
   "@fileWasRenamed": {
     "description": "File activity (journal): renamed",
     "placeholders": {
-      "driveName": {
+      "fileName": {
         "type": "String",
         "example": "file name"
       }
@@ -765,6 +773,10 @@
   "@back": {
     "description": "Go back"
   },
+  "backEmphasized": "BACK",
+  "@backEmphasized": {
+    "description": "Go back. Emphasized with upper case"
+  },
   "logout": "Cerrar sesión",
   "@logout": {
     "description": "The logout process"
@@ -781,11 +793,11 @@
   "@login": {
     "description": "The login process"
   },
-  "conflictingFilesFound": "{numberOfConflicts,plural, =0{No se encontró ningún conflicto} =1{Se encontró un conflicto} =other{Se encontraron {numberOfConflicts} conflictos}}",
-  "@conflictingFilesFound": {
+  "duplicateFiles": "{numberOfDuplicateFiles,plural, =0{No hay ningún archivo duplicado} =1{Se encontró un archivo duplicado} =other{Se encontraron {numberOfDuplicateFiles} archivos duplicados}}",
+  "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
-      "numberOfConflicts": {
+      "numberOfDuplicateFiles": {
         "type": "int",
         "format": "decimalPattern",
         "example": "0"
@@ -809,6 +821,10 @@
   },
   "upload": "Cargar",
   "@upload": {
+    "description": "The action of uploading certain item"
+  },
+  "uploadEmphasized": "UPLOAD",
+  "@uploadEmphasized": {
     "description": "The action of uploading certain item"
   },
   "continueEmphasized": "CONTINUAR",
@@ -1028,6 +1044,157 @@
       "fileCountString": {
         "type": "String",
         "example": "10 files"
+      }
+    }
+  },
+  "uploadingManifestEmphasized": "CARGANDO MANIFESTO...",
+  "@uploadingManifestEmphasized": {
+    "description": "The manifest is being uploaded"
+  },
+  "preparingManifestEmphasized": "PREPARANDO MANIFESTO...",
+  "@preparingManifestEmphasized": {
+    "description": "The manifest is being prepared for the upload"
+  },
+  "manifestName": "Nombre del manifesto",
+  "@manifestName": {
+    "description": "The name of the manifest"
+  },
+  "failedToCreateManifestEmphasized": "LA CREACIÓN DEL MANIFESTO HA FALLADO",
+  "@failedToCreateManifestEmphasized": {
+    "description": "The manifest could not be created"
+  },
+  "walletChangedDuringManifestCreation": "El monedero que estabas usando cambió mientras se creaba el manifesto...",
+  "@walletChangedDuringManifestCreation": {
+    "description": "The wallet has been changed while the creation of the manifest was in process"
+  },
+  "manifestTransactionUnexpectedlyFailed": "La transacción del manifesto ha fallado inesperadamente mientras se cargaba a la red de Arweave...",
+  "@manifestTransactionUnexpectedlyFailed": {
+    "description": "The manifest transaction did not succeed being uploaded"
+  },
+  "insufficientBalanceForManifest": "El balance de {walletBalance} AR es insuficiente para esta transacción de manifesto que cuesta: {totalCost} AR...",
+  "@insufficientBalanceForManifest": {
+    "description": "The ammount of AR the wallet has is not enough to upload the manifest transaction",
+    "placeholders": {
+      "walletBalance": {
+        "type": "String",
+        "example": "0"
+      },
+      "totalCost": {
+        "type": "String",
+        "example": "1.2"
+      }
+    }
+  },
+  "conflictingNameFound": "Se encontró un conflicto de nombres",
+  "@conflictingNameFound": {
+    "description": "There is a non-manifest entity with the same name"
+  },
+  "conflictingNameFoundChooseNewName": "Una entidad con ese nombre ya existe en este lugar. Por favor, elige un nombre diferente.",
+  "@conflictingNameFoundChooseNewName": {
+    "description": "The user must type a non-conflicting name"
+  },
+  "conflictingManifestFound": "El manifesto ya existe",
+  "@conflictingManifestFound": {
+    "description": "There is an on-chain entity with the same name"
+  },
+  "conflictingManifestFoundChooseNewName": "Ya hay un manifesto con ese nombre aquí. ¿Quieres continuar y cargar este manifesto como una nueva revisión?",
+  "@conflictingManifestFoundChooseNewName": {
+    "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
+  },
+  "addnewManifestEmphasized": "AÑADIR NUEVO MANIFESTO",
+  "@addnewManifestEmphasized": {
+    "description": "There is a non-manifest entity with the same name"
+  },
+  "aManifestIsASpecialKindOfFile": "Un manifesto es un tipo especial de archivos que relaciona cualquier cantidad de transacciones Arweave con direcciones amigable.",
+  "@aManifestIsASpecialKindOfFile": {
+    "description": "Simple explanation of what a manifest is"
+  },
+  "learnMore": "Conocer más",
+  "@learnMore": {
+    "description": "Link to a document explaining manifests in detail"
+  },
+  "createManifestEmphasized": "CREAR MANIFESTO",
+  "@createManifestEmphasized": {
+    "description": "To create a manifest"
+  },
+  "filesWillBePermanentlyPublicWarning": "Todos los archivos cargados aquí serán permanentemente públicos para cualquiera en el internet. Asegúrate de estar haciendo la información pública a propósito.",
+  "@filesWillBePermanentlyPublicWarning": {
+    "description": "Make the user aware that it is uploading permanent data publicly"
+  },
+  "createHereEmphasized": "CREAR AQUÍ",
+  "@createHereEmphasized": {
+    "description": "Create the manifest in the current selected folder"
+  },
+  "confirmEmphasized": "CONFIRMAR",
+  "@confirmEmphasized": {
+    "description": "Confirm the prompted question"
+  },
+  "skipEmphasized": "OMITIR",
+  "@skipEmphasized": {
+    "description": "Example: to SKIP a conflict"
+  },
+  "replaceEmphasized": "REEMPLAZAR",
+  "@replaceEmphasized": {
+    "description": "Example: to REPLACE an entity"
+  },
+  "validationRequired": "Este campo es requerido.",
+  "@validationRequired": {
+    "description": "Input validation error: the field is empty, but it's required"
+  },
+  "validationInvalid": "Información inválida.",
+  "@validationInvalid": {
+    "description": "Input validation error: the field has invalid data"
+  },
+  "validationPasswordIncorrect": "Contraseña incorrecta.",
+  "@validationPasswordIncorrect": {
+    "description": "Input validation error: the given password is wrong"
+  },
+  "validationAttachDriveCouldNotBeFound": "No se encontró la unidad especificada.",
+  "@validationAttachDriveCouldNotBeFound": {
+    "description": "Input validation error: The given drive ID does not exist"
+  },
+  "validationInvalidKey": "Clave de la unidad inválida.",
+  "@validationInvalidKey": {
+    "description": "Input validation error: The given drive key is wrong"
+  },
+  "validationAttachUserLoggedOut": "Debes iniciar sesión para vincular discos privados.",
+  "@validationAttachUserLoggedOut": {
+    "description": "Input validation error: the user cannot attach a drive when not logged in"
+  },
+  "validationEntityNameAlreadyPresent": "Una carpeta o archivo con el mismo nombre ya existe aquí.",
+  "@validationEntityNameAlreadyPresent": {
+    "description": "Input validation error: The given name is already in use by some exising entity"
+  },
+  "validationDriveNameAlreadyPresent": "Un disco con el mismo nombre ya existe aquí.",
+  "@validationDriveNameAlreadyPresent": {
+    "description": "Input validation error: The given name is already in use by some exising drive"
+  },
+  "validationNameUnchanged": "Este nombre es el idéntico al nombre original",
+  "@validationNameUnchanged": {
+    "description": "Input validation error: The given name is exactly the same"
+  },
+  "insufficientARWarning": "Balance insuficiente",
+  "@insufficientARWarning": {
+    "description": "Warns the user that the wallet balance is less than minimum AR required to make a transaction"
+  },
+  "displayedPaginatedData": "{from} - {to} de {total}",
+  "@displayedPaginatedData": {
+    "description": "Indicates the user what items of a list are being displayed. Example: 1 - 25 of 100",
+    "placeholders": {
+      "from": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      },
+      "to": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "25"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "100"
       }
     }
   }
