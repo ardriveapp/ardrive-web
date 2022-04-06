@@ -29,8 +29,7 @@ jobs:
           flutter build web --profile
       - name: main.dart.js cache invalidation
         run: |
-          git_revision=$(git rev-parse --short HEAD)
-          sed -i 's/main.dart.js/main.dart.js?version='"$git_revision"'/' build/web/index.html
+          sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
       - uses: JamesIves/github-pages-deploy-action@4.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
