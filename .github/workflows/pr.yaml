@@ -22,7 +22,7 @@ jobs:
           flutter build web --profile
       - name: main.dart.js cache invalidation
         run: |
-          sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_HEAD_REF"'/' build/web/index.html
+          sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
