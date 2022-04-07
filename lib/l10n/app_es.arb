@@ -371,7 +371,7 @@
   "@driveTxID": {
     "description": "The transaction ID of the drive"
   },
-  "copyDriveTxID": "Copiar la ID de la transacción del disco",
+  "copyDriveTxID": "Copiar la ID de la transacción de la unidad",
   "@copyDriveTxID": {
     "description": "Copy transaction ID of Drive tooltip"
   },
@@ -1047,31 +1047,31 @@
       }
     }
   },
-  "uploadingManifestEmphasized": "CARGANDO MANIFESTO...",
+  "uploadingManifestEmphasized": "CARGANDO MANIFIESTO...",
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
-  "preparingManifestEmphasized": "PREPARANDO MANIFESTO...",
+  "preparingManifestEmphasized": "PREPARANDO MANIFIESTO...",
   "@preparingManifestEmphasized": {
     "description": "The manifest is being prepared for the upload"
   },
-  "manifestName": "Nombre del manifesto",
+  "manifestName": "Nombre del manifiesto",
   "@manifestName": {
     "description": "The name of the manifest"
   },
-  "failedToCreateManifestEmphasized": "LA CREACIÓN DEL MANIFESTO HA FALLADO",
+  "failedToCreateManifestEmphasized": "LA CREACIÓN DEL MANIFIESTO HA FALLADO",
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
-  "walletChangedDuringManifestCreation": "El monedero que estabas usando cambió mientras se creaba el manifesto...",
+  "walletChangedDuringManifestCreation": "El monedero que estabas usando cambió mientras se creaba el manifiesto...",
   "@walletChangedDuringManifestCreation": {
     "description": "The wallet has been changed while the creation of the manifest was in process"
   },
-  "manifestTransactionUnexpectedlyFailed": "La transacción del manifesto ha fallado inesperadamente mientras se cargaba a la red de Arweave...",
+  "manifestTransactionUnexpectedlyFailed": "La transacción del manifiesto ha fallado inesperadamente mientras se cargaba a la red de Arweave...",
   "@manifestTransactionUnexpectedlyFailed": {
     "description": "The manifest transaction did not succeed being uploaded"
   },
-  "insufficientBalanceForManifest": "El balance de {walletBalance} AR es insuficiente para esta transacción de manifesto que cuesta: {totalCost} AR...",
+  "insufficientBalanceForManifest": "El balance de {walletBalance} AR es insuficiente para esta transacción de manifiesto que cuesta: {totalCost} AR...",
   "@insufficientBalanceForManifest": {
     "description": "The ammount of AR the wallet has is not enough to upload the manifest transaction",
     "placeholders": {
@@ -1091,21 +1091,21 @@
   },
   "conflictingNameFoundChooseNewName": "Una entidad con ese nombre ya existe en este lugar. Por favor, elige un nombre diferente.",
   "@conflictingNameFoundChooseNewName": {
-    "description": "The user must type a non-conflicting name"
+    "description": "The given name is conflicting with some entity, the user must type a non-conflicting name"
   },
-  "conflictingManifestFound": "El manifesto ya existe",
+  "conflictingManifestFound": "El manifiesto ya existe",
   "@conflictingManifestFound": {
     "description": "There is an on-chain entity with the same name"
   },
-  "conflictingManifestFoundChooseNewName": "Ya hay un manifesto con ese nombre aquí. ¿Quieres continuar y cargar este manifesto como una nueva revisión?",
+  "conflictingManifestFoundChooseNewName": "Ya hay un manifiesto con ese nombre aquí. ¿Quieres continuar y cargar este manifiesto como una nueva revisión?",
   "@conflictingManifestFoundChooseNewName": {
     "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
   },
-  "addnewManifestEmphasized": "AÑADIR NUEVO MANIFESTO",
+  "addnewManifestEmphasized": "AÑADIR NUEVO MANIFIESTO",
   "@addnewManifestEmphasized": {
     "description": "There is a non-manifest entity with the same name"
   },
-  "aManifestIsASpecialKindOfFile": "Un manifesto es un tipo especial de archivos que relaciona cualquier cantidad de transacciones Arweave con direcciones amigable.",
+  "aManifestIsASpecialKindOfFile": "Un manifiesto es un tipo especial de archivo que relaciona transacciones Arweave con rutas perzonalizadas.",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -1113,11 +1113,11 @@
   "@learnMore": {
     "description": "Link to a document explaining manifests in detail"
   },
-  "createManifestEmphasized": "CREAR MANIFESTO",
+  "createManifestEmphasized": "CREAR MANIFIESTO",
   "@createManifestEmphasized": {
     "description": "To create a manifest"
   },
-  "filesWillBePermanentlyPublicWarning": "Todos los archivos cargados aquí serán permanentemente públicos para cualquiera en el internet. Asegúrate de estar haciendo la información pública a propósito.",
+  "filesWillBePermanentlyPublicWarning": "Todos los archivos cargados aquí serán públicos por siempre para cualquiera en el internet. Asegúrate de que quieres que esta información sea pública.",
   "@filesWillBePermanentlyPublicWarning": {
     "description": "Make the user aware that it is uploading permanent data publicly"
   },
@@ -1157,19 +1157,19 @@
   "@validationInvalidKey": {
     "description": "Input validation error: The given drive key is wrong"
   },
-  "validationAttachUserLoggedOut": "Debes iniciar sesión para vincular discos privados.",
+  "validationAttachUserLoggedOut": "Debes iniciar sesión para vincular unidades privadas.",
   "@validationAttachUserLoggedOut": {
     "description": "Input validation error: the user cannot attach a drive when not logged in"
   },
-  "validationEntityNameAlreadyPresent": "Una carpeta o archivo con el mismo nombre ya existe aquí.",
+  "validationEntityNameAlreadyPresent": "Ya existe una carpeta o archivo con el mismo nombre.",
   "@validationEntityNameAlreadyPresent": {
     "description": "Input validation error: The given name is already in use by some exising entity"
   },
-  "validationDriveNameAlreadyPresent": "Un disco con el mismo nombre ya existe aquí.",
+  "validationDriveNameAlreadyPresent": "Una unidad con el mismo nombre ya existe aquí.",
   "@validationDriveNameAlreadyPresent": {
     "description": "Input validation error: The given name is already in use by some exising drive"
   },
-  "validationNameUnchanged": "Este nombre es el idéntico al nombre original",
+  "validationNameUnchanged": "Este nombre es idéntico al nombre original",
   "@validationNameUnchanged": {
     "description": "Input validation error: The given name is exactly the same"
   },

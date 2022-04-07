@@ -1091,7 +1091,7 @@
   },
   "conflictingNameFoundChooseNewName": "An entity with that name already exists at this location. Please choose a new name.",
   "@conflictingNameFoundChooseNewName": {
-    "description": "The user must type a non-conflicting name"
+    "description": "The given name is conflicting with some entity, the user must type a non-conflicting name"
   },
   "conflictingManifestFound": "Conflicting manifest was found",
   "@conflictingManifestFound": {
