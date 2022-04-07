@@ -1,8 +1,16 @@
+import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/upload/web_file.dart';
+import 'package:ardrive/components/upload_form.dart';
+import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
 
 import '../../../utils/app_localizations_wrapper.dart';
+import '../../congestion_warning_wrapper.dart';
 
 class DriveFileDropZone extends StatefulWidget {
   final String driveId;
@@ -77,7 +85,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
         lastModified: fileLastModified,
         length: fileLength,
       );
-      final selectedFiles = <XFile>[fileToUpload];
+      final selectedFiles = [await DragAndDropFile.fromXFile(fileToUpload)];
       try {
         //This is the only way to know whether the dropped file is a folder
         await fileToUpload.readAsBytes();
@@ -100,29 +108,29 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
         ).then((value) => isCurrentlyShown = false);
         return;
       }
-      // await showCongestionDependentModalDialog(
-      //   context,
-      //   () => showDialog(
-      //     context: context,
-      //     builder: (_) => BlocProvider<UploadCubit>(
-      //       create: (context) => UploadCubit(
-      //         uploadPlanUtils: UploadPlanUtils(
-      //           arweave: context.read<ArweaveService>(),
-      //           driveDao: context.read<DriveDao>(),
-      //         ),
-      //         driveId: driveId,
-      //         folderId: folderId,
-      //         files: selectedFiles,
-      //         arweave: context.read<ArweaveService>(),
-      //         pst: context.read<PstService>(),
-      //         profileCubit: context.read<ProfileCubit>(),
-      //         driveDao: context.read<DriveDao>(),
-      //       )..startUploadPreparation(),
-      //       child: UploadForm(),
-      //     ),
-      //     barrierDismissible: false,
-      //   ).then((value) => isCurrentlyShown = false),
-      // );
+      await showCongestionDependentModalDialog(
+        context,
+        () => showDialog(
+          context: context,
+          builder: (_) => BlocProvider<UploadCubit>(
+            create: (context) => UploadCubit(
+              uploadPlanUtils: UploadPlanUtils(
+                arweave: context.read<ArweaveService>(),
+                driveDao: context.read<DriveDao>(),
+              ),
+              driveId: driveId,
+              folderId: folderId,
+              files: selectedFiles,
+              arweave: context.read<ArweaveService>(),
+              pst: context.read<PstService>(),
+              profileCubit: context.read<ProfileCubit>(),
+              driveDao: context.read<DriveDao>(),
+            )..startUploadPreparation(),
+            child: UploadForm(),
+          ),
+          barrierDismissible: false,
+        ).then((value) => isCurrentlyShown = false),
+      );
     }
   }
 
