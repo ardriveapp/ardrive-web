@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:ardrive/blocs/upload/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
@@ -14,7 +15,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 class DataItemUploadHandle implements UploadHandle, DataItemHandle {
   final FileEntity entity;
-  final XFile file;
+  final UploadFile file;
   final String path;
   final SecretKey? driveKey;
   final SecretKey? fileKey;

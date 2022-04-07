@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:ardrive/blocs/upload/cost_estimate.dart';
+import 'package:ardrive/blocs/upload/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_plan.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:rxdart/rxdart.dart';
@@ -25,7 +25,7 @@ final minimumPstTip = BigInt.from(10000000);
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
   final String folderId;
-  final List<XFile> files;
+  final List<UploadFile> files;
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
@@ -121,7 +121,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     final tooLargeFiles = [
       for (final file in files)
-        if (await file.length() > sizeLimit) file.name
+        if (file.size > sizeLimit) file.name
     ];
 
     if (tooLargeFiles.isNotEmpty) {
@@ -131,7 +131,7 @@ class UploadCubit extends Cubit<UploadState> {
       ));
       return;
     }
-    final uploadPlan = await _uploadPlanUtils.xfilesToUploadPlan(
+    final uploadPlan = await _uploadPlanUtils.filesToUploadPlan(
         folderEntry: _targetFolder,
         targetDrive: _targetDrive,
         files: files,

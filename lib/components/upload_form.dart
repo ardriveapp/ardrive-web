@@ -1,11 +1,13 @@
+import 'dart:html';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
+import 'package:ardrive/blocs/upload/web_file.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,33 +20,48 @@ Future<void> promptToUploadFile(
   required String driveId,
   required String folderId,
 }) async {
-  final selectedFiles = await openFiles();
-  if (selectedFiles.isEmpty) {
-    return;
-  }
-  await showCongestionDependentModalDialog(
-    context,
-    () => showDialog(
-      context: context,
-      builder: (_) => BlocProvider<UploadCubit>(
-        create: (context) => UploadCubit(
-          uploadPlanUtils: UploadPlanUtils(
+  final uploadInput = FileUploadInputElement()
+    ..setAttribute('webkitdirectory', 'multiple');
+  uploadInput.click();
+// Create and click upload input element
+
+  uploadInput.onChange.listen((e) async {
+    // read file content as dataURL
+    final files = uploadInput.files;
+    if (files == null) {
+      return;
+    }
+    final selectedFiles = files.map((file) {
+      print(file.relativePath);
+      return WebFile(file);
+    }).toList();
+    if (selectedFiles.isEmpty) {
+      return;
+    }
+    await showCongestionDependentModalDialog(
+      context,
+      () => showDialog(
+        context: context,
+        builder: (_) => BlocProvider<UploadCubit>(
+          create: (context) => UploadCubit(
+            uploadPlanUtils: UploadPlanUtils(
+              arweave: context.read<ArweaveService>(),
+              driveDao: context.read<DriveDao>(),
+            ),
+            driveId: driveId,
+            folderId: folderId,
+            files: selectedFiles,
+            profileCubit: context.read<ProfileCubit>(),
             arweave: context.read<ArweaveService>(),
+            pst: context.read<PstService>(),
             driveDao: context.read<DriveDao>(),
-          ),
-          driveId: driveId,
-          folderId: folderId,
-          files: selectedFiles,
-          profileCubit: context.read<ProfileCubit>(),
-          arweave: context.read<ArweaveService>(),
-          pst: context.read<PstService>(),
-          driveDao: context.read<DriveDao>(),
-        )..startUploadPreparation(),
-        child: UploadForm(),
+          )..startUploadPreparation(),
+          child: UploadForm(),
+        ),
+        barrierDismissible: false,
       ),
-      barrierDismissible: false,
-    ),
-  );
+    );
+  });
 }
 
 class UploadForm extends StatelessWidget {

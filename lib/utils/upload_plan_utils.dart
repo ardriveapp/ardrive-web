@@ -1,10 +1,10 @@
+import 'package:ardrive/blocs/upload/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_plan.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/drive.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:mime/mime.dart';
 import 'package:uuid/uuid.dart';
 
@@ -22,24 +22,25 @@ class UploadPlanUtils {
   final DriveDao driveDao;
   final _uuid = Uuid();
 
-  Future<UploadPlan> xfilesToUploadPlan(
-      {required List<XFile> files,
-      required SecretKey cipherKey,
-      required Wallet wallet,
-      required Map<String, String> conflictingFiles,
-      required Drive targetDrive,
-      required FolderEntry folderEntry}) async {
+  Future<UploadPlan> filesToUploadPlan({
+    required List<UploadFile> files,
+    required SecretKey cipherKey,
+    required Wallet wallet,
+    required Map<String, String> conflictingFiles,
+    required Drive targetDrive,
+    required FolderEntry folderEntry,
+  }) async {
     final _dataItemUploadHandles = <String, DataItemUploadHandle>{};
     final _v2FileUploadHandles = <String, FileUploadHandle>{};
     for (var file in files) {
       final fileName = file.name;
       final filePath = '${folderEntry.path}/$fileName';
-      final fileSize = await file.length();
+      final fileSize = file.size;
       final fileEntity = FileEntity(
         driveId: targetDrive.id,
         name: fileName,
         size: fileSize,
-        lastModifiedDate: await file.lastModified(),
+        lastModifiedDate: file.lastModifiedDate,
         parentFolderId: folderEntry.id,
         dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
       );

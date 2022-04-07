@@ -1,18 +1,18 @@
 import 'dart:convert';
 
+import 'package:ardrive/blocs/upload/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:moor/moor.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class FileUploadHandle implements UploadHandle {
   final FileEntity entity;
-  final XFile file;
+  final UploadFile file;
   final String path;
   final SecretKey? driveKey;
   final SecretKey? fileKey;
