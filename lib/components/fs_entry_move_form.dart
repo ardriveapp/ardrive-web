@@ -104,8 +104,7 @@ class FsEntryMoveForm extends StatelessWidget {
           }
         },
         builder: (context, state) {
-          Widget _buildButtonBar() => Row(
-                mainAxisSize: MainAxisSize.min,
+          Widget _buildButtonBar() => ButtonBar(
                 children: [
                   TextButton(
                       onPressed: () => Navigator.pop(context),
@@ -146,15 +145,6 @@ class FsEntryMoveForm extends StatelessWidget {
                 ? appLocalizationsOf(context).moveFolderEmphasized
                 : appLocalizationsOf(context).moveFileEmphasized,
             contentPadding: EdgeInsets.zero,
-            actions: [
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                children: [
-                  _buildCreateFolderButton(),
-                  Expanded(child: _buildButtonBar()),
-                ],
-              ),
-            ],
             content: state is FsEntryMoveFolderLoadSuccess
                 ? SizedBox(
                     width: kLargeDialogWidth,
@@ -220,6 +210,16 @@ class FsEntryMoveForm extends StatelessWidget {
                           ),
                         ),
                         Divider(),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 16),
+                          child: Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            children: [
+                              _buildCreateFolderButton(),
+                              _buildButtonBar(),
+                            ],
+                          ),
+                        )
                       ],
                     ),
                   )
