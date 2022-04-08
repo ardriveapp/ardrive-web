@@ -155,7 +155,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     }
 
     final entityWithSameNameExists = await _driveDao.doesEntityWithNameExist(
-      name: folder.name,
+      name: newFolderName,
       driveId: driveId,
       // Will never be null since you can't rename root folder
       parentFolderId: folder.parentFolderId!,
@@ -181,7 +181,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     }
 
     final entityWithSameNameExists = await _driveDao.doesEntityWithNameExist(
-      name: file.name,
+      name: newFileName,
       driveId: driveId,
       parentFolderId: file.parentFolderId,
     );
