@@ -85,7 +85,9 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
         lastModified: fileLastModified,
         length: fileLength,
       );
-      final selectedFiles = [await DragAndDropFile.fromXFile(fileToUpload)];
+      final selectedFiles = [
+        await DragAndDropFile.fromXFile(fileToUpload, folderId)
+      ];
       try {
         //This is the only way to know whether the dropped file is a folder
         await fileToUpload.readAsBytes();

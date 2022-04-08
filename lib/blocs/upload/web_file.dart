@@ -6,13 +6,15 @@ import 'package:file_selector/file_selector.dart';
 
 class WebFile extends UploadFile {
   final File file;
-
-  WebFile(this.file)
+  @override
+  final String parentFolderId;
+  WebFile(this.file, this.parentFolderId)
       : super(
           name: file.name,
           path: file.relativePath!,
           lastModifiedDate: file.lastModifiedDate,
           size: file.size,
+          parentFolderId: parentFolderId,
         );
 
   @override
@@ -30,22 +32,34 @@ class DragAndDropFile extends UploadFile {
   final DateTime lastModifiedDate;
   @override
   final int size;
+
+  @override
+  final String parentFolderId;
+
   DragAndDropFile._create(
     this.file,
     this.lastModifiedDate,
     this.size,
+    this.parentFolderId,
   ) : super(
           name: file.name,
           path: file.path,
           lastModifiedDate: lastModifiedDate,
           size: size,
+          parentFolderId: parentFolderId,
         );
 
-  static Future<DragAndDropFile> fromXFile(XFile file) async {
+  static Future<DragAndDropFile> fromXFile(
+      XFile file, String parentFolderId) async {
     final fileLastModified = await file.lastModified();
     final fileSize = await file.length();
 
-    return DragAndDropFile._create(file, fileLastModified, fileSize);
+    return DragAndDropFile._create(
+      file,
+      fileLastModified,
+      fileSize,
+      parentFolderId,
+    );
   }
 
   @override

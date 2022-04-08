@@ -33,7 +33,7 @@ Future<void> promptToUploadFile(
     }
     final selectedFiles = files.map((file) {
       print(file.relativePath);
-      return WebFile(file);
+      return WebFile(file, folderId);
     }).toList();
     if (selectedFiles.isEmpty) {
       return;
