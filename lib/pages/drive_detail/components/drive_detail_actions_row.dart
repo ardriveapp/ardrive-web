@@ -36,6 +36,7 @@ class DriveDetailActionRow extends StatelessWidget {
                     context: context,
                     driveId: state.currentDrive.id,
                     fileId: selectedItem.id,
+                    dataTxId: selectedItem.item.dataTxId,
                   ),
                   tooltip: appLocalizationsOf(context).download,
                 ),
