@@ -7,6 +7,7 @@ import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
@@ -15,6 +16,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -103,6 +105,7 @@ class DriveDetailPage extends StatelessWidget {
                           VerticalDivider(width: 1),
                           FsEntrySideSheet(
                             driveId: state.currentDrive.id,
+                            drivePrivacy: state.currentDrive.privacy,
                             maybeSelectedItem: state.maybeSelectedItem,
                           ),
                         }
@@ -162,6 +165,7 @@ class DriveDetailPage extends StatelessWidget {
                       Expanded(
                         child: FsEntrySideSheet(
                           driveId: state.currentDrive.id,
+                          drivePrivacy: state.currentDrive.privacy,
                           maybeSelectedItem: state.maybeSelectedItem,
                         ),
                       )
