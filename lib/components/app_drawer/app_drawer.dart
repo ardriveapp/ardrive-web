@@ -292,7 +292,7 @@ class AppDrawer extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
-                            R.insufficientARWarning,
+                            appLocalizationsOf(context).insufficientARWarning,
                             style: Theme.of(context)
                                 .textTheme
                                 .caption!

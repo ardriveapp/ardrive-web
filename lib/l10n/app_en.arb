@@ -144,6 +144,10 @@
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing the terms of of service and privacy policy"
   },
+  "aggreeToTerms_main": "I agree to the ",
+  "@aggreeToTerms_main": {
+    "description": "Checkbox for agreeing the terms of of service and privacy policy"
+  },
   "aggreeToTerms_link": "ArDrive terms of service and privacy policy",
   "@aggreeToTerms_link": {
     "description": "Segment of text representing a link to the legal documents"
@@ -1087,7 +1091,7 @@
   },
   "conflictingNameFoundChooseNewName": "An entity with that name already exists at this location. Please choose a new name.",
   "@conflictingNameFoundChooseNewName": {
-    "description": "The user must type a non-conflicting name"
+    "description": "The given name is conflicting with some entity, the user must type a non-conflicting name"
   },
   "conflictingManifestFound": "Conflicting manifest was found",
   "@conflictingManifestFound": {
@@ -1168,5 +1172,30 @@
   "validationNameUnchanged": "This name is identical to the current name",
   "@validationNameUnchanged": {
     "description": "Input validation error: The given name is exactly the same"
+  },
+  "insufficientARWarning": "Insufficient Funds",
+  "@insufficientARWarning": {
+    "description": "Warns the user that the wallet balance is less than minimum AR required to make a transaction"
+  },
+  "displayedPaginatedData": "{from} - {to} of {total}",
+  "@displayedPaginatedData": {
+    "description": "Indicates the user what items of a list are being displayed. Example: 1 - 25 of 100",
+    "placeholders": {
+      "from": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      },
+      "to": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "25"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "100"
+      }
+    }
   }
 }
