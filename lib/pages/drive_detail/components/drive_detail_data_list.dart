@@ -80,6 +80,7 @@ Widget _buildFileListTile({
         child: _buildFileIcon(
           fileStatusFromTransactions(file.metadataTx, file.dataTx),
           file.dataContentType,
+          appLocalizationsOf(context),
         ),
       ),
       title: Text(file.name),
