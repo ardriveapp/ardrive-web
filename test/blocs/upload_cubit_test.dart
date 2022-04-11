@@ -165,7 +165,7 @@ void main() {
               TypeMatcher<UploadPreparationInitialized>(),
               TypeMatcher<UploadPreparationInProgress>(),
               UploadFileConflict(
-                  isAllFilesConflicting: true,
+                  areAllFilesConflicting: true,
                   conflictingFileNames: [tRootFolderId + '1']),
             ]);
 
@@ -184,7 +184,7 @@ void main() {
               TypeMatcher<UploadPreparationInitialized>(),
               TypeMatcher<UploadPreparationInProgress>(),
               UploadFileConflict(
-                  isAllFilesConflicting: false,
+                  areAllFilesConflicting: false,
                   conflictingFileNames: [tRootFolderId + '1'])
             ]);
 

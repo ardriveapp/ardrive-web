@@ -54,7 +54,7 @@ class UploadForm extends StatelessWidget {
           if (state is UploadComplete || state is UploadWalletMismatch) {
             Navigator.pop(context);
           } else if (state is UploadPreparationInitialized) {
-            await context.read<UploadCubit>().checkConflictingFiles();
+            await context.read<UploadCubit>().checkConflictingFolders();
           }
           if (state is UploadWalletMismatch) {
             Navigator.pop(context);
@@ -62,7 +62,52 @@ class UploadForm extends StatelessWidget {
           }
         },
         builder: (context, state) {
-          if (state is UploadFileConflict) {
+          if (state is UploadFolderNameConflict) {
+            return AppDialog(
+              title: appLocalizationsOf(context).duplicateFolders,
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appLocalizationsOf(context)
+                          .foldersWithTheSameNameAlreadyExists(
+                        state.conflictingFileNames.length,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(appLocalizationsOf(context).conflictingFiles),
+                    const SizedBox(height: 8),
+                    ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 320),
+                        child: SingleChildScrollView(
+                            child:
+                                Text(state.conflictingFileNames.join(', ')))),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                if (!state.areAllFilesConflicting)
+                  TextButton(
+                    style: ButtonStyle(
+                        fixedSize:
+                            MaterialStateProperty.all(Size.fromWidth(140))),
+                    onPressed: () =>
+                        context.read<UploadCubit>().checkConflictingFiles(),
+                    child: Text(appLocalizationsOf(context).skipEmphasized),
+                  ),
+                TextButton(
+                  style: ButtonStyle(
+                      fixedSize:
+                          MaterialStateProperty.all(Size.fromWidth(140))),
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(appLocalizationsOf(context).cancelEmphasized),
+                ),
+              ],
+            );
+          } else if (state is UploadFileConflict) {
             return AppDialog(
                 title: appLocalizationsOf(context)
                     .duplicateFiles(state.conflictingFileNames.length),
@@ -72,12 +117,12 @@ class UploadForm extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(state.conflictingFileNames.length == 1
-                          ? appLocalizationsOf(context)
-                              .aFileWithSameNameAlreadyExists
-                          : appLocalizationsOf(context)
-                              .filesWithTheSameNameAlreadyExists(
-                                  state.conflictingFileNames.length)),
+                      Text(
+                        appLocalizationsOf(context)
+                            .filesWithTheSameNameAlreadyExists(
+                          state.conflictingFileNames.length,
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       Text(appLocalizationsOf(context).conflictingFiles),
                       const SizedBox(height: 8),
@@ -90,7 +135,7 @@ class UploadForm extends StatelessWidget {
                   ),
                 ),
                 actions: <Widget>[
-                  if (!state.isAllFilesConflicting)
+                  if (!state.areAllFilesConflicting)
                     TextButton(
                       style: ButtonStyle(
                           fixedSize:
