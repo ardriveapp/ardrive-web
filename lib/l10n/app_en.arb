@@ -815,6 +815,21 @@
       }
     }
   },
+  "duplicateFolders": "Folder Name Conflict",
+  "@duplicateFolders": {
+    "description": "Folder name conflict dialog title"
+  },
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{A folder with the same name already exists at this location. Please rename it and try uploading again.}  =other{{numberOfFolders} folders with the same name already exist at this location. Please rename them and try uploading again.}}",
+  "@foldersWithTheSameNameAlreadyExists": {
+    "description": "Asks the user what to do with folder name conflicts",
+    "placeholders": {
+      "numberOfFolders": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
   "conflictingFiles": "Conflicting files:",
   "@conflictingFiles": {
     "description": "Files being in conflict with already existing items"
