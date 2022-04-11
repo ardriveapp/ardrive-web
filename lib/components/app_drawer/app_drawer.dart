@@ -247,7 +247,9 @@ class AppDrawer extends StatelessWidget {
                                 drive: state.currentDrive),
                             enabled: !state.driveIsEmpty,
                             child: ListTile(
-                              title: Text('Create manifest'),
+                              title: Text(
+                                appLocalizationsOf(context).createManifest,
+                              ),
                               enabled: !state.driveIsEmpty,
                             ),
                           ),
