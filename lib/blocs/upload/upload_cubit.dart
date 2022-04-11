@@ -39,6 +39,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// Map of conflicting file ids keyed by their file names.
   final Map<String, String> conflictingFiles = {};
+  final List<String> conflictingFolders = [];
 
   bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
@@ -72,7 +73,7 @@ class UploadCubit extends Cubit<UploadState> {
   /// If there's one, prompt the user to upload the file as a version of the existing one.
   /// If there isn't one, prepare to upload the file.
 
-  Future<void> checkConflictingFiles() async {
+  Future<void> checkConflictingFolders() async {
     emit(UploadPreparationInProgress());
     if (uploadFolders) {
       final folders = UploadPlanUtils.generateFoldersForFiles(
@@ -97,6 +98,39 @@ class UploadCubit extends Cubit<UploadState> {
     }
     for (final file in files) {
       final fileName = file.name;
+      final existingFolderName = await _driveDao
+          .foldersInFolderWithName(
+            driveId: _targetDrive.id,
+            parentFolderId: _targetFolder.id,
+            name: fileName,
+          )
+          .map((f) => f.name)
+          .getSingleOrNull();
+
+      if (existingFolderName != null) {
+        conflictingFolders.add(existingFolderName);
+      }
+    }
+
+    if (conflictingFolders.isNotEmpty) {
+      emit(
+        UploadFolderNameConflict(
+          areAllFilesConflicting: conflictingFolders.length == files.length,
+          conflictingFileNames: conflictingFolders,
+        ),
+      );
+    } else {
+      await checkConflictingFiles();
+    }
+  }
+
+  Future<void> checkConflictingFiles() async {
+    emit(UploadPreparationInProgress());
+
+    _removeFilesWithFolderNameConflicts();
+
+    for (final file in files) {
+      final fileName = file.name;
       final existingFileId = await _driveDao
           .filesInFolderWithName(
             driveId: _targetDrive.id,
@@ -112,17 +146,21 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     if (conflictingFiles.isNotEmpty) {
-      emit(UploadFileConflict(
-          isAllFilesConflicting: conflictingFiles.length == files.length,
-          conflictingFileNames: conflictingFiles.keys.toList()));
+      emit(
+        UploadFileConflict(
+          areAllFilesConflicting: conflictingFiles.length == files.length,
+          conflictingFileNames: conflictingFiles.keys.toList(),
+        ),
+      );
     } else {
       await prepareUploadPlanAndCostEstimates();
     }
   }
 
   /// If `conflictingFileAction` is null, means that had no conflict.
-  Future<void> prepareUploadPlanAndCostEstimates(
-      {ConflictingFileActions? conflictingFileAction}) async {
+  Future<void> prepareUploadPlanAndCostEstimates({
+    ConflictingFileActions? conflictingFileAction,
+  }) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
     if (await _profileCubit.checkIfWalletMismatch()) {
@@ -139,7 +177,7 @@ class UploadCubit extends Cubit<UploadState> {
         _targetDrive.isPrivate ? privateFileSizeLimit : publicFileSizeLimit;
 
     if (conflictingFileAction == ConflictingFileActions.Skip) {
-      _removeConflictingFiles();
+      _removeFilesWithFileNameConflicts();
     }
 
     final tooLargeFiles = [
@@ -167,10 +205,12 @@ class UploadCubit extends Cubit<UploadState> {
       pstService: _pst,
       wallet: profile.wallet,
     );
+
     if (await _profileCubit.checkIfWalletMismatch()) {
       emit(UploadWalletMismatch());
       return;
     }
+
     emit(
       UploadReady(
         costEstimate: costEstimate,
@@ -243,8 +283,12 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
-  void _removeConflictingFiles() {
+  void _removeFilesWithFileNameConflicts() {
     files.removeWhere((element) => conflictingFiles.containsKey(element.name));
+  }
+
+  void _removeFilesWithFolderNameConflicts() {
+    files.removeWhere((element) => conflictingFolders.contains(element.name));
   }
 
   @override
