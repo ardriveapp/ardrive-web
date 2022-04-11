@@ -117,12 +117,12 @@ class UploadForm extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(state.conflictingFileNames.length == 1
-                          ? appLocalizationsOf(context)
-                              .aFileWithSameNameAlreadyExists
-                          : appLocalizationsOf(context)
-                              .filesWithTheSameNameAlreadyExists(
-                                  state.conflictingFileNames.length)),
+                      Text(
+                        appLocalizationsOf(context)
+                            .filesWithTheSameNameAlreadyExists(
+                          state.conflictingFileNames.length,
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       Text(appLocalizationsOf(context).conflictingFiles),
                       const SizedBox(height: 8),

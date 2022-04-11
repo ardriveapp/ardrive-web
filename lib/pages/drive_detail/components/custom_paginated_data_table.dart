@@ -416,7 +416,11 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
     footerWidgets.addAll(<Widget>[
       Container(width: 32.0),
       Text(
-        '${_firstRowIndex + 1} - ${_firstRowIndex + widget.rowsPerPage} of $_rowCount',
+        appLocalizationsOf(context).displayedPaginatedData(
+          _firstRowIndex + 1,
+          _firstRowIndex + widget.rowsPerPage,
+          _rowCount,
+        ),
       ),
       Container(width: 32.0),
       if (widget.showFirstLastButtons)

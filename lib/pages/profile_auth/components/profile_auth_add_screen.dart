@@ -109,10 +109,15 @@ class ProfileAuthAddScreen extends StatelessWidget {
                                   child: Text.rich(
                                     TextSpan(
                                       children: [
-                                        TextSpan(text: 'I agree to the '),
                                         TextSpan(
-                                          text:
-                                              'ArDrive terms of service and privacy policy',
+                                          // TODO replace at PE-1125
+                                          text: appLocalizationsOf(context)
+                                              .aggreeToTerms_main,
+                                        ),
+                                        TextSpan(
+                                          // TODO replace at PE-1125
+                                          text: appLocalizationsOf(context)
+                                              .aggreeToTerms_link,
                                           style: TextStyle(
                                             decoration:
                                                 TextDecoration.underline,
