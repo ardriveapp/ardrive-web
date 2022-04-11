@@ -120,6 +120,26 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
+  Future<bool> doesEntityWithNameExist({
+    required String name,
+    required DriveID driveId,
+    required FolderID parentFolderId,
+  }) async {
+    final foldersWithName = await foldersInFolderWithName(
+      driveId: driveId,
+      parentFolderId: parentFolderId,
+      name: name,
+    ).get();
+
+    final filesWithName = await filesInFolderWithName(
+      driveId: driveId,
+      parentFolderId: parentFolderId,
+      name: name,
+    ).get();
+
+    return foldersWithName.isNotEmpty || filesWithName.isNotEmpty;
+  }
+
   /// Adds or updates the user's drives with the provided drive entities.
   Future<void> updateUserDrives(
     Map<DriveEntity, SecretKey?> driveEntities,
@@ -161,7 +181,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     SecretKey? driveKey,
     SecretKey? profileKey,
   }) async {
-    
     var companion = DrivesCompanion.insert(
       id: entity.id!,
       name: name,
