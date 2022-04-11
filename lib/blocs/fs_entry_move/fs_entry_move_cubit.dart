@@ -66,21 +66,6 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
             );
   }
 
-  Future<bool> entityNameExists({
-    required String name,
-    required String parentFolderId,
-  }) async {
-    final foldersWithName = await _driveDao
-        .foldersInFolderWithName(
-            driveId: driveId, parentFolderId: parentFolderId, name: name)
-        .get();
-    final filesWithName = await _driveDao
-        .filesInFolderWithName(
-            driveId: driveId, parentFolderId: parentFolderId, name: name)
-        .get();
-    return foldersWithName.isNotEmpty || filesWithName.isNotEmpty;
-  }
-
   Future<void> submit() async {
     try {
       final state = this.state as FsEntryMoveFolderLoadSuccess;
@@ -100,10 +85,14 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
             .folderById(driveId: driveId, folderId: folderId!)
             .getSingle();
 
-        if (await entityNameExists(
+        final entityWithSameNameExists =
+            await _driveDao.doesEntityWithNameExist(
           name: folder.name,
+          driveId: driveId,
           parentFolderId: parentFolder.id,
-        )) {
+        );
+
+        if (entityWithSameNameExists) {
           emit(FsEntryMoveNameConflict(name: folder.name));
           return;
         }
@@ -140,10 +129,14 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
             path: '${parentFolder.path}/${file.name}',
             lastUpdated: DateTime.now());
 
-        if (await entityNameExists(
+        final entityWithSameNameExists =
+            await _driveDao.doesEntityWithNameExist(
           name: file.name,
+          driveId: driveId,
           parentFolderId: parentFolder.id,
-        )) {
+        );
+
+        if (entityWithSameNameExists) {
           emit(FsEntryMoveNameConflict(name: file.name));
           return;
         }

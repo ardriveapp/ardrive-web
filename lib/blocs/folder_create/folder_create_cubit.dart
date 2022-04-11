@@ -110,12 +110,11 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
       AbstractControl<dynamic> control) async {
     final String folderName = control.value;
 
-    // Check that the parent folder does not already have a folder with the input name.
-    final foldersWithName = await _driveDao
-        .foldersInFolderWithName(
-            driveId: driveId, parentFolderId: parentFolderId, name: folderName)
-        .get();
-    final nameAlreadyExists = foldersWithName.isNotEmpty;
+    final nameAlreadyExists = await _driveDao.doesEntityWithNameExist(
+      name: folderName,
+      driveId: driveId,
+      parentFolderId: parentFolderId,
+    );
 
     if (nameAlreadyExists) {
       control.markAsTouched();
