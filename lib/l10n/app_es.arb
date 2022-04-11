@@ -815,6 +815,21 @@
       }
     }
   },
+  "duplicateFolders": "Carpetas con conflictos",
+  "@duplicateFolders": {
+    "description": "Folder name conflict dialog title"
+  },
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{Ya existe una carpeta con el mismo nombre en este lugar. Por favor, renómbrala e inténtalo nuevamente.}  =other{Ya existen {numberOfFolders} carpetas con el mismo nombre en este lugar. Por favor, renómbralas e inténtalo nuevamente.}}",
+  "@foldersWithTheSameNameAlreadyExists": {
+    "description": "Asks the user what to do with folder name conflicts",
+    "placeholders": {
+      "numberOfFolders": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
   "conflictingFiles": "Archivos con conflictos:",
   "@conflictingFiles": {
     "description": "Files being in conflict with already existing items"
