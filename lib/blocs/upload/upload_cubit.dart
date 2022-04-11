@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_plan.dart';
+import 'package:ardrive/blocs/upload/web_file.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -32,7 +33,7 @@ class UploadCubit extends Cubit<UploadState> {
   final ArweaveService _arweave;
   final PstService _pst;
   final UploadPlanUtils _uploadPlanUtils;
-
+  late bool uploadFolders;
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
 
@@ -41,16 +42,17 @@ class UploadCubit extends Cubit<UploadState> {
 
   bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
 
-  UploadCubit(
-      {required this.driveId,
-      required this.folderId,
-      required this.files,
-      required ProfileCubit profileCubit,
-      required DriveDao driveDao,
-      required ArweaveService arweave,
-      required PstService pst,
-      required UploadPlanUtils uploadPlanUtils})
-      : _profileCubit = profileCubit,
+  UploadCubit({
+    required this.driveId,
+    required this.folderId,
+    required this.files,
+    required ProfileCubit profileCubit,
+    required DriveDao driveDao,
+    required ArweaveService arweave,
+    required PstService pst,
+    required UploadPlanUtils uploadPlanUtils,
+    this.uploadFolders = false,
+  })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
         _pst = pst,
@@ -69,9 +71,30 @@ class UploadCubit extends Cubit<UploadState> {
   ///
   /// If there's one, prompt the user to upload the file as a version of the existing one.
   /// If there isn't one, prepare to upload the file.
+
   Future<void> checkConflictingFiles() async {
     emit(UploadPreparationInProgress());
-
+    if (uploadFolders) {
+      final folders = UploadPlanUtils.generateFoldersForFiles(
+        files as List<WebFile>,
+        _targetFolder.id,
+      );
+      folders.forEach((key, folder) async {
+        final existingFolderId = await _driveDao
+            .foldersInFolderWithName(
+              driveId: driveId,
+              name: folder.name,
+              parentFolderId: folders[folder.parentFolderPath] != null
+                  ? folders[folder.parentFolderPath]!.id
+                  : _targetFolder.id,
+            )
+            .map((f) => f.id)
+            .getSingleOrNull();
+        if (existingFolderId != null) {
+          folder.id = existingFolderId;
+        }
+      });
+    }
     for (final file in files) {
       final fileName = file.name;
       final existingFileId = await _driveDao

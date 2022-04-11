@@ -1,5 +1,7 @@
 import 'package:ardrive/blocs/upload/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_plan.dart';
+import 'package:ardrive/blocs/upload/web_file.dart';
+import 'package:ardrive/blocs/upload/web_folder.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/drive.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -16,7 +18,10 @@ import '../models/enums.dart';
 import '../services/crypto/keys.dart';
 
 class UploadPlanUtils {
-  UploadPlanUtils({required this.arweave, required this.driveDao});
+  UploadPlanUtils({
+    required this.arweave,
+    required this.driveDao,
+  });
 
   final ArweaveService arweave;
   final DriveDao driveDao;
@@ -85,5 +90,40 @@ class UploadPlanUtils {
       v2FileUploadHandles: _v2FileUploadHandles,
       dataItemUploadHandles: _dataItemUploadHandles,
     );
+  }
+
+  static Map<String, WebFolder> generateFoldersForFiles(
+    List<WebFile> files,
+    String targetFolderId,
+  ) {
+    final foldersByPath = <String, WebFolder>{};
+    // Generate folders
+    for (var file in files) {
+      final path = file.file.relativePath!;
+
+      final folderPath = path.split('/');
+      folderPath.removeLast();
+      for (var i = 0; i < folderPath.length; i++) {
+        final currentFolder = folderPath.getRange(0, i + 1).join('/');
+        if (foldersByPath[currentFolder] == null) {
+          final parentFolderPath = folderPath.getRange(0, i).join('/');
+
+          foldersByPath.putIfAbsent(
+            currentFolder,
+            () => WebFolder(
+              name: folderPath[i],
+              id: Uuid().v4(),
+              parentFolderPath: parentFolderPath,
+            ),
+          );
+        }
+      }
+    }
+
+    final sortedFolders = foldersByPath.entries.toList()
+      ..sort(
+          (a, b) => a.key.split('/').length.compareTo(b.key.split('/').length));
+    print(sortedFolders.toString());
+    return Map.fromEntries(sortedFolders);
   }
 }

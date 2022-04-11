@@ -21,6 +21,54 @@ Future<void> promptToUploadFile(
   required String folderId,
 }) async {
   final uploadInput = FileUploadInputElement()
+    ..setAttribute('webkitEntries', 'multiple');
+  uploadInput.click();
+// Create and click upload input element
+
+  uploadInput.onChange.listen((e) async {
+    // read file content as dataURL
+    final files = uploadInput.files;
+    if (files == null) {
+      return;
+    }
+    final selectedFiles = files.map((file) {
+      return WebFile(file, folderId);
+    }).toList();
+    if (selectedFiles.isEmpty) {
+      return;
+    }
+    await showCongestionDependentModalDialog(
+      context,
+      () => showDialog(
+        context: context,
+        builder: (_) => BlocProvider<UploadCubit>(
+          create: (context) => UploadCubit(
+            uploadPlanUtils: UploadPlanUtils(
+              arweave: context.read<ArweaveService>(),
+              driveDao: context.read<DriveDao>(),
+            ),
+            driveId: driveId,
+            folderId: folderId,
+            files: selectedFiles,
+            profileCubit: context.read<ProfileCubit>(),
+            arweave: context.read<ArweaveService>(),
+            pst: context.read<PstService>(),
+            driveDao: context.read<DriveDao>(),
+          )..startUploadPreparation(),
+          child: UploadForm(),
+        ),
+        barrierDismissible: false,
+      ),
+    );
+  });
+}
+
+Future<void> promptToUploadFolder(
+  BuildContext context, {
+  required String driveId,
+  required String folderId,
+}) async {
+  final uploadInput = FileUploadInputElement()
     ..setAttribute('webkitdirectory', 'multiple');
   uploadInput.click();
 // Create and click upload input element
@@ -32,12 +80,14 @@ Future<void> promptToUploadFile(
       return;
     }
     final selectedFiles = files.map((file) {
-      print(file.relativePath);
       return WebFile(file, folderId);
     }).toList();
     if (selectedFiles.isEmpty) {
       return;
     }
+    final folders =
+        UploadPlanUtils.generateFoldersForFiles(selectedFiles, folderId);
+
     await showCongestionDependentModalDialog(
       context,
       () => showDialog(

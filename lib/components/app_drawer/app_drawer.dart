@@ -221,6 +221,19 @@ class AppDrawer extends StatelessWidget {
                             ),
                           ),
                           PopupMenuDivider(),
+                          PopupMenuItem(
+                            enabled: state.hasWritePermissions,
+                            value: (context) => promptToUploadFolder(
+                              context,
+                              driveId: state.currentDrive.id,
+                              folderId: state.folderInView.folder.id,
+                            ),
+                            child: ListTile(
+                              enabled: state.hasWritePermissions,
+                              title: Text('Upload Folder'),
+                            ),
+                          ),
+                          PopupMenuDivider(),
                         },
                         if (drivesState is DrivesLoadSuccess) ...{
                           PopupMenuItem(
