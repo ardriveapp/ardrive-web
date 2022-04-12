@@ -1100,7 +1100,7 @@
       }
     }
   },
-  "conflictingNameFound": "El nombre del archivo ya existe",
+  "conflictingNameFound": "Se encontró un conflicto de nombres",
   "@conflictingNameFound": {
     "description": "There is a non-manifest entity with the same name"
   },
