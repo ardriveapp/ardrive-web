@@ -220,7 +220,6 @@ class AppDrawer extends StatelessWidget {
                                   Text(appLocalizationsOf(context).uploadFiles),
                             ),
                           ),
-                          PopupMenuDivider(),
                           PopupMenuItem(
                             enabled: state.hasWritePermissions,
                             value: (context) => promptToUploadFolder(

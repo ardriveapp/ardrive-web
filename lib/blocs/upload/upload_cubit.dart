@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/upload/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_plan.dart';
 import 'package:ardrive/blocs/upload/web_file.dart';
 import 'package:ardrive/blocs/upload/web_folder.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -271,6 +272,8 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     //Upload folders
+    final folderMap = <String, FolderEntity>{};
+    final filesMap = <String, FileEntity>{};
     foldersToUpload.forEach((key, folder) async {
       await _driveDao.transaction(() async {
         final driveKey = _targetDrive.isPrivate
@@ -280,7 +283,7 @@ class UploadCubit extends Cubit<UploadState> {
         final parentFolderId =
             foldersToUpload[folder.parentFolderPath]?.id ?? _targetFolder.id;
 
-        final newFolder = await _driveDao.createFolder(
+        await _driveDao.createFolder(
           driveId: _targetDrive.id,
           parentFolderId: parentFolderId,
           folderName: folder.name,
@@ -303,12 +306,23 @@ class UploadCubit extends Cubit<UploadState> {
 
         await _arweave.postTx(folderTx);
         folderEntity.txId = folderTx.id;
-        await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
-          performedAction: RevisionAction.create,
-        ));
-        final folderMap = {folder.id: newFolder};
-        await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
+        await _driveDao.insertFolderRevision(
+          folderEntity.toRevisionCompanion(
+            performedAction: RevisionAction.create,
+          ),
+        );
+
+        folderMap.putIfAbsent(folder.id, () => folderEntity);
       });
+
+      filesMap.addEntries(uploadPlan.bundleUploadHandles
+          .map((e) => e.fileEntities)
+          .expand((list) => list)
+          .map((file) => MapEntry(file.id!, file)));
+      filesMap.addAll(
+        uploadPlan.v2FileUploadHandles
+            .map((key, value) => MapEntry(key, value.entity)),
+      );
     });
 
     // Upload Bundles
@@ -345,7 +359,7 @@ class UploadCubit extends Cubit<UploadState> {
       }
       uploadHandle.dispose();
     }
-
+    unawaited(_driveDao.generateFsEntryPaths(driveId, folderMap, filesMap));
     unawaited(_profileCubit.refreshBalance());
 
     emit(UploadComplete());
