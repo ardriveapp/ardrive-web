@@ -815,7 +815,7 @@
       }
     }
   },
-  "duplicateFolders": "Carpetas con conflictos",
+  "duplicateFolders": "El nombre de la carpeta ya existe",
   "@duplicateFolders": {
     "description": "Folder name conflict dialog title"
   },
