@@ -37,16 +37,19 @@ class UploadPlanUtils {
   }) async {
     final _dataItemUploadHandles = <String, DataItemUploadHandle>{};
     final _v2FileUploadHandles = <String, FileUploadHandle>{};
+
     for (var file in files) {
+      print('${folderEntry.path}/${file.path}');
+      print(file.parentFolderId);
       final fileName = file.name;
-      final filePath = '${folderEntry.path}/$fileName';
+      final filePath = '${folderEntry.path}/${file.path}';
       final fileSize = file.size;
       final fileEntity = FileEntity(
         driveId: targetDrive.id,
         name: fileName,
         size: fileSize,
         lastModifiedDate: file.lastModifiedDate,
-        parentFolderId: folderEntry.id,
+        parentFolderId: file.parentFolderId,
         dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
       );
 
@@ -92,22 +95,18 @@ class UploadPlanUtils {
     );
   }
 
-  static Map<String, WebFolder> generateFoldersForFiles(
-    List<WebFile> files,
-    String targetFolderId,
-  ) {
+  static Map<String, WebFolder> generateFoldersForFiles(List<WebFile> files) {
     final foldersByPath = <String, WebFolder>{};
+
     // Generate folders
     for (var file in files) {
       final path = file.file.relativePath!;
-
       final folderPath = path.split('/');
       folderPath.removeLast();
       for (var i = 0; i < folderPath.length; i++) {
         final currentFolder = folderPath.getRange(0, i + 1).join('/');
         if (foldersByPath[currentFolder] == null) {
           final parentFolderPath = folderPath.getRange(0, i).join('/');
-
           foldersByPath.putIfAbsent(
             currentFolder,
             () => WebFolder(
@@ -123,7 +122,6 @@ class UploadPlanUtils {
     final sortedFolders = foldersByPath.entries.toList()
       ..sort(
           (a, b) => a.key.split('/').length.compareTo(b.key.split('/').length));
-    print(sortedFolders.toString());
     return Map.fromEntries(sortedFolders);
   }
 }

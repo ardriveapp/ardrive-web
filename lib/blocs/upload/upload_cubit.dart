@@ -5,6 +5,8 @@ import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_plan.dart';
 import 'package:ardrive/blocs/upload/web_file.dart';
+import 'package:ardrive/blocs/upload/web_folder.dart';
+import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -29,6 +31,7 @@ class UploadCubit extends Cubit<UploadState> {
   final List<UploadFile> files;
 
   final ProfileCubit _profileCubit;
+  final SyncCubit _syncCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
   final PstService _pst;
@@ -39,6 +42,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// Map of conflicting file ids keyed by their file names.
   final Map<String, String> conflictingFiles = {};
+  final Map<String, WebFolder> foldersToUpload = {};
   final List<String> conflictingFolders = [];
 
   bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
@@ -48,6 +52,7 @@ class UploadCubit extends Cubit<UploadState> {
     required this.folderId,
     required this.files,
     required ProfileCubit profileCubit,
+    required SyncCubit syncCubit,
     required DriveDao driveDao,
     required ArweaveService arweave,
     required PstService pst,
@@ -56,6 +61,7 @@ class UploadCubit extends Cubit<UploadState> {
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
+        _syncCubit = syncCubit,
         _pst = pst,
         _uploadPlanUtils = uploadPlanUtils,
         super(UploadPreparationInProgress());
@@ -75,29 +81,10 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> checkConflictingFolders() async {
     emit(UploadPreparationInProgress());
-    if (uploadFolders) {
-      final folders = UploadPlanUtils.generateFoldersForFiles(
-        files as List<WebFile>,
-        _targetFolder.id,
-      );
-      folders.forEach((key, folder) async {
-        final existingFolderId = await _driveDao
-            .foldersInFolderWithName(
-              driveId: driveId,
-              name: folder.name,
-              parentFolderId: folders[folder.parentFolderPath] != null
-                  ? folders[folder.parentFolderPath]!.id
-                  : _targetFolder.id,
-            )
-            .map((f) => f.id)
-            .getSingleOrNull();
-        if (existingFolderId != null) {
-          folder.id = existingFolderId;
-        }
-      });
-    }
+
     for (final file in files) {
       final fileName = file.name;
+
       final existingFolderName = await _driveDao
           .foldersInFolderWithName(
             driveId: _targetDrive.id,
@@ -157,6 +144,43 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
+  /// Generate Folders and assign parentFolderIds
+
+  List<UploadFile> generateFoldersForFiles(List<UploadFile> files) {
+    final folders = UploadPlanUtils.generateFoldersForFiles(
+      files as List<WebFile>,
+    );
+    folders.forEach((key, folder) async {
+      final existingFolderId = await _driveDao
+          .foldersInFolderWithName(
+            driveId: driveId,
+            name: folder.name,
+            parentFolderId: folders[folder.parentFolderPath] != null
+                ? folders[folder.parentFolderPath]!.id
+                : _targetFolder.id,
+          )
+          .map((f) => f.id)
+          .getSingleOrNull();
+      if (existingFolderId != null) {
+        folder.id = existingFolderId;
+      }
+    });
+    final filesToUpload = <UploadFile>[];
+    files.forEach((file) {
+      final fileFolder = (file.path.split('/')..removeLast()).join('/');
+      print(folders.keys);
+      print(folders[fileFolder]?.id);
+
+      filesToUpload.add(WebFile(
+        file.file,
+        folders[fileFolder]?.id ?? _targetFolder.id,
+      ));
+    });
+    print(filesToUpload.map((e) => e.parentFolderId));
+    foldersToUpload.addAll(folders);
+    return filesToUpload;
+  }
+
   /// If `conflictingFileAction` is null, means that had no conflict.
   Future<void> prepareUploadPlanAndCostEstimates({
     ConflictingFileActions? conflictingFileAction,
@@ -192,13 +216,16 @@ class UploadCubit extends Cubit<UploadState> {
       ));
       return;
     }
+
     final uploadPlan = await _uploadPlanUtils.filesToUploadPlan(
-        folderEntry: _targetFolder,
-        targetDrive: _targetDrive,
-        files: files,
-        cipherKey: profile.cipherKey,
-        wallet: profile.wallet,
-        conflictingFiles: conflictingFiles);
+      folderEntry: _targetFolder,
+      targetDrive: _targetDrive,
+      files: uploadFolders ? generateFoldersForFiles(files) : files,
+      cipherKey: profile.cipherKey,
+      wallet: profile.wallet,
+      conflictingFiles: conflictingFiles,
+    );
+
     final costEstimate = await CostEstimate.create(
       uploadPlan: uploadPlan,
       arweaveService: _arweave,
@@ -242,6 +269,47 @@ class UploadCubit extends Cubit<UploadState> {
     if (costEstimate.v2FilesFeeTx != null) {
       await _arweave.postTx(costEstimate.v2FilesFeeTx!);
     }
+
+    //Upload folders
+    foldersToUpload.forEach((key, folder) async {
+      await _driveDao.transaction(() async {
+        final driveKey = _targetDrive.isPrivate
+            ? await _driveDao.getDriveKey(_targetDrive.id, profile.cipherKey)
+            : null;
+
+        final parentFolderId =
+            foldersToUpload[folder.parentFolderPath]?.id ?? _targetFolder.id;
+
+        final newFolder = await _driveDao.createFolder(
+          driveId: _targetDrive.id,
+          parentFolderId: parentFolderId,
+          folderName: folder.name,
+          path:
+              '${_targetFolder.path}/${folder.parentFolderPath}/${folder.name}',
+        );
+
+        final folderEntity = FolderEntity(
+          id: folder.id,
+          driveId: _targetFolder.driveId,
+          parentFolderId: parentFolderId,
+          name: folder.name,
+        );
+
+        final folderTx = await _arweave.prepareEntityTx(
+          folderEntity,
+          profile.wallet,
+          driveKey,
+        );
+
+        await _arweave.postTx(folderTx);
+        folderEntity.txId = folderTx.id;
+        await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
+          performedAction: RevisionAction.create,
+        ));
+        final folderMap = {folder.id: newFolder};
+        await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
+      });
+    });
 
     // Upload Bundles
     for (var bundleHandle in uploadPlan.bundleUploadHandles) {

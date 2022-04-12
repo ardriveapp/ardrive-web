@@ -74,7 +74,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
                 targetFolder.driveId, profile.cipherKey)
             : null;
 
-        final newFolderId = await _driveDao.createFolder(
+        final newFolder = await _driveDao.createFolder(
           driveId: targetFolder.driveId,
           parentFolderId: targetFolder.id,
           folderName: folderName,
@@ -82,7 +82,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
         );
 
         final folderEntity = FolderEntity(
-          id: newFolderId,
+          id: newFolder.id.value,
           driveId: targetFolder.driveId,
           parentFolderId: targetFolder.id,
           name: folderName,

@@ -30,7 +30,8 @@ class UploadPlan {
   }
 
   Future<void> createBundleHandlesFromDataItemHandles(
-      Map<String, DataItemUploadHandle> dataItemUploadHandles) async {
+    Map<String, DataItemUploadHandle> dataItemUploadHandles,
+  ) async {
     // NOTE: Using maxFilesPerBundle since FileUploadHandles have 2 data items
     final bundleItems = await NextFitBundlePacker<DataItemUploadHandle>(
       maxBundleSize: bundleSizeLimit,

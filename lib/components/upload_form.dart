@@ -51,6 +51,7 @@ Future<void> promptToUploadFile(
             folderId: folderId,
             files: selectedFiles,
             profileCubit: context.read<ProfileCubit>(),
+            syncCubit: context.read<SyncCubit>(),
             arweave: context.read<ArweaveService>(),
             pst: context.read<PstService>(),
             driveDao: context.read<DriveDao>(),
@@ -85,8 +86,6 @@ Future<void> promptToUploadFolder(
     if (selectedFiles.isEmpty) {
       return;
     }
-    final folders =
-        UploadPlanUtils.generateFoldersForFiles(selectedFiles, folderId);
 
     await showCongestionDependentModalDialog(
       context,
@@ -102,9 +101,11 @@ Future<void> promptToUploadFolder(
             folderId: folderId,
             files: selectedFiles,
             profileCubit: context.read<ProfileCubit>(),
+            syncCubit: context.read<SyncCubit>(),
             arweave: context.read<ArweaveService>(),
             pst: context.read<PstService>(),
             driveDao: context.read<DriveDao>(),
+            uploadFolders: true,
           )..startUploadPreparation(),
           child: UploadForm(),
         ),
