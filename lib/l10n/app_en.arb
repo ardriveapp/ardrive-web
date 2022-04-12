@@ -1132,6 +1132,10 @@
   "@createManifestEmphasized": {
     "description": "To create a manifest"
   },
+  "createManifest": "Create manifest",
+  "@createManifest": {
+    "description": "To create a manifest"
+  },
   "filesWillBePermanentlyPublicWarning": "Files uploaded here will be permanently viewable by anyone on the internet. Make sure you intend on making this data public.",
   "@filesWillBePermanentlyPublicWarning": {
     "description": "Make the user aware that it is uploading permanent data publicly"
