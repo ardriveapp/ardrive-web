@@ -7,7 +7,6 @@ import 'package:ardrive/blocs/upload/upload_plan.dart';
 import 'package:ardrive/blocs/upload/web_file.dart';
 import 'package:ardrive/blocs/upload/web_folder.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/folder_entity.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -32,7 +31,6 @@ class UploadCubit extends Cubit<UploadState> {
   final List<UploadFile> files;
 
   final ProfileCubit _profileCubit;
-  final SyncCubit _syncCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
   final PstService _pst;
@@ -53,7 +51,6 @@ class UploadCubit extends Cubit<UploadState> {
     required this.folderId,
     required this.files,
     required ProfileCubit profileCubit,
-    required SyncCubit syncCubit,
     required DriveDao driveDao,
     required ArweaveService arweave,
     required PstService pst,
@@ -62,7 +59,6 @@ class UploadCubit extends Cubit<UploadState> {
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
-        _syncCubit = syncCubit,
         _pst = pst,
         _uploadPlanUtils = uploadPlanUtils,
         super(UploadPreparationInProgress());
@@ -282,13 +278,14 @@ class UploadCubit extends Cubit<UploadState> {
 
         final parentFolderId =
             foldersToUpload[folder.parentFolderPath]?.id ?? _targetFolder.id;
-
+        final folderPath = folder.parentFolderPath.isNotEmpty
+            ? '${_targetFolder.path}/${folder.parentFolderPath}/${folder.name}'
+            : '${_targetFolder.path}/${folder.name}';
         await _driveDao.createFolder(
           driveId: _targetDrive.id,
           parentFolderId: parentFolderId,
           folderName: folder.name,
-          path:
-              '${_targetFolder.path}/${folder.parentFolderPath}/${folder.name}',
+          path: folderPath,
         );
 
         final folderEntity = FolderEntity(
@@ -359,7 +356,6 @@ class UploadCubit extends Cubit<UploadState> {
       }
       uploadHandle.dispose();
     }
-    unawaited(_driveDao.generateFsEntryPaths(driveId, folderMap, filesMap));
     unawaited(_profileCubit.refreshBalance());
 
     emit(UploadComplete());

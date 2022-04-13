@@ -126,7 +126,6 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
               arweave: context.read<ArweaveService>(),
               pst: context.read<PstService>(),
               profileCubit: context.read<ProfileCubit>(),
-              syncCubit: context.read<SyncCubit>(),
               driveDao: context.read<DriveDao>(),
             )..startUploadPreparation(),
             child: UploadForm(),
