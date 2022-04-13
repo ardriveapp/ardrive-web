@@ -12,7 +12,8 @@ class WebFile extends UploadFile {
       : super(
           name: file.name,
           path: file.relativePath!,
-          lastModifiedDate: file.lastModifiedDate,
+          lastModifiedDate:
+              DateTime.fromMillisecondsSinceEpoch(file.lastModified!),
           size: file.size,
           parentFolderId: parentFolderId,
         );
