@@ -39,8 +39,6 @@ class UploadPlanUtils {
     final _v2FileUploadHandles = <String, FileUploadHandle>{};
 
     for (var file in files) {
-      print('${folderEntry.path}/${file.path}');
-      print(file.parentFolderId);
       final fileName = file.name;
       final filePath = '${folderEntry.path}/${file.path}';
       final fileSize = file.size;

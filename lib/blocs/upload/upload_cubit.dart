@@ -10,6 +10,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
+import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
@@ -78,14 +79,17 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> checkConflictingFolders() async {
     emit(UploadPreparationInProgress());
-
+    if (uploadFolders) {
+      files.clear();
+      files.addAll(generateFoldersForFiles(files));
+    }
     for (final file in files) {
       final fileName = file.name;
 
       final existingFolderName = await _driveDao
           .foldersInFolderWithName(
             driveId: _targetDrive.id,
-            parentFolderId: _targetFolder.id,
+            parentFolderId: file.parentFolderId,
             name: fileName,
           )
           .map((f) => f.name)
@@ -118,7 +122,7 @@ class UploadCubit extends Cubit<UploadState> {
       final existingFileId = await _driveDao
           .filesInFolderWithName(
             driveId: _targetDrive.id,
-            parentFolderId: _targetFolder.id,
+            parentFolderId: file.parentFolderId,
             name: fileName,
           )
           .map((f) => f.id)
@@ -172,7 +176,6 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
     });
-    print(filesToUpload.map((e) => e.parentFolderId));
     foldersToUpload.addAll(folders);
     return filesToUpload;
   }
@@ -267,6 +270,7 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     //Upload folders
+    final folderDataItems = <DataItem>[];
     foldersToUpload.forEach((key, folder) async {
       await _driveDao.transaction(() async {
         final driveKey = _targetDrive.isPrivate
@@ -293,14 +297,15 @@ class UploadCubit extends Cubit<UploadState> {
           name: folder.name,
         );
 
-        final folderTx = await _arweave.prepareEntityTx(
+        final folderDataItem = await _arweave.prepareEntityDataItem(
           folderEntity,
           profile.wallet,
           driveKey,
         );
 
-        await _arweave.postTx(folderTx);
-        folderEntity.txId = folderTx.id;
+        folderDataItems.add(folderDataItem);
+        folderEntity.txId = folderDataItem.id;
+
         await _driveDao.insertFolderRevision(
           folderEntity.toRevisionCompanion(
             performedAction: RevisionAction.create,
@@ -308,6 +313,13 @@ class UploadCubit extends Cubit<UploadState> {
         );
       });
     });
+
+    final folderBundleTx = await _arweave.prepareDataBundleTx(
+      await DataBundle.fromDataItems(items: folderDataItems),
+      profile.wallet,
+    );
+
+    await _arweave.postTx(folderBundleTx);
     // Upload Bundles
     for (var bundleHandle in uploadPlan.bundleUploadHandles) {
       await bundleHandle.prepareAndSignBundleTransaction(

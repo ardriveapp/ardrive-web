@@ -74,7 +74,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
                 targetFolder.driveId, profile.cipherKey)
             : null;
 
-        final newFolder = await _driveDao.createFolder(
+        final newFolderId = await _driveDao.createFolder(
           driveId: targetFolder.driveId,
           parentFolderId: targetFolder.id,
           folderName: folderName,
@@ -82,7 +82,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
         );
 
         final folderEntity = FolderEntity(
-          id: newFolder.id.value,
+          id: newFolderId,
           driveId: targetFolder.driveId,
           parentFolderId: targetFolder.id,
           name: folderName,
@@ -97,7 +97,8 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
         await _arweave.postTx(folderTx);
         folderEntity.txId = folderTx.id;
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
-            performedAction: RevisionAction.create));
+          performedAction: RevisionAction.create,
+        ));
       });
     } catch (err) {
       addError(err);

@@ -311,10 +311,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   /// Create a new folder entry.
   /// Returns the id of the created folder.
-  Future<FolderEntriesCompanion> createFolder({
-    required String driveId,
-    String? parentFolderId,
-    String? folderId,
+  Future<FolderID> createFolder({
+    required DriveID driveId,
+    FolderID? parentFolderId,
+    FolderID? folderId,
     required String folderName,
     required String path,
   }) async {
@@ -328,7 +328,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
     await into(folderEntries).insert(folderEntriesCompanion);
 
-    return folderEntriesCompanion;
+    return id;
   }
 
   UpdateStatement<FolderEntries, FolderEntry> updateFolderById(
