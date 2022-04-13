@@ -80,9 +80,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> checkConflictingFolders() async {
     emit(UploadPreparationInProgress());
-    if (uploadFolders) {
-      files = generateFoldersForFiles(files);
-    }
+
     for (final file in files) {
       final fileName = file.name;
 
@@ -219,7 +217,7 @@ class UploadCubit extends Cubit<UploadState> {
     final uploadPlan = await _uploadPlanUtils.filesToUploadPlan(
       folderEntry: _targetFolder,
       targetDrive: _targetDrive,
-      files: files,
+      files: uploadFolders ? generateFoldersForFiles(files) : files,
       cipherKey: profile.cipherKey,
       wallet: profile.wallet,
       conflictingFiles: conflictingFiles,
