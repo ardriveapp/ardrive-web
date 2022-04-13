@@ -29,13 +29,14 @@ final minimumPstTip = BigInt.from(10000000);
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
   final String folderId;
-  final List<UploadFile> files;
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
   final PstService _pst;
   final UploadPlanUtils _uploadPlanUtils;
+
+  late List<UploadFile> files;
   late bool uploadFolders;
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
@@ -80,8 +81,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> checkConflictingFolders() async {
     emit(UploadPreparationInProgress());
     if (uploadFolders) {
-      files.clear();
-      files.addAll(generateFoldersForFiles(files));
+      files = generateFoldersForFiles(files);
     }
     for (final file in files) {
       final fileName = file.name;
@@ -147,7 +147,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// Generate Folders and assign parentFolderIds
 
-  List<UploadFile> generateFoldersForFiles(List<UploadFile> files) {
+  List<WebFile> generateFoldersForFiles(List<UploadFile> files) {
     final folders = UploadPlanUtils.generateFoldersForFiles(
       files as List<WebFile>,
     );
@@ -166,7 +166,7 @@ class UploadCubit extends Cubit<UploadState> {
         folder.id = existingFolderId;
       }
     });
-    final filesToUpload = <UploadFile>[];
+    final filesToUpload = <WebFile>[];
     files.forEach((file) {
       final fileFolder = (file.path.split('/')..removeLast()).join('/');
       filesToUpload.add(
@@ -219,7 +219,7 @@ class UploadCubit extends Cubit<UploadState> {
     final uploadPlan = await _uploadPlanUtils.filesToUploadPlan(
       folderEntry: _targetFolder,
       targetDrive: _targetDrive,
-      files: uploadFolders ? generateFoldersForFiles(files) : files,
+      files: files,
       cipherKey: profile.cipherKey,
       wallet: profile.wallet,
       conflictingFiles: conflictingFiles,
