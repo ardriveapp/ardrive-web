@@ -165,13 +165,12 @@ class UploadCubit extends Cubit<UploadState> {
     final filesToUpload = <UploadFile>[];
     files.forEach((file) {
       final fileFolder = (file.path.split('/')..removeLast()).join('/');
-      print(folders.keys);
-      print(folders[fileFolder]?.id);
-
-      filesToUpload.add(WebFile(
-        file.file,
-        folders[fileFolder]?.id ?? _targetFolder.id,
-      ));
+      filesToUpload.add(
+        WebFile(
+          file.file,
+          folders[fileFolder]?.id ?? _targetFolder.id,
+        ),
+      );
     });
     print(filesToUpload.map((e) => e.parentFolderId));
     foldersToUpload.addAll(folders);
@@ -268,8 +267,6 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     //Upload folders
-    final folderMap = <String, FolderEntity>{};
-    final filesMap = <String, FileEntity>{};
     foldersToUpload.forEach((key, folder) async {
       await _driveDao.transaction(() async {
         final driveKey = _targetDrive.isPrivate
@@ -286,6 +283,7 @@ class UploadCubit extends Cubit<UploadState> {
           parentFolderId: parentFolderId,
           folderName: folder.name,
           path: folderPath,
+          folderId: folder.id,
         );
 
         final folderEntity = FolderEntity(
@@ -308,20 +306,8 @@ class UploadCubit extends Cubit<UploadState> {
             performedAction: RevisionAction.create,
           ),
         );
-
-        folderMap.putIfAbsent(folder.id, () => folderEntity);
       });
-
-      filesMap.addEntries(uploadPlan.bundleUploadHandles
-          .map((e) => e.fileEntities)
-          .expand((list) => list)
-          .map((file) => MapEntry(file.id!, file)));
-      filesMap.addAll(
-        uploadPlan.v2FileUploadHandles
-            .map((key, value) => MapEntry(key, value.entity)),
-      );
     });
-
     // Upload Bundles
     for (var bundleHandle in uploadPlan.bundleUploadHandles) {
       await bundleHandle.prepareAndSignBundleTransaction(
