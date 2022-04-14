@@ -301,6 +301,8 @@ class UploadCubit extends Cubit<UploadState> {
           driveKey,
         );
 
+        await folderDataItem.sign(profile.wallet);
+
         folderDataItems.add(folderDataItem);
         folderEntity.txId = folderDataItem.id;
 
