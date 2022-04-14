@@ -64,7 +64,9 @@ class UploadForm extends StatelessWidget {
         builder: (context, state) {
           if (state is UploadFolderNameConflict) {
             return AppDialog(
-              title: appLocalizationsOf(context).duplicateFolders,
+              title: appLocalizationsOf(context).duplicateFolders(
+                state.conflictingFileNames.length,
+              ),
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
