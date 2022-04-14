@@ -64,7 +64,9 @@ class UploadForm extends StatelessWidget {
         builder: (context, state) {
           if (state is UploadFolderNameConflict) {
             return AppDialog(
-              title: appLocalizationsOf(context).duplicateFolders,
+              title: appLocalizationsOf(context).duplicateFolders(
+                state.conflictingFileNames.length,
+              ),
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -137,9 +139,6 @@ class UploadForm extends StatelessWidget {
                 actions: <Widget>[
                   if (!state.areAllFilesConflicting)
                     TextButton(
-                      style: ButtonStyle(
-                          fixedSize:
-                              MaterialStateProperty.all(Size.fromWidth(140))),
                       onPressed: () => context
                           .read<UploadCubit>()
                           .prepareUploadPlanAndCostEstimates(
@@ -148,16 +147,10 @@ class UploadForm extends StatelessWidget {
                       child: Text(appLocalizationsOf(context).skipEmphasized),
                     ),
                   TextButton(
-                    style: ButtonStyle(
-                        fixedSize:
-                            MaterialStateProperty.all(Size.fromWidth(140))),
                     onPressed: () => Navigator.of(context).pop(false),
                     child: Text(appLocalizationsOf(context).cancelEmphasized),
                   ),
                   TextButton(
-                    style: ButtonStyle(
-                        fixedSize:
-                            MaterialStateProperty.all(Size.fromWidth(140))),
                     onPressed: () => context
                         .read<UploadCubit>()
                         .prepareUploadPlanAndCostEstimates(

@@ -793,7 +793,7 @@
   "@login": {
     "description": "The login process"
   },
-  "duplicateFiles": "{numberOfDuplicateFiles,plural, =0{No duplicate files found} =1{A duplicate file found} =other{{numberOfDuplicateFiles} duplicate files found}}",
+  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{A duplicate file found} =other{Duplicate files found}}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -815,9 +815,16 @@
       }
     }
   },
-  "duplicateFolders": "Folder Name Conflict",
+  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{A duplicate folder found} =other{Duplicate folders found}}",
   "@duplicateFolders": {
-    "description": "Folder name conflict dialog title"
+    "description": "Folder name conflict dialog title",
+    "placeholders": {
+      "numberOfDuplicateFolders": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
   },
   "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{A folder with the same name already exists at this location. Please rename it and try uploading again.}  =other{{numberOfFolders} folders with the same name already exist at this location. Please rename them and try uploading again.}}",
   "@foldersWithTheSameNameAlreadyExists": {
@@ -1130,6 +1137,10 @@
   },
   "createManifestEmphasized": "CREATE MANIFEST",
   "@createManifestEmphasized": {
+    "description": "To create a manifest"
+  },
+  "createManifest": "Create manifest",
+  "@createManifest": {
     "description": "To create a manifest"
   },
   "filesWillBePermanentlyPublicWarning": "Files uploaded here will be permanently viewable by anyone on the internet. Make sure you intend on making this data public.",
