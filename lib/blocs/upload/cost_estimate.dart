@@ -1,6 +1,6 @@
+import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_handles/bundle_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
-import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/entities/entity.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
@@ -42,7 +42,7 @@ class CostEstimate {
     required PstService pstService,
     required Wallet wallet,
   }) async {
-    final _v2FileUploadHandles = uploadPlan.v2FileUploadHandles;
+    final _v2FileUploadHandles = uploadPlan.fileV2UploadHandles;
     final dataItemsCost = await estimateCostOfAllBundles(
       bundleUploadHandles: uploadPlan.bundleUploadHandles,
       arweaveService: arweaveService,

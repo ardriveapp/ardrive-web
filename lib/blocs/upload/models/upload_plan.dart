@@ -1,4 +1,6 @@
 import 'package:ardrive/blocs/upload/upload_handles/bundle_upload_handle.dart';
+import 'package:ardrive/blocs/upload/upload_handles/folder_data_item_upload_handle.dart';
+import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/utils/bundles/next_fit_bundle_packer.dart';
 
 import '../upload_handles/file_data_item_upload_handle.dart';
@@ -10,40 +12,58 @@ final maxFilesPerBundle = maxBundleDataItemCount ~/ 2;
 
 class UploadPlan {
   /// A map of [FileV2UploadHandle]s keyed by their respective file's id.
-  late Map<String, FileV2UploadHandle> v2FileUploadHandles;
+  late Map<String, FileV2UploadHandle> fileV2UploadHandles;
 
   final List<BundleUploadHandle> bundleUploadHandles = [];
 
   UploadPlan._create({
-    required this.v2FileUploadHandles,
+    required this.fileV2UploadHandles,
   });
 
   static Future<UploadPlan> create({
-    required Map<String, FileV2UploadHandle> v2FileUploadHandles,
-    required Map<String, FileDataItemUploadHandle> dataItemUploadHandles,
+    required Map<String, FileV2UploadHandle> fileV2UploadHandles,
+    required Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles,
+    required Map<String, FolderDataItemUploadHandle>
+        folderDataItemUploadHandles,
   }) async {
     final bundle = UploadPlan._create(
-      v2FileUploadHandles: v2FileUploadHandles,
+      fileV2UploadHandles: fileV2UploadHandles,
     );
-    await bundle.createBundleHandlesFromDataItemHandles(dataItemUploadHandles);
+    if (fileDataItemUploadHandles.isNotEmpty ||
+        folderDataItemUploadHandles.isNotEmpty) {
+      await bundle.createBundleHandlesFromDataItemHandles(
+        fileDataItemUploadHandles: fileDataItemUploadHandles,
+        folderDataItemUploadHandles: folderDataItemUploadHandles,
+      );
+    }
     return bundle;
   }
 
-  Future<void> createBundleHandlesFromDataItemHandles(
-    Map<String, FileDataItemUploadHandle> dataItemUploadHandles,
-  ) async {
+  Future<void> createBundleHandlesFromDataItemHandles({
+    Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles = const {},
+    Map<String, FolderDataItemUploadHandle> folderDataItemUploadHandles =
+        const {},
+  }) async {
     // NOTE: Using maxFilesPerBundle since FileUploadHandles have 2 data items
-    final bundleItems = await NextFitBundlePacker<FileDataItemUploadHandle>(
+    final bundleItems = await NextFitBundlePacker<UploadHandle>(
       maxBundleSize: bundleSizeLimit,
       maxDataItemCount: maxFilesPerBundle,
-    ).packItems(dataItemUploadHandles.values.toList());
+    ).packItems([
+      ...fileDataItemUploadHandles.values,
+      ...folderDataItemUploadHandles.values
+    ]);
     for (var uploadHandles in bundleItems) {
       final bundleToUpload = await BundleUploadHandle.create(
-        dataItemUploadHandles: List.from(uploadHandles),
+        fileDataItemUploadHandles: List.from(
+          uploadHandles.whereType<FileDataItemUploadHandle>(),
+        ),
+        folderDataItemUploadHandles: List.from(
+          uploadHandles.whereType<FolderDataItemUploadHandle>(),
+        ),
       );
       bundleUploadHandles.add(bundleToUpload);
       uploadHandles.clear();
     }
-    dataItemUploadHandles.clear();
+    fileDataItemUploadHandles.clear();
   }
 }

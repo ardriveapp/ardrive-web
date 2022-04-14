@@ -307,7 +307,7 @@ class UploadForm extends StatelessWidget {
                         .map((e) => e.numberOfFiles)
                         .reduce((value, element) => value += element)
                     : 0;
-            final numberOfV2Files = state.uploadPlan.v2FileUploadHandles.length;
+            final numberOfV2Files = state.uploadPlan.fileV2UploadHandles.length;
             return AppDialog(
               title: appLocalizationsOf(context)
                   .uploadNFiles(numberOfFilesInBundles + numberOfV2Files),
@@ -324,7 +324,7 @@ class UploadForm extends StatelessWidget {
                           shrinkWrap: true,
                           children: [
                             for (final file in state
-                                .uploadPlan.v2FileUploadHandles.values) ...{
+                                .uploadPlan.fileV2UploadHandles.values) ...{
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(file.entity.name!),
@@ -425,7 +425,7 @@ class UploadForm extends StatelessWidget {
                         .map((e) => e.numberOfFiles)
                         .reduce((value, element) => value += element)
                     : 0;
-            final numberOfV2Files = state.uploadPlan.v2FileUploadHandles.length;
+            final numberOfV2Files = state.uploadPlan.fileV2UploadHandles.length;
             return AppDialog(
               dismissable: false,
               title: appLocalizationsOf(context)
@@ -439,7 +439,7 @@ class UploadForm extends StatelessWidget {
                       shrinkWrap: true,
                       children: [
                         for (final file
-                            in state.uploadPlan.v2FileUploadHandles.values) ...{
+                            in state.uploadPlan.fileV2UploadHandles.values) ...{
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(file.entity.name!),

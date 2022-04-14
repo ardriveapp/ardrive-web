@@ -1,8 +1,8 @@
-import 'package:ardrive/blocs/upload/upload_handles/folder_data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/models/web_file.dart';
 import 'package:ardrive/blocs/upload/models/web_folder.dart';
+import 'package:ardrive/blocs/upload/upload_handles/folder_data_item_upload_handle.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/drive.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -34,16 +34,16 @@ class UploadPlanUtils {
     required Wallet wallet,
     required Map<String, String> conflictingFiles,
     required Drive targetDrive,
-    required FolderEntry folderEntry,
-    List<WebFolder> folders = const [],
+    required FolderEntry targetFolder,
+    Map<String, WebFolder> folders = const {},
   }) async {
-    final _dataItemUploadHandles = <String, FileDataItemUploadHandle>{};
-    final _v2FileUploadHandles = <String, FileV2UploadHandle>{};
-    final _folderUploadHandles = <String, FolderDataItemUploadHandle>{};
+    final _fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
+    final _fileV2UploadHandles = <String, FileV2UploadHandle>{};
+    final _folderDataItemUploadHandles = <String, FolderDataItemUploadHandle>{};
 
     for (var file in files) {
       final fileName = file.name;
-      final filePath = '${folderEntry.path}/${file.path}';
+      final filePath = '${targetFolder.path}/${file.path}';
       final fileSize = file.size;
       final fileEntity = FileEntity(
         driveId: targetDrive.id,
@@ -69,7 +69,7 @@ class UploadPlanUtils {
           : RevisionAction.uploadNewVersion;
 
       if (fileSize < bundleSizeLimit) {
-        _dataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(
+        _fileDataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(
           entity: fileEntity,
           path: filePath,
           file: file,
@@ -80,7 +80,7 @@ class UploadPlanUtils {
           revisionAction: revisionAction,
         );
       } else {
-        _v2FileUploadHandles[fileEntity.id!] = FileV2UploadHandle(
+        _fileV2UploadHandles[fileEntity.id!] = FileV2UploadHandle(
           entity: fileEntity,
           path: filePath,
           file: file,
@@ -90,9 +90,28 @@ class UploadPlanUtils {
         );
       }
     }
+    folders.forEach((key, folder) async {
+      folder.parentFolderId =
+          folders[folder.parentFolderPath]?.id ?? targetFolder.id;
+      folder.path = folder.parentFolderPath.isNotEmpty
+          ? '${targetFolder.path}/${folder.parentFolderPath}/${folder.name}'
+          : '${targetFolder.path}/${folder.name}';
+
+      _folderDataItemUploadHandles.putIfAbsent(
+        folder.id,
+        () => FolderDataItemUploadHandle(
+          folder: folder,
+          arweave: arweave,
+          wallet: wallet,
+          targetDriveId: targetDrive.id,
+        ),
+      );
+    });
+
     return UploadPlan.create(
-      v2FileUploadHandles: _v2FileUploadHandles,
-      dataItemUploadHandles: _dataItemUploadHandles,
+      fileV2UploadHandles: _fileV2UploadHandles,
+      fileDataItemUploadHandles: _fileDataItemUploadHandles,
+      folderDataItemUploadHandles: _folderDataItemUploadHandles,
     );
   }
 

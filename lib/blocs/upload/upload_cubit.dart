@@ -6,11 +6,9 @@ import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/models/web_file.dart';
 import 'package:ardrive/blocs/upload/models/web_folder.dart';
-import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
-import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
@@ -80,7 +78,9 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> checkConflictingFolders() async {
     emit(UploadPreparationInProgress());
-
+    if (uploadFolders) {
+      files = generateFoldersAndAssignParentsForFiles(files);
+    }
     for (final file in files) {
       final fileName = file.name;
 
@@ -145,7 +145,9 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// Generate Folders and assign parentFolderIds
 
-  List<WebFile> generateFoldersForFiles(List<UploadFile> files) {
+  List<WebFile> generateFoldersAndAssignParentsForFiles(
+    List<UploadFile> files,
+  ) {
     final folders = UploadPlanUtils.generateFoldersForFiles(
       files as List<WebFile>,
     );
@@ -215,12 +217,13 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     final uploadPlan = await _uploadPlanUtils.filesToUploadPlan(
-      folderEntry: _targetFolder,
+      targetFolder: _targetFolder,
       targetDrive: _targetDrive,
-      files: uploadFolders ? generateFoldersForFiles(files) : files,
+      files: files,
       cipherKey: profile.cipherKey,
       wallet: profile.wallet,
       conflictingFiles: conflictingFiles,
+      folders: foldersToUpload,
     );
 
     final costEstimate = await CostEstimate.create(
@@ -267,59 +270,6 @@ class UploadCubit extends Cubit<UploadState> {
       await _arweave.postTx(costEstimate.v2FilesFeeTx!);
     }
 
-    //Upload folders
-    final folderDataItems = <DataItem>[];
-    foldersToUpload.forEach((key, folder) async {
-      await _driveDao.transaction(() async {
-        final driveKey = _targetDrive.isPrivate
-            ? await _driveDao.getDriveKey(_targetDrive.id, profile.cipherKey)
-            : null;
-
-        final parentFolderId =
-            foldersToUpload[folder.parentFolderPath]?.id ?? _targetFolder.id;
-        final folderPath = folder.parentFolderPath.isNotEmpty
-            ? '${_targetFolder.path}/${folder.parentFolderPath}/${folder.name}'
-            : '${_targetFolder.path}/${folder.name}';
-        await _driveDao.createFolder(
-          driveId: _targetDrive.id,
-          parentFolderId: parentFolderId,
-          folderName: folder.name,
-          path: folderPath,
-          folderId: folder.id,
-        );
-
-        final folderEntity = FolderEntity(
-          id: folder.id,
-          driveId: _targetFolder.driveId,
-          parentFolderId: parentFolderId,
-          name: folder.name,
-        );
-
-        final folderDataItem = await _arweave.prepareEntityDataItem(
-          folderEntity,
-          profile.wallet,
-          driveKey,
-        );
-
-        await folderDataItem.sign(profile.wallet);
-
-        folderDataItems.add(folderDataItem);
-        folderEntity.txId = folderDataItem.id;
-
-        await _driveDao.insertFolderRevision(
-          folderEntity.toRevisionCompanion(
-            performedAction: RevisionAction.create,
-          ),
-        );
-      });
-    });
-
-    final folderBundleTx = await _arweave.prepareDataBundleTx(
-      await DataBundle.fromDataItems(items: folderDataItems),
-      profile.wallet,
-    );
-
-    await _arweave.postTx(folderBundleTx);
     // Upload Bundles
     for (var bundleHandle in uploadPlan.bundleUploadHandles) {
       await bundleHandle.prepareAndSignBundleTransaction(
@@ -338,7 +288,7 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     // Upload V2 Files
-    for (final uploadHandle in uploadPlan.v2FileUploadHandles.values) {
+    for (final uploadHandle in uploadPlan.fileV2UploadHandles.values) {
       await uploadHandle.prepareAndSignTransactions(
         arweaveService: _arweave,
         wallet: profile.wallet,
