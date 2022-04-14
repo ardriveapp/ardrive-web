@@ -1,6 +1,6 @@
-import 'package:ardrive/blocs/upload/bundle_upload_handle.dart';
-import 'package:ardrive/blocs/upload/file_upload_handle.dart';
-import 'package:ardrive/blocs/upload/upload_plan.dart';
+import 'package:ardrive/blocs/upload/upload_handles/bundle_upload_handle.dart';
+import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
+import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/entities/entity.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
@@ -128,7 +128,7 @@ class CostEstimate {
   }
 
   static Future<BigInt> estimateV2UploadsCost({
-    required List<FileUploadHandle> fileUploadHandles,
+    required List<FileV2UploadHandle> fileUploadHandles,
     required ArweaveService arweaveService,
   }) async {
     var totalCost = BigInt.zero;
@@ -141,7 +141,7 @@ class CostEstimate {
   }
 
   static Future<BigInt> estimateV2FileUploadCost({
-    required FileUploadHandle fileUploadHandle,
+    required FileV2UploadHandle fileUploadHandle,
     required ArweaveService arweaveService,
   }) async {
     return await arweaveService.getPrice(

@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:ardrive/blocs/upload/cost_estimate.dart';
-import 'package:ardrive/blocs/upload/upload_file.dart';
-import 'package:ardrive/blocs/upload/upload_plan.dart';
-import 'package:ardrive/blocs/upload/web_file.dart';
-import 'package:ardrive/blocs/upload/web_folder.dart';
+import 'package:ardrive/blocs/upload/models/upload_file.dart';
+import 'package:ardrive/blocs/upload/models/upload_plan.dart';
+import 'package:ardrive/blocs/upload/models/web_file.dart';
+import 'package:ardrive/blocs/upload/models/web_folder.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';

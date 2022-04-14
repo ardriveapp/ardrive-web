@@ -1,7 +1,8 @@
-import 'package:ardrive/blocs/upload/upload_file.dart';
-import 'package:ardrive/blocs/upload/upload_plan.dart';
-import 'package:ardrive/blocs/upload/web_file.dart';
-import 'package:ardrive/blocs/upload/web_folder.dart';
+import 'package:ardrive/blocs/upload/upload_handles/folder_data_item_upload_handle.dart';
+import 'package:ardrive/blocs/upload/models/upload_file.dart';
+import 'package:ardrive/blocs/upload/models/upload_plan.dart';
+import 'package:ardrive/blocs/upload/models/web_file.dart';
+import 'package:ardrive/blocs/upload/models/web_folder.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/drive.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -10,8 +11,8 @@ import 'package:cryptography/cryptography.dart';
 import 'package:mime/mime.dart';
 import 'package:uuid/uuid.dart';
 
-import '../blocs/upload/data_item_upload_handle.dart';
-import '../blocs/upload/file_upload_handle.dart';
+import '../blocs/upload/upload_handles/file_data_item_upload_handle.dart';
+import '../blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import '../entities/file_entity.dart';
 import '../models/database/database.dart';
 import '../models/enums.dart';
@@ -34,9 +35,11 @@ class UploadPlanUtils {
     required Map<String, String> conflictingFiles,
     required Drive targetDrive,
     required FolderEntry folderEntry,
+    List<WebFolder> folders = const [],
   }) async {
-    final _dataItemUploadHandles = <String, DataItemUploadHandle>{};
-    final _v2FileUploadHandles = <String, FileUploadHandle>{};
+    final _dataItemUploadHandles = <String, FileDataItemUploadHandle>{};
+    final _v2FileUploadHandles = <String, FileV2UploadHandle>{};
+    final _folderUploadHandles = <String, FolderDataItemUploadHandle>{};
 
     for (var file in files) {
       final fileName = file.name;
@@ -66,7 +69,7 @@ class UploadPlanUtils {
           : RevisionAction.uploadNewVersion;
 
       if (fileSize < bundleSizeLimit) {
-        _dataItemUploadHandles[fileEntity.id!] = DataItemUploadHandle(
+        _dataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(
           entity: fileEntity,
           path: filePath,
           file: file,
@@ -77,7 +80,7 @@ class UploadPlanUtils {
           revisionAction: revisionAction,
         );
       } else {
-        _v2FileUploadHandles[fileEntity.id!] = FileUploadHandle(
+        _v2FileUploadHandles[fileEntity.id!] = FileV2UploadHandle(
           entity: fileEntity,
           path: filePath,
           file: file,

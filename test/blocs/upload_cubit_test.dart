@@ -2,7 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/upload/upload_plan.dart';
+import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:arweave/arweave.dart';

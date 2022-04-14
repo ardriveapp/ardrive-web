@@ -1,7 +1,7 @@
 import 'dart:html';
 import 'dart:typed_data';
 
-import 'package:ardrive/blocs/upload/upload_file.dart';
+import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:file_selector/file_selector.dart';
 
 class WebFile extends UploadFile {

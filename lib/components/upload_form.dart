@@ -2,7 +2,7 @@ import 'dart:html';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
-import 'package:ardrive/blocs/upload/web_file.dart';
+import 'package:ardrive/blocs/upload/models/web_file.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';

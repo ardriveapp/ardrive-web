@@ -1,5 +1,5 @@
-import 'package:ardrive/blocs/upload/data_item_upload_handle.dart';
-import 'package:ardrive/blocs/upload/upload_handle.dart';
+import 'package:ardrive/blocs/upload/upload_handles/file_data_item_upload_handle.dart';
+import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/models/daos/daos.dart';
@@ -8,7 +8,7 @@ import 'package:arweave/arweave.dart';
 import 'package:moor/moor.dart';
 
 class BundleUploadHandle implements UploadHandle {
-  final List<DataItemUploadHandle> dataItemUploadHandles;
+  final List<FileDataItemUploadHandle> dataItemUploadHandles;
 
   late Transaction bundleTx;
   late Iterable<FileEntity> fileEntities;
@@ -21,7 +21,7 @@ class BundleUploadHandle implements UploadHandle {
   }
 
   static Future<BundleUploadHandle> create({
-    required List<DataItemUploadHandle> dataItemUploadHandles,
+    required List<FileDataItemUploadHandle> dataItemUploadHandles,
   }) async {
     final bundle = BundleUploadHandle._create(
       dataItemUploadHandles: dataItemUploadHandles,
