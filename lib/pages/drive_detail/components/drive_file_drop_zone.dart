@@ -1,5 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/upload/models/web_file.dart';
+import 'package:ardrive/blocs/upload/models/io_file.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/services.dart';
@@ -85,9 +85,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
         lastModified: fileLastModified,
         length: fileLength,
       );
-      final selectedFiles = [
-        await DragAndDropFile.fromXFile(fileToUpload, folderId)
-      ];
+      final selectedFiles = [await IOFile.fromXFile(fileToUpload, folderId)];
       try {
         //This is the only way to know whether the dropped file is a folder
         await fileToUpload.readAsBytes();
