@@ -151,7 +151,6 @@ class UploadCubit extends Cubit<UploadState> {
     final folders = UploadPlanUtils.generateFoldersForFiles(
       files as List<WebFile>,
     );
-    final foldersToSkip = [];
     for (var folder in folders.values) {
       //If The folders map contains the immediate ancestor of the current folder
       //we use the id of that folder, otherwise use targetFolder as root
@@ -179,7 +178,6 @@ class UploadCubit extends Cubit<UploadState> {
           .getSingleOrNull();
       if (existingFolderId != null) {
         folder.id = existingFolderId;
-        foldersToSkip.add(folder);
       }
       if (existingFileId != null) {
         conflictingFolders.add(folder.name);
@@ -195,7 +193,6 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
     });
-    folders.removeWhere((key, value) => foldersToSkip.contains(value));
     foldersToUpload.addAll(folders);
     return filesToUpload;
   }
