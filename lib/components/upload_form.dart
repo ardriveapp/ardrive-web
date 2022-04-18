@@ -69,7 +69,8 @@ Future<void> promptToUploadFolder(
   required String folderId,
 }) async {
   final uploadInput = FileUploadInputElement()
-    ..setAttribute('webkitdirectory', 'multiple');
+    ..setAttribute('webkitdirectory', 'multiple')
+    ..setAttribute('webkitEntries', 'multiple');
   uploadInput.click();
 // Create and click upload input element
 
