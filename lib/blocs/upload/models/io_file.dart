@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+// Use the crossfile package instead to make this suitable for use with mobile
 import 'package:file_selector/file_selector.dart';
 
 import 'upload_file.dart';

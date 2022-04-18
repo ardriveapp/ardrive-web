@@ -79,7 +79,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> checkConflictingFolders() async {
     emit(UploadPreparationInProgress());
     if (uploadFolders) {
-      files = generateFoldersAndAssignParentsForFiles(files);
+      files = await generateFoldersAndAssignParentsForFiles(files);
     }
     for (final file in files) {
       final fileName = file.name;
@@ -145,15 +145,30 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// Generate Folders and assign parentFolderIds
 
-  List<WebFile> generateFoldersAndAssignParentsForFiles(
+  Future<List<WebFile>> generateFoldersAndAssignParentsForFiles(
     List<UploadFile> files,
-  ) {
+  ) async {
     final folders = UploadPlanUtils.generateFoldersForFiles(
       files as List<WebFile>,
     );
-    folders.forEach((key, folder) async {
+    final foldersToSkip = [];
+    for (var folder in folders.values) {
+      //If The folders map contains the immediate ancestor of the current folder
+      //we use the id of that folder, otherwise use targetFolder as root
+
+      final parentFolderId = folders.containsKey(folder.parentFolderPath)
+          ? folders[folder.parentFolderPath]!.id
+          : _targetFolder.id;
       final existingFolderId = await _driveDao
           .foldersInFolderWithName(
+            driveId: driveId,
+            name: folder.name,
+            parentFolderId: parentFolderId,
+          )
+          .map((f) => f.id)
+          .getSingleOrNull();
+      final existingFileId = await _driveDao
+          .filesInFolderWithName(
             driveId: driveId,
             name: folder.name,
             parentFolderId: folders[folder.parentFolderPath] != null
@@ -164,8 +179,12 @@ class UploadCubit extends Cubit<UploadState> {
           .getSingleOrNull();
       if (existingFolderId != null) {
         folder.id = existingFolderId;
+        foldersToSkip.add(folder);
       }
-    });
+      if (existingFileId != null) {
+        conflictingFolders.add(folder.name);
+      }
+    }
     final filesToUpload = <WebFile>[];
     files.forEach((file) {
       final fileFolder = (file.path.split('/')..removeLast()).join('/');
@@ -176,6 +195,7 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
     });
+    folders.removeWhere((key, value) => foldersToSkip.contains(value));
     foldersToUpload.addAll(folders);
     return filesToUpload;
   }

@@ -115,6 +115,8 @@ class UploadPlanUtils {
     );
   }
 
+  ///Returns a sorted list of folders (root folder first) from a list of files
+  ///with paths
   static Map<String, WebFolder> generateFoldersForFiles(List<WebFile> files) {
     final foldersByPath = <String, WebFolder>{};
 

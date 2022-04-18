@@ -2,7 +2,6 @@ import 'dart:html';
 import 'dart:typed_data';
 
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
-import 'package:file_selector/file_selector.dart';
 
 class WebFile extends UploadFile {
   final File file;
@@ -26,4 +25,3 @@ class WebFile extends UploadFile {
     return reader.result as Uint8List;
   }
 }
-
