@@ -91,12 +91,6 @@ class UploadPlanUtils {
       }
     }
     folders.forEach((key, folder) async {
-      folder.parentFolderId =
-          folders[folder.parentFolderPath]?.id ?? targetFolder.id;
-      folder.path = folder.parentFolderPath.isNotEmpty
-          ? '${targetFolder.path}/${folder.parentFolderPath}/${folder.name}'
-          : '${targetFolder.path}/${folder.name}';
-
       _folderDataItemUploadHandles.putIfAbsent(
         folder.id,
         () => FolderDataItemUploadHandle(
