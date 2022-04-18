@@ -149,10 +149,13 @@ class UploadForm extends StatelessWidget {
                     Text(appLocalizationsOf(context).conflictingFiles),
                     const SizedBox(height: 8),
                     ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 320),
-                        child: SingleChildScrollView(
-                            child:
-                                Text(state.conflictingFileNames.join(', ')))),
+                      constraints: const BoxConstraints(maxHeight: 320),
+                      child: SingleChildScrollView(
+                        child: Text(
+                          state.conflictingFileNames.join(', \n'),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -195,10 +198,13 @@ class UploadForm extends StatelessWidget {
                       Text(appLocalizationsOf(context).conflictingFiles),
                       const SizedBox(height: 8),
                       ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 320),
-                          child: SingleChildScrollView(
-                              child:
-                                  Text(state.conflictingFileNames.join(', ')))),
+                        constraints: const BoxConstraints(maxHeight: 320),
+                        child: SingleChildScrollView(
+                          child: Text(
+                            state.conflictingFileNames.join(', \n'),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),

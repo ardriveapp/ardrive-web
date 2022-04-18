@@ -127,7 +127,8 @@ class UploadCubit extends Cubit<UploadState> {
           .getSingleOrNull();
 
       if (existingFileId != null) {
-        conflictingFiles[fileName] = existingFileId;
+        conflictingFiles[file.path.isEmpty ? file.name : file.path] =
+            existingFileId;
       }
     }
 
@@ -335,11 +336,17 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   void _removeFilesWithFileNameConflicts() {
-    files.removeWhere((element) => conflictingFiles.containsKey(element.name));
+    files.removeWhere(
+      (file) => conflictingFiles.containsKey(
+        file.path.isEmpty ? file.name : file.path,
+      ),
+    );
   }
 
   void _removeFilesWithFolderNameConflicts() {
-    files.removeWhere((element) => conflictingFolders.contains(element.name));
+    files.removeWhere(
+      (file) => conflictingFolders.contains(file.name),
+    );
   }
 
   @override
