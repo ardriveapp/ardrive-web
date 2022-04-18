@@ -97,6 +97,9 @@ class BundleUploadHandle implements UploadHandle {
     for (var item in fileDataItemUploadHandles) {
       fileSizes.add(await item.estimateDataItemSizes());
     }
+    for (var item in folderDataItemUploadHandles) {
+      fileSizes.add(item.size);
+    }
     var size = 0;
     // Add data item binary size
     size += fileSizes.reduce((value, element) => value + element);
