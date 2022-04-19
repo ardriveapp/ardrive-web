@@ -12,6 +12,9 @@ import 'package:cryptography/cryptography.dart';
 import 'package:moor/moor.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+// Number of data items returned by this handle
+const fileDataItemEntityCount = 2;
+
 class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   final FileEntity entity;
   final UploadFile file;
@@ -151,6 +154,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     return dataItems;
   }
 
+  // Returning a static count here to save memory and avoid any unneccessary data duplication
   @override
-  int get dataItemCount => 2;
+  int get dataItemCount => fileDataItemEntityCount;
 }

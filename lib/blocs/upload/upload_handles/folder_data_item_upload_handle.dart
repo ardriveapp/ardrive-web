@@ -9,6 +9,9 @@ import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 
+// Number of data items returned by this handle
+const folderDataItemEntityCount = 1;
+
 class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
   final WebFolder folder;
   final DriveID targetDriveId;
@@ -86,8 +89,9 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
     });
   }
 
+  // Returning a static count here to save memory and avoid any unneccessary data duplication
   @override
-  int get dataItemCount => 1;
+  int get dataItemCount => folderDataItemEntityCount;
 
   @override
   Future<List<DataItem>> getDataItems() async {
