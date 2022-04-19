@@ -42,6 +42,18 @@ class FolderNode {
     return totalFiles;
   }
 
+  int getRecursiveFileSize() {
+    var totalSize = files.isNotEmpty
+        ? files.values.map((file) => file.size).reduce(
+              (value, fileSize) => value + fileSize,
+            )
+        : 0;
+    for (var subfolder in subfolders) {
+      totalSize += subfolder.getRecursiveFileCount();
+    }
+    return totalSize;
+  }
+
   // TODO: maxDepth slider in story ticket PE-1069
   List<FileEntry> getRecursiveFiles(/*{maxDepth = 2000000}*/) {
     // if (maxDepth == -1) {
