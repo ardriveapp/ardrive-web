@@ -51,7 +51,7 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
     this.driveKey,
   });
 
-  Future<void> prepareAndsignFolderDataItem() async {
+  Future<void> prepareAndSignFolderDataItem() async {
     folderEntity = FolderEntity(
       id: folder.id,
       driveId: targetDriveId,
@@ -95,7 +95,7 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
 
   @override
   Future<List<DataItem>> getDataItems() async {
-    await prepareAndsignFolderDataItem();
+    await prepareAndSignFolderDataItem();
     return [folderEntityTx];
   }
 }
