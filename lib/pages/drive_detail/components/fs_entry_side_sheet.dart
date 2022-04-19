@@ -105,7 +105,7 @@ class FsEntrySideSheet extends StatelessWidget {
               ),
             ]),
             DataRow(cells: [
-              DataCell(Text(appLocalizationsOf(context).fileSize)),
+              DataCell(Text(appLocalizationsOf(context).size)),
               DataCell(
                 Align(
                   alignment: Alignment.centerRight,
@@ -157,7 +157,7 @@ class FsEntrySideSheet extends StatelessWidget {
               ),
             ]),
             DataRow(cells: [
-              DataCell(Text(appLocalizationsOf(context).fileSize)),
+              DataCell(Text(appLocalizationsOf(context).size)),
               DataCell(
                 Align(
                   alignment: Alignment.centerRight,
