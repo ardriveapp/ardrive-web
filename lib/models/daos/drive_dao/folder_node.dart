@@ -42,14 +42,14 @@ class FolderNode {
     return totalFiles;
   }
 
-  int getRecursiveFileSize() {
+  int computeFolderSize() {
     var totalSize = files.isNotEmpty
         ? files.values.map((file) => file.size).reduce(
               (value, fileSize) => value + fileSize,
             )
         : 0;
     for (var subfolder in subfolders) {
-      totalSize += subfolder.getRecursiveFileSize();
+      totalSize += subfolder.computeFolderSize();
     }
     return totalSize;
   }

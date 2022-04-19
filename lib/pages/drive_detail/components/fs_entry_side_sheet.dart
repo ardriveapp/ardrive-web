@@ -110,7 +110,7 @@ class FsEntrySideSheet extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    filesize((state).rootFolderTree.getRecursiveFileSize()),
+                    filesize((state).rootFolderTree.computeFolderSize()),
                     textAlign: TextAlign.end,
                   ),
                 ),
@@ -162,7 +162,7 @@ class FsEntrySideSheet extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    filesize(state.entry.getRecursiveFileSize()),
+                    filesize(state.entry.computeFolderSize()),
                     textAlign: TextAlign.end,
                   ),
                 ),
