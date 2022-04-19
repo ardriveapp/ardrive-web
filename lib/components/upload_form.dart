@@ -15,13 +15,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
-Future<void> promptToUploadFile(
+Future<void> promptToUpload(
   BuildContext context, {
   required String driveId,
   required String folderId,
+  required bool isFolderUpload,
 }) async {
   final uploadInput = FileUploadInputElement()
-    ..setAttribute('webkitEntries', 'multiple');
+    ..setAttribute(
+        isFolderUpload ? 'webkitdirectory' : 'webkitEntries', 'multiple');
   uploadInput.click();
 // Create and click upload input element
 
@@ -54,56 +56,7 @@ Future<void> promptToUploadFile(
             arweave: context.read<ArweaveService>(),
             pst: context.read<PstService>(),
             driveDao: context.read<DriveDao>(),
-          )..startUploadPreparation(),
-          child: UploadForm(),
-        ),
-        barrierDismissible: false,
-      ),
-    );
-  });
-}
-
-Future<void> promptToUploadFolder(
-  BuildContext context, {
-  required String driveId,
-  required String folderId,
-}) async {
-  final uploadInput = FileUploadInputElement()
-    ..setAttribute('webkitdirectory', 'multiple');
-  uploadInput.click();
-// Create and click upload input element
-
-  uploadInput.onChange.listen((e) async {
-    // read file content as dataURL
-    final files = uploadInput.files;
-    if (files == null) {
-      return;
-    }
-    final selectedFiles = files.map((file) {
-      return WebFile(file, folderId);
-    }).toList();
-    if (selectedFiles.isEmpty) {
-      return;
-    }
-
-    await showCongestionDependentModalDialog(
-      context,
-      () => showDialog(
-        context: context,
-        builder: (_) => BlocProvider<UploadCubit>(
-          create: (context) => UploadCubit(
-            uploadPlanUtils: UploadPlanUtils(
-              arweave: context.read<ArweaveService>(),
-              driveDao: context.read<DriveDao>(),
-            ),
-            driveId: driveId,
-            folderId: folderId,
-            files: selectedFiles,
-            profileCubit: context.read<ProfileCubit>(),
-            arweave: context.read<ArweaveService>(),
-            pst: context.read<PstService>(),
-            driveDao: context.read<DriveDao>(),
-            uploadFolders: true,
+            uploadFolders: isFolderUpload,
           )..startUploadPreparation(),
           child: UploadForm(),
         ),
