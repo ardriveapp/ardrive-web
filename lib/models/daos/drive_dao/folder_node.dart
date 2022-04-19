@@ -37,7 +37,7 @@ class FolderNode {
   int getRecursiveFileCount() {
     var totalFiles = files.length;
     for (var subfolder in subfolders) {
-      totalFiles += subfolder.getRecursiveFileCount();
+      totalFiles += subfolder.getRecursiveFileSize();
     }
     return totalFiles;
   }
