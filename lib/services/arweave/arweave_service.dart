@@ -14,6 +14,8 @@ import '../services.dart';
 
 const byteCountPerChunk = 262144; // 256 KiB
 
+const kMaxNumberOfTransactionsPerPage = 100;
+
 class ArweaveService {
   final Arweave client;
 
@@ -125,7 +127,8 @@ class ArweaveService {
 
       cursor = transactionsEdges.last.cursor;
 
-      if (driveEntityHistoryQuery.data!.transactions.edges.length < 100) {
+      if (driveEntityHistoryQuery.data!.transactions.edges.length <
+          kMaxNumberOfTransactionsPerPage) {
         finishProcess = true;
       }
     }
@@ -238,7 +241,8 @@ class ArweaveService {
   }
 
   /// Gets the entity history for a particular drive starting from the specified block height.
-  @Deprecated('')
+  @Deprecated(
+      'Should use getAllTransactionsFromDrive and createDriveEntityHistoryFromTransactions to acomplish the same result.')
   Future<DriveEntityHistory> getNewEntitiesForDrive(
     String driveId, {
     String? after,
