@@ -77,7 +77,9 @@ class DriveDetailPage extends StatelessWidget {
                                                   width: 32, height: 24),
                                         ),
                                         validationMessages: (_) =>
-                                            kValidationMessages,
+                                            kValidationMessages(
+                                          appLocalizationsOf(context),
+                                        ),
                                       ),
                                     ],
                                   ),
