@@ -279,7 +279,7 @@ class SyncCubit extends Cubit<SyncState> {
     ///
     /// It is needed because of close connection issues when made a huge number of requests to get the metadata,
     /// and also to accomplish a better visualization of the sync progress.
-    await paginateProcess<
+    await _paginateProcess<
             DriveEntityHistory$Query$TransactionConnection$TransactionEdge>(
         list: transactions,
         pageCount: pageCount,
@@ -344,7 +344,7 @@ class SyncCubit extends Cubit<SyncState> {
         });
   }
 
-  FutureOr<void> paginateProcess<T>(
+  FutureOr<void> _paginateProcess<T>(
       {required List<T> list,
       required FutureOr Function(List<T> items) itemsPerPageCallback,
       required int pageCount}) async {
