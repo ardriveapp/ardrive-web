@@ -295,7 +295,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     var subFolderStream = subfolderQuery.watch();
     var filesStream = filesQuery.watch();
-
     if (search.isNotEmpty) {
       subFolderStream = subFolderStream.map((folders) =>
           folders.where((folder) => folder.name.contains(search)).toList());
@@ -305,8 +304,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     return Rx.combineLatest3(
       folderStream.where((folder) => folder != null).map((folder) => folder!),
-      subfolderQuery.watch(),
-      filesQuery.watch(),
+      subFolderStream,
+      filesStream,
       (
         FolderEntry folder,
         List<FolderEntry> subfolders,

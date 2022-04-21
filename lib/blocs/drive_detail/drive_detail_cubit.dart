@@ -127,17 +127,19 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             await _driveDao.getFolderTree(driveId, drive.rootFolderId);
 
         if (state != null) {
-          emit(state.copyWith(
-            currentDrive: drive,
-            hasWritePermissions: profile is ProfileLoggedIn &&
-                drive.ownerAddress == profile.walletAddress,
-            folderInView: folderContents,
-            contentOrderBy: contentOrderBy,
-            contentOrderingMode: contentOrderingMode,
-            rowsPerPage: availableRowsPerPage.first,
-            availableRowsPerPage: availableRowsPerPage,
-            maybeSelectedItem: maybeSelectedItem,
-          ));
+          emit(
+            state.copyWith(
+              currentDrive: drive,
+              hasWritePermissions: profile is ProfileLoggedIn &&
+                  drive.ownerAddress == profile.walletAddress,
+              folderInView: folderContents,
+              contentOrderBy: contentOrderBy,
+              contentOrderingMode: contentOrderingMode,
+              rowsPerPage: availableRowsPerPage.first,
+              availableRowsPerPage: availableRowsPerPage,
+              maybeSelectedItem: maybeSelectedItem,
+            ),
+          );
         } else {
           emit(DriveDetailLoadSuccess(
             currentDrive: drive,
@@ -210,10 +212,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
   }
 
-  void searchFolder(
-      {DriveOrder contentOrderBy = DriveOrder.name,
-      OrderingMode contentOrderingMode = OrderingMode.asc,
-      String search = ''}) {
+  void searchFolder({
+    DriveOrder contentOrderBy = DriveOrder.name,
+    OrderingMode contentOrderingMode = OrderingMode.asc,
+    String search = '',
+  }) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
       path: state.folderInView.folder.path,
@@ -225,10 +228,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   void submit() async {
     form.markAllAsTouched();
-
-    if (form.invalid) {
-      return;
-    }
 
     try {
       final String search = form.control('search').value;

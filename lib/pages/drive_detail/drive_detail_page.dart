@@ -58,32 +58,6 @@ class DriveDetailPage extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                ReactiveForm(
-                                  formGroup:
-                                      context.watch<DriveDetailCubit>().form,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      ReactiveTextField(
-                                        formControlName: 'search',
-                                        onSubmitted: () => context
-                                            .read<DriveDetailCubit>()
-                                            .submit(),
-                                        decoration: InputDecoration(
-                                          labelText: 'Search',
-                                          prefixIcon: Icon(Icons.search),
-                                          prefixIconConstraints:
-                                              const BoxConstraints.tightFor(
-                                                  width: 32, height: 24),
-                                        ),
-                                        validationMessages: (_) =>
-                                            kValidationMessages(
-                                          appLocalizationsOf(context),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -101,6 +75,27 @@ class DriveDetailPage extends StatelessWidget {
                                       ),
                                     ),
                                     DriveDetailActionRow(),
+                                    SizedBox(width: 8),
+                                    ReactiveForm(
+                                      formGroup: context
+                                          .watch<DriveDetailCubit>()
+                                          .form,
+                                      child: ReactiveTextField(
+                                        formControlName: 'search',
+                                        onSubmitted: () => context
+                                            .read<DriveDetailCubit>()
+                                            .submit(),
+                                        cursorHeight: 21,
+                                        decoration: InputDecoration(
+                                          constraints: BoxConstraints(
+                                              maxWidth: 300, maxHeight: 48),
+                                          border: OutlineInputBorder(),
+                                          labelText: 'Search',
+                                          prefixIcon: Icon(Icons.search),
+                                          
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
