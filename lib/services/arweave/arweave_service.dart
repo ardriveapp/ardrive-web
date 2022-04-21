@@ -102,13 +102,12 @@ class ArweaveService {
   Future<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
       getAllTransactionsFromDrive(
     String driveId, {
-    String? after,
     int? lastBlockHeight,
   }) async {
     final transactionsEdges =
         <DriveEntityHistory$Query$TransactionConnection$TransactionEdge>[];
     var finishProcess = false;
-    var cursor = after;
+    String? cursor;
 
     while (!finishProcess) {
       // Get a page of 100 transactions
@@ -125,7 +124,8 @@ class ArweaveService {
       transactionsEdges
           .addAll(driveEntityHistoryQuery.data!.transactions.edges);
 
-      cursor = transactionsEdges.last.cursor;
+      cursor =
+          transactionsEdges.isNotEmpty ? transactionsEdges.last.cursor : null;
 
       if (driveEntityHistoryQuery.data!.transactions.edges.length <
           kMaxNumberOfTransactionsPerPage) {
