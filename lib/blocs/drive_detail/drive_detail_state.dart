@@ -11,14 +11,14 @@ class DriveDetailLoadInProgress extends DriveDetailState {}
 class DriveDetailLoadSuccess extends DriveDetailState {
   final Drive currentDrive;
   final bool hasWritePermissions;
+  final bool driveIsEmpty;
 
-  final FolderWithContents currentFolder;
+  final FolderWithContents folderInView;
 
   final DriveOrder contentOrderBy;
   final OrderingMode contentOrderingMode;
 
-  final String? selectedItemId;
-  final bool selectedItemIsFolder;
+  final SelectedItem? maybeSelectedItem;
   final bool showSelectedItemDetails;
 
   /// The preview URL for the selected file.
@@ -26,55 +26,70 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   /// Null if no file is selected.
   final Uri? selectedFilePreviewUrl;
 
+  final int rowsPerPage;
+  final List<int> availableRowsPerPage;
+  final int _equatableBust = DateTime.now().millisecondsSinceEpoch;
+
   DriveDetailLoadSuccess({
     required this.currentDrive,
     required this.hasWritePermissions,
-    required this.currentFolder,
+    required this.folderInView,
     required this.contentOrderBy,
     required this.contentOrderingMode,
-    this.selectedItemId,
-    this.selectedItemIsFolder = false,
+    required this.rowsPerPage,
+    required this.availableRowsPerPage,
+    this.maybeSelectedItem,
     this.showSelectedItemDetails = false,
     this.selectedFilePreviewUrl,
+    required this.driveIsEmpty,
   });
 
   DriveDetailLoadSuccess copyWith({
     Drive? currentDrive,
     bool? hasWritePermissions,
-    FolderWithContents? currentFolder,
+    FolderWithContents? folderInView,
     DriveOrder? contentOrderBy,
     OrderingMode? contentOrderingMode,
-    String? selectedItemId,
-    bool? selectedItemIsFolder,
+    SelectedItem? maybeSelectedItem,
     bool? showSelectedItemDetails,
     Uri? selectedFilePreviewUrl,
+    int? rowsPerPage,
+    List<int>? availableRowsPerPage,
+    bool? driveIsEmpty,
   }) =>
       DriveDetailLoadSuccess(
         currentDrive: currentDrive ?? this.currentDrive,
         hasWritePermissions: hasWritePermissions ?? this.hasWritePermissions,
-        currentFolder: currentFolder ?? this.currentFolder,
+        folderInView: folderInView ?? this.folderInView,
         contentOrderBy: contentOrderBy ?? this.contentOrderBy,
         contentOrderingMode: contentOrderingMode ?? this.contentOrderingMode,
-        selectedItemId: selectedItemId ?? this.selectedItemId,
-        selectedItemIsFolder: selectedItemIsFolder ?? this.selectedItemIsFolder,
+        maybeSelectedItem: maybeSelectedItem ?? this.maybeSelectedItem,
         showSelectedItemDetails:
             showSelectedItemDetails ?? this.showSelectedItemDetails,
         selectedFilePreviewUrl:
             selectedFilePreviewUrl ?? this.selectedFilePreviewUrl,
+        availableRowsPerPage: availableRowsPerPage ?? this.availableRowsPerPage,
+        rowsPerPage: rowsPerPage ?? this.rowsPerPage,
+        driveIsEmpty: driveIsEmpty ?? this.driveIsEmpty,
       );
 
   @override
   List<Object?> get props => [
         currentDrive,
         hasWritePermissions,
-        currentFolder,
         contentOrderBy,
         contentOrderingMode,
-        selectedItemId,
-        selectedItemIsFolder,
         showSelectedItemDetails,
         selectedFilePreviewUrl,
+        rowsPerPage,
+        availableRowsPerPage,
+        maybeSelectedItem,
+        _equatableBust,
+        driveIsEmpty,
       ];
+
+  bool isViewingRootFolder() =>
+      folderInView.folder.id != currentDrive.rootFolderId;
 }
 
 /// [DriveDetailLoadNotFound] means that the specified drive could not be found attached to

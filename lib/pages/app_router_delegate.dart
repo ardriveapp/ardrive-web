@@ -1,5 +1,7 @@
+import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
@@ -7,6 +9,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import '../app_shell.dart';
 
 class AppRouterDelegate extends RouterDelegate<AppRoutePath>
@@ -17,6 +20,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String? driveName;
   String? driveFolderId;
 
+  SecretKey? sharedDriveKey;
+  String? sharedRawDriveKey;
+
   String? sharedFileId;
   SecretKey? sharedFileKey;
   String? sharedRawFileKey;
@@ -24,6 +30,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   bool canAnonymouslyShowDriveDetail(ProfileState profileState) =>
       profileState is ProfileUnavailable && tryingToViewDrive;
   bool get tryingToViewDrive => driveId != null;
+  bool get tryingToViewSharedPrivateDrive => sharedDriveKey != null;
   bool get isViewingSharedFile => sharedFileId != null;
 
   @override
@@ -31,6 +38,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         signingIn: signingIn,
         driveId: driveId,
         driveName: driveName,
+        sharedDriveKey: sharedDriveKey,
+        sharedRawDriveKey: sharedRawDriveKey,
         driveFolderId: driveFolderId,
         sharedFileId: sharedFileId,
         sharedFileKey: sharedFileKey,
@@ -67,6 +76,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             signingIn = false;
             notifyListeners();
           }
+          // Cleans up any shared drives from previous sessions
+          // TODO: Find a better place to do this
+          final lastLoggedInUser =
+              state is ProfileLoggedIn ? state.walletAddress : null;
+          context.read<DriveDao>().deleteSharedPrivateDrives(lastLoggedInUser);
         },
         builder: (context, state) {
           Widget? shell;
@@ -106,43 +120,41 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 }
 
                 shellPage ??= const SizedBox();
-                if (driveId != null) {
-                  return BlocProvider(
-                    key: ValueKey(driveId),
-                    create: (context) => DriveDetailCubit(
-                      driveId: driveId!,
-                      initialFolderId: driveFolderId,
-                      profileCubit: context.read<ProfileCubit>(),
-                      driveDao: context.read<DriveDao>(),
-                      config: context.read<AppConfig>(),
-                    ),
-                    child: BlocListener<DriveDetailCubit, DriveDetailState>(
-                      listener: (context, state) {
-                        if (state is DriveDetailLoadSuccess) {
-                          driveId = state.currentDrive.id;
-                          driveFolderId = state.currentFolder.folder.id;
-                          notifyListeners();
-                        } else if (state is DriveDetailLoadNotFound) {
-                          // Do not prompt the user to attach an unfound drive if they are logging out.
-                          final profileCubit = context.read<ProfileCubit>();
-                          if (profileCubit.state is ProfileLoggingOut) {
-                            return;
-                          }
-
-                          attachDrive(
-                            context: context,
-                            initialDriveId: driveId,
-                            driveName: driveName,
-                          );
+                driveId = driveId ?? rootPath;
+                return BlocProvider(
+                  key: ValueKey(driveId),
+                  create: (context) => DriveDetailCubit(
+                    driveId: driveId!,
+                    initialFolderId: driveFolderId,
+                    profileCubit: context.read<ProfileCubit>(),
+                    driveDao: context.read<DriveDao>(),
+                    config: context.read<AppConfig>(),
+                  ),
+                  child: BlocListener<DriveDetailCubit, DriveDetailState>(
+                    listener: (context, state) {
+                      if (state is DriveDetailLoadSuccess) {
+                        driveId = state.currentDrive.id;
+                        driveFolderId = state.folderInView.folder.id;
+                        //Can be null at the root folder of the drive
+                        notifyListeners();
+                      } else if (state is DriveDetailLoadNotFound) {
+                        // Do not prompt the user to attach an unfound drive if they are logging out.
+                        final profileCubit = context.read<ProfileCubit>();
+                        if (profileCubit.state is ProfileLoggingOut) {
+                          clearState();
+                          return;
                         }
-                      },
-                      child: FloatingHelpButtonPortalEntry(
-                        child: AppShell(page: shellPage),
-                      ),
-                    ),
-                  );
-                }
-                return Container();
+                        attachDrive(
+                          context: context,
+                          driveId: driveId,
+                          driveName: driveName,
+                          driveKey: sharedDriveKey,
+                        );
+                      }
+                    },
+                    child: AppShell(page: shellPage),
+                  ),
+                );
               },
             );
           }
@@ -173,6 +185,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 BlocProvider(
                   create: (context) => SyncCubit(
                     profileCubit: context.read<ProfileCubit>(),
+                    activityCubit: context.read<ActivityCubit>(),
                     arweave: context.read<ArweaveService>(),
                     driveDao: context.read<DriveDao>(),
                     db: context.read<Database>(),
@@ -192,10 +205,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Failed to sync drive contents.',
+                          appLocalizationsOf(context).failedToSyncDrive,
                         ),
                         action: SnackBarAction(
-                          label: 'TRY AGAIN',
+                          label: appLocalizationsOf(context).tryAgainEmphasized,
                           onPressed: () =>
                               context.read<SyncCubit>().startSync(),
                         ),
@@ -218,9 +231,23 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveId = path.driveId;
     driveName = path.driveName;
     driveFolderId = path.driveFolderId;
+    sharedDriveKey = path.sharedDriveKey;
+    sharedRawDriveKey = path.sharedRawDriveKey;
     sharedFileId = path.sharedFileId;
     sharedFileKey = path.sharedFileKey;
     sharedRawFileKey = path.sharedRawFileKey;
+  }
+
+  void clearState() {
+    signingIn = true;
+    driveId = null;
+    driveName = null;
+    driveFolderId = null;
+    sharedDriveKey = null;
+    sharedRawDriveKey = null;
+    sharedFileId = null;
+    sharedFileKey = null;
+    sharedRawFileKey = null;
   }
 }
 

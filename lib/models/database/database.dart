@@ -15,8 +15,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 10;
-
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -25,7 +24,7 @@ class Database extends _$Database {
         },
         onUpgrade: (Migrator m, int from, int to) async {
           print('schema changed from $from to $to ');
-          if (from >= 1 && from <= 9) {
+          if (from >= 1 && from < schemaVersion) {
             // Reset the database.
             for (final table in allTables) {
               await m.deleteTable(table.actualTableName);

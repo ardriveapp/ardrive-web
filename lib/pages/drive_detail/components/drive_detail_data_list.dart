@@ -3,35 +3,32 @@ part of '../drive_detail_page.dart';
 Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
     ListView(
       children: [
-        ...state.currentFolder.subfolders.map(
+        ...state.folderInView.subfolders.map(
           (folder) => _buildFolderListTile(
             context: context,
             folder: folder,
-            selected: folder.id == state.selectedItemId,
+            selected: folder.id == state.maybeSelectedItem?.id,
             onPressed: () {
               final bloc = context.read<DriveDetailCubit>();
-              if (folder.id == state.selectedItemId) {
+              if (folder.id == state.maybeSelectedItem?.id) {
                 bloc.openFolder(path: folder.path);
               } else {
-                bloc.selectItem(
-                  folder.id,
-                  isFolder: true,
-                );
+                bloc.selectItem(SelectedFolder(folder: folder));
               }
             },
           ),
         ),
-        ...state.currentFolder.files.map(
+        ...state.folderInView.files.map(
           (file) => _buildFileListTile(
             context: context,
             file: file,
-            selected: file.id == state.selectedItemId,
+            selected: file.id == state.maybeSelectedItem?.id,
             onPressed: () async {
               final bloc = context.read<DriveDetailCubit>();
-              if (file.id == state.selectedItemId) {
+              if (file.id == state.maybeSelectedItem?.id) {
                 bloc.toggleSelectedItemDetails();
               } else {
-                await bloc.selectItem(file.id);
+                await bloc.selectItem(SelectedFile(file: file));
               }
             },
           ),
@@ -53,6 +50,20 @@ Widget _buildFolderListTile({
         child: const Icon(Icons.folder),
       ),
       title: Text(folder.name),
+      trailing: folder.isGhost
+          ? ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                primary: LightColors.kOnLightSurfaceMediumEmphasis,
+                textStyle:
+                    TextStyle(color: LightColors.kOnDarkSurfaceHighEmphasis),
+              ),
+              onPressed: () => showCongestionDependentModalDialog(
+                context,
+                () => promptToReCreateFolder(context, ghostFolder: folder),
+              ),
+              child: Text(appLocalizationsOf(context).fix),
+            )
+          : null,
     );
 
 Widget _buildFileListTile({
@@ -69,13 +80,14 @@ Widget _buildFileListTile({
         child: _buildFileIcon(
           fileStatusFromTransactions(file.metadataTx, file.dataTx),
           file.dataContentType,
+          appLocalizationsOf(context),
         ),
       ),
       title: Text(file.name),
       subtitle: Text(
-        'Last Modified ' +
+        appLocalizationsOf(context).lastModifiedDate(
             (file.lastUpdated.difference(DateTime.now()).inDays > 3
                 ? format(file.lastUpdated)
-                : yMMdDateFormatter.format(file.lastUpdated)),
+                : yMMdDateFormatter.format(file.lastUpdated))),
       ),
     );

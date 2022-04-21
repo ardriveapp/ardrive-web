@@ -5,18 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToShareDrive({
   required BuildContext context,
-  required String driveId,
+  required Drive drive,
 }) =>
     showDialog(
       context: context,
       builder: (_) => BlocProvider(
         create: (_) => DriveShareCubit(
-          driveId: driveId,
+          drive: drive,
           driveDao: context.read<DriveDao>(),
+          profileCubit: context.read<ProfileCubit>(),
         ),
         child: DriveShareDialog(),
       ),
@@ -33,14 +35,9 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
 
   @override
   Widget build(BuildContext context) =>
-      BlocConsumer<DriveShareCubit, DriveShareState>(
-        listener: (context, state) {
-          if (state is DriveShareLoadSuccess) {
-            shareLinkController.text = state.driveShareLink.toString();
-          }
-        },
+      BlocBuilder<DriveShareCubit, DriveShareState>(
         builder: (context, state) => AppDialog(
-          title: 'Share drive with others',
+          title: appLocalizationsOf(context).shareDriveWithOthers,
           content: SizedBox(
             width: kLargeDialogWidth,
             child: Column(
@@ -51,7 +48,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                   const Center(child: CircularProgressIndicator())
                 else if (state is DriveShareLoadSuccess) ...{
                   ListTile(
-                    title: Text(state.driveName),
+                    title: Text(state.drive.name),
                     contentPadding: EdgeInsets.zero,
                   ),
                   Row(
@@ -59,7 +56,8 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                     children: [
                       Expanded(
                         child: TextField(
-                          controller: shareLinkController,
+                          controller: shareLinkController
+                            ..text = state.driveShareLink.toString(),
                           readOnly: true,
                         ),
                       ),
@@ -78,16 +76,21 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
                           Clipboard.setData(
                               ClipboardData(text: shareLinkController.text));
                         },
-                        child: Text('Copy link'),
+                        child: Text(appLocalizationsOf(context).copyLink),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Anyone can access this drive using the link above.',
+                    state.drive.isPublic
+                        ? appLocalizationsOf(context)
+                            .anyoneCanAccessThisDrivePublic
+                        : appLocalizationsOf(context)
+                            .anyoneCanAccessThisDrivePrivate,
                     style: Theme.of(context).textTheme.subtitle2,
                   ),
-                }
+                } else if (state is DriveShareLoadFail)
+                  Text(state.message)
               ],
             ),
           ),
@@ -95,7 +98,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
             if (state is DriveShareLoadSuccess)
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text('DONE'),
+                child: Text(appLocalizationsOf(context).doneEmphasized),
               ),
           ],
         ),

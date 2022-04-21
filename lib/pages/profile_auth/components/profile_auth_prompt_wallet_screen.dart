@@ -3,8 +3,9 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/link.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'profile_auth_shell.dart';
 
 class ProfileAuthPromptWalletScreen extends StatelessWidget {
@@ -19,38 +20,36 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'WELCOME TO',
+              // TODO replace at PE-1125
+              appLocalizationsOf(context).welcomeTo_main,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headline5,
             ),
             const SizedBox(height: 32),
             Text(
-              'Your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive.',
+              // TODO replace at PE-1125
+              appLocalizationsOf(context).welcomeTo_description,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headline6,
             ),
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () => _pickWallet(context),
-              child: Text('SELECT WALLET'),
+              child: Text(appLocalizationsOf(context).selectWalletEmphasized),
             ),
             if (context.read<ProfileAddCubit>().isArconnectInstalled()) ...[
               const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: () => _pickWalletArconnect(context),
-                child: Text('USE ARCONNECT'),
+                child: Text(appLocalizationsOf(context).useArconnectEmphasized),
               ),
             ],
             const SizedBox(height: 16),
-            Link(
-              uri: Uri.parse('https://tokens.arweave.org'),
-              target: LinkTarget.blank,
-              builder: (context, followLink) => TextButton(
-                onPressed: followLink,
-                child: Text(
-                  'Don\'t have a wallet? Get one here!',
-                  textAlign: TextAlign.center,
-                ),
+            TextButton(
+              onPressed: () => launch('https://tokens.arweave.org'),
+              child: Text(
+                appLocalizationsOf(context).getAWallet,
+                textAlign: TextAlign.center,
               ),
             ),
           ],

@@ -1,11 +1,12 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToMoveFolder(
@@ -13,38 +14,43 @@ Future<void> promptToMoveFolder(
   required String driveId,
   required String folderId,
 }) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider(
-        create: (context) => FsEntryMoveCubit(
-          driveId: driveId,
-          folderId: folderId,
-          arweave: context.read<ArweaveService>(),
-          driveDao: context.read<DriveDao>(),
-          profileCubit: context.read<ProfileCubit>(),
-          syncCubit: context.read<SyncCubit>(),
-        ),
-        child: FsEntryMoveForm(),
-      ),
-    );
+    showCongestionDependentModalDialog(
+        context,
+        () => showDialog(
+              context: context,
+              builder: (_) => BlocProvider(
+                create: (context) => FsEntryMoveCubit(
+                  driveId: driveId,
+                  folderId: folderId,
+                  arweave: context.read<ArweaveService>(),
+                  driveDao: context.read<DriveDao>(),
+                  profileCubit: context.read<ProfileCubit>(),
+                  syncCubit: context.read<SyncCubit>(),
+                ),
+                child: FsEntryMoveForm(),
+              ),
+            ));
 
 Future<void> promptToMoveFile(
   BuildContext context, {
   required String driveId,
   required String fileId,
 }) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider(
-        create: (context) => FsEntryMoveCubit(
-          driveId: driveId,
-          fileId: fileId,
-          arweave: context.read<ArweaveService>(),
-          driveDao: context.read<DriveDao>(),
-          profileCubit: context.read<ProfileCubit>(),
-          syncCubit: context.read<SyncCubit>(),
+    showCongestionDependentModalDialog(
+      context,
+      () => showDialog(
+        context: context,
+        builder: (_) => BlocProvider(
+          create: (context) => FsEntryMoveCubit(
+            driveId: driveId,
+            fileId: fileId,
+            arweave: context.read<ArweaveService>(),
+            driveDao: context.read<DriveDao>(),
+            profileCubit: context.read<ProfileCubit>(),
+            syncCubit: context.read<SyncCubit>(),
+          ),
+          child: FsEntryMoveForm(),
         ),
-        child: FsEntryMoveForm(),
       ),
     );
 
@@ -54,9 +60,11 @@ class FsEntryMoveForm extends StatelessWidget {
       BlocConsumer<FsEntryMoveCubit, FsEntryMoveState>(
         listener: (context, state) {
           if (state is FolderEntryMoveInProgress) {
-            showProgressDialog(context, 'MOVING FOLDER...');
+            showProgressDialog(
+                context, appLocalizationsOf(context).movingFolderEmphasized);
           } else if (state is FileEntryMoveInProgress) {
-            showProgressDialog(context, 'MOVING FILE...');
+            showProgressDialog(
+                context, appLocalizationsOf(context).movingFileEmphasized);
           } else if (state is FolderEntryMoveSuccess ||
               state is FileEntryMoveSuccess) {
             Navigator.pop(context);
@@ -64,6 +72,35 @@ class FsEntryMoveForm extends StatelessWidget {
           } else if (state is FolderEntryMoveWalletMismatch ||
               state is FileEntryMoveWalletMismatch) {
             Navigator.pop(context);
+          } else if (state is FsEntryMoveNameConflict) {
+            Navigator.pop(context);
+            Navigator.pop(context);
+            showDialog(
+              context: context,
+              builder: (BuildContext context) => AppDialog(
+                dismissable: true,
+                title: appLocalizationsOf(context).nameConflict,
+                content: SizedBox(
+                  width: kSmallDialogWidth,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Center(
+                        child: Text(
+                          appLocalizationsOf(context)
+                              .entityAlreadyExists(state.name),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(appLocalizationsOf(context).ok)),
+                ],
+              ),
+            );
           }
         },
         builder: (context, state) {
@@ -71,10 +108,11 @@ class FsEntryMoveForm extends StatelessWidget {
                 children: [
                   TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text('CANCEL')),
+                      child:
+                          Text(appLocalizationsOf(context).cancelEmphasized)),
                   ElevatedButton(
                     onPressed: () => context.read<FsEntryMoveCubit>().submit(),
-                    child: Text('MOVE HERE'),
+                    child: Text(appLocalizationsOf(context).moveHereEmphasized),
                   ),
                 ],
               );
@@ -82,11 +120,19 @@ class FsEntryMoveForm extends StatelessWidget {
             if (state is FsEntryMoveFolderLoadSuccess) {
               return TextButton.icon(
                 icon: const Icon(Icons.create_new_folder),
-                label: Text('CREATE FOLDER'),
-                onPressed: () => promptToCreateFolder(
-                  context,
-                  driveId: state.viewingFolder.folder.driveId,
-                  parentFolderId: state.viewingFolder.folder.id,
+                label: Text(appLocalizationsOf(context).createFolderEmphasized),
+                onPressed: () => showDialog(
+                  context: context,
+                  builder: (_) => BlocProvider(
+                    create: (context) => FolderCreateCubit(
+                      driveId: state.viewingFolder.folder.driveId,
+                      parentFolderId: state.viewingFolder.folder.id,
+                      profileCubit: context.read<ProfileCubit>(),
+                      arweave: context.read<ArweaveService>(),
+                      driveDao: context.read<DriveDao>(),
+                    ),
+                    child: FolderCreateForm(),
+                  ),
                 ),
               );
             } else {
@@ -95,7 +141,9 @@ class FsEntryMoveForm extends StatelessWidget {
           }
 
           return AppDialog(
-            title: state.isMovingFolder ? 'MOVE FOLDER' : 'MOVE FILE',
+            title: state.isMovingFolder
+                ? appLocalizationsOf(context).moveFolderEmphasized
+                : appLocalizationsOf(context).moveFileEmphasized,
             contentPadding: EdgeInsets.zero,
             content: state is FsEntryMoveFolderLoadSuccess
                 ? SizedBox(
@@ -108,19 +156,22 @@ class FsEntryMoveForm extends StatelessWidget {
                         const SizedBox(height: 16),
                         if (!state.viewingRootFolder)
                           Padding(
-                            padding: const EdgeInsets.only(
-                                left: 16, right: 16, bottom: 8),
-                            child: TextButton.icon(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: TextButton(
                                 style: TextButton.styleFrom(
                                     textStyle:
                                         Theme.of(context).textTheme.subtitle2,
                                     padding: const EdgeInsets.all(16)),
-                                icon: const Icon(Icons.arrow_back),
-                                label: Text(
-                                    'Back to "${state.viewingFolder.folder.name}" folder'),
                                 onPressed: () => context
                                     .read<FsEntryMoveCubit>()
-                                    .loadParentFolder()),
+                                    .loadParentFolder(),
+                                child: ListTile(
+                                  dense: true,
+                                  leading: const Icon(Icons.arrow_back),
+                                  title: Text(appLocalizationsOf(context)
+                                      .backToFolder(
+                                          state.viewingFolder.folder.name)),
+                                )),
                           ),
                         Expanded(
                           child: Padding(
@@ -160,24 +211,15 @@ class FsEntryMoveForm extends StatelessWidget {
                         ),
                         Divider(),
                         Padding(
-                            padding: const EdgeInsets.only(right: 16),
-                            child: ScreenTypeLayout(
-                              desktop: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _buildCreateFolderButton(),
-                                  _buildButtonBar(),
-                                ],
-                              ),
-                              mobile: Wrap(
-                                alignment: WrapAlignment.spaceBetween,
-                                children: [
-                                  _buildCreateFolderButton(),
-                                  _buildButtonBar(),
-                                ],
-                              ),
-                            )),
+                          padding: const EdgeInsets.only(right: 16),
+                          child: Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            children: [
+                              _buildCreateFolderButton(),
+                              _buildButtonBar(),
+                            ],
+                          ),
+                        )
                       ],
                     ),
                   )

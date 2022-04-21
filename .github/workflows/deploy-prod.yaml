@@ -2,8 +2,14 @@ name: deploy
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        required: true
+        default: 'warning'
 
 jobs:
   deploy:
@@ -14,13 +20,16 @@ jobs:
           persist-credentials: false
       - uses: subosito/flutter-action@v1
         with:
-          channel: 'stable'
+          flutter-version: '2.8.1'
       - name: Build app
         run: |
           flutter pub get
           flutter pub run build_runner build
           flutter config --enable-web
           flutter build web
+      - name: main.dart.js cache invalidation
+        run: |
+          sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'

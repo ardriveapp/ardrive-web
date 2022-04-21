@@ -11,6 +11,7 @@ CREATE TABLE file_entries (
     dataContentType TEXT,
 
     dataTxId TEXT NOT NULL,
+    bundledIn TEXT,
 
     dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
     lastUpdated DATETIME NOT NULL DEFAULT (strftime('%s','now')),

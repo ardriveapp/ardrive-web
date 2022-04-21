@@ -1,15 +1,17 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/entities/constants.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
-import 'package:pedantic/pedantic.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../blocs.dart';
 
@@ -24,6 +26,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final AppConfig _config;
 
   StreamSubscription? _folderSubscription;
+  final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
 
   DriveDetailCubit({
     required this.driveId,
@@ -80,14 +83,21 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     DriveOrder contentOrderBy = DriveOrder.name,
     OrderingMode contentOrderingMode = OrderingMode.asc,
     String search = '',
-  }) {
+  }) async {
     emit(DriveDetailLoadInProgress());
 
-    unawaited(_folderSubscription?.cancel());
+    await _folderSubscription?.cancel();
+    // For attaching drives. If drive is not found, emit state to prompt drive attach
+    await _driveDao.driveById(driveId: driveId).getSingleOrNull().then((value) {
+      if (value == null) {
+        emit(DriveDetailLoadNotFound());
+        return;
+      }
+    });
 
     _folderSubscription =
-        Rx.combineLatest3<Drive?, FolderWithContents, ProfileState, void>(
-      _driveDao.driveById(driveId: driveId).watchSingleOrNull(),
+        Rx.combineLatest3<Drive, FolderWithContents, ProfileState, void>(
+      _driveDao.driveById(driveId: driveId).watchSingle(),
       _driveDao.watchFolderContents(
         driveId,
         folderPath: path,
@@ -97,59 +107,96 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       ),
       _profileCubit.stream.startWith(ProfileCheckingAvailability()),
       (drive, folderContents, _) async {
-        if (drive == null) {
-          emit(DriveDetailLoadNotFound());
-          return;
-        }
         final state = this.state is DriveDetailLoadSuccess
             ? this.state as DriveDetailLoadSuccess
             : null;
         final profile = _profileCubit.state;
+
+        // Set selected item to subfolder if the folder being viewed is not drive root
+
+        final maybeSelectedItem = folderContents.folder.id != drive.rootFolderId
+            ? SelectedFolder(folder: folderContents.folder)
+            : null;
+        var availableRowsPerPage = _defaultAvailableRowsPerPage;
+
+        availableRowsPerPage = calculateRowsPerPage(
+          folderContents.files.length + folderContents.subfolders.length,
+        );
+
+        final rootFolderNode =
+            await _driveDao.getFolderTree(driveId, drive.rootFolderId);
+
         if (state != null) {
-          emit(
-            state.copyWith(
-              currentDrive: drive,
-              hasWritePermissions: profile is ProfileLoggedIn &&
-                  drive.ownerAddress == profile.walletAddress,
-              currentFolder: folderContents,
-              contentOrderBy: contentOrderBy,
-              contentOrderingMode: contentOrderingMode,
-            ),
-          );
+          emit(state.copyWith(
+            currentDrive: drive,
+            hasWritePermissions: profile is ProfileLoggedIn &&
+                drive.ownerAddress == profile.walletAddress,
+            folderInView: folderContents,
+            contentOrderBy: contentOrderBy,
+            contentOrderingMode: contentOrderingMode,
+            rowsPerPage: availableRowsPerPage.first,
+            availableRowsPerPage: availableRowsPerPage,
+            maybeSelectedItem: maybeSelectedItem,
+          ));
         } else {
           emit(DriveDetailLoadSuccess(
             currentDrive: drive,
             hasWritePermissions: profile is ProfileLoggedIn &&
                 drive.ownerAddress == profile.walletAddress,
-            currentFolder: folderContents,
+            folderInView: folderContents,
             contentOrderBy: contentOrderBy,
             contentOrderingMode: contentOrderingMode,
+            rowsPerPage: availableRowsPerPage.first,
+            availableRowsPerPage: availableRowsPerPage,
+            maybeSelectedItem: maybeSelectedItem,
+            driveIsEmpty: rootFolderNode.isEmpty(),
           ));
         }
       },
     ).listen((_) {});
   }
 
-  Future<void> selectItem(String itemId, {bool isFolder = false}) async {
+  List<int> calculateRowsPerPage(int totalEntries) {
+    List<int> availableRowsPerPage;
+    if (totalEntries < _defaultAvailableRowsPerPage.first) {
+      availableRowsPerPage = <int>[totalEntries];
+    } else {
+      availableRowsPerPage = _defaultAvailableRowsPerPage;
+    }
+    return availableRowsPerPage;
+  }
+
+  void setRowsPerPage(int rowsPerPage) {
+    switch (state.runtimeType) {
+      case DriveDetailLoadSuccess:
+        emit(
+          (state as DriveDetailLoadSuccess).copyWith(
+            rowsPerPage: rowsPerPage,
+          ),
+        );
+    }
+  }
+
+  Future<void> selectItem(SelectedItem selectedItem) async {
     var state = this.state as DriveDetailLoadSuccess;
 
-    state = state.copyWith(
-      selectedItemId: itemId,
-      selectedItemIsFolder: isFolder,
-    );
-
-    if (state.selectedItemId != null) {
-      if (state.currentDrive.isPublic && !isFolder) {
-        final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
-            driveId: driveId, fileId: state.selectedItemId!);
-        final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
-        state = state.copyWith(
-            selectedFilePreviewUrl:
-                Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'));
-      }
+    state = state.copyWith(maybeSelectedItem: selectedItem);
+    if (state.currentDrive.isPublic && selectedItem is SelectedFile) {
+      final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
+        driveId: driveId,
+        fileId: selectedItem.id,
+      );
+      final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
+      state = state.copyWith(
+          selectedFilePreviewUrl:
+              Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'));
     }
 
     emit(state);
+  }
+
+  Future<void> launchPreview(TxID dataTxId) {
+    return launch('${_config.defaultArweaveGatewayUrl}/$dataTxId');
   }
 
   void sortFolder(
@@ -157,9 +204,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       OrderingMode contentOrderingMode = OrderingMode.asc}) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
-        path: state.currentFolder.folder.path,
-        contentOrderBy: contentOrderBy,
-        contentOrderingMode: contentOrderingMode);
+      path: state.folderInView.folder.path,
+      contentOrderBy: contentOrderBy,
+      contentOrderingMode: contentOrderingMode,
+    );
   }
 
   void searchFolder(
@@ -168,7 +216,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       String search = ''}) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
-      path: state.currentFolder.folder.path,
+      path: state.folderInView.folder.path,
       contentOrderBy: contentOrderBy,
       contentOrderingMode: contentOrderingMode,
       search: search,

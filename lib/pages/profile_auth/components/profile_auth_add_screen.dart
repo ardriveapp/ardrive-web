@@ -3,10 +3,10 @@ import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:reactive_forms/reactive_forms.dart';
-import 'package:url_launcher/link.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'profile_auth_shell.dart';
 
 class ProfileAuthAddScreen extends StatelessWidget {
@@ -20,120 +20,141 @@ class ProfileAuthAddScreen extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
                 contentWidthFactor: 0.5,
-                content: ReactiveForm(
-                  formGroup: context.watch<ProfileAddCubit>().form,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        state.isExistingUser
-                            ? AppLocalizations.of(context)!
-                                .welcomeBack
-                                .toUpperCase()
-                            : AppLocalizations.of(context)!
-                                .letsGetStarted
-                                .toUpperCase(),
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headline5,
-                      ),
-                      const SizedBox(height: 32),
-                      if (state.isExistingUser)
+                content: AutofillGroup(
+                  child: ReactiveForm(
+                    formGroup: context.watch<ProfileAddCubit>().form,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                         Text(
-                            'Please provide the same password as the one you used before.',
-                            textAlign: TextAlign.center)
-                      else
-                        Text(
-                            'Your password can never be changed or recovered. Please keep it safe!',
-                            textAlign: TextAlign.center),
-                      const SizedBox(height: 16),
-                      ReactiveTextField(
-                        formControlName: 'username',
-                        autofocus: true,
-                        decoration: InputDecoration(
-                          labelText: 'Username',
-                          prefixIcon: const Icon(Icons.person),
+                          state.isExistingUser
+                              ? appLocalizationsOf(context)
+                                  .welcomeBackEmphasized
+                              : appLocalizationsOf(context)
+                                  .letsGetStartedEmphasized,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.headline5,
                         ),
-                        validationMessages: (_) => kValidationMessages,
-                      ),
-                      const SizedBox(height: 16),
-                      ReactiveTextField(
-                        formControlName: 'password',
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          prefixIcon: const Icon(Icons.lock),
-                        ),
-                        validationMessages: (_) => kValidationMessages,
-                      ),
-                      if (!state.isExistingUser) ...{
+                        const SizedBox(height: 32),
+                        if (state.isExistingUser)
+                          Text(
+                              appLocalizationsOf(context)
+                                  .pleaseProvideSamePassword,
+                              textAlign: TextAlign.center)
+                        else
+                          Text(
+                              appLocalizationsOf(context)
+                                  .passwordCanNeverBeChanged,
+                              textAlign: TextAlign.center),
                         const SizedBox(height: 16),
                         ReactiveTextField(
-                          formControlName: 'passwordConfirmation',
+                          formControlName: 'username',
+                          autofocus: true,
+                          autofillHints: [AutofillHints.username],
+                          decoration: InputDecoration(
+                            labelText: appLocalizationsOf(context).username,
+                            prefixIcon: const Icon(Icons.person),
+                          ),
+                          onSubmitted: () =>
+                              context.read<ProfileAddCubit>().submit(),
+                          validationMessages: (_) =>
+                              kValidationMessages(appLocalizationsOf(context)),
+                        ),
+                        const SizedBox(height: 16),
+                        ReactiveTextField(
+                          formControlName: 'password',
                           obscureText: true,
                           decoration: InputDecoration(
-                            labelText: 'Confirm Password',
+                            labelText: appLocalizationsOf(context).password,
                             prefixIcon: const Icon(Icons.lock),
                           ),
-                          validationMessages: (_) => const {
-                            ...kValidationMessages,
-                            'mustMatch':
-                                'The confirmation password does not match.',
-                          },
+                          autofillHints: [AutofillHints.password],
+                          onSubmitted: () =>
+                              context.read<ProfileAddCubit>().submit(),
+                          validationMessages: (_) =>
+                              kValidationMessages(appLocalizationsOf(context)),
                         ),
-                      },
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ReactiveCheckbox(formControlName: 'agreementConsent'),
-                          const SizedBox(width: 12),
-                          Flexible(
-                            child: Link(
-                              uri: Uri.parse(
-                                  'https://ardrive.io/tos-and-privacy/'),
-                              target: LinkTarget.blank,
-                              builder: (context, onPressed) => GestureDetector(
-                                onTap: onPressed,
-                                child: Text.rich(
-                                  TextSpan(
-                                    children: [
-                                      TextSpan(text: 'I agree to the '),
-                                      TextSpan(
-                                        text:
-                                            'ArDrive terms of service and privacy policy',
-                                        style: TextStyle(
-                                          decoration: TextDecoration.underline,
+                        if (!state.isExistingUser) ...[
+                          const SizedBox(height: 16),
+                          ReactiveTextField(
+                            formControlName: 'passwordConfirmation',
+                            obscureText: true,
+                            decoration: InputDecoration(
+                              labelText:
+                                  appLocalizationsOf(context).confirmPassword,
+                              prefixIcon: const Icon(Icons.lock),
+                            ),
+                            onSubmitted: () =>
+                                context.read<ProfileAddCubit>().submit(),
+                            validationMessages: (_) => {
+                              ...kValidationMessages(
+                                  appLocalizationsOf(context)),
+                              'mustMatch':
+                                  appLocalizationsOf(context).passwordMismatch,
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ReactiveCheckbox(
+                                formControlName: 'agreementConsent',
+                              ),
+                              const SizedBox(width: 12),
+                              Flexible(
+                                child: GestureDetector(
+                                  onTap: () => launch(
+                                    'https://ardrive.io/tos-and-privacy/',
+                                  ),
+                                  child: Text.rich(
+                                    TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          // TODO replace at PE-1125
+                                          text: appLocalizationsOf(context)
+                                              .aggreeToTerms_main,
                                         ),
-                                      ),
-                                      TextSpan(text: '.'),
-                                    ],
+                                        TextSpan(
+                                          // TODO replace at PE-1125
+                                          text: appLocalizationsOf(context)
+                                              .aggreeToTerms_link,
+                                          style: TextStyle(
+                                            decoration:
+                                                TextDecoration.underline,
+                                          ),
+                                        ),
+                                        TextSpan(text: '.'),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
+                            ],
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 32),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () =>
-                              context.read<ProfileAddCubit>().submit(),
-                          child: Text('ADD PROFILE'),
+                        const SizedBox(height: 32),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () =>
+                                context.read<ProfileAddCubit>().submit(),
+                            child: Text(appLocalizationsOf(context)
+                                .addProfileEmphasized),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextButton(
-                        onPressed: () =>
-                            context.read<ProfileAddCubit>().promptForWallet(),
-                        child: context
-                                .read<ProfileAddCubit>()
-                                .isArconnectInstalled()
-                            ? Text('LOG OUT')
-                            : Text('Change wallet'),
-                      ),
-                    ],
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: () =>
+                              context.read<ProfileAddCubit>().promptForWallet(),
+                          child: context
+                                  .read<ProfileAddCubit>()
+                                  .isArconnectInstalled()
+                              ? Text(
+                                  appLocalizationsOf(context).logOutEmphasized)
+                              : Text(appLocalizationsOf(context).changeWallet),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               )

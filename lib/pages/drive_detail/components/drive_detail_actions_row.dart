@@ -8,89 +8,106 @@ class DriveDetailActionRow extends StatelessWidget {
     return BlocBuilder<DriveDetailCubit, DriveDetailState>(
       builder: (context, state) {
         if (state is DriveDetailLoadSuccess) {
+          final selectedItem = state.maybeSelectedItem;
           final fsActions = <Widget>[
-            if (state.hasWritePermissions&& state.selectedItemId == null)
+            if (state.hasWritePermissions && selectedItem == null) ...[
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () {
                   promptToRenameDrive(context, driveId: state.currentDrive.id);
                 },
-                tooltip: 'Rename Drive',
-              ), // A folder/file is selected.
-            if (state.selectedItemId != null) ...{
-              if (!state.selectedItemIsFolder) ...{
+                tooltip: appLocalizationsOf(context).renameDrive,
+              ),
+            ],
+            if (selectedItem == null)
+              IconButton(
+                  icon: const Icon(Icons.table_chart),
+                  onPressed: () {
+                    promptToExportCSVData(
+                        context: context, driveId: state.currentDrive.id);
+                  },
+                  tooltip: appLocalizationsOf(context).exportDriveContents),
+            // A folder/file is selected.
+            if (selectedItem != null) ...{
+              if (selectedItem is SelectedFile) ...{
                 IconButton(
                   icon: const Icon(Icons.file_download),
                   onPressed: () => promptToDownloadProfileFile(
                     context: context,
                     driveId: state.currentDrive.id,
-                    fileId: state.selectedItemId as String,
+                    fileId: selectedItem.id,
+                    dataTxId: selectedItem.item.dataTxId,
                   ),
-                  tooltip: 'Download',
+                  tooltip: appLocalizationsOf(context).download,
                 ),
                 IconButton(
                   icon: const Icon(Icons.share),
-                  tooltip: 'Share File',
+                  tooltip: appLocalizationsOf(context).shareFile,
                   onPressed: () => promptToShareFile(
                     context: context,
                     driveId: state.currentDrive.id,
-                    fileId: state.selectedItemId as String,
+                    fileId: selectedItem.id,
                   ),
                 ),
                 if (state.currentDrive.isPublic)
-                  Link(
-                    uri: state.selectedFilePreviewUrl,
-                    target: LinkTarget.blank,
-                    builder: (context, followLink) => IconButton(
-                      icon: const Icon(Icons.open_in_new),
-                      onPressed: followLink,
-                      tooltip: 'Preview',
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.open_in_new),
+                    onPressed: () =>
+                        launch(state.selectedFilePreviewUrl.toString()),
+                    tooltip: appLocalizationsOf(context).preview,
                   ),
               },
               if (state.hasWritePermissions) ...{
                 IconButton(
                   icon: const Icon(Icons.drive_file_rename_outline),
                   onPressed: () {
-                    if (state.selectedItemIsFolder) {
-                      promptToRenameFolder(context,
-                          driveId: state.currentDrive.id,
-                          folderId: state.selectedItemId as String);
+                    if (selectedItem is SelectedFolder &&
+                        !selectedItem.item.isGhost) {
+                      promptToRenameFolder(
+                        context,
+                        driveId: state.currentDrive.id,
+                        folderId: selectedItem.id,
+                      );
                     } else {
-                      promptToRenameFile(context,
-                          driveId: state.currentDrive.id,
-                          fileId: state.selectedItemId as String);
+                      promptToRenameFile(
+                        context,
+                        driveId: state.currentDrive.id,
+                        fileId: selectedItem.id,
+                      );
                     }
                   },
-                  tooltip: 'Rename',
+                  tooltip: appLocalizationsOf(context).rename,
                 ),
                 IconButton(
                   icon: const Icon(Icons.drive_file_move),
                   onPressed: () {
-                    if (state.selectedItemIsFolder) {
-                      promptToMoveFolder(context,
-                          driveId: state.currentDrive.id,
-                          folderId: state.selectedItemId as String);
+                    if (selectedItem is SelectedFolder) {
+                      promptToMoveFolder(
+                        context,
+                        driveId: state.currentDrive.id,
+                        folderId: selectedItem.id,
+                      );
                     } else {
-                      promptToMoveFile(context,
-                          driveId: state.currentDrive.id,
-                          fileId: state.selectedItemId as String);
+                      promptToMoveFile(
+                        context,
+                        driveId: state.currentDrive.id,
+                        fileId: selectedItem.id,
+                      );
                     }
                   },
-                  tooltip: 'Move',
+                  tooltip: appLocalizationsOf(context).move,
                 ),
               },
               // Nothing is selected.
             } else ...{
-              if (state.currentDrive.isPublic)
-                IconButton(
-                  icon: const Icon(Icons.share),
-                  onPressed: () => promptToShareDrive(
-                    context: context,
-                    driveId: state.currentDrive.id,
-                  ),
-                  tooltip: 'Share Drive',
+              IconButton(
+                icon: const Icon(Icons.share),
+                onPressed: () => promptToShareDrive(
+                  context: context,
+                  drive: state.currentDrive,
                 ),
+                tooltip: appLocalizationsOf(context).shareDrive,
+              ),
             }
           ];
 
@@ -103,24 +120,24 @@ class DriveDetailActionRow extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.remove_red_eye),
                   onPressed: () => bloc.toggleSelectedItemDetails(),
-                  tooltip: 'View Only',
+                  tooltip: appLocalizationsOf(context).viewOnly,
                 ),
               state.currentDrive.isPrivate
                   ? IconButton(
                       icon: const Icon(Icons.lock),
                       onPressed: () => bloc.toggleSelectedItemDetails(),
-                      tooltip: 'Private',
+                      tooltip: appLocalizationsOf(context).private,
                     )
                   : IconButton(
                       icon: const Icon(Icons.public),
                       onPressed: () => bloc.toggleSelectedItemDetails(),
-                      tooltip: 'Public',
+                      tooltip: appLocalizationsOf(context).public,
                     ),
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.info),
                 onPressed: () => bloc.toggleSelectedItemDetails(),
-                tooltip: 'View Info',
+                tooltip: appLocalizationsOf(context).viewInfo,
               ),
             ],
           );

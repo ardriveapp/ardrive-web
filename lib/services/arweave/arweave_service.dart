@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
@@ -6,20 +7,75 @@ import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart' as http;
 import 'package:moor/moor.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:pedantic/pedantic.dart';
 
 import '../services.dart';
+
+const byteCountPerChunk = 262144; // 256 KiB
 
 class ArweaveService {
   final Arweave client;
 
   final ArtemisClient _gql;
 
+  int _mempoolSize = 0;
+
   ArweaveService(this.client)
-      : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql');
+      : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
+    unawaited(initializeMempoolStream());
+  }
+
+  int bytesToChunks(int bytes) {
+    return (bytes / byteCountPerChunk).ceil();
+  }
 
   /// Returns the onchain balance of the specified address.
-  Future<BigInt> getWalletBalance(String address) => client.api.get('wallet/$address/balance')
+  Future<BigInt> getWalletBalance(String address) => client.api
+      .get('wallet/$address/balance')
       .then((res) => BigInt.parse(res.body));
+
+  Future<int> getCurrentBlockHeight() =>
+      client.api.get('/').then((res) => json.decode(res.body)['height']);
+
+  Future<void> initializeMempoolStream() async {
+    Stream.periodic(Duration(minutes: 1, seconds: 44))
+        .asyncMap((event) => getMempoolAverage())
+        .listen((mempoolSize) {
+      _mempoolSize = mempoolSize;
+    });
+    _mempoolSize = await getMempoolAverage();
+  }
+
+  Future<BigInt> getPrice({required int byteSize}) {
+    return client.api
+        .get('/price/$byteSize')
+        .then((res) => BigInt.parse(res.body));
+  }
+
+  // Spread requests across time to avoid getting load balanced to the same gateway
+  Future<int> getMempoolAverage() async {
+    return await Stream.periodic(Duration(seconds: 4))
+            .asyncMap((event) => getMempoolSizeFromArweave())
+            .take(4)
+            .reduce((next, acc) => acc += next) ~/
+        4;
+  }
+
+  Future<int> getMempoolSizeFromArweave() async {
+    try {
+      return await client.api
+          .get('tx/pending')
+          .then((res) => (json.decode(res.body) as List).length);
+    } catch (_) {
+      print('Error fetching mempool size');
+      return 0;
+    }
+  }
+
+  Future<int> getCachedMempoolSize() async {
+    return _mempoolSize;
+  }
 
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
   Future<BigInt> getPendingTxFees(String address) async {
@@ -42,8 +98,13 @@ class ArweaveService {
   }
 
   /// Gets the entity history for a particular drive starting from the specified block height.
-  Future<DriveEntityHistory> getNewEntitiesForDrive(String driveId,
-      {String? after, int? lastBlockHeight, SecretKey? driveKey}) async {
+  Future<DriveEntityHistory> getNewEntitiesForDrive(
+    String driveId, {
+    String? after,
+    int? lastBlockHeight,
+    SecretKey? driveKey,
+    String? owner,
+  }) async {
     final driveEntityHistoryQuery = await _gql.execute(
       DriveEntityHistoryQuery(
         variables: DriveEntityHistoryArguments(
@@ -55,9 +116,9 @@ class ArweaveService {
     );
     final queryEdges = driveEntityHistoryQuery.data!.transactions.edges;
     final entityTxs = queryEdges.map((e) => e.node).toList();
-    final rawEntityData =
-        await Future.wait(entityTxs.map((e) => client.api.get(e.id)))
-            .then((rs) => rs.map((r) => r.bodyBytes).toList());
+    final responses = await Future.wait(
+      entityTxs.map((e) => client.api.get(e.id)),
+    );
 
     final blockHistory = <BlockEntities>[];
     for (var i = 0; i < entityTxs.length; i++) {
@@ -66,6 +127,7 @@ class ArweaveService {
       // If we encounter a transaction that has yet to be mined, we stop moving through history.
       // We can continue once the transaction is mined.
       if (transaction.block == null) {
+        // TODO: Revisit
         break;
       }
 
@@ -76,22 +138,33 @@ class ArweaveService {
 
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
+        final entityResponse = responses[i];
+
+        if (entityResponse.statusCode != 200) {
+          throw EntityTransactionDataNetworkException(
+            transactionId: transaction.id,
+            statusCode: entityResponse.statusCode,
+            reasonPhrase: entityResponse.reasonPhrase,
+          );
+        }
+
+        final rawEntityData = entityResponse.bodyBytes;
 
         Entity? entity;
         if (entityType == EntityType.drive) {
           entity = await DriveEntity.fromTransaction(
-              transaction, rawEntityData[i], driveKey);
+              transaction, rawEntityData, driveKey);
         } else if (entityType == EntityType.folder) {
           entity = await FolderEntity.fromTransaction(
-              transaction, rawEntityData[i], driveKey);
+              transaction, rawEntityData, driveKey);
         } else if (entityType == EntityType.file) {
           entity = await FileEntity.fromTransaction(
             transaction,
-            rawEntityData[i],
+            rawEntityData,
             driveKey: driveKey,
           );
         }
-
+        //TODO: Revisit
         if (blockHistory.isEmpty ||
             transaction.block!.height != blockHistory.last.blockHeight) {
           blockHistory.add(BlockEntities(transaction.block!.height));
@@ -100,12 +173,26 @@ class ArweaveService {
         blockHistory.last.entities.add(entity);
 
         // If there are errors in parsing the entity, ignore it.
-      } on EntityTransactionParseException catch (_) {}
+      } on EntityTransactionParseException catch (parseException) {
+        print(
+          'Failed to parse transaction '
+          'with id ${parseException.transactionId}',
+        );
+      } on EntityTransactionDataNetworkException catch (fetchException) {
+        print(
+          'Failed to fetch entity data '
+          'for transaction ${fetchException.transactionId}, '
+          'with status ${fetchException.statusCode} '
+          'and reason ${fetchException.reasonPhrase}',
+        );
+      }
     }
 
     // Sort the entities in each block by ascending commit time.
     for (final block in blockHistory) {
       block.entities.sort((e1, e2) => e1!.createdAt.compareTo(e2!.createdAt));
+      //Remove entities with spoofed owners
+      block.entities.removeWhere((e) => e!.ownerAddress != owner);
     }
 
     return DriveEntityHistory(
@@ -186,7 +273,12 @@ class ArweaveService {
         drivesWithKey[drive] = driveKey;
 
         // If there's an error parsing the drive entity, just ignore it.
-      } on EntityTransactionParseException catch (_) {}
+      } on EntityTransactionParseException catch (parseException) {
+        print(
+          'Failed to parse transaction '
+          'with id ${parseException.transactionId}',
+        );
+      }
     }
 
     return drivesWithKey;
@@ -228,9 +320,58 @@ class ArweaveService {
     try {
       return await DriveEntity.fromTransaction(
           fileTx, fileDataRes.bodyBytes, driveKey);
-    } on EntityTransactionParseException catch (_) {
+    } on EntityTransactionParseException catch (parseException) {
+      print(
+        'Failed to parse transaction '
+        'with id ${parseException.transactionId}',
+      );
       return null;
     }
+  }
+
+  /// Gets the drive privacy of the latest drive entity with the provided id.
+  ///
+  /// This function first checks for the owner of the first instance of the [DriveEntity]
+  /// with the specified id and then queries for the latest instance of the [DriveEntity]
+  /// by that owner.
+  ///
+  /// Returns `null` if no valid drive is found.
+  Future<String?> getDrivePrivacyForId(String driveId) async {
+    final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
+        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
+
+    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    final driveOwner =
+        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
+
+    final latestDriveQuery = await _gql.execute(LatestDriveEntityWithIdQuery(
+        variables: LatestDriveEntityWithIdArguments(
+            driveId: driveId, owner: driveOwner)));
+
+    final queryEdges = latestDriveQuery.data!.transactions.edges;
+    if (queryEdges.isEmpty) {
+      return null;
+    }
+
+    final driveTx = queryEdges.first.node;
+
+    return driveTx.getTag(EntityTag.drivePrivacy);
+  }
+
+  /// Gets the owner of the drive sorted by blockheight.
+  /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
+  Future<String?> getOwnerForDriveEntityWithId(String driveId) async {
+    final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
+        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
+
+    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    return firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
   }
 
   /// Gets any created private drive belonging to [profileId], as long as its unlockable with [password] when used with the [getSignatureFn]
@@ -297,7 +438,11 @@ class ArweaveService {
         fileDataRes.bodyBytes,
         fileKey: fileKey,
       );
-    } on EntityTransactionParseException catch (_) {
+    } on EntityTransactionParseException catch (parseException) {
+      print(
+        'Failed to parse transaction '
+        'with id ${parseException.transactionId}',
+      );
       return null;
     }
   }
@@ -404,8 +549,11 @@ class ArweaveService {
 
   Future<Transaction> prepareDataBundleTx(
       DataBundle bundle, Wallet wallet) async {
+    final packageInfo = await PackageInfo.fromPlatform();
+
     final bundleTx = await client.transactions.prepare(
-      Transaction.withDataBundle(bundle: bundle)..addApplicationTags(),
+      Transaction.withDataBundle(bundleBlob: bundle.blob)
+        ..addApplicationTags(version: packageInfo.version),
       wallet,
     );
 
@@ -414,8 +562,29 @@ class ArweaveService {
     return bundleTx;
   }
 
-  Future<void> postTx(Transaction transaction) =>
-      client.transactions.post(transaction);
+  Future<Transaction> prepareDataBundleTxFromBlob(
+      Uint8List bundleBlob, Wallet wallet) async {
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    final bundleTx = await client.transactions.prepare(
+      Transaction.withDataBundle(bundleBlob: bundleBlob)
+        ..addApplicationTags(version: packageInfo.version),
+      wallet,
+    );
+
+    await bundleTx.sign(wallet);
+
+    return bundleTx;
+  }
+
+  Future<void> postTx(
+    Transaction transaction, {
+    bool dryRun = false,
+  }) =>
+      client.transactions.post(
+        transaction,
+        dryRun: dryRun,
+      );
 
   Future<double> getArUsdConversionRate() async {
     final client = http.Client();

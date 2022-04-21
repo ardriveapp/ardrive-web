@@ -3,6 +3,7 @@ import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'entities.dart';
 
@@ -15,6 +16,10 @@ abstract class Entity {
   @JsonKey(ignore: true)
   late String ownerAddress;
 
+  /// The bundle this entity is a part of.
+  @JsonKey(ignore: true)
+  String? bundledIn;
+
   /// The time this entity was created at ie. its `Unix-Time`.
   @JsonKey(ignore: true)
   DateTime createdAt = DateTime.now();
@@ -26,9 +31,10 @@ abstract class Entity {
     final tx = key == null
         ? Transaction.withJsonData(data: this)
         : await createEncryptedEntityTransaction(this, key);
+    final packageInfo = await PackageInfo.fromPlatform();
 
     addEntityTagsToTransaction(tx);
-
+    tx.addApplicationTags(version: packageInfo.version, unixTime: createdAt);
     return tx;
   }
 
@@ -41,8 +47,9 @@ abstract class Entity {
     final item = key == null
         ? DataItem.withJsonData(data: this)
         : await createEncryptedEntityDataItem(this, key);
-
+    final packageInfo = await PackageInfo.fromPlatform();
     addEntityTagsToTransaction(item);
+    item.addApplicationTags(version: packageInfo.version);
 
     return item;
   }
@@ -51,13 +58,30 @@ abstract class Entity {
   void addEntityTagsToTransaction<T extends TransactionBase>(T tx);
 }
 
-class EntityTransactionParseException implements Exception {}
+class EntityTransactionParseException implements Exception {
+  final String transactionId;
+
+  EntityTransactionParseException({required this.transactionId});
+}
+
+class EntityTransactionDataNetworkException implements Exception {
+  final String transactionId;
+  final int statusCode;
+  final String? reasonPhrase;
+  EntityTransactionDataNetworkException({
+    required this.transactionId,
+    required this.statusCode,
+    required this.reasonPhrase,
+  });
+}
 
 extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the app name, version, and the specified unix time.
-  void addApplicationTags({DateTime? unixTime}) {
+  /// https://ardrive.atlassian.net/wiki/spaces/ENGINEERIN/pages/277544961/Data+Model
+  /// TODO: Split App-Name into App-Name and Client
+  void addApplicationTags({required String version, DateTime? unixTime}) {
     addTag(EntityTag.appName, 'ArDrive-Web');
-    addTag(EntityTag.appVersion, '0.1.0');
+    addTag(EntityTag.appVersion, version);
     addTag(
         EntityTag.unixTime,
         ((unixTime ?? DateTime.now()).millisecondsSinceEpoch ~/ 1000)

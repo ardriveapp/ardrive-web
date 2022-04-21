@@ -32,16 +32,27 @@ folderById:
     WHERE driveId = :driveId AND id = :folderId;
 folderWithPath:
     SELECT * FROM folder_entries
-    WHERE driveId = :driveId AND path = :path;
+    WHERE driveId = :driveId AND path = :path 
+    LIMIT 1;
 
 foldersInFolder ($order = ''):
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId
     ORDER BY $order;
+
 foldersInFolderAtPath ($order = ''):
     SELECT * FROM folder_entries
-    WHERE driveId = :driveId AND path LIKE :path || '/%' AND path NOT LIKE :path || '/%/%'
+    WHERE parentFolderId IN (
+        SELECT id FROM folder_entries
+        WHERE driveId = :driveId AND path = :path 
+        LIMIT 1
+    ) 
     ORDER BY $order;
+
+ghostFolders:
+    SELECT * FROM folder_entries
+    WHERE isGhost = TRUE;
+
 foldersInFolderWithName:
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;
@@ -65,6 +76,10 @@ latestFolderRevisionsByFolderIdWithTransactions AS FolderRevisionWithTransaction
 fileById:
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND id = :fileId;
+
+fileRevisionByDataTx:
+    SELECT * FROM file_revisions
+    WHERE dataTxId = :tx;
 
 filesInFolder ($order = ''):
     SELECT * FROM file_entries
@@ -107,6 +122,21 @@ filesInFolderAtPathWithRevisionTransactions ($order = '') AS FileWithLatestRevis
     WHERE driveId = :driveId AND path LIKE :path || '/%' AND path NOT LIKE :path || '/%/%'
     ORDER BY $order;
 
+filesInDriveWithRevisionTransactions ($order = '') AS FileWithLatestRevisionTransactions:
+SELECT file_entries.*, metadataTx.**, dataTx.** FROM file_entries
+JOIN network_transactions AS metadataTx ON metadataTx.id = (
+    SELECT metadataTxId FROM file_revisions AS rev
+    WHERE driveId = :driveId AND fileId = file_entries.id
+    ORDER BY rev.dateCreated DESC
+    LIMIT 1)
+JOIN network_transactions AS dataTx ON dataTx.id = (
+    SELECT dataTxId FROM file_revisions AS rev
+    WHERE driveId = :driveId AND fileId = file_entries.id
+    ORDER BY rev.dateCreated DESC
+    LIMIT 1)
+WHERE driveId = :driveId
+ORDER BY $order;
+
 oldestFileRevisionByFileId:
     SELECT * FROM file_revisions
     WHERE driveId = :driveId AND fileId = :fileId
@@ -127,3 +157,20 @@ latestFileRevisionsByFileIdWithTransactions AS FileRevisionWithTransactions:
 pendingTransactions:
     SELECT * FROM network_transactions
     WHERE status = 'pending';
+
+deleteDriveById: DELETE FROM drives WHERE id = :driveId;
+deleteAllDriveRevisionsByDriveId:
+    DELETE FROM drive_revisions
+    WHERE driveId = :driveId;
+deleteFoldersByDriveId:
+    DELETE FROM folder_entries
+    WHERE driveId = :driveId;
+deleteFolderRevisionsByDriveId:
+    DELETE FROM folder_revisions
+    WHERE driveId = :driveId;
+deleteFilesForDriveId:
+    DELETE FROM file_entries
+    WHERE driveId = :driveId;
+deleteFileRevisionsByDriveId:
+    DELETE FROM file_revisions
+    WHERE driveId = :driveId;

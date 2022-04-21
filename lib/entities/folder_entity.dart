@@ -49,7 +49,7 @@ class FolderEntity extends Entity {
         ..ownerAddress = transaction.owner.address
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
-      throw EntityTransactionParseException();
+      throw EntityTransactionParseException(transactionId: transaction.id);
     }
   }
 
@@ -58,7 +58,6 @@ class FolderEntity extends Entity {
     assert(id != null && driveId != null && name != null);
 
     tx
-      ..addApplicationTags(unixTime: createdAt)
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.folder)
       ..addTag(EntityTag.driveId, driveId!)

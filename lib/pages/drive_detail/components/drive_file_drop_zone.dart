@@ -1,14 +1,25 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
+import '../../congestion_warning_wrapper.dart';
+
 class DriveFileDropZone extends StatefulWidget {
+  final String driveId;
+  final String folderId;
+
+  const DriveFileDropZone({
+    Key? key,
+    required this.driveId,
+    required this.folderId,
+  }) : super(key: key);
   @override
   _DriveFileDropZoneState createState() => _DriveFileDropZoneState();
 }
@@ -19,42 +30,34 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
   bool isCurrentlyShown = false;
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<DriveDetailCubit, DriveDetailState>(
-      builder: (context, state) {
-        if (state is DriveDetailLoadSuccess) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 128, horizontal: 128),
-            /* 
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 128, horizontal: 128),
+      /* 
             Added padding here so that the drop zone doesn't overlap with the
             Link widget.
             */
-            child: IgnorePointer(
-              //ignoring: isHovering,
-              child: Stack(
-                children: [
-                  if (isHovering) _buildDropZoneOnHover(),
-                  DropzoneView(
-                    key: Key('dropZone'),
-                    onCreated: (ctrl) => controller = ctrl,
-                    operation: DragOperation.all,
-                    onDrop: (htmlFile) => _onDrop(
-                      htmlFile,
-                      driveId: state.currentDrive.id,
-                      folderId: state.currentFolder.folder.id,
-                      context: context,
-                    ),
-                    onHover: _onHover,
-                    onLeave: _onLeave,
-                    onError: (e) => _onLeave,
-                  ),
-                ],
+      child: IgnorePointer(
+        //ignoring: isHovering,
+        child: Stack(
+          children: [
+            if (isHovering) _buildDropZoneOnHover(),
+            DropzoneView(
+              key: Key('dropZone'),
+              onCreated: (ctrl) => controller = ctrl,
+              operation: DragOperation.all,
+              onDrop: (htmlFile) => _onDrop(
+                htmlFile,
+                driveId: widget.driveId,
+                folderId: widget.folderId,
+                context: context,
               ),
+              onHover: _onHover,
+              onLeave: _onLeave,
+              onError: (e) => _onLeave,
             ),
-          );
-        }
-
-        return const SizedBox();
-      },
+          ],
+        ),
+      ),
     );
   }
 
@@ -71,32 +74,62 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
       final fileName = await controller.getFilename(htmlFile);
       final fileMIME = await controller.getFileMIME(htmlFile);
       final fileLength = await controller.getFileSize(htmlFile);
+      final fileLastModified = await controller.getFileLastModified(htmlFile);
+
       final htmlUrl = await controller.createFileUrl(htmlFile);
       final fileToUpload = XFile(
         htmlUrl,
         name: fileName,
         mimeType: fileMIME,
-        lastModified: DateTime.now(),
+        lastModified: fileLastModified,
         length: fileLength,
       );
       final selectedFiles = <XFile>[fileToUpload];
-
-      await showDialog(
-        context: context,
-        builder: (_) => BlocProvider<UploadCubit>(
-          create: (context) => UploadCubit(
-            driveId: driveId,
-            folderId: folderId,
-            files: selectedFiles,
-            arweave: context.read<ArweaveService>(),
-            pst: context.read<PstService>(),
-            profileCubit: context.read<ProfileCubit>(),
-            driveDao: context.read<DriveDao>(),
+      try {
+        //This is the only way to know whether the dropped file is a folder
+        await fileToUpload.readAsBytes();
+      } catch (e) {
+        await showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text(appLocalizationsOf(context).error),
+            content: Text(
+              appLocalizationsOf(context).errorDragAndDropFolder,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(appLocalizationsOf(context).ok),
+              ),
+            ],
           ),
-          child: UploadForm(),
-        ),
-        barrierDismissible: false,
-      ).then((value) => isCurrentlyShown = false);
+          barrierDismissible: true,
+        ).then((value) => isCurrentlyShown = false);
+        return;
+      }
+      await showCongestionDependentModalDialog(
+        context,
+        () => showDialog(
+          context: context,
+          builder: (_) => BlocProvider<UploadCubit>(
+            create: (context) => UploadCubit(
+              uploadPlanUtils: UploadPlanUtils(
+                arweave: context.read<ArweaveService>(),
+                driveDao: context.read<DriveDao>(),
+              ),
+              driveId: driveId,
+              folderId: folderId,
+              files: selectedFiles,
+              arweave: context.read<ArweaveService>(),
+              pst: context.read<PstService>(),
+              profileCubit: context.read<ProfileCubit>(),
+              driveDao: context.read<DriveDao>(),
+            )..startUploadPreparation(),
+            child: UploadForm(),
+          ),
+          barrierDismissible: false,
+        ).then((value) => isCurrentlyShown = false),
+      );
     }
   }
 
@@ -128,7 +161,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
                 width: 16,
               ),
               Text(
-                'Upload File',
+                appLocalizationsOf(context).uploadDragAndDrop,
                 style: Theme.of(context).textTheme.headline2,
               ),
             ],

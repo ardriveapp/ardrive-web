@@ -1,41 +1,62 @@
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/utils/link_generators.dart';
 import 'package:bloc/bloc.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:meta/meta.dart';
 
 part 'drive_share_state.dart';
 
 /// [DriveShareCubit] includes logic for the user to retrieve a link to share a public drive with.
 class DriveShareCubit extends Cubit<DriveShareState> {
-  final String driveId;
+  final Drive drive;
 
+  final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
 
   DriveShareCubit({
-    required this.driveId,
+    required this.drive,
     required DriveDao driveDao,
+    required ProfileCubit profileCubit,
   })  : _driveDao = driveDao,
+        _profileCubit = profileCubit,
         super(DriveShareLoadInProgress()) {
     loadDriveShareDetails();
   }
+
   Future<void> loadDriveShareDetails() async {
+    late Uri driveShareLink;
     emit(DriveShareLoadInProgress());
 
-    final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-
-    // On web, link to the current origin the user is on.
-    // Elsewhere, link to app.ardrive.io.
-    final linkOrigin = kIsWeb ? Uri.base.origin : 'https://app.ardrive.io';
-    final driveName = drive.name;
-
-    final driveShareLink = '$linkOrigin/#/drives/${drive.id}?name=' +
-        Uri.encodeQueryComponent(driveName);
+    if (drive.isPrivate) {
+      SecretKey? driveKey;
+      if (_profileCubit.state is ProfileLoggedIn) {
+        final profileKey = (_profileCubit.state as ProfileLoggedIn).cipherKey;
+        driveKey = await _driveDao.getDriveKey(drive.id, profileKey);
+      } else {
+        driveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
+      }
+      if (driveKey != null) {
+        driveShareLink = await generatePrivateDriveShareLink(
+          driveId: drive.id,
+          driveName: drive.name,
+          driveKey: driveKey,
+        );
+      } else {
+        throw StateError('Drive key not found');
+      }
+    } else {
+      driveShareLink = generatePublicDriveShareLink(
+        driveId: drive.id,
+        driveName: drive.name,
+      );
+    }
 
     emit(
       DriveShareLoadSuccess(
-        driveName: drive.name,
-        driveShareLink: Uri.parse(driveShareLink),
+        drive: drive,
+        driveShareLink: driveShareLink,
       ),
     );
   }

@@ -21,7 +21,6 @@ class DriveEntity extends Entity {
 
   String? name;
   String? rootFolderId;
-
   DriveEntity({
     this.id,
     this.name,
@@ -52,9 +51,10 @@ class DriveEntity extends Entity {
         ..authMode = transaction.getTag(EntityTag.driveAuthMode)
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
+        ..bundledIn = transaction.bundledIn?.id
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
-      throw EntityTransactionParseException();
+      throw EntityTransactionParseException(transactionId: transaction.id);
     }
   }
 
@@ -63,7 +63,6 @@ class DriveEntity extends Entity {
     assert(id != null && rootFolderId != null);
 
     tx
-      ..addApplicationTags(unixTime: createdAt)
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.drive)
       ..addTag(EntityTag.driveId, id!)

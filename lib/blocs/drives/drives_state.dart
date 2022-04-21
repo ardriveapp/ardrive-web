@@ -16,6 +16,7 @@ class DrivesLoadSuccess extends DrivesState {
   final List<Drive> userDrives;
   final List<Drive> sharedDrives;
 
+  final List<String> drivesWithAlerts;
   final bool canCreateNewDrive;
 
   bool get hasNoDrives => userDrives.isEmpty && sharedDrives.isEmpty;
@@ -24,6 +25,7 @@ class DrivesLoadSuccess extends DrivesState {
     required this.selectedDriveId,
     required this.userDrives,
     required this.sharedDrives,
+    required this.drivesWithAlerts,
     required this.canCreateNewDrive,
   });
 
@@ -31,16 +33,23 @@ class DrivesLoadSuccess extends DrivesState {
     String? selectedDriveId,
     List<Drive>? userDrives,
     List<Drive>? sharedDrives,
+    List<String>? drivesWithAlerts,
     bool? canCreateNewDrive,
   }) =>
       DrivesLoadSuccess(
         selectedDriveId: selectedDriveId ?? this.selectedDriveId,
         userDrives: userDrives ?? this.userDrives,
         sharedDrives: sharedDrives ?? this.sharedDrives,
+        drivesWithAlerts: drivesWithAlerts ?? this.drivesWithAlerts,
         canCreateNewDrive: canCreateNewDrive ?? this.canCreateNewDrive,
       );
 
   @override
-  List<Object?> get props =>
-      [selectedDriveId, userDrives, sharedDrives, canCreateNewDrive];
+  List<Object?> get props => [
+        selectedDriveId,
+        userDrives,
+        sharedDrives,
+        drivesWithAlerts,
+        canCreateNewDrive,
+      ];
 }

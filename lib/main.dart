@@ -1,4 +1,4 @@
-
+import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
@@ -49,12 +49,19 @@ class _AppState extends State<App> {
           RepositoryProvider<DriveDao>(
               create: (context) => context.read<Database>().driveDao),
         ],
-        child: BlocProvider(
-          create: (context) => ProfileCubit(
-            arweave: context.read<ArweaveService>(),
-            profileDao: context.read<ProfileDao>(),
-            db: context.read<Database>(),
-          ),
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider(
+              create: (context) => ProfileCubit(
+                arweave: context.read<ArweaveService>(),
+                profileDao: context.read<ProfileDao>(),
+                db: context.read<Database>(),
+              ),
+            ),
+            BlocProvider(
+              create: (context) => ActivityCubit(),
+            ),
+          ],
           child: MaterialApp.router(
             title: 'ArDrive',
             theme: appTheme(),
@@ -68,7 +75,7 @@ class _AppState extends State<App> {
             ],
             supportedLocales: [
               const Locale('en', ''), // English, no country code
-              //const Locale('es', ''), // Spanish, no country code
+              const Locale('es', ''), // Spanish, no country code
             ],
             builder: (context, child) => ListTileTheme(
               textColor: kOnSurfaceBodyTextColor,

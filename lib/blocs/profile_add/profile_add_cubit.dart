@@ -5,7 +5,6 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
@@ -13,7 +12,6 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:meta/meta.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'profile_add_state.dart';
@@ -107,8 +105,9 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         'username': FormControl(validators: [Validators.required]),
         'password': FormControl(validators: [Validators.required]),
         if (withPasswordConfirmation) 'passwordConfirmation': FormControl(),
-        'agreementConsent':
-            FormControl<bool>(validators: [Validators.requiredTrue]),
+        if (withPasswordConfirmation)
+          'agreementConsent':
+              FormControl<bool>(validators: [Validators.requiredTrue]),
       },
       validators: [
         if (withPasswordConfirmation)
@@ -124,6 +123,10 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       if (form.invalid) {
         return;
       }
+
+      // Clean up any data from previous sessions
+      await _profileCubit.deleteTables();
+
       if (_profileType == ProfileType.ArConnect &&
           (_lastKnownWalletAddress != await arconnect.getWalletAddress() ||
               !(await arconnect.checkPermissions()))) {

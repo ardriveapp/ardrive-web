@@ -25,12 +25,14 @@ class DrivesCubit extends Cubit<DrivesState> {
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         super(DrivesLoadInProgress()) {
-    _drivesSubscription = Rx.combineLatest2<List<Drive>, void, List<Drive>>(
+    _drivesSubscription =
+        Rx.combineLatest3<List<Drive>, List<FolderEntry>, void, List<Drive>>(
       _driveDao
           .allDrives(order: OrderBy([OrderingTerm.asc(_driveDao.drives.name)]))
           .watch(),
+      _driveDao.ghostFolders().watch(),
       _profileCubit.stream.startWith(ProfileCheckingAvailability()),
-      (drives, _) => drives,
+      (drives, _, __) => drives,
     ).listen((drives) async {
       final state = this.state;
 
@@ -43,32 +45,43 @@ class DrivesCubit extends Cubit<DrivesState> {
       }
 
       final profile = _profileCubit.state;
-      if (profile is ProfileLoggedIn) {
-        final walletAddress = profile.walletAddress;
-        emit(
-          DrivesLoadSuccess(
-            selectedDriveId: selectedDriveId,
-            // If the user is not logged in, all drives are considered shared ones.
-            userDrives: drives
-                .where((d) => profile is ProfileLoggedIn
-                    ? d.ownerAddress == walletAddress
-                    : false)
-                .toList(),
-            sharedDrives: drives
-                .where((d) => profile is ProfileLoggedIn
-                    ? d.ownerAddress != walletAddress
-                    : true)
-                .toList(),
-            canCreateNewDrive: _profileCubit.state is ProfileLoggedIn,
-          ),
-        );
-      }
+
+      final walletAddress =
+          profile is ProfileLoggedIn ? profile.walletAddress : null;
+
+      final ghostFolders = await _driveDao.ghostFolders().get();
+      emit(
+        DrivesLoadSuccess(
+          selectedDriveId: selectedDriveId,
+          // If the user is not logged in, all drives are considered shared ones.
+          userDrives: drives
+              .where((d) => profile is ProfileLoggedIn
+                  ? d.ownerAddress == walletAddress
+                  : false)
+              .toList(),
+          sharedDrives: drives
+              .where((d) => profile is ProfileLoggedIn
+                  ? d.ownerAddress != walletAddress
+                  : true)
+              .toList(),
+          drivesWithAlerts: ghostFolders.map((e) => e.driveId).toList(),
+          canCreateNewDrive: _profileCubit.state is ProfileLoggedIn,
+        ),
+      );
     });
   }
 
   void selectDrive(String driveId) {
-    final state = this.state as DrivesLoadSuccess;
-    emit(state.copyWith(selectedDriveId: driveId));
+    final canCreateNewDrive = _profileCubit.state is ProfileLoggedIn;
+    final state = this.state is DrivesLoadSuccess
+        ? (this.state as DrivesLoadSuccess).copyWith(selectedDriveId: driveId)
+        : DrivesLoadSuccess(
+            selectedDriveId: driveId,
+            userDrives: [],
+            sharedDrives: [],
+            drivesWithAlerts: [],
+            canCreateNewDrive: canCreateNewDrive);
+    emit(state);
   }
 
   @override

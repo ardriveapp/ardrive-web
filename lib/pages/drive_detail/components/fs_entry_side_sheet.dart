@@ -2,23 +2,26 @@ part of '../drive_detail_page.dart';
 
 class FsEntrySideSheet extends StatelessWidget {
   final String driveId;
-  final String? folderId;
-  final String? fileId;
-
-  FsEntrySideSheet({required this.driveId, this.folderId, this.fileId});
+  final Privacy drivePrivacy;
+  final SelectedItem? maybeSelectedItem;
+  FsEntrySideSheet({
+    required this.driveId,
+    required this.drivePrivacy,
+    this.maybeSelectedItem,
+  });
 
   @override
   Widget build(BuildContext context) => Drawer(
         elevation: 1,
         child: BlocProvider<FsEntryInfoCubit>(
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
-          key: ValueKey(driveId +
-              ([folderId, fileId].firstWhere((e) => e != null,
-                  orElse: () => Random().nextInt(1000).toString())!)),
+          key: ValueKey(
+            driveId +
+                '${maybeSelectedItem?.id ?? Random().nextInt(1000).toString()}',
+          ),
           create: (context) => FsEntryInfoCubit(
             driveId: driveId,
-            folderId: folderId,
-            fileId: fileId,
+            maybeSelectedItem: maybeSelectedItem,
             driveDao: context.read<DriveDao>(),
           ),
           child: DefaultTabController(
@@ -40,9 +43,13 @@ class FsEntrySideSheet extends StatelessWidget {
                           ),
                         ),
                         TabBar(
-                          tabs: const [
-                            Tab(text: 'DETAILS'),
-                            Tab(text: 'ACTIVITY'),
+                          tabs: [
+                            Tab(
+                                text: appLocalizationsOf(context)
+                                    .itemDetailsEmphasized),
+                            Tab(
+                                text: appLocalizationsOf(context)
+                                    .itemActivityEmphasized)
                           ],
                         ),
                         Expanded(
@@ -79,62 +86,125 @@ class FsEntrySideSheet extends StatelessWidget {
         rows: [
           if (state is FsEntryInfoSuccess<Drive>) ...{
             DataRow(cells: [
-              DataCell(Text('Drive ID')),
+              DataCell(Text(appLocalizationsOf(context).itemContains)),
+              DataCell(
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    fileAndFolderCountsToString(
+                      fileCount: (state as FsEntryDriveInfoSuccess)
+                          .rootFolderTree
+                          .getRecursiveFileCount(),
+                      folderCount:
+                          state.rootFolderTree.getRecursiveSubFolderCount(),
+                      localizations: appLocalizationsOf(context),
+                    ),
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ),
+            ]),
+            DataRow(cells: [
+              DataCell(Text(appLocalizationsOf(context).driveID)),
               DataCell(
                 CopyIconButton(
-                  tooltip: 'Copy Drive ID',
+                  tooltip: appLocalizationsOf(context).copyDriveID,
                   value: state.entry.id,
                 ),
               ),
             ]),
             DataRow(cells: [
-              DataCell(Text('Privacy')),
+              DataCell(Text(appLocalizationsOf(context).privacy)),
               // Capitalise the privacy enums of drives for display.
               DataCell(
-                Text(
-                  state.entry.privacy == DrivePrivacy.private
-                      ? 'Private'
-                      : 'Public',
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    state.entry.privacy == DrivePrivacy.private
+                        ? appLocalizationsOf(context).private
+                        : appLocalizationsOf(context).public,
+                  ),
                 ),
               )
             ]),
-          } else if (state is FsEntryInfoSuccess<FolderEntry>) ...{
+          } else if (state is FsEntryInfoSuccess<FolderNode>) ...{
             DataRow(cells: [
-              DataCell(Text('Folder ID')),
+              DataCell(Text(appLocalizationsOf(context).itemContains)),
+              DataCell(
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    fileAndFolderCountsToString(
+                      folderCount: state.entry.getRecursiveSubFolderCount(),
+                      fileCount: state.entry.getRecursiveFileCount(),
+                      localizations: appLocalizationsOf(context),
+                    ),
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ),
+            ]),
+            DataRow(cells: [
+              DataCell(Text(appLocalizationsOf(context).folderID)),
               DataCell(
                 CopyIconButton(
-                  tooltip: 'Copy Folder ID',
-                  value: state.entry.id,
+                  tooltip: appLocalizationsOf(context).copyFolderID,
+                  value: state.entry.folder.id,
                 ),
               ),
             ]),
           } else if (state is FsEntryInfoSuccess<FileEntry>) ...{
             DataRow(cells: [
-              DataCell(Text('File ID')),
+              DataCell(Text(appLocalizationsOf(context).fileID)),
               DataCell(
                 CopyIconButton(
-                  tooltip: 'Copy File ID',
+                  tooltip: appLocalizationsOf(context).copyFileID,
                   value: state.entry.id,
                 ),
               ),
             ]),
             DataRow(cells: [
-              DataCell(Text('Size')),
-              DataCell(Text(filesize(state.entry.size)))
+              DataCell(Text(appLocalizationsOf(context).fileSize)),
+              DataCell(
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(filesize(state.entry.size)),
+                ),
+              )
             ]),
             DataRow(cells: [
-              DataCell(Text('Last modified')),
+              DataCell(Text(appLocalizationsOf(context).lastModified)),
               DataCell(
-                  Text(yMMdDateFormatter.format(state.entry.lastModifiedDate)))
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    yMMdDateFormatter.format(state.entry.lastModifiedDate),
+                  ),
+                ),
+              )
             ]),
           },
           DataRow(cells: [
-            DataCell(Text('Last updated')),
-            DataCell(Text(yMMdDateFormatter.format(state.lastUpdated))),
+            DataCell(Text(appLocalizationsOf(context).lastUpdated)),
+            DataCell(
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  yMMdDateFormatter.format(state.lastUpdated),
+                ),
+              ),
+            ),
           ]),
           DataRow(cells: [
-            DataCell(Text('Date created')),
-            DataCell(Text(yMMdDateFormatter.format(state.dateCreated))),
+            DataCell(Text(appLocalizationsOf(context).dateCreated)),
+            DataCell(
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  yMMdDateFormatter.format(state.dateCreated),
+                ),
+              ),
+            ),
           ]),
         ],
       );
@@ -142,15 +212,14 @@ class FsEntrySideSheet extends StatelessWidget {
       BlocProvider(
         create: (context) => FsEntryActivityCubit(
           driveId: driveId,
-          folderId: folderId,
-          fileId: fileId,
           driveDao: context.read<DriveDao>(),
+          maybeSelectedItem: maybeSelectedItem,
         ),
         child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
           builder: (context, state) {
             if (state is FsEntryActivitySuccess) {
               if (state.revisions.isNotEmpty) {
-                final revision = state.revisions.last;
+                final revision = state.revisions.first;
                 return DataTable(
                   // Hide the data table header.
 
@@ -161,51 +230,91 @@ class FsEntrySideSheet extends StatelessWidget {
                     DataColumn(label: Text('')),
                   ],
                   rows: [
-                    if (infoState is FsEntryInfoSuccess<Drive>) ...{
+                    if (infoState is FsEntryDriveInfoSuccess) ...{
                       DataRow(cells: [
-                        DataCell(Text('Metadata Tx ID')),
+                        DataCell(Text(appLocalizationsOf(context).driveTxID)),
                         DataCell(
                           CopyIconButton(
-                            tooltip: 'Copy Metadata Tx ID',
+                            tooltip: appLocalizationsOf(context).copyDriveTxID,
                             value: revision.metadataTx.id,
                           ),
                         ),
                       ]),
-                    } else if (infoState
-                        is FsEntryInfoSuccess<FolderEntry>) ...{
                       DataRow(cells: [
-                        DataCell(Text('Metadata Tx ID')),
+                        DataCell(
+                            Text(appLocalizationsOf(context).rootFolderTxID)),
                         DataCell(
                           CopyIconButton(
-                            tooltip: 'Copy Metadata Tx ID',
+                            tooltip:
+                                appLocalizationsOf(context).copyRootFolderTxID,
+                            value: infoState.rootFolderRevision.metadataTxId,
+                          ),
+                        ),
+                      ]),
+                      if (revision.bundledIn != null)
+                        DataRow(cells: [
+                          DataCell(
+                              Text(appLocalizationsOf(context).bundleTxID)),
+                          DataCell(
+                            CopyIconButton(
+                              tooltip:
+                                  appLocalizationsOf(context).copyBundleTxID,
+                              value: revision.bundledIn,
+                            ),
+                          ),
+                        ]),
+                    } else if (infoState is FsEntryInfoSuccess<FolderNode>) ...{
+                      DataRow(cells: [
+                        DataCell(
+                            Text(appLocalizationsOf(context).metadataTxID)),
+                        DataCell(
+                          CopyIconButton(
+                            tooltip:
+                                appLocalizationsOf(context).copyMetadataTxID,
                             value: revision.metadataTx.id,
                           ),
                         ),
                       ]),
                     } else if (infoState is FsEntryInfoSuccess<FileEntry>) ...{
                       DataRow(cells: [
-                        DataCell(Text('Metadata Tx ID')),
+                        DataCell(
+                            Text(appLocalizationsOf(context).metadataTxID)),
                         DataCell(
                           CopyIconButton(
-                            tooltip: 'Copy Metadata Tx ID',
+                            tooltip:
+                                appLocalizationsOf(context).copyMetadataTxID,
                             value: revision.metadataTx.id,
                           ),
                         ),
                       ]),
                       DataRow(cells: [
-                        DataCell(Text('Data Tx ID')),
+                        DataCell(Text(appLocalizationsOf(context).dataTxID)),
                         DataCell(
                           CopyIconButton(
-                            tooltip: 'Copy Data Tx ID',
+                            tooltip: appLocalizationsOf(context).copyDataTxID,
                             value: revision.dataTx.id,
                           ),
                         ),
                       ]),
+                      if (revision.bundledIn != null)
+                        DataRow(cells: [
+                          DataCell(
+                              Text(appLocalizationsOf(context).bundleTxID)),
+                          DataCell(
+                            CopyIconButton(
+                              tooltip:
+                                  appLocalizationsOf(context).copyBundleTxID,
+                              value: revision.bundledIn,
+                            ),
+                          ),
+                        ]),
                     },
                   ],
                 );
               } else {
-                return Center(child: Text('This item is being processed...'));
+                return Center(
+                    child:
+                        Text(appLocalizationsOf(context).itemIsBeingProcesed));
               }
             } else {
               return const Center(child: CircularProgressIndicator());
@@ -220,8 +329,7 @@ class FsEntrySideSheet extends StatelessWidget {
         child: BlocProvider(
           create: (context) => FsEntryActivityCubit(
             driveId: driveId,
-            folderId: folderId,
-            fileId: fileId,
+            maybeSelectedItem: maybeSelectedItem,
             driveDao: context.read<DriveDao>(),
           ),
           child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
@@ -239,15 +347,16 @@ class FsEntrySideSheet extends StatelessWidget {
                       if (revision is DriveRevisionWithTransaction) {
                         switch (revision.action) {
                           case RevisionAction.create:
-                            content = Text(
-                                'This drive was created with the name ${revision.name}.');
+                            content = Text(appLocalizationsOf(context)
+                                .driveWasCreatedWithName(revision.name));
                             break;
                           case RevisionAction.rename:
-                            content = Text(
-                                'This drive was renamed to ${revision.name}.');
+                            content = Text(appLocalizationsOf(context)
+                                .driveWasRenamed(revision.name));
                             break;
                           default:
-                            content = Text('This drive was modified');
+                            content = Text(
+                                appLocalizationsOf(context).driveWasModified);
                         }
 
                         dateCreatedSubtitle = Text(
@@ -258,18 +367,20 @@ class FsEntrySideSheet extends StatelessWidget {
                       } else if (revision is FolderRevisionWithTransaction) {
                         switch (revision.action) {
                           case RevisionAction.create:
-                            content = Text(
-                                'This folder was created with the name ${revision.name}.');
+                            content = Text(appLocalizationsOf(context)
+                                .folderWasCreatedWithName(revision.name));
                             break;
                           case RevisionAction.rename:
-                            content = Text(
-                                'This folder was renamed to ${revision.name}.');
+                            content = Text(appLocalizationsOf(context)
+                                .folderWasRenamed(revision.name));
                             break;
                           case RevisionAction.move:
-                            content = Text('This folder was moved.');
+                            content = Text(
+                                appLocalizationsOf(context).folderWasMoved);
                             break;
                           default:
-                            content = Text('This folder was modified');
+                            content = Text(
+                                appLocalizationsOf(context).folderWasModified);
                         }
 
                         dateCreatedSubtitle = Text(
@@ -278,24 +389,68 @@ class FsEntrySideSheet extends StatelessWidget {
                         revisionConfirmationStatus =
                             revision.confirmationStatus;
                       } else if (revision is FileRevisionWithTransactions) {
+                        final previewOrDownloadButton = InkWell(
+                          onTap: () {
+                            downloadOrPreviewRevision(
+                              drivePrivacy: drivePrivacy,
+                              context: context,
+                              revision: revision,
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: drivePrivacy == DrivePrivacy.private
+                                  ? [
+                                      Text(
+                                          appLocalizationsOf(context).download),
+                                      SizedBox(width: 4),
+                                      Icon(Icons.download),
+                                    ]
+                                  : [
+                                      Text(appLocalizationsOf(context).preview),
+                                      SizedBox(width: 4),
+                                      Icon(Icons.open_in_new)
+                                    ],
+                            ),
+                          ),
+                        );
+
                         switch (revision.action) {
                           case RevisionAction.create:
-                            content = Text(
-                                'This file was created with the name ${revision.name}.');
+                            content = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  appLocalizationsOf(context)
+                                      .fileWasCreatedWithName(revision.name),
+                                ),
+                                previewOrDownloadButton,
+                              ],
+                            );
                             break;
                           case RevisionAction.rename:
-                            content = Text(
-                                'This file was renamed to ${revision.name}.');
+                            content = Text(appLocalizationsOf(context)
+                                .fileWasRenamed(revision.name));
                             break;
                           case RevisionAction.move:
-                            content = Text('This file was moved.');
+                            content =
+                                Text(appLocalizationsOf(context).fileWasMoved);
                             break;
                           case RevisionAction.uploadNewVersion:
-                            content = Text(
-                                'A new version of this file was uploaded.');
+                            content = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(appLocalizationsOf(context)
+                                    .fileHadANewRevision),
+                                previewOrDownloadButton,
+                              ],
+                            );
                             break;
                           default:
-                            content = Text('This file was modified');
+                            content = Text(
+                                appLocalizationsOf(context).fileWasModified);
                         }
 
                         dateCreatedSubtitle = Text(
@@ -309,19 +464,19 @@ class FsEntrySideSheet extends StatelessWidget {
                       if (revisionConfirmationStatus ==
                           TransactionStatus.pending) {
                         statusIcon = Tooltip(
-                          message: 'Pending',
+                          message: appLocalizationsOf(context).pending,
                           child: const Icon(Icons.pending),
                         );
                       } else if (revisionConfirmationStatus ==
                           TransactionStatus.confirmed) {
                         statusIcon = Tooltip(
-                          message: 'Confirmed',
+                          message: appLocalizationsOf(context).confirmed,
                           child: const Icon(Icons.check),
                         );
                       } else if (revisionConfirmationStatus ==
                           TransactionStatus.failed) {
                         statusIcon = Tooltip(
-                          message: 'Failed',
+                          message: appLocalizationsOf(context).failed,
                           child: const Icon(Icons.error_outline),
                         );
                       }
@@ -342,7 +497,9 @@ class FsEntrySideSheet extends StatelessWidget {
                     itemCount: state.revisions.length,
                   );
                 } else {
-                  return Center(child: Text('This item is being processed...'));
+                  return Center(
+                      child: Text(
+                          appLocalizationsOf(context).itemIsBeingProcesed));
                 }
               } else {
                 return const Center(child: CircularProgressIndicator());
@@ -353,6 +510,23 @@ class FsEntrySideSheet extends StatelessWidget {
       );
 }
 
+void downloadOrPreviewRevision({
+  required String drivePrivacy,
+  required BuildContext context,
+  required FileRevisionWithTransactions revision,
+}) {
+  if (drivePrivacy == DrivePrivacy.private) {
+    promptToDownloadProfileFile(
+      context: context,
+      driveId: revision.driveId,
+      fileId: revision.fileId,
+      dataTxId: revision.dataTxId,
+    );
+  } else {
+    context.read<DriveDetailCubit>().launchPreview(revision.dataTxId);
+  }
+}
+
 class CopyIconButton extends StatelessWidget {
   final String value;
   final String tooltip;
@@ -360,9 +534,12 @@ class CopyIconButton extends StatelessWidget {
   CopyIconButton({required this.value, required this.tooltip});
 
   @override
-  Widget build(BuildContext context) => IconButton(
-        icon: Icon(Icons.copy, color: Colors.black54),
-        tooltip: tooltip,
-        onPressed: () => Clipboard.setData(ClipboardData(text: value)),
+  Widget build(BuildContext context) => Container(
+        alignment: Alignment.centerRight,
+        child: IconButton(
+          icon: Icon(Icons.copy, color: Colors.black54),
+          tooltip: tooltip,
+          onPressed: () => Clipboard.setData(ClipboardData(text: value)),
+        ),
       );
 }

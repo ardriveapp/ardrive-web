@@ -75,9 +75,10 @@ class FileEntity extends Entity {
         ..lastModifiedDate ??= commitTime
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
+        ..bundledIn = transaction.bundledIn?.id
         ..createdAt = commitTime;
     } catch (_) {
-      throw EntityTransactionParseException();
+      throw EntityTransactionParseException(transactionId: transaction.id);
     }
   }
 
@@ -90,7 +91,6 @@ class FileEntity extends Entity {
         size != null);
 
     tx
-      ..addApplicationTags(unixTime: createdAt)
       ..addArFsTag()
       ..addTag(EntityTag.entityType, EntityType.file)
       ..addTag(EntityTag.driveId, driveId!)

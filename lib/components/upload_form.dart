@@ -1,43 +1,49 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
-import 'package:file_selector/file_selector.dart' as file_selector;
+import 'package:ardrive/utils/upload_plan_utils.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToUploadFile(
   BuildContext context, {
   required String driveId,
   required String folderId,
-  bool allowSelectMultiple = false,
 }) async {
-  final selectedFiles = allowSelectMultiple
-      ? await file_selector.openFiles()
-      : [await file_selector.openFile()].where((file) => file != null) as List<file_selector.XFile>;
-
+  final selectedFiles = await openFiles();
   if (selectedFiles.isEmpty) {
     return;
   }
-
-  await showDialog(
-    context: context,
-    builder: (_) => BlocProvider<UploadCubit>(
-      create: (context) => UploadCubit(
-        driveId: driveId,
-        folderId: folderId,
-        files: selectedFiles,
-        arweave: context.read<ArweaveService>(),
-        pst: context.read<PstService>(),
-        profileCubit: context.read<ProfileCubit>(),
-        driveDao: context.read<DriveDao>(),
+  await showCongestionDependentModalDialog(
+    context,
+    () => showDialog(
+      context: context,
+      builder: (_) => BlocProvider<UploadCubit>(
+        create: (context) => UploadCubit(
+          uploadPlanUtils: UploadPlanUtils(
+            arweave: context.read<ArweaveService>(),
+            driveDao: context.read<DriveDao>(),
+          ),
+          driveId: driveId,
+          folderId: folderId,
+          files: selectedFiles,
+          profileCubit: context.read<ProfileCubit>(),
+          arweave: context.read<ArweaveService>(),
+          pst: context.read<PstService>(),
+          driveDao: context.read<DriveDao>(),
+        )..startUploadPreparation(),
+        child: UploadForm(),
       ),
-      child: UploadForm(),
+      barrierDismissible: false,
     ),
-    barrierDismissible: false,
   );
 }
 
@@ -47,6 +53,8 @@ class UploadForm extends StatelessWidget {
         listener: (context, state) async {
           if (state is UploadComplete || state is UploadWalletMismatch) {
             Navigator.pop(context);
+          } else if (state is UploadPreparationInitialized) {
+            await context.read<UploadCubit>().checkConflictingFolders();
           }
           if (state is UploadWalletMismatch) {
             Navigator.pop(context);
@@ -54,10 +62,11 @@ class UploadForm extends StatelessWidget {
           }
         },
         builder: (context, state) {
-          if (state is UploadFileConflict) {
+          if (state is UploadFolderNameConflict) {
             return AppDialog(
-              title:
-                  '${state.conflictingFileNames.length} conflicting file(s) found',
+              title: appLocalizationsOf(context).duplicateFolders(
+                state.conflictingFileNames.length,
+              ),
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -65,31 +74,95 @@ class UploadForm extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      state.conflictingFileNames.length == 1
-                          ? 'A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?'
-                          : '${state.conflictingFileNames.length} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?',
+                      appLocalizationsOf(context)
+                          .foldersWithTheSameNameAlreadyExists(
+                        state.conflictingFileNames.length,
+                      ),
                     ),
                     const SizedBox(height: 16),
-                    Text('Conflicting files:'),
+                    Text(appLocalizationsOf(context).conflictingFiles),
                     const SizedBox(height: 8),
-                    Text(state.conflictingFileNames.join(', ')),
+                    ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 320),
+                        child: SingleChildScrollView(
+                            child:
+                                Text(state.conflictingFileNames.join(', ')))),
                   ],
                 ),
               ),
               actions: <Widget>[
+                if (!state.areAllFilesConflicting)
+                  TextButton(
+                    style: ButtonStyle(
+                        fixedSize:
+                            MaterialStateProperty.all(Size.fromWidth(140))),
+                    onPressed: () =>
+                        context.read<UploadCubit>().checkConflictingFiles(),
+                    child: Text(appLocalizationsOf(context).skipEmphasized),
+                  ),
                 TextButton(
+                  style: ButtonStyle(
+                      fixedSize:
+                          MaterialStateProperty.all(Size.fromWidth(140))),
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text('CANCEL'),
-                ),
-                ElevatedButton(
-                  onPressed: () => context.read<UploadCubit>().prepareUpload(),
-                  child: Text('CONTINUE'),
+                  child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
               ],
             );
+          } else if (state is UploadFileConflict) {
+            return AppDialog(
+                title: appLocalizationsOf(context)
+                    .duplicateFiles(state.conflictingFileNames.length),
+                content: SizedBox(
+                  width: kMediumDialogWidth,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        appLocalizationsOf(context)
+                            .filesWithTheSameNameAlreadyExists(
+                          state.conflictingFileNames.length,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(appLocalizationsOf(context).conflictingFiles),
+                      const SizedBox(height: 8),
+                      ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 320),
+                          child: SingleChildScrollView(
+                              child:
+                                  Text(state.conflictingFileNames.join(', ')))),
+                    ],
+                  ),
+                ),
+                actions: <Widget>[
+                  if (!state.areAllFilesConflicting)
+                    TextButton(
+                      onPressed: () => context
+                          .read<UploadCubit>()
+                          .prepareUploadPlanAndCostEstimates(
+                              conflictingFileAction:
+                                  ConflictingFileActions.Skip),
+                      child: Text(appLocalizationsOf(context).skipEmphasized),
+                    ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text(appLocalizationsOf(context).cancelEmphasized),
+                  ),
+                  TextButton(
+                    onPressed: () => context
+                        .read<UploadCubit>()
+                        .prepareUploadPlanAndCostEstimates(
+                            conflictingFileAction:
+                                ConflictingFileActions.Replace),
+                    child: Text(appLocalizationsOf(context).replaceEmphasized),
+                  ),
+                ]);
           } else if (state is UploadFileTooLarge) {
             return AppDialog(
-              title: '${state.tooLargeFileNames.length} file(s) too large',
+              title: appLocalizationsOf(context)
+                  .filesTooLarge(state.tooLargeFileNames.length),
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -97,11 +170,14 @@ class UploadForm extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ArDrive on web currently only supports file uploads smaller than '
-                      '${state.isPrivate ? '100 MB for private drives' : '1.25 GB for public drives'}.',
+                      state.isPrivate
+                          ? appLocalizationsOf(context)
+                              .filesTooLargeExplanationPrivate
+                          : appLocalizationsOf(context)
+                              .filesTooLargeExplanationPublic,
                     ),
                     const SizedBox(height: 16),
-                    Text('Too large for upload:'),
+                    Text(appLocalizationsOf(context).tooLargeForUpload),
                     const SizedBox(height: 8),
                     Text(state.tooLargeFileNames.join(', ')),
                   ],
@@ -110,13 +186,14 @@ class UploadForm extends StatelessWidget {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text('OK'),
+                  child: Text(appLocalizationsOf(context).ok),
                 ),
               ],
             );
-          } else if (state is UploadPreparationInProgress) {
+          } else if (state is UploadPreparationInProgress ||
+              state is UploadPreparationInitialized) {
             return AppDialog(
-              title: 'Preparing upload...',
+              title: appLocalizationsOf(context).preparingUpload,
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -124,30 +201,43 @@ class UploadForm extends StatelessWidget {
                   children: <Widget>[
                     const CircularProgressIndicator(),
                     const SizedBox(height: 16),
-                    Text('This may take a while...'),
+                    if (state is UploadPreparationInProgress &&
+                        state.isArConnect)
+                      Text(appLocalizationsOf(context).arConnectRemainOnThisTab)
+                    else
+                      Text(appLocalizationsOf(context).thisMayTakeAWhile)
                   ],
                 ),
               ),
             );
           } else if (state is UploadPreparationFailure) {
             return AppDialog(
-              title: 'Failed to prepare file upload',
+              title: appLocalizationsOf(context).failedToPrepareFileUpload,
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Text(
-                  'An error occured while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.',
+                  appLocalizationsOf(context)
+                      .failedToPrepareFileUploadExplanation,
                 ),
               ),
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text('CLOSE'),
+                  child: Text(appLocalizationsOf(context).closeEmphasized),
                 ),
               ],
             );
           } else if (state is UploadReady) {
+            final numberOfFilesInBundles =
+                state.uploadPlan.bundleUploadHandles.isNotEmpty
+                    ? state.uploadPlan.bundleUploadHandles
+                        .map((e) => e.numberOfFiles)
+                        .reduce((value, element) => value += element)
+                    : 0;
+            final numberOfV2Files = state.uploadPlan.v2FileUploadHandles.length;
             return AppDialog(
-              title: 'Upload ${state.files.length} file(s)',
+              title: appLocalizationsOf(context)
+                  .uploadNFiles(numberOfFilesInBundles + numberOfV2Files),
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -160,12 +250,23 @@ class UploadForm extends StatelessWidget {
                         child: ListView(
                           shrinkWrap: true,
                           children: [
-                            for (final file in state.files) ...{
+                            for (final file in state
+                                .uploadPlan.v2FileUploadHandles.values) ...{
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(file.entity.name!),
                                 subtitle: Text(filesize(file.size)),
                               ),
+                            },
+                            for (final bundle
+                                in state.uploadPlan.bundleUploadHandles) ...{
+                              for (final fileEntity in bundle.fileEntities) ...{
+                                ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: Text(fileEntity.name!),
+                                  subtitle: Text(filesize(fileEntity.size)),
+                                ),
+                              },
                             },
                           ],
                         ),
@@ -176,11 +277,14 @@ class UploadForm extends StatelessWidget {
                     Text.rich(
                       TextSpan(
                         children: [
-                          TextSpan(text: 'Cost: ${state.arUploadCost} AR'),
-                          if (state.usdUploadCost != null)
+                          TextSpan(
+                            text: appLocalizationsOf(context)
+                                .cost(state.costEstimate.arUploadCost),
+                          ),
+                          if (state.costEstimate.usdUploadCost != null)
                             TextSpan(
-                                text: state.usdUploadCost! >= 0.01
-                                    ? ' (~${state.usdUploadCost!.toStringAsFixed(2)} USD)'
+                                text: state.costEstimate.usdUploadCost! >= 0.01
+                                    ? ' (~${state.costEstimate.usdUploadCost!.toStringAsFixed(2)} USD)'
                                     : ' (< 0.01 USD)'),
                         ],
                         style: Theme.of(context).textTheme.bodyText1,
@@ -188,12 +292,15 @@ class UploadForm extends StatelessWidget {
                     ),
                     if (state.uploadIsPublic) ...{
                       const SizedBox(height: 8),
-                      Text('These file(s) will be uploaded publicly.'),
+                      Text(
+                        appLocalizationsOf(context).filesWillBeUploadedPublicly(
+                            numberOfFilesInBundles + numberOfV2Files),
+                      ),
                     },
                     if (!state.sufficientArBalance) ...{
                       const SizedBox(height: 8),
                       Text(
-                        'Insufficient AR for upload.',
+                        appLocalizationsOf(context).insufficientARForUpload,
                         style: DefaultTextStyle.of(context)
                             .style
                             .copyWith(color: Theme.of(context).errorColor),
@@ -205,20 +312,51 @@ class UploadForm extends StatelessWidget {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text('CANCEL'),
+                  child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
                 ElevatedButton(
                   onPressed: state.sufficientArBalance
-                      ? () => context.read<UploadCubit>().startUpload()
+                      ? () => context.read<UploadCubit>().startUpload(
+                            uploadPlan: state.uploadPlan,
+                            costEstimate: state.costEstimate,
+                          )
                       : null,
-                  child: Text('UPLOAD'),
+                  child: Text(appLocalizationsOf(context).uploadEmphasized),
                 ),
               ],
             );
+          } else if (state is UploadSigningInProgress) {
+            return AppDialog(
+              title: state.uploadPlan.bundleUploadHandles.isNotEmpty
+                  ? appLocalizationsOf(context).bundlingAndSigningUpload
+                  : appLocalizationsOf(context).signingUpload,
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    if (state.isArConnect)
+                      Text(appLocalizationsOf(context).arConnectRemainOnThisTab)
+                    else
+                      Text(appLocalizationsOf(context).thisMayTakeAWhile)
+                  ],
+                ),
+              ),
+            );
           } else if (state is UploadInProgress) {
+            final numberOfFilesInBundles =
+                state.uploadPlan.bundleUploadHandles.isNotEmpty
+                    ? state.uploadPlan.bundleUploadHandles
+                        .map((e) => e.numberOfFiles)
+                        .reduce((value, element) => value += element)
+                    : 0;
+            final numberOfV2Files = state.uploadPlan.v2FileUploadHandles.length;
             return AppDialog(
               dismissable: false,
-              title: 'Uploading ${state.files!.length} file(s)...',
+              title: appLocalizationsOf(context)
+                  .uploadingNFiles(numberOfFilesInBundles + numberOfV2Files),
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: ConstrainedBox(
@@ -227,7 +365,8 @@ class UploadForm extends StatelessWidget {
                     child: ListView(
                       shrinkWrap: true,
                       children: [
-                        for (final file in state.files!) ...{
+                        for (final file
+                            in state.uploadPlan.v2FileUploadHandles.values) ...{
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(file.entity.name!),
@@ -238,6 +377,27 @@ class UploadForm extends StatelessWidget {
                                 // small uploads might never report a progress.
                                 value: file.uploadProgress != 0
                                     ? file.uploadProgress
+                                    : null),
+                          ),
+                        },
+                        for (final bundle
+                            in state.uploadPlan.bundleUploadHandles) ...{
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (var fileEntity in bundle.fileEntities)
+                                  Text(fileEntity.name!)
+                              ],
+                            ),
+                            subtitle: Text(
+                                '${filesize(bundle.uploadedSize)}/${filesize(bundle.size)}'),
+                            trailing: CircularProgressIndicator(
+                                // Show an indeterminate progress indicator if the upload hasn't started yet as
+                                // small uploads might never report a progress.
+                                value: bundle.uploadProgress != 0
+                                    ? bundle.uploadProgress
                                     : null),
                           ),
                         },

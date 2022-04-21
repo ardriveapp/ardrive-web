@@ -2,29 +2,34 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_rename/drive_rename_cubit.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
+import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToRenameDrive(
   BuildContext context, {
   required String driveId,
 }) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider(
-        create: (context) => DriveRenameCubit(
-          driveId: driveId,
-          arweave: context.read<ArweaveService>(),
-          driveDao: context.read<DriveDao>(),
-          profileCubit: context.read<ProfileCubit>(),
-          syncCubit: context.read<SyncCubit>(),
+    showCongestionDependentModalDialog(
+      context,
+      () => showDialog(
+        context: context,
+        builder: (_) => BlocProvider(
+          create: (context) => DriveRenameCubit(
+            driveId: driveId,
+            arweave: context.read<ArweaveService>(),
+            driveDao: context.read<DriveDao>(),
+            profileCubit: context.read<ProfileCubit>(),
+            syncCubit: context.read<SyncCubit>(),
+          ),
+          child: DriveRenameForm(),
         ),
-        child: DriveRenameForm(),
       ),
     );
 
@@ -34,7 +39,8 @@ class DriveRenameForm extends StatelessWidget {
       BlocConsumer<DriveRenameCubit, DriveRenameState>(
         listener: (context, state) {
           if (state is DriveRenameInProgress) {
-            showProgressDialog(context, 'RENAMING DRIVE...');
+            showProgressDialog(
+                context, appLocalizationsOf(context).renamingDriveEmphasized);
           } else if (state is DriveRenameSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
@@ -43,7 +49,7 @@ class DriveRenameForm extends StatelessWidget {
           }
         },
         builder: (context, state) => AppDialog(
-          title: 'RENAME DRIVE',
+          title: appLocalizationsOf(context).renameDriveEmphasized,
           content: state is! FsEntryRenameInitializing
               ? SizedBox(
                   width: kMediumDialogWidth,
@@ -52,9 +58,11 @@ class DriveRenameForm extends StatelessWidget {
                     child: ReactiveTextField(
                       formControlName: 'name',
                       autofocus: true,
-                      decoration: InputDecoration(labelText: 'Drive name'),
+                      decoration: InputDecoration(
+                          labelText: appLocalizationsOf(context).driveName),
                       showErrors: (control) => control.invalid,
-                      validationMessages: (_) => kValidationMessages,
+                      validationMessages: (_) =>
+                          kValidationMessages(appLocalizationsOf(context)),
                     ),
                   ),
                 )
@@ -62,11 +70,11 @@ class DriveRenameForm extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('CANCEL'),
+              child: Text(appLocalizationsOf(context).cancelEmphasized),
             ),
             ElevatedButton(
               onPressed: () => context.read<DriveRenameCubit>().submit(),
-              child: Text('RENAME'),
+              child: Text(appLocalizationsOf(context).renameEmphasized),
             ),
           ],
         ),
