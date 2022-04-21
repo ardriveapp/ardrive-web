@@ -20,6 +20,21 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<SyncCubit>().drivesSyncedController.stream.listen((event) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Drive synced: ' + event),
+          duration: Duration(milliseconds: 1000),
+          width: MediaQuery.of(context).size.width * 0.25,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    });
+  }
+
   bool _showProfileOverlay = false;
   bool _showWalletSwitchDialog = true;
   @override
@@ -95,15 +110,33 @@ class _AppShellState extends State<AppShell> {
                                 builder: (BuildContext context,
                                     AsyncSnapshot snapshot) {
                                   if (snapshot.data ?? false) {
-                                    return ProgressDialog(
-                                      title: appLocalizationsOf(context)
-                                          .syncingPleaseRemainOnThisTab,
-                                    );
+                                    return StreamBuilder<double>(
+                                        stream: context
+                                            .read<SyncCubit>()
+                                            .syncProgressController
+                                            .stream,
+                                        builder: (context, snapshot) {
+                                          return ProgressDialog(
+                                            title: appLocalizationsOf(context)
+                                                    .syncingPleaseRemainOnThisTab +
+                                                ' ' +
+                                                '${snapshot.hasData ? (snapshot.data! * 100).toStringAsFixed(2) + '%' : ''} ',
+                                          );
+                                        });
                                   } else {
-                                    return ProgressDialog(
-                                      title: appLocalizationsOf(context)
-                                          .syncingPleaseWait,
-                                    );
+                                  return StreamBuilder<double>(
+                                        stream: context
+                                            .read<SyncCubit>()
+                                            .syncProgressController
+                                            .stream,
+                                        builder: (context, snapshot) {
+                                          return ProgressDialog(
+                                            title: appLocalizationsOf(context)
+                                                    .syncingPleaseWait +
+                                                ' ' +
+                                                '${snapshot.hasData ? (snapshot.data! * 100).toStringAsFixed(2) + '%' : ''} ',
+                                          );
+                                        });
                                   }
                                 },
                               );
@@ -115,16 +148,18 @@ class _AppShellState extends State<AppShell> {
               );
           return ScreenTypeLayout(
             desktop: _buildPage(
-              Row(
-                children: [
-                  AppDrawer(),
-                  Expanded(
-                    child: Scaffold(
-                      appBar: _buildAppBar(),
-                      body: widget.page,
+              Scaffold(
+                body: Row(
+                  children: [
+                    AppDrawer(),
+                    Expanded(
+                      child: Scaffold(
+                        appBar: _buildAppBar(),
+                        body: widget.page,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             mobile: _buildPage(

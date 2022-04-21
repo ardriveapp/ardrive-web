@@ -16,7 +16,8 @@ class DriveDetailActionRow extends StatelessWidget {
                 onPressed: () {
                   promptToRenameDrive(context, driveId: state.currentDrive.id);
                 },
-                tooltip: appLocalizationsOf(context).renameDrive,
+                tooltip:
+                    context.ofLocalizations().aFileWithSameNameAlreadyExists,
               ),
             ],
             if (selectedItem == null)

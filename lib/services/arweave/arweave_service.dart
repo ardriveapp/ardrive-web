@@ -97,6 +97,161 @@ class ArweaveService {
     return query.data?.transaction;
   }
 
+  Future<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
+      getAllEntitiesFromDrive(
+    String driveId, {
+    String? after,
+    int? lastBlockHeight,
+    SecretKey? driveKey,
+    String? owner,
+  }) async {
+    final queryEdges =
+        <DriveEntityHistory$Query$TransactionConnection$TransactionEdge>[];
+    final entityTxs = <
+        DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>[];
+    var finishProcess = false;
+    int? _lastBlockHeight;
+    var cursor = after;
+
+    print('getAllEntitiesFromDrive: $driveId....');
+
+    while (!finishProcess) {
+      // await Future.delayed(Duration(milliseconds: 100));
+
+      final driveEntityHistoryQuery = await _gql.execute(
+        DriveEntityHistoryQuery(
+          variables: DriveEntityHistoryArguments(
+            driveId: driveId,
+            lastBlockHeight: _lastBlockHeight ?? lastBlockHeight,
+            after: cursor,
+          ),
+        ),
+      );
+
+      queryEdges.addAll(driveEntityHistoryQuery.data!.transactions.edges);
+      entityTxs.addAll(driveEntityHistoryQuery.data!.transactions.edges
+          .map((e) => e.node)
+          .toList());
+
+      cursor = queryEdges.last.cursor;
+      if (entityTxs.isNotEmpty) {
+        _lastBlockHeight = entityTxs.last.block?.height ?? lastBlockHeight;
+      }
+
+      if (driveEntityHistoryQuery.data!.transactions.edges.length < 100) {
+        finishProcess = true;
+      }
+    }
+
+    return queryEdges;
+  }
+
+  Future<DriveEntityHistory> buildDriveEntityHistory(
+      List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>
+          queryEdges,
+      SecretKey? driveKey,
+      String? owner,
+      int lastBlockHeight) async {
+    int counter = 0;
+    final entityTxs = <
+        DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>[];
+    entityTxs.addAll(queryEdges.map((e) => e.node).toList());
+
+    final responses = await Future.wait(
+      entityTxs.map((e) async {
+        // if (counter == 100) {
+        // counter = 0;
+        // await Future.delayed(Duration(milliseconds: 100));
+        // }
+        // ++counter;
+        final res = await client.api.get(e.id);
+
+        return res;
+      }),
+    );
+
+    final blockHistory = <BlockEntities>[];
+    for (var i = 0; i < entityTxs.length; i++) {
+      final transaction = entityTxs[i];
+
+      // If we encounter a transaction that has yet to be mined, we stop moving through history.
+      // We can continue once the transaction is mined.
+      if (transaction.block == null) {
+        // TODO: Revisit
+        break;
+      }
+
+      if (blockHistory.isEmpty ||
+          transaction.block!.height != blockHistory.last.blockHeight) {
+        blockHistory.add(BlockEntities(transaction.block!.height));
+      }
+
+      try {
+        final entityType = transaction.getTag(EntityTag.entityType);
+        final entityResponse = responses[i];
+
+        if (entityResponse.statusCode != 200) {
+          throw EntityTransactionDataNetworkException(
+            transactionId: transaction.id,
+            statusCode: entityResponse.statusCode,
+            reasonPhrase: entityResponse.reasonPhrase,
+          );
+        }
+
+        final rawEntityData = entityResponse.bodyBytes;
+
+        Entity? entity;
+        if (entityType == EntityType.drive) {
+          entity = await DriveEntity.fromTransaction(
+              transaction, rawEntityData, driveKey);
+        } else if (entityType == EntityType.folder) {
+          entity = await FolderEntity.fromTransaction(
+              transaction, rawEntityData, driveKey);
+        } else if (entityType == EntityType.file) {
+          entity = await FileEntity.fromTransaction(
+            transaction,
+            rawEntityData,
+            driveKey: driveKey,
+          );
+        }
+        //TODO: Revisit
+        if (blockHistory.isEmpty ||
+            transaction.block!.height != blockHistory.last.blockHeight) {
+          blockHistory.add(BlockEntities(transaction.block!.height));
+        }
+
+        blockHistory.last.entities.add(entity);
+
+        // If there are errors in parsing the entity, ignore it.
+      } on EntityTransactionParseException catch (parseException) {
+        print(
+          'Failed to parse transaction '
+          'with id ${parseException.transactionId}',
+        );
+      } on EntityTransactionDataNetworkException catch (fetchException) {
+        print(
+          'Failed to fetch entity data '
+          'for transaction ${fetchException.transactionId}, '
+          'with status ${fetchException.statusCode} '
+          'and reason ${fetchException.reasonPhrase}',
+        );
+      }
+    }
+
+    // Sort the entities in each block by ascending commit time.
+    for (final block in blockHistory) {
+      block.entities.sort((e1, e2) => e1!.createdAt.compareTo(e2!.createdAt));
+      //Remove entities with spoofed owners
+      block.entities.removeWhere((e) => e!.ownerAddress != owner);
+    }
+
+    return DriveEntityHistory(
+      queryEdges.isNotEmpty ? queryEdges.last.cursor : null,
+      blockHistory.isNotEmpty ? blockHistory.last.blockHeight : lastBlockHeight,
+      blockHistory,
+    );
+  }
+
   /// Gets the entity history for a particular drive starting from the specified block height.
   Future<DriveEntityHistory> getNewEntitiesForDrive(
     String driveId, {
@@ -116,8 +271,13 @@ class ArweaveService {
     );
     final queryEdges = driveEntityHistoryQuery.data!.transactions.edges;
     final entityTxs = queryEdges.map((e) => e.node).toList();
+
     final responses = await Future.wait(
-      entityTxs.map((e) => client.api.get(e.id)),
+      entityTxs.map((e) async {
+        print(e);
+        final res = await client.api.get(e.id);
+        return res;
+      }),
     );
 
     final blockHistory = <BlockEntities>[];
