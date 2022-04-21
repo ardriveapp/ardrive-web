@@ -186,7 +186,7 @@ class SyncCubit extends Cubit<SyncState> {
       await Future.wait(driveSyncProcesses);
 
       print('Syncing drives finished.\nDrives quantity: $_drivesCount\n'
-          'The total progress was ${_totalProgress * 100}');
+          'The total progress was ${(_totalProgress * 100).roundToDouble()}');
 
       await createGhosts(ownerAddress: ownerAddress);
 
@@ -267,7 +267,7 @@ class SyncCubit extends Cubit<SyncState> {
   }) async {
     late int entitiesCounter;
     var entitiesSynced = 0;
-    late double driveSyncProgress;
+    var driveSyncProgress = 0.0;
 
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
 
@@ -296,6 +296,18 @@ class SyncCubit extends Cubit<SyncState> {
         lastBlockHeight: lastBlockHeight)
       ..toList();
 
+    if (transactions.isEmpty) {
+      await _driveDao.writeToDrive(DrivesCompanion(
+        id: Value(drive.id),
+        lastBlockHeight: Value(currentBlockheight),
+        syncCursor: Value(null),
+      ));
+
+      /// If there's nothing to sync, we assume that all were synced
+      driveSyncProgress = 1;
+      _totalProgress += driveSyncProgress / _drivesCount;
+    }
+
     final timeSpentGettingAllTransactions = startGetAllTransactionsDateTime
         .difference(DateTime.now())
         .inMilliseconds;
@@ -307,8 +319,6 @@ class SyncCubit extends Cubit<SyncState> {
 
     print(
         'The total number of entities of the drive ${drive.name} to be synced is: $entitiesCounter\n');
-
-    driveSyncProgress = 0;
 
     const pageCount = 200;
 
@@ -377,7 +387,7 @@ class SyncCubit extends Cubit<SyncState> {
                     driveId, latestFileRevisions);
 
             entitiesSynced += newEntities.length;
-            
+
             entitiesSynced -=
                 updatedFoldersById.length + updatedFilesById.length;
 
@@ -429,9 +439,14 @@ class SyncCubit extends Cubit<SyncState> {
           });
         });
 
-    print(
-        'Drive: ${drive.name} sync finishes. The progress was ${driveSyncProgress * 100}\n'
-        'The total progress until now is ${_totalProgress * 100}');
+    print(''' 
+        ${'- - ' * 10}
+        Drive: ${drive.name} sync finishes.\n
+        The progress was:                     ${driveSyncProgress * 100}
+        Total progress until now:             ${(_totalProgress * 100).roundToDouble()}
+        The number of entities to be synced:  $entitiesCounter
+        The Total number of synced entities:  $entitiesSynced
+        ''');
   }
 
   double _calculateDriveProgressPercentage({
@@ -441,12 +456,11 @@ class SyncCubit extends Cubit<SyncState> {
       entitiesSynced / entitiesCount;
 
   double _calculateProgressInTotalPercentage(double currentDriveProgress) =>
-      currentDriveProgress / _drivesCount;
+      (currentDriveProgress / _drivesCount);
 
   double _calculatePercentageProgress(
-      double currentPercentage, double newPercentage) {
-    return newPercentage - currentPercentage;
-  }
+          double currentPercentage, double newPercentage) =>
+      newPercentage - currentPercentage;
 
   FutureOr<void> _paginateProcess<T>(
       {required List<T> list,
