@@ -466,6 +466,10 @@ class SyncCubit extends Cubit<SyncState> {
       {required List<T> list,
       required FutureOr Function(List<T> items) itemsPerPageCallback,
       required int pageCount}) async {
+    if (list.isEmpty) {
+      return;
+    }
+
     final length = list.length;
 
     for (var i = 0; i < length / pageCount; i++) {
