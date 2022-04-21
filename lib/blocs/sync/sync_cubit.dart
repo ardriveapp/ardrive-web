@@ -273,82 +273,95 @@ class SyncCubit extends Cubit<SyncState> {
     final transactions = await _arweave.getAllTransactionsFromDrive(driveId,
         lastBlockHeight: lastBlockHeight)
       ..toList();
-    final transactionListLength = transactions.length;
     const pageCount = 200;
 
     /// Paginate the process in pages of `pageCount`
     ///
     /// It is needed because of close connection issues when made a huge number of requests to get the metadata,
     /// and also to accomplish a better visualization of the sync progress.
-    for (var i = 0; i < transactionListLength / pageCount; i++) {
-      final currentPageOfTransactions =
-          <DriveEntityHistory$Query$TransactionConnection$TransactionEdge>[];
+    await paginateProcess<
+            DriveEntityHistory$Query$TransactionConnection$TransactionEdge>(
+        list: transactions,
+        pageCount: pageCount,
+        itemsPerPageCallback: (items) async {
+          final entityHistory =
+              await _arweave.createDriveEntityHistoryFromTransactions(
+                  items, driveKey, owner, lastBlockHeight);
+
+          // Create entries for all the new revisions of file and folders in this drive.
+          final newEntities = entityHistory.blockHistory
+              .map((b) => b.entities)
+              .expand((entities) => entities);
+
+          // Handle the last page of newEntities, i.e; There's nothing more to sync
+          if (newEntities.length < pageCount) {
+            // Reset the sync cursor after every sync to pick up files from other instances of the app.
+            // (Different tab, different window, mobile, desktop etc)
+            await _driveDao.writeToDrive(DrivesCompanion(
+              id: Value(drive.id),
+              lastBlockHeight: Value(currentBlockheight),
+              syncCursor: Value(null),
+            ));
+          }
+
+          await _db.transaction(() async {
+            final latestDriveRevision = await _addNewDriveEntityRevisions(
+                newEntities.whereType<DriveEntity>());
+            final latestFolderRevisions = await _addNewFolderEntityRevisions(
+                driveId, newEntities.whereType<FolderEntity>());
+            final latestFileRevisions = await _addNewFileEntityRevisions(
+                driveId, newEntities.whereType<FileEntity>());
+
+            // Check and handle cases where there's no more revisions
+            final updatedDrive = latestDriveRevision != null
+                ? await _computeRefreshedDriveFromRevision(latestDriveRevision)
+                : null;
+
+            final updatedFoldersById =
+                await _computeRefreshedFolderEntriesFromRevisions(
+                    driveId, latestFolderRevisions);
+            final updatedFilesById =
+                await _computeRefreshedFileEntriesFromRevisions(
+                    driveId, latestFileRevisions);
+
+            // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
+            if (updatedDrive != null) {
+              await (_db.update(_db.drives)..whereSamePrimaryKey(updatedDrive))
+                  .write(updatedDrive);
+            }
+
+            // Update the folder and file entries before generating their new paths.
+            await _db.batch((b) {
+              b.insertAllOnConflictUpdate(
+                  _db.folderEntries, updatedFoldersById.values.toList());
+              b.insertAllOnConflictUpdate(
+                  _db.fileEntries, updatedFilesById.values.toList());
+            });
+
+            await generateFsEntryPaths(
+                driveId, updatedFoldersById, updatedFilesById);
+          });
+        });
+  }
+
+  FutureOr<void> paginateProcess<T>(
+      {required List<T> list,
+      required FutureOr Function(List<T> items) itemsPerPageCallback,
+      required int pageCount}) async {
+    final length = list.length;
+
+    for (var i = 0; i < length / pageCount; i++) {
+      final currentPage = <T>[];
 
       /// Mounts the list to be iterated
       for (var j = i * pageCount; j < ((i + 1) * pageCount); j++) {
-        if (j >= transactionListLength) {
+        if (j >= length) {
           break;
         }
 
-        currentPageOfTransactions.add(transactions[j]);
+        currentPage.add(list[j]);
       }
-      final entityHistory =
-          await _arweave.createDriveEntityHistoryFromTransactions(
-              currentPageOfTransactions, driveKey, owner, lastBlockHeight);
-
-      // Create entries for all the new revisions of file and folders in this drive.
-      final newEntities = entityHistory.blockHistory
-          .map((b) => b.entities)
-          .expand((entities) => entities);
-
-      // Handle the last page of newEntities, i.e; There's nothing more to sync
-      if (newEntities.length < pageCount) {
-        // Reset the sync cursor after every sync to pick up files from other instances of the app.
-        // (Different tab, different window, mobile, desktop etc)
-        await _driveDao.writeToDrive(DrivesCompanion(
-          id: Value(drive.id),
-          lastBlockHeight: Value(currentBlockheight),
-          syncCursor: Value(null),
-        ));
-      }
-
-      await _db.transaction(() async {
-        final latestDriveRevision = await _addNewDriveEntityRevisions(
-            newEntities.whereType<DriveEntity>());
-        final latestFolderRevisions = await _addNewFolderEntityRevisions(
-            driveId, newEntities.whereType<FolderEntity>());
-        final latestFileRevisions = await _addNewFileEntityRevisions(
-            driveId, newEntities.whereType<FileEntity>());
-
-        // Check and handle cases where there's no more revisions
-        final updatedDrive = latestDriveRevision != null
-            ? await _computeRefreshedDriveFromRevision(latestDriveRevision)
-            : null;
-
-        final updatedFoldersById =
-            await _computeRefreshedFolderEntriesFromRevisions(
-                driveId, latestFolderRevisions);
-        final updatedFilesById =
-            await _computeRefreshedFileEntriesFromRevisions(
-                driveId, latestFileRevisions);
-
-        // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
-        if (updatedDrive != null) {
-          await (_db.update(_db.drives)..whereSamePrimaryKey(updatedDrive))
-              .write(updatedDrive);
-        }
-
-        // Update the folder and file entries before generating their new paths.
-        await _db.batch((b) {
-          b.insertAllOnConflictUpdate(
-              _db.folderEntries, updatedFoldersById.values.toList());
-          b.insertAllOnConflictUpdate(
-              _db.fileEntries, updatedFilesById.values.toList());
-        });
-
-        await generateFsEntryPaths(
-            driveId, updatedFoldersById, updatedFilesById);
-      });
+      await itemsPerPageCallback(currentPage);
     }
   }
 
