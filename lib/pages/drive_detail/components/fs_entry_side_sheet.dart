@@ -1,6 +1,6 @@
 part of '../drive_detail_page.dart';
 
-class FsEntrySideSheet extends StatelessWidget {
+class FsEntrySideSheet extends StatefulWidget {
   final String driveId;
   final Privacy drivePrivacy;
   final SelectedItem? maybeSelectedItem;
@@ -11,66 +11,131 @@ class FsEntrySideSheet extends StatelessWidget {
   });
 
   @override
+  State<FsEntrySideSheet> createState() => _FsEntrySideSheetState();
+}
+
+class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
+  Map<String, dynamic> datas = {};
+  var tabCount = 2;
+  bool hasPreview = false;
+  @override
   Widget build(BuildContext context) => Drawer(
         elevation: 1,
-        child: BlocProvider<FsEntryInfoCubit>(
+        child: MultiBlocProvider(
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
           key: ValueKey(
-            driveId +
-                '${maybeSelectedItem?.id ?? Random().nextInt(1000).toString()}',
+            widget.driveId +
+                '${widget.maybeSelectedItem?.id ?? Random().nextInt(1000).toString()}',
           ),
-          create: (context) => FsEntryInfoCubit(
-            driveId: driveId,
-            maybeSelectedItem: maybeSelectedItem,
-            driveDao: context.read<DriveDao>(),
-          ),
-          child: DefaultTabController(
-            length: 2,
-            child: BlocBuilder<FsEntryInfoCubit, FsEntryInfoState>(
-              builder: (context, state) => state is FsEntryInfoSuccess
-                  ? Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 8),
-                        ListTile(
-                          title: Text(state.name),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () => context
-                                .read<DriveDetailCubit>()
-                                .toggleSelectedItemDetails(),
-                          ),
-                        ),
-                        TabBar(
-                          tabs: [
-                            Tab(
-                                text: appLocalizationsOf(context)
-                                    .itemDetailsEmphasized),
-                            Tab(
-                                text: appLocalizationsOf(context)
-                                    .itemActivityEmphasized)
-                          ],
-                        ),
-                        Expanded(
-                          child: TabBarView(
+          providers: [
+            BlocProvider<FsEntryInfoCubit>(
+              create: (context) => FsEntryInfoCubit(
+                driveId: widget.driveId,
+                maybeSelectedItem: widget.maybeSelectedItem,
+                driveDao: context.read<DriveDao>(),
+              ),
+            ),
+            BlocProvider<FsEntryPreviewCubit>(
+              create: (context) => FsEntryPreviewCubit(
+                  driveId: widget.driveId,
+                  maybeSelectedItem: widget.maybeSelectedItem,
+                  driveDao: context.read<DriveDao>(),
+                  config: context.read<AppConfig>()),
+            )
+          ],
+          child: BlocListener<FsEntryPreviewCubit, FsEntryPreviewState>(
+            listener: (context, previewState) {
+              if (previewState is FsEntryPreviewSuccess) {
+                setState(() {
+                  tabCount = 3;
+                  hasPreview = true;
+                });
+              } else {
+                setState(() {
+                  tabCount = 2;
+                  hasPreview = false;
+                });
+              }
+            },
+            child: DefaultTabController(
+              length: tabCount,
+              child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
+                builder: (context, previewState) {
+                  return BlocBuilder<FsEntryInfoCubit, FsEntryInfoState>(
+                    builder: (context, state) => state is FsEntryInfoSuccess
+                        ? Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _buildInfoTable(context, state),
-                                  _buildTxTable(context, state),
+                              const SizedBox(height: 8),
+                              ListTile(
+                                title: Text(state.name),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.close),
+                                  onPressed: () => context
+                                      .read<DriveDetailCubit>()
+                                      .toggleSelectedItemDetails(),
+                                ),
+                              ),
+                              TabBar(
+                                tabs: [
+                                  if (hasPreview)
+                                    Tab(
+                                      text: 'Preview',
+                                    ),
+                                  Tab(
+                                      text: appLocalizationsOf(context)
+                                          .itemDetailsEmphasized),
+                                  Tab(
+                                      text: appLocalizationsOf(context)
+                                          .itemActivityEmphasized),
                                 ],
                               ),
-                              _buildActivityTab(context, state),
+                              Expanded(
+                                child: TabBarView(
+                                  children: [
+                                    if (hasPreview &&
+                                        previewState is FsEntryPreviewSuccess)
+                                      _buildPreviewTab(context, previewState),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        _buildInfoTable(context, state),
+                                        _buildTxTable(context, state),
+                                      ],
+                                    ),
+                                    _buildActivityTab(context, state),
+                                  ],
+                                ),
+                              )
                             ],
-                          ),
-                        )
-                      ],
-                    )
-                  : const SizedBox(),
+                          )
+                        : const SizedBox(),
+                  );
+                },
+              ),
             ),
           ),
+        ),
+      );
+
+  Widget _buildPreviewTab(BuildContext context, FsEntryPreviewSuccess state) =>
+      Container(
+        child: LinkPreview(
+          enableAnimation: true,
+          onPreviewDataFetched: (data) {
+            setState(() {
+              datas = {
+                ...datas,
+                state.previewUrl: data,
+              };
+            });
+          },
+          previewData: datas[state.previewUrl],
+          text: state.previewUrl,
+          hideImage: false,
+          width: 700,
         ),
       );
 
@@ -208,12 +273,13 @@ class FsEntrySideSheet extends StatelessWidget {
           ]),
         ],
       );
+
   Widget _buildTxTable(BuildContext context, FsEntryInfoSuccess infoState) =>
       BlocProvider(
         create: (context) => FsEntryActivityCubit(
-          driveId: driveId,
+          driveId: widget.driveId,
           driveDao: context.read<DriveDao>(),
-          maybeSelectedItem: maybeSelectedItem,
+          maybeSelectedItem: widget.maybeSelectedItem,
         ),
         child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
           builder: (context, state) {
@@ -328,8 +394,8 @@ class FsEntrySideSheet extends StatelessWidget {
         padding: const EdgeInsets.only(top: 16),
         child: BlocProvider(
           create: (context) => FsEntryActivityCubit(
-            driveId: driveId,
-            maybeSelectedItem: maybeSelectedItem,
+            driveId: widget.driveId,
+            maybeSelectedItem: widget.maybeSelectedItem,
             driveDao: context.read<DriveDao>(),
           ),
           child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
@@ -392,7 +458,7 @@ class FsEntrySideSheet extends StatelessWidget {
                         final previewOrDownloadButton = InkWell(
                           onTap: () {
                             downloadOrPreviewRevision(
-                              drivePrivacy: drivePrivacy,
+                              drivePrivacy: widget.drivePrivacy,
                               context: context,
                               revision: revision,
                             );
@@ -401,7 +467,8 @@ class FsEntrySideSheet extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.start,
-                              children: drivePrivacy == DrivePrivacy.private
+                              children: widget.drivePrivacy ==
+                                      DrivePrivacy.private
                                   ? [
                                       Text(
                                           appLocalizationsOf(context).download),
