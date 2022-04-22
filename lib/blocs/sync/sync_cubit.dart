@@ -41,7 +41,8 @@ class SyncCubit extends Cubit<SyncState> {
 
   StreamSubscription? _syncSub;
   StreamSubscription? _arconnectSyncSub;
-
+  final StreamController<double> syncProgressController =
+      StreamController<double>.broadcast();
   DateTime? _lastSync;
   late DateTime _initSync;
 
@@ -200,7 +201,8 @@ class SyncCubit extends Cubit<SyncState> {
       addError(err);
     }
     _lastSync = DateTime.now();
-    print(_initSync.difference(_lastSync!).inMilliseconds);
+    print('The sync process took: '
+        '${_lastSync!.difference(_initSync!).inMilliseconds} milliseconds to finish.\n');
     emit(SyncIdle());
   }
 
@@ -306,6 +308,7 @@ class SyncCubit extends Cubit<SyncState> {
       /// If there's nothing to sync, we assume that all were synced
       driveSyncProgress = 1;
       _totalProgress += driveSyncProgress / _drivesCount;
+      syncProgressController.add(_totalProgress);
     }
 
     final timeSpentGettingAllTransactions = startGetAllTransactionsDateTime
@@ -348,6 +351,8 @@ class SyncCubit extends Cubit<SyncState> {
                   _calculateDriveProgressPercentage(
                       entitiesCount: entitiesCounter,
                       entitiesSynced: entitiesSynced)));
+
+          syncProgressController.add(_totalProgress);
 
           driveSyncProgress += _calculatePercentageProgress(
               driveSyncProgress,
@@ -398,6 +403,8 @@ class SyncCubit extends Cubit<SyncState> {
                         entitiesCount: entitiesCounter,
                         entitiesSynced: entitiesSynced)));
 
+            syncProgressController.add(_totalProgress);
+
             driveSyncProgress += _calculatePercentageProgress(
                 driveSyncProgress,
                 _calculateDriveProgressPercentage(
@@ -430,6 +437,8 @@ class SyncCubit extends Cubit<SyncState> {
                     _calculateDriveProgressPercentage(
                         entitiesCount: entitiesCounter,
                         entitiesSynced: entitiesSynced)));
+
+            syncProgressController.add(_totalProgress);
 
             driveSyncProgress += _calculatePercentageProgress(
                 driveSyncProgress,
