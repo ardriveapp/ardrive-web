@@ -3,7 +3,7 @@ import 'dart:math';
 /// A method returns a human readable string representing a file _size
 String filesize(dynamic size, [int round = 2]) {
   /** 
-   * [size] can be passed as number or as string
+   * [size] in bytes, can be passed as number or as string
    *
    * the optional parameter [round] specifies the number 
    * of digits after comma/point (default is 2)
