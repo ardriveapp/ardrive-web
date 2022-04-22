@@ -41,8 +41,10 @@ class SyncCubit extends Cubit<SyncState> {
 
   StreamSubscription? _syncSub;
   StreamSubscription? _arconnectSyncSub;
-
+  final StreamController<double> syncProgressController =
+      StreamController<double>.broadcast();
   DateTime? _lastSync;
+  late DateTime _initSync;
 
   SyncCubit({
     required ProfileCubit profileCubit,
@@ -118,15 +120,20 @@ class SyncCubit extends Cubit<SyncState> {
   final ghostFoldersByDrive =
       <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
 
+  late double _totalProgress;
+  late int _drivesCount;
+
   Future<void> startSync() async {
     if (state is SyncInProgress) {
       return;
     }
+    _totalProgress = 0;
 
     try {
       final profile = _profileCubit.state;
       String? ownerAddress;
 
+      _initSync = DateTime.now();
       print('Syncing...');
       emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
@@ -161,6 +168,9 @@ class SyncCubit extends Cubit<SyncState> {
 
       // Sync the contents of each drive attached in the app.
       final drives = await _driveDao.allDrives().map((d) => d).get();
+
+      _drivesCount = drives.length;
+
       final currentBlockHeight = await arweave.getCurrentBlockHeight();
 
       final driveSyncProcesses = drives.map((drive) => _syncDrive(
@@ -175,7 +185,12 @@ class SyncCubit extends Cubit<SyncState> {
             addError(error!);
           }));
       await Future.wait(driveSyncProcesses);
+
+      print('Syncing drives finished.\nDrives quantity: $_drivesCount\n'
+          'The total progress was ${(_totalProgress * 100).roundToDouble()}');
+
       await createGhosts(ownerAddress: ownerAddress);
+
       emit(SyncEmpty());
 
       await Future.wait([
@@ -186,6 +201,8 @@ class SyncCubit extends Cubit<SyncState> {
       addError(err);
     }
     _lastSync = DateTime.now();
+    print('The sync process took: '
+        '${_lastSync!.difference(_initSync!).inMilliseconds} milliseconds to finish.\n');
     emit(SyncIdle());
   }
 
@@ -249,9 +266,15 @@ class SyncCubit extends Cubit<SyncState> {
     String driveId, {
     required int currentBlockheight,
     required int lastBlockHeight,
-    String? syncCursor,
   }) async {
+    late int entitiesCounter;
+    var entitiesSynced = 0;
+    var driveSyncProgress = 0.0;
+
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+
+    print('Starting Drive ${drive.name} sync. Timestamp: ${DateTime.now()}');
+
     final owner = await arweave.getOwnerForDriveEntityWithId(driveId);
     SecretKey? driveKey;
     if (drive.isPrivate) {
@@ -267,73 +290,210 @@ class SyncCubit extends Cubit<SyncState> {
         }
       }
     }
-    final entityHistory = await _arweave.getNewEntitiesForDrive(
-      drive.id,
-      lastBlockHeight: lastBlockHeight,
-      after: syncCursor,
-      driveKey: driveKey,
-      owner: owner,
-    );
+    print('Getting all information about the drive ${drive.name}\n');
 
-    // Create entries for all the new revisions of file and folders in this drive.
-    final newEntities = entityHistory.blockHistory
-        .map((b) => b.entities)
-        .expand((entities) => entities);
-    // Handle newEntities being empty, i.e; There's nothing more to sync
-    if ((newEntities.isEmpty && entityHistory.cursor == null)) {
-      // Reset the sync cursor after every sync to pick up files from other instances of the app.
-      // (Different tab, different window, mobile, desktop etc)
+    final startGetAllTransactionsDateTime = DateTime.now();
+
+    final transactions = await _arweave.getAllTransactionsFromDrive(driveId,
+        lastBlockHeight: lastBlockHeight)
+      ..toList();
+
+    if (transactions.isEmpty) {
       await _driveDao.writeToDrive(DrivesCompanion(
         id: Value(drive.id),
         lastBlockHeight: Value(currentBlockheight),
         syncCursor: Value(null),
       ));
+
+      /// If there's nothing to sync, we assume that all were synced
+      driveSyncProgress = 1;
+      _totalProgress += driveSyncProgress / _drivesCount;
+      syncProgressController.add(_totalProgress);
+    }
+
+    final timeSpentGettingAllTransactions = startGetAllTransactionsDateTime
+        .difference(DateTime.now())
+        .inMilliseconds;
+
+    print(
+        'Drive ${drive.name} information loaded in $timeSpentGettingAllTransactions milliseconds\n');
+
+    entitiesCounter = transactions.length;
+
+    print(
+        'The total number of entities of the drive ${drive.name} to be synced is: $entitiesCounter\n');
+
+    const pageCount = 200;
+
+    /// Paginate the process in pages of `pageCount`
+    ///
+    /// It is needed because of close connection issues when made a huge number of requests to get the metadata,
+    /// and also to accomplish a better visualization of the sync progress.
+    await _paginateProcess<
+            DriveEntityHistory$Query$TransactionConnection$TransactionEdge>(
+        list: transactions,
+        pageCount: pageCount,
+        itemsPerPageCallback: (items) async {
+          final entityHistory =
+              await _arweave.createDriveEntityHistoryFromTransactions(
+                  items, driveKey, owner, lastBlockHeight);
+
+          // Create entries for all the new revisions of file and folders in this drive.
+          final newEntities = entityHistory.blockHistory
+              .map((b) => b.entities)
+              .expand((entities) => entities);
+
+          entitiesSynced += items.length - newEntities.length;
+
+          _totalProgress += _calculateProgressInTotalPercentage(
+              _calculatePercentageProgress(
+                  driveSyncProgress,
+                  _calculateDriveProgressPercentage(
+                      entitiesCount: entitiesCounter,
+                      entitiesSynced: entitiesSynced)));
+
+          syncProgressController.add(_totalProgress);
+
+          driveSyncProgress += _calculatePercentageProgress(
+              driveSyncProgress,
+              _calculateDriveProgressPercentage(
+                  entitiesCount: entitiesCounter,
+                  entitiesSynced: entitiesSynced));
+
+          // Handle the last page of newEntities, i.e; There's nothing more to sync
+          if (newEntities.length < pageCount) {
+            // Reset the sync cursor after every sync to pick up files from other instances of the app.
+            // (Different tab, different window, mobile, desktop etc)
+            await _driveDao.writeToDrive(DrivesCompanion(
+              id: Value(drive.id),
+              lastBlockHeight: Value(currentBlockheight),
+              syncCursor: Value(null),
+            ));
+          }
+
+          await _db.transaction(() async {
+            final latestDriveRevision = await _addNewDriveEntityRevisions(
+                newEntities.whereType<DriveEntity>());
+            final latestFolderRevisions = await _addNewFolderEntityRevisions(
+                driveId, newEntities.whereType<FolderEntity>());
+            final latestFileRevisions = await _addNewFileEntityRevisions(
+                driveId, newEntities.whereType<FileEntity>());
+
+            // Check and handle cases where there's no more revisions
+            final updatedDrive = latestDriveRevision != null
+                ? await _computeRefreshedDriveFromRevision(latestDriveRevision)
+                : null;
+
+            final updatedFoldersById =
+                await _computeRefreshedFolderEntriesFromRevisions(
+                    driveId, latestFolderRevisions);
+            final updatedFilesById =
+                await _computeRefreshedFileEntriesFromRevisions(
+                    driveId, latestFileRevisions);
+
+            entitiesSynced += newEntities.length;
+
+            entitiesSynced -=
+                updatedFoldersById.length + updatedFilesById.length;
+
+            _totalProgress += _calculateProgressInTotalPercentage(
+                _calculatePercentageProgress(
+                    driveSyncProgress,
+                    _calculateDriveProgressPercentage(
+                        entitiesCount: entitiesCounter,
+                        entitiesSynced: entitiesSynced)));
+
+            syncProgressController.add(_totalProgress);
+
+            driveSyncProgress += _calculatePercentageProgress(
+                driveSyncProgress,
+                _calculateDriveProgressPercentage(
+                    entitiesCount: entitiesCounter,
+                    entitiesSynced: entitiesSynced));
+
+            // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
+            if (updatedDrive != null) {
+              await (_db.update(_db.drives)..whereSamePrimaryKey(updatedDrive))
+                  .write(updatedDrive);
+            }
+
+            // Update the folder and file entries before generating their new paths.
+            await _db.batch((b) {
+              b.insertAllOnConflictUpdate(
+                  _db.folderEntries, updatedFoldersById.values.toList());
+              b.insertAllOnConflictUpdate(
+                  _db.fileEntries, updatedFilesById.values.toList());
+            });
+
+            await generateFsEntryPaths(
+                driveId, updatedFoldersById, updatedFilesById);
+
+            entitiesSynced +=
+                updatedFoldersById.length + updatedFilesById.length;
+
+            _totalProgress += _calculateProgressInTotalPercentage(
+                _calculatePercentageProgress(
+                    driveSyncProgress,
+                    _calculateDriveProgressPercentage(
+                        entitiesCount: entitiesCounter,
+                        entitiesSynced: entitiesSynced)));
+
+            syncProgressController.add(_totalProgress);
+
+            driveSyncProgress += _calculatePercentageProgress(
+                driveSyncProgress,
+                _calculateDriveProgressPercentage(
+                    entitiesCount: entitiesCounter,
+                    entitiesSynced: entitiesSynced));
+          });
+        });
+
+    print(''' 
+        ${'- - ' * 10}
+        Drive: ${drive.name} sync finishes.\n
+        The progress was:                     ${driveSyncProgress * 100}
+        Total progress until now:             ${(_totalProgress * 100).roundToDouble()}
+        The number of entities to be synced:  $entitiesCounter
+        The Total number of synced entities:  $entitiesSynced
+        ''');
+  }
+
+  double _calculateDriveProgressPercentage({
+    required int entitiesCount,
+    required int entitiesSynced,
+  }) =>
+      entitiesSynced / entitiesCount;
+
+  double _calculateProgressInTotalPercentage(double currentDriveProgress) =>
+      (currentDriveProgress / _drivesCount);
+
+  double _calculatePercentageProgress(
+          double currentPercentage, double newPercentage) =>
+      newPercentage - currentPercentage;
+
+  FutureOr<void> _paginateProcess<T>(
+      {required List<T> list,
+      required FutureOr Function(List<T> items) itemsPerPageCallback,
+      required int pageCount}) async {
+    if (list.isEmpty) {
       return;
     }
 
-    await _db.transaction(() async {
-      final latestDriveRevision = await _addNewDriveEntityRevisions(
-          newEntities.whereType<DriveEntity>());
-      final latestFolderRevisions = await _addNewFolderEntityRevisions(
-          driveId, newEntities.whereType<FolderEntity>());
-      final latestFileRevisions = await _addNewFileEntityRevisions(
-          driveId, newEntities.whereType<FileEntity>());
+    final length = list.length;
 
-      // Check and handle cases where there's no more revisions
-      final updatedDrive = latestDriveRevision != null
-          ? await _computeRefreshedDriveFromRevision(latestDriveRevision)
-          : null;
+    for (var i = 0; i < length / pageCount; i++) {
+      final currentPage = <T>[];
 
-      final updatedFoldersById =
-          await _computeRefreshedFolderEntriesFromRevisions(
-              driveId, latestFolderRevisions);
-      final updatedFilesById = await _computeRefreshedFileEntriesFromRevisions(
-          driveId, latestFileRevisions);
+      /// Mounts the list to be iterated
+      for (var j = i * pageCount; j < ((i + 1) * pageCount); j++) {
+        if (j >= length) {
+          break;
+        }
 
-      // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
-      if (updatedDrive != null) {
-        await (_db.update(_db.drives)..whereSamePrimaryKey(updatedDrive))
-            .write(updatedDrive);
+        currentPage.add(list[j]);
       }
-
-      // Update the folder and file entries before generating their new paths.
-      await _db.batch((b) {
-        b.insertAllOnConflictUpdate(
-            _db.folderEntries, updatedFoldersById.values.toList());
-        b.insertAllOnConflictUpdate(
-            _db.fileEntries, updatedFilesById.values.toList());
-      });
-
-      await generateFsEntryPaths(driveId, updatedFoldersById, updatedFilesById);
-    });
-
-    // If there are more results to process, recurse.
-    await _syncDrive(
-      driveId,
-      syncCursor: entityHistory.cursor,
-      lastBlockHeight: lastBlockHeight,
-      currentBlockheight: currentBlockheight,
-    );
+      await itemsPerPageCallback(currentPage);
+    }
   }
 
   /// Computes the new drive revisions from the provided entities, inserts them into the database,
