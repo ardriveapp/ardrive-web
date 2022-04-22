@@ -42,4 +42,9 @@ class IOFile extends UploadFile {
 
   @override
   Future<Uint8List> readAsBytes() => file.readAsBytes();
+
+  @override
+  String getIdentifier() {
+    return path.isEmpty ? name : path;
+  }
 }

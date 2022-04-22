@@ -55,7 +55,7 @@ class UploadPlanUtils {
       );
 
       // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
-      fileEntity.id = conflictingFiles[fileName] ?? _uuid.v4();
+      fileEntity.id = conflictingFiles[file.getIdentifier()] ?? _uuid.v4();
 
       final private = targetDrive.isPrivate;
       final driveKey = private
