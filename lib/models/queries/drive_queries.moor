@@ -88,6 +88,9 @@ filesInFolder ($order = ''):
 filesInFolderWithName:
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND parentFolderId = :parentFolderId AND name = :name;
+
+allFiles:
+    SELECT * FROM file_entries;
 filesInFolderAtPath ($order = ''):
     SELECT * FROM file_entries
     WHERE driveId = :driveId AND path LIKE :path || '/%' AND path NOT LIKE :path || '/%/%'

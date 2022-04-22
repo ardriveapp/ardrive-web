@@ -4,6 +4,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:reactive_forms/reactive_forms.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../utils/app_localizations_wrapper.dart';
@@ -52,6 +53,37 @@ class AppDrawer extends StatelessWidget {
                                 padding: EdgeInsets.all(21),
                                 key: PageStorageKey<String>('driveScrollView'),
                                 children: [
+                                  ReactiveForm(
+                                    formGroup:
+                                        context.watch<DriveDetailCubit>().form,
+                                    child: ReactiveTextField(
+                                      formControlName: 'search',
+                                      onSubmitted: () => context
+                                          .read<DriveDetailCubit>()
+                                          .submit(),
+                                      cursorHeight: 21,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .caption!
+                                          .copyWith(
+                                              color: ListTileTheme.of(context)
+                                                  .textColor),
+                                      decoration: InputDecoration(
+                                        constraints: BoxConstraints(
+                                            maxWidth: 300, maxHeight: 64),
+                                        border: OutlineInputBorder(
+                                          borderSide: BorderSide(
+                                            color:
+                                                Theme.of(context).primaryColor,
+                                          ),
+                                        ),
+                                        labelText: 'Search',
+                                        prefixIcon: Icon(Icons.search),
+                                        prefixIconColor:
+                                            ListTileTheme.of(context).textColor,
+                                      ),
+                                    ),
+                                  ),
                                   if (state.userDrives.isNotEmpty ||
                                       state.sharedDrives.isEmpty) ...{
                                     ListTile(
