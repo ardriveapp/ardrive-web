@@ -96,7 +96,7 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                                   children: [
                                     if (hasPreview &&
                                         previewState is FsEntryPreviewSuccess)
-                                      _buildPreviewTab(context, previewState),
+                                      FsEntryPreviewWidget( state: previewState),
                                     Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.stretch,
@@ -117,25 +117,6 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
               ),
             ),
           ),
-        ),
-      );
-
-  Widget _buildPreviewTab(BuildContext context, FsEntryPreviewSuccess state) =>
-      Container(
-        child: LinkPreview(
-          enableAnimation: true,
-          onPreviewDataFetched: (data) {
-            setState(() {
-              datas = {
-                ...datas,
-                state.previewUrl: data,
-              };
-            });
-          },
-          previewData: datas[state.previewUrl],
-          text: state.previewUrl,
-          hideImage: false,
-          width: 700,
         ),
       );
 
@@ -576,6 +557,8 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
         ),
       );
 }
+
+
 
 void downloadOrPreviewRevision({
   required String drivePrivacy,

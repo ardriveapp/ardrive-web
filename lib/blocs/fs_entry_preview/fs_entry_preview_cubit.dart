@@ -37,12 +37,24 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
               .watchSingle()
               .listen((file) {
             if (file.size <= previewMaxFileSize) {
-              emit(
-                FsEntryPreviewSuccess(
-                  previewUrl:
-                      '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}',
-                ),
-              );
+              final contentType = file.dataContentType!.split('/').first;
+              final previewUrl =
+                  '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
+              switch (contentType) {
+                case 'image':
+                  emit(FsEntryPreviewImage(previewUrl: previewUrl));
+                  break;
+                case 'audio':
+                  emit(FsEntryPreviewAudio(previewUrl: previewUrl));
+                  break;
+                case 'video':
+                  emit(FsEntryPreviewVideo(previewUrl: previewUrl));
+                  break;
+                case 'text':
+                  emit(FsEntryPreviewText(previewUrl: previewUrl));
+                  break;
+                default:
+              }
             } else {
               emit(FsEntryPreviewUnavailable());
             }

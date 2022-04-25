@@ -16,18 +16,19 @@ import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart'
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
+import 'package:chewie/chewie.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_link_previewer/flutter_link_previewer.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:moor/moor.dart' show OrderingMode;
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../utils/app_localizations_wrapper.dart';
 import 'components/custom_paginated_data_table.dart';
@@ -38,6 +39,7 @@ part 'components/drive_detail_data_list.dart';
 part 'components/drive_detail_data_table.dart';
 part 'components/drive_detail_data_table_source.dart';
 part 'components/drive_detail_folder_empty_card.dart';
+part 'components/fs_entry_preview_widget.dart';
 part 'components/fs_entry_side_sheet.dart';
 
 class DriveDetailPage extends StatelessWidget {

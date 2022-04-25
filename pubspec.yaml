@@ -57,6 +57,9 @@ dependencies:
   csv: 5.0.0
   stash_memory: 4.0.1
   flutter_link_previewer: ^2.5.2
+  shimmer: ^2.0.0
+  chewie: ^1.3.2
+  video_player: ^2.3.0
 
 dev_dependencies:
   flutter_test:
