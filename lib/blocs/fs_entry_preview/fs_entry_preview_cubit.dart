@@ -5,6 +5,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:mime/mime.dart';
 
 part 'fs_entry_preview_state.dart';
 
@@ -37,10 +38,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
               .watchSingle()
               .listen((file) {
             if (file.size <= previewMaxFileSize) {
-              final contentType = file.dataContentType!.split('/').first;
+              final contentType =
+                  file.dataContentType ?? lookupMimeType(file.name);
+              final previewType = contentType?.split('/').first;
               final previewUrl =
                   '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
-              switch (contentType) {
+              switch (previewType) {
                 case 'image':
                   emit(FsEntryPreviewImage(previewUrl: previewUrl));
                   break;
