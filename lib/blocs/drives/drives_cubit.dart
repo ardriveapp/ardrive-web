@@ -1,12 +1,11 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
-
-import '../blocs.dart';
 
 part 'drives_state.dart';
 
