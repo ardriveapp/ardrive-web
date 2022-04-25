@@ -1,6 +1,6 @@
+import 'package:ardrive/models/daos/daos.dart';
 import 'package:moor/moor.dart';
 
-import '../daos/daos.dart';
 import 'unsupported.dart'
     if (dart.library.html) 'web.dart'
     if (dart.library.io) 'ffi.dart';

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
@@ -16,8 +17,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
-
-import '../blocs.dart';
 
 part 'sync_state.dart';
 

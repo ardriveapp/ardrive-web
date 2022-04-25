@@ -1,11 +1,9 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/cost_estimate.dart';
-import 'package:ardrive/blocs/upload/models/upload_file.dart';
-import 'package:ardrive/blocs/upload/models/upload_plan.dart';
-import 'package:ardrive/blocs/upload/models/web_file.dart';
-import 'package:ardrive/blocs/upload/models/web_folder.dart';
+import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -15,7 +13,6 @@ import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:rxdart/rxdart.dart';
 
-import '../blocs.dart';
 import 'enums/conflicting_files_actions.dart';
 
 part 'upload_state.dart';
@@ -335,15 +332,12 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   void _removeFilesWithFileNameConflicts() {
-    files.removeWhere(
-      (file) => conflictingFiles.containsKey(file.getIdentifier()),
-    );
+    files.removeWhere((file) => conflictingFiles
+        .containsKey(file.path.isEmpty ? file.name : file.path));
   }
 
   void _removeFilesWithFolderNameConflicts() {
-    files.removeWhere(
-      (file) => conflictingFolders.contains(file.name),
-    );
+    files.removeWhere((file) => conflictingFolders.contains(file.name));
   }
 
   @override
