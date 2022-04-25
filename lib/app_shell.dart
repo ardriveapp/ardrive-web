@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'blocs/blocs.dart';
 import 'components/components.dart';
+import 'components/progress_bar.dart';
 import 'components/wallet_switch_dialog.dart';
 import 'utils/app_localizations_wrapper.dart';
 
@@ -101,9 +102,35 @@ class _AppShellState extends State<AppShell> {
                                     );
                                   } else {
                                     return ProgressDialog(
-                                      title: appLocalizationsOf(context)
-                                          .syncingPleaseWait,
-                                    );
+                                        progressBar: ProgressBar(
+                                          percentage: context
+                                              .read<SyncCubit>()
+                                              .syncProgressController
+                                              .stream,
+                                        ),
+                                        details: StreamBuilder<SyncInfo>(
+                                          stream: context
+                                              .read<SyncCubit>()
+                                              .syncProgressController
+                                              .stream,
+                                          builder: (BuildContext context,
+                                              AsyncSnapshot<SyncInfo>
+                                                  snapshot) {
+                                            if (!snapshot.hasData) {
+                                              return Container();
+                                            }
+
+                                            return Container(child: Text(
+                                                // '${(snapshot.data!.progress * 100).roundToDouble()}% complete found ${snapshot.data!.totalNumberOfFiles} items.\nLoaded ${snapshot.data!.drivesSynced} of ${snapshot.data!.drivesCount}'));
+                                                '${(snapshot.data!.progress * 100).roundToDouble()}% complete ${snapshot.data!.drivesSynced} of ${snapshot.data!.drivesCount} drive(s) loaded'));
+
+                                            // '${(snapshot.data!.progress * 100).roundToDouble()}% complete (${snapshot.data!.totalSynced} of ${snapshot.data!.totalNumberOfFiles} items).'));
+                                          },
+                                        ),
+                                        title: appLocalizationsOf(context)
+                                            .syncingPleaseWait
+                                        // + ' ${snapshot.hasData ? (snapshot.data! * 100).roundToDouble() : ''}%',
+                                        );
                                   }
                                 },
                               );
