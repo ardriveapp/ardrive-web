@@ -333,17 +333,12 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   void _removeFilesWithFileNameConflicts() {
-    files.removeWhere(
-      (file) => conflictingFiles.containsKey(
-        file.path.isEmpty ? file.name : file.path,
-      ),
-    );
+    files.removeWhere((file) => conflictingFiles
+        .containsKey(file.path.isEmpty ? file.name : file.path));
   }
 
   void _removeFilesWithFolderNameConflicts() {
-    files.removeWhere(
-      (file) => conflictingFolders.contains(file.name),
-    );
+    files.removeWhere((file) => conflictingFolders.contains(file.name));
   }
 
   @override
