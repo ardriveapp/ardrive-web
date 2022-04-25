@@ -99,21 +99,21 @@ class UploadPlanUtils {
     );
   }
 
-  ///Returns a sorted list of foldersByPath (root folder first) from a list of files
+  ///Returns a sorted list of folders (root folder first) from a list of files
   ///with paths
   static Map<String, WebFolder> generateFoldersForFiles(List<WebFile> files) {
-    final foldersByPathByPath = <String, WebFolder>{};
+    final foldersByPath = <String, WebFolder>{};
 
-    // Generate foldersByPath
+    // Generate folders
     for (var file in files) {
       final path = file.file.relativePath!;
       final folderPath = path.split('/');
       folderPath.removeLast();
       for (var i = 0; i < folderPath.length; i++) {
         final currentFolder = folderPath.getRange(0, i + 1).join('/');
-        if (foldersByPathByPath[currentFolder] == null) {
+        if (foldersByPath[currentFolder] == null) {
           final parentFolderPath = folderPath.getRange(0, i).join('/');
-          foldersByPathByPath.putIfAbsent(
+          foldersByPath.putIfAbsent(
             currentFolder,
             () => WebFolder(
               name: folderPath[i],
@@ -125,7 +125,7 @@ class UploadPlanUtils {
       }
     }
 
-    final sortedFolders = foldersByPathByPath.entries.toList()
+    final sortedFolders = foldersByPath.entries.toList()
       ..sort(
           (a, b) => a.key.split('/').length.compareTo(b.key.split('/').length));
     return Map.fromEntries(sortedFolders);
