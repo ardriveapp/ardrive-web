@@ -35,7 +35,7 @@ class UploadPlanUtils {
     required Map<String, String> conflictingFiles,
     required Drive targetDrive,
     required FolderEntry targetFolder,
-    Map<String, WebFolder> folders = const {},
+    Map<String, WebFolder> foldersByPath = const {},
   }) async {
     final _fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
     final _fileV2UploadHandles = <String, FileV2UploadHandle>{};
@@ -90,7 +90,7 @@ class UploadPlanUtils {
         );
       }
     }
-    folders.forEach((key, folder) async {
+    foldersByPath.forEach((key, folder) async {
       _folderDataItemUploadHandles.putIfAbsent(
         folder.id,
         () => FolderDataItemUploadHandle(
@@ -109,21 +109,21 @@ class UploadPlanUtils {
     );
   }
 
-  ///Returns a sorted list of folders (root folder first) from a list of files
+  ///Returns a sorted list of foldersByPath (root folder first) from a list of files
   ///with paths
   static Map<String, WebFolder> generateFoldersForFiles(List<WebFile> files) {
-    final foldersByPath = <String, WebFolder>{};
+    final foldersByPathByPath = <String, WebFolder>{};
 
-    // Generate folders
+    // Generate foldersByPath
     for (var file in files) {
       final path = file.file.relativePath!;
       final folderPath = path.split('/');
       folderPath.removeLast();
       for (var i = 0; i < folderPath.length; i++) {
         final currentFolder = folderPath.getRange(0, i + 1).join('/');
-        if (foldersByPath[currentFolder] == null) {
+        if (foldersByPathByPath[currentFolder] == null) {
           final parentFolderPath = folderPath.getRange(0, i).join('/');
-          foldersByPath.putIfAbsent(
+          foldersByPathByPath.putIfAbsent(
             currentFolder,
             () => WebFolder(
               name: folderPath[i],
@@ -135,7 +135,7 @@ class UploadPlanUtils {
       }
     }
 
-    final sortedFolders = foldersByPath.entries.toList()
+    final sortedFolders = foldersByPathByPath.entries.toList()
       ..sort(
           (a, b) => a.key.split('/').length.compareTo(b.key.split('/').length));
     return Map.fromEntries(sortedFolders);
