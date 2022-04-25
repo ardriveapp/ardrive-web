@@ -29,10 +29,10 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
   Widget build(BuildContext context) {
     switch (widget.state.runtimeType) {
       case FsEntryPreviewImage:
-        return Image(
-          loadingBuilder: (context, child, loadingProgress) =>
-              CircularProgressIndicator(),
-          image: NetworkImage(widget.state.previewUrl),
+        return ExtendedImage.network(
+          widget.state.previewUrl,
+          fit: BoxFit.fitWidth,
+          cache: true,
         );
       case FsEntryPreviewVideo:
         videoPlayerController =

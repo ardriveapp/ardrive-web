@@ -17,6 +17,7 @@ import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:chewie/chewie.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
