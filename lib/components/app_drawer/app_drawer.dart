@@ -1,4 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/app_drawer/drive_list_tile.dart';
+import 'package:ardrive/components/components.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -6,9 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../components.dart';
-import 'drive_list_tile.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({
