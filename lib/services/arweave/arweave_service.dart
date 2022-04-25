@@ -99,13 +99,11 @@ class ArweaveService {
     return query.data?.transaction;
   }
 
-  Future<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
+  Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
       getAllTransactionsFromDrive(
     String driveId, {
     int? lastBlockHeight,
-  }) async {
-    final transactionsEdges =
-        <DriveEntityHistory$Query$TransactionConnection$TransactionEdge>[];
+  }) async* {
     var finishProcess = false;
     String? cursor;
 
@@ -120,20 +118,17 @@ class ArweaveService {
           ),
         ),
       );
+      yield driveEntityHistoryQuery.data!.transactions.edges;
 
-      transactionsEdges
-          .addAll(driveEntityHistoryQuery.data!.transactions.edges);
-
-      cursor =
-          transactionsEdges.isNotEmpty ? transactionsEdges.last.cursor : null;
+      cursor = driveEntityHistoryQuery.data!.transactions.edges.isNotEmpty
+          ? driveEntityHistoryQuery.data!.transactions.edges.last.cursor
+          : null;
 
       if (driveEntityHistoryQuery.data!.transactions.edges.length <
           kMaxNumberOfTransactionsPerPage) {
         finishProcess = true;
       }
     }
-
-    return transactionsEdges;
   }
 
   /// Get the metadata of transactions

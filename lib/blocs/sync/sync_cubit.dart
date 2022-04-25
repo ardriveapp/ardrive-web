@@ -21,6 +21,41 @@ import '../blocs.dart';
 
 part 'sync_state.dart';
 
+class SyncInfo {
+  SyncInfo(
+      {required this.entitiesNumber,
+      required this.progress,
+      required this.entitiesSynced,
+      required this.drivesCount,
+      required this.drivesSynced});
+
+  factory SyncInfo.initial() => SyncInfo(
+      entitiesNumber: 0,
+      progress: 0,
+      entitiesSynced: 0,
+      drivesCount: 0,
+      drivesSynced: 0);
+
+  final int entitiesNumber;
+  final int entitiesSynced;
+  final double progress;
+  final int drivesSynced;
+  final int drivesCount;
+
+  SyncInfo copyWith(
+          {int? entitiesNumber,
+          int? entitiesSynced,
+          double? progress,
+          int? drivesSynced,
+          int? drivesCount}) =>
+      SyncInfo(
+          entitiesNumber: entitiesNumber ?? this.entitiesNumber,
+          progress: progress ?? this.progress,
+          entitiesSynced: entitiesSynced ?? this.entitiesSynced,
+          drivesCount: drivesCount ?? this.drivesCount,
+          drivesSynced: drivesSynced ?? this.drivesSynced);
+}
+
 const kRequiredTxConfirmationCount = 15;
 const kRequiredTxConfirmationPendingThreshold = 60 * 8;
 
@@ -41,10 +76,11 @@ class SyncCubit extends Cubit<SyncState> {
 
   StreamSubscription? _syncSub;
   StreamSubscription? _arconnectSyncSub;
-  final StreamController<double> syncProgressController =
-      StreamController<double>.broadcast();
+  final StreamController<SyncInfo> syncProgressController =
+      StreamController<SyncInfo>.broadcast();
   DateTime? _lastSync;
   late DateTime _initSync;
+  late SyncInfo _syncInfo;
 
   SyncCubit({
     required ProfileCubit profileCubit,
@@ -121,12 +157,14 @@ class SyncCubit extends Cubit<SyncState> {
       <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
 
   late double _totalProgress;
-  late int _drivesCount;
 
   Future<void> startSync() async {
     if (state is SyncInProgress) {
       return;
     }
+
+    _syncInfo = SyncInfo.initial();
+
     _totalProgress = 0;
 
     try {
@@ -169,7 +207,7 @@ class SyncCubit extends Cubit<SyncState> {
       // Sync the contents of each drive attached in the app.
       final drives = await _driveDao.allDrives().map((d) => d).get();
 
-      _drivesCount = drives.length;
+      _syncInfo = _syncInfo.copyWith(drivesCount: drives.length);
 
       final currentBlockHeight = await arweave.getCurrentBlockHeight();
 
@@ -179,17 +217,32 @@ class SyncCubit extends Cubit<SyncState> {
               drive.lastBlockHeight!,
             ),
             currentBlockheight: currentBlockHeight,
-          ).onError((error, stackTrace) {
-            print('Error syncing drive with id ${drive.id}');
-            print(error.toString() + stackTrace.toString());
-            addError(error!);
-          }));
-      await Future.wait(driveSyncProcesses);
+          ));
 
-      print('Syncing drives finished.\nDrives quantity: $_drivesCount\n'
-          'The total progress was ${(_totalProgress * 100).roundToDouble()}');
+      await Future.wait(driveSyncProcesses.map((driveSyncProgress) async {
+        await for (var syncProgress in driveSyncProgress) {
+          syncProgressController.add(syncProgress);
+        }
+        _syncInfo =
+            _syncInfo.copyWith(drivesSynced: _syncInfo.drivesSynced + 1);
+
+        syncProgressController.add(_syncInfo);
+      }));
+
+      // .onError((error, stackTrace) {
+      //   print('Error syncing drive with id ${drive.id}');
+      //   print(error.toString() + stackTrace.toString());
+      //   addError(error!);
+      // }));
+
+      print(
+          'Syncing drives finished.\nDrives quantity: ${_syncInfo.drivesCount}\n'
+          'The total progress was ${(_syncInfo.progress * 100).roundToDouble()}');
 
       await createGhosts(ownerAddress: ownerAddress);
+
+      /// In order to have a smooth transition at the end.
+      await Future.delayed(Duration(milliseconds: 1000));
 
       emit(SyncEmpty());
 
@@ -202,7 +255,7 @@ class SyncCubit extends Cubit<SyncState> {
     }
     _lastSync = DateTime.now();
     print('The sync process took: '
-        '${_lastSync!.difference(_initSync!).inMilliseconds} milliseconds to finish.\n');
+        '${_lastSync!.difference(_initSync).inMilliseconds} milliseconds to finish.\n');
     emit(SyncIdle());
   }
 
@@ -262,21 +315,24 @@ class SyncCubit extends Cubit<SyncState> {
     ]);
   }
 
-  Future<void> _syncDrive(
+  Stream<SyncInfo> _syncDrive(
     String driveId, {
     required int currentBlockheight,
     required int lastBlockHeight,
-  }) async {
+  }) async* {
+    /// Variables to count the current drive's progress information
     late int entitiesCounter;
     var entitiesSynced = 0;
     var driveSyncProgress = 0.0;
 
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
 
-    print('Starting Drive ${drive.name} sync. Timestamp: ${DateTime.now()}');
+    print('${DateTime.now()} : Starting Drive ${drive.name} sync.');
 
     final owner = await arweave.getOwnerForDriveEntityWithId(driveId);
+
     SecretKey? driveKey;
+
     if (drive.isPrivate) {
       final profile = _profileCubit.state;
 
@@ -290,13 +346,95 @@ class SyncCubit extends Cubit<SyncState> {
         }
       }
     }
-    print('Getting all information about the drive ${drive.name}\n');
+    print(
+        '${DateTime.now()} : Getting all information about the drive ${drive.name}\n');
 
     final startGetAllTransactionsDateTime = DateTime.now();
 
-    final transactions = await _arweave.getAllTransactionsFromDrive(driveId,
-        lastBlockHeight: lastBlockHeight)
-      ..toList();
+    final transactions =
+        <DriveEntityHistory$Query$TransactionConnection$TransactionEdge>[];
+
+    final transactionsStream = _arweave
+        .getAllTransactionsFromDrive(driveId, lastBlockHeight: lastBlockHeight)
+        .asBroadcastStream();
+
+    /// The first block height from this drive.
+    int? firstBlockHeight;
+
+    /// In order to measure the sync progress by the block height, we use the difference
+    /// between the first block and the `currentBlockheight`
+    int? totalBlockHeightDifference;
+
+    /// This percentage is based on block heights.
+    /// It will be half on the entire percentage.
+    var fetchPhasePercentage = 0.0;
+
+    /// First phase of the sync
+    /// Here we get all transactions from its drive.
+    await for (var t in transactionsStream) {
+      late int currentPageBlockHeight;
+
+      t.forEach((element) {
+        if (firstBlockHeight == null) {
+          firstBlockHeight = element.node.block?.height;
+          totalBlockHeightDifference = currentBlockheight - firstBlockHeight!;
+          print('firstBlockHeight $firstBlockHeight\n'
+              'totalBlockHeightDifference $totalBlockHeightDifference\n'
+              'lastBlockHeight $lastBlockHeight\n');
+        }
+
+        currentPageBlockHeight = element.node.block!.height;
+
+        print(element.node.block?.height);
+
+        print('firstBlockHeight $firstBlockHeight\n'
+            'currentBlockheight $currentBlockheight\n'
+            'totalBlockHeightDifference $totalBlockHeightDifference\n'
+            'currentPageBlockHeight $currentPageBlockHeight\n'
+            'percentage based on block height: ${(1 - ((currentBlockheight - currentPageBlockHeight) / totalBlockHeightDifference!)) * 100}');
+      });
+
+      _totalProgress += _calculateProgressInTotalPercentage(
+          _calculatePercentageProgress(
+              fetchPhasePercentage,
+              _calculatePercentageBasedOnBlockHeights(
+                  arweaveCurrentBlockHeight: currentBlockheight,
+                  differenceBetweenTheFirstAndLastBlockHeight:
+                      totalBlockHeightDifference!,
+                  entitieBlockHeight: currentPageBlockHeight)));
+
+      var entitiesToSync = _syncInfo.entitiesSynced;
+
+      entitiesToSync += t.length;
+
+      _syncInfo = _syncInfo.copyWith(
+          progress: _totalProgress, entitiesNumber: entitiesToSync);
+
+      yield _syncInfo;
+
+      fetchPhasePercentage += _calculatePercentageProgress(
+          fetchPhasePercentage,
+          _calculatePercentageBasedOnBlockHeights(
+              arweaveCurrentBlockHeight: currentBlockheight,
+              differenceBetweenTheFirstAndLastBlockHeight:
+                  totalBlockHeightDifference!,
+              entitieBlockHeight: currentPageBlockHeight));
+
+      transactions.addAll(t);
+    }
+    print('total progress after fetch phase: $_totalProgress');
+    print('fetchPhasePercentage: $fetchPhasePercentage');
+
+    /// Fill the remaining percentage until get 50%.
+    /// It is needed because the phase one isn't accurate and possibly will not
+    /// match 100% everytime
+    _totalProgress += ((1 - fetchPhasePercentage) / 2) / _syncInfo.drivesCount;
+
+    _syncInfo = _syncInfo.copyWith(progress: _totalProgress);
+
+    yield _syncInfo;
+
+    print('Transactions list length: ${transactions.length}');
 
     if (transactions.isEmpty) {
       await _driveDao.writeToDrive(DrivesCompanion(
@@ -306,9 +444,10 @@ class SyncCubit extends Cubit<SyncState> {
       ));
 
       /// If there's nothing to sync, we assume that all were synced
-      driveSyncProgress = 1;
-      _totalProgress += driveSyncProgress / _drivesCount;
-      syncProgressController.add(_totalProgress);
+      driveSyncProgress = 1; // 100%
+      _totalProgress += driveSyncProgress / _syncInfo.drivesCount;
+      _syncInfo = _syncInfo.copyWith(progress: _totalProgress);
+      yield _syncInfo;
     }
 
     final timeSpentGettingAllTransactions = startGetAllTransactionsDateTime
@@ -329,11 +468,11 @@ class SyncCubit extends Cubit<SyncState> {
     ///
     /// It is needed because of close connection issues when made a huge number of requests to get the metadata,
     /// and also to accomplish a better visualization of the sync progress.
-    await _paginateProcess<
+    yield* _paginateProcess<
             DriveEntityHistory$Query$TransactionConnection$TransactionEdge>(
         list: transactions,
         pageCount: pageCount,
-        itemsPerPageCallback: (items) async {
+        itemsPerPageCallback: (items) async* {
           final entityHistory =
               await _arweave.createDriveEntityHistoryFromTransactions(
                   items, driveKey, owner, lastBlockHeight);
@@ -352,7 +491,11 @@ class SyncCubit extends Cubit<SyncState> {
                       entitiesCount: entitiesCounter,
                       entitiesSynced: entitiesSynced)));
 
-          syncProgressController.add(_totalProgress);
+          _syncInfo = _syncInfo.copyWith(
+              progress: _totalProgress,
+              entitiesSynced: _syncInfo.entitiesSynced + entitiesSynced);
+
+          yield _syncInfo;
 
           driveSyncProgress += _calculatePercentageProgress(
               driveSyncProgress,
@@ -403,7 +546,9 @@ class SyncCubit extends Cubit<SyncState> {
                         entitiesCount: entitiesCounter,
                         entitiesSynced: entitiesSynced)));
 
-            syncProgressController.add(_totalProgress);
+            _syncInfo = _syncInfo.copyWith(
+                progress: _totalProgress,
+                entitiesSynced: _syncInfo.entitiesSynced + entitiesSynced);
 
             driveSyncProgress += _calculatePercentageProgress(
                 driveSyncProgress,
@@ -438,7 +583,9 @@ class SyncCubit extends Cubit<SyncState> {
                         entitiesCount: entitiesCounter,
                         entitiesSynced: entitiesSynced)));
 
-            syncProgressController.add(_totalProgress);
+            _syncInfo = _syncInfo.copyWith(
+                progress: _totalProgress,
+                entitiesSynced: _syncInfo.entitiesSynced + entitiesSynced);
 
             driveSyncProgress += _calculatePercentageProgress(
                 driveSyncProgress,
@@ -446,6 +593,7 @@ class SyncCubit extends Cubit<SyncState> {
                     entitiesCount: entitiesCounter,
                     entitiesSynced: entitiesSynced));
           });
+          yield _syncInfo;
         });
 
     print(''' 
@@ -464,17 +612,26 @@ class SyncCubit extends Cubit<SyncState> {
   }) =>
       entitiesSynced / entitiesCount;
 
+  /// Divided by 2 because we have 2 phases
   double _calculateProgressInTotalPercentage(double currentDriveProgress) =>
-      (currentDriveProgress / _drivesCount);
+      (currentDriveProgress / _syncInfo.drivesCount) / 2;
 
   double _calculatePercentageProgress(
           double currentPercentage, double newPercentage) =>
       newPercentage - currentPercentage;
 
-  FutureOr<void> _paginateProcess<T>(
+  double _calculatePercentageBasedOnBlockHeights(
+          {required int arweaveCurrentBlockHeight,
+          required int entitieBlockHeight,
+          required int differenceBetweenTheFirstAndLastBlockHeight}) =>
+      (1 -
+          ((arweaveCurrentBlockHeight - entitieBlockHeight) /
+              differenceBetweenTheFirstAndLastBlockHeight));
+
+  Stream<SyncInfo> _paginateProcess<T>(
       {required List<T> list,
-      required FutureOr Function(List<T> items) itemsPerPageCallback,
-      required int pageCount}) async {
+      required Stream<SyncInfo> Function(List<T> items) itemsPerPageCallback,
+      required int pageCount}) async* {
     if (list.isEmpty) {
       return;
     }
@@ -492,7 +649,7 @@ class SyncCubit extends Cubit<SyncState> {
 
         currentPage.add(list[j]);
       }
-      await itemsPerPageCallback(currentPage);
+      yield* itemsPerPageCallback(currentPage);
     }
   }
 
