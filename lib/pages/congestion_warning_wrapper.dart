@@ -3,10 +3,9 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../../utils/app_localizations_wrapper.dart';
 
 Future<void> showCongestionDependentModalDialog(
     BuildContext context, Function() showAppDialog) async {

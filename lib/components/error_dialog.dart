@@ -1,6 +1,6 @@
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 
-import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> showErrorDialog({

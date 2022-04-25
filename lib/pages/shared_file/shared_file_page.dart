@@ -2,12 +2,11 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../../../utils/app_localizations_wrapper.dart';
 
 /// [SharedFilePage] displays details of a shared file and controls for downloading and previewing it
 /// from a parent [SharedFileCubit].

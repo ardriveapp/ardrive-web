@@ -1,7 +1,6 @@
 import 'package:ardrive/blocs/upload/data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/upload_plan.dart';
 import 'package:ardrive/models/models.dart';
@@ -13,7 +14,6 @@ import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:rxdart/rxdart.dart';
 
-import '../blocs.dart';
 import 'enums/conflicting_files_actions.dart';
 
 part 'upload_state.dart';
