@@ -114,7 +114,7 @@ class _AppShellState extends State<AppShell> {
                                                     .syncProgressPercentage(
                                                         (syncProgress.progress *
                                                                 100)
-                                                            .roundToDouble
+                                                            .roundToDouble()
                                                             .toString()))),
                                         progressDescription: _syncStreamBuilder(
                                           builderWithData: (syncProgress) =>
