@@ -21,7 +21,11 @@ import '../blocs.dart';
 
 part 'sync_state.dart';
 
-class SyncProgress {
+abstract class LinearProgress {
+  double get progress;
+}
+
+class SyncProgress extends LinearProgress {
   SyncProgress(
       {required this.entitiesNumber,
       required this.progress,
@@ -38,6 +42,7 @@ class SyncProgress {
 
   final int entitiesNumber;
   final int entitiesSynced;
+  @override
   final double progress;
   final int drivesSynced;
   final int drivesCount;
@@ -217,7 +222,11 @@ class SyncCubit extends Cubit<SyncState> {
               drive.lastBlockHeight!,
             ),
             currentBlockheight: currentBlockHeight,
-          ));
+          ).handleError((error, stackTrace) {
+            print('Error syncing drive with id ${drive.id}');
+            print(onError.toString() + stackTrace.toString());
+            addError(error!);
+          }));
 
       await Future.wait(driveSyncProcesses.map((driveSyncProgress) async {
         await for (var syncProgress in driveSyncProgress) {
@@ -228,12 +237,6 @@ class SyncCubit extends Cubit<SyncState> {
 
         syncProgressController.add(_syncProgress);
       }));
-
-      // .onError((error, stackTrace) {
-      //   print('Error syncing drive with id ${drive.id}');
-      //   print(error.toString() + stackTrace.toString());
-      //   addError(error!);
-      // }));
 
       print(
           'Syncing drives finished.\nDrives quantity: ${_syncProgress.drivesCount}\n'
@@ -251,6 +254,7 @@ class SyncCubit extends Cubit<SyncState> {
         _updateTransactionStatuses(),
       ]);
     } catch (err) {
+      print('catched');
       addError(err);
       print(err.toString());
     }
@@ -383,6 +387,8 @@ class SyncCubit extends Cubit<SyncState> {
 
       currentPageBlockHeight = t.last.node.block!.height;
 
+      transactions.addAll(t);
+
       print('firstBlockHeight $firstBlockHeight\n'
           'currentBlockheight $currentBlockheight\n'
           'totalBlockHeightDifference $totalBlockHeightDifference\n'
@@ -399,20 +405,23 @@ class SyncCubit extends Cubit<SyncState> {
 
       yield _syncProgress;
 
-      fetchPhasePercentage += _calculatePercentageProgress(
-          fetchPhasePercentage, _calculatePercentageBasedOnBlockHeights());
-
-      transactions.addAll(t);
+      if (totalBlockHeightDifference > 0) {
+        fetchPhasePercentage += _calculatePercentageProgress(
+            fetchPhasePercentage, _calculatePercentageBasedOnBlockHeights());
+      } else {
+        // If the difference is zero means that the first phase was concluded.
+        fetchPhasePercentage = 1;
+      }
     }
-    print('total progress after fetch phase: $_totalProgress');
-    print('fetchPhasePercentage: $fetchPhasePercentage');
+
+    print('FetchPhasePercentage: $fetchPhasePercentage\n');
 
     /// Fill the remaining percentage until get 50%.
     /// It is needed because the phase one isn't accurate and possibly will not
     /// match 100% everytime
     _totalProgress +=
         _calculateProgressInTotalPercentage((1 - fetchPhasePercentage));
-
+    print('Total progress after fetch phase: $_totalProgress');
     _syncProgress = _syncProgress.copyWith(progress: _totalProgress);
 
     yield _syncProgress;
@@ -454,7 +463,6 @@ class SyncCubit extends Cubit<SyncState> {
 
       /// If there's nothing to sync, we assume that all were synced
       _totalProgress += _calculateProgressInTotalPercentage(1); // 100%
-      // _totalProgress += driveSyncProgress / _syncProgress.drivesCount;
       _syncProgress = _syncProgress.copyWith(progress: _totalProgress);
       yield _syncProgress;
       return;
@@ -477,7 +485,7 @@ class SyncCubit extends Cubit<SyncState> {
         list: transactions,
         pageCount: pageCount,
         itemsPerPageCallback: (items) async* {
-          print('getting metadata: ${items.length}');
+          print('${DateTime.now()} Getting metadata from drive ${drive.name}');
           final entityHistory =
               await _arweave.createDriveEntityHistoryFromTransactions(
                   items, driveKey, owner, lastBlockHeight);
