@@ -24,4 +24,9 @@ class WebFile extends UploadFile {
     await reader.onLoad.first;
     return reader.result as Uint8List;
   }
+
+  @override
+  String getIdentifier() {
+    return path.isEmpty ? name : path;
+  }
 }

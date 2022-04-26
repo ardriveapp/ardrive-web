@@ -44,7 +44,6 @@ class UploadPlan {
     Map<String, FolderDataItemUploadHandle> folderDataItemUploadHandles =
         const {},
   }) async {
-    // NOTE: Using maxFilesPerBundle since FileUploadHandles have 2 data items
     final bundleItems = await NextFitBundlePacker<UploadHandle>(
       maxBundleSize: bundleSizeLimit,
       maxDataItemCount: maxFilesPerBundle,

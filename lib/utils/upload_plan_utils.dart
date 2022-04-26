@@ -25,7 +25,7 @@ class UploadPlanUtils {
     required Map<String, String> conflictingFiles,
     required Drive targetDrive,
     required FolderEntry targetFolder,
-    Map<String, WebFolder> folders = const {},
+    Map<String, WebFolder> foldersByPath = const {},
   }) async {
     final _fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
     final _fileV2UploadHandles = <String, FileV2UploadHandle>{};
@@ -45,7 +45,7 @@ class UploadPlanUtils {
       );
 
       // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
-      fileEntity.id = conflictingFiles[fileName] ?? _uuid.v4();
+      fileEntity.id = conflictingFiles[file.getIdentifier()] ?? _uuid.v4();
 
       final private = targetDrive.isPrivate;
       final driveKey = private
@@ -54,9 +54,9 @@ class UploadPlanUtils {
       final fileKey =
           private ? await deriveFileKey(driveKey!, fileEntity.id!) : null;
 
-      final revisionAction = !conflictingFiles.containsKey(file.name)
-          ? RevisionAction.create
-          : RevisionAction.uploadNewVersion;
+      final revisionAction = conflictingFiles.containsKey(file.getIdentifier())
+          ? RevisionAction.uploadNewVersion
+          : RevisionAction.create;
 
       if (fileSize < bundleSizeLimit) {
         _fileDataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(
@@ -80,7 +80,7 @@ class UploadPlanUtils {
         );
       }
     }
-    folders.forEach((key, folder) async {
+    foldersByPath.forEach((key, folder) async {
       _folderDataItemUploadHandles.putIfAbsent(
         folder.id,
         () => FolderDataItemUploadHandle(

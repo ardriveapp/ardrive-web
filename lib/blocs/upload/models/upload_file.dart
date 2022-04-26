@@ -8,6 +8,8 @@ abstract class UploadFile {
   String parentFolderId;
   Future<Uint8List> readAsBytes();
 
+  String getIdentifier();
+
   UploadFile({
     required this.name,
     required this.path,

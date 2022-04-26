@@ -20,6 +20,7 @@ part 'upload_state.dart';
 final privateFileSizeLimit = 104857600;
 final publicFileSizeLimit = 1.25 * math.pow(10, 9);
 final minimumPstTip = BigInt.from(10000000);
+final filesNamesToExclude = ['.DS_Store'];
 
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
@@ -31,14 +32,15 @@ class UploadCubit extends Cubit<UploadState> {
   final PstService _pst;
   final UploadPlanUtils _uploadPlanUtils;
 
-  late List<UploadFile> files;
   late bool uploadFolders;
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
 
+  List<UploadFile> files = [];
+  Map<String, WebFolder> foldersByPath = {};
+
   /// Map of conflicting file ids keyed by their file names.
   final Map<String, String> conflictingFiles = {};
-  final Map<String, WebFolder> foldersToUpload = {};
   final List<String> conflictingFolders = [];
 
   bool fileSizeWithinBundleLimits(int size) => size < bundleSizeLimit;
@@ -61,6 +63,7 @@ class UploadCubit extends Cubit<UploadState> {
         super(UploadPreparationInProgress());
 
   Future<void> startUploadPreparation() async {
+    files.removeWhere((file) => filesNamesToExclude.contains(file.name));
     _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
     _targetFolder = await _driveDao
         .folderById(driveId: driveId, folderId: folderId)
@@ -76,7 +79,10 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> checkConflictingFolders() async {
     emit(UploadPreparationInProgress());
     if (uploadFolders) {
-      files = await generateFoldersAndAssignParentsForFiles(files);
+      final folderPrepareResult =
+          await generateFoldersAndAssignParentsForFiles(files);
+      files = folderPrepareResult.files;
+      foldersByPath = folderPrepareResult.foldersByPath;
     }
     for (final file in files) {
       final fileName = file.name;
@@ -124,8 +130,7 @@ class UploadCubit extends Cubit<UploadState> {
           .getSingleOrNull();
 
       if (existingFileId != null) {
-        conflictingFiles[file.path.isEmpty ? file.name : file.path] =
-            existingFileId;
+        conflictingFiles[file.getIdentifier()] = existingFileId;
       }
     }
 
@@ -143,7 +148,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// Generate Folders and assign parentFolderIds
 
-  Future<List<WebFile>> generateFoldersAndAssignParentsForFiles(
+  Future<FolderPrepareResult> generateFoldersAndAssignParentsForFiles(
     List<UploadFile> files,
   ) async {
     final folders = UploadPlanUtils.generateFoldersForFiles(
@@ -154,14 +159,14 @@ class UploadCubit extends Cubit<UploadState> {
       //If The folders map contains the immediate ancestor of the current folder
       //we use the id of that folder, otherwise use targetFolder as root
 
-      final parentFolderId = folders.containsKey(folder.parentFolderPath)
+      folder.parentFolderId = folders.containsKey(folder.parentFolderPath)
           ? folders[folder.parentFolderPath]!.id
           : _targetFolder.id;
       final existingFolderId = await _driveDao
           .foldersInFolderWithName(
             driveId: driveId,
             name: folder.name,
-            parentFolderId: parentFolderId,
+            parentFolderId: folder.parentFolderId,
           )
           .map((f) => f.id)
           .getSingleOrNull();
@@ -182,14 +187,15 @@ class UploadCubit extends Cubit<UploadState> {
       if (existingFileId != null) {
         conflictingFolders.add(folder.name);
       }
-      folder.parentFolderId =
-          folders[folder.parentFolderPath]?.id ?? _targetFolder.id;
       folder.path = folder.parentFolderPath.isNotEmpty
           ? '${_targetFolder.path}/${folder.parentFolderPath}/${folder.name}'
           : '${_targetFolder.path}/${folder.name}';
     }
     final filesToUpload = <WebFile>[];
     files.forEach((file) {
+      // Splits the file path, gets rid of the file name and rejoins the strings
+      // to get parent folder path.
+      // eg: Test/A/B/C/file.txt becomes Test/A/B/C
       final fileFolder = (file.path.split('/')..removeLast()).join('/');
       filesToUpload.add(
         WebFile(
@@ -199,8 +205,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
     });
     folders.removeWhere((key, value) => foldersToSkip.contains(value));
-    foldersToUpload.addAll(folders);
-    return filesToUpload;
+    return FolderPrepareResult(files: filesToUpload, foldersByPath: folders);
   }
 
   /// If `conflictingFileAction` is null, means that had no conflict.
@@ -246,7 +251,7 @@ class UploadCubit extends Cubit<UploadState> {
       cipherKey: profile.cipherKey,
       wallet: profile.wallet,
       conflictingFiles: conflictingFiles,
-      folders: foldersToUpload,
+      foldersByPath: foldersByPath,
     );
 
     final costEstimate = await CostEstimate.create(
