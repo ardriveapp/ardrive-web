@@ -20,6 +20,7 @@ part 'upload_state.dart';
 final privateFileSizeLimit = 104857600;
 final publicFileSizeLimit = 1.25 * math.pow(10, 9);
 final minimumPstTip = BigInt.from(10000000);
+final filesNamesToExclude = ['.DS_Store'];
 
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
@@ -62,6 +63,7 @@ class UploadCubit extends Cubit<UploadState> {
         super(UploadPreparationInProgress());
 
   Future<void> startUploadPreparation() async {
+    files.removeWhere((file) => filesNamesToExclude.contains(file.name));
     _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
     _targetFolder = await _driveDao
         .folderById(driveId: driveId, folderId: folderId)

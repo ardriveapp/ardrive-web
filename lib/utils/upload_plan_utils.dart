@@ -54,9 +54,9 @@ class UploadPlanUtils {
       final fileKey =
           private ? await deriveFileKey(driveKey!, fileEntity.id!) : null;
 
-      final revisionAction = !conflictingFiles.containsKey(file.name)
-          ? RevisionAction.create
-          : RevisionAction.uploadNewVersion;
+      final revisionAction = conflictingFiles.containsKey(file.getIdentifier())
+          ? RevisionAction.uploadNewVersion
+          : RevisionAction.create;
 
       if (fileSize < bundleSizeLimit) {
         _fileDataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(
