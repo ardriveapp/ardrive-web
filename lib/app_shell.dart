@@ -109,12 +109,20 @@ class _AppShellState extends State<AppShell> {
                                               .stream,
                                         ),
                                         percentageDetails: _syncStreamBuilder(
-                                            builderWithData: (syncProgress) => Text(
-                                                '${(syncProgress.progress * 100).roundToDouble()}% complete')),
+                                            builderWithData: (syncProgress) =>
+                                                Text(appLocalizationsOf(context)
+                                                    .syncProgressPercentage(
+                                                        (syncProgress.progress *
+                                                                100)
+                                                            .roundToDouble
+                                                            .toString()))),
                                         details: _syncStreamBuilder(
                                           builderWithData: (syncProgress) =>
                                               Text(
-                                            'Drive ${syncProgress.drivesSynced} of ${syncProgress.drivesCount} Synced',
+                                            appLocalizationsOf(context)
+                                                .driveSyncedOfDrivesCount(
+                                                    syncProgress.drivesSynced,
+                                                    syncProgress.drivesCount),
                                             style: TextStyle(
                                                 fontSize: 16,
                                                 fontWeight: FontWeight.bold),
