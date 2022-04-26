@@ -25,7 +25,7 @@ class UploadPlanUtils {
     required Map<String, String> conflictingFiles,
     required Drive targetDrive,
     required FolderEntry targetFolder,
-    Map<String, WebFolder> folders = const {},
+    Map<String, WebFolder> foldersByPath = const {},
   }) async {
     final _fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
     final _fileV2UploadHandles = <String, FileV2UploadHandle>{};
@@ -80,7 +80,7 @@ class UploadPlanUtils {
         );
       }
     }
-    folders.forEach((key, folder) async {
+    foldersByPath.forEach((key, folder) async {
       _folderDataItemUploadHandles.putIfAbsent(
         folder.id,
         () => FolderDataItemUploadHandle(
