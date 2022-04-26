@@ -116,7 +116,7 @@ class _AppShellState extends State<AppShell> {
                                                                 100)
                                                             .roundToDouble
                                                             .toString()))),
-                                        details: _syncStreamBuilder(
+                                        progressDescription: _syncStreamBuilder(
                                           builderWithData: (syncProgress) =>
                                               Text(
                                             appLocalizationsOf(context)

@@ -13,13 +13,13 @@ Future<void> showProgressDialog(BuildContext context, String title) =>
 class ProgressDialog extends StatelessWidget {
   final String title;
   final Widget? percentageDetails;
-  final Widget? details;
+  final Widget? progressDescription;
   final Widget? progressBar;
 
   ProgressDialog(
       {required this.title,
       this.progressBar,
-      this.details,
+      this.progressDescription,
       this.percentageDetails});
 
   @override
@@ -41,10 +41,10 @@ class ProgressDialog extends StatelessWidget {
                       strokeWidth: 8,
                     )),
               ),
-              if (details != null)
+              if (progressDescription != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
-                  child: details!,
+                  child: progressDescription!,
                 ),
               if (progressBar != null) progressBar!,
               if (percentageDetails != null)
