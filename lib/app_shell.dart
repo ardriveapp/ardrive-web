@@ -108,29 +108,20 @@ class _AppShellState extends State<AppShell> {
                                               .syncProgressController
                                               .stream,
                                         ),
-                                        details: StreamBuilder<SyncProgress>(
-                                          stream: context
-                                              .read<SyncCubit>()
-                                              .syncProgressController
-                                              .stream,
-                                          builder: (BuildContext context,
-                                              AsyncSnapshot<SyncProgress>
-                                                  snapshot) {
-                                            if (!snapshot.hasData) {
-                                              return Container();
-                                            }
-
-                                            return Container(child: Text(
-                                                // '${(snapshot.data!.progress * 100).roundToDouble()}% complete found ${snapshot.data!.totalNumberOfFiles} items.\nLoaded ${snapshot.data!.drivesSynced} of ${snapshot.data!.drivesCount}'));
-                                                '${(snapshot.data!.progress * 100).roundToDouble()}% complete ${snapshot.data!.drivesSynced} of ${snapshot.data!.drivesCount} drive(s) loaded'));
-
-                                            // '${(snapshot.data!.progress * 100).roundToDouble()}% complete (${snapshot.data!.totalSynced} of ${snapshot.data!.totalNumberOfFiles} items).'));
-                                          },
+                                        percentageDetails: _syncStreamBuilder(
+                                            builderWithData: (syncProgress) => Text(
+                                                '${(syncProgress.progress * 100).roundToDouble()}% complete')),
+                                        details: _syncStreamBuilder(
+                                          builderWithData: (syncProgress) =>
+                                              Text(
+                                            'Drive ${syncProgress.drivesSynced} of ${syncProgress.drivesCount} Synced',
+                                            style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold),
+                                          ),
                                         ),
                                         title: appLocalizationsOf(context)
-                                            .syncingPleaseWait
-                                        // + ' ${snapshot.hasData ? (snapshot.data! * 100).roundToDouble() : ''}%',
-                                        );
+                                            .syncingPleaseWait);
                                   }
                                 },
                               );
@@ -170,6 +161,13 @@ class _AppShellState extends State<AppShell> {
           );
         },
       );
+
+  Widget _syncStreamBuilder(
+          {required Widget Function(SyncProgress s) builderWithData}) =>
+      StreamBuilder<SyncProgress>(
+          stream: context.read<SyncCubit>().syncProgressController.stream,
+          builder: (context, snapshot) =>
+              snapshot.hasData ? builderWithData(snapshot.data!) : Container());
 
   void toggleProfileOverlay() =>
       setState(() => _showProfileOverlay = !_showProfileOverlay);
