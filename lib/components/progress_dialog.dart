@@ -12,35 +12,45 @@ Future<void> showProgressDialog(BuildContext context, String title) =>
 
 class ProgressDialog extends StatelessWidget {
   final String title;
+  final Widget? percentageDetails;
   final Widget? details;
   final Widget? progressBar;
 
-  ProgressDialog({required this.title, this.progressBar, this.details});
+  ProgressDialog(
+      {required this.title,
+      this.progressBar,
+      this.details,
+      this.percentageDetails});
 
   @override
   Widget build(BuildContext context) => AppDialog(
         dismissable: false,
         title: title,
         content: SizedBox(
-          width: kSmallDialogWidth + 100,
+          width: kSmallDialogWidth + 164,
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Center(
-                  child: SizedBox(
-                      width: 74,
-                      height: 74,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 8,
-                      ))),
-              SizedBox(
-                height: 34,
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: const SizedBox(
+                    width: 74,
+                    height: 74,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 8,
+                    )),
               ),
+              if (details != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: details!,
+                ),
               if (progressBar != null) progressBar!,
-              SizedBox(
-                height: 24,
-              ),
-              if (details != null) details!,
+              if (percentageDetails != null)
+                Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: percentageDetails!),
             ],
           ),
         ),
