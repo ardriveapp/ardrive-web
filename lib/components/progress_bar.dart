@@ -5,7 +5,7 @@ import 'package:percent_indicator/linear_percent_indicator.dart';
 class ProgressBar extends StatefulWidget {
   ProgressBar({Key? key, required this.percentage}) : super(key: key);
 
-  final Stream<SyncInfo> percentage;
+  final Stream<SyncProgress> percentage;
 
   @override
   State<ProgressBar> createState() => _ProgressBarState();
@@ -25,7 +25,7 @@ class _ProgressBarState extends State<ProgressBar> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<SyncInfo>(
+    return StreamBuilder<SyncProgress>(
         stream: widget.percentage,
         builder: (context, snapshot) {
           if (snapshot.hasData) {

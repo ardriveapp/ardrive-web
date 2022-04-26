@@ -108,13 +108,13 @@ class _AppShellState extends State<AppShell> {
                                               .syncProgressController
                                               .stream,
                                         ),
-                                        details: StreamBuilder<SyncInfo>(
+                                        details: StreamBuilder<SyncProgress>(
                                           stream: context
                                               .read<SyncCubit>()
                                               .syncProgressController
                                               .stream,
                                           builder: (BuildContext context,
-                                              AsyncSnapshot<SyncInfo>
+                                              AsyncSnapshot<SyncProgress>
                                                   snapshot) {
                                             if (!snapshot.hasData) {
                                               return Container();
