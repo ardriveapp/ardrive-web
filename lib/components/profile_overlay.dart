@@ -1,11 +1,10 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../../../utils/app_localizations_wrapper.dart';
 
 class ProfileOverlay extends StatelessWidget {
   @override

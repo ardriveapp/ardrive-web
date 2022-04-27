@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/string_types.dart';
@@ -12,8 +13,6 @@ import 'package:moor/moor.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../blocs.dart';
 
 part 'drive_detail_state.dart';
 
