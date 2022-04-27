@@ -527,7 +527,7 @@
   },
   "uploadFolder": "Upload folder",
   "@uploadFolder": {
-    "description": "Upload a folder and all subfolder and files in it"
+    "description": "Upload a folder and every subfolder alongside files inside them"
   },
   "newDrive": "New drive",
   "@newDrive": {
