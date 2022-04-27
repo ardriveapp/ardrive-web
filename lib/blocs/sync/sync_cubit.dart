@@ -247,8 +247,6 @@ class SyncCubit extends Cubit<SyncState> {
       /// In order to have a smooth transition at the end.
       await Future.delayed(Duration(milliseconds: 1000));
 
-      emit(SyncEmpty());
-
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
         _updateTransactionStatuses(),
