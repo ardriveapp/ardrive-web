@@ -56,7 +56,6 @@ dependencies:
   collection: ^1.15.0-nullsafety.4
   csv: 5.0.0
   stash_memory: 4.0.1
-  extended_image: ^6.0.2+1
 
 dev_dependencies:
   flutter_test:

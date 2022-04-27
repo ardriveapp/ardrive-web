@@ -35,12 +35,13 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
             ),
             BlocProvider<FsEntryPreviewCubit>(
               create: (context) => FsEntryPreviewCubit(
-                  driveId: widget.driveId,
-                  maybeSelectedItem: widget.maybeSelectedItem,
-                  driveDao: context.read<DriveDao>(),
-                  profileCubit: context.read<ProfileCubit>(),
-                  arweave: context.read<ArweaveService>(),
-                  config: context.read<AppConfig>()),
+                driveId: widget.driveId,
+                maybeSelectedItem: widget.maybeSelectedItem,
+                driveDao: context.read<DriveDao>(),
+                profileCubit: context.read<ProfileCubit>(),
+                arweave: context.read<ArweaveService>(),
+                config: context.read<AppConfig>(),
+              ),
             )
           ],
           child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(

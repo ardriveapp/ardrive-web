@@ -25,17 +25,9 @@ class FsEntryPreviewLoading extends FsEntryPreviewSuccess {
 }
 
 class FsEntryPreviewImage extends FsEntryPreviewSuccess {
-  FsEntryPreviewImage({
-    required String previewUrl,
-  }) : super(previewUrl: previewUrl);
-
-  @override
-  List<Object> get props => [previewUrl];
-}
-
-class FsEntryPreviewPrivateImage extends FsEntryPreviewImage {
   final Uint8List imageBytes;
-  FsEntryPreviewPrivateImage({
+
+  FsEntryPreviewImage({
     required this.imageBytes,
     required String previewUrl,
   }) : super(previewUrl: previewUrl);

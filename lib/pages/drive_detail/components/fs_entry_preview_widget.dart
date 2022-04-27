@@ -18,19 +18,16 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
     switch (widget.state.runtimeType) {
       case FsEntryPreviewLoading:
         return Center(
-            child: SizedBox(
-                height: 24, width: 24, child: CircularProgressIndicator()));
-
-      case FsEntryPreviewImage:
-        return ExtendedImage.network(
-          widget.state.previewUrl,
-          fit: BoxFit.fitWidth,
-          cache: true,
+          child: SizedBox(
+            height: 24,
+            width: 24,
+            child: CircularProgressIndicator(),
+          ),
         );
 
-      case FsEntryPreviewPrivateImage:
-        return ExtendedImage.memory(
-          (widget.state as FsEntryPreviewPrivateImage).imageBytes,
+      case FsEntryPreviewImage:
+        return Image.memory(
+          (widget.state as FsEntryPreviewImage).imageBytes,
           fit: BoxFit.fitWidth,
         );
 

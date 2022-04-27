@@ -4,7 +4,6 @@ import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
@@ -61,12 +60,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
                   '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
               switch (previewType) {
                 case 'image':
-                  emitImagePreview(file.id, previewUrl);
-
+                  emitImagePreview(file, previewUrl);
                   break;
 
-                ///TODO Enable more previews in the future after dealing
+                /// Enable more previews in the future after dealing
                 /// with state and widget disposal
+
                 // case 'audio':
                 //   emit(FsEntryPreviewAudio(previewUrl: previewUrl));
                 //   break;
@@ -92,21 +91,37 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
   }
 
-  Future<void> emitImagePreview(String fileId, String dataUrl) async {
+  Future<void> emitImagePreview(FileEntry file, String dataUrl) async {
     try {
-      final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-      final file = await _driveDao
-          .fileById(driveId: driveId, fileId: fileId)
-          .getSingle();
+      emit(FsEntryPreviewLoading());
+
+      final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
+      if (dataTx == null) {
+        emit(FsEntryPreviewFailure());
+        return;
+      }
 
       late Uint8List dataBytes;
+      final cachedBytes = await _driveDao.getPreviewDataFromMemory(dataTx.id);
+      if (cachedBytes == null) {
+        final dataRes = await http.get(Uri.parse(dataUrl));
+        dataBytes = dataRes.bodyBytes;
+        await _driveDao.putPreviewDataInMemory(
+          dataTxId: dataTx.id,
+          bytes: dataBytes,
+        );
+      } else {
+        dataBytes = cachedBytes;
+      }
 
+      final drive = await _driveDao.driveById(driveId: driveId).getSingle();
       switch (drive.privacy) {
         case DrivePrivacy.public:
-          emit(FsEntryPreviewImage(previewUrl: dataUrl));
+          emit(
+            FsEntryPreviewImage(imageBytes: dataBytes, previewUrl: dataUrl),
+          );
           break;
         case DrivePrivacy.private:
-          emit(FsEntryPreviewLoading());
           final profile = _profileCubit.state;
           SecretKey? driveKey;
 
@@ -123,22 +138,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             throw StateError('Drive Key not found');
           }
 
-          final fileKey = await _driveDao.getFileKey(fileId, driveKey);
-          final dataTx = await (_arweave.getTransactionDetails(file.dataTxId));
-
-          if (dataTx != null) {
-            final dataRes = await http.get(Uri.parse(dataUrl));
-            dataBytes = await decryptTransactionData(
-              dataTx,
-              dataRes.bodyBytes,
-              fileKey,
-            );
-          }
+          final fileKey = await _driveDao.getFileKey(file.id, driveKey);
+          final decodedBytes = await decryptTransactionData(
+            dataTx,
+            dataBytes,
+            fileKey,
+          );
           emit(
-            FsEntryPreviewPrivateImage(
-              imageBytes: dataBytes,
-              previewUrl: dataUrl,
-            ),
+            FsEntryPreviewImage(imageBytes: decodedBytes, previewUrl: dataUrl),
           );
           break;
 
