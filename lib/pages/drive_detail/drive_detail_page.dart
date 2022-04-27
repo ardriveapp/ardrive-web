@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
@@ -13,10 +11,10 @@ import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
-import 'package:chewie/chewie.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:filesize/filesize.dart';
 import 'package:flutter/foundation.dart';
@@ -29,7 +27,6 @@ import 'package:moor/moor.dart' show OrderingMode;
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:video_player/video_player.dart';
 
 import '../../../utils/app_localizations_wrapper.dart';
 import 'components/custom_paginated_data_table.dart';

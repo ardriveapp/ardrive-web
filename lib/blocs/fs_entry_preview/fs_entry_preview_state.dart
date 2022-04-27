@@ -20,6 +20,10 @@ class FsEntryPreviewSuccess extends FsEntryPreviewState {
   List<Object> get props => [previewUrl];
 }
 
+class FsEntryPreviewLoading extends FsEntryPreviewSuccess {
+  FsEntryPreviewLoading() : super(previewUrl: '');
+}
+
 class FsEntryPreviewImage extends FsEntryPreviewSuccess {
   FsEntryPreviewImage({
     required String previewUrl,
@@ -27,6 +31,17 @@ class FsEntryPreviewImage extends FsEntryPreviewSuccess {
 
   @override
   List<Object> get props => [previewUrl];
+}
+
+class FsEntryPreviewPrivateImage extends FsEntryPreviewImage {
+  final Uint8List imageBytes;
+  FsEntryPreviewPrivateImage({
+    required this.imageBytes,
+    required String previewUrl,
+  }) : super(previewUrl: previewUrl);
+
+  @override
+  List<Object> get props => [imageBytes, previewUrl];
 }
 
 class FsEntryPreviewAudio extends FsEntryPreviewSuccess {

@@ -13,40 +13,27 @@ class FsEntryPreviewWidget extends StatefulWidget {
 }
 
 class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
-  VideoPlayerController? videoPlayerController;
-  ChewieController? chewieController;
-
-  @override
-  void dispose() {
-    if (videoPlayerController != null) {
-      videoPlayerController?.dispose();
-      chewieController?.dispose();
-    }
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     switch (widget.state.runtimeType) {
+      case FsEntryPreviewLoading:
+        return Center(
+            child: SizedBox(
+                height: 24, width: 24, child: CircularProgressIndicator()));
+
       case FsEntryPreviewImage:
         return ExtendedImage.network(
           widget.state.previewUrl,
           fit: BoxFit.fitWidth,
           cache: true,
         );
-      case FsEntryPreviewVideo:
-        videoPlayerController =
-            VideoPlayerController.network(widget.state.previewUrl)
-              ..initialize();
 
-        chewieController = ChewieController(
-          videoPlayerController: videoPlayerController!,
-          autoPlay: true,
-          looping: true,
+      case FsEntryPreviewPrivateImage:
+        return ExtendedImage.memory(
+          (widget.state as FsEntryPreviewPrivateImage).imageBytes,
+          fit: BoxFit.fitWidth,
         );
-        return Chewie(
-          controller: chewieController!,
-        );
+
       default:
         return Container();
     }

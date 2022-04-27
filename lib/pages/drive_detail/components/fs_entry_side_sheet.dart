@@ -15,18 +15,16 @@ class FsEntrySideSheet extends StatefulWidget {
 }
 
 class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
-  Map<String, dynamic> datas = {};
-  var tabCount = 2;
-  bool hasPreview = false;
   @override
   Widget build(BuildContext context) => Drawer(
         elevation: 1,
         child: MultiBlocProvider(
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
-          key: ValueKey(
-            widget.driveId +
-                '${widget.maybeSelectedItem?.id ?? Random().nextInt(1000).toString()}',
-          ),
+          key: widget.maybeSelectedItem?.id != null
+              ? ValueKey(
+                  widget.driveId + '${widget.maybeSelectedItem?.id}',
+                )
+              : UniqueKey(),
           providers: [
             BlocProvider<FsEntryInfoCubit>(
               create: (context) => FsEntryInfoCubit(
@@ -40,82 +38,68 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                   driveId: widget.driveId,
                   maybeSelectedItem: widget.maybeSelectedItem,
                   driveDao: context.read<DriveDao>(),
+                  profileCubit: context.read<ProfileCubit>(),
+                  arweave: context.read<ArweaveService>(),
                   config: context.read<AppConfig>()),
             )
           ],
-          child: BlocListener<FsEntryPreviewCubit, FsEntryPreviewState>(
-            listener: (context, previewState) {
-              if (previewState is FsEntryPreviewSuccess) {
-                setState(() {
-                  tabCount = 3;
-                  hasPreview = true;
-                });
-              } else {
-                setState(() {
-                  tabCount = 2;
-                  hasPreview = false;
-                });
-              }
-            },
-            child: DefaultTabController(
-              length: tabCount,
-              child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
-                builder: (context, previewState) {
-                  return BlocBuilder<FsEntryInfoCubit, FsEntryInfoState>(
-                    builder: (context, state) => state is FsEntryInfoSuccess
-                        ? Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              const SizedBox(height: 8),
-                              ListTile(
-                                title: Text(state.name),
-                                trailing: IconButton(
-                                  icon: const Icon(Icons.close),
-                                  onPressed: () => context
-                                      .read<DriveDetailCubit>()
-                                      .toggleSelectedItemDetails(),
-                                ),
+          child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
+            builder: (context, previewState) {
+              return DefaultTabController(
+                length: previewState is FsEntryPreviewSuccess ? 3 : 2,
+                child: BlocBuilder<FsEntryInfoCubit, FsEntryInfoState>(
+                  builder: (context, state) => state is FsEntryInfoSuccess
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: 8),
+                            ListTile(
+                              title: Text(state.name),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () => context
+                                    .read<DriveDetailCubit>()
+                                    .toggleSelectedItemDetails(),
                               ),
-                              TabBar(
-                                tabs: [
-                                  if (hasPreview)
-                                    Tab(
-                                      text: 'Preview',
-                                    ),
+                            ),
+                            TabBar(
+                              tabs: [
+                                if (previewState is FsEntryPreviewSuccess)
                                   Tab(
-                                      text: appLocalizationsOf(context)
-                                          .itemDetailsEmphasized),
-                                  Tab(
-                                      text: appLocalizationsOf(context)
-                                          .itemActivityEmphasized),
+                                    text: 'Preview',
+                                  ),
+                                Tab(
+                                    text: appLocalizationsOf(context)
+                                        .itemDetailsEmphasized),
+                                Tab(
+                                    text: appLocalizationsOf(context)
+                                        .itemActivityEmphasized),
+                              ],
+                            ),
+                            Expanded(
+                              child: TabBarView(
+                                children: [
+                                  if (previewState is FsEntryPreviewSuccess)
+                                    FsEntryPreviewWidget(state: previewState),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _buildInfoTable(context, state),
+                                      _buildTxTable(context, state),
+                                    ],
+                                  ),
+                                  _buildActivityTab(context, state),
                                 ],
                               ),
-                              Expanded(
-                                child: TabBarView(
-                                  children: [
-                                    if (hasPreview &&
-                                        previewState is FsEntryPreviewSuccess)
-                                      FsEntryPreviewWidget( state: previewState),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        _buildInfoTable(context, state),
-                                        _buildTxTable(context, state),
-                                      ],
-                                    ),
-                                    _buildActivityTab(context, state),
-                                  ],
-                                ),
-                              )
-                            ],
-                          )
-                        : const SizedBox(),
-                  );
-                },
-              ),
-            ),
+                            )
+                          ],
+                        )
+                      : const SizedBox(),
+                ),
+              );
+            },
           ),
         ),
       );
@@ -557,8 +541,6 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
         ),
       );
 }
-
-
 
 void downloadOrPreviewRevision({
   required String drivePrivacy,
