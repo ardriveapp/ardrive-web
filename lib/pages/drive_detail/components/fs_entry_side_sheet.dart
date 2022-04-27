@@ -68,7 +68,8 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                               tabs: [
                                 if (previewState is FsEntryPreviewSuccess)
                                   Tab(
-                                    text: 'Preview',
+                                    text: appLocalizationsOf(context)
+                                        .itemPreviewEmphasized,
                                   ),
                                 Tab(
                                     text: appLocalizationsOf(context)
