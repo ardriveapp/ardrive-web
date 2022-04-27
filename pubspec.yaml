@@ -34,7 +34,6 @@ dependencies:
   file_selector: ^0.8.2
   file_selector_web: ^0.8.1
   file_selector_macos: ^0.0.4
-  filesize: ^2.0.1
   google_fonts: ^2.1.0
   intersperse: ^2.0.0
   intl: ^0.17.0
