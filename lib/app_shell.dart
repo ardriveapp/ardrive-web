@@ -95,42 +95,37 @@ class _AppShellState extends State<AppShell> {
                                     .isCurrentProfileArConnect(),
                                 builder: (BuildContext context,
                                     AsyncSnapshot snapshot) {
-                                  if (snapshot.data ?? false) {
-                                    return ProgressDialog(
-                                      title: appLocalizationsOf(context)
-                                          .syncingPleaseRemainOnThisTab,
-                                    );
-                                  } else {
-                                    return ProgressDialog(
-                                        progressBar: ProgressBar(
-                                          percentage: context
-                                              .read<SyncCubit>()
-                                              .syncProgressController
-                                              .stream,
-                                        ),
-                                        percentageDetails: _syncStreamBuilder(
-                                            builderWithData: (syncProgress) =>
-                                                Text(appLocalizationsOf(context)
-                                                    .syncProgressPercentage(
-                                                        (syncProgress.progress *
-                                                                100)
-                                                            .roundToDouble()
-                                                            .toString()))),
-                                        progressDescription: _syncStreamBuilder(
+                                  return ProgressDialog(
+                                      progressBar: ProgressBar(
+                                        percentage: context
+                                            .read<SyncCubit>()
+                                            .syncProgressController
+                                            .stream,
+                                      ),
+                                      percentageDetails: _syncStreamBuilder(
                                           builderWithData: (syncProgress) =>
-                                              Text(
-                                            appLocalizationsOf(context)
-                                                .driveSyncedOfDrivesCount(
-                                                    syncProgress.drivesSynced,
-                                                    syncProgress.drivesCount),
-                                            style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold),
-                                          ),
+                                              Text(appLocalizationsOf(context)
+                                                  .syncProgressPercentage(
+                                                      (syncProgress.progress *
+                                                              100)
+                                                          .roundToDouble()
+                                                          .toString()))),
+                                      progressDescription: _syncStreamBuilder(
+                                        builderWithData: (syncProgress) => Text(
+                                          appLocalizationsOf(context)
+                                              .driveSyncedOfDrivesCount(
+                                                  syncProgress.drivesSynced,
+                                                  syncProgress.drivesCount),
+                                          style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold),
                                         ),
-                                        title: appLocalizationsOf(context)
-                                            .syncingPleaseWait);
-                                  }
+                                      ),
+                                      title: snapshot.data ?? false
+                                          ? appLocalizationsOf(context)
+                                              .syncingPleaseRemainOnThisTab
+                                          : appLocalizationsOf(context)
+                                              .syncingPleaseWait);
                                 },
                               );
                             },
