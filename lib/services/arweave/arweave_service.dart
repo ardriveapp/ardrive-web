@@ -106,10 +106,9 @@ class ArweaveService {
   }) async {
     final transactionsEdges =
         <DriveEntityHistory$Query$TransactionConnection$TransactionEdge>[];
-    var finishProcess = false;
     String? cursor;
 
-    while (!finishProcess) {
+    while (true) {
       // Get a page of 100 transactions
       final driveEntityHistoryQuery = await _gql.execute(
         DriveEntityHistoryQuery(
@@ -127,9 +126,8 @@ class ArweaveService {
       cursor =
           transactionsEdges.isNotEmpty ? transactionsEdges.last.cursor : null;
 
-      if (driveEntityHistoryQuery.data!.transactions.edges.length <
-          kMaxNumberOfTransactionsPerPage) {
-        finishProcess = true;
+      if (!driveEntityHistoryQuery.data!.transactions.pageInfo.hasNextPage) {
+        break;
       }
     }
 
