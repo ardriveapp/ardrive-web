@@ -252,9 +252,8 @@ class SyncCubit extends Cubit<SyncState> {
         _updateTransactionStatuses(),
       ]);
     } catch (err) {
-      print('catched');
       addError(err);
-      print(err.toString());
+      print('An error occurs while sync. rror: ' + err.toString());
     }
     _lastSync = DateTime.now();
     print('The sync process took: '
