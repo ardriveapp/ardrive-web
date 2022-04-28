@@ -241,7 +241,6 @@ class SyncCubit extends Cubit<SyncState> {
         _syncProgress = _syncProgress.copyWith(
             drivesSynced: _syncProgress.drivesSynced + 1);
         syncProgressController.add(_syncProgress);
-        await _updateTransactionStatuses();
       }));
 
       print(
@@ -255,7 +254,7 @@ class SyncCubit extends Cubit<SyncState> {
 
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
-        // _updateTransactionStatuses(),
+        _updateTransactionStatuses(),
       ]);
     } catch (err) {
       addError(err);
@@ -463,7 +462,8 @@ class SyncCubit extends Cubit<SyncState> {
       required SecretKey? driveKey,
       required int lastBlockHeight,
       required int currentBlockHeight}) async* {
-    const pageCount = 200;
+    final pageCount =
+        200 ~/ (_syncProgress.drivesCount - _syncProgress.drivesSynced);
     var currentDriveEntitiesSynced = 0;
     var driveSyncProgress = 0.0;
 
@@ -609,10 +609,6 @@ class SyncCubit extends Cubit<SyncState> {
           });
 
           yield _syncProgress;
-
-          await Future.delayed(Duration(
-              milliseconds:
-                  (_syncProgress.numberOfDrivesAtGetMetadataPhase) * 100));
         });
     print('''
         ${'- - ' * 10}
@@ -654,6 +650,7 @@ class SyncCubit extends Cubit<SyncState> {
 
         currentPage.add(list[j]);
       }
+
       yield* itemsPerPageCallback(currentPage);
     }
   }
@@ -994,7 +991,13 @@ class SyncCubit extends Cubit<SyncState> {
 
     final length = pendingTxMap.length;
     final list = pendingTxMap.keys.toList();
-    const page = 500;
+    late int page;
+
+    if (pendingTxMap.length > 10000) {
+      page = 5000;
+    } else {
+      page = 1000;
+    }
 
     for (var i = 0; i < length / page; i++) {
       final Map<String?, int> confirmations = {};
@@ -1060,7 +1063,7 @@ class SyncCubit extends Cubit<SyncState> {
           }
         }
       });
-      // await Future.delayed(Duration(milliseconds: 500));
+      await Future.delayed(Duration(milliseconds: 200));
     }
   }
 

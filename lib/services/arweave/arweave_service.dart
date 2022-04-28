@@ -143,9 +143,21 @@ class ArweaveService {
     final entityTxs = <
         DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>[];
     entityTxs.addAll(queryEdges.map((e) => e.node).toList());
+    // List<http.Response> responses = [];
+
+    // await Future.forEach(entityTxs,
+    //     (DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+    //         element) async {
+    //   final res = await client.api.get(element.id);
+    //   responses.add(res);
+    // });q
 
     final responses = await Future.wait(
       entityTxs.map((e) async {
+        // ++count;
+        // if (count == 100) {
+        await Future.delayed(Duration(milliseconds: 50));
+        // }
         final res = await client.api.get(e.id);
         return res;
       }),
