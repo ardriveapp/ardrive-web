@@ -330,7 +330,9 @@ class SyncCubit extends Cubit<SyncState> {
     /// Variables to count the current drive's progress information
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
 
-    print('${DateTime.now()} : Starting Drive ${drive.name} sync.');
+    final startSyncDT = DateTime.now();
+
+    print('$startSyncDT: Starting Drive ${drive.name} sync.');
 
     SecretKey? driveKey;
 
@@ -347,6 +349,8 @@ class SyncCubit extends Cubit<SyncState> {
         }
       }
     }
+    final fetchPhaseStartDT = DateTime.now();
+
     print(
         '${DateTime.now()} : Getting all information about the drive ${drive.name}\n');
 
@@ -397,7 +401,7 @@ class SyncCubit extends Cubit<SyncState> {
           'currentPageBlockHeight $currentPageBlockHeight\n'
           'percentage based on block height: ${(1 - ((currentBlockheight - currentPageBlockHeight) / totalBlockHeightDifference!)) * 100}');
 
-      _totalProgress += _calculateProgressInTotalPercentage(
+      _totalProgress += _calculateProgressInFetchPhasePercentage(
           _calculatePercentageProgress(
               fetchPhasePercentage, _calculatePercentageBasedOnBlockHeights()));
 
@@ -416,19 +420,25 @@ class SyncCubit extends Cubit<SyncState> {
       }
     }
 
+    final fetchPhaseTotalTime =
+        DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
+
+    print(
+        'It tooks $fetchPhaseTotalTime milliseconds to get all ${drive.name}\'s transactions.\n');
+
     print('FetchPhasePercentage: $fetchPhasePercentage\n');
 
     /// Fill the remaining percentage until get 50%.
     /// It is needed because the phase one isn't accurate and possibly will not
     /// match 100% everytime
     _totalProgress +=
-        _calculateProgressInTotalPercentage((1 - fetchPhasePercentage));
+        _calculateProgressInFetchPhasePercentage((1 - fetchPhasePercentage));
     print('Total progress after fetch phase: $_totalProgress');
     _syncProgress = _syncProgress.copyWith(progress: _totalProgress);
 
     yield _syncProgress;
 
-    print('Drive ${drive.name} is going to the 2nd phase');
+    print('Drive ${drive.name} is going to the 2nd phase\n');
 
     _syncProgress = _syncProgress.copyWith(
         numberOfDrivesAtGetMetadataPhase:
@@ -441,7 +451,18 @@ class SyncCubit extends Cubit<SyncState> {
         currentBlockHeight: currentBlockheight,
         lastBlockHeight: lastBlockHeight);
 
-    print('Drive ${drive.name} passed the 2nd phase');
+    print('Drive ${drive.name} passed the 2nd phase\n');
+
+    final syncDriveTotalTime =
+        DateTime.now().difference(startSyncDT).inMilliseconds;
+
+    print(
+        'It tooks $syncDriveTotalTime in milleseconds to sync the ${drive.name}.\n');
+
+    final averageBetweenFetchAndGet = fetchPhaseTotalTime / syncDriveTotalTime;
+
+    print(
+        'The fetch phase took: ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of the entire drive process.\n');
 
     _syncProgress = _syncProgress.copyWith(
         numberOfDrivesAtGetMetadataPhase:
@@ -480,7 +501,7 @@ class SyncCubit extends Cubit<SyncState> {
       ));
 
       /// If there's nothing to sync, we assume that all were synced
-      _totalProgress += _calculateProgressInTotalPercentage(1); // 100%
+      _totalProgress += _calculateProgressInGetPhasePercentage(1); // 100%
       _syncProgress = _syncProgress.copyWith(progress: _totalProgress);
       yield _syncProgress;
       return;
@@ -516,7 +537,7 @@ class SyncCubit extends Cubit<SyncState> {
 
           currentDriveEntitiesSynced += items.length - newEntities.length;
 
-          _totalProgress += _calculateProgressInTotalPercentage(
+          _totalProgress += _calculateProgressInGetPhasePercentage(
               _calculateDrivePercentProgress());
 
           _syncProgress = _syncProgress.copyWith(
@@ -565,7 +586,7 @@ class SyncCubit extends Cubit<SyncState> {
             currentDriveEntitiesSynced -=
                 updatedFoldersById.length + updatedFilesById.length;
 
-            _totalProgress += _calculateProgressInTotalPercentage(
+            _totalProgress += _calculateProgressInGetPhasePercentage(
                 _calculateDrivePercentProgress());
 
             _syncProgress = _syncProgress.copyWith(
@@ -596,7 +617,7 @@ class SyncCubit extends Cubit<SyncState> {
             currentDriveEntitiesSynced +=
                 updatedFoldersById.length + updatedFilesById.length;
 
-            _totalProgress += _calculateProgressInTotalPercentage(
+            _totalProgress += _calculateProgressInGetPhasePercentage(
                 _calculateDrivePercentProgress());
 
             _syncProgress = _syncProgress.copyWith(
@@ -621,8 +642,12 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   /// Divided by 2 because we have 2 phases
-  double _calculateProgressInTotalPercentage(double currentDriveProgress) =>
-      (currentDriveProgress / _syncProgress.drivesCount) / 2;
+  double _calculateProgressInGetPhasePercentage(double currentDriveProgress) =>
+      (currentDriveProgress / _syncProgress.drivesCount) * 0.9; // 90%
+
+  double _calculateProgressInFetchPhasePercentage(
+          double currentDriveProgress) =>
+      (currentDriveProgress / _syncProgress.drivesCount) * 0.1; // 10%
 
   double _calculatePercentageProgress(
           double currentPercentage, double newPercentage) =>
