@@ -323,10 +323,6 @@
   "@uploadDragAndDrop": {
     "description": "The action of uploading a file"
   },
-  "itemPreviewEmphasized": "VISTA PREVIA",
-  "@itemPreviewEmphasized": {
-    "description": "Item preview"
-  },
   "itemDetailsEmphasized": "DETALLES",
   "@itemDetailsEmphasized": {
     "description": "Item details such as dates, transaction IDs and entity IDs. Emphasized with upper case"

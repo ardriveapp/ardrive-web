@@ -325,7 +325,7 @@
   },
   "itemPreviewEmphasized": "PREVIEW",
   "@itemPreviewEmphasized": {
-    "description": "Item preview"
+    "description": "Item previews"
   },
   "itemDetailsEmphasized": "DETAILS",
   "@itemDetailsEmphasized": {
