@@ -529,6 +529,10 @@
   "@uploadFiles": {
     "description": "Upload files to the Weave"
   },
+  "uploadFolder": "Upload folder",
+  "@uploadFolder": {
+    "description": "Upload a folder and every subfolder alongside files inside them"
+  },
   "newDrive": "New drive",
   "@newDrive": {
     "description": "Create a new drive entity"

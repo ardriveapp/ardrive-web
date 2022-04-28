@@ -547,7 +547,9 @@ class ArweaveService {
   /// Creates and signs a [Transaction] representing the provided [DataBundle].
 
   Future<Transaction> prepareDataBundleTx(
-      DataBundle bundle, Wallet wallet) async {
+    DataBundle bundle,
+    Wallet wallet,
+  ) async {
     final packageInfo = await PackageInfo.fromPlatform();
 
     final bundleTx = await client.transactions.prepare(

@@ -1,5 +1,8 @@
+import 'dart:html';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
+import 'package:ardrive/blocs/upload/models/web_file.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
@@ -7,44 +10,61 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
-import 'package:file_selector/file_selector.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'components.dart';
 
-Future<void> promptToUploadFile(
+Future<void> promptToUpload(
   BuildContext context, {
   required String driveId,
   required String folderId,
+  required bool isFolderUpload,
 }) async {
-  final selectedFiles = await openFiles();
-  if (selectedFiles.isEmpty) {
-    return;
-  }
-  await showCongestionDependentModalDialog(
-    context,
-    () => showDialog(
-      context: context,
-      builder: (_) => BlocProvider<UploadCubit>(
-        create: (context) => UploadCubit(
-          uploadPlanUtils: UploadPlanUtils(
+  final uploadInput = FileUploadInputElement()
+    ..setAttribute(
+        isFolderUpload ? 'webkitdirectory' : 'webkitEntries', 'multiple');
+  uploadInput.click();
+// Create and click upload input element
+
+  uploadInput.onChange.listen((e) async {
+    // read file content as dataURL
+    final files = uploadInput.files;
+    if (files == null) {
+      return;
+    }
+    final selectedFiles = files.map((file) {
+      return WebFile(file, folderId);
+    }).toList();
+    if (selectedFiles.isEmpty) {
+      return;
+    }
+    await showCongestionDependentModalDialog(
+      context,
+      () => showDialog(
+        context: context,
+        builder: (_) => BlocProvider<UploadCubit>(
+          create: (context) => UploadCubit(
+            uploadPlanUtils: UploadPlanUtils(
+              arweave: context.read<ArweaveService>(),
+              driveDao: context.read<DriveDao>(),
+            ),
+            driveId: driveId,
+            folderId: folderId,
+            files: selectedFiles,
+            profileCubit: context.read<ProfileCubit>(),
             arweave: context.read<ArweaveService>(),
+            pst: context.read<PstService>(),
             driveDao: context.read<DriveDao>(),
-          ),
-          driveId: driveId,
-          folderId: folderId,
-          files: selectedFiles,
-          profileCubit: context.read<ProfileCubit>(),
-          arweave: context.read<ArweaveService>(),
-          pst: context.read<PstService>(),
-          driveDao: context.read<DriveDao>(),
-        )..startUploadPreparation(),
-        child: UploadForm(),
+            uploadFolders: isFolderUpload,
+          )..startUploadPreparation(),
+          child: UploadForm(),
+        ),
+        barrierDismissible: false,
       ),
-      barrierDismissible: false,
-    ),
-  );
+    );
+  });
 }
 
 class UploadForm extends StatelessWidget {
@@ -83,10 +103,13 @@ class UploadForm extends StatelessWidget {
                     Text(appLocalizationsOf(context).conflictingFiles),
                     const SizedBox(height: 8),
                     ConstrainedBox(
-                        constraints: const BoxConstraints(maxHeight: 320),
-                        child: SingleChildScrollView(
-                            child:
-                                Text(state.conflictingFileNames.join(', ')))),
+                      constraints: const BoxConstraints(maxHeight: 320),
+                      child: SingleChildScrollView(
+                        child: Text(
+                          state.conflictingFileNames.join(', \n'),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -129,10 +152,13 @@ class UploadForm extends StatelessWidget {
                       Text(appLocalizationsOf(context).conflictingFiles),
                       const SizedBox(height: 8),
                       ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 320),
-                          child: SingleChildScrollView(
-                              child:
-                                  Text(state.conflictingFileNames.join(', ')))),
+                        constraints: const BoxConstraints(maxHeight: 320),
+                        child: SingleChildScrollView(
+                          child: Text(
+                            state.conflictingFileNames.join(', \n'),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -234,7 +260,7 @@ class UploadForm extends StatelessWidget {
                         .map((e) => e.numberOfFiles)
                         .reduce((value, element) => value += element)
                     : 0;
-            final numberOfV2Files = state.uploadPlan.v2FileUploadHandles.length;
+            final numberOfV2Files = state.uploadPlan.fileV2UploadHandles.length;
             return AppDialog(
               title: appLocalizationsOf(context)
                   .uploadNFiles(numberOfFilesInBundles + numberOfV2Files),
@@ -251,7 +277,7 @@ class UploadForm extends StatelessWidget {
                           shrinkWrap: true,
                           children: [
                             for (final file in state
-                                .uploadPlan.v2FileUploadHandles.values) ...{
+                                .uploadPlan.fileV2UploadHandles.values) ...{
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(file.entity.name!),
@@ -352,7 +378,7 @@ class UploadForm extends StatelessWidget {
                         .map((e) => e.numberOfFiles)
                         .reduce((value, element) => value += element)
                     : 0;
-            final numberOfV2Files = state.uploadPlan.v2FileUploadHandles.length;
+            final numberOfV2Files = state.uploadPlan.fileV2UploadHandles.length;
             return AppDialog(
               dismissable: false,
               title: appLocalizationsOf(context)
@@ -366,7 +392,7 @@ class UploadForm extends StatelessWidget {
                       shrinkWrap: true,
                       children: [
                         for (final file
-                            in state.uploadPlan.v2FileUploadHandles.values) ...{
+                            in state.uploadPlan.fileV2UploadHandles.values) ...{
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(file.entity.name!),

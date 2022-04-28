@@ -3,13 +3,12 @@ import 'dart:math' as math;
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/cost_estimate.dart';
-import 'package:ardrive/blocs/upload/upload_plan.dart';
+import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
 import 'package:rxdart/rxdart.dart';
@@ -21,11 +20,11 @@ part 'upload_state.dart';
 final privateFileSizeLimit = 104857600;
 final publicFileSizeLimit = 1.25 * math.pow(10, 9);
 final minimumPstTip = BigInt.from(10000000);
+final filesNamesToExclude = ['.DS_Store'];
 
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
   final String folderId;
-  final List<XFile> files;
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
@@ -33,8 +32,12 @@ class UploadCubit extends Cubit<UploadState> {
   final PstService _pst;
   final UploadPlanUtils _uploadPlanUtils;
 
+  late bool uploadFolders;
   late Drive _targetDrive;
   late FolderEntry _targetFolder;
+
+  List<UploadFile> files = [];
+  Map<String, WebFolder> foldersByPath = {};
 
   /// Map of conflicting file ids keyed by their file names.
   final Map<String, String> conflictingFiles = {};
@@ -51,6 +54,7 @@ class UploadCubit extends Cubit<UploadState> {
     required ArweaveService arweave,
     required PstService pst,
     required UploadPlanUtils uploadPlanUtils,
+    this.uploadFolders = false,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
@@ -59,6 +63,7 @@ class UploadCubit extends Cubit<UploadState> {
         super(UploadPreparationInProgress());
 
   Future<void> startUploadPreparation() async {
+    files.removeWhere((file) => filesNamesToExclude.contains(file.name));
     _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
     _targetFolder = await _driveDao
         .folderById(driveId: driveId, folderId: folderId)
@@ -73,13 +78,19 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> checkConflictingFolders() async {
     emit(UploadPreparationInProgress());
-
+    if (uploadFolders) {
+      final folderPrepareResult =
+          await generateFoldersAndAssignParentsForFiles(files);
+      files = folderPrepareResult.files;
+      foldersByPath = folderPrepareResult.foldersByPath;
+    }
     for (final file in files) {
       final fileName = file.name;
+
       final existingFolderName = await _driveDao
           .foldersInFolderWithName(
             driveId: _targetDrive.id,
-            parentFolderId: _targetFolder.id,
+            parentFolderId: file.parentFolderId,
             name: fileName,
           )
           .map((f) => f.name)
@@ -112,14 +123,14 @@ class UploadCubit extends Cubit<UploadState> {
       final existingFileId = await _driveDao
           .filesInFolderWithName(
             driveId: _targetDrive.id,
-            parentFolderId: _targetFolder.id,
+            parentFolderId: file.parentFolderId,
             name: fileName,
           )
           .map((f) => f.id)
           .getSingleOrNull();
 
       if (existingFileId != null) {
-        conflictingFiles[fileName] = existingFileId;
+        conflictingFiles[file.getIdentifier()] = existingFileId;
       }
     }
 
@@ -133,6 +144,68 @@ class UploadCubit extends Cubit<UploadState> {
     } else {
       await prepareUploadPlanAndCostEstimates();
     }
+  }
+
+  /// Generate Folders and assign parentFolderIds
+
+  Future<FolderPrepareResult> generateFoldersAndAssignParentsForFiles(
+    List<UploadFile> files,
+  ) async {
+    final folders = UploadPlanUtils.generateFoldersForFiles(
+      files as List<WebFile>,
+    );
+    final foldersToSkip = [];
+    for (var folder in folders.values) {
+      //If The folders map contains the immediate ancestor of the current folder
+      //we use the id of that folder, otherwise use targetFolder as root
+
+      folder.parentFolderId = folders.containsKey(folder.parentFolderPath)
+          ? folders[folder.parentFolderPath]!.id
+          : _targetFolder.id;
+      final existingFolderId = await _driveDao
+          .foldersInFolderWithName(
+            driveId: driveId,
+            name: folder.name,
+            parentFolderId: folder.parentFolderId,
+          )
+          .map((f) => f.id)
+          .getSingleOrNull();
+      final existingFileId = await _driveDao
+          .filesInFolderWithName(
+            driveId: driveId,
+            name: folder.name,
+            parentFolderId: folders[folder.parentFolderPath] != null
+                ? folders[folder.parentFolderPath]!.id
+                : _targetFolder.id,
+          )
+          .map((f) => f.id)
+          .getSingleOrNull();
+      if (existingFolderId != null) {
+        folder.id = existingFolderId;
+        foldersToSkip.add(folder);
+      }
+      if (existingFileId != null) {
+        conflictingFolders.add(folder.name);
+      }
+      folder.path = folder.parentFolderPath.isNotEmpty
+          ? '${_targetFolder.path}/${folder.parentFolderPath}/${folder.name}'
+          : '${_targetFolder.path}/${folder.name}';
+    }
+    final filesToUpload = <WebFile>[];
+    files.forEach((file) {
+      // Splits the file path, gets rid of the file name and rejoins the strings
+      // to get parent folder path.
+      // eg: Test/A/B/C/file.txt becomes Test/A/B/C
+      final fileFolder = (file.path.split('/')..removeLast()).join('/');
+      filesToUpload.add(
+        WebFile(
+          file.file,
+          folders[fileFolder]?.id ?? _targetFolder.id,
+        ),
+      );
+    });
+    folders.removeWhere((key, value) => foldersToSkip.contains(value));
+    return FolderPrepareResult(files: filesToUpload, foldersByPath: folders);
   }
 
   /// If `conflictingFileAction` is null, means that had no conflict.
@@ -160,7 +233,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     final tooLargeFiles = [
       for (final file in files)
-        if (await file.length() > sizeLimit) file.name
+        if (file.size > sizeLimit) file.name
     ];
 
     if (tooLargeFiles.isNotEmpty) {
@@ -171,13 +244,14 @@ class UploadCubit extends Cubit<UploadState> {
       return;
     }
 
-    final uploadPlan = await _uploadPlanUtils.xfilesToUploadPlan(
-      folderEntry: _targetFolder,
+    final uploadPlan = await _uploadPlanUtils.filesToUploadPlan(
+      targetFolder: _targetFolder,
       targetDrive: _targetDrive,
       files: files,
       cipherKey: profile.cipherKey,
       wallet: profile.wallet,
       conflictingFiles: conflictingFiles,
+      foldersByPath: foldersByPath,
     );
 
     final costEstimate = await CostEstimate.create(
@@ -242,7 +316,7 @@ class UploadCubit extends Cubit<UploadState> {
     }
 
     // Upload V2 Files
-    for (final uploadHandle in uploadPlan.v2FileUploadHandles.values) {
+    for (final uploadHandle in uploadPlan.fileV2UploadHandles.values) {
       await uploadHandle.prepareAndSignTransactions(
         arweaveService: _arweave,
         wallet: profile.wallet,
@@ -258,18 +332,18 @@ class UploadCubit extends Cubit<UploadState> {
       }
       uploadHandle.dispose();
     }
-
     unawaited(_profileCubit.refreshBalance());
 
     emit(UploadComplete());
   }
 
   void _removeFilesWithFileNameConflicts() {
-    files.removeWhere((element) => conflictingFiles.containsKey(element.name));
+    files.removeWhere((file) => conflictingFiles
+        .containsKey(file.path.isEmpty ? file.name : file.path));
   }
 
   void _removeFilesWithFolderNameConflicts() {
-    files.removeWhere((element) => conflictingFolders.contains(element.name));
+    files.removeWhere((file) => conflictingFolders.contains(file.name));
   }
 
   @override
