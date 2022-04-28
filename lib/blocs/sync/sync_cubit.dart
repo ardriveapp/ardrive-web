@@ -119,7 +119,7 @@ class SyncCubit extends Cubit<SyncState> {
         // Do not start another sync until the previous sync has completed.
         .map((value) => Stream.fromFuture(startSync()))
         .listen((_) {});
-    // startSync();
+    startSync();
   }
 
   void restartSyncOnFocus() {
@@ -1060,7 +1060,7 @@ class SyncCubit extends Cubit<SyncState> {
           }
         }
       });
-      await Future.delayed(Duration(milliseconds: 500));
+      // await Future.delayed(Duration(milliseconds: 500));
     }
   }
 
