@@ -31,14 +31,16 @@ class SyncProgress extends LinearProgress {
       required this.progress,
       required this.entitiesSynced,
       required this.drivesCount,
-      required this.drivesSynced});
+      required this.drivesSynced,
+      required this.numberOfDrivesAtGetMetadataPhase});
 
   factory SyncProgress.initial() => SyncProgress(
       entitiesNumber: 0,
       progress: 0,
       entitiesSynced: 0,
       drivesCount: 0,
-      drivesSynced: 0);
+      drivesSynced: 0,
+      numberOfDrivesAtGetMetadataPhase: 0);
 
   final int entitiesNumber;
   final int entitiesSynced;
@@ -46,19 +48,23 @@ class SyncProgress extends LinearProgress {
   final double progress;
   final int drivesSynced;
   final int drivesCount;
+  final int numberOfDrivesAtGetMetadataPhase;
 
   SyncProgress copyWith(
           {int? entitiesNumber,
           int? entitiesSynced,
           double? progress,
           int? drivesSynced,
-          int? drivesCount}) =>
+          int? drivesCount,
+          int? numberOfDrivesAtGetMetadataPhase}) =>
       SyncProgress(
           entitiesNumber: entitiesNumber ?? this.entitiesNumber,
           progress: progress ?? this.progress,
           entitiesSynced: entitiesSynced ?? this.entitiesSynced,
           drivesCount: drivesCount ?? this.drivesCount,
-          drivesSynced: drivesSynced ?? this.drivesSynced);
+          drivesSynced: drivesSynced ?? this.drivesSynced,
+          numberOfDrivesAtGetMetadataPhase: numberOfDrivesAtGetMetadataPhase ??
+              this.numberOfDrivesAtGetMetadataPhase);
 }
 
 const kRequiredTxConfirmationCount = 15;
@@ -113,7 +119,7 @@ class SyncCubit extends Cubit<SyncState> {
         // Do not start another sync until the previous sync has completed.
         .map((value) => Stream.fromFuture(startSync()))
         .listen((_) {});
-    startSync();
+    // startSync();
   }
 
   void restartSyncOnFocus() {
@@ -234,8 +240,8 @@ class SyncCubit extends Cubit<SyncState> {
         }
         _syncProgress = _syncProgress.copyWith(
             drivesSynced: _syncProgress.drivesSynced + 1);
-
         syncProgressController.add(_syncProgress);
+        await _updateTransactionStatuses();
       }));
 
       print(
@@ -249,7 +255,7 @@ class SyncCubit extends Cubit<SyncState> {
 
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
-        _updateTransactionStatuses(),
+        // _updateTransactionStatuses(),
       ]);
     } catch (err) {
       addError(err);
@@ -423,12 +429,24 @@ class SyncCubit extends Cubit<SyncState> {
 
     yield _syncProgress;
 
+    print('Drive ${drive.name} is going to the 2nd phase');
+
+    _syncProgress = _syncProgress.copyWith(
+        numberOfDrivesAtGetMetadataPhase:
+            _syncProgress.numberOfDrivesAtGetMetadataPhase + 1);
+
     yield* _syncSecondPhase(
         transactions: transactions,
         drive: drive,
         driveKey: driveKey,
         currentBlockHeight: currentBlockheight,
         lastBlockHeight: lastBlockHeight);
+
+    print('Drive ${drive.name} passed the 2nd phase');
+
+    _syncProgress = _syncProgress.copyWith(
+        numberOfDrivesAtGetMetadataPhase:
+            _syncProgress.numberOfDrivesAtGetMetadataPhase - 1);
   }
 
   /// Sync Second Phase
@@ -448,6 +466,9 @@ class SyncCubit extends Cubit<SyncState> {
     const pageCount = 200;
     var currentDriveEntitiesSynced = 0;
     var driveSyncProgress = 0.0;
+
+    print(
+        'number of drives at 2 phase : ${_syncProgress.numberOfDrivesAtGetMetadataPhase}');
 
     print('Transactions list length: ${transactions.length}');
 
@@ -483,6 +504,7 @@ class SyncCubit extends Cubit<SyncState> {
         pageCount: pageCount,
         itemsPerPageCallback: (items) async* {
           print('${DateTime.now()} Getting metadata from drive ${drive.name}');
+
           final entityHistory =
               await _arweave.createDriveEntityHistoryFromTransactions(
                   items, driveKey, owner, lastBlockHeight);
@@ -585,7 +607,12 @@ class SyncCubit extends Cubit<SyncState> {
             driveSyncProgress += _calculatePercentageProgress(
                 driveSyncProgress, _calculateDriveSyncPercentage());
           });
+
           yield _syncProgress;
+
+          await Future.delayed(Duration(
+              milliseconds:
+                  (_syncProgress.numberOfDrivesAtGetMetadataPhase) * 100));
         });
     print('''
         ${'- - ' * 10}
@@ -965,53 +992,76 @@ class SyncCubit extends Cubit<SyncState> {
       for (final tx in await _driveDao.pendingTransactions().get()) tx.id: tx,
     };
 
-    final txConfirmations =
-        await _arweave.getTransactionConfirmations(pendingTxMap.keys.toList());
+    final length = pendingTxMap.length;
+    final list = pendingTxMap.keys.toList();
+    const page = 500;
 
-    await _driveDao.transaction(() async {
-      for (final txId in pendingTxMap.keys) {
-        final txConfirmed =
-            txConfirmations[txId]! >= kRequiredTxConfirmationCount;
-        final txNotFound = txConfirmations[txId]! < 0;
+    for (var i = 0; i < length / page; i++) {
+      final Map<String?, int> confirmations = {};
+      final currentPage = <String>[];
 
-        var txStatus;
-
-        DateTime? transactionDateCreated;
-
-        if (pendingTxMap[txId]!.transactionDateCreated != null) {
-          transactionDateCreated = pendingTxMap[txId]!.transactionDateCreated!;
-        } else {
-          transactionDateCreated = await _getDateCreatedByDataTx(txId);
+      /// Mounts the list to be iterated
+      for (var j = i * page; j < ((i + 1) * page); j++) {
+        if (j >= length) {
+          break;
         }
+        currentPage.add(list[j]);
+      }
 
-        if (txConfirmed) {
-          txStatus = TransactionStatus.confirmed;
-        } else if (txNotFound) {
-          // Only mark transactions as failed if they are unconfirmed for over 45 minutes
-          // as the transaction might not be queryable for right after it was created.
-          final abovePendingThreshold = DateTime.now()
-                  .difference(pendingTxMap[txId]!.dateCreated)
-                  .inMinutes >
-              kRequiredTxConfirmationPendingThreshold;
+      final map =
+          await _arweave.getTransactionConfirmations(currentPage.toList());
 
-          // Assume that data tx that weren't mined up to a maximum of
-          // `_pendingWaitTime` was failed.
-          if (abovePendingThreshold ||
-              _isOverThePendingTime(transactionDateCreated)) {
-            txStatus = TransactionStatus.failed;
+      map.forEach((key, value) {
+        confirmations.putIfAbsent(key, () => value);
+      });
+
+      await _driveDao.transaction(() async {
+        for (final txId in currentPage) {
+          final txConfirmed =
+              confirmations[txId]! >= kRequiredTxConfirmationCount;
+          final txNotFound = confirmations[txId]! < 0;
+
+          var txStatus;
+
+          DateTime? transactionDateCreated;
+
+          if (pendingTxMap[txId]!.transactionDateCreated != null) {
+            transactionDateCreated =
+                pendingTxMap[txId]!.transactionDateCreated!;
+          } else {
+            transactionDateCreated = await _getDateCreatedByDataTx(txId);
+          }
+
+          if (txConfirmed) {
+            txStatus = TransactionStatus.confirmed;
+          } else if (txNotFound) {
+            // Only mark transactions as failed if they are unconfirmed for over 45 minutes
+            // as the transaction might not be queryable for right after it was created.
+            final abovePendingThreshold = DateTime.now()
+                    .difference(pendingTxMap[txId]!.dateCreated)
+                    .inMinutes >
+                kRequiredTxConfirmationPendingThreshold;
+
+            // Assume that data tx that weren't mined up to a maximum of
+            // `_pendingWaitTime` was failed.
+            if (abovePendingThreshold ||
+                _isOverThePendingTime(transactionDateCreated)) {
+              txStatus = TransactionStatus.failed;
+            }
+          }
+          if (txStatus != null) {
+            await _driveDao.writeToTransaction(
+              NetworkTransactionsCompanion(
+                transactionDateCreated: Value(transactionDateCreated),
+                id: Value(txId),
+                status: Value(txStatus),
+              ),
+            );
           }
         }
-        if (txStatus != null) {
-          await _driveDao.writeToTransaction(
-            NetworkTransactionsCompanion(
-              transactionDateCreated: Value(transactionDateCreated),
-              id: Value(txId),
-              status: Value(txStatus),
-            ),
-          );
-        }
-      }
-    });
+      });
+      await Future.delayed(Duration(milliseconds: 500));
+    }
   }
 
   bool _isOverThePendingTime(DateTime? transactionCreatedDate) {

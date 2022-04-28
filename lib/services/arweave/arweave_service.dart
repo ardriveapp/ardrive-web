@@ -632,7 +632,11 @@ class ArweaveService {
       }());
     }
 
-    await Future.wait(confirmationFutures);
+    try {
+      await Future.wait(confirmationFutures);
+    } catch (e) {
+      print('Error at arweave_service: $e');
+    }
 
     return transactionConfirmations;
   }
