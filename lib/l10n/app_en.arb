@@ -291,6 +291,10 @@
   "@fileSize": {
     "description": "The size of a file"
   },
+  "size": "Size",
+  "@size": {
+    "description": "The size of a file, folder or drive"
+  },
   "lastUpdated": "Last updated",
   "@lastUpdated": {
     "description": "The timestamp of the transaction"
