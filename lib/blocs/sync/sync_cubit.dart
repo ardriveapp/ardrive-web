@@ -41,7 +41,8 @@ class SyncCubit extends Cubit<SyncState> {
 
   StreamSubscription? _syncSub;
   StreamSubscription? _arconnectSyncSub;
-
+  final StreamController<double> syncProgressController =
+      StreamController<double>.broadcast();
   DateTime? _lastSync;
   late DateTime _initSync;
 
@@ -119,10 +120,14 @@ class SyncCubit extends Cubit<SyncState> {
   final ghostFoldersByDrive =
       <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
 
+  late double _totalProgress;
+  late int _drivesCount;
+
   Future<void> startSync() async {
     if (state is SyncInProgress) {
       return;
     }
+    _totalProgress = 0;
 
     try {
       final profile = _profileCubit.state;
@@ -163,6 +168,9 @@ class SyncCubit extends Cubit<SyncState> {
 
       // Sync the contents of each drive attached in the app.
       final drives = await _driveDao.allDrives().map((d) => d).get();
+
+      _drivesCount = drives.length;
+
       final currentBlockHeight = await arweave.getCurrentBlockHeight();
 
       final driveSyncProcesses = drives.map((drive) => _syncDrive(
@@ -177,7 +185,12 @@ class SyncCubit extends Cubit<SyncState> {
             addError(error!);
           }));
       await Future.wait(driveSyncProcesses);
+
+      print('Syncing drives finished.\nDrives quantity: $_drivesCount\n'
+          'The total progress was ${(_totalProgress * 100).roundToDouble()}');
+
       await createGhosts(ownerAddress: ownerAddress);
+
       emit(SyncEmpty());
 
       await Future.wait([
@@ -188,7 +201,8 @@ class SyncCubit extends Cubit<SyncState> {
       addError(err);
     }
     _lastSync = DateTime.now();
-    print(_initSync.difference(_lastSync!).inMilliseconds);
+    print('The sync process took: '
+        '${_lastSync!.difference(_initSync!).inMilliseconds} milliseconds to finish.\n');
     emit(SyncIdle());
   }
 
@@ -253,7 +267,14 @@ class SyncCubit extends Cubit<SyncState> {
     required int currentBlockheight,
     required int lastBlockHeight,
   }) async {
+    late int entitiesCounter;
+    var entitiesSynced = 0;
+    var driveSyncProgress = 0.0;
+
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+
+    print('Starting Drive ${drive.name} sync. Timestamp: ${DateTime.now()}');
+
     final owner = await arweave.getOwnerForDriveEntityWithId(driveId);
     SecretKey? driveKey;
     if (drive.isPrivate) {
@@ -269,10 +290,39 @@ class SyncCubit extends Cubit<SyncState> {
         }
       }
     }
+    print('Getting all information about the drive ${drive.name}\n');
+
+    final startGetAllTransactionsDateTime = DateTime.now();
 
     final transactions = await _arweave.getAllTransactionsFromDrive(driveId,
         lastBlockHeight: lastBlockHeight)
       ..toList();
+
+    if (transactions.isEmpty) {
+      await _driveDao.writeToDrive(DrivesCompanion(
+        id: Value(drive.id),
+        lastBlockHeight: Value(currentBlockheight),
+        syncCursor: Value(null),
+      ));
+
+      /// If there's nothing to sync, we assume that all were synced
+      driveSyncProgress = 1;
+      _totalProgress += driveSyncProgress / _drivesCount;
+      syncProgressController.add(_totalProgress);
+    }
+
+    final timeSpentGettingAllTransactions = startGetAllTransactionsDateTime
+        .difference(DateTime.now())
+        .inMilliseconds;
+
+    print(
+        'Drive ${drive.name} information loaded in $timeSpentGettingAllTransactions milliseconds\n');
+
+    entitiesCounter = transactions.length;
+
+    print(
+        'The total number of entities of the drive ${drive.name} to be synced is: $entitiesCounter\n');
+
     const pageCount = 200;
 
     /// Paginate the process in pages of `pageCount`
@@ -292,6 +342,23 @@ class SyncCubit extends Cubit<SyncState> {
           final newEntities = entityHistory.blockHistory
               .map((b) => b.entities)
               .expand((entities) => entities);
+
+          entitiesSynced += items.length - newEntities.length;
+
+          _totalProgress += _calculateProgressInTotalPercentage(
+              _calculatePercentageProgress(
+                  driveSyncProgress,
+                  _calculateDriveProgressPercentage(
+                      entitiesCount: entitiesCounter,
+                      entitiesSynced: entitiesSynced)));
+
+          syncProgressController.add(_totalProgress);
+
+          driveSyncProgress += _calculatePercentageProgress(
+              driveSyncProgress,
+              _calculateDriveProgressPercentage(
+                  entitiesCount: entitiesCounter,
+                  entitiesSynced: entitiesSynced));
 
           // Handle the last page of newEntities, i.e; There's nothing more to sync
           if (newEntities.length < pageCount) {
@@ -324,6 +391,26 @@ class SyncCubit extends Cubit<SyncState> {
                 await _computeRefreshedFileEntriesFromRevisions(
                     driveId, latestFileRevisions);
 
+            entitiesSynced += newEntities.length;
+
+            entitiesSynced -=
+                updatedFoldersById.length + updatedFilesById.length;
+
+            _totalProgress += _calculateProgressInTotalPercentage(
+                _calculatePercentageProgress(
+                    driveSyncProgress,
+                    _calculateDriveProgressPercentage(
+                        entitiesCount: entitiesCounter,
+                        entitiesSynced: entitiesSynced)));
+
+            syncProgressController.add(_totalProgress);
+
+            driveSyncProgress += _calculatePercentageProgress(
+                driveSyncProgress,
+                _calculateDriveProgressPercentage(
+                    entitiesCount: entitiesCounter,
+                    entitiesSynced: entitiesSynced));
+
             // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
             if (updatedDrive != null) {
               await (_db.update(_db.drives)..whereSamePrimaryKey(updatedDrive))
@@ -340,14 +427,58 @@ class SyncCubit extends Cubit<SyncState> {
 
             await generateFsEntryPaths(
                 driveId, updatedFoldersById, updatedFilesById);
+
+            entitiesSynced +=
+                updatedFoldersById.length + updatedFilesById.length;
+
+            _totalProgress += _calculateProgressInTotalPercentage(
+                _calculatePercentageProgress(
+                    driveSyncProgress,
+                    _calculateDriveProgressPercentage(
+                        entitiesCount: entitiesCounter,
+                        entitiesSynced: entitiesSynced)));
+
+            syncProgressController.add(_totalProgress);
+
+            driveSyncProgress += _calculatePercentageProgress(
+                driveSyncProgress,
+                _calculateDriveProgressPercentage(
+                    entitiesCount: entitiesCounter,
+                    entitiesSynced: entitiesSynced));
           });
         });
+
+    print(''' 
+        ${'- - ' * 10}
+        Drive: ${drive.name} sync finishes.\n
+        The progress was:                     ${driveSyncProgress * 100}
+        Total progress until now:             ${(_totalProgress * 100).roundToDouble()}
+        The number of entities to be synced:  $entitiesCounter
+        The Total number of synced entities:  $entitiesSynced
+        ''');
   }
+
+  double _calculateDriveProgressPercentage({
+    required int entitiesCount,
+    required int entitiesSynced,
+  }) =>
+      entitiesSynced / entitiesCount;
+
+  double _calculateProgressInTotalPercentage(double currentDriveProgress) =>
+      (currentDriveProgress / _drivesCount);
+
+  double _calculatePercentageProgress(
+          double currentPercentage, double newPercentage) =>
+      newPercentage - currentPercentage;
 
   FutureOr<void> _paginateProcess<T>(
       {required List<T> list,
       required FutureOr Function(List<T> items) itemsPerPageCallback,
       required int pageCount}) async {
+    if (list.isEmpty) {
+      return;
+    }
+
     final length = list.length;
 
     for (var i = 0; i < length / pageCount; i++) {
