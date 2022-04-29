@@ -1019,7 +1019,7 @@
   "@syncingPleaseWait": {
     "description": "Syncing drives"
   },
-  "driveSyncedOfDrivesCount": "Drive {drivesSynced} of {drivesCount} Synced",
+  "driveSyncedOfDrivesCount": "{drivesSynced} of {drivesCount} Drives Synced",
   "@driveSyncedOfDrivesCount": {
     "description": "Show the number of drives synced and the number of user's drives",
     "placeholders": {
