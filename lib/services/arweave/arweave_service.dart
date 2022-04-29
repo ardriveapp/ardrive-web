@@ -635,6 +635,7 @@ class ArweaveService {
       await Future.wait(confirmationFutures);
     } catch (e) {
       print('Error at arweave_service: $e');
+      rethrow;
     }
 
     return transactionConfirmations;
