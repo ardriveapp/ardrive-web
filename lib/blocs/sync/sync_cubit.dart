@@ -1016,16 +1016,13 @@ class SyncCubit extends Cubit<SyncState> {
 
     final length = pendingTxMap.length;
     final list = pendingTxMap.keys.toList();
-    late int page;
 
-    if (pendingTxMap.length > 10000) {
-      page = 5000;
-    } else {
-      page = 1000;
-    }
+    // Thats was discovered by tests at profile mode.
+    // TODO(@thiagocarvalhodev): Revisit
+    final page = 5000;
 
     for (var i = 0; i < length / page; i++) {
-      final Map<String?, int> confirmations = {};
+      final confirmations = <String?, int>{};
       final currentPage = <String>[];
 
       /// Mounts the list to be iterated
