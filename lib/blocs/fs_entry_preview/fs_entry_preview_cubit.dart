@@ -46,45 +46,40 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   Future<void> preview() async {
     final selectedItem = maybeSelectedItem;
     if (selectedItem != null) {
-      switch (selectedItem.runtimeType) {
-        case SelectedFile:
-          _entrySubscription = _driveDao
-              .fileById(driveId: driveId, fileId: selectedItem.id)
-              .watchSingle()
-              .listen((file) {
-            if (file.size <= previewMaxFileSize) {
-              final contentType =
-                  file.dataContentType ?? lookupMimeType(file.name);
-              final previewType = contentType?.split('/').first;
-              final previewUrl =
-                  '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
-              switch (previewType) {
-                case 'image':
-                  emitImagePreview(file, previewUrl);
-                  break;
+      if (selectedItem.runtimeType == SelectedFile) {
+        _entrySubscription = _driveDao
+            .fileById(driveId: driveId, fileId: selectedItem.id)
+            .watchSingle()
+            .listen((file) {
+          if (file.size <= previewMaxFileSize) {
+            final contentType =
+                file.dataContentType ?? lookupMimeType(file.name);
+            final previewType = contentType?.split('/').first;
+            final previewUrl =
+                '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
+            switch (previewType) {
+              case 'image':
+                emitImagePreview(file, previewUrl);
+                break;
 
-                /// Enable more previews in the future after dealing
-                /// with state and widget disposal
+              /// Enable more previews in the future after dealing
+              /// with state and widget disposal
 
-                // case 'audio':
-                //   emit(FsEntryPreviewAudio(previewUrl: previewUrl));
-                //   break;
-                // case 'video':
-                //   emit(FsEntryPreviewVideo(previewUrl: previewUrl));
-                //   break;
-                // case 'text':
-                //   emit(FsEntryPreviewText(previewUrl: previewUrl));
-                //   break;
-                default:
-                  emit(FsEntryPreviewUnavailable());
-              }
-            } else {
-              emit(FsEntryPreviewUnavailable());
+              // case 'audio':
+              //   emit(FsEntryPreviewAudio(previewUrl: previewUrl));
+              //   break;
+              // case 'video':
+              //   emit(FsEntryPreviewVideo(previewUrl: previewUrl));
+              //   break;
+              // case 'text':
+              //   emit(FsEntryPreviewText(previewUrl: previewUrl));
+              //   break;
+
+              default:
+                emit(FsEntryPreviewUnavailable());
             }
-          });
-          break;
-
-        default:
+          }
+        });
       }
     } else {
       emit(FsEntryPreviewUnavailable());
