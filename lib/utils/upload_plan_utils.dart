@@ -30,7 +30,9 @@ class UploadPlanUtils {
     final _fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
     final _fileV2UploadHandles = <String, FileV2UploadHandle>{};
     final _folderDataItemUploadHandles = <String, FolderDataItemUploadHandle>{};
-
+    final private = targetDrive.isPrivate;
+    final driveKey =
+        private ? await driveDao.getDriveKey(targetDrive.id, cipherKey) : null;
     for (var file in files) {
       final fileName = file.name;
       final filePath = '${targetFolder.path}/${file.path}';
@@ -47,10 +49,6 @@ class UploadPlanUtils {
       // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
       fileEntity.id = conflictingFiles[file.getIdentifier()] ?? _uuid.v4();
 
-      final private = targetDrive.isPrivate;
-      final driveKey = private
-          ? await driveDao.getDriveKey(targetDrive.id, cipherKey)
-          : null;
       final fileKey =
           private ? await deriveFileKey(driveKey!, fileEntity.id!) : null;
 
@@ -88,6 +86,7 @@ class UploadPlanUtils {
           arweave: arweave,
           wallet: wallet,
           targetDriveId: targetDrive.id,
+          driveKey: driveKey,
         ),
       );
     });
