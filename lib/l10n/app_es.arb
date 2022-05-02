@@ -1019,6 +1019,32 @@
   "@syncingPleaseWait": {
     "description": "Syncing drives"
   },
+  "driveSyncedOfDrivesCount": "Unidad {drivesSynced} de {drivesCount}",
+  "@driveSyncedOfDrivesCount": {
+    "description": "Show the number of drives synced and the number of user's drives",
+    "placeholders": {
+      "drivesSynced": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      },
+      "drivesCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      }
+    }
+  },
+  "syncProgressPercentage": "{percentage}% completado",
+  "@syncProgressPercentage": {
+    "description": "The sync progress percentage",
+    "placeholders": {
+      "percentage": {
+        "type": "String",
+        "example": "45.5"
+      }
+    }
+  },
   "exportFromCSV": "Exportación de {driveId} {timestamp}.csv",
   "@exportFromCSV": {
     "description": "Filename of the CSV data export",

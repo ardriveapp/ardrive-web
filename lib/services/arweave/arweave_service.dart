@@ -99,13 +99,11 @@ class ArweaveService {
     return query.data?.transaction;
   }
 
-  Future<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
+  Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
       getAllTransactionsFromDrive(
     String driveId, {
     int? lastBlockHeight,
-  }) async {
-    final transactionsEdges =
-        <DriveEntityHistory$Query$TransactionConnection$TransactionEdge>[];
+  }) async* {
     String? cursor;
 
     while (true) {
@@ -119,19 +117,16 @@ class ArweaveService {
           ),
         ),
       );
+      yield driveEntityHistoryQuery.data!.transactions.edges;
 
-      transactionsEdges
-          .addAll(driveEntityHistoryQuery.data!.transactions.edges);
-
-      cursor =
-          transactionsEdges.isNotEmpty ? transactionsEdges.last.cursor : null;
+      cursor = driveEntityHistoryQuery.data!.transactions.edges.isNotEmpty
+          ? driveEntityHistoryQuery.data!.transactions.edges.last.cursor
+          : null;
 
       if (!driveEntityHistoryQuery.data!.transactions.pageInfo.hasNextPage) {
         break;
       }
     }
-
-    return transactionsEdges;
   }
 
   /// Get the metadata of transactions
@@ -151,8 +146,7 @@ class ArweaveService {
 
     final responses = await Future.wait(
       entityTxs.map((e) async {
-        final res = await client.api.get(e.id);
-        return res;
+        return client.api.get(e.id);
       }),
     );
 
@@ -637,7 +631,12 @@ class ArweaveService {
       }());
     }
 
-    await Future.wait(confirmationFutures);
+    try {
+      await Future.wait(confirmationFutures);
+    } catch (e) {
+      print('Error at arweave_service: $e');
+      rethrow;
+    }
 
     return transactionConfirmations;
   }

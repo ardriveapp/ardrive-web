@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'blocs/blocs.dart';
 import 'components/components.dart';
+import 'components/progress_bar.dart';
 import 'components/wallet_switch_dialog.dart';
 import 'utils/app_localizations_wrapper.dart';
 
@@ -94,17 +95,37 @@ class _AppShellState extends State<AppShell> {
                                     .isCurrentProfileArConnect(),
                                 builder: (BuildContext context,
                                     AsyncSnapshot snapshot) {
-                                  if (snapshot.data ?? false) {
-                                    return ProgressDialog(
-                                      title: appLocalizationsOf(context)
-                                          .syncingPleaseRemainOnThisTab,
-                                    );
-                                  } else {
-                                    return ProgressDialog(
-                                      title: appLocalizationsOf(context)
-                                          .syncingPleaseWait,
-                                    );
-                                  }
+                                  return ProgressDialog(
+                                      progressBar: ProgressBar(
+                                        percentage: context
+                                            .read<SyncCubit>()
+                                            .syncProgressController
+                                            .stream,
+                                      ),
+                                      percentageDetails: _syncStreamBuilder(
+                                          builderWithData: (syncProgress) =>
+                                              Text(appLocalizationsOf(context)
+                                                  .syncProgressPercentage(
+                                                      (syncProgress.progress *
+                                                              100)
+                                                          .roundToDouble()
+                                                          .toString()))),
+                                      progressDescription: _syncStreamBuilder(
+                                        builderWithData: (syncProgress) => Text(
+                                          appLocalizationsOf(context)
+                                              .driveSyncedOfDrivesCount(
+                                                  syncProgress.drivesSynced,
+                                                  syncProgress.drivesCount),
+                                          style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                      title: snapshot.data ?? false
+                                          ? appLocalizationsOf(context)
+                                              .syncingPleaseRemainOnThisTab
+                                          : appLocalizationsOf(context)
+                                              .syncingPleaseWait);
                                 },
                               );
                             },
@@ -143,6 +164,13 @@ class _AppShellState extends State<AppShell> {
           );
         },
       );
+
+  Widget _syncStreamBuilder(
+          {required Widget Function(SyncProgress s) builderWithData}) =>
+      StreamBuilder<SyncProgress>(
+          stream: context.read<SyncCubit>().syncProgressController.stream,
+          builder: (context, snapshot) =>
+              snapshot.hasData ? builderWithData(snapshot.data!) : Container());
 
   void toggleProfileOverlay() =>
       setState(() => _showProfileOverlay = !_showProfileOverlay);
