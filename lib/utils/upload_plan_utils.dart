@@ -1,51 +1,51 @@
-import 'package:ardrive/blocs/upload/upload_plan.dart';
-import 'package:ardrive/models/daos/daos.dart';
-import 'package:ardrive/models/drive.dart';
-import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/blocs/upload/models/models.dart';
+import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
+import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:mime/mime.dart';
 import 'package:uuid/uuid.dart';
 
-import '../blocs/upload/data_item_upload_handle.dart';
-import '../blocs/upload/file_upload_handle.dart';
-import '../entities/file_entity.dart';
-import '../models/database/database.dart';
-import '../models/enums.dart';
-import '../services/crypto/keys.dart';
-
 class UploadPlanUtils {
-  UploadPlanUtils({required this.arweave, required this.driveDao});
+  UploadPlanUtils({
+    required this.arweave,
+    required this.driveDao,
+  });
 
   final ArweaveService arweave;
   final DriveDao driveDao;
   final _uuid = Uuid();
 
-  Future<UploadPlan> xfilesToUploadPlan(
-      {required List<XFile> files,
-      required SecretKey cipherKey,
-      required Wallet wallet,
-      required Map<String, String> conflictingFiles,
-      required Drive targetDrive,
-      required FolderEntry folderEntry}) async {
-    final _dataItemUploadHandles = <String, DataItemUploadHandle>{};
-    final _v2FileUploadHandles = <String, FileUploadHandle>{};
+  Future<UploadPlan> filesToUploadPlan({
+    required List<UploadFile> files,
+    required SecretKey cipherKey,
+    required Wallet wallet,
+    required Map<String, String> conflictingFiles,
+    required Drive targetDrive,
+    required FolderEntry targetFolder,
+    Map<String, WebFolder> foldersByPath = const {},
+  }) async {
+    final _fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
+    final _fileV2UploadHandles = <String, FileV2UploadHandle>{};
+    final _folderDataItemUploadHandles = <String, FolderDataItemUploadHandle>{};
+
     for (var file in files) {
       final fileName = file.name;
-      final filePath = '${folderEntry.path}/$fileName';
-      final fileSize = await file.length();
+      final filePath = '${targetFolder.path}/${file.path}';
+      final fileSize = file.size;
       final fileEntity = FileEntity(
         driveId: targetDrive.id,
         name: fileName,
         size: fileSize,
-        lastModifiedDate: await file.lastModified(),
-        parentFolderId: folderEntry.id,
+        lastModifiedDate: file.lastModifiedDate,
+        parentFolderId: file.parentFolderId,
         dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
       );
 
       // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
-      fileEntity.id = conflictingFiles[fileName] ?? _uuid.v4();
+      fileEntity.id = conflictingFiles[file.getIdentifier()] ?? _uuid.v4();
 
       final private = targetDrive.isPrivate;
       final driveKey = private
@@ -54,12 +54,12 @@ class UploadPlanUtils {
       final fileKey =
           private ? await deriveFileKey(driveKey!, fileEntity.id!) : null;
 
-      final revisionAction = !conflictingFiles.containsKey(file.name)
-          ? RevisionAction.create
-          : RevisionAction.uploadNewVersion;
+      final revisionAction = conflictingFiles.containsKey(file.getIdentifier())
+          ? RevisionAction.uploadNewVersion
+          : RevisionAction.create;
 
       if (fileSize < bundleSizeLimit) {
-        _dataItemUploadHandles[fileEntity.id!] = DataItemUploadHandle(
+        _fileDataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(
           entity: fileEntity,
           path: filePath,
           file: file,
@@ -70,7 +70,7 @@ class UploadPlanUtils {
           revisionAction: revisionAction,
         );
       } else {
-        _v2FileUploadHandles[fileEntity.id!] = FileUploadHandle(
+        _fileV2UploadHandles[fileEntity.id!] = FileV2UploadHandle(
           entity: fileEntity,
           path: filePath,
           file: file,
@@ -80,9 +80,54 @@ class UploadPlanUtils {
         );
       }
     }
+    foldersByPath.forEach((key, folder) async {
+      _folderDataItemUploadHandles.putIfAbsent(
+        folder.id,
+        () => FolderDataItemUploadHandle(
+          folder: folder,
+          arweave: arweave,
+          wallet: wallet,
+          targetDriveId: targetDrive.id,
+        ),
+      );
+    });
+
     return UploadPlan.create(
-      v2FileUploadHandles: _v2FileUploadHandles,
-      dataItemUploadHandles: _dataItemUploadHandles,
+      fileV2UploadHandles: _fileV2UploadHandles,
+      fileDataItemUploadHandles: _fileDataItemUploadHandles,
+      folderDataItemUploadHandles: _folderDataItemUploadHandles,
     );
+  }
+
+  ///Returns a sorted list of folders (root folder first) from a list of files
+  ///with paths
+  static Map<String, WebFolder> generateFoldersForFiles(List<WebFile> files) {
+    final foldersByPath = <String, WebFolder>{};
+
+    // Generate folders
+    for (var file in files) {
+      final path = file.file.relativePath!;
+      final folderPath = path.split('/');
+      folderPath.removeLast();
+      for (var i = 0; i < folderPath.length; i++) {
+        final currentFolder = folderPath.getRange(0, i + 1).join('/');
+        if (foldersByPath[currentFolder] == null) {
+          final parentFolderPath = folderPath.getRange(0, i).join('/');
+          foldersByPath.putIfAbsent(
+            currentFolder,
+            () => WebFolder(
+              name: folderPath[i],
+              id: Uuid().v4(),
+              parentFolderPath: parentFolderPath,
+            ),
+          );
+        }
+      }
+    }
+
+    final sortedFolders = foldersByPath.entries.toList()
+      ..sort(
+          (a, b) => a.key.split('/').length.compareTo(b.key.split('/').length));
+    return Map.fromEntries(sortedFolders);
   }
 }

@@ -47,8 +47,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v3.0.1"
-      resolved-ref: e74024d267687f40edd4139b15c54aea427596e0
+      ref: "6ed04b590bad5fa3ecc511f2d022bf483738813d"
+      resolved-ref: "6ed04b590bad5fa3ecc511f2d022bf483738813d"
       url: "https://github.com/ardriveapp/arweave-dart"
     source: git
     version: "3.0.0"
@@ -199,6 +199,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.1"
+  cooky:
+    dependency: "direct main"
+    description:
+      name: cooky
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.0"
   coverage:
     dependency: transitive
     description:
@@ -311,13 +318,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.8.1+2"
-  filesize:
-    dependency: "direct main"
-    description:
-      name: filesize
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.0.1"
   fixnum:
     dependency: transitive
     description:

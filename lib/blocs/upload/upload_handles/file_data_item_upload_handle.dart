@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:ardrive/blocs/upload/upload_handle.dart';
+import 'package:ardrive/blocs/upload/models/upload_file.dart';
+import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -8,13 +9,15 @@ import 'package:ardrive/utils/bundles/fake_tags.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:moor/moor.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-class DataItemUploadHandle implements UploadHandle, DataItemHandle {
+// Number of data items returned by this handle
+const fileDataItemEntityCount = 2;
+
+class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   final FileEntity entity;
-  final XFile file;
+  final UploadFile file;
   final String path;
   final SecretKey? driveKey;
   final SecretKey? fileKey;
@@ -39,7 +42,7 @@ class DataItemUploadHandle implements UploadHandle, DataItemHandle {
   ArweaveService arweave;
   Wallet wallet;
 
-  DataItemUploadHandle({
+  FileDataItemUploadHandle({
     required this.entity,
     required this.path,
     required this.file,
@@ -146,9 +149,12 @@ class DataItemUploadHandle implements UploadHandle, DataItemHandle {
   }
 
   @override
-  Future<List<DataItem>> createDataItemsFromFileHandle() async {
+  Future<List<DataItem>> getDataItems() async {
     final dataItems = await prepareAndSignDataItems();
-    // Remove file data references
     return dataItems;
   }
+
+  // Returning a static count here to save memory and avoid any unneccessary data duplication
+  @override
+  int get dataItemCount => fileDataItemEntityCount;
 }

@@ -1,13 +1,12 @@
 import 'dart:convert';
 
 import 'package:ardrive/entities/profileTypes.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:moor/moor.dart';
-
-import '../database/database.dart';
 
 part 'profile_dao.g.dart';
 
