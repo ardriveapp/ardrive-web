@@ -179,159 +179,75 @@ class AppDrawer extends StatelessWidget {
 
     if (profileState.runtimeType == ProfileLoggedIn) {
       final profile = profileState as ProfileLoggedIn;
-      return ListTileTheme(
-        textColor: theme.textTheme.bodyText1!.color,
-        iconColor: theme.iconTheme.color,
-        child: Align(
-          alignment: Alignment.center,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-            child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
-              builder: (context, state) => profile.walletBalance >=
-                      minimumWalletBalance
-                  ? PopupMenuButton<Function>(
-                      onSelected: (callback) => callback(context),
-                      itemBuilder: (context) => [
-                        if (state is DriveDetailLoadSuccess) ...{
-                          PopupMenuItem(
-                            enabled: state.hasWritePermissions,
-                            value: (context) => promptToCreateFolder(
-                              context,
-                              driveId: state.currentDrive.id,
-                              parentFolderId: state.folderInView.folder.id,
-                            ),
-                            child: ListTile(
-                              enabled: state.hasWritePermissions,
-                              title:
-                                  Text(appLocalizationsOf(context).newFolder),
-                            ),
-                          ),
-                          PopupMenuDivider(),
-                          PopupMenuItem(
-                            enabled: state.hasWritePermissions,
-                            value: (context) => promptToUpload(
-                              context,
-                              driveId: state.currentDrive.id,
-                              folderId: state.folderInView.folder.id,
-                              isFolderUpload: false,
-                            ),
-                            child: ListTile(
-                              enabled: state.hasWritePermissions,
-                              title: Text(
-                                appLocalizationsOf(context).uploadFiles,
-                              ),
-                            ),
-                          ),
-                          PopupMenuItem(
-                            enabled: state.hasWritePermissions,
-                            value: (context) => promptToUpload(
-                              context,
-                              driveId: state.currentDrive.id,
-                              folderId: state.folderInView.folder.id,
-                              isFolderUpload: true,
-                            ),
-                            child: ListTile(
-                              enabled: state.hasWritePermissions,
-                              title: Text(
-                                appLocalizationsOf(context).uploadFolder,
-                              ),
-                            ),
-                          ),
-                          PopupMenuDivider(),
-                        },
-                        if (drivesState is DrivesLoadSuccess) ...{
-                          PopupMenuItem(
-                            enabled: drivesState.canCreateNewDrive,
-                            value: (context) => promptToCreateDrive(context),
-                            child: ListTile(
-                              enabled: drivesState.canCreateNewDrive,
-                              title: Text(appLocalizationsOf(context).newDrive),
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: (context) => attachDrive(context: context),
-                            child: ListTile(
-                              title:
-                                  Text(appLocalizationsOf(context).attachDrive),
-                            ),
-                          ),
-                        },
-                        if (state is DriveDetailLoadSuccess &&
-                            state.currentDrive.privacy == 'public') ...{
-                          PopupMenuItem(
-                            value: (context) => promptToCreateManifest(context,
-                                drive: state.currentDrive),
-                            enabled: !state.driveIsEmpty,
-                            child: ListTile(
-                              title: Text(
-                                appLocalizationsOf(context).createManifest,
-                              ),
-                              enabled: !state.driveIsEmpty,
-                            ),
-                          ),
-                        },
-                      ],
-                      child: SizedBox(
-                        width: 164,
-                        height: 36,
-                        child: FloatingActionButton.extended(
-                          onPressed: null,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                          label: Text(
-                            appLocalizationsOf(context).newStringEmphasized,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 164,
-                          height: 36,
-                          child: FloatingActionButton.extended(
-                            onPressed: null,
-                            backgroundColor: Colors.grey,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                            label: Text(
-                              appLocalizationsOf(context).newStringEmphasized,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            appLocalizationsOf(context).insufficientARWarning,
-                            style: Theme.of(context)
-                                .textTheme
-                                .caption!
-                                .copyWith(color: Colors.grey),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => launch(R.arHelpLink),
-                          child: Text(
-                            appLocalizationsOf(context).howDoIGetAR,
-                            style: TextStyle(
-                              color: Colors.grey,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+      return Column(
+        children: [
+          ListTileTheme(
+            textColor: theme.textTheme.bodyText1!.color,
+            iconColor: theme.iconTheme.color,
+            child: Align(
+              alignment: Alignment.center,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
+                  builder: (context, state) => PopupMenuButton<Function>(
+                    onSelected: (callback) => callback(context),
+                    itemBuilder: (context) => [
+                      if (state is DriveDetailLoadSuccess) ...{
+                        // TODO(@thiagocarvalhodev): add the tooltip and `hasMinimumWalletBalance` validation
+
+                        _buildNewFolderItem(context, state,
+                            profile.walletBalance >= minimumWalletBalance),
+                        PopupMenuDivider(),
+                        _buildUploadFileItem(context, state,
+                            profile.walletBalance >= minimumWalletBalance),
+                        _buildUploadFolderItem(context, state,
+                            profile.walletBalance >= minimumWalletBalance),
+                        PopupMenuDivider(),
+                      },
+                      if (drivesState is DrivesLoadSuccess) ...{
+                        // TODO(@thiagocarvalhodev): add the tooltip and `hasMinimumWalletBalance` validation
+
+                        _buildCreateDrive(context, drivesState,
+                            profile.walletBalance >= minimumWalletBalance),
+                        _buildAttachDrive(context)
+                      },
+                      if (state is DriveDetailLoadSuccess &&
+                          state.currentDrive.privacy == 'public') ...{
+                        // TODO(@thiagocarvalhodev): add the tooltip and `hasMinimumWalletBalance` validation
+
+                        _buildCreateManifestItem(state, context)
+                      },
+                    ],
+                    child: _buildNewButton(context),
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+          if (profile.walletBalance < minimumWalletBalance) ...{
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                appLocalizationsOf(context).insufficientARWarning,
+                style: Theme.of(context)
+                    .textTheme
+                    .caption!
+                    .copyWith(color: Colors.grey),
+              ),
+            ),
+            TextButton(
+              onPressed: () => launch(R.arHelpLink),
+              child: Text(
+                appLocalizationsOf(context).howDoIGetAR,
+                style: TextStyle(
+                  color: Colors.grey,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          }
+        ],
       );
     } else {
       return ListTileTheme(
@@ -342,36 +258,139 @@ class AppDrawer extends StatelessWidget {
           child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
               child: PopupMenuButton<Function>(
-                onSelected: (callback) => callback(context),
-                itemBuilder: (context) => [
-                  if (drivesState is DrivesLoadSuccess) ...{
-                    PopupMenuItem(
-                      value: (context) => attachDrive(context: context),
-                      child: ListTile(
-                        title: Text(appLocalizationsOf(context).attachDrive),
-                      ),
-                    ),
-                  }
-                ],
-                child: SizedBox(
-                  width: 164,
-                  height: 36,
-                  child: FloatingActionButton.extended(
-                    onPressed: null,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    label: Text(
-                      appLocalizationsOf(context).newStringEmphasized,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              )),
+                  onSelected: (callback) => callback(context),
+                  itemBuilder: (context) => [
+                        if (drivesState is DrivesLoadSuccess) ...{
+                          PopupMenuItem(
+                            value: (context) => attachDrive(context: context),
+                            child: ListTile(
+                              title:
+                                  Text(appLocalizationsOf(context).attachDrive),
+                            ),
+                          ),
+                        }
+                      ],
+                  child: _buildNewButton(context))),
         ),
       );
     }
+  }
+
+  PopupMenuEntry<Function> _buildNewFolderItem(
+      context, DriveDetailLoadSuccess state, bool hasMinimumWalletBalance) {
+    return PopupMenuItem(
+      enabled: state.hasWritePermissions,
+      value: (context) => promptToCreateFolder(
+        context,
+        driveId: state.currentDrive.id,
+        parentFolderId: state.folderInView.folder.id,
+      ),
+      child: ListTile(
+        enabled: state.hasWritePermissions && hasMinimumWalletBalance,
+        title: Text(appLocalizationsOf(context).newFolder),
+      ),
+    );
+  }
+
+  PopupMenuEntry<Function> _buildUploadFileItem(
+      context, DriveDetailLoadSuccess state, bool hasMinimumWalletBalance) {
+    return PopupMenuItem(
+      enabled: state.hasWritePermissions,
+      value: (context) => promptToUpload(
+        context,
+        driveId: state.currentDrive.id,
+        folderId: state.folderInView.folder.id,
+        isFolderUpload: false,
+      ),
+      // TODO(@thiagocarvalhodev): add the tooltip and `hasMinimumWalletBalance` validation
+
+      child: ListTile(
+        enabled: state.hasWritePermissions,
+        title: Text(
+          appLocalizationsOf(context).uploadFiles,
+        ),
+      ),
+    );
+  }
+
+  PopupMenuEntry<Function> _buildUploadFolderItem(
+      context, DriveDetailLoadSuccess state, bool hasMinimumWalletBalance) {
+    return PopupMenuItem(
+      enabled: state.hasWritePermissions,
+      value: (context) => promptToUpload(
+        context,
+        driveId: state.currentDrive.id,
+        folderId: state.folderInView.folder.id,
+        isFolderUpload: true,
+      ),
+      // TODO(@thiagocarvalhodev): add the tooltip and `hasMinimumWalletBalance` validation
+      child: ListTile(
+        enabled: state.hasWritePermissions,
+        title: Text(
+          appLocalizationsOf(context).uploadFolder,
+        ),
+      ),
+    );
+  }
+
+  PopupMenuEntry<Function> _buildAttachDrive(BuildContext context) {
+    return PopupMenuItem(
+      value: (context) => attachDrive(context: context),
+      child: ListTile(
+        title: Text(appLocalizationsOf(context).attachDrive),
+      ),
+    );
+  }
+
+  PopupMenuEntry<Function> _buildCreateDrive(BuildContext context,
+      DrivesLoadSuccess drivesState, bool hasMinimumWalletBalance) {
+    return PopupMenuItem(
+      enabled: drivesState.canCreateNewDrive && hasMinimumWalletBalance,
+      value: (context) => promptToCreateDrive(context),
+      child: Tooltip(
+        message: hasMinimumWalletBalance
+            ? ''
+            : 'Only wallets with AR can create New Drives',
+        child: ListTile(
+          textColor: hasMinimumWalletBalance
+              ? ListTileTheme.of(context).textColor
+              : Colors.grey,
+          enabled: drivesState.canCreateNewDrive,
+          title: Text(appLocalizationsOf(context).newDrive),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNewButton(BuildContext context) {
+    return SizedBox(
+      width: 164,
+      height: 36,
+      child: FloatingActionButton.extended(
+        onPressed: null,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        label: Text(
+          appLocalizationsOf(context).newStringEmphasized,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  PopupMenuEntry<Function> _buildCreateManifestItem(context, state) {
+    return PopupMenuItem(
+      value: (context) =>
+          promptToCreateManifest(context, drive: state.currentDrive),
+      enabled: !state.driveIsEmpty,
+      child: ListTile(
+        title: Text(
+          appLocalizationsOf(context).createManifest,
+        ),
+        enabled: !state.driveIsEmpty,
+      ),
+    );
   }
 
   Widget _buildSyncButton() => BlocBuilder<SyncCubit, SyncState>(
