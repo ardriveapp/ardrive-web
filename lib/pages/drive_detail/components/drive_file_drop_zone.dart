@@ -1,15 +1,15 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/upload/models/io_file.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-
-import '../../../utils/app_localizations_wrapper.dart';
-import '../../congestion_warning_wrapper.dart';
 
 class DriveFileDropZone extends StatefulWidget {
   final String driveId;
@@ -84,7 +84,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
         lastModified: fileLastModified,
         length: fileLength,
       );
-      final selectedFiles = <XFile>[fileToUpload];
+      final selectedFiles = [await IOFile.fromXFile(fileToUpload, folderId)];
       try {
         //This is the only way to know whether the dropped file is a folder
         await fileToUpload.readAsBytes();

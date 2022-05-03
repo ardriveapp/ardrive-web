@@ -1,10 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:intersperse/src/intersperse_extensions.dart';
-
-import '../../../utils/app_localizations_wrapper.dart';
 
 class CustomPaginatedDataTable extends StatefulWidget {
   CustomPaginatedDataTable({

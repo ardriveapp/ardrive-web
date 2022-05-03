@@ -291,6 +291,10 @@
   "@fileSize": {
     "description": "The size of a file"
   },
+  "size": "Size",
+  "@size": {
+    "description": "The size of a file, folder or drive"
+  },
   "lastUpdated": "Last updated",
   "@lastUpdated": {
     "description": "The timestamp of the transaction"
@@ -524,6 +528,10 @@
   "uploadFiles": "Upload file(s)",
   "@uploadFiles": {
     "description": "Upload files to the Weave"
+  },
+  "uploadFolder": "Upload folder",
+  "@uploadFolder": {
+    "description": "Upload a folder and every subfolder alongside files inside them"
   },
   "newDrive": "New drive",
   "@newDrive": {

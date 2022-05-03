@@ -1,8 +1,7 @@
 import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../../../utils/app_localizations_wrapper.dart';
 
 class ScreenNotSupportedPage extends StatelessWidget {
   @override
