@@ -1027,6 +1027,10 @@
   "@syncingPleaseWait": {
     "description": "Syncing drives"
   },
+  "syncingOnlyOneDrive": "Syncing your drive...",
+  "@syncingOnlyOneDrive": {
+    "description": "Show the message when the user has only one drive"
+  },
   "driveSyncedOfDrivesCount": "{drivesSynced} of {drivesCount} Drives Synced",
   "@driveSyncedOfDrivesCount": {
     "description": "Show the number of drives synced and the number of user's drives",

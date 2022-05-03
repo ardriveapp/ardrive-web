@@ -1019,11 +1019,15 @@
   "@syncingPleaseRemainOnThisTab": {
     "description": "Syncing drives"
   },
+  "syncingOnlyOneDrive": "Sincronizando la unidad...",
+  "@syncingOnlyOneDrive": {
+    "description": "Show the message when the user has only one drive"
+  },
   "syncingPleaseWait": "Sincronizando... Por favor espera.",
   "@syncingPleaseWait": {
     "description": "Syncing drives"
   },
-  "driveSyncedOfDrivesCount": "Unidad {drivesSynced} de {drivesCount}",
+  "driveSyncedOfDrivesCount": "{drivesSynced} de {drivesCount} unidades sincronizadas",
   "@driveSyncedOfDrivesCount": {
     "description": "Show the number of drives synced and the number of user's drives",
     "placeholders": {
