@@ -194,8 +194,6 @@ class AppDrawer extends StatelessWidget {
                     onSelected: (callback) => callback(context),
                     itemBuilder: (context) => [
                       if (state is DriveDetailLoadSuccess) ...{
-                        // TODO(@thiagocarvalhodev): add the tooltip and `hasMinimumWalletBalance` validation
-
                         _buildNewFolderItem(context, state,
                             profile.walletBalance >= minimumWalletBalance),
                         PopupMenuDivider(),
@@ -206,17 +204,14 @@ class AppDrawer extends StatelessWidget {
                         PopupMenuDivider(),
                       },
                       if (drivesState is DrivesLoadSuccess) ...{
-                        // TODO(@thiagocarvalhodev): add the tooltip and `hasMinimumWalletBalance` validation
-
                         _buildCreateDrive(context, drivesState,
                             profile.walletBalance >= minimumWalletBalance),
                         _buildAttachDrive(context)
                       },
                       if (state is DriveDetailLoadSuccess &&
                           state.currentDrive.privacy == 'public') ...{
-                        // TODO(@thiagocarvalhodev): add the tooltip and `hasMinimumWalletBalance` validation
-
-                        _buildCreateManifestItem(state, context)
+                        _buildCreateManifestItem(context, state,
+                            profile.walletBalance >= minimumWalletBalance)
                       },
                     ],
                     child: _buildNewButton(context),
@@ -285,9 +280,14 @@ class AppDrawer extends StatelessWidget {
         driveId: state.currentDrive.id,
         parentFolderId: state.folderInView.folder.id,
       ),
-      child: ListTile(
-        enabled: state.hasWritePermissions && hasMinimumWalletBalance,
-        title: Text(appLocalizationsOf(context).newFolder),
+      child: Tooltip(
+        message: hasMinimumWalletBalance
+            ? ''
+            : appLocalizationsOf(context).insufficientFundsForCreateAFolder,
+        child: ListTile(
+          enabled: state.hasWritePermissions && hasMinimumWalletBalance,
+          title: Text(appLocalizationsOf(context).newFolder),
+        ),
       ),
     );
   }
@@ -302,12 +302,15 @@ class AppDrawer extends StatelessWidget {
         folderId: state.folderInView.folder.id,
         isFolderUpload: false,
       ),
-      // TODO(@thiagocarvalhodev): add the tooltip and `hasMinimumWalletBalance` validation
-
-      child: ListTile(
-        enabled: state.hasWritePermissions,
-        title: Text(
-          appLocalizationsOf(context).uploadFiles,
+      child: Tooltip(
+        message: hasMinimumWalletBalance
+            ? ''
+            : appLocalizationsOf(context).insufficientFundsForUploadFiles,
+        child: ListTile(
+          enabled: state.hasWritePermissions && hasMinimumWalletBalance,
+          title: Text(
+            appLocalizationsOf(context).uploadFiles,
+          ),
         ),
       ),
     );
@@ -323,11 +326,15 @@ class AppDrawer extends StatelessWidget {
         folderId: state.folderInView.folder.id,
         isFolderUpload: true,
       ),
-      // TODO(@thiagocarvalhodev): add the tooltip and `hasMinimumWalletBalance` validation
-      child: ListTile(
-        enabled: state.hasWritePermissions,
-        title: Text(
-          appLocalizationsOf(context).uploadFolder,
+      child: Tooltip(
+        message: hasMinimumWalletBalance
+            ? ''
+            : appLocalizationsOf(context).insufficientFundsForUploadFolders,
+        child: ListTile(
+          enabled: state.hasWritePermissions && hasMinimumWalletBalance,
+          title: Text(
+            appLocalizationsOf(context).uploadFolder,
+          ),
         ),
       ),
     );
@@ -350,12 +357,12 @@ class AppDrawer extends StatelessWidget {
       child: Tooltip(
         message: hasMinimumWalletBalance
             ? ''
-            : 'Only wallets with AR can create New Drives',
+            : appLocalizationsOf(context).insufficientFundsForCreateADrive,
         child: ListTile(
           textColor: hasMinimumWalletBalance
               ? ListTileTheme.of(context).textColor
               : Colors.grey,
-          enabled: drivesState.canCreateNewDrive,
+          enabled: drivesState.canCreateNewDrive && hasMinimumWalletBalance,
           title: Text(appLocalizationsOf(context).newDrive),
         ),
       ),
@@ -379,16 +386,22 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  PopupMenuEntry<Function> _buildCreateManifestItem(context, state) {
+  PopupMenuEntry<Function> _buildCreateManifestItem(BuildContext context,
+      DriveDetailLoadSuccess state, bool hasMinimumWalletBalance) {
     return PopupMenuItem(
       value: (context) =>
           promptToCreateManifest(context, drive: state.currentDrive),
       enabled: !state.driveIsEmpty,
-      child: ListTile(
-        title: Text(
-          appLocalizationsOf(context).createManifest,
+      child: Tooltip(
+        message: hasMinimumWalletBalance
+            ? ''
+            : appLocalizationsOf(context).insufficientFundsForCreateAManifest,
+        child: ListTile(
+          title: Text(
+            appLocalizationsOf(context).createManifest,
+          ),
+          enabled: !state.driveIsEmpty,
         ),
-        enabled: !state.driveIsEmpty,
       ),
     );
   }
