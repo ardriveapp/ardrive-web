@@ -274,6 +274,7 @@ class AppDrawer extends StatelessWidget {
   PopupMenuEntry<Function> _buildNewFolderItem(
       context, DriveDetailLoadSuccess state, bool hasMinimumWalletBalance) {
     return _buildMenuItemTile(
+      context: context,
       isEnabled: state.hasWritePermissions && hasMinimumWalletBalance,
       itemTitle: appLocalizationsOf(context).newFolder,
       message: hasMinimumWalletBalance
@@ -290,6 +291,7 @@ class AppDrawer extends StatelessWidget {
   PopupMenuEntry<Function> _buildUploadFileItem(
       context, DriveDetailLoadSuccess state, bool hasMinimumWalletBalance) {
     return _buildMenuItemTile(
+      context: context,
       isEnabled: state.hasWritePermissions && hasMinimumWalletBalance,
       message: hasMinimumWalletBalance
           ? null
@@ -307,6 +309,7 @@ class AppDrawer extends StatelessWidget {
   PopupMenuEntry<Function> _buildUploadFolderItem(
       context, DriveDetailLoadSuccess state, bool hasMinimumWalletBalance) {
     return _buildMenuItemTile(
+      context: context,
       isEnabled: state.hasWritePermissions && hasMinimumWalletBalance,
       itemTitle: appLocalizationsOf(context).uploadFolder,
       message: hasMinimumWalletBalance
@@ -333,6 +336,7 @@ class AppDrawer extends StatelessWidget {
   PopupMenuEntry<Function> _buildCreateDrive(BuildContext context,
       DrivesLoadSuccess drivesState, bool hasMinimumWalletBalance) {
     return _buildMenuItemTile(
+      context: context,
       isEnabled: drivesState.canCreateNewDrive && hasMinimumWalletBalance,
       itemTitle: appLocalizationsOf(context).newDrive,
       message: hasMinimumWalletBalance
@@ -362,6 +366,7 @@ class AppDrawer extends StatelessWidget {
   PopupMenuEntry<Function> _buildCreateManifestItem(BuildContext context,
       DriveDetailLoadSuccess state, bool hasMinimumWalletBalance) {
     return _buildMenuItemTile(
+      context: context,
       isEnabled: !state.driveIsEmpty,
       itemTitle: appLocalizationsOf(context).createManifest,
       message: hasMinimumWalletBalance
@@ -376,13 +381,16 @@ class AppDrawer extends StatelessWidget {
       {required bool isEnabled,
       Future<void> Function(dynamic)? value,
       String? message,
-      required String itemTitle}) {
+      required String itemTitle,
+      required BuildContext context}) {
     return PopupMenuItem(
       value: value,
       enabled: isEnabled,
       child: Tooltip(
         message: message ?? '',
         child: ListTile(
+          textColor:
+              isEnabled ? ListTileTheme.of(context).textColor : Colors.grey,
           title: Text(
             itemTitle,
           ),
