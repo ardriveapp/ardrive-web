@@ -1,14 +1,13 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/app_drawer/drive_list_tile.dart';
+import 'package:ardrive/components/components.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import '../../../utils/app_localizations_wrapper.dart';
-import '../components.dart';
-import 'drive_list_tile.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({
@@ -210,15 +209,32 @@ class AppDrawer extends StatelessWidget {
                           PopupMenuDivider(),
                           PopupMenuItem(
                             enabled: state.hasWritePermissions,
-                            value: (context) => promptToUploadFile(
+                            value: (context) => promptToUpload(
                               context,
                               driveId: state.currentDrive.id,
                               folderId: state.folderInView.folder.id,
+                              isFolderUpload: false,
                             ),
                             child: ListTile(
                               enabled: state.hasWritePermissions,
-                              title:
-                                  Text(appLocalizationsOf(context).uploadFiles),
+                              title: Text(
+                                appLocalizationsOf(context).uploadFiles,
+                              ),
+                            ),
+                          ),
+                          PopupMenuItem(
+                            enabled: state.hasWritePermissions,
+                            value: (context) => promptToUpload(
+                              context,
+                              driveId: state.currentDrive.id,
+                              folderId: state.folderInView.folder.id,
+                              isFolderUpload: true,
+                            ),
+                            child: ListTile(
+                              enabled: state.hasWritePermissions,
+                              title: Text(
+                                appLocalizationsOf(context).uploadFolder,
+                              ),
                             ),
                           ),
                           PopupMenuDivider(),

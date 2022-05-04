@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -9,8 +10,6 @@ import 'package:http/http.dart' as http;
 import 'package:moor/moor.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pedantic/pedantic.dart';
-
-import '../services.dart';
 
 const byteCountPerChunk = 262144; // 256 KiB
 
@@ -548,7 +547,9 @@ class ArweaveService {
   /// Creates and signs a [Transaction] representing the provided [DataBundle].
 
   Future<Transaction> prepareDataBundleTx(
-      DataBundle bundle, Wallet wallet) async {
+    DataBundle bundle,
+    Wallet wallet,
+  ) async {
     final packageInfo = await PackageInfo.fromPlatform();
 
     final bundleTx = await client.transactions.prepare(

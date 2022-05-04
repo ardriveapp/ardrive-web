@@ -137,6 +137,18 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
               ),
             ]),
             DataRow(cells: [
+              DataCell(Text(appLocalizationsOf(context).size)),
+              DataCell(
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    filesize((state).rootFolderTree.computeFolderSize()),
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ),
+            ]),
+            DataRow(cells: [
               DataCell(Text(appLocalizationsOf(context).driveID)),
               DataCell(
                 CopyIconButton(
@@ -171,6 +183,18 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                       fileCount: state.entry.getRecursiveFileCount(),
                       localizations: appLocalizationsOf(context),
                     ),
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ),
+            ]),
+            DataRow(cells: [
+              DataCell(Text(appLocalizationsOf(context).size)),
+              DataCell(
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    filesize(state.entry.computeFolderSize()),
                     textAlign: TextAlign.end,
                   ),
                 ),
