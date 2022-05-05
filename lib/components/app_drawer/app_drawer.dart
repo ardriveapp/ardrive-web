@@ -179,6 +179,7 @@ class AppDrawer extends StatelessWidget {
 
     if (profileState.runtimeType == ProfileLoggedIn) {
       final profile = profileState as ProfileLoggedIn;
+      final hasMinBalance = profile.walletBalance >= minimumWalletBalance;
       return Column(
         children: [
           ListTileTheme(
@@ -194,24 +195,19 @@ class AppDrawer extends StatelessWidget {
                     onSelected: (callback) => callback(context),
                     itemBuilder: (context) => [
                       if (state is DriveDetailLoadSuccess) ...{
-                        _buildNewFolderItem(context, state,
-                            profile.walletBalance >= minimumWalletBalance),
+                        _buildNewFolderItem(context, state, hasMinBalance),
                         PopupMenuDivider(),
-                        _buildUploadFileItem(context, state,
-                            profile.walletBalance >= minimumWalletBalance),
-                        _buildUploadFolderItem(context, state,
-                            profile.walletBalance >= minimumWalletBalance),
+                        _buildUploadFileItem(context, state, hasMinBalance),
+                        _buildUploadFolderItem(context, state, hasMinBalance),
                         PopupMenuDivider(),
                       },
                       if (drivesState is DrivesLoadSuccess) ...{
-                        _buildCreateDrive(context, drivesState,
-                            profile.walletBalance >= minimumWalletBalance),
+                        _buildCreateDrive(context, drivesState, hasMinBalance),
                         _buildAttachDrive(context)
                       },
                       if (state is DriveDetailLoadSuccess &&
                           state.currentDrive.privacy == 'public') ...{
-                        _buildCreateManifestItem(context, state,
-                            profile.walletBalance >= minimumWalletBalance)
+                        _buildCreateManifestItem(context, state, hasMinBalance)
                       },
                     ],
                     child: _buildNewButton(context),
@@ -220,7 +216,7 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
           ),
-          if (profile.walletBalance < minimumWalletBalance) ...{
+          if (!hasMinBalance) ...{
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
@@ -272,12 +268,12 @@ class AppDrawer extends StatelessWidget {
   }
 
   PopupMenuEntry<Function> _buildNewFolderItem(
-      context, DriveDetailLoadSuccess state, bool hasMinimumWalletBalance) {
+      context, DriveDetailLoadSuccess state, bool hasMinBalance) {
     return _buildMenuItemTile(
       context: context,
-      isEnabled: state.hasWritePermissions && hasMinimumWalletBalance,
+      isEnabled: state.hasWritePermissions && hasMinBalance,
       itemTitle: appLocalizationsOf(context).newFolder,
-      message: hasMinimumWalletBalance
+      message: hasMinBalance
           ? null
           : appLocalizationsOf(context).insufficientFundsForCreateAFolder,
       value: (context) => promptToCreateFolder(
@@ -289,11 +285,11 @@ class AppDrawer extends StatelessWidget {
   }
 
   PopupMenuEntry<Function> _buildUploadFileItem(
-      context, DriveDetailLoadSuccess state, bool hasMinimumWalletBalance) {
+      context, DriveDetailLoadSuccess state, bool hasMinBalance) {
     return _buildMenuItemTile(
       context: context,
-      isEnabled: state.hasWritePermissions && hasMinimumWalletBalance,
-      message: hasMinimumWalletBalance
+      isEnabled: state.hasWritePermissions && hasMinBalance,
+      message: hasMinBalance
           ? null
           : appLocalizationsOf(context).insufficientFundsForUploadFiles,
       itemTitle: appLocalizationsOf(context).uploadFiles,
@@ -307,12 +303,12 @@ class AppDrawer extends StatelessWidget {
   }
 
   PopupMenuEntry<Function> _buildUploadFolderItem(
-      context, DriveDetailLoadSuccess state, bool hasMinimumWalletBalance) {
+      context, DriveDetailLoadSuccess state, bool hasMinBalance) {
     return _buildMenuItemTile(
       context: context,
-      isEnabled: state.hasWritePermissions && hasMinimumWalletBalance,
+      isEnabled: state.hasWritePermissions && hasMinBalance,
       itemTitle: appLocalizationsOf(context).uploadFolder,
-      message: hasMinimumWalletBalance
+      message: hasMinBalance
           ? null
           : appLocalizationsOf(context).insufficientFundsForUploadFolders,
       value: (context) => promptToUpload(
@@ -334,12 +330,12 @@ class AppDrawer extends StatelessWidget {
   }
 
   PopupMenuEntry<Function> _buildCreateDrive(BuildContext context,
-      DrivesLoadSuccess drivesState, bool hasMinimumWalletBalance) {
+      DrivesLoadSuccess drivesState, bool hasMinBalance) {
     return _buildMenuItemTile(
       context: context,
-      isEnabled: drivesState.canCreateNewDrive && hasMinimumWalletBalance,
+      isEnabled: drivesState.canCreateNewDrive && hasMinBalance,
       itemTitle: appLocalizationsOf(context).newDrive,
-      message: hasMinimumWalletBalance
+      message: hasMinBalance
           ? null
           : appLocalizationsOf(context).insufficientFundsForCreateADrive,
       value: (context) => promptToCreateDrive(context),
@@ -364,12 +360,12 @@ class AppDrawer extends StatelessWidget {
   }
 
   PopupMenuEntry<Function> _buildCreateManifestItem(BuildContext context,
-      DriveDetailLoadSuccess state, bool hasMinimumWalletBalance) {
+      DriveDetailLoadSuccess state, bool hasMinBalance) {
     return _buildMenuItemTile(
       context: context,
       isEnabled: !state.driveIsEmpty,
       itemTitle: appLocalizationsOf(context).createManifest,
-      message: hasMinimumWalletBalance
+      message: hasMinBalance
           ? null
           : appLocalizationsOf(context).insufficientFundsForCreateAManifest,
       value: (context) =>
