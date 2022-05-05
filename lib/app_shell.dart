@@ -112,13 +112,17 @@ class _AppShellState extends State<AppShell> {
                                                           .toString()))),
                                       progressDescription: _syncStreamBuilder(
                                         builderWithData: (syncProgress) => Text(
-                                          syncProgress.drivesCount > 1
-                                              ? appLocalizationsOf(context)
-                                                  .driveSyncedOfDrivesCount(
-                                                      syncProgress.drivesSynced,
-                                                      syncProgress.drivesCount)
-                                              : appLocalizationsOf(context)
-                                                  .syncingOnlyOneDrive,
+                                          syncProgress.drivesCount == 0
+                                              ? ''
+                                              : syncProgress.drivesCount > 1
+                                                  ? appLocalizationsOf(context)
+                                                      .driveSyncedOfDrivesCount(
+                                                          syncProgress
+                                                              .drivesSynced,
+                                                          syncProgress
+                                                              .drivesCount)
+                                                  : appLocalizationsOf(context)
+                                                      .syncingOnlyOneDrive,
                                           style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold),

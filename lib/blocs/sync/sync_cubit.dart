@@ -41,6 +41,14 @@ class SyncProgress extends LinearProgress {
       drivesSynced: 0,
       numberOfDrivesAtGetMetadataPhase: 0);
 
+  factory SyncProgress.emptySyncCompleted() => SyncProgress(
+      entitiesNumber: 0,
+      progress: 1,
+      entitiesSynced: 0,
+      drivesCount: 0,
+      drivesSynced: 0,
+      numberOfDrivesAtGetMetadataPhase: 0);
+
   final int entitiesNumber;
   final int entitiesSynced;
   @override
@@ -216,6 +224,19 @@ class SyncCubit extends Cubit<SyncState> {
 
       // Sync the contents of each drive attached in the app.
       final drives = await _driveDao.allDrives().map((d) => d).get();
+
+      if (drives.isEmpty) {
+        _syncProgress = SyncProgress.emptySyncCompleted();
+
+        syncProgressController.add(_syncProgress);
+
+        // To show 100% loaded to the user
+        await Future.delayed(Duration(milliseconds: 1000));
+
+        emit(SyncIdle());
+
+        return;
+      }
 
       _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
 
