@@ -138,15 +138,15 @@
   },
   "passwordMismatch": "The confirmation password does not match.",
   "@passwordMismatch": {
-    "description": "Error message for when the confirmation password don't match the actual pass"
+    "description": "Error message for when the confirmation password doesn't match the actual pass"
   },
   "aggreeToTerms_body": "I agree to the ArDrive terms of service and privacy policy",
   "@aggreeToTerms_body": {
-    "description": "Checkbox for agreeing the terms of of service and privacy policy"
+    "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
   "aggreeToTerms_main": "I agree to the ",
   "@aggreeToTerms_main": {
-    "description": "Checkbox for agreeing the terms of of service and privacy policy"
+    "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
   "aggreeToTerms_link": "ArDrive terms of service and privacy policy",
   "@aggreeToTerms_link": {
@@ -180,7 +180,7 @@
   },
   "unlockEmphasized": "UNLOCK",
   "@unlockEmphasized": {
-    "description": "Unlock the wallet with its password. EMphasized with upper case"
+    "description": "Unlock the wallet with its password. Emphasized with upper case"
   },
   "forgetWallet": "Forget wallet and change profile",
   "@forgetWallet": {
@@ -567,7 +567,7 @@
   },
   "exportingData": "Exporting your data, please wait.",
   "@exportingData": {
-    "description": "The drive data is being procesed"
+    "description": "The drive data is being processed"
   },
   "fileDownloadFailed": "File download failed",
   "@fileDownloadFailed": {
@@ -579,7 +579,7 @@
   },
   "cancelEmphasized": "CANCEL",
   "@cancelEmphasized": {
-    "description": "Cancel button. Emphatized with upper case"
+    "description": "Cancel button. Emphasized with upper case"
   },
   "attachEmphasized": "ATTACH",
   "@attachEmphasized": {
@@ -717,7 +717,7 @@
   },
   "moveFileEmphasized": "MOVE FILE",
   "@moveFileEmphasized": {
-    "description": "The action of moving a file. EMphasized with upper case"
+    "description": "The action of moving a file. Emphasized with upper case"
   },
   "backToFolder": "Back to {entityName} folder",
   "@backToFolder": {
@@ -847,7 +847,7 @@
   },
   "conflictingFiles": "Conflicting files:",
   "@conflictingFiles": {
-    "description": "Files being in conflict with already existing items"
+    "description": "Files conflict with already existing items"
   },
   "upload": "Upload",
   "@upload": {
@@ -890,7 +890,7 @@
   },
   "arConnectRemainOnThisTab": "CAUTION: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.",
   "@arConnectRemainOnThisTab": {
-    "description": "Warning for te user to do not leave the tab"
+    "description": "Warning for the user to do not leave the tab"
   },
   "thisMayTakeAWhile": "This may take a while...",
   "@thisMayTakeAWhile": {
@@ -900,7 +900,7 @@
   "@failedToPrepareFileUpload": {
     "description": "Error message for when it failed to prepare the upload"
   },
-  "failedToPrepareFileUploadExplanation": "An error occured while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.",
+  "failedToPrepareFileUploadExplanation": "An error occurred while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.",
   "@failedToPrepareFileUploadExplanation": {
     "description": "Error message for when it failed to prepare the upload"
   },
@@ -953,7 +953,7 @@
   },
   "insufficientARForUpload": "Insufficient AR for upload.",
   "@insufficientARForUpload": {
-    "description": "The wallet has no enough balance"
+    "description": "The wallet does not have enough balance"
   },
   "bundlingAndSigningUpload": "Bundling and signing upload",
   "@bundlingAndSigningUpload": {
@@ -961,7 +961,7 @@
   },
   "signingUpload": "Signing upload",
   "@signingUpload": {
-    "description": "The app is signing the transations"
+    "description": "The app is signing the transactions"
   },
   "walletSwitch": "Wallet Switch",
   "@walletSwitch": {
@@ -1013,7 +1013,7 @@
   },
   "proceedCongestionEmphasized": "PROCEED",
   "@proceedCongestionEmphasized": {
-    "description": "Proceed being aware of the network congestion. Empasized with upper case"
+    "description": "Proceed being aware of the network congestion. Emphasized with upper case"
   },
   "profile": "Profile",
   "@profile": {
@@ -1103,7 +1103,7 @@
   },
   "insufficientBalanceForManifest": "Provided wallet balance of {walletBalance} AR is not enough for this manifest transaction costing {totalCost} AR...",
   "@insufficientBalanceForManifest": {
-    "description": "The ammount of AR the wallet has is not enough to upload the manifest transaction",
+    "description": "The amount of AR the wallet has is not enough to upload the manifest transaction",
     "placeholders": {
       "walletBalance": {
         "type": "String",
