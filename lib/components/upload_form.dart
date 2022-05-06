@@ -10,7 +10,6 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -22,9 +21,15 @@ Future<void> promptToUpload(
   required String folderId,
   required bool isFolderUpload,
 }) async {
-  final uploadInput = FileUploadInputElement()
-    ..setAttribute(
-        isFolderUpload ? 'webkitdirectory' : 'webkitEntries', 'multiple');
+  final uploadInput = FileUploadInputElement();
+
+  if (isFolderUpload) {
+    uploadInput.setAttribute('webkitdirectory', true);
+  } else {
+    uploadInput.setAttribute('webkitEntries', true);
+    uploadInput.setAttribute('multiple', true);
+  }
+
   uploadInput.click();
 // Create and click upload input element
 

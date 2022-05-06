@@ -45,6 +45,10 @@ class IOFile extends UploadFile {
 
   @override
   String getIdentifier() {
-    return path.isEmpty ? name : path;
+    return path.isEmpty || _isPathBlobFromDragAndDrop(path) ? name : path;
+  }
+
+  bool _isPathBlobFromDragAndDrop(String path) {
+    return path.split(':')[0] == 'blob';
   }
 }
