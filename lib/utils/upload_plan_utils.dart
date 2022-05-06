@@ -35,7 +35,12 @@ class UploadPlanUtils {
         private ? await driveDao.getDriveKey(targetDrive.id, cipherKey) : null;
     for (var file in files) {
       final fileName = file.name;
-      final filePath = '${targetFolder.path}/${file.path}';
+
+      // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
+      final pathToUse =
+          file.path.split(':')[0] == 'blob' ? fileName : file.path;
+
+      final filePath = '${targetFolder.path}/$pathToUse';
       final fileSize = file.size;
       final fileEntity = FileEntity(
         driveId: targetDrive.id,
