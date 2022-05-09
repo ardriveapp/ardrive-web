@@ -294,10 +294,6 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     );
 
-    if (costEstimate.v2FilesFeeTx != null) {
-      await _arweave.postTx(costEstimate.v2FilesFeeTx!);
-    }
-
     // Upload Bundles
     for (var bundleHandle in uploadPlan.bundleUploadHandles) {
       await bundleHandle.prepareAndSignBundleTransaction(
@@ -318,9 +314,7 @@ class UploadCubit extends Cubit<UploadState> {
     // Upload V2 Files
     for (final uploadHandle in uploadPlan.fileV2UploadHandles.values) {
       await uploadHandle.prepareAndSignTransactions(
-        arweaveService: _arweave,
-        wallet: profile.wallet,
-      );
+          arweaveService: _arweave, wallet: profile.wallet, pstService: _pst);
       await uploadHandle.writeFileEntityToDatabase(
         driveDao: _driveDao,
       );
