@@ -19,7 +19,6 @@ part 'upload_state.dart';
 
 final privateFileSizeLimit = 104857600;
 final publicFileSizeLimit = 1.25 * math.pow(10, 9);
-final minimumPstTip = BigInt.from(10000000);
 final filesNamesToExclude = ['.DS_Store'];
 
 class UploadCubit extends Cubit<UploadState> {
