@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
@@ -54,9 +55,16 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           if (file.size <= previewMaxFileSize) {
             final contentType =
                 file.dataContentType ?? lookupMimeType(file.name);
+            final fileExtension = contentType?.split('/').last;
             final previewType = contentType?.split('/').first;
             final previewUrl =
                 '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
+
+            if (!_supportedExtension(previewType, fileExtension)) {
+              emit(FsEntryPreviewUnavailable());
+              return;
+            }
+
             switch (previewType) {
               case 'image':
                 emitImagePreview(file, previewUrl);
@@ -158,6 +166,20 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     super.onError(error, stackTrace);
 
     print('Failed to load entity activity: $error $stackTrace');
+  }
+
+  bool _supportedExtension(String? previewType, String? extension) {
+    if (previewType == null || extension == null) {
+      return false;
+    }
+
+    switch (previewType) {
+      case 'image':
+        return supportedImageTypesInFilePreview
+            .any((element) => element.contains(extension));
+      default:
+        return false;
+    }
   }
 
   @override
