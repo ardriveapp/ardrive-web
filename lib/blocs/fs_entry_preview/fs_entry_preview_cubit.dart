@@ -59,7 +59,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             final previewType = contentType?.split('/').first;
             final previewUrl =
                 '${_config.defaultArweaveGatewayUrl}/${file.dataTxId}';
-
             if (!_supportedExtension(previewType, fileExtension)) {
               emit(FsEntryPreviewUnavailable());
               return;
@@ -168,15 +167,15 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     print('Failed to load entity activity: $error $stackTrace');
   }
 
-  bool _supportedExtension(String? previewType, String? extension) {
-    if (previewType == null || extension == null) {
+  bool _supportedExtension(String? previewType, String? fileExtension) {
+    if (previewType == null || fileExtension == null) {
       return false;
     }
 
     switch (previewType) {
       case 'image':
         return supportedImageTypesInFilePreview
-            .any((element) => element.contains(extension));
+            .any((element) => element.contains(fileExtension));
       default:
         return false;
     }
