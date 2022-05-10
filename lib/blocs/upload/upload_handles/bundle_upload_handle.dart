@@ -61,13 +61,11 @@ class BundleUploadHandle implements UploadHandle {
       wallet,
     );
 
-    // Add tips to bundle tx
-    final bundleTip = await pstService.getPSTFee(bundleTx.reward);
-    bundleTx
-      ..addTag(TipType.tagName, TipType.dataUpload)
-      ..setTarget(await pstService.getWeightedPstHolder())
-      ..setQuantity(bundleTip);
+    await pstService.addCommunityTipToTx(bundleTx);
+
     await bundleTx.sign(wallet);
+
+    // Write entities to database
     folderDataItemUploadHandles.forEach((folder) async {
       await folder.writeFolderToDatabase(driveDao: driveDao);
     });
