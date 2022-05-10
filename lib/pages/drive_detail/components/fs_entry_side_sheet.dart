@@ -83,7 +83,10 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                               child: TabBarView(
                                 children: [
                                   if (previewState is FsEntryPreviewSuccess)
-                                    FsEntryPreviewWidget(state: previewState),
+                                    Align(
+                                        alignment: Alignment.topCenter,
+                                        child: FsEntryPreviewWidget(
+                                            state: previewState)),
                                   Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
