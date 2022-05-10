@@ -79,7 +79,8 @@ class SyncCubit extends Cubit<SyncState> {
               kSyncTimerDuration) {
         return;
       }
-      Future.delayed(Duration(seconds: 2)).then((value) => createSyncStream());
+      Future.delayed(const Duration(seconds: 2))
+          .then((value) => createSyncStream());
     });
   }
 
@@ -107,7 +108,7 @@ class SyncCubit extends Cubit<SyncState> {
   void restartArConnectSyncOnFocus() async {
     if (await _profileCubit.isCurrentProfileArConnect()) {
       whenBrowserTabIsUnhidden(() {
-        Future.delayed(Duration(seconds: 2))
+        Future.delayed(const Duration(seconds: 2))
             .then((value) => createArConnectSyncStream());
       });
     }
@@ -285,7 +286,7 @@ class SyncCubit extends Cubit<SyncState> {
       await _driveDao.writeToDrive(DrivesCompanion(
         id: Value(drive.id),
         lastBlockHeight: Value(currentBlockheight),
-        syncCursor: Value(null),
+        syncCursor: const Value(null),
       ));
       return;
     }
@@ -374,7 +375,7 @@ class SyncCubit extends Cubit<SyncState> {
                 (rev) => NetworkTransactionsCompanion.insert(
                   transactionDateCreated: rev.dateCreated,
                   id: rev.metadataTxId.value,
-                  status: Value(TransactionStatus.confirmed),
+                  status: const Value(TransactionStatus.confirmed),
                 ),
               )
               .toList());
@@ -427,7 +428,7 @@ class SyncCubit extends Cubit<SyncState> {
                 (rev) => NetworkTransactionsCompanion.insert(
                   transactionDateCreated: rev.dateCreated,
                   id: rev.metadataTxId.value,
-                  status: Value(TransactionStatus.confirmed),
+                  status: const Value(TransactionStatus.confirmed),
                 ),
               )
               .toList());
@@ -484,14 +485,14 @@ class SyncCubit extends Cubit<SyncState> {
                   NetworkTransactionsCompanion.insert(
                     transactionDateCreated: rev.dateCreated,
                     id: rev.metadataTxId.value,
-                    status: Value(TransactionStatus.confirmed),
+                    status: const Value(TransactionStatus.confirmed),
                   ),
                   // We cannot be sure that the data tx of files have been mined
                   // so we'll mark it as pending initially.
                   NetworkTransactionsCompanion.insert(
                     transactionDateCreated: rev.dateCreated,
                     id: rev.dataTxId.value,
-                    status: Value(TransactionStatus.pending),
+                    status: const Value(TransactionStatus.pending),
                   ),
                 ],
               )
@@ -678,7 +679,7 @@ class SyncCubit extends Cubit<SyncState> {
             txConfirmations[txId]! >= kRequiredTxConfirmationCount;
         final txNotFound = txConfirmations[txId]! < 0;
 
-        var txStatus;
+        String? txStatus;
 
         DateTime? transactionDateCreated;
 

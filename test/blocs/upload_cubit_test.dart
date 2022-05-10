@@ -174,11 +174,11 @@ void main() {
           await cubit.checkConflictingFiles();
         },
         expect: () => <dynamic>[
-              TypeMatcher<UploadPreparationInitialized>(),
-              TypeMatcher<UploadPreparationInProgress>(),
+              const TypeMatcher<UploadPreparationInitialized>(),
+              const TypeMatcher<UploadPreparationInProgress>(),
               UploadFileConflict(
                   areAllFilesConflicting: true,
-                  conflictingFileNames: [tRootFolderId + '1']),
+                  conflictingFileNames: const [tRootFolderId + '1']),
             ]);
 
     blocTest<UploadCubit, UploadState>(
@@ -193,11 +193,11 @@ void main() {
           await cubit.checkConflictingFiles();
         },
         expect: () => <dynamic>[
-              TypeMatcher<UploadPreparationInitialized>(),
-              TypeMatcher<UploadPreparationInProgress>(),
+              const TypeMatcher<UploadPreparationInitialized>(),
+              const TypeMatcher<UploadPreparationInProgress>(),
               UploadFileConflict(
                   areAllFilesConflicting: false,
-                  conflictingFileNames: [tRootFolderId + '1'])
+                  conflictingFileNames: const [tRootFolderId + '1'])
             ]);
 
     blocTest<UploadCubit, UploadState>(
@@ -210,9 +210,9 @@ void main() {
           await cubit.checkConflictingFiles();
         },
         expect: () => <dynamic>[
-              TypeMatcher<UploadPreparationInitialized>(),
-              TypeMatcher<UploadPreparationInProgress>(),
-              TypeMatcher<UploadReady>()
+              const TypeMatcher<UploadPreparationInitialized>(),
+              const TypeMatcher<UploadPreparationInProgress>(),
+              const TypeMatcher<UploadReady>()
             ]);
   });
 
@@ -269,7 +269,7 @@ void main() {
       expect: () => <dynamic>[
         UploadPreparationInitialized(),
         UploadPreparationInProgress(isArConnect: true),
-        TypeMatcher<UploadReady>()
+        const TypeMatcher<UploadReady>()
       ],
     );
     blocTest<UploadCubit, UploadState>(
@@ -289,7 +289,7 @@ void main() {
       expect: () => <dynamic>[
         UploadPreparationInitialized(),
         UploadPreparationInProgress(isArConnect: false),
-        TypeMatcher<UploadReady>()
+        const TypeMatcher<UploadReady>()
       ],
     );
 
@@ -317,7 +317,7 @@ void main() {
       },
       expect: () => <dynamic>[
         UploadPreparationInitialized(),
-        TypeMatcher<UploadPreparationInProgress>(),
+        const TypeMatcher<UploadPreparationInProgress>(),
         UploadFileTooLarge(
             tooLargeFileNames: [tTooLargeFiles.first.name], isPrivate: false)
       ],

@@ -32,11 +32,11 @@ class AppDrawer extends StatelessWidget {
                   Expanded(
                     child: Column(
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           height: 32,
                         ),
                         _buildLogo(),
-                        SizedBox(
+                        const SizedBox(
                           height: 32,
                         ),
                         BlocBuilder<ProfileCubit, ProfileState>(
@@ -48,8 +48,8 @@ class AppDrawer extends StatelessWidget {
                           Expanded(
                             child: Scrollbar(
                               child: ListView(
-                                padding: EdgeInsets.all(21),
-                                key: PageStorageKey<String>('driveScrollView'),
+                                padding: const EdgeInsets.all(21),
+                                key: const PageStorageKey<String>('driveScrollView'),
                                 children: [
                                   if (state.userDrives.isNotEmpty ||
                                       state.sharedDrives.isEmpty) ...{
@@ -116,7 +116,7 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: EdgeInsets.all(21),
+                    padding: const EdgeInsets.all(21),
                     alignment: Alignment.centerLeft,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,7 +148,7 @@ class AppDrawer extends StatelessWidget {
                                 ),
                               );
                             } else {
-                              return SizedBox(height: 32, width: 32);
+                              return const SizedBox(height: 32, width: 32);
                             }
                           },
                         ),
@@ -206,7 +206,7 @@ class AppDrawer extends StatelessWidget {
                                   Text(appLocalizationsOf(context).newFolder),
                             ),
                           ),
-                          PopupMenuDivider(),
+                          const PopupMenuDivider(),
                           PopupMenuItem(
                             enabled: state.hasWritePermissions,
                             value: (context) => promptToUpload(
@@ -237,7 +237,7 @@ class AppDrawer extends StatelessWidget {
                               ),
                             ),
                           ),
-                          PopupMenuDivider(),
+                          const PopupMenuDivider(),
                         },
                         if (drivesState is DrivesLoadSuccess) ...{
                           PopupMenuItem(
@@ -280,7 +280,7 @@ class AppDrawer extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10)),
                           label: Text(
                             appLocalizationsOf(context).newStringEmphasized,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -301,7 +301,7 @@ class AppDrawer extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(10)),
                             label: Text(
                               appLocalizationsOf(context).newStringEmphasized,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -321,7 +321,7 @@ class AppDrawer extends StatelessWidget {
                           onPressed: () => launch(R.arHelpLink),
                           child: Text(
                             appLocalizationsOf(context).howDoIGetAR,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Colors.grey,
                               decoration: TextDecoration.underline,
                             ),
@@ -362,7 +362,7 @@ class AppDrawer extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10)),
                     label: Text(
                       appLocalizationsOf(context).newStringEmphasized,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                       ),
                     ),

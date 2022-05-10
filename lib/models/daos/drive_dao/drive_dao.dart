@@ -23,7 +23,7 @@ part 'folder_with_contents.dart';
   '../../queries/drive_queries.moor',
 })
 class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
-  final _uuid = Uuid();
+  final _uuid = const Uuid();
 
   late Vault<SecretKey> _driveKeyVault;
 
@@ -40,9 +40,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       (drive) =>
           drive.ownerAddress != owner && drive.privacy == DrivePrivacy.private,
     );
-    drives.forEach((drive) async {
+    for (var drive in drives) {
       await detachDrive(drive.id);
-    });
+    }
   }
 
   Future<void> detachDrive(String driveId) async {

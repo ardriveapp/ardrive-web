@@ -62,7 +62,7 @@ class DriveDetailPage extends StatelessWidget {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
-                                      child: Container(
+                                      child: SizedBox(
                                         width: 400,
                                         child: Text(
                                           state.currentDrive.name,
@@ -102,7 +102,7 @@ class DriveDetailPage extends StatelessWidget {
                           ),
                         ),
                         if (state.showSelectedItemDetails) ...{
-                          VerticalDivider(width: 1),
+                          const VerticalDivider(width: 1),
                           FsEntrySideSheet(
                             driveId: state.currentDrive.id,
                             drivePrivacy: state.currentDrive.privacy,
@@ -138,7 +138,7 @@ class DriveDetailPage extends StatelessWidget {
                                       style:
                                           Theme.of(context).textTheme.headline5,
                                     ),
-                                    SizedBox(
+                                    const SizedBox(
                                       height: 16,
                                     ),
                                     DriveDetailActionRow()

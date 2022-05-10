@@ -39,7 +39,7 @@ class DriveListTile extends StatelessWidget {
               : null,
           title: Text(
             drive.name,
-            style: TextStyle(fontSize: 12),
+            style: const TextStyle(fontSize: 12),
           ),
           selected: selected,
           onTap: onPressed,

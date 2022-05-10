@@ -17,7 +17,7 @@ import 'enums/conflicting_files_actions.dart';
 
 part 'upload_state.dart';
 
-final privateFileSizeLimit = 104857600;
+const privateFileSizeLimit = 104857600;
 final publicFileSizeLimit = 1.25 * math.pow(10, 9);
 final minimumPstTip = BigInt.from(10000000);
 final filesNamesToExclude = ['.DS_Store'];
@@ -192,7 +192,7 @@ class UploadCubit extends Cubit<UploadState> {
           : '${_targetFolder.path}/${folder.name}';
     }
     final filesToUpload = <WebFile>[];
-    files.forEach((file) {
+    for (var file in files) {
       // Splits the file path, gets rid of the file name and rejoins the strings
       // to get parent folder path.
       // eg: Test/A/B/C/file.txt becomes Test/A/B/C
@@ -203,7 +203,7 @@ class UploadCubit extends Cubit<UploadState> {
           folders[fileFolder]?.id ?? _targetFolder.id,
         ),
       );
-    });
+    }
     folders.removeWhere((key, value) => foldersToSkip.contains(value));
     return FolderPrepareResult(files: filesToUpload, foldersByPath: folders);
   }
@@ -308,7 +308,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
       await for (final _ in bundleHandle
           .upload(_arweave)
-          .debounceTime(Duration(milliseconds: 500))
+          .debounceTime(const Duration(milliseconds: 500))
           .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
@@ -326,7 +326,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
       await for (final _ in uploadHandle
           .upload(_arweave)
-          .debounceTime(Duration(milliseconds: 500))
+          .debounceTime(const Duration(milliseconds: 500))
           .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }

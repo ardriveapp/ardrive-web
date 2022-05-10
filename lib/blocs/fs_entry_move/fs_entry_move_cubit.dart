@@ -75,12 +75,12 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
 
       if (await _profileCubit.logoutIfWalletMismatch()) {
         emit(_isMovingFolder
-            ? FolderEntryMoveWalletMismatch()
-            : FileEntryMoveWalletMismatch());
+            ? const FolderEntryMoveWalletMismatch()
+            : const FileEntryMoveWalletMismatch());
         return;
       }
       if (_isMovingFolder) {
-        emit(FolderEntryMoveInProgress());
+        emit(const FolderEntryMoveInProgress());
         var folder = await _driveDao
             .folderById(driveId: driveId, folderId: folderId!)
             .getSingle();
@@ -118,9 +118,9 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
           await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
         });
 
-        emit(FolderEntryMoveSuccess());
+        emit(const FolderEntryMoveSuccess());
       } else {
-        emit(FileEntryMoveInProgress());
+        emit(const FileEntryMoveInProgress());
         var file = await _driveDao
             .fileById(driveId: driveId, fileId: fileId!)
             .getSingle();
@@ -157,7 +157,7 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
               performedAction: RevisionAction.move));
         });
 
-        emit(FileEntryMoveSuccess());
+        emit(const FileEntryMoveSuccess());
       }
     } catch (err) {
       addError(err);
@@ -173,10 +173,10 @@ class FsEntryMoveCubit extends Cubit<FsEntryMoveState> {
   @override
   void onError(Object error, StackTrace stackTrace) {
     if (_isMovingFolder) {
-      emit(FolderEntryMoveFailure());
+      emit(const FolderEntryMoveFailure());
       print('Failed to move folder: $error $stackTrace');
     } else {
-      emit(FileEntryMoveFailure());
+      emit(const FileEntryMoveFailure());
       print('Failed to move file: $error $stackTrace');
     }
 

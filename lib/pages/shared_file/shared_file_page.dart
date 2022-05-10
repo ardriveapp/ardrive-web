@@ -47,7 +47,7 @@ class SharedFilePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
-                      icon: Icon(Icons.file_download),
+                      icon: const Icon(Icons.file_download),
                       label: Text(appLocalizationsOf(context).download),
                       onPressed: () => promptToDownloadSharedFile(
                         context: context,
@@ -78,6 +78,6 @@ class SharedFilePage extends StatelessWidget {
 
   Widget _buildReturnToAppLink() => TextButton(
         onPressed: () => launch('https://ardrive.io/'),
-        child: Text('Learn more about ArDrive'),
+        child: const Text('Learn more about ArDrive'),
       );
 }

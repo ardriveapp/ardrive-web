@@ -10,7 +10,7 @@ class ProfileAuthShell extends StatelessWidget {
   final double? contentWidthFactor;
   final Widget? contentFooter;
 
-  ProfileAuthShell({
+  const ProfileAuthShell({
     required this.illustration,
     required this.content,
     this.contentWidthFactor,
@@ -53,7 +53,7 @@ class ProfileAuthShell extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Image.asset(R.images.profile.permahillsBg),
-                  SizedBox(height: 128),
+                  const SizedBox(height: 128),
                 ],
               ),
             ),

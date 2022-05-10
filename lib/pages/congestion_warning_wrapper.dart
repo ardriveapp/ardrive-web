@@ -27,7 +27,7 @@ Future<void> showCongestionDependentModalDialog(
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.warning),
+                    const Icon(Icons.warning),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text.rich(

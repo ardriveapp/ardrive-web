@@ -75,7 +75,7 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
   @override
   RouteInformation restoreRouteInformation(AppRoutePath path) {
     if (path.signingIn) {
-      return RouteInformation(location: '/sign-in');
+      return const RouteInformation(location: '/sign-in');
     } else if (path.driveId != null) {
       if (path.driveName != null && path.sharedRawDriveKey != null) {
         return RouteInformation(
@@ -102,6 +102,6 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
       }
     }
 
-    return RouteInformation(location: '/');
+    return const RouteInformation(location: '/');
   }
 }

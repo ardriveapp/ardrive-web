@@ -58,7 +58,7 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                       child: TextFormField(
                                         controller: TextEditingController(
                                             text: state.username),
-                                        autofillHints: [AutofillHints.username],
+                                        autofillHints: const [AutofillHints.username],
                                       )),
                                 ),
                               ),
@@ -66,7 +66,7 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                 formControlName: 'password',
                                 autofocus: true,
                                 obscureText: true,
-                                autofillHints: [AutofillHints.password],
+                                autofillHints: const [AutofillHints.password],
                                 decoration: InputDecoration(
                                   labelText:
                                       appLocalizationsOf(context).password,

@@ -103,7 +103,7 @@ Future<void> addTestFilesToDb(
               size: 500,
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
-              dataContentType: Value(''),
+              dataContentType: const Value(''),
             );
           },
         )..shuffle(Random(0)),
@@ -121,7 +121,7 @@ Future<void> addTestFilesToDb(
               size: 500,
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
-              dataContentType: Value(''),
+              dataContentType: const Value(''),
             );
           },
         )..shuffle(Random(0)),
@@ -146,7 +146,7 @@ Future<void> addTestFilesToDb(
               size: 500,
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
-              dataContentType: Value(''),
+              dataContentType: const Value(''),
             );
           },
         )..shuffle(Random(0)),
@@ -165,7 +165,7 @@ Future<void> addTestFilesToDb(
               size: 500,
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
-              dataContentType: Value(''),
+              dataContentType: const Value(''),
             );
           },
         )..shuffle(Random(0)),
@@ -181,7 +181,7 @@ Future<void> addTestFilesToDb(
             final fileId = '$rootFolderId$i';
             return NetworkTransactionsCompanion.insert(
               id: fileId + 'Meta',
-              status: Value(TransactionStatus.confirmed),
+              status: const Value(TransactionStatus.confirmed),
               dateCreated: Value(defaultDate),
             );
           },
@@ -192,7 +192,7 @@ Future<void> addTestFilesToDb(
             final fileId = '$rootFolderId$i';
             return NetworkTransactionsCompanion.insert(
               id: fileId + 'Data',
-              status: Value(TransactionStatus.confirmed),
+              status: const Value(TransactionStatus.confirmed),
               dateCreated: Value(defaultDate),
             );
           },
@@ -203,7 +203,7 @@ Future<void> addTestFilesToDb(
             final fileId = '$nestedFolderId$i';
             return NetworkTransactionsCompanion.insert(
               id: fileId + 'Meta',
-              status: Value(TransactionStatus.confirmed),
+              status: const Value(TransactionStatus.confirmed),
               dateCreated: Value(defaultDate),
             );
           },
@@ -214,7 +214,7 @@ Future<void> addTestFilesToDb(
             final fileId = '$nestedFolderId$i';
             return NetworkTransactionsCompanion.insert(
               id: fileId + 'Data',
-              status: Value(TransactionStatus.confirmed),
+              status: const Value(TransactionStatus.confirmed),
               dateCreated: Value(defaultDate),
             );
           },

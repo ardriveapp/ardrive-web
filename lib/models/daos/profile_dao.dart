@@ -27,7 +27,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     final profileSalt = profile.keySalt;
     final profileKdRes = await deriveProfileKey(password, profileSalt);
     //Checks password for both JSON and ArConnect by decrypting stored public key
-    var publicKey;
+    String publicKey;
     try {
       publicKey = utf8.decode(
         await aesGcm.decrypt(

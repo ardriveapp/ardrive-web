@@ -81,12 +81,12 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
 
       if (await _profileCubit.logoutIfWalletMismatch()) {
         emit(_isRenamingFolder
-            ? FolderEntryRenameWalletMismatch()
-            : FileEntryRenameWalletMismatch());
+            ? const FolderEntryRenameWalletMismatch()
+            : const FileEntryRenameWalletMismatch());
         return;
       }
       if (_isRenamingFolder) {
-        emit(FolderEntryRenameInProgress());
+        emit(const FolderEntryRenameInProgress());
 
         await _driveDao.transaction(() async {
           var folder = await _driveDao
@@ -109,9 +109,9 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
         });
 
-        emit(FolderEntryRenameSuccess());
+        emit(const FolderEntryRenameSuccess());
       } else {
-        emit(FileEntryRenameInProgress());
+        emit(const FileEntryRenameInProgress());
 
         await _driveDao.transaction(() async {
           var file = await _driveDao
@@ -135,7 +135,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               performedAction: RevisionAction.rename));
         });
 
-        emit(FileEntryRenameSuccess());
+        emit(const FileEntryRenameSuccess());
       }
     } catch (err) {
       addError(err);
@@ -197,10 +197,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   @override
   void onError(Object error, StackTrace stackTrace) {
     if (_isRenamingFolder) {
-      emit(FolderEntryRenameFailure());
+      emit(const FolderEntryRenameFailure());
       print('Failed to rename folder: $error $stackTrace');
     } else {
-      emit(FileEntryRenameFailure());
+      emit(const FileEntryRenameFailure());
       print('Failed to rename file: $error $stackTrace');
     }
 

@@ -13,7 +13,7 @@ import 'utils/app_localizations_wrapper.dart';
 class AppShell extends StatefulWidget {
   final Widget page;
 
-  AppShell({Key? key, required this.page}) : super(key: key);
+  const AppShell({Key? key, required this.page}) : super(key: key);
 
   @override
   _AppShellState createState() => _AppShellState();
@@ -29,7 +29,7 @@ class _AppShellState extends State<AppShell> {
             if (_showWalletSwitchDialog) {
               showDialog(
                 context: context,
-                builder: (context) => WalletSwitchDialog(),
+                builder: (context) => const WalletSwitchDialog(),
               );
             }
             //Used to prevent the dialog being shown multiple times.
@@ -117,7 +117,7 @@ class _AppShellState extends State<AppShell> {
             desktop: _buildPage(
               Row(
                 children: [
-                  AppDrawer(),
+                  const AppDrawer(),
                   Expanded(
                     child: Scaffold(
                       appBar: _buildAppBar(),
@@ -130,7 +130,7 @@ class _AppShellState extends State<AppShell> {
             mobile: _buildPage(
               Scaffold(
                 appBar: _buildAppBar(),
-                drawer: AppDrawer(),
+                drawer: const AppDrawer(),
                 body: Row(
                   children: [
                     Expanded(

@@ -88,7 +88,7 @@ class DriveAttachForm extends StatelessWidget {
                       formControlName: 'driveKey',
                       autofocus: true,
                       obscureText: true,
-                      decoration: InputDecoration(labelText: 'Drive Key'),
+                      decoration: const InputDecoration(labelText: 'Drive Key'),
                       validationMessages: (_) =>
                           kValidationMessages(appLocalizationsOf(context)),
                       onEditingComplete: () => context

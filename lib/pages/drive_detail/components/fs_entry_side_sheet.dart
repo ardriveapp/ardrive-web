@@ -4,7 +4,7 @@ class FsEntrySideSheet extends StatelessWidget {
   final String driveId;
   final Privacy drivePrivacy;
   final SelectedItem? maybeSelectedItem;
-  FsEntrySideSheet({
+  const FsEntrySideSheet({
     required this.driveId,
     required this.drivePrivacy,
     this.maybeSelectedItem,
@@ -17,7 +17,7 @@ class FsEntrySideSheet extends StatelessWidget {
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
           key: ValueKey(
             driveId +
-                '${maybeSelectedItem?.id ?? Random().nextInt(1000).toString()}',
+                (maybeSelectedItem?.id ?? Random().nextInt(1000).toString()),
           ),
           create: (context) => FsEntryInfoCubit(
             driveId: driveId,
@@ -429,13 +429,13 @@ class FsEntrySideSheet extends StatelessWidget {
                                   ? [
                                       Text(
                                           appLocalizationsOf(context).download),
-                                      SizedBox(width: 4),
-                                      Icon(Icons.download),
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.download),
                                     ]
                                   : [
                                       Text(appLocalizationsOf(context).preview),
-                                      SizedBox(width: 4),
-                                      Icon(Icons.open_in_new)
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.open_in_new)
                                     ],
                             ),
                           ),
@@ -517,7 +517,7 @@ class FsEntrySideSheet extends StatelessWidget {
                         trailing: statusIcon,
                       );
                     },
-                    separatorBuilder: (context, index) => Divider(),
+                    separatorBuilder: (context, index) => const Divider(),
                     itemCount: state.revisions.length,
                   );
                 } else {
@@ -555,13 +555,13 @@ class CopyIconButton extends StatelessWidget {
   final String value;
   final String tooltip;
 
-  CopyIconButton({required this.value, required this.tooltip});
+  const CopyIconButton({required this.value, required this.tooltip});
 
   @override
   Widget build(BuildContext context) => Container(
         alignment: Alignment.centerRight,
         child: IconButton(
-          icon: Icon(Icons.copy, color: Colors.black54),
+          icon: const Icon(Icons.copy, color: Colors.black54),
           tooltip: tooltip,
           onPressed: () => Clipboard.setData(ClipboardData(text: value)),
         ),

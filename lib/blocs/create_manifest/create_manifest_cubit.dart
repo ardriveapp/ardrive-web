@@ -200,7 +200,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         parentFolderId: parentFolder.id,
         name: manifestName,
         lastModifiedDate: DateTime.now(),
-        id: existingManifestFileId ?? Uuid().v4(),
+        id: existingManifestFileId ?? const Uuid().v4(),
         driveId: drive.id,
         dataTxId: manifestDataItem.id,
         dataContentType: ContentType.manifest,

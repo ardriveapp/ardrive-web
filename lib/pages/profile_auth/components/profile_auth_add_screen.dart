@@ -50,7 +50,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                         ReactiveTextField(
                           formControlName: 'username',
                           autofocus: true,
-                          autofillHints: [AutofillHints.username],
+                          autofillHints: const [AutofillHints.username],
                           decoration: InputDecoration(
                             labelText: appLocalizationsOf(context).username,
                             prefixIcon: const Icon(Icons.person),
@@ -68,7 +68,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                             labelText: appLocalizationsOf(context).password,
                             prefixIcon: const Icon(Icons.lock),
                           ),
-                          autofillHints: [AutofillHints.password],
+                          autofillHints: const [AutofillHints.password],
                           onSubmitted: () =>
                               context.read<ProfileAddCubit>().submit(),
                           validationMessages: (_) =>
@@ -118,12 +118,12 @@ class ProfileAuthAddScreen extends StatelessWidget {
                                           // TODO replace at PE-1125
                                           text: appLocalizationsOf(context)
                                               .aggreeToTerms_link,
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             decoration:
                                                 TextDecoration.underline,
                                           ),
                                         ),
-                                        TextSpan(text: '.'),
+                                        const TextSpan(text: '.'),
                                       ],
                                     ),
                                   ),

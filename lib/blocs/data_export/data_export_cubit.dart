@@ -58,7 +58,7 @@ class DataExportCubit extends Cubit<DataExportState> {
   }
 
   Future<void> exportData() async {
-    emit(DataExportInProgress());
+    emit(const DataExportInProgress());
 
     final dataBytes =
         utf8.encode((await getFilesInDriveAsCSV(driveId))) as Uint8List;

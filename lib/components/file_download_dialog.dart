@@ -74,8 +74,8 @@ class FileDownloadDialog extends StatelessWidget {
               title: appLocalizationsOf(context).downloadingFile,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Center(child: CircularProgressIndicator()),
+                children: const [
+                  Center(child: CircularProgressIndicator()),
                 ],
               ),
               actions: [

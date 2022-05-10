@@ -28,7 +28,7 @@ class _ProfileAuthPageState extends State<ProfileAuthPage> {
       if (_showWalletSwitchDialog) {
         showDialog(
           context: context,
-          builder: (context) => WalletSwitchDialog(
+          builder: (context) => const WalletSwitchDialog(
             fromAuthPage: true,
           ),
         );
@@ -79,7 +79,7 @@ class _ProfileAuthPageState extends State<ProfileAuthPage> {
 
             return ProfileAuthUnlockScreen();
           } else {
-            return ProfileAuthLoadingScreen();
+            return const ProfileAuthLoadingScreen();
           }
         },
       );

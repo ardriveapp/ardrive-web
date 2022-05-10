@@ -53,8 +53,8 @@ class FileDownloadDialog extends StatelessWidget {
               title: appLocalizationsOf(context).downloadingCSV,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Center(child: CircularProgressIndicator()),
+                children: const [
+                  Center(child: CircularProgressIndicator()),
                 ],
               ),
               actions: [
@@ -94,7 +94,7 @@ class FileDownloadDialog extends StatelessWidget {
             return AppDialog(
               dismissable: false,
               title: appLocalizationsOf(context).fileDownloadFailed,
-              content: SizedBox(
+              content: const SizedBox(
                 width: kMediumDialogWidth,
               ),
               actions: [

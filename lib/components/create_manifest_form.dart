@@ -78,9 +78,9 @@ class CreateManifestForm extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Text(errorText),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
@@ -158,12 +158,12 @@ class CreateManifestForm extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
                     appLocalizationsOf(context)
                         .conflictingManifestFoundChooseNewName,
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -259,7 +259,7 @@ class CreateManifestForm extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Divider(),
+                  const Divider(),
                   const SizedBox(height: 16),
                   Text.rich(
                     TextSpan(
@@ -351,7 +351,7 @@ class CreateManifestForm extends StatelessWidget {
                                   title: Text(f.name),
                                   onTap: () =>
                                       readCubitContext.loadFolder(f.id),
-                                  trailing: Icon(Icons.keyboard_arrow_right),
+                                  trailing: const Icon(Icons.keyboard_arrow_right),
                                   enabled: !_isFolderEmpty(
                                     f.id,
                                     readCubitContext.rootFolderNode,
@@ -366,7 +366,7 @@ class CreateManifestForm extends StatelessWidget {
                                   .map(
                                     (f) => ListTile(
                                       key: ValueKey(f.id),
-                                      leading: Icon(Icons.insert_drive_file),
+                                      leading: const Icon(Icons.insert_drive_file),
                                       title: Text(f.name),
                                       enabled: false,
                                       dense: true,
@@ -381,7 +381,7 @@ class CreateManifestForm extends StatelessWidget {
                 )),
           );
         }
-        return SizedBox();
+        return const SizedBox();
       });
 
   bool _isFolderEmpty(FolderID folderId, FolderNode rootFolderNode) {

@@ -24,7 +24,7 @@ void main() async {
 
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
-  refreshHTMLPageAtInterval(Duration(hours: 12));
+  refreshHTMLPageAtInterval(const Duration(hours: 12));
   runApp(App());
 }
 
@@ -68,14 +68,14 @@ class _AppState extends State<App> {
             debugShowCheckedModeBanner: false,
             routeInformationParser: _routeInformationParser,
             routerDelegate: _routerDelegate,
-            localizationsDelegates: [
+            localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
             ],
-            supportedLocales: [
-              const Locale('en', ''), // English, no country code
-              const Locale('es', ''), // Spanish, no country code
+            supportedLocales: const [
+              Locale('en', ''), // English, no country code
+              Locale('es', ''), // Spanish, no country code
             ],
             builder: (context, child) => ListTileTheme(
               textColor: kOnSurfaceBodyTextColor,

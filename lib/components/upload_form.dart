@@ -118,7 +118,7 @@ class UploadForm extends StatelessWidget {
                   TextButton(
                     style: ButtonStyle(
                         fixedSize:
-                            MaterialStateProperty.all(Size.fromWidth(140))),
+                            MaterialStateProperty.all(const Size.fromWidth(140))),
                     onPressed: () =>
                         context.read<UploadCubit>().checkConflictingFiles(),
                     child: Text(appLocalizationsOf(context).skipEmphasized),
@@ -126,7 +126,7 @@ class UploadForm extends StatelessWidget {
                 TextButton(
                   style: ButtonStyle(
                       fixedSize:
-                          MaterialStateProperty.all(Size.fromWidth(140))),
+                          MaterialStateProperty.all(const Size.fromWidth(140))),
                   onPressed: () => Navigator.of(context).pop(false),
                   child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
@@ -298,7 +298,7 @@ class UploadForm extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Divider(),
+                    const Divider(),
                     const SizedBox(height: 16),
                     Text.rich(
                       TextSpan(

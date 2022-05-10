@@ -164,7 +164,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             key: navigatorKey,
             pages: [
               MaterialPage(
-                key: ValueKey('AppShell'),
+                key: const ValueKey('AppShell'),
                 child: shell,
               ),
             ],

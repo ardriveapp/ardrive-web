@@ -16,7 +16,7 @@ class UploadPlanUtils {
 
   final ArweaveService arweave;
   final DriveDao driveDao;
-  final _uuid = Uuid();
+  final _uuid = const Uuid();
 
   Future<UploadPlan> filesToUploadPlan({
     required List<UploadFile> files,
@@ -116,7 +116,7 @@ class UploadPlanUtils {
             currentFolder,
             () => WebFolder(
               name: folderPath[i],
-              id: Uuid().v4(),
+              id: const Uuid().v4(),
               parentFolderPath: parentFolderPath,
             ),
           );

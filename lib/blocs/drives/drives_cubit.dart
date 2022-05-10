@@ -76,9 +76,9 @@ class DrivesCubit extends Cubit<DrivesState> {
         ? (this.state as DrivesLoadSuccess).copyWith(selectedDriveId: driveId)
         : DrivesLoadSuccess(
             selectedDriveId: driveId,
-            userDrives: [],
-            sharedDrives: [],
-            drivesWithAlerts: [],
+            userDrives: const [],
+            sharedDrives: const [],
+            drivesWithAlerts: const [],
             canCreateNewDrive: canCreateNewDrive);
     emit(state);
   }

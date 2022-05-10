@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 part 'colors.dart';
@@ -15,7 +16,6 @@ ThemeData appTheme() {
   return base.copyWith(
     primaryColor: kPrimarySwatch,
     primaryColorLight: kPrimarySwatch,
-    accentColor: kSecondarySwatch.shade900,
     errorColor: errorColor,
     textTheme: textTheme,
     textSelectionTheme: _buildTextSelectionTheme(base.textSelectionTheme),
@@ -32,7 +32,7 @@ ThemeData appTheme() {
     dataTableTheme: _buildDataTableTheme(base.dataTableTheme),
     checkboxTheme: _buildCheckboxTheme(base.checkboxTheme),
     snackBarTheme: _buildSnackBarTheme(base.snackBarTheme),
-    tooltipTheme: _buildToolTipTheme(base.tooltipTheme, textTheme),
+    tooltipTheme: _buildToolTipTheme(base.tooltipTheme, textTheme), colorScheme: ColorScheme.fromSwatch().copyWith(secondary: kSecondarySwatch.shade900),
   );
 }
 
@@ -73,7 +73,7 @@ TextTheme _buildTextTheme(TextTheme base) => base
       displayColor: kPrimarySwatch,
     )
     .merge(
-      TextTheme(
+      const TextTheme(
         headline5:
             TextStyle(color: kPrimarySwatch, fontWeight: FontWeight.bold),
       ),
@@ -90,10 +90,9 @@ TextSelectionThemeData _buildTextSelectionTheme(TextSelectionThemeData base) =>
     );
 
 AppBarTheme _buildAppBarTheme(AppBarTheme appBarBase) => appBarBase.copyWith(
-      brightness: Brightness.light,
       color: Colors.white,
       centerTitle: false,
-      iconTheme: _buildIconTheme(base.iconTheme),
+      iconTheme: _buildIconTheme(base.iconTheme), systemOverlayStyle: SystemUiOverlayStyle.dark,
     );
 
 TextButtonThemeData _buildTextButtonTheme(TextButtonThemeData base) =>
@@ -124,7 +123,7 @@ CardTheme _buildCardTheme(CardTheme base) => base.copyWith(elevation: 0);
 
 TabBarTheme _buildTabBarTheme(TabBarTheme base) => base.copyWith(
       labelColor: kOnSurfaceBodyTextColor,
-      indicator: UnderlineTabIndicator(
+      indicator: const UnderlineTabIndicator(
         borderSide: BorderSide(width: 2, color: kPrimarySwatch),
       ),
     );

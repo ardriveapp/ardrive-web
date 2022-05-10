@@ -38,7 +38,7 @@ class ArweaveService {
       client.api.get('/').then((res) => json.decode(res.body)['height']);
 
   Future<void> initializeMempoolStream() async {
-    Stream.periodic(Duration(minutes: 1, seconds: 44))
+    Stream.periodic(const Duration(minutes: 1, seconds: 44))
         .asyncMap((event) => getMempoolAverage())
         .listen((mempoolSize) {
       _mempoolSize = mempoolSize;
@@ -54,7 +54,7 @@ class ArweaveService {
 
   // Spread requests across time to avoid getting load balanced to the same gateway
   Future<int> getMempoolAverage() async {
-    return await Stream.periodic(Duration(seconds: 4))
+    return await Stream.periodic(const Duration(seconds: 4))
             .asyncMap((event) => getMempoolSizeFromArweave())
             .take(4)
             .reduce((next, acc) => acc += next) ~/
