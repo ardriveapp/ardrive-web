@@ -52,8 +52,11 @@ class FileV2UploadHandle implements UploadHandle {
     });
   }
 
-  Future<void> prepareAndSignTransactions(
-      {required ArweaveService arweaveService, required Wallet wallet}) async {
+  Future<void> prepareAndSignTransactions({
+    required ArweaveService arweaveService,
+    required Wallet wallet,
+    required PstService pstService,
+  }) async {
     final packageInfo = await PackageInfo.fromPlatform();
 
     final fileData = await file.readAsBytes();
@@ -62,9 +65,10 @@ class FileV2UploadHandle implements UploadHandle {
           ? await createEncryptedTransaction(fileData, fileKey!)
           : Transaction.withBlobData(data: fileData),
       wallet,
-    );
+    )
+      ..addApplicationTags(version: packageInfo.version);
 
-    dataTx.addApplicationTags(version: packageInfo.version);
+    await pstService.addCommunityTipToTx(dataTx);
 
     // Don't include the file's Content-Type tag if it is meant to be private.
     if (!isPrivate) {

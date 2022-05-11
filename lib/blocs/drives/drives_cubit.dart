@@ -72,6 +72,7 @@ class DrivesCubit extends Cubit<DrivesState> {
 
   void selectDrive(String driveId) {
     final canCreateNewDrive = _profileCubit.state is ProfileLoggedIn;
+
     final state = this.state is DrivesLoadSuccess
         ? (this.state as DrivesLoadSuccess).copyWith(selectedDriveId: driveId)
         : DrivesLoadSuccess(
