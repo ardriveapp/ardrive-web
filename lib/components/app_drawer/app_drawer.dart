@@ -273,9 +273,9 @@ class AppDrawer extends StatelessWidget {
       context: context,
       isEnabled: state.hasWritePermissions && hasMinBalance,
       itemTitle: appLocalizationsOf(context).newFolder,
-      message: hasMinBalance
-          ? null
-          : appLocalizationsOf(context).insufficientFundsForCreateAFolder,
+      message: state.hasWritePermissions && !hasMinBalance
+          ? appLocalizationsOf(context).insufficientFundsForCreateAFolder
+          : null,
       value: (context) => promptToCreateFolder(
         context,
         driveId: state.currentDrive.id,
@@ -289,9 +289,9 @@ class AppDrawer extends StatelessWidget {
     return _buildMenuItemTile(
       context: context,
       isEnabled: state.hasWritePermissions && hasMinBalance,
-      message: hasMinBalance
-          ? null
-          : appLocalizationsOf(context).insufficientFundsForUploadFiles,
+      message: state.hasWritePermissions && !hasMinBalance
+          ? appLocalizationsOf(context).insufficientFundsForUploadFiles
+          : null,
       itemTitle: appLocalizationsOf(context).uploadFiles,
       value: (context) => promptToUpload(
         context,
@@ -308,9 +308,9 @@ class AppDrawer extends StatelessWidget {
       context: context,
       isEnabled: state.hasWritePermissions && hasMinBalance,
       itemTitle: appLocalizationsOf(context).uploadFolder,
-      message: hasMinBalance
-          ? null
-          : appLocalizationsOf(context).insufficientFundsForUploadFolders,
+      message: state.hasWritePermissions && !hasMinBalance
+          ? appLocalizationsOf(context).insufficientFundsForUploadFolders
+          : null,
       value: (context) => promptToUpload(
         context,
         driveId: state.currentDrive.id,
@@ -329,8 +329,8 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  PopupMenuEntry<Function> _buildCreateDrive(BuildContext context,
-      DrivesLoadSuccess drivesState, bool hasMinBalance) {
+  PopupMenuEntry<Function> _buildCreateDrive(
+      BuildContext context, DrivesLoadSuccess drivesState, bool hasMinBalance) {
     return _buildMenuItemTile(
       context: context,
       isEnabled: drivesState.canCreateNewDrive && hasMinBalance,
@@ -359,15 +359,15 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  PopupMenuEntry<Function> _buildCreateManifestItem(BuildContext context,
-      DriveDetailLoadSuccess state, bool hasMinBalance) {
+  PopupMenuEntry<Function> _buildCreateManifestItem(
+      BuildContext context, DriveDetailLoadSuccess state, bool hasMinBalance) {
     return _buildMenuItemTile(
       context: context,
-      isEnabled: !state.driveIsEmpty,
+      isEnabled: !state.driveIsEmpty && hasMinBalance,
       itemTitle: appLocalizationsOf(context).createManifest,
-      message: hasMinBalance
-          ? null
-          : appLocalizationsOf(context).insufficientFundsForCreateAManifest,
+      message: !state.driveIsEmpty && !hasMinBalance
+          ? appLocalizationsOf(context).insufficientFundsForCreateAManifest
+          : null,
       value: (context) =>
           promptToCreateManifest(context, drive: state.currentDrive),
     );
