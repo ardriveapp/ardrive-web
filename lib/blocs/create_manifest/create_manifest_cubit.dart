@@ -223,13 +223,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         bundle.blob,
         wallet,
       );
-
-      // Add tips to bundle tx
-      final bundleTip = await _pst.getPSTFee(bundleTx.reward);
-      bundleTx
-        ..addTag(TipType.tagName, TipType.dataUpload)
-        ..setTarget(await _pst.getWeightedPstHolder())
-        ..setQuantity(bundleTip);
+      await _pst.addCommunityTipToTx(bundleTx);
 
       final totalCost = bundleTx.reward + bundleTx.quantity;
 

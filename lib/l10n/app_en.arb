@@ -1145,6 +1145,26 @@
       }
     }
   },
+  "insufficientFundsForCreateADrive": "You do not have sufficient funds to create a Drive at this time. Please go to the top up page to add funds to your account.",
+  "@insufficientFundsForCreateADrive": {
+    "description": "Show that needs funds to create a Drive"
+  },
+  "insufficientFundsForCreateAFolder": "You do not have sufficient funds to create a Folder at this time. Please go to the top up page to add funds to your account.",
+  "@insufficientFundsForCreateADrive": {
+    "description": "Show that needs funds to create a Folder"
+  },
+  "insufficientFundsForCreateAManifest": "You do not have sufficient funds to create a Manifest at this time. Please go to the top up page to add funds to your account.",
+  "@insufficientFundsForCreateAManifest": {
+    "description": "Show that needs funds to create a Manifest"
+  },
+  "insufficientFundsForUploadFiles": "You do not have sufficient funds to upload Files at this time. Please go to the top up page to add funds to your account.",
+  "@insufficientFundsForUploadFiles": {
+    "description": "Show that needs funds to upload files"
+  },
+  "insufficientFundsForUploadFolders": "You do not have sufficient funds to upload Folders at this time. Please go to the top up page to add funds to your account.",
+  "@insufficientFundsForUploadFolders": {
+    "description": "Show that needs funds to upload folders"
+  },
   "conflictingNameFound": "Conflicting name was found",
   "@conflictingNameFound": {
     "description": "There is a non-manifest entity with the same name"

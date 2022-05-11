@@ -116,6 +116,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 if (state is DrivesLoadSuccess) {
                   shellPage =
                       !state.hasNoDrives ? DriveDetailPage() : NoDrivesPage();
+                  driveId = state.selectedDriveId;
                 }
 
                 shellPage ??= const SizedBox();

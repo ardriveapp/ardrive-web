@@ -19,7 +19,6 @@ part 'upload_state.dart';
 
 final privateFileSizeLimit = 104857600;
 final publicFileSizeLimit = 1.25 * math.pow(10, 9);
-final minimumPstTip = BigInt.from(10000000);
 final filesNamesToExclude = ['.DS_Store'];
 
 class UploadCubit extends Cubit<UploadState> {
@@ -294,10 +293,6 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     );
 
-    if (costEstimate.v2FilesFeeTx != null) {
-      await _arweave.postTx(costEstimate.v2FilesFeeTx!);
-    }
-
     // Upload Bundles
     for (var bundleHandle in uploadPlan.bundleUploadHandles) {
       await bundleHandle.prepareAndSignBundleTransaction(
@@ -318,9 +313,7 @@ class UploadCubit extends Cubit<UploadState> {
     // Upload V2 Files
     for (final uploadHandle in uploadPlan.fileV2UploadHandles.values) {
       await uploadHandle.prepareAndSignTransactions(
-        arweaveService: _arweave,
-        wallet: profile.wallet,
-      );
+          arweaveService: _arweave, wallet: profile.wallet, pstService: _pst);
       await uploadHandle.writeFileEntityToDatabase(
         driveDao: _driveDao,
       );
