@@ -1,7 +1,6 @@
-import 'dart:math';
-
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/selected_item.dart';
+import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
@@ -12,6 +11,8 @@ import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
@@ -35,6 +36,7 @@ part 'components/drive_detail_data_list.dart';
 part 'components/drive_detail_data_table.dart';
 part 'components/drive_detail_data_table_source.dart';
 part 'components/drive_detail_folder_empty_card.dart';
+part 'components/fs_entry_preview_widget.dart';
 part 'components/fs_entry_side_sheet.dart';
 
 class DriveDetailPage extends StatelessWidget {
