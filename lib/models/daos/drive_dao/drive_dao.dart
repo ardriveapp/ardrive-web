@@ -27,12 +27,15 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   late Vault<SecretKey> _driveKeyVault;
 
+  late Vault<Uint8List> _previewVault;
+
   DriveDao(Database db) : super(db) {
     // Creates a store
     final store = newMemoryVaultStore();
 
     // Creates a vault from the previously created store
     _driveKeyVault = store.vault<SecretKey>(name: 'driveKeyVault');
+    _previewVault = store.vault<Uint8List>(name: 'previewVault');
   }
 
   Future<void> deleteSharedPrivateDrives(String? owner) async {
@@ -65,6 +68,17 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     required SecretKey driveKey,
   }) async {
     return await _driveKeyVault.put(driveID, driveKey);
+  }
+
+  Future<Uint8List?> getPreviewDataFromMemory(TxID dataTxId) async {
+    return await _previewVault.get(dataTxId);
+  }
+
+  Future<void> putPreviewDataInMemory({
+    required TxID dataTxId,
+    required Uint8List bytes,
+  }) async {
+    return await _previewVault.put(dataTxId, bytes);
   }
 
   /// Creates a drive with its accompanying root folder.
