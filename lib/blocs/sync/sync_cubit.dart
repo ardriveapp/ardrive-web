@@ -43,6 +43,7 @@ class SyncCubit extends Cubit<SyncState> {
   StreamSubscription? _arconnectSyncSub;
 
   DateTime? _lastSync;
+  late DateTime _initSync;
 
   SyncCubit({
     required ProfileCubit profileCubit,
@@ -126,7 +127,7 @@ class SyncCubit extends Cubit<SyncState> {
     try {
       final profile = _profileCubit.state;
       String? ownerAddress;
-
+      _initSync = DateTime.now();
       print('Syncing...');
       emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
@@ -186,6 +187,8 @@ class SyncCubit extends Cubit<SyncState> {
       addError(err);
     }
     _lastSync = DateTime.now();
+    print('The sync process took: '
+        '${_lastSync!.difference(_initSync).inMilliseconds} milliseconds to finish.\n');
     emit(SyncIdle());
   }
 
