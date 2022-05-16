@@ -215,7 +215,6 @@ class SyncCubit extends Cubit<SyncState> {
         //
         // It also adds the encryption keys onto the drive models which isn't touched by the
         // later system.
-        //
         final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
             profile.wallet, profile.password);
 
@@ -249,8 +248,8 @@ class SyncCubit extends Cubit<SyncState> {
             ),
             currentBlockheight: currentBlockHeight,
           ).handleError((error, stackTrace) {
-            print('Error syncing drive with id ${drive.id}');
-            print(onError.toString() + stackTrace.toString());
+            print(
+                'Error syncing drive with id ${drive.id}. Skipping sync to this one.\nException: ${onError.toString()}\nStackTrace: ${stackTrace.toString()}');
             addError(error!);
           }));
 
@@ -270,15 +269,19 @@ class SyncCubit extends Cubit<SyncState> {
       await createGhosts(ownerAddress: ownerAddress);
 
       /// In order to have a smooth transition at the end.
-      await Future.delayed(Duration(milliseconds: 1000));
+      await Future.delayed(const Duration(milliseconds: 1000));
 
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
         _updateTransactionStatuses(),
       ]);
-    } catch (err) {
+    } catch (err, stacktrace) {
+      if (err is FormatException) {
+        print('FormatException');
+      }
+      print(
+          'An error occurs while sync.\nError: ${err.toString()}\nStacktrace: ${stacktrace.toString()}');
       addError(err);
-      print('An error occurs while sync. Error: ' + err.toString());
     }
     _lastSync = DateTime.now();
     print('The sync process took: '
@@ -296,7 +299,6 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> createGhosts({String? ownerAddress}) async {
     //Finalize missing parent list
-
     for (final ghostFolder in ghostFolders.values) {
       final folderExists = (await _driveDao
               .folderById(
@@ -1131,11 +1133,14 @@ class SyncCubit extends Cubit<SyncState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
+    print(
+        'An error occurs while sync.\nError: ${error.toString()}\nStacktrace${stackTrace.toString()}');
+    print('Emiting SyncFailure state');
     emit(SyncFailure(error: error, stackTrace: stackTrace));
-    super.onError(error, stackTrace);
-    emit(SyncIdle());
 
-    print('Failed to sync: $error $stackTrace');
+    print('Emiting SyncIdle state');
+    emit(SyncIdle());
+    super.onError(error, stackTrace);
   }
 
   @override
