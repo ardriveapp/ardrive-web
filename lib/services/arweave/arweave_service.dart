@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:moor/moor.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:pedantic/pedantic.dart';
+import 'package:retry/retry.dart';
 
 const byteCountPerChunk = 262144; // 256 KiB
 
@@ -107,15 +108,24 @@ class ArweaveService {
 
     while (true) {
       // Get a page of 100 transactions
-      final driveEntityHistoryQuery = await _gql.execute(
-        DriveEntityHistoryQuery(
-          variables: DriveEntityHistoryArguments(
-            driveId: driveId,
-            lastBlockHeight: lastBlockHeight,
-            after: cursor,
+      final driveEntityHistoryQuery =
+          await retry<GraphQLResponse<DriveEntityHistory$Query>>(
+        () async => await _gql.execute(
+          DriveEntityHistoryQuery(
+            variables: DriveEntityHistoryArguments(
+              driveId: driveId,
+              lastBlockHeight: lastBlockHeight,
+              after: cursor,
+            ),
           ),
         ),
+        onRetry: (exception) {
+          print(
+            'Retrying for get drive transactions on exception ${exception.toString()}\nDrive id: $driveId',
+          );
+        },
       );
+
       yield driveEntityHistoryQuery.data!.transactions.edges;
 
       cursor = driveEntityHistoryQuery.data!.transactions.edges.isNotEmpty
@@ -145,7 +155,14 @@ class ArweaveService {
 
     final responses = await Future.wait(
       entityTxs.map((e) async {
-        return client.api.get(e.id);
+        return retry(
+          () => client.api.get(e.id),
+          onRetry: (exception) {
+            print(
+              'Retrying for get ${e.id} metadata on exception ${exception.toString()}',
+            );
+          },
+        );
       }),
     );
 
@@ -369,57 +386,73 @@ class ArweaveService {
     Wallet wallet,
     String password,
   ) async {
-    final userDriveEntitiesQuery = await _gql.execute(
-      UserDriveEntitiesQuery(
-          variables:
-              UserDriveEntitiesArguments(owner: await wallet.getAddress())),
-    );
-    final driveTxs = userDriveEntitiesQuery.data!.transactions.edges
-        .map((e) => e.node)
-        .toList();
+    try {
+      final userDriveEntitiesQuery = await retry(
+        () async => await _gql.execute(
+          UserDriveEntitiesQuery(
+              variables:
+                  UserDriveEntitiesArguments(owner: await wallet.getAddress())),
+        ),
+        onRetry: (exception) {
+          if (exception is FormatException) {
+            print('FormatException: ${exception.toString()}');
+          }
+          print(
+            'Retrying for get user drives on exception ${exception.toString()}',
+          );
+        },
+      );
 
-    final driveResponses =
-        await Future.wait(driveTxs.map((e) => client.api.get(e.id)));
+      final driveTxs = userDriveEntitiesQuery.data!.transactions.edges
+          .map((e) => e.node)
+          .toList();
 
-    final drivesById = <String?, DriveEntity>{};
-    final drivesWithKey = <DriveEntity, SecretKey?>{};
-    for (var i = 0; i < driveTxs.length; i++) {
-      final driveTx = driveTxs[i];
+      final driveResponses =
+          await Future.wait(driveTxs.map((e) => client.api.get(e.id)));
 
-      // Ignore drive entity transactions which we already have newer entities for.
-      if (drivesById.containsKey(driveTx.getTag(EntityTag.driveId))) {
-        continue;
+      final drivesById = <String?, DriveEntity>{};
+      final drivesWithKey = <DriveEntity, SecretKey?>{};
+      for (var i = 0; i < driveTxs.length; i++) {
+        final driveTx = driveTxs[i];
+
+        // Ignore drive entity transactions which we already have newer entities for.
+        if (drivesById.containsKey(driveTx.getTag(EntityTag.driveId))) {
+          continue;
+        }
+
+        final driveKey =
+            driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private
+                ? await deriveDriveKey(
+                    wallet,
+                    driveTx.getTag(EntityTag.driveId)!,
+                    password,
+                  )
+                : null;
+
+        try {
+          final drive = await DriveEntity.fromTransaction(
+            driveTx,
+            driveResponses[i].bodyBytes,
+            driveKey,
+          );
+
+          drivesById[drive.id] = drive;
+          drivesWithKey[drive] = driveKey;
+
+          // If there's an error parsing the drive entity, just ignore it.
+        } on EntityTransactionParseException catch (parseException) {
+          print(
+            'Failed to parse transaction '
+            'with id ${parseException.transactionId}',
+          );
+        }
       }
-
-      final driveKey =
-          driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private
-              ? await deriveDriveKey(
-                  wallet,
-                  driveTx.getTag(EntityTag.driveId)!,
-                  password,
-                )
-              : null;
-
-      try {
-        final drive = await DriveEntity.fromTransaction(
-          driveTx,
-          driveResponses[i].bodyBytes,
-          driveKey,
-        );
-
-        drivesById[drive.id] = drive;
-        drivesWithKey[drive] = driveKey;
-
-        // If there's an error parsing the drive entity, just ignore it.
-      } on EntityTransactionParseException catch (parseException) {
-        print(
-          'Failed to parse transaction '
-          'with id ${parseException.transactionId}',
-        );
-      }
+      return drivesWithKey;
+    } catch (e, stacktrace) {
+      print(
+          'An error occurs getting the unique user drive entities. Exception: ${e.toString()} stacktrace: ${stacktrace.toString()}');
+      rethrow;
     }
-
-    return drivesWithKey;
   }
 
   /// Gets the latest drive entity with the provided id.
@@ -608,11 +641,18 @@ class ArweaveService {
             ? i + chunkSize
             : transactionIds.length;
 
-        final query = await _gql.execute(
-          TransactionStatusesQuery(
-              variables: TransactionStatusesArguments(
-                  transactionIds:
-                      transactionIds.sublist(i, chunkEnd) as List<String>?)),
+        final query = await retry(
+          () async => await _gql.execute(
+            TransactionStatusesQuery(
+                variables: TransactionStatusesArguments(
+                    transactionIds:
+                        transactionIds.sublist(i, chunkEnd) as List<String>?)),
+          ),
+          onRetry: (exception) {
+            print(
+              'Retrying for get transaction confirmations on exception: ${exception.toString()}',
+            );
+          },
         );
 
         final currentBlockHeight = query.data!.blocks.edges.first.node.height;
@@ -633,7 +673,7 @@ class ArweaveService {
     try {
       await Future.wait(confirmationFutures);
     } catch (e) {
-      print('Error at arweave_service: $e');
+      print('Error getting transactions confirmations on exception: $e');
       rethrow;
     }
 

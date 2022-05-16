@@ -58,6 +58,7 @@ dependencies:
   percent_indicator: ^4.0.0
   cooky: ^2.0.0
   flutter_lints: ^1.0.4
+  retry: ^3.1.0
 
 dev_dependencies:
   flutter_test:
