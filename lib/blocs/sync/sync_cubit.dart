@@ -282,6 +282,7 @@ class SyncCubit extends Cubit<SyncState> {
       print(
           'An error occurs while sync.\nError: ${err.toString()}\nStacktrace: ${stacktrace.toString()}');
       addError(err);
+      print('An error occurs while sync. Error: ' + err.toString());
     }
     _lastSync = DateTime.now();
     print('The sync process took: '
