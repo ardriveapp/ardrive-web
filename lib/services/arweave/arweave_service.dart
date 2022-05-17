@@ -85,7 +85,7 @@ class ArweaveService {
 
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
   Future<BigInt> getPendingTxFees(String address) async {
-    final query = await _gql.execute(PendingTxFeesQuery(
+    final query = await _graphQLRetry.execute(PendingTxFeesQuery(
         variables: PendingTxFeesArguments(walletAddress: address)));
 
     return query.data!.transactions.edges
