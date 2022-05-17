@@ -275,14 +275,9 @@ class SyncCubit extends Cubit<SyncState> {
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
         _updateTransactionStatuses(),
       ]);
-    } catch (err, stacktrace) {
-      if (err is FormatException) {
-        print('FormatException');
-      }
-      print(
-          'An error occurs while sync.\nError: ${err.toString()}\nStacktrace: ${stacktrace.toString()}');
+    } catch (err, stackTrace) {
+      _printSyncError(err, stackTrace);
       addError(err);
-      print('An error occurs while sync. Error: ' + err.toString());
     }
     _lastSync = DateTime.now();
     print('The sync process took: '
@@ -852,14 +847,14 @@ class SyncCubit extends Cubit<SyncState> {
                   NetworkTransactionsCompanion.insert(
                     transactionDateCreated: rev.dateCreated,
                     id: rev.metadataTxId.value,
-                    status: Value(TransactionStatus.confirmed),
+                    status: const Value(TransactionStatus.confirmed),
                   ),
                   // We cannot be sure that the data tx of files have been mined
                   // so we'll mark it as pending initially.
                   NetworkTransactionsCompanion.insert(
                     transactionDateCreated: rev.dateCreated,
                     id: rev.dataTxId.value,
-                    status: Value(TransactionStatus.pending),
+                    status: const Value(TransactionStatus.pending),
                   ),
                 ],
               )
@@ -1042,7 +1037,7 @@ class SyncCubit extends Cubit<SyncState> {
 
     // Thats was discovered by tests at profile mode.
     // TODO(@thiagocarvalhodev): Revisit
-    final page = 5000;
+    const page = 5000;
 
     for (var i = 0; i < length / page; i++) {
       final confirmations = <String?, int>{};
@@ -1108,7 +1103,7 @@ class SyncCubit extends Cubit<SyncState> {
           }
         }
       });
-      await Future.delayed(Duration(milliseconds: 200));
+      await Future.delayed(const Duration(milliseconds: 200));
     }
   }
 
@@ -1134,14 +1129,18 @@ class SyncCubit extends Cubit<SyncState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    print(
-        'An error occurs while sync.\nError: ${error.toString()}\nStacktrace${stackTrace.toString()}');
+    _printSyncError(error, stackTrace);
     print('Emiting SyncFailure state');
     emit(SyncFailure(error: error, stackTrace: stackTrace));
 
     print('Emiting SyncIdle state');
     emit(SyncIdle());
     super.onError(error, stackTrace);
+  }
+
+  void _printSyncError(Object error, StackTrace stackTrace) {
+    print(
+        'An error occurs while sync.\nError: ${error.toString()}\nStacktrace${stackTrace.toString()}');
   }
 
   @override
