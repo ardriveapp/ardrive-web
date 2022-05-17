@@ -249,7 +249,7 @@ class SyncCubit extends Cubit<SyncState> {
             currentBlockheight: currentBlockHeight,
           ).handleError((error, stackTrace) {
             print(
-                'Error syncing drive with id ${drive.id}. Skipping sync to this one.\nException: ${onError.toString()}\nStackTrace: ${stackTrace.toString()}');
+                'Error syncing drive with id ${drive.id}. Skipping sync on this drive.\nException: ${onError.toString()}\nStackTrace: ${stackTrace.toString()}');
             addError(error!);
           }));
 
