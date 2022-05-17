@@ -27,14 +27,14 @@ class ArweaveService {
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     unawaited(initializeMempoolStream());
-    graphQLRetry = GraphQLRetry(_gql);
+    _graphQLRetry = GraphQLRetry(_gql);
   }
 
   int bytesToChunks(int bytes) {
     return (bytes / byteCountPerChunk).ceil();
   }
 
-  late GraphQLRetry graphQLRetry;
+  late GraphQLRetry _graphQLRetry;
 
   /// Returns the onchain balance of the specified address.
   Future<BigInt> getWalletBalance(String address) => client.api
@@ -112,7 +112,7 @@ class ArweaveService {
 
     while (true) {
       // Get a page of 100 transactions
-      final driveEntityHistoryQuery = await graphQLRetry.execute(
+      final driveEntityHistoryQuery = await _graphQLRetry.execute(
         DriveEntityHistoryQuery(
           variables: DriveEntityHistoryArguments(
             driveId: driveId,
@@ -383,7 +383,7 @@ class ArweaveService {
     String password,
   ) async {
     try {
-      final userDriveEntitiesQuery = await graphQLRetry.execute(
+      final userDriveEntitiesQuery = await _graphQLRetry.execute(
           UserDriveEntitiesQuery(
               variables: UserDriveEntitiesArguments(
                   owner: await wallet.getAddress())));
@@ -631,7 +631,7 @@ class ArweaveService {
             ? i + chunkSize
             : transactionIds.length;
 
-        final query = await graphQLRetry.execute(TransactionStatusesQuery(
+        final query = await _graphQLRetry.execute(TransactionStatusesQuery(
             variables: TransactionStatusesArguments(
                 transactionIds:
                     transactionIds.sublist(i, chunkEnd) as List<String>?)));
