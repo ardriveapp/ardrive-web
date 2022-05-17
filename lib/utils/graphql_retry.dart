@@ -14,7 +14,7 @@ class GraphQLRetry {
       GraphQLQuery<T, U> query,
       {Function(Exception e)? onRetry}) async {
     try {
-      final queryResponse = retry(
+      final queryResponse = await retry(
         () async => await _client.execute(query),
         onRetry: (exception) {
           onRetry?.call(exception);
