@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -26,11 +27,14 @@ class ArweaveService {
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     unawaited(initializeMempoolStream());
+    graphQLRetry = GraphQLRetry(_gql);
   }
 
   int bytesToChunks(int bytes) {
     return (bytes / byteCountPerChunk).ceil();
   }
+
+  late GraphQLRetry graphQLRetry;
 
   /// Returns the onchain balance of the specified address.
   Future<BigInt> getWalletBalance(String address) => client.api
@@ -41,7 +45,7 @@ class ArweaveService {
       client.api.get('/').then((res) => json.decode(res.body)['height']);
 
   Future<void> initializeMempoolStream() async {
-    Stream.periodic(Duration(minutes: 1, seconds: 44))
+    Stream.periodic(const Duration(minutes: 1, seconds: 44))
         .asyncMap((event) => getMempoolAverage())
         .listen((mempoolSize) {
       _mempoolSize = mempoolSize;
@@ -108,22 +112,14 @@ class ArweaveService {
 
     while (true) {
       // Get a page of 100 transactions
-      final driveEntityHistoryQuery =
-          await retry<GraphQLResponse<DriveEntityHistory$Query>>(
-        () async => await _gql.execute(
-          DriveEntityHistoryQuery(
-            variables: DriveEntityHistoryArguments(
-              driveId: driveId,
-              lastBlockHeight: lastBlockHeight,
-              after: cursor,
-            ),
+      final driveEntityHistoryQuery = await graphQLRetry.execute(
+        DriveEntityHistoryQuery(
+          variables: DriveEntityHistoryArguments(
+            driveId: driveId,
+            lastBlockHeight: lastBlockHeight,
+            after: cursor,
           ),
         ),
-        onRetry: (exception) {
-          print(
-            'Retrying for get drive transactions on exception ${exception.toString()}\nDrive id: $driveId',
-          );
-        },
       );
 
       yield driveEntityHistoryQuery.data!.transactions.edges;
@@ -387,21 +383,10 @@ class ArweaveService {
     String password,
   ) async {
     try {
-      final userDriveEntitiesQuery = await retry(
-        () async => await _gql.execute(
+      final userDriveEntitiesQuery = await graphQLRetry.execute(
           UserDriveEntitiesQuery(
-              variables:
-                  UserDriveEntitiesArguments(owner: await wallet.getAddress())),
-        ),
-        onRetry: (exception) {
-          if (exception is FormatException) {
-            print('FormatException: ${exception.toString()}');
-          }
-          print(
-            'Retrying for get user drives on exception ${exception.toString()}',
-          );
-        },
-      );
+              variables: UserDriveEntitiesArguments(
+                  owner: await wallet.getAddress())));
 
       final driveTxs = userDriveEntitiesQuery.data!.transactions.edges
           .map((e) => e.node)
@@ -641,19 +626,10 @@ class ArweaveService {
             ? i + chunkSize
             : transactionIds.length;
 
-        final query = await retry(
-          () async => await _gql.execute(
-            TransactionStatusesQuery(
-                variables: TransactionStatusesArguments(
-                    transactionIds:
-                        transactionIds.sublist(i, chunkEnd) as List<String>?)),
-          ),
-          onRetry: (exception) {
-            print(
-              'Retrying for get transaction confirmations on exception: ${exception.toString()}',
-            );
-          },
-        );
+        final query = await graphQLRetry.execute(TransactionStatusesQuery(
+            variables: TransactionStatusesArguments(
+                transactionIds:
+                    transactionIds.sublist(i, chunkEnd) as List<String>?)));
 
         final currentBlockHeight = query.data!.blocks.edges.first.node.height;
 
