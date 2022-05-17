@@ -280,8 +280,10 @@ class SyncCubit extends Cubit<SyncState> {
       addError(err);
     }
     _lastSync = DateTime.now();
+
     print('The sync process took: '
         '${_lastSync!.difference(_initSync).inMilliseconds} milliseconds to finish.\n');
+
     emit(SyncIdle());
   }
 
@@ -377,7 +379,10 @@ class SyncCubit extends Cubit<SyncState> {
 
     final transactionsStream = _arweave
         .getAllTransactionsFromDrive(driveId, lastBlockHeight: lastBlockHeight)
-        .asBroadcastStream();
+        .asBroadcastStream()
+      ..handleError((err) {
+        addError(err);
+      });
 
     /// The first block height from this drive.
     int? firstBlockHeight;
@@ -387,7 +392,6 @@ class SyncCubit extends Cubit<SyncState> {
     int? totalBlockHeightDifference;
 
     /// This percentage is based on block heights.
-    /// It will be half on the entire percentage.
     var fetchPhasePercentage = 0.0;
 
     /// First phase of the sync
@@ -446,7 +450,7 @@ class SyncCubit extends Cubit<SyncState> {
 
     print('FetchPhasePercentage: $fetchPhasePercentage\n');
 
-    /// Fill the remaining percentage until get 50%.
+    /// Fill the remaining percentage.
     /// It is needed because the phase one isn't accurate and possibly will not
     /// match 100% everytime
     _totalProgress +=
