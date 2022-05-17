@@ -32,7 +32,7 @@ class GraphQLRetry {
         exception = e;
       }
       print(
-          'Fatal error while querying ${query.operationName}. Exceed the number of retries. Exception ${exception.toString()}');
+          'Fatal error while querying ${query.operationName}. Number of retries has been exceeded. Exception ${exception.toString()}');
       throw exception;
     }
   }
