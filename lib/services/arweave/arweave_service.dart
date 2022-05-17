@@ -392,8 +392,13 @@ class ArweaveService {
           .map((e) => e.node)
           .toList();
 
-      final driveResponses =
-          await Future.wait(driveTxs.map((e) => client.api.get(e.id)));
+      final driveResponses = await retry(
+          () async => await Future.wait(
+                driveTxs.map((e) => client.api.get(e.id)),
+              ), onRetry: (Exception err) {
+        print(
+            'Retrying for get unique user drive entities on Exception: ${err.toString()}');
+      });
 
       final drivesById = <String?, DriveEntity>{};
       final drivesWithKey = <DriveEntity, SecretKey?>{};
