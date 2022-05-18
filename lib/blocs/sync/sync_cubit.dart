@@ -379,10 +379,9 @@ class SyncCubit extends Cubit<SyncState> {
 
     final transactionsStream = _arweave
         .getAllTransactionsFromDrive(driveId, lastBlockHeight: lastBlockHeight)
-        .asBroadcastStream()
-      ..handleError((err) {
-        addError(err);
-      });
+        .handleError((err) {
+      addError(err);
+    }).asBroadcastStream();
 
     /// The first block height from this drive.
     int? firstBlockHeight;
