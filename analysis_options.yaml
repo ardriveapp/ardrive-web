@@ -1,9 +1,9 @@
-include: package:pedantic/analysis_options.yaml
+include: package:flutter_lints/flutter.yaml
 
 analyzer:
-  plugins:
-    - moor
-
+  exclude:
+    - 'lib/services/arweave/graphql/**'
+    - '**.g.dart'
 linter:
   rules:
-    - prefer_final_locals
+
