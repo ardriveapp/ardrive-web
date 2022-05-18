@@ -152,7 +152,7 @@ class ArweaveService {
     final responses = await Future.wait(
       entityTxs.map((e) async {
         return retry(
-          () => client.api.get(e.id),
+          () => client.api.getSandboxedTx(e.id),
           onRetry: (exception) {
             print(
               'Retrying for get ${e.id} metadata on exception ${exception.toString()}',
