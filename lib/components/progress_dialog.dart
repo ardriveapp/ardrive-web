@@ -12,19 +12,45 @@ Future<void> showProgressDialog(BuildContext context, String title) =>
 
 class ProgressDialog extends StatelessWidget {
   final String title;
+  final Widget? percentageDetails;
+  final Widget? progressDescription;
+  final Widget? progressBar;
 
-  ProgressDialog({required this.title});
+  ProgressDialog(
+      {required this.title,
+      this.progressBar,
+      this.progressDescription,
+      this.percentageDetails});
 
   @override
   Widget build(BuildContext context) => AppDialog(
         dismissable: false,
         title: title,
         content: SizedBox(
-          width: kSmallDialogWidth,
+          width: kSmallDialogWidth + 164,
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Center(child: CircularProgressIndicator()),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: const SizedBox(
+                    width: 74,
+                    height: 74,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 8,
+                    )),
+              ),
+              if (progressDescription != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: progressDescription!,
+                ),
+              if (progressBar != null) progressBar!,
+              if (percentageDetails != null)
+                Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: percentageDetails!),
             ],
           ),
         ),
