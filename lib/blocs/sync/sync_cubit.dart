@@ -308,7 +308,7 @@ class SyncCubit extends Cubit<SyncState> {
 
     if (currentBlockHeight < 0) {
       throw Exception(
-          'The current block height is negative. It should be equal or greater than 0.');
+          'The current block height $currentBlockHeight is negative. It should be equal or greater than 0.');
     }
     return currentBlockHeight;
   }
