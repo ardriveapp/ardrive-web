@@ -356,7 +356,7 @@ class ArweaveService {
   // Gets the unique drive entity transactions for a particular user.
   Future<List<TransactionCommonMixin>> getUniqueUserDriveEntityTxs(
       String userAddress) async {
-    final userDriveEntitiesQuery = await _gql.execute(
+    final userDriveEntitiesQuery = await _graphQLRetry.execute(
       UserDriveEntitiesQuery(
           variables: UserDriveEntitiesArguments(owner: userAddress)),
     );
@@ -525,8 +525,9 @@ class ArweaveService {
   /// Gets the owner of the drive sorted by blockheight.
   /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
   Future<String?> getOwnerForDriveEntityWithId(String driveId) async {
-    final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
-        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
+    final firstOwnerQuery = await _graphQLRetry.execute(
+        FirstDriveEntityWithIdOwnerQuery(
+            variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
 
     if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
       return null;
