@@ -215,7 +215,6 @@ class SyncCubit extends Cubit<SyncState> {
         //
         // It also adds the encryption keys onto the drive models which isn't touched by the
         // later system.
-        //
         final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
             profile.wallet, profile.password);
 
@@ -249,8 +248,8 @@ class SyncCubit extends Cubit<SyncState> {
             ),
             currentBlockheight: currentBlockHeight,
           ).handleError((error, stackTrace) {
-            print('Error syncing drive with id ${drive.id}');
-            print(onError.toString() + stackTrace.toString());
+            print(
+                'Error syncing drive with id ${drive.id}. Skipping sync on this drive.\nException: ${onError.toString()}\nStackTrace: ${stackTrace.toString()}');
             addError(error!);
           }));
 
@@ -270,19 +269,21 @@ class SyncCubit extends Cubit<SyncState> {
       await createGhosts(ownerAddress: ownerAddress);
 
       /// In order to have a smooth transition at the end.
-      await Future.delayed(Duration(milliseconds: 1000));
+      await Future.delayed(const Duration(milliseconds: 1000));
 
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
         _updateTransactionStatuses(),
       ]);
-    } catch (err) {
+    } catch (err, stackTrace) {
+      _printSyncError(err, stackTrace);
       addError(err);
-      print('An error occurs while sync. Error: ' + err.toString());
     }
     _lastSync = DateTime.now();
+
     print('The sync process took: '
         '${_lastSync!.difference(_initSync).inMilliseconds} milliseconds to finish.\n');
+
     emit(SyncIdle());
   }
 
@@ -296,7 +297,6 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> createGhosts({String? ownerAddress}) async {
     //Finalize missing parent list
-
     for (final ghostFolder in ghostFolders.values) {
       final folderExists = (await _driveDao
               .folderById(
@@ -379,7 +379,9 @@ class SyncCubit extends Cubit<SyncState> {
 
     final transactionsStream = _arweave
         .getAllTransactionsFromDrive(driveId, lastBlockHeight: lastBlockHeight)
-        .asBroadcastStream();
+        .handleError((err) {
+      addError(err);
+    }).asBroadcastStream();
 
     /// The first block height from this drive.
     int? firstBlockHeight;
@@ -389,7 +391,6 @@ class SyncCubit extends Cubit<SyncState> {
     int? totalBlockHeightDifference;
 
     /// This percentage is based on block heights.
-    /// It will be half on the entire percentage.
     var fetchPhasePercentage = 0.0;
 
     /// First phase of the sync
@@ -448,7 +449,7 @@ class SyncCubit extends Cubit<SyncState> {
 
     print('FetchPhasePercentage: $fetchPhasePercentage\n');
 
-    /// Fill the remaining percentage until get 50%.
+    /// Fill the remaining percentage.
     /// It is needed because the phase one isn't accurate and possibly will not
     /// match 100% everytime
     _totalProgress +=
@@ -849,14 +850,14 @@ class SyncCubit extends Cubit<SyncState> {
                   NetworkTransactionsCompanion.insert(
                     transactionDateCreated: rev.dateCreated,
                     id: rev.metadataTxId.value,
-                    status: Value(TransactionStatus.confirmed),
+                    status: const Value(TransactionStatus.confirmed),
                   ),
                   // We cannot be sure that the data tx of files have been mined
                   // so we'll mark it as pending initially.
                   NetworkTransactionsCompanion.insert(
                     transactionDateCreated: rev.dateCreated,
                     id: rev.dataTxId.value,
-                    status: Value(TransactionStatus.pending),
+                    status: const Value(TransactionStatus.pending),
                   ),
                 ],
               )
@@ -1039,7 +1040,7 @@ class SyncCubit extends Cubit<SyncState> {
 
     // Thats was discovered by tests at profile mode.
     // TODO(@thiagocarvalhodev): Revisit
-    final page = 5000;
+    const page = 5000;
 
     for (var i = 0; i < length / page; i++) {
       final confirmations = <String?, int>{};
@@ -1105,7 +1106,7 @@ class SyncCubit extends Cubit<SyncState> {
           }
         }
       });
-      await Future.delayed(Duration(milliseconds: 200));
+      await Future.delayed(const Duration(milliseconds: 200));
     }
   }
 
@@ -1131,11 +1132,18 @@ class SyncCubit extends Cubit<SyncState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
+    _printSyncError(error, stackTrace);
+    print('Emiting SyncFailure state');
     emit(SyncFailure(error: error, stackTrace: stackTrace));
-    super.onError(error, stackTrace);
-    emit(SyncIdle());
 
-    print('Failed to sync: $error $stackTrace');
+    print('Emiting SyncIdle state');
+    emit(SyncIdle());
+    super.onError(error, stackTrace);
+  }
+
+  void _printSyncError(Object error, StackTrace stackTrace) {
+    print(
+        'An error occurs while sync.\nError: ${error.toString()}\nStacktrace${stackTrace.toString()}');
   }
 
   @override
