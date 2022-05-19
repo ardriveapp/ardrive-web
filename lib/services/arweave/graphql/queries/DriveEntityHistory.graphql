@@ -9,6 +9,9 @@ query DriveEntityHistory($driveId: String!, $after: String, $lastBlockHeight: In
     after: $after,
     block: {min: $lastBlockHeight}
   ) {
+    pageInfo {
+      hasNextPage
+    }
     edges {
       node {
         ...TransactionCommon
