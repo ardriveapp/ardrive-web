@@ -209,7 +209,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   /// If `conflictingFileAction` is null, means that had no conflict.
   Future<void> prepareUploadPlanAndCostEstimates({
-    ConflictingFileActions? conflictingFileAction,
+    UploadActions? uploadAction,
   }) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
@@ -226,21 +226,24 @@ class UploadCubit extends Cubit<UploadState> {
     final sizeLimit =
         _targetDrive.isPrivate ? privateFileSizeLimit : publicFileSizeLimit;
 
-    if (conflictingFileAction == ConflictingFileActions.Skip) {
+    if (uploadAction == UploadActions.Skip) {
       _removeFilesWithFileNameConflicts();
-    }
+    } else if (uploadAction == UploadActions.SkipBigFiles) {
+      _removeBigFiles();
+    } else {
+      final tooLargeFiles = [
+        for (final file in files)
+          if (file.size > sizeLimit) file.name
+      ];
 
-    final tooLargeFiles = [
-      for (final file in files)
-        if (file.size > sizeLimit) file.name
-    ];
-
-    if (tooLargeFiles.isNotEmpty) {
-      emit(UploadFileTooLarge(
-        tooLargeFileNames: tooLargeFiles,
-        isPrivate: _targetDrive.isPrivate,
-      ));
-      return;
+      if (tooLargeFiles.isNotEmpty) {
+        emit(UploadFileTooLarge(
+          hasFilesToUpload: files.length > tooLargeFiles.length,
+          tooLargeFileNames: tooLargeFiles,
+          isPrivate: _targetDrive.isPrivate,
+        ));
+        return;
+      }
     }
 
     final uploadPlan = await _uploadPlanUtils.filesToUploadPlan(
@@ -334,6 +337,12 @@ class UploadCubit extends Cubit<UploadState> {
     files.removeWhere((file) => conflictingFiles
         .containsKey(file.path.isEmpty ? file.name : file.path));
   }
+
+  void _removeBigFiles() =>
+      files.removeWhere((element) => element.size > sizeLimit);
+
+  num get sizeLimit =>
+      _targetDrive.isPrivate ? privateFileSizeLimit : publicFileSizeLimit;
 
   void _removeFilesWithFolderNameConflicts() {
     files.removeWhere((file) => conflictingFolders.contains(file.name));

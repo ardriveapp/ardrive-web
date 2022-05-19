@@ -173,8 +173,7 @@ class UploadForm extends StatelessWidget {
                       onPressed: () => context
                           .read<UploadCubit>()
                           .prepareUploadPlanAndCostEstimates(
-                              conflictingFileAction:
-                                  ConflictingFileActions.Skip),
+                              uploadAction: UploadActions.Skip),
                       child: Text(appLocalizationsOf(context).skipEmphasized),
                     ),
                   TextButton(
@@ -185,8 +184,7 @@ class UploadForm extends StatelessWidget {
                     onPressed: () => context
                         .read<UploadCubit>()
                         .prepareUploadPlanAndCostEstimates(
-                            conflictingFileAction:
-                                ConflictingFileActions.Replace),
+                            uploadAction: UploadActions.Replace),
                     child: Text(appLocalizationsOf(context).replaceEmphasized),
                   ),
                 ]);
@@ -219,6 +217,14 @@ class UploadForm extends StatelessWidget {
                   onPressed: () => Navigator.of(context).pop(false),
                   child: Text(appLocalizationsOf(context).ok),
                 ),
+                if (state.hasFilesToUpload)
+                  TextButton(
+                    onPressed: () => context
+                        .read<UploadCubit>()
+                        .prepareUploadPlanAndCostEstimates(
+                            uploadAction: UploadActions.SkipBigFiles),
+                    child: Text(appLocalizationsOf(context).skipEmphasized),
+                  ),
               ],
             );
           } else if (state is UploadPreparationInProgress ||
