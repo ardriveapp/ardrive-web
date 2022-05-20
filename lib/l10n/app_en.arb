@@ -1154,7 +1154,7 @@
     "description": "Show that needs funds to create a Drive"
   },
   "insufficientFundsForCreateAFolder": "You do not have sufficient funds to create a Folder at this time. Please go to the top up page to add funds to your account.",
-  "@insufficientFundsForCreateADrive": {
+  "@insufficientFundsForCreateAFolder": {
     "description": "Show that needs funds to create a Folder"
   },
   "insufficientFundsForCreateAManifest": "You do not have sufficient funds to create a Manifest at this time. Please go to the top up page to add funds to your account.",
