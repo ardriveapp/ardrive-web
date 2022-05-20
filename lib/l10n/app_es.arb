@@ -1164,7 +1164,7 @@
   "insufficientFundsForUploadFolders": "No tienes el balance suficiente para cargar carpetas. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
   "@insufficientFundsForUploadFolders": {
       "description": "Show that needs funds to upload folders"
-  }
+  },
   "conflictingNameFound": "Se encontró un conflicto de nombres",
   "@conflictingNameFound": {
     "description": "There is a non-manifest entity with the same name"
