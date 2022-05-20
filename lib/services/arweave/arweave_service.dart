@@ -394,7 +394,7 @@ class ArweaveService {
 
       final driveResponses = await retry(
           () async => await Future.wait(
-                driveTxs.map((e) => client.api.get(e.id)),
+                driveTxs.map((e) => client.api.getSandboxedTx(e.id)),
               ), onRetry: (Exception err) {
         print(
             'Retrying for get unique user drive entities on Exception: ${err.toString()}');
@@ -476,7 +476,7 @@ class ArweaveService {
     }
 
     final fileTx = queryEdges.first.node;
-    final fileDataRes = await client.api.get(fileTx.id);
+    final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
 
     try {
       return await DriveEntity.fromTransaction(
@@ -592,7 +592,7 @@ class ArweaveService {
     }
 
     final fileTx = queryEdges.first.node;
-    final fileDataRes = await client.api.get(fileTx.id);
+    final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
 
     try {
       return await FileEntity.fromTransaction(
