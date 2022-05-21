@@ -77,10 +77,33 @@ class DrivesCubit extends Cubit<DrivesState> {
         ? (this.state as DrivesLoadSuccess).copyWith(selectedDriveId: driveId)
         : DrivesLoadSuccess(
             selectedDriveId: driveId,
-            userDrives: [],
-            sharedDrives: [],
-            drivesWithAlerts: [],
+            userDrives: const [],
+            sharedDrives: const [],
+            drivesWithAlerts: const [],
             canCreateNewDrive: canCreateNewDrive);
+    emit(state);
+  }
+
+  void resetDriveSelection() {
+    final canCreateNewDrive = _profileCubit.state is ProfileLoggedIn;
+    if (state is DrivesLoadSuccess) {
+      final state = this.state as DrivesLoadSuccess;
+      final firstOrNullDrive = state.userDrives.isNotEmpty
+          ? state.userDrives.first.id
+          : state.sharedDrives.isNotEmpty
+              ? state.sharedDrives.first.id
+              : null;
+      emit(state.copyWith(selectedDriveId: firstOrNullDrive));
+    } else {
+      emit(DrivesLoadSuccess(
+        selectedDriveId: null,
+        userDrives: const [],
+        sharedDrives: const [],
+        drivesWithAlerts: const [],
+        canCreateNewDrive: canCreateNewDrive,
+      ));
+    }
+
     emit(state);
   }
 
