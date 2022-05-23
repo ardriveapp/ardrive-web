@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -72,15 +73,9 @@ class DrivesCubit extends Cubit<DrivesState> {
 
   void selectDrive(String driveId) {
     final canCreateNewDrive = _profileCubit.state is ProfileLoggedIn;
-
     final state = this.state is DrivesLoadSuccess
         ? (this.state as DrivesLoadSuccess).copyWith(selectedDriveId: driveId)
-        : DrivesLoadSuccess(
-            selectedDriveId: driveId,
-            userDrives: const [],
-            sharedDrives: const [],
-            drivesWithAlerts: const [],
-            canCreateNewDrive: canCreateNewDrive);
+        : DrivesLoadedWithNoDrivesFound(canCreateNewDrive: canCreateNewDrive);
     emit(state);
   }
 
@@ -95,15 +90,13 @@ class DrivesCubit extends Cubit<DrivesState> {
               : null;
       emit(state.copyWith(selectedDriveId: firstOrNullDrive));
     } else {
-      emit(DrivesLoadSuccess(
-        selectedDriveId: null,
-        userDrives: const [],
-        sharedDrives: const [],
-        drivesWithAlerts: const [],
-        canCreateNewDrive: canCreateNewDrive,
-      ));
+      emit(DrivesLoadedWithNoDrivesFound(canCreateNewDrive: canCreateNewDrive));
     }
+  }
 
+  void detachDrive(DriveID driveId) {
+    _driveDao.deleteDriveById(driveId: driveId);
+    resetDriveSelection();
     emit(state);
   }
 
