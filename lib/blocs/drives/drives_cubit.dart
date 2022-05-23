@@ -79,10 +79,12 @@ class DrivesCubit extends Cubit<DrivesState> {
     emit(state);
   }
 
-  void resetDriveSelection() {
+  void _resetDriveSelection(DriveID detachedDriveId) {
     final canCreateNewDrive = _profileCubit.state is ProfileLoggedIn;
     if (state is DrivesLoadSuccess) {
       final state = this.state as DrivesLoadSuccess;
+      state.userDrives.removeWhere((drive) => drive.id == detachedDriveId);
+      state.sharedDrives.removeWhere((drive) => drive.id == detachedDriveId);
       final firstOrNullDrive = state.userDrives.isNotEmpty
           ? state.userDrives.first.id
           : state.sharedDrives.isNotEmpty
@@ -94,9 +96,9 @@ class DrivesCubit extends Cubit<DrivesState> {
     }
   }
 
-  void detachDrive(DriveID driveId) {
-    _driveDao.deleteDriveById(driveId: driveId);
-    resetDriveSelection();
+  Future<void> detachDrive(DriveID driveId) async {
+    await _driveDao.deleteDriveById(driveId: driveId);
+    _resetDriveSelection(driveId);
     emit(state);
   }
 
