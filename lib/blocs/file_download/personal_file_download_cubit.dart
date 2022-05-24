@@ -38,13 +38,37 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
           totalByteCount: file.size,
         ),
       );
-      final dataRes = await http.get(
-        Uri.parse(
-          _arweave.client.api.gatewayUrl.origin + '/$dataTxId',
-        ),
-      );
-
       late Uint8List dataBytes;
+
+      // final client = http.Client();
+      // final request = http.Request(
+      //   'GET',
+      //   Uri.parse(
+      //     _arweave.client.api.gatewayUrl.origin + '/$dataTxId',
+      //   ),
+      // );
+
+      final buffer = await downloadProgress(dataTxId, _arweave);
+      // final response = await client.send(request);
+      // // final stream = response.stream;
+      // List<int> buffer = [];
+      // var total = response.contentLength ?? 0;
+
+      // response.stream.listen((value) {
+      //   buffer.addAll(value);
+      //   print(total);
+      //   total += value.length;
+      // }).onDone(() async {
+      //   print('done');
+      // });
+
+      print(buffer.length); 
+
+      // final dataRes = await http.get(
+      //   Uri.parse(
+      //     _arweave.client.api.gatewayUrl.origin + '/$dataTxId',
+      //   ),
+      // );
 
       switch (drive.privacy) {
         case DrivePrivacy.private:
@@ -70,14 +94,14 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
           if (dataTx != null) {
             dataBytes = await decryptTransactionData(
               dataTx,
-              dataRes.bodyBytes,
+              Uint8List.fromList(buffer),
               fileKey,
             );
           }
 
           break;
         case DrivePrivacy.public:
-          dataBytes = dataRes.bodyBytes;
+          dataBytes = Uint8List.fromList(buffer);
           break;
         default:
       }

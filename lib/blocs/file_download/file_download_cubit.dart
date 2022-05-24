@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/file_download/html_dart.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
@@ -13,6 +15,8 @@ import 'package:file_selector/file_selector.dart';
 import 'package:http/http.dart' as http;
 import 'package:mime/mime.dart';
 import 'package:moor/moor.dart';
+import 'package:dio/dio.dart';
+
 
 part 'file_download_state.dart';
 part 'personal_file_download_cubit.dart';
