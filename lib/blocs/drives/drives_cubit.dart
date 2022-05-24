@@ -90,10 +90,11 @@ class DrivesCubit extends Cubit<DrivesState> {
           : state.sharedDrives.isNotEmpty
               ? state.sharedDrives.first.id
               : null;
-      emit(state.copyWith(selectedDriveId: firstOrNullDrive));
-    } else {
-      emit(DrivesLoadedWithNoDrivesFound(canCreateNewDrive: canCreateNewDrive));
+      if (firstOrNullDrive != null) {
+        emit(state.copyWith(selectedDriveId: firstOrNullDrive));
+      }
     }
+    emit(DrivesLoadedWithNoDrivesFound(canCreateNewDrive: canCreateNewDrive));
   }
 
   Future<void> detachDrive(DriveID driveId) async {
