@@ -273,9 +273,6 @@ class SyncCubit extends Cubit<SyncState> {
 
       await createGhosts(ownerAddress: ownerAddress);
 
-      /// In order to have a smooth transition at the end.
-      await Future.delayed(const Duration(milliseconds: 1000));
-
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
         _updateTransactionStatuses(),
