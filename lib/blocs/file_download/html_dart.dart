@@ -47,7 +47,9 @@ Future<List<int>> downloadProgress(String tx, ArweaveService arweave) async {
   });
 
   httpReq.onProgress.debounceTime(Duration(milliseconds: 50)).listen((event) {
-    if (event.total == 0 || event.total == null) {
+    if (event.total == 0 ||
+        event.total == null ||
+        DateTime.now().difference(start).inSeconds == 0) {
       return;
     }
     print('On progress event');
