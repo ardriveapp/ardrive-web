@@ -645,10 +645,6 @@
   "@doneEmphaseized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
-  "errorLog": "Registro de errores",
-  "@errorLog": {
-    "description": "Error dialog"
-  },
   "downloadingFile": "Descargando archivo...",
   "@downloadingFile": {
     "description": "File is being downloaded"
@@ -895,14 +891,6 @@
   "thisMayTakeAWhile": "Ésto puede tomar un momento...",
   "@thisMayTakeAWhile": {
     "description": "Uploading may take a while"
-  },
-  "failedToPrepareFileUpload": "La preparación de archivos falló",
-  "@failedToPrepareFileUpload": {
-    "description": "Error message for when it failed to prepare the upload"
-  },
-  "failedToPrepareFileUploadExplanation": "Ocurrió un error mientras se preparaba la carga de tus archivos. Por favor utiliza la aplicación de escritorio o intenta con un archivo más pequeño.",
-  "@failedToPrepareFileUploadExplanation": {
-    "description": "Error message for when it failed to prepare the upload"
   },
   "closeEmphasized": "CERRAR",
   "@closeEmphasized": {

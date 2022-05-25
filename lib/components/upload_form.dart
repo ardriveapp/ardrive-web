@@ -241,23 +241,6 @@ class UploadForm extends StatelessWidget {
                 ),
               ),
             );
-          } else if (state is UploadPreparationFailure) {
-            return AppDialog(
-              title: appLocalizationsOf(context).failedToPrepareFileUpload,
-              content: SizedBox(
-                width: kMediumDialogWidth,
-                child: Text(
-                  appLocalizationsOf(context)
-                      .failedToPrepareFileUploadExplanation,
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(appLocalizationsOf(context).closeEmphasized),
-                ),
-              ],
-            );
           } else if (state is UploadReady) {
             final numberOfFilesInBundles =
                 state.uploadPlan.bundleUploadHandles.isNotEmpty
