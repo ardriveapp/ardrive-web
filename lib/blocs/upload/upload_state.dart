@@ -16,8 +16,6 @@ class UploadPreparationInProgress extends UploadState {
 
 class UploadPreparationInitialized extends UploadState {}
 
-class UploadPreparationFailure extends UploadState {}
-
 class UploadSigningInProgress extends UploadState {
   final UploadPlan uploadPlan;
   final bool isArConnect;
