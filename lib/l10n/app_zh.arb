@@ -649,10 +649,6 @@
   "@doneEmphaseized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
-  "errorLog": "错误日志",
-  "@errorLog": {
-    "description": "Error dialog"
-  },
   "downloadingFile": "下载文件中...",
   "@downloadingFile": {
     "description": "File is being downloaded"
@@ -899,14 +895,6 @@
   "thisMayTakeAWhile": "这可能会需要一些时间...",
   "@thisMayTakeAWhile": {
     "description": "Uploading may take a while"
-  },
-  "failedToPrepareFileUpload": "准备上传文件时发生了错误",
-  "@failedToPrepareFileUpload": {
-    "description": "Error message for when it failed to prepare the upload"
-  },
-  "failedToPrepareFileUploadExplanation": "准备上传文件时发生了错误. 请使用桌面客户端, 或者尝试上传更小的文件.",
-  "@failedToPrepareFileUploadExplanation": {
-    "description": "Error message for when it failed to prepare the upload"
   },
   "closeEmphasized": "关闭",
   "@closeEmphasized": {
