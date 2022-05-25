@@ -17,6 +17,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
+import 'package:retry/retry.dart';
 
 part 'sync_state.dart';
 
@@ -237,9 +238,16 @@ class SyncCubit extends Cubit<SyncState> {
         return;
       }
 
+      final currentBlockHeight = await retry(
+          () async => await getCurrentBlockHeight(), onRetry: (exception) {
+        print(
+          'Retrying for get the current block height on exception ${exception.toString()}',
+        );
+      });
+
       _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
 
-      final currentBlockHeight = await arweave.getCurrentBlockHeight();
+      print('Current block height number $currentBlockHeight');
 
       final driveSyncProcesses = drives.map((drive) => _syncDrive(
             drive.id,
@@ -293,6 +301,16 @@ class SyncCubit extends Cubit<SyncState> {
     } else {
       return max(lastBlockHeight - kBlockHeightLookBack, 0);
     }
+  }
+
+  Future<int> getCurrentBlockHeight() async {
+    final currentBlockHeight = await arweave.getCurrentBlockHeight();
+
+    if (currentBlockHeight < 0) {
+      throw Exception(
+          'The current block height $currentBlockHeight is negative. It should be equal or greater than 0.');
+    }
+    return currentBlockHeight;
   }
 
   Future<void> createGhosts({String? ownerAddress}) async {
