@@ -230,9 +230,6 @@ class SyncCubit extends Cubit<SyncState> {
 
         syncProgressController.add(_syncProgress);
 
-        // To show 100% loaded to the user
-        await Future.delayed(Duration(milliseconds: 1000));
-
         emit(SyncIdle());
 
         return;
