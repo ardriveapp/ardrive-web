@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/file_download/html_dart.dart';
+import 'package:ardrive/components/progress_bar.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -86,6 +88,50 @@ class FileDownloadDialog extends StatelessWidget {
               ],
             );
           } else if (state is FileDownloadInProgress) {
+            return ProgressDialog(
+              title: 'Downloading',
+              progressBar: ProgressBar(percentage: downloadStream),
+              progressDescription: StreamBuilder<DownloadProgress>(
+                stream: downloadStream,
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    final speed = snapshot.data!.speed!.toStringAsFixed(2);
+                    String timeFormatter(int time) {
+                      Duration duration = Duration(seconds: time.round());
+
+                      return [
+                        if (duration.inMinutes > 60) duration.inHours,
+                        if (duration.inSeconds > 60) duration.inMinutes,
+                        duration.inSeconds
+                      ]
+                          .map((seg) =>
+                              seg.remainder(60).toString().padLeft(2, '0'))
+                          .join(':');
+                    }
+
+                    final remainingTime = snapshot.data!.remainingTime;
+
+                    return Text(
+                        'Download speed: $speed MB/s Remaining time: ${timeFormatter(remainingTime!)}s');
+                  }
+                  return Container();
+                },
+              ),
+              percentageDetails: StreamBuilder<DownloadProgress>(
+                  stream: downloadStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      final percentageTxt = appLocalizationsOf(context)
+                          .syncProgressPercentage(
+                              (snapshot.data!.progress * 100)
+                                  .roundToDouble()
+                                  .toString());
+
+                      return Text(percentageTxt);
+                    }
+                    return Container();
+                  }),
+            );
             return AppDialog(
               dismissable: false,
               title: appLocalizationsOf(context).downloadingFile,
