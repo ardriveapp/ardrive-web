@@ -32,7 +32,7 @@ class DriveDetailActionRow extends StatelessWidget {
               if (selectedItem is SelectedFile) ...{
                 IconButton(
                   icon: const Icon(Icons.file_download),
-                  onPressed: () => promptToDownloadProfileFile(
+                  onPressed: () => showDownloadOverlay(
                     context: context,
                     driveId: state.currentDrive.id,
                     fileId: selectedItem.id,

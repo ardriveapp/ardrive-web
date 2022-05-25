@@ -17,6 +17,36 @@ import 'package:pedantic/pedantic.dart';
 
 import 'components.dart';
 
+late OverlayEntry entry;
+
+showDownloadOverlay({
+  required BuildContext context,
+  required DriveID driveId,
+  required FileID fileId,
+  required TxID dataTxId,
+}) {
+  print('showDownloadOverlay');
+  entry = OverlayEntry(
+    builder: (context) => Positioned(
+      right: 20,
+      bottom: 20,
+      child: BlocProvider<FileDownloadCubit>(
+        create: (_) => ProfileFileDownloadCubit(
+          driveId: driveId,
+          fileId: fileId,
+          dataTxId: dataTxId,
+          profileCubit: context.read<ProfileCubit>(),
+          driveDao: context.read<DriveDao>(),
+          arweave: context.read<ArweaveService>(),
+        ),
+        child: Material(child: FileDownloadFloating()),
+      ),
+    ),
+  );
+
+  Overlay.of(context)!.insert(entry);
+}
+
 Future<void> promptToDownloadProfileFile({
   required BuildContext context,
   required DriveID driveId,
@@ -54,6 +84,87 @@ Future<void> promptToDownloadSharedFile({
         child: FileDownloadDialog(),
       ),
     );
+
+class FileDownloadFloating extends StatelessWidget {
+  const FileDownloadFloating({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<FileDownloadCubit, FileDownloadState>(
+      listener: (context, state) async {
+        if (state is FileDownloadSuccess) {
+          entry.remove();
+          final savePath = await getSavePath();
+          if (savePath != null) {
+            unawaited(state.file.saveTo(savePath));
+          }
+
+          Navigator.pop(context);
+        }
+      },
+      builder: (context, state) {
+        if (state is FileDownloadInProgress) {
+          return SizedBox(
+            width: 300,
+            height: 80,
+            child: Container(
+              decoration: BoxDecoration(
+                  color: Colors.black87,
+                  borderRadius: BorderRadius.circular(10)),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ProgressBar(
+                      percentage: downloadStream,
+                      darkMode: true,
+                    ),
+                    StreamBuilder<DownloadProgress>(
+                      stream: downloadStream,
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          final speed =
+                              snapshot.data!.speed!.toStringAsFixed(2);
+                          String timeFormatter(int time) {
+                            Duration duration = Duration(seconds: time.round());
+
+                            return [
+                              if (duration.inMinutes > 60) duration.inHours,
+                              if (duration.inSeconds > 60) duration.inMinutes,
+                              duration.inSeconds
+                            ]
+                                .map((seg) => seg
+                                    .remainder(60)
+                                    .toString()
+                                    .padLeft(2, '0'))
+                                .join(':');
+                          }
+
+                          final remainingTime = snapshot.data!.remainingTime;
+
+                          return Text(
+                            'Download speed: $speed MB/s Remaining time: ${timeFormatter(remainingTime!)}s',
+                            style: TextStyle(color: Colors.white),
+                          );
+                        }
+                        return Container();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+        return const SizedBox(
+          height: 300,
+          width: 300,
+        );
+      },
+    );
+  }
+}
 
 class FileDownloadDialog extends StatelessWidget {
   @override

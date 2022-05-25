@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 
 class ProgressBar extends StatefulWidget {
-  ProgressBar({Key? key, required this.percentage}) : super(key: key);
+  ProgressBar({Key? key, required this.percentage, this.darkMode = false})
+      : super(key: key);
 
   final Stream<LinearProgress> percentage;
+  final bool darkMode;
 
   @override
   State<ProgressBar> createState() => _ProgressBarState();
@@ -40,10 +42,12 @@ class _ProgressBarState extends State<ProgressBar> {
             animateFromLastPercent: true,
             lineHeight: 10.0,
             barRadius: Radius.circular(5),
-            backgroundColor: Color(0xffFAFAFA),
+            backgroundColor:
+                widget.darkMode ? Color(0xff3C3C3C) : Color(0xffFAFAFA),
             animationDuration: 1000,
             percent: _percentage,
-            progressColor: Color(0xff3C3C3C),
+            progressColor:
+                widget.darkMode ? Color(0xffFAFAFA) : Color(0xff3C3C3C),
           );
         });
   }
