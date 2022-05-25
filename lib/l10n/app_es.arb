@@ -880,7 +880,7 @@
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
-  "tooLargeForUpload": "Archivos demasiado grande para cargar:",
+  "tooLargeForUpload": "Archivos demasiado grandes para cargar:",
   "@tooLargeForUpload": {
     "description": "Files too large for upload"
   },
