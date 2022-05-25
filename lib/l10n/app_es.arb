@@ -876,7 +876,7 @@
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
-  "tooLargeForUpload": "Archivos demasiado grande para cargar:",
+  "tooLargeForUpload": "Archivos demasiado grandes para cargar:",
   "@tooLargeForUpload": {
     "description": "Files too large for upload"
   },
@@ -1132,6 +1132,26 @@
         "example": "1.2"
       }
     }
+  },
+  "insufficientFundsForCreateADrive": "No tienes el balance suficiente para crear una unidad. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
+  "@insufficientFundsForCreateADrive": {
+      "description": "Show that needs funds to create a Drive"
+  },
+  "insufficientFundsForCreateAFolder": "No tienes el balance suficiente para crear una carpeta. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
+  "@insufficientFundsForCreateAFolder": {
+      "description": "Show that needs funds to create a Folder"
+  },
+  "insufficientFundsForCreateAManifest": "No tienes el balance suficiente para crear un manifiesto. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
+  "@insufficientFundsForCreateAManifest": {
+      "description": "Show that needs funds to create a Manifest"
+  },
+  "insufficientFundsForUploadFiles": "No tienes el balance suficiente para cargar archivos. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
+  "@insufficientFundsForUploadFiles": {
+      "description": "Show that needs funds to upload files"
+  },
+  "insufficientFundsForUploadFolders": "No tienes el balance suficiente para cargar carpetas. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
+  "@insufficientFundsForUploadFolders": {
+      "description": "Show that needs funds to upload folders"
   },
   "conflictingNameFound": "Se encontró un conflicto de nombres",
   "@conflictingNameFound": {
