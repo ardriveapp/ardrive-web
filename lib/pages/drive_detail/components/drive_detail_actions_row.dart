@@ -1,6 +1,8 @@
 part of '../drive_detail_page.dart';
 
 class DriveDetailActionRow extends StatelessWidget {
+  const DriveDetailActionRow({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     final bloc = context.watch<DriveDetailCubit>();
@@ -17,6 +19,19 @@ class DriveDetailActionRow extends StatelessWidget {
                   promptToRenameDrive(context, driveId: state.currentDrive.id);
                 },
                 tooltip: appLocalizationsOf(context).renameDrive,
+              ),
+            ],
+            if (!state.hasWritePermissions) ...[
+              IconButton(
+                icon: const Icon(Icons.eject_outlined),
+                onPressed: () {
+                  showDetachDriveDialog(
+                    context: context,
+                    driveID: state.currentDrive.id,
+                    driveName: state.currentDrive.name,
+                  );
+                },
+                tooltip: appLocalizationsOf(context).detachDrive,
               ),
             ],
             if (selectedItem == null)
