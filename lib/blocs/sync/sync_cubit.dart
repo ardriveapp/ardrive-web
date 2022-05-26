@@ -230,9 +230,6 @@ class SyncCubit extends Cubit<SyncState> {
 
         syncProgressController.add(_syncProgress);
 
-        // To show 100% loaded to the user
-        await Future.delayed(Duration(milliseconds: 1000));
-
         emit(SyncIdle());
 
         return;
@@ -275,9 +272,6 @@ class SyncCubit extends Cubit<SyncState> {
           'The total progress was ${(_syncProgress.progress * 100).roundToDouble()}');
 
       await createGhosts(ownerAddress: ownerAddress);
-
-      /// In order to have a smooth transition at the end.
-      await Future.delayed(const Duration(milliseconds: 1000));
 
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),

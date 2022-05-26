@@ -645,10 +645,6 @@
   "@doneEmphaseized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
-  "errorLog": "Registro de errores",
-  "@errorLog": {
-    "description": "Error dialog"
-  },
   "downloadingFile": "Descargando archivo...",
   "@downloadingFile": {
     "description": "File is being downloaded"
@@ -872,15 +868,15 @@
       }
     }
   },
-  "filesTooLargeExplanationPrivate": "Actualmente, las unidades privadas en ArDrive Web soportan archivos de hasta 100 MB",
+  "filesTooLargeExplanationPrivate": "Actualmente, las unidades privadas en ArDrive Web soportan archivos de hasta 100 MiB",
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "Actualmente, las unidades públicas en ArDrive WEB soportan archivos de hasta 1.25 GB",
+  "filesTooLargeExplanationPublic": "Actualmente, las unidades públicas en ArDrive WEB soportan archivos de hasta 1.25 GiB",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
-  "tooLargeForUpload": "Archivos demasiado grande para cargar:",
+  "tooLargeForUpload": "Archivos demasiado grandes para cargar:",
   "@tooLargeForUpload": {
     "description": "Files too large for upload"
   },
@@ -895,14 +891,6 @@
   "thisMayTakeAWhile": "Ésto puede tomar un momento...",
   "@thisMayTakeAWhile": {
     "description": "Uploading may take a while"
-  },
-  "failedToPrepareFileUpload": "La preparación de archivos falló",
-  "@failedToPrepareFileUpload": {
-    "description": "Error message for when it failed to prepare the upload"
-  },
-  "failedToPrepareFileUploadExplanation": "Ocurrió un error mientras se preparaba la carga de tus archivos. Por favor utiliza la aplicación de escritorio o intenta con un archivo más pequeño.",
-  "@failedToPrepareFileUploadExplanation": {
-    "description": "Error message for when it failed to prepare the upload"
   },
   "closeEmphasized": "CERRAR",
   "@closeEmphasized": {
@@ -1144,6 +1132,26 @@
         "example": "1.2"
       }
     }
+  },
+  "insufficientFundsForCreateADrive": "No tienes el balance suficiente para crear una unidad. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
+  "@insufficientFundsForCreateADrive": {
+      "description": "Show that needs funds to create a Drive"
+  },
+  "insufficientFundsForCreateAFolder": "No tienes el balance suficiente para crear una carpeta. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
+  "@insufficientFundsForCreateAFolder": {
+      "description": "Show that needs funds to create a Folder"
+  },
+  "insufficientFundsForCreateAManifest": "No tienes el balance suficiente para crear un manifiesto. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
+  "@insufficientFundsForCreateAManifest": {
+      "description": "Show that needs funds to create a Manifest"
+  },
+  "insufficientFundsForUploadFiles": "No tienes el balance suficiente para cargar archivos. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
+  "@insufficientFundsForUploadFiles": {
+      "description": "Show that needs funds to upload files"
+  },
+  "insufficientFundsForUploadFolders": "No tienes el balance suficiente para cargar carpetas. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
+  "@insufficientFundsForUploadFolders": {
+      "description": "Show that needs funds to upload folders"
   },
   "conflictingNameFound": "Se encontró un conflicto de nombres",
   "@conflictingNameFound": {
