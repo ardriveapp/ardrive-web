@@ -228,7 +228,9 @@ class UploadCubit extends Cubit<UploadState> {
 
     if (uploadAction == UploadActions.Skip) {
       _removeFilesWithFileNameConflicts();
-    } else if (uploadAction == UploadActions.SkipBigFiles) {
+    }
+
+    if (uploadAction == UploadActions.SkipBigFiles) {
       _removeBigFiles();
     } else {
       final tooLargeFiles = [
