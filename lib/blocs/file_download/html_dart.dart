@@ -27,10 +27,12 @@ class DownloadProgress extends LinearProgress {
 final downloadController = StreamController<DownloadProgress>.broadcast();
 
 final downloadStream = downloadController.stream;
+final httpReq = HttpRequest();
+
+void abordDownload() => httpReq.abort();
 
 Future<List<int>> downloadProgress(String tx, ArweaveService arweave) async {
   // This is for Flutter Web
-  final httpReq = HttpRequest();
 
   late DownloadProgress downloadProgress;
 

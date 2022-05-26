@@ -108,6 +108,8 @@ class FileDownloadFloating extends StatelessWidget {
           });
 
           Navigator.pop(context);
+        } else {
+          Future.delayed(Duration(milliseconds: 2000)).then((value) {});
         }
       },
       builder: (context, state) {
@@ -117,12 +119,13 @@ class FileDownloadFloating extends StatelessWidget {
   }
 }
 
-enum DownloadStatus { inProgress, done }
+enum DownloadStatus { inProgress, done, cancel }
 
 class DownloadBarController {
   final _downloadController = StreamController<DownloadStatus>();
   startDownload() => _downloadController.sink.add(DownloadStatus.inProgress);
   endDownload() => _downloadController.sink.add(DownloadStatus.done);
+  cancelDownload() => _downloadController.sink.add(DownloadStatus.cancel);
 }
 
 class DownloadBar extends StatefulWidget {
@@ -139,6 +142,8 @@ class _DownloadBarState extends State<DownloadBar> {
   double height = 100;
   bool downloadCompleted = false;
   bool downloadEndPhase = false;
+  bool cancel = false;
+
   Color background = Colors.black87;
 
   @override
@@ -149,10 +154,20 @@ class _DownloadBarState extends State<DownloadBar> {
             .then((value) => setState(() {
                   width = 300;
                 }));
-      } else {
+      } else if (event == DownloadStatus.done) {
         setState(() {
           downloadCompleted = true;
           background = Colors.green;
+        });
+        Future.delayed(Duration(milliseconds: 1000))
+            .then((value) => setState(() {
+                  downloadEndPhase = true;
+                  width = 0;
+                }));
+      } else if (event == DownloadStatus.cancel) {
+        setState(() {
+          downloadCompleted = true;
+          cancel = true;
         });
         Future.delayed(Duration(milliseconds: 1000))
             .then((value) => setState(() {
@@ -179,8 +194,9 @@ class _DownloadBarState extends State<DownloadBar> {
         child: downloadCompleted && !downloadEndPhase
             ? Center(
                 child: Text(
-                  'Download finished',
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                  cancel ? 'Canceled' : 'Download finished',
+                  style: TextStyle(
+                      fontSize: 16, color: cancel ? Colors.red : Colors.white),
                 ),
               )
             : downloadEndPhase
@@ -190,9 +206,27 @@ class _DownloadBarState extends State<DownloadBar> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        ProgressBar(
-                          percentage: downloadStream,
-                          darkMode: true,
+                        Row(
+                          children: [
+                            Flexible(
+                              flex: 6,
+                              child: ProgressBar(
+                                percentage: downloadStream,
+                                darkMode: true,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.close,
+                                size: 24,
+                                color: Colors.red,
+                              ),
+                              onPressed: () {
+                                abordDownload();
+                                widget.controller.cancelDownload();
+                              },
+                            )
+                          ],
                         ),
                         StreamBuilder<DownloadProgress>(
                           stream: downloadStream,
@@ -225,7 +259,9 @@ class _DownloadBarState extends State<DownloadBar> {
                                 style: TextStyle(color: Colors.white),
                               );
                             }
-                            return Container();
+                            return Container(
+                              height: 24,
+                            );
                           },
                         ),
                       ],
