@@ -1286,11 +1286,15 @@
       }
     }
   },
-  "detachDrive": "Detach Drive",
+  "detachEmphasized": "DETACH",
+  "@detachEmphasized": {
+    "description": "Example: To DETACH a drive. Emphasized in upper case"
+  },
+  "detachDrive": "Detach Drive?",
   "@detachDrive": {
     "description": "Detach Drive Title"
   },
-  "detachDriveQuestion": "Are you sure you want to detach '{driveName}'",
+  "detachDriveQuestion": "Are you sure you want to detach '{driveName}'?",
   "@detachDriveQuestion": {
     "description": "Ask for user confirmation to detach drive",
     "placeholders": {
