@@ -27,7 +27,7 @@ Future<void> showDetachDriveDialog({
               context.read<DrivesCubit>().detachDrive(driveID);
               Navigator.of(context).pop();
             },
-            child: Text(appLocalizationsOf(context).confirmEmphasized),
+            child: Text(appLocalizationsOf(context).detachEmphasized),
           ),
         ],
       ),
