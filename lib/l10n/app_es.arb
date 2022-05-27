@@ -291,6 +291,10 @@
   "@fileSize": {
     "description": "The size of a file"
   },
+  "size": "Tamaño",
+  "@size": {
+    "description": "The size of a file, folder or drive"
+  },
   "lastUpdated": "Última actualización",
   "@lastUpdated": {
     "description": "The timestamp of the transaction"
