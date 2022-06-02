@@ -6,6 +6,7 @@ class DriveDetailActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bloc = context.watch<DriveDetailCubit>();
+    final profile = context.read<ProfileCubit>().state;
 
     return BlocBuilder<DriveDetailCubit, DriveDetailState>(
       builder: (context, state) {
@@ -21,7 +22,7 @@ class DriveDetailActionRow extends StatelessWidget {
                 tooltip: appLocalizationsOf(context).renameDrive,
               ),
             ],
-            if (!state.hasWritePermissions) ...[
+            if (!state.hasWritePermissions && profile is ProfileLoggedIn) ...[
               IconButton(
                 icon: const Icon(Icons.eject_outlined),
                 onPressed: () {
