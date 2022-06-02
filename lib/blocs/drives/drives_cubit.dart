@@ -92,15 +92,16 @@ class DrivesCubit extends Cubit<DrivesState> {
               : null;
       if (firstOrNullDrive != null) {
         emit(state.copyWith(selectedDriveId: firstOrNullDrive));
+        return;
       }
     }
     emit(DrivesLoadedWithNoDrivesFound(canCreateNewDrive: canCreateNewDrive));
   }
 
   Future<void> detachDrive(DriveID driveId) async {
-    await _driveDao.deleteDriveById(driveId: driveId);
     _resetDriveSelection(driveId);
-    emit(state);
+    await Future.delayed(const Duration(seconds: 1));
+    await _driveDao.deleteDriveById(driveId: driveId);
   }
 
   @override
