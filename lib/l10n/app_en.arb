@@ -649,10 +649,6 @@
   "@doneEmphaseized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
-  "errorLog": "Error log",
-  "@errorLog": {
-    "description": "Error dialog"
-  },
   "downloadingFile": "Downloading file...",
   "@downloadingFile": {
     "description": "File is being downloaded"
@@ -876,11 +872,11 @@
       }
     }
   },
-  "filesTooLargeExplanationPrivate": "ArDrive on web currently only supports file uploads smaller than 100 MB for private drives",
+  "filesTooLargeExplanationPrivate": "ArDrive on web currently only supports file uploads smaller than 100 MiB for private drives",
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "ArDrive on web currently only supports file uploads smaller than 1.25 GB for public drives",
+  "filesTooLargeExplanationPublic": "ArDrive on web currently only supports file uploads smaller than 1.25 GiB for public drives",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
@@ -899,14 +895,6 @@
   "thisMayTakeAWhile": "This may take a while...",
   "@thisMayTakeAWhile": {
     "description": "Uploading may take a while"
-  },
-  "failedToPrepareFileUpload": "Failed to prepare file upload",
-  "@failedToPrepareFileUpload": {
-    "description": "Error message for when it failed to prepare the upload"
-  },
-  "failedToPrepareFileUploadExplanation": "An error occurred while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.",
-  "@failedToPrepareFileUploadExplanation": {
-    "description": "Error message for when it failed to prepare the upload"
   },
   "closeEmphasized": "CLOSE",
   "@closeEmphasized": {
@@ -1154,7 +1142,7 @@
     "description": "Show that needs funds to create a Drive"
   },
   "insufficientFundsForCreateAFolder": "You do not have sufficient funds to create a Folder at this time. Please go to the top up page to add funds to your account.",
-  "@insufficientFundsForCreateADrive": {
+  "@insufficientFundsForCreateAFolder": {
     "description": "Show that needs funds to create a Folder"
   },
   "insufficientFundsForCreateAManifest": "You do not have sufficient funds to create a Manifest at this time. Please go to the top up page to add funds to your account.",

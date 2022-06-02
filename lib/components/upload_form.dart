@@ -173,8 +173,7 @@ class UploadForm extends StatelessWidget {
                       onPressed: () => context
                           .read<UploadCubit>()
                           .prepareUploadPlanAndCostEstimates(
-                              conflictingFileAction:
-                                  ConflictingFileActions.Skip),
+                              uploadAction: UploadActions.Skip),
                       child: Text(appLocalizationsOf(context).skipEmphasized),
                     ),
                   TextButton(
@@ -185,8 +184,7 @@ class UploadForm extends StatelessWidget {
                     onPressed: () => context
                         .read<UploadCubit>()
                         .prepareUploadPlanAndCostEstimates(
-                            conflictingFileAction:
-                                ConflictingFileActions.Replace),
+                            uploadAction: UploadActions.Replace),
                     child: Text(appLocalizationsOf(context).replaceEmphasized),
                   ),
                 ]);
@@ -217,8 +215,16 @@ class UploadForm extends StatelessWidget {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(appLocalizationsOf(context).ok),
+                  child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
+                if (state.hasFilesToUpload)
+                  TextButton(
+                    onPressed: () => context
+                        .read<UploadCubit>()
+                        .prepareUploadPlanAndCostEstimates(
+                            uploadAction: UploadActions.SkipBigFiles),
+                    child: Text(appLocalizationsOf(context).skipEmphasized),
+                  ),
               ],
             );
           } else if (state is UploadPreparationInProgress ||
@@ -240,23 +246,6 @@ class UploadForm extends StatelessWidget {
                   ],
                 ),
               ),
-            );
-          } else if (state is UploadPreparationFailure) {
-            return AppDialog(
-              title: appLocalizationsOf(context).failedToPrepareFileUpload,
-              content: SizedBox(
-                width: kMediumDialogWidth,
-                child: Text(
-                  appLocalizationsOf(context)
-                      .failedToPrepareFileUploadExplanation,
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(appLocalizationsOf(context).closeEmphasized),
-                ),
-              ],
             );
           } else if (state is UploadReady) {
             final numberOfFilesInBundles =
