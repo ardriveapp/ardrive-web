@@ -45,11 +45,12 @@ class ProfileOverlay extends StatelessWidget {
                             ],
                           ),
                           trailing: IconButton(
-                            icon: const Icon(Icons.logout),
-                            tooltip: appLocalizationsOf(context).logout,
-                            onPressed: () =>
-                                context.read<ProfileCubit>().logoutProfile(),
-                          ),
+                              icon: const Icon(Icons.logout),
+                              tooltip: appLocalizationsOf(context).logout,
+                              onPressed: () {
+                                context.read<DrivesCubit>().cleanDrives();
+                                context.read<ProfileCubit>().logoutProfile();
+                              }),
                         )
                       : ListTile(
                           contentPadding: EdgeInsets.zero,
