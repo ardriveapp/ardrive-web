@@ -173,9 +173,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     return launch('${_config.defaultArweaveGatewayUrl}/$dataTxId');
   }
 
-  void sortFolder(
-      {DriveOrder contentOrderBy = DriveOrder.name,
-      OrderingMode contentOrderingMode = OrderingMode.asc}) {
+  void sortFolder({
+    DriveOrder contentOrderBy = DriveOrder.name,
+    OrderingMode contentOrderingMode = OrderingMode.asc,
+  }) {
     final state = this.state as DriveDetailLoadSuccess;
     openFolder(
       path: state.folderInView.folder.path,
