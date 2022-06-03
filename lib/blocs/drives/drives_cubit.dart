@@ -16,9 +16,9 @@ class DrivesCubit extends Cubit<DrivesState> {
   final DriveDao _driveDao;
 
   late StreamSubscription _drivesSubscription;
-
+  String? initialSelectedDriveId;
   DrivesCubit({
-    String? initialSelectedDriveId,
+    this.initialSelectedDriveId,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
@@ -35,7 +35,10 @@ class DrivesCubit extends Cubit<DrivesState> {
     ).listen((drives) async {
       final state = this.state;
 
+      final profile = _profileCubit.state;
+
       String? selectedDriveId;
+
       if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
         selectedDriveId = state.selectedDriveId;
       } else {
@@ -43,12 +46,13 @@ class DrivesCubit extends Cubit<DrivesState> {
             (drives.isNotEmpty ? drives.first.id : null);
       }
 
-      final profile = _profileCubit.state;
-
       final walletAddress =
           profile is ProfileLoggedIn ? profile.walletAddress : null;
 
       final ghostFolders = await _driveDao.ghostFolders().get();
+
+      print('selected drive id: $selectedDriveId');
+
       emit(
         DrivesLoadSuccess(
           selectedDriveId: selectedDriveId,
@@ -81,6 +85,18 @@ class DrivesCubit extends Cubit<DrivesState> {
             sharedDrives: [],
             drivesWithAlerts: [],
             canCreateNewDrive: canCreateNewDrive);
+    emit(state);
+  }
+
+  void cleanDrives() {
+    final canCreateNewDrive = _profileCubit.state is ProfileLoggedIn;
+    initialSelectedDriveId = null;
+    final state = DrivesLoadSuccess(
+        selectedDriveId: null,
+        userDrives: [],
+        sharedDrives: [],
+        drivesWithAlerts: [],
+        canCreateNewDrive: canCreateNewDrive);
     emit(state);
   }
 
