@@ -24,6 +24,11 @@ class DrivesCubit extends Cubit<DrivesState> {
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         super(DrivesLoadInProgress()) {
+    _profileCubit.stream.listen((state) {
+      if (state is ProfileLoggingOut) {
+        cleanDrives();
+      }
+    });
     _drivesSubscription =
         Rx.combineLatest3<List<Drive>, List<FolderEntry>, void, List<Drive>>(
       _driveDao
@@ -89,14 +94,14 @@ class DrivesCubit extends Cubit<DrivesState> {
   }
 
   void cleanDrives() {
-    final canCreateNewDrive = _profileCubit.state is ProfileLoggedIn;
     initialSelectedDriveId = null;
+
     final state = DrivesLoadSuccess(
         selectedDriveId: null,
-        userDrives: [],
-        sharedDrives: [],
-        drivesWithAlerts: [],
-        canCreateNewDrive: canCreateNewDrive);
+        userDrives: const [],
+        sharedDrives: const [],
+        drivesWithAlerts: const [],
+        canCreateNewDrive: false);
     emit(state);
   }
 
