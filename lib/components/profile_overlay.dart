@@ -48,7 +48,6 @@ class ProfileOverlay extends StatelessWidget {
                               icon: const Icon(Icons.logout),
                               tooltip: appLocalizationsOf(context).logout,
                               onPressed: () {
-                                context.read<DrivesCubit>().cleanDrives();
                                 context.read<ProfileCubit>().logoutProfile();
                               }),
                         )
