@@ -11,7 +11,7 @@ Have any questions? Join the ArDrive Discord channel for support, news and updat
 
 Install lefthook for your platform from the intructions [here](https://github.com/evilmartians/lefthook/blob/master/docs/other.md).
 This will enable the use of git hooks.
-After installing lefthook you need to enable it running:
+After installing lefthook you need to enable it by running:
 
 ```shell
 lefthook install
