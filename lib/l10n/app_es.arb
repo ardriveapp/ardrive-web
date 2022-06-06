@@ -291,6 +291,10 @@
   "@fileSize": {
     "description": "The size of a file"
   },
+  "size": "Tamaño",
+  "@size": {
+    "description": "The size of a file, folder or drive"
+  },
   "lastUpdated": "Última actualización",
   "@lastUpdated": {
     "description": "The timestamp of the transaction"
@@ -1267,6 +1271,24 @@
         "type": "int",
         "format": "decimalPattern",
         "example": "100"
+      }
+    }
+  },
+  "detachEmphasized": "DESVINCULAR",
+  "@detachEmphasized": {
+    "description": "Example: To DETACH a drive. Emphasized in upper case"
+  },
+  "detachDrive": "¿Desvincular unidad?",
+  "@detachDrive": {
+    "description": "Detach Drive Title"
+  },
+  "detachDriveQuestion": "¿Confirmas que quieres desvincular '{driveName}'?",
+  "@detachDriveQuestion": {
+    "description": "Ask for user confirmation to detach drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Shared Drive A"
       }
     }
   }
