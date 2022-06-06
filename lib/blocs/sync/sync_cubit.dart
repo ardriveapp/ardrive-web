@@ -267,16 +267,27 @@ class SyncCubit extends Cubit<SyncState> {
         syncProgressController.add(_syncProgress);
       }));
 
-      print(
-          'Syncing drives finished.\nDrives quantity: ${_syncProgress.drivesCount}\n'
-          'The total progress was ${(_syncProgress.progress * 100).roundToDouble()}');
+      print('Creating ghosts...');
 
       await createGhosts(ownerAddress: ownerAddress);
+
+      ghostFolders.clear();
+      ghostFoldersByDrive.clear();
+
+      print('Ghosts created..');
+
+      print('Updating transaction statuses...');
 
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
         _updateTransactionStatuses(),
       ]);
+
+      print('Transaction statuses updated');
+
+      print(
+          'Syncing drives finished.\nDrives quantity: ${_syncProgress.drivesCount}\n'
+          'The total progress was ${(_syncProgress.progress * 100).roundToDouble()}');
     } catch (err, stackTrace) {
       _printSyncError(err, stackTrace);
       addError(err);
@@ -310,11 +321,12 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> createGhosts({String? ownerAddress}) async {
     //Finalize missing parent list
     for (final ghostFolder in ghostFolders.values) {
-      final folderExists = (await _driveDao
-              .folderById(
-                  driveId: ghostFolder.driveId, folderId: ghostFolder.folderId)
-              .getSingleOrNull()) !=
-          null;
+      final folder = await _driveDao
+          .folderById(
+              driveId: ghostFolder.driveId, folderId: ghostFolder.folderId)
+          .getSingleOrNull();
+
+      final folderExists = folder != null;
 
       if (folderExists) {
         continue;
@@ -343,7 +355,6 @@ class SyncCubit extends Cubit<SyncState> {
         isGhost: true,
         dateCreated: DateTime.now(),
       );
-
       await _driveDao.into(_driveDao.folderEntries).insert(folderEntry);
       ghostFoldersByDrive.putIfAbsent(
           drive.id, () => {folderEntry.id: folderEntry.toCompanion(false)});
@@ -1008,6 +1019,7 @@ class SyncCubit extends Cubit<SyncState> {
       if (parentPath != null) {
         await updateFolderTree(treeRoot, parentPath);
       } else {
+        print('Add missing folder: ${treeRoot.folder.name}');
         await addMissingFolder(
           treeRoot.folder.parentFolderId!,
         );
@@ -1034,6 +1046,9 @@ class SyncCubit extends Cubit<SyncState> {
               driveId: staleOrphanFile.driveId,
               path: Value(filePath)));
         } else {
+          print('Add missing folder to file: ${staleOrphanFile.name.value}'
+              'folder id: ${staleOrphanFile.name.value}');
+
           await addMissingFolder(
             staleOrphanFile.parentFolderId.value,
           );
