@@ -1291,5 +1291,21 @@
         "example": "Shared Drive A"
       }
     }
+  },
+  "feedbackTitle": "Thank you for using ArDrive!",
+  "@feedbackTitle": {
+    "description": "We thank the user"
+  },
+  "feedbackContent": "Would you be willing to leave feedback on your experience using the app?",
+  "@feedbackContent": {
+    "description": "Asks for feedback"
+  },
+  "leaveFeedback": "Leave Feedback",
+  "@leaveFeedback": {
+    "description": "The action of leaving feedback"
+  },
+  "noThanks": "No thanks! Don't remind me again",
+  "@noThanks": {
+    "description": "Don't leave feedback, and don't ask again for it"
   }
 }
