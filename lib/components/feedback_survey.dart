@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/open_survey_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -81,7 +82,7 @@ class FeedbackSurveyModal extends StatelessWidget {
                             minimumSize: const Size.fromHeight(50), // NEW
                           ),
                           onPressed: () {
-                            print('TODO: open the survey page');
+                            launchSurveyURL();
                             context
                                 .read<FeedbackSurveyCubit>()
                                 .dontRemindMeAgain();
