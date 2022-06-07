@@ -11,6 +11,11 @@ Have any questions? Join the ArDrive Discord channel for support, news and updat
 
 Install lefthook for your platform from the intructions [here](https://github.com/evilmartians/lefthook/blob/master/docs/other.md).
 This will enable the use of git hooks.
+After installing lefthook you need to enable it by running:
+
+```shell
+lefthook install
+```
 
 If your environment is using homebrew, install the Flutter SDK with its cask as shown below. Alternatively, visit the [Flutter Installation Instructions][https://flutter.dev/docs/get-started/install] to get the Flutter SDK up and running for your OS / local setup.
 
