@@ -303,7 +303,7 @@ class SyncCubit extends Cubit<SyncState> {
 
     emit(SyncIdle());
 
-    _feedbackCubit.openModal();
+    _feedbackCubit.openModal('sync');
   }
 
   int calculateSyncLastBlockHeight(int lastBlockHeight) {
