@@ -164,7 +164,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                           Navigator.pop(context);
                           print('It is close! :D');
                         } else {
-                          Navigator.pop(context);
                           print('It is "do not ask again"! :D');
                         }
                       },

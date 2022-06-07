@@ -1,7 +1,7 @@
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/open_survey_form.dart';
+import 'package:ardrive/utils/launch_survey_url.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -22,7 +22,7 @@ class FeedbackSurveyModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       BlocBuilder<FeedbackSurveyCubit, FeedbackSurveyState>(
-        builder: (context, _) => Stack(
+        builder: (context, state) => Stack(
           children: [
             Positioned(
               child: AlertDialog(
@@ -55,14 +55,26 @@ class FeedbackSurveyModal extends StatelessWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  appLocalizationsOf(context).feedbackTitle,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headline6!
-                                      .copyWith(
-                                          color: kOnDarkSurfaceHighEmphasis),
-                                ),
+                                state is FeedbackSurveyDontRemindMeAgain
+                                    ? Text(
+                                        'OK COOL -TODO-',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headline6!
+                                            .copyWith(
+                                                color:
+                                                    kOnDarkSurfaceHighEmphasis),
+                                      )
+                                    : Text(
+                                        appLocalizationsOf(context)
+                                            .feedbackTitle,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headline6!
+                                            .copyWith(
+                                                color:
+                                                    kOnDarkSurfaceHighEmphasis),
+                                      ),
                               ],
                             ),
                           ),
@@ -71,41 +83,57 @@ class FeedbackSurveyModal extends StatelessWidget {
                     )),
                 content: SizedBox(
                   width: kMediumDialogWidth,
-                  child: Text(appLocalizationsOf(context).feedbackContent),
+                  child: state is FeedbackSurveyDontRemindMeAgain
+                      ? Text('If you change you mind BLAH BLAH')
+                      : Text(appLocalizationsOf(context).feedbackContent),
                 ),
                 actions: [
                   Center(
                     child: Column(
-                      children: [
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: const Size.fromHeight(50), // NEW
-                          ),
-                          onPressed: () {
-                            launchSurveyURL();
-                            context
-                                .read<FeedbackSurveyCubit>()
-                                .dontRemindMeAgain();
-                          },
-                          child: Text(
-                            appLocalizationsOf(context).leaveFeedback,
-                          ),
-                        ),
-                        TextButton(
-                          style: TextButton.styleFrom(
-                            minimumSize: const Size.fromHeight(50), // NEW
-                          ),
-                          onPressed: () {
-                            context
-                                .read<FeedbackSurveyCubit>()
-                                .dontRemindMeAgain();
-                          },
-                          child: Text(
-                            appLocalizationsOf(context).noThanks,
-                            textWidthBasis: TextWidthBasis.parent,
-                          ),
-                        ),
-                      ],
+                      children: state is FeedbackSurveyDontRemindMeAgain
+                          ? [
+                              ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize:
+                                        const Size.fromHeight(50), // NEW
+                                  ),
+                                  onPressed: () {
+                                    context
+                                        .read<FeedbackSurveyCubit>()
+                                        .closeModal();
+                                  },
+                                  child: Text('Got it -TODO-'))
+                            ]
+                          : [
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(50), // NEW
+                                ),
+                                onPressed: () {
+                                  launchSurveyURL();
+                                  context
+                                      .read<FeedbackSurveyCubit>()
+                                      .dontRemindMeAgain();
+                                },
+                                child: Text(
+                                  appLocalizationsOf(context).leaveFeedback,
+                                ),
+                              ),
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(50), // NEW
+                                ),
+                                onPressed: () {
+                                  context
+                                      .read<FeedbackSurveyCubit>()
+                                      .dontRemindMeAgain();
+                                },
+                                child: Text(
+                                  appLocalizationsOf(context).noThanks,
+                                  textWidthBasis: TextWidthBasis.parent,
+                                ),
+                              ),
+                            ],
                     ),
                   )
                 ],
