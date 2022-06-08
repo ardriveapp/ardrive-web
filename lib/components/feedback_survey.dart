@@ -57,7 +57,8 @@ class FeedbackSurveyModal extends StatelessWidget {
                               children: [
                                 state is FeedbackSurveyDontRemindMe
                                     ? Text(
-                                        'OK COOL -TODO-',
+                                        appLocalizationsOf(context)
+                                            .weWontRemindYou,
                                         style: Theme.of(context)
                                             .textTheme
                                             .headline6!
@@ -84,7 +85,8 @@ class FeedbackSurveyModal extends StatelessWidget {
                 content: SizedBox(
                   width: kMediumDialogWidth,
                   child: state is FeedbackSurveyDontRemindMe
-                      ? Text('If you change you mind BLAH BLAH')
+                      ? Text(appLocalizationsOf(context)
+                          .weWontRemindYouDescription)
                       : Text(appLocalizationsOf(context).feedbackContent),
                 ),
                 actions: [
@@ -102,7 +104,8 @@ class FeedbackSurveyModal extends StatelessWidget {
                                         .read<FeedbackSurveyCubit>()
                                         .dontRemindMeAgainClose();
                                   },
-                                  child: Text('Got it -TODO-'))
+                                  child:
+                                      Text(appLocalizationsOf(context).gotIt))
                             ]
                           : [
                               ElevatedButton(
