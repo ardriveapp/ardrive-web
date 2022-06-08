@@ -158,18 +158,16 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         BlocListener<FeedbackSurveyCubit, FeedbackSurveyState>(
                       listener: (context, state) {
                         if (state is FeedbackSurveyRemindMe && state.isOpen) {
-                          print('It is open!!! :D');
                           openFeedbackSurveyModal(context);
                         } else if (state is FeedbackSurveyRemindMe &&
                             !state.isOpen) {
                           Navigator.pop(context);
-                          print('It is close! :D');
                         } else if (state is FeedbackSurveyDontRemindMe &&
                             state.isOpen) {
-                          print('It is "do not ask again"! :D');
+                          /// nothing to do
                         } else {
+                          /// state is FeedbackSurveyDontRemindMe && !state.isOpen
                           Navigator.pop(context);
-                          print('It is "do not ask again"! :D');
                         }
                       },
                       child: AppShell(page: shellPage),
