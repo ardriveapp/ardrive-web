@@ -2,23 +2,24 @@ part of 'feedback_survey_cubit.dart';
 
 abstract class FeedbackSurveyState extends Equatable {}
 
-class FeedbackSurveyOpen extends FeedbackSurveyState {
+class FeedbackSurveyRemindMe extends FeedbackSurveyState {
+  final bool isOpen;
   final String source;
 
-  FeedbackSurveyOpen({required this.source}) : super();
+  FeedbackSurveyRemindMe({required this.isOpen, required this.source})
+      : super();
 
   @override
-  List<Object?> get props => [source];
+  List<Object?> get props => [isOpen, source];
 }
 
-class FeedbackSurveyClose extends FeedbackSurveyState {
-  @override
-  List<Object?> get props => [];
-}
+class FeedbackSurveyDontRemindMe extends FeedbackSurveyState {
+  final bool isOpen;
 
-class FeedbackSurveyDontRemindMeAgain extends FeedbackSurveyState {
+  FeedbackSurveyDontRemindMe({required this.isOpen}) : super();
+
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [isOpen];
 }
 
 class FeedbackSurveyInitialState extends FeedbackSurveyState {

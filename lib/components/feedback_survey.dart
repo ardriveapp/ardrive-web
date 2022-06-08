@@ -39,7 +39,7 @@ class FeedbackSurveyModal extends StatelessWidget {
                             IconButton(
                               onPressed: () => context
                                   .read<FeedbackSurveyCubit>()
-                                  .closeModal(),
+                                  .closeModal('dismiss'),
                               icon: const Icon(Icons.close),
                               color: kOnDarkSurfaceMediumEmphasis,
                               iconSize: 16,
@@ -55,7 +55,7 @@ class FeedbackSurveyModal extends StatelessWidget {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                state is FeedbackSurveyDontRemindMeAgain
+                                state is FeedbackSurveyDontRemindMe
                                     ? Text(
                                         'OK COOL -TODO-',
                                         style: Theme.of(context)
@@ -83,14 +83,14 @@ class FeedbackSurveyModal extends StatelessWidget {
                     )),
                 content: SizedBox(
                   width: kMediumDialogWidth,
-                  child: state is FeedbackSurveyDontRemindMeAgain
+                  child: state is FeedbackSurveyDontRemindMe
                       ? Text('If you change you mind BLAH BLAH')
                       : Text(appLocalizationsOf(context).feedbackContent),
                 ),
                 actions: [
                   Center(
                     child: Column(
-                      children: state is FeedbackSurveyDontRemindMeAgain
+                      children: state is FeedbackSurveyDontRemindMe
                           ? [
                               ElevatedButton(
                                   style: ElevatedButton.styleFrom(
@@ -100,7 +100,7 @@ class FeedbackSurveyModal extends StatelessWidget {
                                   onPressed: () {
                                     context
                                         .read<FeedbackSurveyCubit>()
-                                        .closeModal();
+                                        .dontRemindMeAgainClose();
                                   },
                                   child: Text('Got it -TODO-'))
                             ]
@@ -113,7 +113,7 @@ class FeedbackSurveyModal extends StatelessWidget {
                                   launchSurveyURL();
                                   context
                                       .read<FeedbackSurveyCubit>()
-                                      .dontRemindMeAgain();
+                                      .leaveFeedback();
                                 },
                                 child: Text(
                                   appLocalizationsOf(context).leaveFeedback,
