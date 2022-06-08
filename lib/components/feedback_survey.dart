@@ -25,6 +25,8 @@ class FeedbackSurveyModal extends StatelessWidget {
         builder: (context, state) => Stack(
           children: [
             Positioned(
+              right: 50,
+              bottom: 50,
               child: AlertDialog(
                 insetPadding: const EdgeInsets.only(bottom: 0, left: 0),
                 titlePadding: EdgeInsets.zero,
@@ -141,8 +143,6 @@ class FeedbackSurveyModal extends StatelessWidget {
                   )
                 ],
               ),
-              right: 50,
-              bottom: 50,
             )
           ],
         ),
