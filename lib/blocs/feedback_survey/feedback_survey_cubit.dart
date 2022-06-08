@@ -7,7 +7,7 @@ class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
   FeedbackSurveyCubit(FeedbackSurveyState initialState) : super(initialState);
   bool hasAlreadyBeenOpenedFromSync = false;
 
-  void openModal(String source) {
+  void openRemindMe(String source) {
     if (!(hasAlreadyBeenOpenedFromSync && source == 'sync')) {
       emit(FeedbackSurveyRemindMe(isOpen: true, source: source));
     }
@@ -15,7 +15,7 @@ class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
         hasAlreadyBeenOpenedFromSync || source == 'sync';
   }
 
-  void closeModal(String source) {
+  void closeRemindMe(String source) {
     emit(FeedbackSurveyRemindMe(isOpen: false, source: source));
   }
 
@@ -23,11 +23,11 @@ class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
     emit(FeedbackSurveyDontRemindMe(isOpen: false));
   }
 
-  void dontRemindMeAgain() {
+  void dontRemindMe() {
     emit(FeedbackSurveyDontRemindMe(isOpen: true));
   }
 
-  void dontRemindMeAgainClose() {
+  void closeDontRemindMe() {
     emit(FeedbackSurveyDontRemindMe(isOpen: false));
   }
 }

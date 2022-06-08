@@ -39,7 +39,7 @@ class FeedbackSurveyModal extends StatelessWidget {
                             IconButton(
                               onPressed: () => context
                                   .read<FeedbackSurveyCubit>()
-                                  .closeModal('dismiss'),
+                                  .closeRemindMe('dismiss'),
                               icon: const Icon(Icons.close),
                               color: kOnDarkSurfaceMediumEmphasis,
                               iconSize: 16,
@@ -102,7 +102,7 @@ class FeedbackSurveyModal extends StatelessWidget {
                                   onPressed: () {
                                     context
                                         .read<FeedbackSurveyCubit>()
-                                        .dontRemindMeAgainClose();
+                                        .closeDontRemindMe();
                                   },
                                   child:
                                       Text(appLocalizationsOf(context).gotIt))
@@ -129,7 +129,7 @@ class FeedbackSurveyModal extends StatelessWidget {
                                 onPressed: () {
                                   context
                                       .read<FeedbackSurveyCubit>()
-                                      .dontRemindMeAgain();
+                                      .dontRemindMe();
                                 },
                                 child: Text(
                                   appLocalizationsOf(context).noThanks,
