@@ -8,8 +8,6 @@ import '../test_utils/fakes.dart';
 void main() {
   group('FeedbackSurveyCubit', () {
     late FeedbackSurveyCubit feedbackCubit;
-    const String testSource = 'test source';
-    const String syncSource = 'test source';
 
     setUp(() {
       registerFallbackValue(SyncStatefake());
@@ -20,35 +18,13 @@ void main() {
     tearDown(() async {});
 
     blocTest<FeedbackSurveyCubit, FeedbackSurveyState>(
-      'open from sync first time',
-      build: () => feedbackCubit,
-      act: (bloc) async {
-        bloc.openRemindMe(syncSource);
-      },
-      expect: () => [
-        FeedbackSurveyRemindMe(isOpen: true, source: testSource),
-      ],
-    );
-
-    blocTest<FeedbackSurveyCubit, FeedbackSurveyState>(
       'open modal',
       build: () => feedbackCubit,
       act: (bloc) async {
-        bloc.openRemindMe(testSource);
+        bloc.openRemindMe();
       },
       expect: () => [
-        FeedbackSurveyRemindMe(isOpen: true, source: testSource),
-      ],
-    );
-
-    blocTest<FeedbackSurveyCubit, FeedbackSurveyState>(
-      'open from sync second time',
-      build: () => feedbackCubit,
-      act: (bloc) async {
-        bloc.openRemindMe(syncSource);
-      },
-      expect: () => [
-        FeedbackSurveyRemindMe(isOpen: true, source: testSource),
+        FeedbackSurveyRemindMe(isOpen: true),
       ],
     );
 
@@ -67,10 +43,10 @@ void main() {
       'dismiss modal',
       build: () => feedbackCubit,
       act: (bloc) async {
-        bloc.closeRemindMe(testSource);
+        bloc.closeRemindMe();
       },
       expect: () => [
-        FeedbackSurveyRemindMe(isOpen: false, source: testSource),
+        FeedbackSurveyRemindMe(isOpen: false),
       ],
     );
 
