@@ -1,9 +1,11 @@
 class R {
-  static final images = Images();
-  static final arHelpLink =
+  static const images = Images();
+  static const arHelpLink =
       'https://ardrive.io/questions/where-do-i-get-additional-arweave-tokens/';
-  static final manifestLearnMoreLink =
+  static const manifestLearnMoreLink =
       'https://ardrive.atlassian.net/wiki/spaces/help/pages/359530513/Arweave+Manifests';
+  static const surveyFeedbackFormUrl =
+      'https://ardrive.typeform.com/UserSurvey';
 }
 
 class Images {

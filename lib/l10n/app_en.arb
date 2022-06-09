@@ -1291,5 +1291,33 @@
         "example": "Shared Drive A"
       }
     }
+  },
+  "feedbackTitle": "Thank you for using ArDrive!",
+  "@feedbackTitle": {
+    "description": "We thank the user"
+  },
+  "feedbackContent": "Would you be willing to leave feedback on your experience using the app?",
+  "@feedbackContent": {
+    "description": "Asks for feedback"
+  },
+  "leaveFeedback": "Leave Feedback",
+  "@leaveFeedback": {
+    "description": "The action of leaving feedback"
+  },
+  "noThanks": "No thanks! Don't remind me again",
+  "@noThanks": {
+    "description": "Don't leave feedback, and don't ask again for it"
+  },
+  "weWontRemindYou": "Ok cool! We won't remind you again.",
+  "@weWontRemindYou": {
+    "description": "We know the user don't want to leave feedback ATM"
+  },
+  "weWontRemindYouDescription": "If you ever change your mind and want to leave feedback at a later date, then you can do so via the link in your menu.",
+  "@weWontRemindYouDescription": {
+    "description": "We let the user know where to find the 'Leave Feedback' button"
+  },
+  "gotIt": "Got it!",
+  "@gotIt": {
+    "description": "Example similar phrases: I've got it, I understood, OK"
   }
 }

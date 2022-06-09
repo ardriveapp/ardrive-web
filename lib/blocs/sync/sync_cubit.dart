@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
@@ -89,6 +90,7 @@ const _pendingWaitTime = Duration(days: 1);
 class SyncCubit extends Cubit<SyncState> {
   final ProfileCubit _profileCubit;
   final ActivityCubit _activityCubit;
+  final FeedbackSurveyCubit _feedbackCubit;
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final Database _db;
@@ -107,11 +109,13 @@ class SyncCubit extends Cubit<SyncState> {
     required ArweaveService arweave,
     required DriveDao driveDao,
     required Database db,
+    required FeedbackSurveyCubit feedbackCubit,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
         _arweave = arweave,
         _driveDao = driveDao,
         _db = db,
+        _feedbackCubit = feedbackCubit,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
     createSyncStream();
@@ -298,6 +302,8 @@ class SyncCubit extends Cubit<SyncState> {
         '${_lastSync!.difference(_initSync).inMilliseconds} milliseconds to finish.\n');
 
     emit(SyncIdle());
+
+    _feedbackCubit.openRemindMe('sync');
   }
 
   int calculateSyncLastBlockHeight(int lastBlockHeight) {

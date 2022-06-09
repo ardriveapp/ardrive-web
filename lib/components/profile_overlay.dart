@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/launch_survey_url.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -42,6 +43,10 @@ class ProfileOverlay extends StatelessWidget {
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
+                              TextButton(
+                                  onPressed: () => launchSurveyURL(),
+                                  child: Text(appLocalizationsOf(context)
+                                      .leaveFeedback))
                             ],
                           ),
                           trailing: IconButton(
@@ -54,8 +59,16 @@ class ProfileOverlay extends StatelessWidget {
                       : ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text(appLocalizationsOf(context).notLoggedIn),
-                          subtitle: Text(appLocalizationsOf(context)
-                              .logInToExperienceFeatures),
+                          subtitle: Column(
+                            children: [
+                              Text(appLocalizationsOf(context)
+                                  .logInToExperienceFeatures),
+                              TextButton(
+                                  onPressed: () => launchSurveyURL(),
+                                  child: Text(appLocalizationsOf(context)
+                                      .leaveFeedback))
+                            ],
+                          ),
                           trailing: IconButton(
                             icon: const Icon(Icons.login),
                             tooltip: appLocalizationsOf(context).login,
