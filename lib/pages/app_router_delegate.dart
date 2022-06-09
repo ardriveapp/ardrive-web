@@ -163,10 +163,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                             !state.isOpen) {
                           Navigator.pop(context);
                         } else if (state is FeedbackSurveyDontRemindMe &&
-                            state.isOpen) {
-                          /// nothing to do
-                        } else {
-                          /// state is FeedbackSurveyDontRemindMe && !state.isOpen
+                            !state.isOpen) {
                           Navigator.pop(context);
                         }
                       },
