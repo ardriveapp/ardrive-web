@@ -205,7 +205,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     arweave: context.read<ArweaveService>(),
                     driveDao: context.read<DriveDao>(),
                     db: context.read<Database>(),
-                    feedbackCubit: context.read<FeedbackSurveyCubit>(),
                   ),
                 ),
                 BlocProvider(

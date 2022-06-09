@@ -4,19 +4,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'feedback_survey_state.dart';
 
 class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
-  FeedbackSurveyCubit(FeedbackSurveyState initialState) : super(initialState);
-  bool hasAlreadyBeenOpenedFromSync = false;
+  bool hasAlreadyBeenOpened = false;
 
-  void openRemindMe(String source) {
-    if (!(hasAlreadyBeenOpenedFromSync && source == 'sync')) {
-      emit(FeedbackSurveyRemindMe(isOpen: true, source: source));
+  FeedbackSurveyCubit(FeedbackSurveyState initialState) : super(initialState);
+
+  void openRemindMe() {
+    if (!(hasAlreadyBeenOpened)) {
+      emit(FeedbackSurveyRemindMe(isOpen: true));
     }
-    hasAlreadyBeenOpenedFromSync =
-        hasAlreadyBeenOpenedFromSync || source == 'sync';
+    hasAlreadyBeenOpened = true;
   }
 
-  void closeRemindMe(String source) {
-    emit(FeedbackSurveyRemindMe(isOpen: false, source: source));
+  void closeRemindMe() {
+    emit(FeedbackSurveyRemindMe(isOpen: false));
   }
 
   void leaveFeedback() {
