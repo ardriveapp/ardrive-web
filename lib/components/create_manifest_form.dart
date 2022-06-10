@@ -15,6 +15,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'components.dart';
 
 Future<void> promptToCreateManifest(BuildContext context,
@@ -52,6 +53,7 @@ class CreateManifestForm extends StatelessWidget {
             state is CreateManifestPrivacyMismatch) {
           Navigator.pop(context);
           Navigator.pop(context);
+          context.read<FeedbackSurveyCubit>().openRemindMe();
         }
       }, builder: (context, state) {
         final readCubitContext = context.read<CreateManifestCubit>();

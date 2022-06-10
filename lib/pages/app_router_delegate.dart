@@ -159,7 +159,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       ),
                       BlocListener<FeedbackSurveyCubit, FeedbackSurveyState>(
                         listener: (context, state) {
-                          // TODO: remove me if possible
                           if (state is FeedbackSurveyRemindMe && state.isOpen) {
                             openFeedbackSurveyModal(context);
                           } else if (state is FeedbackSurveyRemindMe &&

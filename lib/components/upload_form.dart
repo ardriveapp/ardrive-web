@@ -13,6 +13,7 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'components.dart';
 
 Future<void> promptToUpload(
@@ -78,6 +79,7 @@ class UploadForm extends StatelessWidget {
         listener: (context, state) async {
           if (state is UploadComplete || state is UploadWalletMismatch) {
             Navigator.pop(context);
+            context.read<FeedbackSurveyCubit>().openRemindMe();
           } else if (state is UploadPreparationInitialized) {
             await context.read<UploadCubit>().checkConflictingFolders();
           }

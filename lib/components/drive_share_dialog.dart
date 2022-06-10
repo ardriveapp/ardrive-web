@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'components.dart';
 
 Future<void> promptToShareDrive({
@@ -97,7 +98,10 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
           actions: [
             if (state is DriveShareLoadSuccess)
               ElevatedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.read<FeedbackSurveyCubit>().openRemindMe();
+                },
                 child: Text(appLocalizationsOf(context).doneEmphasized),
               ),
           ],
