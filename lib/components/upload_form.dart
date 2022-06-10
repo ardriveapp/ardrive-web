@@ -1,6 +1,7 @@
 import 'dart:html';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/blocs/upload/models/web_file.dart';
 import 'package:ardrive/models/models.dart';
@@ -13,7 +14,6 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'components.dart';
 
 Future<void> promptToUpload(
