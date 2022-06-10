@@ -132,43 +132,47 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     driveDao: context.read<DriveDao>(),
                     config: context.read<AppConfig>(),
                   ),
-                  child: BlocListener<DriveDetailCubit, DriveDetailState>(
-                    listener: (context, state) {
-                      if (state is DriveDetailLoadSuccess) {
-                        driveId = state.currentDrive.id;
-                        driveFolderId = state.folderInView.folder.id;
-                        //Can be null at the root folder of the drive
-                        notifyListeners();
-                      } else if (state is DriveDetailLoadNotFound) {
-                        // Do not prompt the user to attach an unfound drive if they are logging out.
-                        final profileCubit = context.read<ProfileCubit>();
-                        if (profileCubit.state is ProfileLoggingOut) {
-                          clearState();
-                          return;
-                        }
-                        attachDrive(
-                          context: context,
-                          driveId: driveId,
-                          driveName: driveName,
-                          driveKey: sharedDriveKey,
-                        );
-                      }
-                    },
-                    child:
-                        BlocListener<FeedbackSurveyCubit, FeedbackSurveyState>(
-                      listener: (context, state) {
-                        if (state is FeedbackSurveyRemindMe && state.isOpen) {
-                          openFeedbackSurveyModal(context);
-                        } else if (state is FeedbackSurveyRemindMe &&
-                            !state.isOpen) {
-                          Navigator.pop(context);
-                        } else if (state is FeedbackSurveyDontRemindMe &&
-                            !state.isOpen) {
-                          Navigator.pop(context);
-                        }
-                      },
-                      child: AppShell(page: shellPage),
-                    ),
+                  child: MultiBlocListener(
+                    listeners: [
+                      BlocListener<DriveDetailCubit, DriveDetailState>(
+                        listener: (context, state) {
+                          if (state is DriveDetailLoadSuccess) {
+                            driveId = state.currentDrive.id;
+                            driveFolderId = state.folderInView.folder.id;
+                            //Can be null at the root folder of the drive
+                            notifyListeners();
+                          } else if (state is DriveDetailLoadNotFound) {
+                            // Do not prompt the user to attach an unfound drive if they are logging out.
+                            final profileCubit = context.read<ProfileCubit>();
+                            if (profileCubit.state is ProfileLoggingOut) {
+                              clearState();
+                              return;
+                            }
+                            attachDrive(
+                              context: context,
+                              driveId: driveId,
+                              driveName: driveName,
+                              driveKey: sharedDriveKey,
+                            );
+                          }
+                        },
+                      ),
+                      BlocListener<FeedbackSurveyCubit, FeedbackSurveyState>(
+                        listener: (context, state) {
+                          // TODO: remove me if possible
+                          if (state is FeedbackSurveyRemindMe && state.isOpen) {
+                            openFeedbackSurveyModal(context);
+                          } else if (state is FeedbackSurveyRemindMe &&
+                              !state.isOpen) {
+                            Navigator.pop(context);
+                          } else if (state is FeedbackSurveyDontRemindMe &&
+                              !state.isOpen) {
+                            Navigator.pop(context);
+                          }
+                        },
+                      ),
+                    ],
+                    child: AppShell(page: shellPage),
                   ),
                 );
               },
