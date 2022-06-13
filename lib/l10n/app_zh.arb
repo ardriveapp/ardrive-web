@@ -1019,6 +1019,36 @@
   "@syncingPleaseWait": {
     "description": "Syncing drives"
   },
+  "syncingOnlyOneDrive": "Syncing your drive...",
+  "@syncingOnlyOneDrive": {
+    "description": "Show the message when the user has only one drive"
+  },
+  "driveSyncedOfDrivesCount": "{drivesSynced} of {drivesCount} Drives Synced",
+  "@driveSyncedOfDrivesCount": {
+    "description": "Show the number of drives synced and the number of user's drives",
+    "placeholders": {
+      "drivesSynced": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      },
+      "drivesCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      }
+    }
+  },
+  "syncProgressPercentage": "{percentage}% complete",
+  "@syncProgressPercentage": {
+    "description": "The sync progress percentage",
+    "placeholders": {
+      "percentage": {
+        "type": "String",
+        "example": "45.5"
+      }
+    }
+  },
   "exportFromCSV": "从{driveId}中导出{timestamp}.csv",
   "@exportFromCSV": {
     "description": "Filename of the CSV data export",
@@ -1112,7 +1142,7 @@
     "description": "Show that needs funds to create a Drive"
   },
   "insufficientFundsForCreateAFolder": "你没有足够的余额来创建文件夹. 请到账户的充值页面进行充值.",
-  "@insufficientFundsForCreateADrive": {
+  "@insufficientFundsForCreateAFolder": {
     "description": "Show that needs funds to create a Folder"
   },
   "insufficientFundsForCreateAManifest": "你没有足够的余额来创建Manifest. 请到账户的充值页面进行充值.",
@@ -1241,6 +1271,24 @@
         "type": "int",
         "format": "decimalPattern",
         "example": "100"
+      }
+    }
+  },
+  "detachEmphasized": "DETACH",
+  "@detachEmphasized": {
+    "description": "Example: To DETACH a drive. Emphasized in upper case"
+  },
+  "detachDrive": "Detach Drive?",
+  "@detachDrive": {
+    "description": "Detach Drive Title"
+  },
+  "detachDriveQuestion": "Are you sure you want to detach '{driveName}'?",
+  "@detachDriveQuestion": {
+    "description": "Ask for user confirmation to detach drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Shared Drive A"
       }
     }
   }
