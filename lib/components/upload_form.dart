@@ -1,6 +1,7 @@
 import 'dart:html';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/blocs/upload/models/web_file.dart';
 import 'package:ardrive/models/models.dart';
@@ -78,6 +79,7 @@ class UploadForm extends StatelessWidget {
         listener: (context, state) async {
           if (state is UploadComplete || state is UploadWalletMismatch) {
             Navigator.pop(context);
+            context.read<FeedbackSurveyCubit>().openRemindMe();
           } else if (state is UploadPreparationInitialized) {
             await context.read<UploadCubit>().checkConflictingFolders();
           }

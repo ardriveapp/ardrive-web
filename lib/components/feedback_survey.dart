@@ -41,7 +41,7 @@ class FeedbackSurveyModal extends StatelessWidget {
                             IconButton(
                               onPressed: () => context
                                   .read<FeedbackSurveyCubit>()
-                                  .closeRemindMe('dismiss'),
+                                  .closeRemindMe(),
                               icon: const Icon(Icons.close),
                               color: kOnDarkSurfaceMediumEmphasis,
                               iconSize: 16,

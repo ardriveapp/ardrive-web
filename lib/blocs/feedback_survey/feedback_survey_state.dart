@@ -4,13 +4,11 @@ abstract class FeedbackSurveyState extends Equatable {}
 
 class FeedbackSurveyRemindMe extends FeedbackSurveyState {
   final bool isOpen;
-  final String source;
 
-  FeedbackSurveyRemindMe({required this.isOpen, required this.source})
-      : super();
+  FeedbackSurveyRemindMe({required this.isOpen}) : super();
 
   @override
-  List<Object?> get props => [isOpen, source];
+  List<Object?> get props => [isOpen];
 }
 
 class FeedbackSurveyDontRemindMe extends FeedbackSurveyState {
