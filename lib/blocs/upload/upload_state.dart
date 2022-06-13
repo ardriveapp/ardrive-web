@@ -49,10 +49,15 @@ class UploadFolderNameConflict extends UploadFileConflict {
 }
 
 class UploadFileTooLarge extends UploadState {
+  UploadFileTooLarge({
+    required this.tooLargeFileNames,
+    required this.hasFilesToUpload,
+    required this.isPrivate,
+  });
+
   final List<String> tooLargeFileNames;
+  final bool hasFilesToUpload;
   final bool isPrivate;
-  UploadFileTooLarge(
-      {required this.tooLargeFileNames, required this.isPrivate});
 
   @override
   List<Object> get props => [tooLargeFileNames];

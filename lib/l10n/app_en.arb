@@ -872,11 +872,11 @@
       }
     }
   },
-  "filesTooLargeExplanationPrivate": "ArDrive on web currently only supports file uploads smaller than 100 MB for private drives",
+  "filesTooLargeExplanationPrivate": "ArDrive on web currently only supports file uploads smaller than 100 MiB for private drives",
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "ArDrive on web currently only supports file uploads smaller than 1.25 GB for public drives",
+  "filesTooLargeExplanationPublic": "ArDrive on web currently only supports file uploads smaller than 1.25 GiB for public drives",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
@@ -1142,7 +1142,7 @@
     "description": "Show that needs funds to create a Drive"
   },
   "insufficientFundsForCreateAFolder": "You do not have sufficient funds to create a Folder at this time. Please go to the top up page to add funds to your account.",
-  "@insufficientFundsForCreateADrive": {
+  "@insufficientFundsForCreateAFolder": {
     "description": "Show that needs funds to create a Folder"
   },
   "insufficientFundsForCreateAManifest": "You do not have sufficient funds to create a Manifest at this time. Please go to the top up page to add funds to your account.",
@@ -1271,6 +1271,24 @@
         "type": "int",
         "format": "decimalPattern",
         "example": "100"
+      }
+    }
+  },
+  "detachEmphasized": "DETACH",
+  "@detachEmphasized": {
+    "description": "Example: To DETACH a drive. Emphasized in upper case"
+  },
+  "detachDrive": "Detach Drive?",
+  "@detachDrive": {
+    "description": "Detach Drive Title"
+  },
+  "detachDriveQuestion": "Are you sure you want to detach '{driveName}'?",
+  "@detachDriveQuestion": {
+    "description": "Ask for user confirmation to detach drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Shared Drive A"
       }
     }
   }
