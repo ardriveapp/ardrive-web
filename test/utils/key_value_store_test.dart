@@ -40,7 +40,7 @@ void main() {
     });
 
     group('getBool method', () {
-      test('retrurns false if the key is not present', () async {
+      test('returns false if the key is not present', () async {
         var currentValue = store.getBool('isItTrue');
         expect(currentValue, false);
       });
