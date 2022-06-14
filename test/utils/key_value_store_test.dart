@@ -3,6 +3,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group('KeyValueStore class setup', () {
+    test('throws if not setted up', () async {
+      final store = KeyValueStore();
+      expect(() => store.getBool('key'), throwsException);
+    });
+  });
+
   group('KeyValueStore class', () {
     final store = KeyValueStore();
 
@@ -10,7 +17,7 @@ void main() {
       Map<String, Object> values = <String, Object>{'isItTrue': false};
       SharedPreferences.setMockInitialValues(values);
       final fakePrefs = await SharedPreferences.getInstance();
-      await store.setup(fakePrefs);
+      await store.setup(instance: fakePrefs);
     });
 
     group('putBool method', () {

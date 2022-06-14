@@ -1,21 +1,28 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class KeyValueStore {
-  late SharedPreferences _prefs;
+  SharedPreferences? _prefs;
 
-  setup(SharedPreferences? instance) async {
-    _prefs = instance ?? await SharedPreferences.getInstance();
+  SharedPreferences get _preferences {
+    if (_prefs == null) {
+      throw Exception('You have to call setup() first!');
+    }
+    return _prefs!;
+  }
+
+  setup({SharedPreferences? instance}) async {
+    _prefs = _prefs ?? instance ?? await SharedPreferences.getInstance();
   }
 
   Future<bool> putBool(String key, bool value) {
-    return _prefs.setBool(key, value);
+    return _preferences.setBool(key, value);
   }
 
   bool getBool(String key) {
-    return _prefs.getBool(key) ?? false;
+    return _preferences.getBool(key) ?? false;
   }
 
   Future<bool> remove(String key) {
-    return _prefs.remove(key);
+    return _preferences.remove(key);
   }
 }
