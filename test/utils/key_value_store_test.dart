@@ -3,8 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('KeyValueStore class', () {
-    test('throws if used before the setup method is called', () async {
+  group('KeyValueStore class setup', () {
+    test('throws if not setted up', () async {
       final store = KeyValueStore();
       expect(() => store.getBool('key'), throwsException);
     });
@@ -34,6 +34,8 @@ void main() {
       test('returns true when sucessfully removed', () async {
         final success = await store.remove('isItTrue');
         expect(success, true);
+        var currentValue = store.getBool('isItTrue');
+        expect(currentValue, false);
       });
     });
 
