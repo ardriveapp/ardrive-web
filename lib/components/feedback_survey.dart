@@ -101,8 +101,8 @@ class FeedbackSurveyModal extends StatelessWidget {
                                     minimumSize:
                                         const Size.fromHeight(50), // NEW
                                   ),
-                                  onPressed: () {
-                                    context
+                                  onPressed: () async {
+                                    await context
                                         .read<FeedbackSurveyCubit>()
                                         .closeDontRemindMe();
                                   },
@@ -114,9 +114,9 @@ class FeedbackSurveyModal extends StatelessWidget {
                                 style: ElevatedButton.styleFrom(
                                   minimumSize: const Size.fromHeight(50), // NEW
                                 ),
-                                onPressed: () {
+                                onPressed: () async {
                                   launchSurveyURL();
-                                  context
+                                  await context
                                       .read<FeedbackSurveyCubit>()
                                       .leaveFeedback();
                                 },

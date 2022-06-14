@@ -99,9 +99,9 @@ class _FileShareDialogState extends State<FileShareDialog> {
           actions: [
             if (state is FileShareLoadSuccess)
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(context);
-                  context.read<FeedbackSurveyCubit>().openRemindMe();
+                  await context.read<FeedbackSurveyCubit>().openRemindMe();
                 },
                 child: Text(appLocalizationsOf(context).doneEmphasized),
               ),

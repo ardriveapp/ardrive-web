@@ -10,7 +10,7 @@ class KeyValueStore {
     return _prefs!;
   }
 
-  setup({SharedPreferences? instance}) async {
+  Future<void> setup({SharedPreferences? instance}) async {
     _prefs = _prefs ?? instance ?? await SharedPreferences.getInstance();
   }
 

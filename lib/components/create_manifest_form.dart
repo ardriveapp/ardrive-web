@@ -38,7 +38,7 @@ class CreateManifestForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<CreateManifestCubit, CreateManifestState>(
-          listener: (context, state) {
+          listener: (context, state) async {
         if (state is CreateManifestUploadInProgress) {
           showProgressDialog(
             context,
@@ -53,7 +53,7 @@ class CreateManifestForm extends StatelessWidget {
             state is CreateManifestPrivacyMismatch) {
           Navigator.pop(context);
           Navigator.pop(context);
-          context.read<FeedbackSurveyCubit>().openRemindMe();
+          await context.read<FeedbackSurveyCubit>().openRemindMe();
         }
       }, builder: (context, state) {
         final readCubitContext = context.read<CreateManifestCubit>();

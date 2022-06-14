@@ -79,7 +79,7 @@ class UploadForm extends StatelessWidget {
         listener: (context, state) async {
           if (state is UploadComplete || state is UploadWalletMismatch) {
             Navigator.pop(context);
-            context.read<FeedbackSurveyCubit>().openRemindMe();
+            await context.read<FeedbackSurveyCubit>().openRemindMe();
           } else if (state is UploadPreparationInitialized) {
             await context.read<UploadCubit>().checkConflictingFolders();
           }
