@@ -26,7 +26,7 @@ void main() {
     const fakePassword = '123';
 
     setUp(() async {
-      registerFallbackValue(ProfileStatefake());
+      registerFallbackValue(ProfileStateFake());
 
       db = getTestDb();
       profileDao = db.profileDao;

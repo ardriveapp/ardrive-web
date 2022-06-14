@@ -13,8 +13,8 @@ void main() {
     late FeedbackSurveyCubit feedbackCubit;
 
     setUp(() async {
-      registerFallbackValue(SyncStatefake());
-      registerFallbackValue(ProfileStatefake());
+      registerFallbackValue(SyncStateFake());
+      registerFallbackValue(ProfileStateFake());
 
       Map<String, Object> values = <String, Object>{};
       SharedPreferences.setMockInitialValues(values);
@@ -66,8 +66,8 @@ void main() {
     late FeedbackSurveyCubit feedbackCubit;
 
     setUp(() async {
-      registerFallbackValue(SyncStatefake());
-      registerFallbackValue(ProfileStatefake());
+      registerFallbackValue(SyncStateFake());
+      registerFallbackValue(ProfileStateFake());
 
       Map<String, Object> values = <String, Object>{
         FeedbackSurveyCubit.dontRemindMeAgainKey: true
