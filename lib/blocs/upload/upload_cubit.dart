@@ -131,7 +131,11 @@ class UploadCubit extends Cubit<UploadState> {
         tooLargeFileNames: tooLargeFiles,
         isPrivate: _targetDrive.isPrivate,
       ));
+      return;
     }
+    
+    // If we don't have any file above limit, we can check conflicts
+    checkConflicts();
   }
 
   Future<void> checkConflictingFiles() async {
