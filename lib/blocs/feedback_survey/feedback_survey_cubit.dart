@@ -16,7 +16,7 @@ class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
 
   Future<void> openRemindMe() async {
     await _store.setup();
-    final dontRemindMeAgain = _store.getBool(dontRemindMeAgainKey);
+    final dontRemindMeAgain = _store.getBool(dontRemindMeAgainKey) == true;
     if (!(_hasAlreadyBeenOpened || dontRemindMeAgain)) {
       emit(FeedbackSurveyRemindMe(isOpen: true));
       _hasAlreadyBeenOpened = true;

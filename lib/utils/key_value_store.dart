@@ -18,8 +18,8 @@ class KeyValueStore {
     return _preferences.setBool(key, value);
   }
 
-  bool getBool(String key) {
-    return _preferences.getBool(key) ?? false;
+  bool? getBool(String key) {
+    return _preferences.getBool(key);
   }
 
   Future<bool> remove(String key) {
