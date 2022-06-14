@@ -3,8 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('KeyValueStore class setup', () {
-    test('throws if not setted up', () async {
+  group('KeyValueStore class', () {
+    test('throws if used before the setup method is called', () async {
       final store = KeyValueStore();
       expect(() => store.getBool('key'), throwsException);
     });
