@@ -64,7 +64,7 @@ Future<void> promptToUpload(
             driveDao: context.read<DriveDao>(),
             uploadFolders: isFolderUpload,
           )..startUploadPreparation(),
-          child: UploadForm(),
+          child: const UploadForm(),
         ),
         barrierDismissible: false,
       ),
@@ -73,13 +73,15 @@ Future<void> promptToUpload(
 }
 
 class UploadForm extends StatelessWidget {
+  const UploadForm({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) => BlocConsumer<UploadCubit, UploadState>(
         listener: (context, state) async {
           if (state is UploadComplete || state is UploadWalletMismatch) {
             Navigator.pop(context);
           } else if (state is UploadPreparationInitialized) {
-            await context.read<UploadCubit>().checkConflictingFolders();
+            context.read<UploadCubit>().checkFilesAboveLimit();
           }
           if (state is UploadWalletMismatch) {
             Navigator.pop(context);
@@ -219,10 +221,10 @@ class UploadForm extends StatelessWidget {
                 ),
                 if (state.hasFilesToUpload)
                   TextButton(
-                    onPressed: () => context
-                        .read<UploadCubit>()
-                        .prepareUploadPlanAndCostEstimates(
-                            uploadAction: UploadActions.SkipBigFiles),
+                    onPressed: () {
+                      context.read<UploadCubit>().removeBigFiles();
+                      context.read<UploadCubit>().checkConflicts();
+                    },
                     child: Text(appLocalizationsOf(context).skipEmphasized),
                   ),
               ],
