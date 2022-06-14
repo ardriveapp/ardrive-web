@@ -35,14 +35,14 @@ void main() {
         final success = await store.remove('isItTrue');
         expect(success, true);
         var currentValue = store.getBool('isItTrue');
-        expect(currentValue, false);
+        expect(currentValue, null);
       });
     });
 
     group('getBool method', () {
-      test('returns false if the key is not present', () async {
+      test('returns null if the key is not present', () async {
         var currentValue = store.getBool('isItTrue');
-        expect(currentValue, false);
+        expect(currentValue, null);
       });
     });
   });
