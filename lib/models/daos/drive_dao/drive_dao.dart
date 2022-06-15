@@ -5,6 +5,7 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
+import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:moor/moor.dart';
@@ -307,20 +308,30 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             driveId: driveId, path: folderPath!, order: filesOrder);
 
     return Rx.combineLatest3(
-      folderStream.where((folder) => folder != null).map((folder) => folder!),
-      subfolderQuery.watch(),
-      filesQuery.watch(),
-      (
-        FolderEntry folder,
-        List<FolderEntry> subfolders,
-        List<FileWithLatestRevisionTransactions> files,
-      ) =>
-          FolderWithContents(
+        folderStream.where((folder) => folder != null).map((folder) => folder!),
+        subfolderQuery.watch(),
+        filesQuery.watch(), (
+      FolderEntry folder,
+      List<FolderEntry> subfolders,
+      List<FileWithLatestRevisionTransactions> files,
+    ) {
+      /// Implementing natural sort this way because to do it in SQLite
+      /// it requires triggers, regex spliiting names and creating index fields
+      /// and ordering by that index plus interfacing that with moor
+      if (orderBy == DriveOrder.name) {
+        subfolders.sort((a, b) => compareNatural(a.name, b.name));
+        files.sort((a, b) => compareNatural(a.name, b.name));
+        if (orderingMode == OrderingMode.desc) {
+          subfolders = subfolders.reversed.toList();
+          files = files.reversed.toList();
+        }
+      }
+      return FolderWithContents(
         folder: folder,
         subfolders: subfolders,
         files: files,
-      ),
-    );
+      );
+    });
   }
 
   /// Create a new folder entry.

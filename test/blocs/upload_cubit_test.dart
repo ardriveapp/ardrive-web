@@ -374,9 +374,10 @@ void main() {
             tNoConflictingFiles..add(tTooLargeFile));
       },
       act: (cubit) async {
+        // TODO(@thiagocarvalhodev): Review
         await cubit.startUploadPreparation();
         await cubit.prepareUploadPlanAndCostEstimates(
-            uploadAction: UploadActions.SkipBigFiles);
+            uploadAction: UploadActions.Skip);
       },
       expect: () => <dynamic>[
         UploadPreparationInitialized(),
