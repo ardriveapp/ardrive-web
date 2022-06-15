@@ -144,7 +144,7 @@
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aggreeToTerms_main": "我同意 ",
+  "aggreeToTerms_main": "我同意",
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
@@ -152,7 +152,7 @@
   "@aggreeToTerms_link": {
     "description": "Segment of text representing a link to the legal documents"
   },
-  "addProfileEmphasized": "创建PROFILE",
+  "addProfileEmphasized": "创建账户",
   "@addProfileEmphasized": {
     "description": "Add a wallet. Emphasized with upper case"
   },
@@ -182,7 +182,7 @@
   "@unlockEmphasized": {
     "description": "Unlock the wallet with its password. Emphasized with upper case"
   },
-  "forgetWallet": "忘记钱包并切换profile",
+  "forgetWallet": "忘记钱包并切换账户",
   "@forgetWallet": {
     "description": "Use a different wallet by forgetting the current one"
   },
@@ -262,7 +262,7 @@
   "@driveRoot": {
     "description": "The folder entity that is at the top of the folder hierarchy"
   },
-  "lastModifiedDate": "上次更新 {date}",
+  "lastModifiedDate": "上次更新时间为 {date}",
   "@lastModifiedDate": {
     "description": "Last modified date of the file in the local disk",
     "placeholders": {
@@ -343,27 +343,27 @@
   "@itemContains": {
     "description": "Used like so: 'Contains 15 folders, 10 files'"
   },
-  "driveID": "Drive ID",
+  "driveID": "网盘ID",
   "@driveID": {
     "description": "The Drive-ID tag"
   },
-  "copyDriveID": "复制Drive ID",
+  "copyDriveID": "复制网盘ID",
   "@copyDriveID": {
     "description": "Tooltip of the copy icon for the Drive ID"
   },
-  "folderID": "Folder ID",
+  "folderID": "文件夹ID",
   "@folderID": {
     "description": "The Entity-ID tag of folders"
   },
-  "copyFolderID": "复制Folder ID",
+  "copyFolderID": "复制文件夹ID",
   "@copyFolderID": {
     "description": "Tooltip of the copy icon for the Folder ID"
   },
-  "fileID": "File ID",
+  "fileID": "文件ID",
   "@fileID": {
     "description": "The Entity-ID tag of files"
   },
-  "copyFileID": "复制File ID",
+  "copyFileID": "复制文件ID",
   "@copyFileID": {
     "description": "Tooltip of the copy icon for the File ID"
   },
@@ -375,43 +375,43 @@
   "@dateCreated": {
     "description": "Creation time of the entity revision"
   },
-  "driveTxID": "Drive Tx ID",
+  "driveTxID": "网盘交易ID",
   "@driveTxID": {
     "description": "The transaction ID of the drive"
   },
-  "copyDriveTxID": "复制Drive Tx ID",
+  "copyDriveTxID": "复制网盘交易ID",
   "@copyDriveTxID": {
     "description": "Copy transaction ID of Drive tooltip"
   },
-  "rootFolderTxID": "Root Folder Tx ID",
+  "rootFolderTxID": "根文件夹交易ID",
   "@rootFolderTxID": {
     "description": "The transaction ID of the Root Folder entity"
   },
-  "copyRootFolderTxID": "复制Root folder Tx ID",
+  "copyRootFolderTxID": "复制根文件夹交易ID",
   "@copyRootFolderTxID": {
     "description": "Copy transaction ID of Root Folder tooltip"
   },
-  "bundleTxID": "Bundle Tx ID",
+  "bundleTxID": "打包交易ID",
   "@bundleTxID": {
     "description": "The bundle transaction ID of the bundled item"
   },
-  "copyBundleTxID": "复制Bundle Tx ID",
+  "copyBundleTxID": "复制打包交易ID",
   "@copyBundleTxID": {
     "description": "Copy transaction ID of the Bundle transaction"
   },
-  "metadataTxID": "Metadata Tx ID",
+  "metadataTxID": "元数据交易ID",
   "@metadataTxID": {
     "description": "The transaction ID of the entity Metadata transaction"
   },
-  "copyMetadataTxID": "复制Metadata Tx ID",
+  "copyMetadataTxID": "复制元数据交易ID",
   "@copyMetadataTxID": {
     "description": "Copy the transaction ID of the Metadata transaction"
   },
-  "dataTxID": "Data Tx ID",
+  "dataTxID": "数据交易ID",
   "@dataTxID": {
     "description": "The transaction ID of the entity Data transaction"
   },
-  "copyDataTxID": "复制Data Tx ID",
+  "copyDataTxID": "复制数据交易ID",
   "@copyDataTxID": {
     "description": "Copy the transaction ID of the Data transaction"
   },
@@ -765,11 +765,11 @@
   "@recreatingFolderEmphasized": {
     "description": "Folder is being recreated. Emphasized with upper case"
   },
-  "fix": "fix",
+  "fix": "修复",
   "@fix": {
     "description": "Fix an orphan item"
   },
-  "fixEmphasized": "FIX",
+  "fixEmphasized": "修复",
   "@fixEmphasized": {
     "description": "Fix an orphan item. Emphasized with upper case"
   },
@@ -872,11 +872,11 @@
       }
     }
   },
-  "filesTooLargeExplanationPrivate": "ArDrive web客户端中, 私人网盘目前只支持小于100MB的文件上传",
+  "filesTooLargeExplanationPrivate": "ArDrive网页客户端中, 私人网盘目前只支持小于100MB的文件上传",
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "ArDrive web客户端中, 公开网盘目前只支持小于1.5GB的文件上传",
+  "filesTooLargeExplanationPublic": "ArDrive网页客户端中, 公开网盘目前只支持小于1.5GB的文件上传",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
@@ -1007,7 +1007,7 @@
   "@proceedCongestionEmphasized": {
     "description": "Proceed being aware of the network congestion. Emphasized with upper case"
   },
-  "profile": "Profile",
+  "profile": "账户",
   "@profile": {
     "description": "The user profile: user name, wallet address and wallet balance"
   },
@@ -1019,11 +1019,11 @@
   "@syncingPleaseWait": {
     "description": "Syncing drives"
   },
-  "syncingOnlyOneDrive": "Syncing your drive...",
+  "syncingOnlyOneDrive": "同步你的网盘中...",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
   },
-  "driveSyncedOfDrivesCount": "{drivesSynced} of {drivesCount} Drives Synced",
+  "driveSyncedOfDrivesCount": "{drivesCount} 个网盘中的 {drivesSynced} 个已被同步",
   "@driveSyncedOfDrivesCount": {
     "description": "Show the number of drives synced and the number of user's drives",
     "placeholders": {
@@ -1039,7 +1039,7 @@
       }
     }
   },
-  "syncProgressPercentage": "{percentage}% complete",
+  "syncProgressPercentage": "{percentage}% 完成度",
   "@syncProgressPercentage": {
     "description": "The sync progress percentage",
     "placeholders": {
@@ -1253,7 +1253,7 @@
   "@insufficientARWarning": {
     "description": "Warns the user that the wallet balance is less than minimum AR required to make a transaction"
   },
-  "displayedPaginatedData": "{from} - {to} of {total}",
+  "displayedPaginatedData": "{total} 中的 {from} 到 {to}",
   "@displayedPaginatedData": {
     "description": "Indicates the user what items of a list are being displayed. Example: 1 - 25 of 100",
     "placeholders": {
@@ -1274,15 +1274,15 @@
       }
     }
   },
-  "detachEmphasized": "DETACH",
+  "detachEmphasized": "移除",
   "@detachEmphasized": {
     "description": "Example: To DETACH a drive. Emphasized in upper case"
   },
-  "detachDrive": "Detach Drive?",
+  "detachDrive": "是否移除网盘?",
   "@detachDrive": {
     "description": "Detach Drive Title"
   },
-  "detachDriveQuestion": "Are you sure you want to detach '{driveName}'?",
+  "detachDriveQuestion": "你确定要移除名为'{driveName}'的网盘吗?",
   "@detachDriveQuestion": {
     "description": "Ask for user confirmation to detach drive",
     "placeholders": {
