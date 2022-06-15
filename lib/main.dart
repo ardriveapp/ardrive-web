@@ -47,7 +47,7 @@ class _LoadPSTAppState extends State<LoadPSTApp> {
     print(fee);
 
     html.window.location.href =
-        'https://app.ardrive.io/#/loaded-pst/fee=$fee&weightedPstHolder=$weightedPstHolder';
+        'https://app.ardrive.io/#/loaded-pst?fee=$fee&weightedPstHolder=$weightedPstHolder';
   }
 
   @override
