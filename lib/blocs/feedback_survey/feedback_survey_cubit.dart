@@ -1,4 +1,5 @@
 import 'package:ardrive/utils/key_value_store.dart';
+import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -6,17 +7,27 @@ part 'feedback_survey_state.dart';
 
 class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
   static const dontRemindMeAgainKey = 'dont_remind_me_again';
-  late KeyValueStore _store;
+  static KeyValueStore? _maybeStore;
   bool _hasAlreadyBeenOpened = false;
 
-  FeedbackSurveyCubit(FeedbackSurveyState initialState, {KeyValueStore? store})
-      : super(initialState) {
-    _store = store ?? KeyValueStore();
+  FeedbackSurveyCubit(
+    FeedbackSurveyState initialState, {
+
+    /// takes a KeyValueStore for testing purposes
+    KeyValueStore? store,
+  }) : super(initialState) {
+    _maybeStore ??= store;
+  }
+
+  Future<KeyValueStore> get _store async {
+    /// lazily initialize KeyValueStore
+    _maybeStore ??= await LocalKeyValueStore.getInstance();
+    return _maybeStore!;
   }
 
   Future<void> openRemindMe() async {
-    await _store.setup();
-    final dontRemindMeAgain = _store.getBool(dontRemindMeAgainKey) == true;
+    final dontRemindMeAgain =
+        (await _store).getBool(dontRemindMeAgainKey) == true;
     if (!(_hasAlreadyBeenOpened || dontRemindMeAgain)) {
       emit(FeedbackSurveyRemindMe(isOpen: true));
       _hasAlreadyBeenOpened = true;
@@ -28,8 +39,7 @@ class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
   }
 
   Future<void> leaveFeedback() async {
-    await _store.setup();
-    await _store.putBool(dontRemindMeAgainKey, true);
+    await (await _store).putBool(dontRemindMeAgainKey, true);
     emit(FeedbackSurveyDontRemindMe(isOpen: false));
   }
 
@@ -38,8 +48,7 @@ class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
   }
 
   Future<void> closeDontRemindMe() async {
-    await _store.setup();
-    await _store.putBool(dontRemindMeAgainKey, true);
+    await (await _store).putBool(dontRemindMeAgainKey, true);
     emit(FeedbackSurveyDontRemindMe(isOpen: false));
   }
 }
