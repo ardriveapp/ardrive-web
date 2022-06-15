@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('KeyValueStore class', () {
+  group('LocalKeyValueStore class', () {
     late KeyValueStore store;
 
     setUp(() async {
