@@ -42,9 +42,12 @@ class _LoadPSTAppState extends State<LoadPSTApp> {
     PstService pstService = PstService();
 
     final fee = await pstService.getPstFeePercentage();
+    final weightedPstHolder = await pstService.getWeightedPstHolder();
 
     print(fee);
-    html.window.location.href = 'https://app.ardrive.io/#/loaded-pst/$fee';
+
+    html.window.location.href =
+        'https://app.ardrive.io/#/loaded-pst/fee?${fee}weightedPstHolder?$weightedPstHolder';
   }
 
   @override
