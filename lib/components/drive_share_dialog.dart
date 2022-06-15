@@ -100,7 +100,7 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                 context.read<FeedbackSurveyCubit>().openRemindMe();
+                  context.read<FeedbackSurveyCubit>().openRemindMe();
                 },
                 child: Text(appLocalizationsOf(context).doneEmphasized),
               ),
