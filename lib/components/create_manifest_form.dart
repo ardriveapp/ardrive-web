@@ -53,7 +53,7 @@ class CreateManifestForm extends StatelessWidget {
             state is CreateManifestPrivacyMismatch) {
           Navigator.pop(context);
           Navigator.pop(context);
-          await context.read<FeedbackSurveyCubit>().openRemindMe();
+          context.read<FeedbackSurveyCubit>().openRemindMe();
         }
       }, builder: (context, state) {
         final readCubitContext = context.read<CreateManifestCubit>();

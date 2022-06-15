@@ -98,9 +98,9 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
           actions: [
             if (state is DriveShareLoadSuccess)
               ElevatedButton(
-                onPressed: () async {
+                onPressed: () {
                   Navigator.pop(context);
-                  await context.read<FeedbackSurveyCubit>().openRemindMe();
+                 context.read<FeedbackSurveyCubit>().openRemindMe();
                 },
                 child: Text(appLocalizationsOf(context).doneEmphasized),
               ),
