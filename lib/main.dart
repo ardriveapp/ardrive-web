@@ -44,8 +44,7 @@ class _LoadPSTAppState extends State<LoadPSTApp> {
     final fee = await pstService.getPstFeePercentage();
 
     print(fee);
-
-    html.window.open('https://app.ardrive.io/#/loaded-pst/$fee', 'loaded pst');
+    html.window.location.href = 'https://app.ardrive.io/#/loaded-pst/$fee';
   }
 
   @override
