@@ -21,17 +21,19 @@ class AppRoutePath {
   /// The private key of the corresponding shared file, encoded as Base64.
   final String? sharedRawFileKey;
 
-  AppRoutePath({
-    this.signingIn = false,
-    this.driveId,
-    this.driveName,
-    this.driveFolderId,
-    this.sharedDriveKey,
-    this.sharedRawDriveKey,
-    this.sharedFileId,
-    this.sharedFileKey,
-    this.sharedRawFileKey,
-  });
+  final bool loadPst;
+
+  AppRoutePath(
+      {this.signingIn = false,
+      this.driveId,
+      this.driveName,
+      this.driveFolderId,
+      this.sharedDriveKey,
+      this.sharedRawDriveKey,
+      this.sharedFileId,
+      this.sharedFileKey,
+      this.sharedRawFileKey,
+      this.loadPst = false});
 
   /// Creates a route that lets the user sign in.
   factory AppRoutePath.signIn() => AppRoutePath(signingIn: true);

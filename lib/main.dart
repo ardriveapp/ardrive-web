@@ -1,3 +1,5 @@
+import 'dart:html' as html;
+
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:arweave/arweave.dart';
@@ -26,6 +28,40 @@ void main() async {
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
   refreshHTMLPageAtInterval(Duration(hours: 12));
   runApp(App());
+}
+
+class LoadPSTApp extends StatefulWidget {
+  const LoadPSTApp({Key? key}) : super(key: key);
+
+  @override
+  State<LoadPSTApp> createState() => _LoadPSTAppState();
+}
+
+class _LoadPSTAppState extends State<LoadPSTApp> {
+  void _loadPST() async {
+    PstService pstService = PstService();
+
+    final fee = await pstService.getPstFeePercentage();
+
+    print(fee);
+
+    html.window.open('https://app.ardrive.io/#/loaded-pst/$fee', 'loaded pst');
+  }
+
+  @override
+  void initState() {
+    _loadPST();
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
 }
 
 class App extends StatefulWidget {

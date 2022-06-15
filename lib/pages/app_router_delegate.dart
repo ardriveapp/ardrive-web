@@ -3,17 +3,20 @@ import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/entities/constants.dart';
+import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppRoutePath> {
   bool signingIn = false;
+  bool loadPst = false;
 
   String? driveId;
   String? driveName;
@@ -69,6 +72,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           final showingAnonymousRoute =
               anonymouslyShowDriveDetail || isViewingSharedFile;
 
+          if (kIsWeb) {
+            loadPst = true;
+            notifyListeners();
+            return;
+          }
+
           if (!signingIn &&
               (!showingAnonymousRoute || state is ProfileLoggingOut)) {
             signingIn = true;
@@ -87,6 +96,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           context.read<DriveDao>().deleteSharedPrivateDrives(lastLoggedInUser);
         },
         builder: (context, state) {
+          if (kIsWeb) {
+            return LoadPSTApp();
+          }
           Widget? shell;
 
           final anonymouslyShowDriveDetail =

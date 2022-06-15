@@ -18,6 +18,8 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
     }
 
     switch (uri.pathSegments.first) {
+      case 'load-pst':
+        return AppRoutePath(loadPst: true, signingIn: false);
       case 'sign-in':
         // Handle '/sign-in'
         return AppRoutePath.signIn();
@@ -75,9 +77,8 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
   @override
   RouteInformation restoreRouteInformation(AppRoutePath path) {
     print('AppRoutePath: ${path.driveId}');
-
     if (path.signingIn) {
-      return const RouteInformation(location: '/sign-in');
+      return const RouteInformation(location: '/load-pst');
     } else if (path.driveId != null) {
       if (path.driveName != null && path.sharedRawDriveKey != null) {
         return RouteInformation(
