@@ -25,12 +25,15 @@ void main() {
     });
 
     group('remove method', () {
-      test('returns true when sucessfully removed', () async {
-        final success = await store.remove('isItTrue');
-        expect(success, true);
-        var currentValue = store.getBool('isItTrue');
-        expect(currentValue, null);
-      });
+      test(
+        'returns true when sucessfully removed and the value turns null',
+        () async {
+          final success = await store.remove('isItTrue');
+          expect(success, true);
+          var currentValue = store.getBool('isItTrue');
+          expect(currentValue, null);
+        },
+      );
     });
 
     group('getBool method', () {
