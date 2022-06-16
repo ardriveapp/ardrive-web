@@ -19,7 +19,7 @@ void main() {
     late FolderCreateCubit folderCreateCubit;
 
     setUp(() async {
-      registerFallbackValue(ProfileStatefake());
+      registerFallbackValue(ProfileStateFake());
 
       db = getTestDb();
       driveDao = db.driveDao;
