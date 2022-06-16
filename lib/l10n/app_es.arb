@@ -1139,23 +1139,23 @@
   },
   "insufficientFundsForCreateADrive": "No tienes el balance suficiente para crear una unidad. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
   "@insufficientFundsForCreateADrive": {
-      "description": "Show that needs funds to create a Drive"
+    "description": "Show that needs funds to create a Drive"
   },
   "insufficientFundsForCreateAFolder": "No tienes el balance suficiente para crear una carpeta. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
   "@insufficientFundsForCreateAFolder": {
-      "description": "Show that needs funds to create a Folder"
+    "description": "Show that needs funds to create a Folder"
   },
   "insufficientFundsForCreateAManifest": "No tienes el balance suficiente para crear un manifiesto. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
   "@insufficientFundsForCreateAManifest": {
-      "description": "Show that needs funds to create a Manifest"
+    "description": "Show that needs funds to create a Manifest"
   },
   "insufficientFundsForUploadFiles": "No tienes el balance suficiente para cargar archivos. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
   "@insufficientFundsForUploadFiles": {
-      "description": "Show that needs funds to upload files"
+    "description": "Show that needs funds to upload files"
   },
   "insufficientFundsForUploadFolders": "No tienes el balance suficiente para cargar carpetas. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
   "@insufficientFundsForUploadFolders": {
-      "description": "Show that needs funds to upload folders"
+    "description": "Show that needs funds to upload folders"
   },
   "conflictingNameFound": "Se encontró un conflicto de nombres",
   "@conflictingNameFound": {
@@ -1291,5 +1291,33 @@
         "example": "Shared Drive A"
       }
     }
+  },
+  "feedbackTitle": "¡Gracias por usar ArDrive!",
+  "@feedbackTitle": {
+    "description": "We thank the user"
+  },
+  "feedbackContent": "¿Te interesaría dejar comentarios sobre tu experiencia en la aplicación?",
+  "@feedbackContent": {
+    "description": "Asks for feedback"
+  },
+  "leaveFeedback": "Dejar comentarios",
+  "@leaveFeedback": {
+    "description": "The action of leaving feedback"
+  },
+  "noThanks": "No, ¡gracias! No me lo recuerdes otra vez",
+  "@noThanks": {
+    "description": "Don't leave feedback, and don't ask again for it"
+  },
+  "weWontRemindYou": "¡Bien! No te lo recordaremos otra vez.",
+  "@weWontRemindYou": {
+    "description": "We know the user don't want to leave feedback ATM"
+  },
+  "weWontRemindYouDescription": "Si cambias de opinión y quieres dejar comentarios en otro momento, puedes hacerlo desde el enlace en tu menú.",
+  "@weWontRemindYouDescription": {
+    "description": "We let the user know where to find the 'Leave Feedback' button"
+  },
+  "gotIt": "¡Entendido!",
+  "@gotIt": {
+    "description": "Example similar phrases: I've got it, I understood, OK"
   }
 }
