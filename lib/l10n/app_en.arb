@@ -1312,7 +1312,7 @@
   "@weWontRemindYou": {
     "description": "We know the user don't want to leave feedback ATM"
   },
-  "weWontRemindYouDescription": "If you ever change your mind and want to leave feedback at a later date, then you can do so via the link in your menu.",
+  "weWontRemindYouDescription": "If you ever change your mind and want to leave feedback at a later date, you can do so via the link in your menu.",
   "@weWontRemindYouDescription": {
     "description": "We let the user know where to find the 'Leave Feedback' button"
   },
