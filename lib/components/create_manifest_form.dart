@@ -38,7 +38,7 @@ class CreateManifestForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<CreateManifestCubit, CreateManifestState>(
-          listener: (context, state) async {
+          listener: (context, state) {
         if (state is CreateManifestUploadInProgress) {
           showProgressDialog(
             context,
