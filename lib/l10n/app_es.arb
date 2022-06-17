@@ -1304,7 +1304,7 @@
   "@leaveFeedback": {
     "description": "The action of leaving feedback"
   },
-  "noThanks": "No, ¡gracias! No me lo recuerdes otra vez",
+  "noThanks": "¡No, gracias! No me lo recuerdes otra vez",
   "@noThanks": {
     "description": "Don't leave feedback, and don't ask again for it"
   },
