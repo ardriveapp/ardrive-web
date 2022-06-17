@@ -47,14 +47,13 @@ class ArweaveService {
   }
 
   Future<int> getMempoolSizeFromArweave() async {
-    try {
-      return await client.api
-          .get('tx/pending')
-          .then((res) => (json.decode(res.body) as List).length);
-    } catch (_) {
-      print('Error fetching mempool size');
-      return 0;
+    final response = await client.api.get('tx/pending');
+    
+    if (response.statusCode == 200) {
+      return (json.decode(response.body) as List).length;
     }
+
+    throw Exception('Error fetching mempool size');
   }
 
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.

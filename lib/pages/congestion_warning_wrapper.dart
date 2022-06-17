@@ -9,9 +9,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 Future<void> showCongestionDependentModalDialog(
     BuildContext context, Function() showAppDialog) async {
-  final warnAboutCongestion =
-      await context.read<ArweaveService>().getMempoolSizeFromArweave() >
-          mempoolWarningSizeLimit;
+  late bool warnAboutCongestion;
+
+  try {
+    final mempoolSize =
+        await context.read<ArweaveService>().getMempoolSizeFromArweave();
+    
+   warnAboutCongestion = mempoolSize > mempoolWarningSizeLimit;
+  } catch (e) {
+    warnAboutCongestion = false;
+  }
+
   return await showModalDialog(context, () async {
     if (warnAboutCongestion) {
       final shouldShowDialog = await showDialog(
