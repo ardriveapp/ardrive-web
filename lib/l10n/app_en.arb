@@ -1310,7 +1310,7 @@
   },
   "weWontRemindYou": "Ok cool! We won't remind you again.",
   "@weWontRemindYou": {
-    "description": "We know the user don't want to leave feedback ATM"
+    "description": "We let the user know that we won't remind them to leave feedback again"
   },
   "weWontRemindYouDescription": "If you ever change your mind and want to leave feedback at a later date, then you can do so via the link in your menu.",
   "@weWontRemindYouDescription": {
