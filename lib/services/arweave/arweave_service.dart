@@ -10,7 +10,6 @@ import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart' as http;
 import 'package:moor/moor.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:pedantic/pedantic.dart';
 import 'package:retry/retry.dart';
 
 const byteCountPerChunk = 262144; // 256 KiB
@@ -22,11 +21,8 @@ class ArweaveService {
 
   final ArtemisClient _gql;
 
-  int _mempoolSize = 0;
-
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
-    unawaited(initializeMempoolStream());
     _graphQLRetry = GraphQLRetry(_gql);
   }
 
@@ -44,43 +40,20 @@ class ArweaveService {
   Future<int> getCurrentBlockHeight() =>
       client.api.get('/').then((res) => json.decode(res.body)['height']);
 
-  Future<void> initializeMempoolStream() async {
-    Stream.periodic(const Duration(minutes: 1, seconds: 44))
-        .asyncMap((event) => getMempoolAverage())
-        .listen((mempoolSize) {
-      _mempoolSize = mempoolSize;
-    });
-    _mempoolSize = await getMempoolAverage();
-  }
-
   Future<BigInt> getPrice({required int byteSize}) {
     return client.api
         .get('/price/$byteSize')
         .then((res) => BigInt.parse(res.body));
   }
 
-  // Spread requests across time to avoid getting load balanced to the same gateway
-  Future<int> getMempoolAverage() async {
-    return await Stream.periodic(Duration(seconds: 4))
-            .asyncMap((event) => getMempoolSizeFromArweave())
-            .take(4)
-            .reduce((next, acc) => acc += next) ~/
-        4;
-  }
-
   Future<int> getMempoolSizeFromArweave() async {
-    try {
-      return await client.api
-          .get('tx/pending')
-          .then((res) => (json.decode(res.body) as List).length);
-    } catch (_) {
-      print('Error fetching mempool size');
-      return 0;
+    final response = await client.api.get('tx/pending');
+    
+    if (response.statusCode == 200) {
+      return (json.decode(response.body) as List).length;
     }
-  }
 
-  Future<int> getCachedMempoolSize() async {
-    return _mempoolSize;
+    throw Exception('Error fetching mempool size');
   }
 
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
