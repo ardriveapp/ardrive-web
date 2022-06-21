@@ -57,7 +57,7 @@ void main() {
       );
       expect(
         partitionsJA.getSegment(2),
-        'ポリシーに同意します ',
+        'に同意します',
       );
       expect(
         partitionsEN.getSegment(0),
