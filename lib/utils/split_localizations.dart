@@ -1,30 +1,12 @@
 import 'package:ardrive/utils/text_partitions.dart';
 import 'package:flutter/material.dart';
 
-typedef widgetFactory = Widget Function(String text);
-
-// class partition {
-//   final String segment;
-//   final widgetFactory widgetMapper;
-//   late num index;
-
-//   partition({
-//     required wholeText,
-//     required this.segment,
-//     required this.widgetMapper,
-//   }) {
-//     index = wholeText.indexOf(segment);
-//   }
-
-//   Widget getWidget() {
-//     return widgetMapper(segment);
-//   }
-// }
+typedef WidgetFactory = Widget Function(String text);
 
 List<Widget> splitTranslationsWithMultipleStyles(
   String originalText,
-  widgetFactory defaultMapper,
-  Map<String, widgetFactory> parts,
+  WidgetFactory defaultMapper,
+  Map<String, WidgetFactory> parts,
 ) {
   final partitions = TextPartitions(wholeText: originalText);
 

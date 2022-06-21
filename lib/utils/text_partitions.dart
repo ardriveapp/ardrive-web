@@ -1,21 +1,5 @@
-// import 'package:ardrive/utils/split_localizations.dart';
-
-// class Pair {
-//   final num a;
-//   final num b;
-
-//   Pair({
-//     required this.a,
-//     required this.b,
-//   })
-
-//   bool equals(Pair other) {
-//     return other.a == a && other.b == b;
-//   };
-// };
-
 class TextPartitions {
-  final _indexes = Set<int>();
+  final _indexes = <int>{};
   final String wholeText;
 
   TextPartitions({
@@ -28,12 +12,9 @@ class TextPartitions {
     _indexes.add(wholeText.length);
   }
 
-  // Widget getWidget() {
-  //   return widgetMapper(segment);
-  // }
-
   List<int> get indexes {
-    return _indexes.toList();
+    final indexesAsList = _indexes.toList()..sort();
+    return indexesAsList;
   }
 
   int get amount {
@@ -44,8 +25,9 @@ class TextPartitions {
     if (index > amount) {
       throw Exception('Index overflow');
     }
-    final start = _indexes.elementAt(index);
-    final end = _indexes.elementAt(index + 1);
+    final sortedIndexes = indexes;
+    final start = sortedIndexes.elementAt(index);
+    final end = sortedIndexes.elementAt(index + 1);
     return wholeText.substring(start, end);
   }
 
