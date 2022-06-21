@@ -5,6 +5,7 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
+import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:moor/moor.dart';
@@ -27,12 +28,15 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   late Vault<SecretKey> _driveKeyVault;
 
+  late Vault<Uint8List> _previewVault;
+
   DriveDao(Database db) : super(db) {
     // Creates a store
     final store = newMemoryVaultStore();
 
     // Creates a vault from the previously created store
     _driveKeyVault = store.vault<SecretKey>(name: 'driveKeyVault');
+    _previewVault = store.vault<Uint8List>(name: 'previewVault');
   }
 
   Future<void> deleteSharedPrivateDrives(String? owner) async {
@@ -65,6 +69,17 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     required SecretKey driveKey,
   }) async {
     return await _driveKeyVault.put(driveID, driveKey);
+  }
+
+  Future<Uint8List?> getPreviewDataFromMemory(TxID dataTxId) async {
+    return await _previewVault.get(dataTxId);
+  }
+
+  Future<void> putPreviewDataInMemory({
+    required TxID dataTxId,
+    required Uint8List bytes,
+  }) async {
+    return await _previewVault.put(dataTxId, bytes);
   }
 
   /// Creates a drive with its accompanying root folder.
@@ -120,6 +135,26 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
+  Future<bool> doesEntityWithNameExist({
+    required String name,
+    required DriveID driveId,
+    required FolderID parentFolderId,
+  }) async {
+    final foldersWithName = await foldersInFolderWithName(
+      driveId: driveId,
+      parentFolderId: parentFolderId,
+      name: name,
+    ).get();
+
+    final filesWithName = await filesInFolderWithName(
+      driveId: driveId,
+      parentFolderId: parentFolderId,
+      name: name,
+    ).get();
+
+    return foldersWithName.isNotEmpty || filesWithName.isNotEmpty;
+  }
+
   /// Adds or updates the user's drives with the provided drive entities.
   Future<void> updateUserDrives(
     Map<DriveEntity, SecretKey?> driveEntities,
@@ -161,7 +196,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     SecretKey? driveKey,
     SecretKey? profileKey,
   }) async {
-    
     var companion = DrivesCompanion.insert(
       id: entity.id!,
       name: name,
@@ -274,41 +308,50 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             driveId: driveId, path: folderPath!, order: filesOrder);
 
     return Rx.combineLatest3(
-      folderStream.where((folder) => folder != null).map((folder) => folder!),
-      subfolderQuery.watch(),
-      filesQuery.watch(),
-      (
-        FolderEntry folder,
-        List<FolderEntry> subfolders,
-        List<FileWithLatestRevisionTransactions> files,
-      ) =>
-          FolderWithContents(
+        folderStream.where((folder) => folder != null).map((folder) => folder!),
+        subfolderQuery.watch(),
+        filesQuery.watch(), (
+      FolderEntry folder,
+      List<FolderEntry> subfolders,
+      List<FileWithLatestRevisionTransactions> files,
+    ) {
+      /// Implementing natural sort this way because to do it in SQLite
+      /// it requires triggers, regex spliiting names and creating index fields
+      /// and ordering by that index plus interfacing that with moor
+      if (orderBy == DriveOrder.name) {
+        subfolders.sort((a, b) => compareNatural(a.name, b.name));
+        files.sort((a, b) => compareNatural(a.name, b.name));
+        if (orderingMode == OrderingMode.desc) {
+          subfolders = subfolders.reversed.toList();
+          files = files.reversed.toList();
+        }
+      }
+      return FolderWithContents(
         folder: folder,
         subfolders: subfolders,
         files: files,
-      ),
-    );
+      );
+    });
   }
 
   /// Create a new folder entry.
   /// Returns the id of the created folder.
-  Future<String> createFolder({
-    required String driveId,
-    String? parentFolderId,
+  Future<FolderID> createFolder({
+    required DriveID driveId,
+    FolderID? parentFolderId,
+    FolderID? folderId,
     required String folderName,
     required String path,
   }) async {
-    final id = _uuid.v4();
-
-    await into(folderEntries).insert(
-      FolderEntriesCompanion.insert(
-        id: id,
-        driveId: driveId,
-        parentFolderId: Value(parentFolderId),
-        name: folderName,
-        path: path,
-      ),
+    final id = folderId ?? _uuid.v4();
+    final folderEntriesCompanion = FolderEntriesCompanion.insert(
+      id: id,
+      driveId: driveId,
+      parentFolderId: Value(parentFolderId),
+      name: folderName,
+      path: path,
     );
+    await into(folderEntries).insert(folderEntriesCompanion);
 
     return id;
   }

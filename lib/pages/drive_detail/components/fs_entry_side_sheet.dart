@@ -1,6 +1,6 @@
 part of '../drive_detail_page.dart';
 
-class FsEntrySideSheet extends StatelessWidget {
+class FsEntrySideSheet extends StatefulWidget {
   final String driveId;
   final Privacy drivePrivacy;
   final SelectedItem? maybeSelectedItem;
@@ -11,65 +11,100 @@ class FsEntrySideSheet extends StatelessWidget {
   });
 
   @override
+  State<FsEntrySideSheet> createState() => _FsEntrySideSheetState();
+}
+
+class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
+  @override
   Widget build(BuildContext context) => Drawer(
         elevation: 1,
-        child: BlocProvider<FsEntryInfoCubit>(
+        child: MultiBlocProvider(
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
-          key: ValueKey(
-            driveId +
-                '${maybeSelectedItem?.id ?? Random().nextInt(1000).toString()}',
-          ),
-          create: (context) => FsEntryInfoCubit(
-            driveId: driveId,
-            maybeSelectedItem: maybeSelectedItem,
-            driveDao: context.read<DriveDao>(),
-          ),
-          child: DefaultTabController(
-            length: 2,
-            child: BlocBuilder<FsEntryInfoCubit, FsEntryInfoState>(
-              builder: (context, state) => state is FsEntryInfoSuccess
-                  ? Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 8),
-                        ListTile(
-                          title: Text(state.name),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () => context
-                                .read<DriveDetailCubit>()
-                                .toggleSelectedItemDetails(),
-                          ),
-                        ),
-                        TabBar(
-                          tabs: [
-                            Tab(
-                                text: appLocalizationsOf(context)
-                                    .itemDetailsEmphasized),
-                            Tab(
-                                text: appLocalizationsOf(context)
-                                    .itemActivityEmphasized)
-                          ],
-                        ),
-                        Expanded(
-                          child: TabBarView(
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
+          key: widget.maybeSelectedItem?.id != null
+              ? ValueKey(
+                  widget.driveId + '${widget.maybeSelectedItem?.id}',
+                )
+              : UniqueKey(),
+          providers: [
+            BlocProvider<FsEntryInfoCubit>(
+              create: (context) => FsEntryInfoCubit(
+                driveId: widget.driveId,
+                maybeSelectedItem: widget.maybeSelectedItem,
+                driveDao: context.read<DriveDao>(),
+              ),
+            ),
+            BlocProvider<FsEntryPreviewCubit>(
+              create: (context) => FsEntryPreviewCubit(
+                driveId: widget.driveId,
+                maybeSelectedItem: widget.maybeSelectedItem,
+                driveDao: context.read<DriveDao>(),
+                profileCubit: context.read<ProfileCubit>(),
+                arweave: context.read<ArweaveService>(),
+                config: context.read<AppConfig>(),
+              ),
+            )
+          ],
+          child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
+            builder: (context, previewState) {
+              return DefaultTabController(
+                length: previewState is FsEntryPreviewSuccess ? 3 : 2,
+                child: BlocBuilder<FsEntryInfoCubit, FsEntryInfoState>(
+                  builder: (context, state) => state is FsEntryInfoSuccess
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: 8),
+                            ListTile(
+                              title: Text(state.name),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () => context
+                                    .read<DriveDetailCubit>()
+                                    .toggleSelectedItemDetails(),
+                              ),
+                            ),
+                            TabBar(
+                              tabs: [
+                                if (previewState is FsEntryPreviewSuccess)
+                                  Tab(
+                                    text: appLocalizationsOf(context)
+                                        .itemPreviewEmphasized,
+                                  ),
+                                Tab(
+                                    text: appLocalizationsOf(context)
+                                        .itemDetailsEmphasized),
+                                Tab(
+                                    text: appLocalizationsOf(context)
+                                        .itemActivityEmphasized),
+                              ],
+                            ),
+                            Expanded(
+                              child: TabBarView(
                                 children: [
-                                  _buildInfoTable(context, state),
-                                  _buildTxTable(context, state),
+                                  if (previewState is FsEntryPreviewSuccess)
+                                    Align(
+                                        alignment: Alignment.topCenter,
+                                        child: FsEntryPreviewWidget(
+                                            state: previewState)),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _buildInfoTable(context, state),
+                                      _buildTxTable(context, state),
+                                    ],
+                                  ),
+                                  _buildActivityTab(context, state),
                                 ],
                               ),
-                              _buildActivityTab(context, state),
-                            ],
-                          ),
+                            )
+                          ],
                         )
-                      ],
-                    )
-                  : const SizedBox(),
-            ),
+                      : const SizedBox(),
+                ),
+              );
+            },
           ),
         ),
       );
@@ -99,6 +134,18 @@ class FsEntrySideSheet extends StatelessWidget {
                           state.rootFolderTree.getRecursiveSubFolderCount(),
                       localizations: appLocalizationsOf(context),
                     ),
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ),
+            ]),
+            DataRow(cells: [
+              DataCell(Text(appLocalizationsOf(context).size)),
+              DataCell(
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    filesize((state).rootFolderTree.computeFolderSize()),
                     textAlign: TextAlign.end,
                   ),
                 ),
@@ -139,6 +186,18 @@ class FsEntrySideSheet extends StatelessWidget {
                       fileCount: state.entry.getRecursiveFileCount(),
                       localizations: appLocalizationsOf(context),
                     ),
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ),
+            ]),
+            DataRow(cells: [
+              DataCell(Text(appLocalizationsOf(context).size)),
+              DataCell(
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    filesize(state.entry.computeFolderSize()),
                     textAlign: TextAlign.end,
                   ),
                 ),
@@ -208,12 +267,13 @@ class FsEntrySideSheet extends StatelessWidget {
           ]),
         ],
       );
+
   Widget _buildTxTable(BuildContext context, FsEntryInfoSuccess infoState) =>
       BlocProvider(
         create: (context) => FsEntryActivityCubit(
-          driveId: driveId,
+          driveId: widget.driveId,
           driveDao: context.read<DriveDao>(),
-          maybeSelectedItem: maybeSelectedItem,
+          maybeSelectedItem: widget.maybeSelectedItem,
         ),
         child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
           builder: (context, state) {
@@ -328,8 +388,8 @@ class FsEntrySideSheet extends StatelessWidget {
         padding: const EdgeInsets.only(top: 16),
         child: BlocProvider(
           create: (context) => FsEntryActivityCubit(
-            driveId: driveId,
-            maybeSelectedItem: maybeSelectedItem,
+            driveId: widget.driveId,
+            maybeSelectedItem: widget.maybeSelectedItem,
             driveDao: context.read<DriveDao>(),
           ),
           child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
@@ -392,7 +452,7 @@ class FsEntrySideSheet extends StatelessWidget {
                         final previewOrDownloadButton = InkWell(
                           onTap: () {
                             downloadOrPreviewRevision(
-                              drivePrivacy: drivePrivacy,
+                              drivePrivacy: widget.drivePrivacy,
                               context: context,
                               revision: revision,
                             );
@@ -401,7 +461,8 @@ class FsEntrySideSheet extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.start,
-                              children: drivePrivacy == DrivePrivacy.private
+                              children: widget.drivePrivacy ==
+                                      DrivePrivacy.private
                                   ? [
                                       Text(
                                           appLocalizationsOf(context).download),

@@ -1,10 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:intersperse/src/intersperse_extensions.dart';
-
-import '../../../utils/app_localizations_wrapper.dart';
 
 class CustomPaginatedDataTable extends StatefulWidget {
   CustomPaginatedDataTable({
@@ -416,7 +415,11 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
     footerWidgets.addAll(<Widget>[
       Container(width: 32.0),
       Text(
-        '${_firstRowIndex + 1} - ${_firstRowIndex + widget.rowsPerPage} of $_rowCount',
+        appLocalizationsOf(context).displayedPaginatedData(
+          _firstRowIndex + 1,
+          _firstRowIndex + widget.rowsPerPage,
+          _rowCount,
+        ),
       ),
       Container(width: 32.0),
       if (widget.showFirstLastButtons)

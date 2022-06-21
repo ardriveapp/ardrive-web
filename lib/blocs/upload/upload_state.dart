@@ -16,8 +16,6 @@ class UploadPreparationInProgress extends UploadState {
 
 class UploadPreparationInitialized extends UploadState {}
 
-class UploadPreparationFailure extends UploadState {}
-
 class UploadSigningInProgress extends UploadState {
   final UploadPlan uploadPlan;
   final bool isArConnect;
@@ -29,22 +27,37 @@ class UploadSigningInProgress extends UploadState {
 
 class UploadFileConflict extends UploadState {
   final List<String> conflictingFileNames;
-  final bool isAllFilesConflicting;
+  final bool areAllFilesConflicting;
 
   UploadFileConflict({
     required this.conflictingFileNames,
-    required this.isAllFilesConflicting,
+    required this.areAllFilesConflicting,
   });
 
   @override
   List<Object> get props => [conflictingFileNames];
 }
 
+class UploadFolderNameConflict extends UploadFileConflict {
+  UploadFolderNameConflict({
+    required List<String> conflictingFileNames,
+    required bool areAllFilesConflicting,
+  }) : super(
+          conflictingFileNames: conflictingFileNames,
+          areAllFilesConflicting: areAllFilesConflicting,
+        );
+}
+
 class UploadFileTooLarge extends UploadState {
+  UploadFileTooLarge({
+    required this.tooLargeFileNames,
+    required this.hasFilesToUpload,
+    required this.isPrivate,
+  });
+
   final List<String> tooLargeFileNames;
+  final bool hasFilesToUpload;
   final bool isPrivate;
-  UploadFileTooLarge(
-      {required this.tooLargeFileNames, required this.isPrivate});
 
   @override
   List<Object> get props => [tooLargeFileNames];

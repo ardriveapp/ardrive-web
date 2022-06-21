@@ -1,12 +1,12 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
-
-import '../blocs.dart';
 
 part 'drives_state.dart';
 
@@ -17,14 +17,19 @@ class DrivesCubit extends Cubit<DrivesState> {
   final DriveDao _driveDao;
 
   late StreamSubscription _drivesSubscription;
-
+  String? initialSelectedDriveId;
   DrivesCubit({
-    String? initialSelectedDriveId,
+    this.initialSelectedDriveId,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         super(DrivesLoadInProgress()) {
+    _profileCubit.stream.listen((state) {
+      if (state is ProfileLoggingOut) {
+        cleanDrives();
+      }
+    });
     _drivesSubscription =
         Rx.combineLatest3<List<Drive>, List<FolderEntry>, void, List<Drive>>(
       _driveDao
@@ -36,7 +41,10 @@ class DrivesCubit extends Cubit<DrivesState> {
     ).listen((drives) async {
       final state = this.state;
 
+      final profile = _profileCubit.state;
+
       String? selectedDriveId;
+
       if (state is DrivesLoadSuccess && state.selectedDriveId != null) {
         selectedDriveId = state.selectedDriveId;
       } else {
@@ -44,12 +52,13 @@ class DrivesCubit extends Cubit<DrivesState> {
             (drives.isNotEmpty ? drives.first.id : null);
       }
 
-      final profile = _profileCubit.state;
-
       final walletAddress =
           profile is ProfileLoggedIn ? profile.walletAddress : null;
 
       final ghostFolders = await _driveDao.ghostFolders().get();
+
+      print('selected drive id: $selectedDriveId');
+
       emit(
         DrivesLoadSuccess(
           selectedDriveId: selectedDriveId,
@@ -75,13 +84,45 @@ class DrivesCubit extends Cubit<DrivesState> {
     final canCreateNewDrive = _profileCubit.state is ProfileLoggedIn;
     final state = this.state is DrivesLoadSuccess
         ? (this.state as DrivesLoadSuccess).copyWith(selectedDriveId: driveId)
-        : DrivesLoadSuccess(
-            selectedDriveId: driveId,
-            userDrives: [],
-            sharedDrives: [],
-            drivesWithAlerts: [],
-            canCreateNewDrive: canCreateNewDrive);
+        : DrivesLoadedWithNoDrivesFound(canCreateNewDrive: canCreateNewDrive);
     emit(state);
+  }
+
+  void cleanDrives() {
+    initialSelectedDriveId = null;
+
+    final state = DrivesLoadSuccess(
+        selectedDriveId: null,
+        userDrives: const [],
+        sharedDrives: const [],
+        drivesWithAlerts: const [],
+        canCreateNewDrive: false);
+    emit(state);
+  }
+
+  void _resetDriveSelection(DriveID detachedDriveId) {
+    final canCreateNewDrive = _profileCubit.state is ProfileLoggedIn;
+    if (state is DrivesLoadSuccess) {
+      final state = this.state as DrivesLoadSuccess;
+      state.userDrives.removeWhere((drive) => drive.id == detachedDriveId);
+      state.sharedDrives.removeWhere((drive) => drive.id == detachedDriveId);
+      final firstOrNullDrive = state.userDrives.isNotEmpty
+          ? state.userDrives.first.id
+          : state.sharedDrives.isNotEmpty
+              ? state.sharedDrives.first.id
+              : null;
+      if (firstOrNullDrive != null) {
+        emit(state.copyWith(selectedDriveId: firstOrNullDrive));
+        return;
+      }
+    }
+    emit(DrivesLoadedWithNoDrivesFound(canCreateNewDrive: canCreateNewDrive));
+  }
+
+  Future<void> detachDrive(DriveID driveId) async {
+    _resetDriveSelection(driveId);
+    await Future.delayed(const Duration(seconds: 1));
+    await _driveDao.deleteDriveById(driveId: driveId);
   }
 
   @override

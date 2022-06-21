@@ -1,14 +1,14 @@
 {
   "@@locale": "en",
-  "welcomeTo_body": "Welcome to your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive",
+  "welcomeTo_body": "WELCOME TO Your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive",
   "@welcomeTo_body": {
     "description": "Welcoming message just after the ArDrive logo"
   },
-  "welcomeTo_main": "Welcome to",
+  "welcomeTo_main": "WELCOME TO",
   "@welcomeTo_main": {
     "description": "Highly emphasized text giving welcome"
   },
-  "welcomeTo_description": "your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive",
+  "welcomeTo_description": "Your private and secure, decentralized, pay-as-you-go, censorship-resistant and permanent hard drive",
   "@welcomeTo_description": {
     "description": "Brief description of ArDrive as welcoming"
   },
@@ -138,11 +138,15 @@
   },
   "passwordMismatch": "The confirmation password does not match.",
   "@passwordMismatch": {
-    "description": "Error message for when the confirmation password don't match the actual pass"
+    "description": "Error message for when the confirmation password doesn't match the actual pass"
   },
   "aggreeToTerms_body": "I agree to the ArDrive terms of service and privacy policy",
   "@aggreeToTerms_body": {
-    "description": "Checkbox for agreeing the terms of of service and privacy policy"
+    "description": "Checkbox for agreeing to the terms of service and privacy policy"
+  },
+  "aggreeToTerms_main": "I agree to the ",
+  "@aggreeToTerms_main": {
+    "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
   "aggreeToTerms_link": "ArDrive terms of service and privacy policy",
   "@aggreeToTerms_link": {
@@ -176,7 +180,7 @@
   },
   "unlockEmphasized": "UNLOCK",
   "@unlockEmphasized": {
-    "description": "Unlock the wallet with its password. EMphasized with upper case"
+    "description": "Unlock the wallet with its password. Emphasized with upper case"
   },
   "forgetWallet": "Forget wallet and change profile",
   "@forgetWallet": {
@@ -287,6 +291,10 @@
   "@fileSize": {
     "description": "The size of a file"
   },
+  "size": "Size",
+  "@size": {
+    "description": "The size of a file, folder or drive"
+  },
   "lastUpdated": "Last updated",
   "@lastUpdated": {
     "description": "The timestamp of the transaction"
@@ -318,6 +326,10 @@
   "uploadDragAndDrop": "Upload File",
   "@uploadDragAndDrop": {
     "description": "The action of uploading a file"
+  },
+  "itemPreviewEmphasized": "PREVIEW",
+  "@itemPreviewEmphasized": {
+    "description": "Item preview"
   },
   "itemDetailsEmphasized": "DETAILS",
   "@itemDetailsEmphasized": {
@@ -503,8 +515,8 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
-  "appVersoin": "Version {version}.",
-  "@appVersoin": {
+  "appVersion": "Version {version}.",
+  "@appVersion": {
     "description": "App version number",
     "placeholders": {
       "version": {
@@ -520,6 +532,10 @@
   "uploadFiles": "Upload file(s)",
   "@uploadFiles": {
     "description": "Upload files to the Weave"
+  },
+  "uploadFolder": "Upload folder",
+  "@uploadFolder": {
+    "description": "Upload a folder and every subfolder alongside files inside them"
   },
   "newDrive": "New drive",
   "@newDrive": {
@@ -555,7 +571,7 @@
   },
   "exportingData": "Exporting your data, please wait.",
   "@exportingData": {
-    "description": "The drive data is being procesed"
+    "description": "The drive data is being processed"
   },
   "fileDownloadFailed": "File download failed",
   "@fileDownloadFailed": {
@@ -567,7 +583,7 @@
   },
   "cancelEmphasized": "CANCEL",
   "@cancelEmphasized": {
-    "description": "Cancel button. Emphatized with upper case"
+    "description": "Cancel button. Emphasized with upper case"
   },
   "attachEmphasized": "ATTACH",
   "@attachEmphasized": {
@@ -632,10 +648,6 @@
   "doneEmphasized": "DONE",
   "@doneEmphaseized": {
     "description": "Done, no more to do here. Emphasized with upper case"
-  },
-  "errorLog": "Error log",
-  "@errorLog": {
-    "description": "Error dialog"
   },
   "downloadingFile": "Downloading file...",
   "@downloadingFile": {
@@ -705,7 +717,7 @@
   },
   "moveFileEmphasized": "MOVE FILE",
   "@moveFileEmphasized": {
-    "description": "The action of moving a file. EMphasized with upper case"
+    "description": "The action of moving a file. Emphasized with upper case"
   },
   "backToFolder": "Back to {entityName} folder",
   "@backToFolder": {
@@ -789,7 +801,7 @@
   "@login": {
     "description": "The login process"
   },
-  "duplicateFiles": "{numberOfDuplicateFiles,plural, =0{No duplicate files found} =1{A duplicate file found} =other{{numberOfDuplicateFiles} duplicate files found}}",
+  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{A duplicate file found} =other{Duplicate files found}}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -800,11 +812,7 @@
       }
     }
   },
-  "aFileWithSameNameAlreadyExists": "A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?",
-  "@aFileWithSameNameAlreadyExists": {
-    "description": "Asks the user what to do with the items conflicting name"
-  },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?",
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?} =other{{numberOfFiles} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?}}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
@@ -815,9 +823,31 @@
       }
     }
   },
+  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{A duplicate folder found} =other{Duplicate folders found}}",
+  "@duplicateFolders": {
+    "description": "Folder name conflict dialog title",
+    "placeholders": {
+      "numberOfDuplicateFolders": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{A folder with the same name already exists at this location. Please rename it and try uploading again.}  =other{{numberOfFolders} folders with the same name already exist at this location. Please rename them and try uploading again.}}",
+  "@foldersWithTheSameNameAlreadyExists": {
+    "description": "Asks the user what to do with folder name conflicts",
+    "placeholders": {
+      "numberOfFolders": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
   "conflictingFiles": "Conflicting files:",
   "@conflictingFiles": {
-    "description": "Files being in conflict with already existing items"
+    "description": "Files conflict with already existing items"
   },
   "upload": "Upload",
   "@upload": {
@@ -842,11 +872,11 @@
       }
     }
   },
-  "filesTooLargeExplanationPrivate": "ArDrive on web currently only supports file uploads smaller than 100 MB for private drives",
+  "filesTooLargeExplanationPrivate": "ArDrive on web currently only supports file uploads smaller than 100 MiB for private drives",
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "ArDrive on web currently only supports file uploads smaller than 1.25 GB for public drives",
+  "filesTooLargeExplanationPublic": "ArDrive on web currently only supports file uploads smaller than 1.25 GiB for public drives",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
@@ -860,19 +890,11 @@
   },
   "arConnectRemainOnThisTab": "CAUTION: Your Web3 wallet is signing your transactions. Please remain on this tab until it has completed.",
   "@arConnectRemainOnThisTab": {
-    "description": "Warning for te user to do not leave the tab"
+    "description": "Warning for the user to do not leave the tab"
   },
   "thisMayTakeAWhile": "This may take a while...",
   "@thisMayTakeAWhile": {
     "description": "Uploading may take a while"
-  },
-  "failedToPrepareFileUpload": "Failed to prepare file upload",
-  "@failedToPrepareFileUpload": {
-    "description": "Error message for when it failed to prepare the upload"
-  },
-  "failedToPrepareFileUploadExplanation": "An error occured while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.",
-  "@failedToPrepareFileUploadExplanation": {
-    "description": "Error message for when it failed to prepare the upload"
   },
   "closeEmphasized": "CLOSE",
   "@closeEmphasized": {
@@ -923,7 +945,7 @@
   },
   "insufficientARForUpload": "Insufficient AR for upload.",
   "@insufficientARForUpload": {
-    "description": "The wallet has no enough balance"
+    "description": "The wallet does not have enough balance"
   },
   "bundlingAndSigningUpload": "Bundling and signing upload",
   "@bundlingAndSigningUpload": {
@@ -931,7 +953,7 @@
   },
   "signingUpload": "Signing upload",
   "@signingUpload": {
-    "description": "The app is signing the transations"
+    "description": "The app is signing the transactions"
   },
   "walletSwitch": "Wallet Switch",
   "@walletSwitch": {
@@ -983,7 +1005,7 @@
   },
   "proceedCongestionEmphasized": "PROCEED",
   "@proceedCongestionEmphasized": {
-    "description": "Proceed being aware of the network congestion. Empasized with upper case"
+    "description": "Proceed being aware of the network congestion. Emphasized with upper case"
   },
   "profile": "Profile",
   "@profile": {
@@ -996,6 +1018,36 @@
   "syncingPleaseWait": "Syncing... Please wait.",
   "@syncingPleaseWait": {
     "description": "Syncing drives"
+  },
+  "syncingOnlyOneDrive": "Syncing your drive...",
+  "@syncingOnlyOneDrive": {
+    "description": "Show the message when the user has only one drive"
+  },
+  "driveSyncedOfDrivesCount": "{drivesSynced} of {drivesCount} Drives Synced",
+  "@driveSyncedOfDrivesCount": {
+    "description": "Show the number of drives synced and the number of user's drives",
+    "placeholders": {
+      "drivesSynced": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      },
+      "drivesCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      }
+    }
+  },
+  "syncProgressPercentage": "{percentage}% complete",
+  "@syncProgressPercentage": {
+    "description": "The sync progress percentage",
+    "placeholders": {
+      "percentage": {
+        "type": "String",
+        "example": "45.5"
+      }
+    }
   },
   "exportFromCSV": "Export from {driveId} {timestamp}.csv",
   "@exportFromCSV": {
@@ -1013,7 +1065,7 @@
   },
   "folderCount": "{folderCount,plural, =0{No folders} =1{1 folder} other{{folderCount} folders}",
   "@folderCount": {
-    "description": "Plurals for the folder count",
+    "description": "Plurals for the folder count. First character in lower case",
     "placeholders": {
       "folderCount": {
         "type": "int",
@@ -1024,7 +1076,7 @@
   },
   "fileCount": "{fileCount,plural, =0{no files} =1{1 file} other{{fileCount} files}}",
   "@fileCount": {
-    "description": "Plurals for the file count",
+    "description": "Plurals for the file count. First character in lower case",
     "placeholders": {
       "fileCount": {
         "type": "int",
@@ -1073,7 +1125,7 @@
   },
   "insufficientBalanceForManifest": "Provided wallet balance of {walletBalance} AR is not enough for this manifest transaction costing {totalCost} AR...",
   "@insufficientBalanceForManifest": {
-    "description": "The ammount of AR the wallet has is not enough to upload the manifest transaction",
+    "description": "The amount of AR the wallet has is not enough to upload the manifest transaction",
     "placeholders": {
       "walletBalance": {
         "type": "String",
@@ -1085,13 +1137,33 @@
       }
     }
   },
+  "insufficientFundsForCreateADrive": "You do not have sufficient funds to create a Drive at this time. Please go to the top up page to add funds to your account.",
+  "@insufficientFundsForCreateADrive": {
+    "description": "Show that needs funds to create a Drive"
+  },
+  "insufficientFundsForCreateAFolder": "You do not have sufficient funds to create a Folder at this time. Please go to the top up page to add funds to your account.",
+  "@insufficientFundsForCreateAFolder": {
+    "description": "Show that needs funds to create a Folder"
+  },
+  "insufficientFundsForCreateAManifest": "You do not have sufficient funds to create a Manifest at this time. Please go to the top up page to add funds to your account.",
+  "@insufficientFundsForCreateAManifest": {
+    "description": "Show that needs funds to create a Manifest"
+  },
+  "insufficientFundsForUploadFiles": "You do not have sufficient funds to upload Files at this time. Please go to the top up page to add funds to your account.",
+  "@insufficientFundsForUploadFiles": {
+    "description": "Show that needs funds to upload files"
+  },
+  "insufficientFundsForUploadFolders": "You do not have sufficient funds to upload Folders at this time. Please go to the top up page to add funds to your account.",
+  "@insufficientFundsForUploadFolders": {
+    "description": "Show that needs funds to upload folders"
+  },
   "conflictingNameFound": "Conflicting name was found",
   "@conflictingNameFound": {
     "description": "There is a non-manifest entity with the same name"
   },
   "conflictingNameFoundChooseNewName": "An entity with that name already exists at this location. Please choose a new name.",
   "@conflictingNameFoundChooseNewName": {
-    "description": "The user must type a non-conflicting name"
+    "description": "The given name is conflicting with some entity, the user must type a non-conflicting name"
   },
   "conflictingManifestFound": "Conflicting manifest was found",
   "@conflictingManifestFound": {
@@ -1115,6 +1187,10 @@
   },
   "createManifestEmphasized": "CREATE MANIFEST",
   "@createManifestEmphasized": {
+    "description": "To create a manifest"
+  },
+  "createManifest": "Create manifest",
+  "@createManifest": {
     "description": "To create a manifest"
   },
   "filesWillBePermanentlyPublicWarning": "Files uploaded here will be permanently viewable by anyone on the internet. Make sure you intend on making this data public.",
@@ -1172,5 +1248,48 @@
   "validationNameUnchanged": "This name is identical to the current name",
   "@validationNameUnchanged": {
     "description": "Input validation error: The given name is exactly the same"
+  },
+  "insufficientARWarning": "Insufficient Funds",
+  "@insufficientARWarning": {
+    "description": "Warns the user that the wallet balance is less than minimum AR required to make a transaction"
+  },
+  "displayedPaginatedData": "{from} - {to} of {total}",
+  "@displayedPaginatedData": {
+    "description": "Indicates the user what items of a list are being displayed. Example: 1 - 25 of 100",
+    "placeholders": {
+      "from": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      },
+      "to": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "25"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "100"
+      }
+    }
+  },
+  "detachEmphasized": "DETACH",
+  "@detachEmphasized": {
+    "description": "Example: To DETACH a drive. Emphasized in upper case"
+  },
+  "detachDrive": "Detach Drive?",
+  "@detachDrive": {
+    "description": "Detach Drive Title"
+  },
+  "detachDriveQuestion": "Are you sure you want to detach '{driveName}'?",
+  "@detachDriveQuestion": {
+    "description": "Ask for user confirmation to detach drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Shared Drive A"
+      }
+    }
   }
 }

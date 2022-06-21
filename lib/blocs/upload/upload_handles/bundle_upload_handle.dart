@@ -1,32 +1,35 @@
-import 'package:ardrive/blocs/upload/data_item_upload_handle.dart';
-import 'package:ardrive/blocs/upload/upload_handle.dart';
+import 'package:ardrive/blocs/upload/upload_handles/file_data_item_upload_handle.dart';
+import 'package:ardrive/blocs/upload/upload_handles/folder_data_item_upload_handle.dart';
+import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:moor/moor.dart';
 
 class BundleUploadHandle implements UploadHandle {
-  final List<DataItemUploadHandle> dataItemUploadHandles;
+  final List<FileDataItemUploadHandle> fileDataItemUploadHandles;
+  final List<FolderDataItemUploadHandle> folderDataItemUploadHandles;
 
   late Transaction bundleTx;
   late Iterable<FileEntity> fileEntities;
 
   BundleUploadHandle._create({
-    required this.dataItemUploadHandles,
+    this.fileDataItemUploadHandles = const [],
+    this.folderDataItemUploadHandles = const [],
     this.size = 0,
   }) {
-    fileEntities = dataItemUploadHandles.map((item) => item.entity);
+    fileEntities = fileDataItemUploadHandles.map((item) => item.entity);
   }
 
   static Future<BundleUploadHandle> create({
-    required List<DataItemUploadHandle> dataItemUploadHandles,
+    List<FileDataItemUploadHandle> fileDataItemUploadHandles = const [],
+    List<FolderDataItemUploadHandle> folderDataItemUploadHandles = const [],
   }) async {
     final bundle = BundleUploadHandle._create(
-      dataItemUploadHandles: dataItemUploadHandles,
+      fileDataItemUploadHandles: fileDataItemUploadHandles,
+      folderDataItemUploadHandles: folderDataItemUploadHandles,
     );
-
     bundle.size = await bundle.computeBundleSize();
     return bundle;
   }
@@ -46,22 +49,27 @@ class BundleUploadHandle implements UploadHandle {
     required PstService pstService,
     required Wallet wallet,
   }) async {
-    final bundle = await DataBundle.fromHandles(handles: dataItemUploadHandles);
+    final bundle = await DataBundle.fromHandles(
+      handles: List.castFrom<FileDataItemUploadHandle, DataItemHandle>(
+              fileDataItemUploadHandles) +
+          List.castFrom<FolderDataItemUploadHandle, DataItemHandle>(
+              folderDataItemUploadHandles),
+    );
     // Create bundle tx
     bundleTx = await arweaveService.prepareDataBundleTxFromBlob(
       bundle.blob,
       wallet,
     );
 
-    // Add tips to bundle tx
-    final bundleTip = await pstService.getPSTFee(bundleTx.reward);
-    bundleTx
-      ..addTag(TipType.tagName, TipType.dataUpload)
-      ..setTarget(await pstService.getWeightedPstHolder())
-      ..setQuantity(bundleTip);
+    await pstService.addCommunityTipToTx(bundleTx);
+
     await bundleTx.sign(wallet);
 
-    dataItemUploadHandles.forEach((file) async {
+    // Write entities to database
+    folderDataItemUploadHandles.forEach((folder) async {
+      await folder.writeFolderToDatabase(driveDao: driveDao);
+    });
+    fileDataItemUploadHandles.forEach((file) async {
       await file.writeFileEntityToDatabase(
           bundledInTxId: bundleTx.id, driveDao: driveDao);
     });
@@ -84,8 +92,11 @@ class BundleUploadHandle implements UploadHandle {
 
   Future<int> computeBundleSize() async {
     final fileSizes = <int>[];
-    for (var item in dataItemUploadHandles) {
+    for (var item in fileDataItemUploadHandles) {
       fileSizes.add(await item.estimateDataItemSizes());
+    }
+    for (var item in folderDataItemUploadHandles) {
+      fileSizes.add(item.size);
     }
     var size = 0;
     // Add data item binary size

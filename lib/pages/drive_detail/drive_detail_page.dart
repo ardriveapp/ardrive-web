@@ -1,9 +1,9 @@
-import 'dart:math';
-
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/selected_item.dart';
+import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
+import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -12,21 +12,23 @@ import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
-import 'package:filesize/filesize.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:moor/moor.dart' show OrderingMode;
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../utils/app_localizations_wrapper.dart';
 import 'components/custom_paginated_data_table.dart';
 
 part 'components/drive_detail_actions_row.dart';
@@ -35,6 +37,7 @@ part 'components/drive_detail_data_list.dart';
 part 'components/drive_detail_data_table.dart';
 part 'components/drive_detail_data_table_source.dart';
 part 'components/drive_detail_folder_empty_card.dart';
+part 'components/fs_entry_preview_widget.dart';
 part 'components/fs_entry_side_sheet.dart';
 
 class DriveDetailPage extends StatelessWidget {

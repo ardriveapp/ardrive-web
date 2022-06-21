@@ -1,3 +1,4 @@
+import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
@@ -5,12 +6,10 @@ import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../../../utils/app_localizations_wrapper.dart';
-import '../app_shell.dart';
 
 class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppRoutePath> {
@@ -55,6 +54,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   Widget build(BuildContext context) =>
       BlocConsumer<ProfileCubit, ProfileState>(
         listener: (context, state) {
+          // Clear state to prevent the last drive from being attached on new login
+          if (state is ProfileLoggingOut) {
+            clearState();
+          }
+
           final anonymouslyShowDriveDetail =
               state is! ProfileLoggedIn && canAnonymouslyShowDriveDetail(state);
 
@@ -117,6 +121,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 if (state is DrivesLoadSuccess) {
                   shellPage =
                       !state.hasNoDrives ? DriveDetailPage() : NoDrivesPage();
+                  driveId = state.selectedDriveId;
                 }
 
                 shellPage ??= const SizedBox();

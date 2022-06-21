@@ -162,6 +162,7 @@ DataRow _buildFileRow({
               child: _buildFileIcon(
                 fileStatusFromTransactions(file.metadataTx, file.dataTx),
                 file.dataContentType,
+                appLocalizationsOf(context),
               ),
             ),
             Text(
@@ -183,24 +184,26 @@ DataRow _buildFileRow({
   );
 }
 
-Widget _buildFileIcon(String status, String? dataContentType) {
+Widget _buildFileIcon(
+  String status,
+  String? dataContentType,
+  AppLocalizations localizations,
+) {
   String tooltipMessage;
   Color indicatorColor;
   Widget icon;
 
-  // FIXME: context is not available here. Internationalization cannot be applied
-
   switch (status) {
     case TransactionStatus.pending:
-      tooltipMessage = 'Pending';
+      tooltipMessage = localizations.pending;
       indicatorColor = Colors.orange;
       break;
     case TransactionStatus.confirmed:
-      tooltipMessage = 'Confirmed';
+      tooltipMessage = localizations.confirmed;
       indicatorColor = Colors.green;
       break;
     case TransactionStatus.failed:
-      tooltipMessage = 'Failed';
+      tooltipMessage = localizations.failed;
       indicatorColor = Colors.red;
       break;
     default:

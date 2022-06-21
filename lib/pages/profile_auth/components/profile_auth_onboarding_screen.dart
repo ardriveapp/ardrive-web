@@ -1,9 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../utils/app_localizations_wrapper.dart';
 import 'profile_auth_shell.dart';
 
 class ProfileAuthOnboarding extends StatefulWidget {

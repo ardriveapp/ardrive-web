@@ -1,18 +1,18 @@
 import 'dart:convert';
 
-import 'package:ardrive/blocs/upload/upload_handle.dart';
+import 'package:ardrive/blocs/upload/models/upload_file.dart';
+import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:moor/moor.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-class FileUploadHandle implements UploadHandle {
+class FileV2UploadHandle implements UploadHandle {
   final FileEntity entity;
-  final XFile file;
+  final UploadFile file;
   final String path;
   final SecretKey? driveKey;
   final SecretKey? fileKey;
@@ -34,7 +34,7 @@ class FileUploadHandle implements UploadHandle {
   late Transaction entityTx;
   late Transaction dataTx;
 
-  FileUploadHandle({
+  FileV2UploadHandle({
     required this.entity,
     required this.path,
     required this.file,
@@ -52,8 +52,11 @@ class FileUploadHandle implements UploadHandle {
     });
   }
 
-  Future<void> prepareAndSignTransactions(
-      {required ArweaveService arweaveService, required Wallet wallet}) async {
+  Future<void> prepareAndSignTransactions({
+    required ArweaveService arweaveService,
+    required Wallet wallet,
+    required PstService pstService,
+  }) async {
     final packageInfo = await PackageInfo.fromPlatform();
 
     final fileData = await file.readAsBytes();
@@ -62,9 +65,10 @@ class FileUploadHandle implements UploadHandle {
           ? await createEncryptedTransaction(fileData, fileKey!)
           : Transaction.withBlobData(data: fileData),
       wallet,
-    );
+    )
+      ..addApplicationTags(version: packageInfo.version);
 
-    dataTx.addApplicationTags(version: packageInfo.version);
+    await pstService.addCommunityTipToTx(dataTx);
 
     // Don't include the file's Content-Type tag if it is meant to be private.
     if (!isPrivate) {

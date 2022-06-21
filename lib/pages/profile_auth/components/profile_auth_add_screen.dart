@@ -1,12 +1,12 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../utils/app_localizations_wrapper.dart';
 import 'profile_auth_shell.dart';
 
 class ProfileAuthAddScreen extends StatelessWidget {
@@ -109,10 +109,15 @@ class ProfileAuthAddScreen extends StatelessWidget {
                                   child: Text.rich(
                                     TextSpan(
                                       children: [
-                                        TextSpan(text: 'I agree to the '),
                                         TextSpan(
-                                          text:
-                                              'ArDrive terms of service and privacy policy',
+                                          // TODO replace at PE-1125
+                                          text: appLocalizationsOf(context)
+                                              .aggreeToTerms_main,
+                                        ),
+                                        TextSpan(
+                                          // TODO replace at PE-1125
+                                          text: appLocalizationsOf(context)
+                                              .aggreeToTerms_link,
                                           style: TextStyle(
                                             decoration:
                                                 TextDecoration.underline,

@@ -1,8 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/upload/upload_plan.dart';
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
+import 'package:ardrive/blocs/upload/models/io_file.dart';
+import 'package:ardrive/blocs/upload/models/upload_file.dart';
+import 'package:ardrive/blocs/upload/models/upload_plan.dart';
+import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:arweave/arweave.dart';
@@ -36,9 +40,9 @@ void main() {
   const tEmptyNestedFolderCount = 5;
 
   late Database db;
-  late List<XFile> tAllConflictingFiles;
-  late List<XFile> tSomeConflictingFiles;
-  late List<XFile> tNoConflictingFiles;
+  late List<UploadFile> tAllConflictingFiles;
+  late List<UploadFile> tSomeConflictingFiles;
+  late List<UploadFile> tNoConflictingFiles;
 
   final tWallet = getTestWallet();
   String? tWalletAddress;
@@ -74,19 +78,24 @@ void main() {
 
     // We need a real file path because in the UploadCubit we needs the size of the file
     // to know if the file is `tooLargeFiles`.
-    final _tRealPathFile = XFile('assets/config/dev.json');
+    final _tRealPathFile =
+        await IOFile.fromXFile(XFile('assets/config/dev.json'), tRootFolderId);
 
     // The `addTestFilesToDb` will generate files with this path and name, so it
     // will be a confliting file.
-    final tConflictingFile = XFile(tRootFolderId + '1');
+    final tConflictingFile =
+        await IOFile.fromXFile(XFile(tRootFolderId + '1'), tRootFolderId);
 
     // Contains only conflicting files.
-    tAllConflictingFiles = <XFile>[tConflictingFile];
+    tAllConflictingFiles = <UploadFile>[tConflictingFile];
 
     /// This list contains conflicting and non conflicting files.
-    tSomeConflictingFiles = <XFile>[tConflictingFile, XFile('dumb_test_path')];
+    tSomeConflictingFiles = <UploadFile>[
+      tConflictingFile,
+      await IOFile.fromXFile(XFile('dumb_test_path'), tRootFolderId)
+    ];
 
-    tNoConflictingFiles = <XFile>[_tRealPathFile];
+    tNoConflictingFiles = <UploadFile>[_tRealPathFile];
 
     mockArweave = MockArweaveService();
     mockPst = MockPstService();
@@ -107,7 +116,7 @@ void main() {
     );
   });
 
-  UploadCubit getUploadCubitInstanceWith(List<XFile> files) {
+  UploadCubit getUploadCubitInstanceWith(List<UploadFile> files) {
     return UploadCubit(
         uploadPlanUtils: mockUploadPlanUtils,
         driveId: tDriveId,
@@ -119,15 +128,20 @@ void main() {
         pst: mockPst);
   }
 
-  void setDumbUploadPlan() => when(() => mockUploadPlanUtils.xfilesToUploadPlan(
-      files: any(named: 'files'),
-      cipherKey: any(named: 'cipherKey'),
-      wallet: any(named: 'wallet'),
-      conflictingFiles: any(named: 'conflictingFiles'),
-      targetDrive: any(named: 'targetDrive'),
-      folderEntry: any<FolderEntry>(
-          named: 'folderEntry'))).thenAnswer((invocation) => Future.value(
-      UploadPlan.create(v2FileUploadHandles: {}, dataItemUploadHandles: {})));
+  void setDumbUploadPlan() => when(() => mockUploadPlanUtils.filesToUploadPlan(
+          files: any(named: 'files'),
+          cipherKey: any(named: 'cipherKey'),
+          wallet: any(named: 'wallet'),
+          conflictingFiles: any(named: 'conflictingFiles'),
+          targetDrive: any(named: 'targetDrive'),
+          targetFolder: any<FolderEntry>(named: 'folderEntry')))
+      .thenAnswer((invocation) => Future.value(
+            UploadPlan.create(
+              fileV2UploadHandles: {},
+              fileDataItemUploadHandles: {},
+              folderDataItemUploadHandles: {},
+            ),
+          ));
 
   group('check if there are some conflicting file', () {
     setUp(() {
@@ -165,7 +179,7 @@ void main() {
               TypeMatcher<UploadPreparationInitialized>(),
               TypeMatcher<UploadPreparationInProgress>(),
               UploadFileConflict(
-                  isAllFilesConflicting: true,
+                  areAllFilesConflicting: true,
                   conflictingFileNames: [tRootFolderId + '1']),
             ]);
 
@@ -184,7 +198,7 @@ void main() {
               TypeMatcher<UploadPreparationInitialized>(),
               TypeMatcher<UploadPreparationInProgress>(),
               UploadFileConflict(
-                  isAllFilesConflicting: false,
+                  areAllFilesConflicting: false,
                   conflictingFileNames: [tRootFolderId + '1'])
             ]);
 
@@ -205,8 +219,8 @@ void main() {
   });
 
   group('prepare upload plan and costs estimates', () {
-    late XFile tTooLargeFile;
-    late List<XFile> tTooLargeFiles;
+    late UploadFile tTooLargeFile;
+    late List<UploadFile> tTooLargeFiles;
 
     setUp(() {
       when(() => mockProfileCubit!.state).thenReturn(
@@ -225,15 +239,21 @@ void main() {
           .thenAnswer((invocation) => Future.value(BigInt.zero));
       when(() => mockArweave.getArUsdConversionRate())
           .thenAnswer((invocation) => Future.value(10));
-      when(() => mockUploadPlanUtils.xfilesToUploadPlan(
-              files: any(named: 'files'),
-              cipherKey: any(named: 'cipherKey'),
-              wallet: any(named: 'wallet'),
-              conflictingFiles: any(named: 'conflictingFiles'),
-              targetDrive: any(named: 'targetDrive'),
-              folderEntry: any<FolderEntry>(named: 'folderEntry')))
-          .thenAnswer((invocation) => Future.value(UploadPlan.create(
-              v2FileUploadHandles: {}, dataItemUploadHandles: {})));
+      when(() => mockUploadPlanUtils.filesToUploadPlan(
+          files: any(named: 'files'),
+          cipherKey: any(named: 'cipherKey'),
+          wallet: any(named: 'wallet'),
+          conflictingFiles: any(named: 'conflictingFiles'),
+          targetDrive: any(named: 'targetDrive'),
+          targetFolder: any<FolderEntry>(named: 'folderEntry'))).thenAnswer(
+        (invocation) => Future.value(
+          UploadPlan.create(
+            fileV2UploadHandles: {},
+            fileDataItemUploadHandles: {},
+            folderDataItemUploadHandles: {},
+          ),
+        ),
+      );
       when(() => mockProfileCubit!.isCurrentProfileArConnect())
           .thenAnswer((i) => Future.value(true));
     });
@@ -276,12 +296,16 @@ void main() {
     );
 
     blocTest<UploadCubit, UploadState>(
-      'should emit UploadFileTooLarge when a file larger than publicFileSizeLimit'
+      'should emit UploadFileTooLarge with hasFilesToUpload false when we have'
+      ' only a file larger than publicFileSizeLimit'
       ' is intended to upload',
       setUp: () async {
         final tFile = File('some_file.txt');
         tFile.writeAsBytesSync(Uint8List(publicFileSizeLimit.toInt() + 1));
-        tTooLargeFile = XFile(tFile.path);
+        tTooLargeFile = await IOFile.fromXFile(
+          XFile(tFile.path),
+          tRootFolderId,
+        );
         tTooLargeFiles = [tTooLargeFile];
       },
       build: () {
@@ -298,7 +322,67 @@ void main() {
         UploadPreparationInitialized(),
         TypeMatcher<UploadPreparationInProgress>(),
         UploadFileTooLarge(
-            tooLargeFileNames: [tTooLargeFiles.first.name], isPrivate: false)
+            hasFilesToUpload: false,
+            tooLargeFileNames: [tTooLargeFiles.first.name],
+            isPrivate: false)
+      ],
+    );
+
+    blocTest<UploadCubit, UploadState>(
+      'should emit UploadFileTooLarge with hasFilesToUpload true when we have'
+      ' others files not too large to upload',
+      setUp: () async {
+        final tFile = File('some_file.txt');
+        tFile.writeAsBytesSync(Uint8List(publicFileSizeLimit.toInt() + 1));
+        tTooLargeFile = await IOFile.fromXFile(
+          XFile(tFile.path),
+          tRootFolderId,
+        );
+      },
+      build: () {
+        final tTooLargeFilesWithNoConflictingFiles = tNoConflictingFiles
+          ..add(tTooLargeFile);
+
+        return getUploadCubitInstanceWith(tTooLargeFilesWithNoConflictingFiles);
+      },
+      tearDown: () {
+        File('some_file.txt').deleteSync();
+      },
+      act: (cubit) async {
+        await cubit.startUploadPreparation();
+        await cubit.prepareUploadPlanAndCostEstimates();
+      },
+      expect: () => <dynamic>[
+        UploadPreparationInitialized(),
+        TypeMatcher<UploadPreparationInProgress>(),
+        UploadFileTooLarge(
+            hasFilesToUpload: false,
+            tooLargeFileNames: [tTooLargeFiles.first.name],
+            isPrivate: false)
+      ],
+    );
+
+    blocTest<UploadCubit, UploadState>(
+      'should emit UploadReady when we have too large files but at least a not too large'
+      ' and select the UploadAction skipBigFiles to skip those ',
+      setUp: () {
+        when(() => mockProfileCubit!.isCurrentProfileArConnect())
+            .thenAnswer((i) => Future.value(false));
+      },
+      build: () {
+        return getUploadCubitInstanceWith(
+            tNoConflictingFiles..add(tTooLargeFile));
+      },
+      act: (cubit) async {
+        // TODO(@thiagocarvalhodev): Review
+        await cubit.startUploadPreparation();
+        await cubit.prepareUploadPlanAndCostEstimates(
+            uploadAction: UploadActions.Skip);
+      },
+      expect: () => <dynamic>[
+        UploadPreparationInitialized(),
+        UploadPreparationInProgress(isArConnect: false),
+        TypeMatcher<UploadReady>()
       ],
     );
 

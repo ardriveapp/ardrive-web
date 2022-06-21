@@ -3,11 +3,10 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
-import '../../../utils/app_localizations_wrapper.dart';
 import 'components.dart';
 
 Future<void> promptToMoveFolder(
@@ -212,24 +211,15 @@ class FsEntryMoveForm extends StatelessWidget {
                         ),
                         Divider(),
                         Padding(
-                            padding: const EdgeInsets.only(right: 16),
-                            child: ScreenTypeLayout(
-                              desktop: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _buildCreateFolderButton(),
-                                  _buildButtonBar(),
-                                ],
-                              ),
-                              mobile: Wrap(
-                                alignment: WrapAlignment.spaceBetween,
-                                children: [
-                                  _buildCreateFolderButton(),
-                                  _buildButtonBar(),
-                                ],
-                              ),
-                            )),
+                          padding: const EdgeInsets.only(right: 16),
+                          child: Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            children: [
+                              _buildCreateFolderButton(),
+                              _buildButtonBar(),
+                            ],
+                          ),
+                        )
                       ],
                     ),
                   )
