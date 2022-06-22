@@ -2,7 +2,7 @@ import 'package:ardrive/utils/mime_lookup.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('customLookupMimeType function', () {
+  group('lookupMimeType function', () {
     const tarGzPaths = [
       '.my.file.tar.gz',
       'another file that is cool.tar.gz',
@@ -19,14 +19,14 @@ void main() {
 
     test('returns the expected value for .tar.gz files', () {
       tarGzPaths.forEach((path) {
-        final mime = customLookupMimeType(path);
+        final mime = lookupMimeType(path);
         expect(mime, applicationXTar);
       });
     });
 
     test('returns the expected value for NON .tar.gz files', () {
       nonTarGzPaths.forEach((path) {
-        final mime = customLookupMimeType(path);
+        final mime = lookupMimeType(path);
         expect(mime == applicationXTar, false);
       });
     });

@@ -46,8 +46,7 @@ class UploadPlanUtils {
         size: fileSize,
         lastModifiedDate: file.lastModifiedDate,
         parentFolderId: file.parentFolderId,
-        dataContentType:
-            customLookupMimeType(fileName) ?? 'application/octet-stream',
+        dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
       );
 
       // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.

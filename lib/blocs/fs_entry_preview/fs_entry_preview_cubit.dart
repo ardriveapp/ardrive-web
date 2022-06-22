@@ -54,7 +54,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             .listen((file) {
           if (file.size <= previewMaxFileSize) {
             final contentType =
-                file.dataContentType ?? customLookupMimeType(file.name);
+                file.dataContentType ?? lookupMimeType(file.name);
             final fileExtension = contentType?.split('/').last;
             final previewType = contentType?.split('/').first;
             final previewUrl =
