@@ -43,7 +43,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
           file: XFile.fromData(
             dataBytes,
             name: file.name,
-            mimeType: lookupMimeType(file.name!),
+            mimeType: customLookupMimeType(file.name!),
             length: dataBytes.lengthInBytes,
             lastModified: file.lastModifiedDate,
           ),
