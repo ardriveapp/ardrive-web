@@ -7,6 +7,7 @@ bool isTabHidden() {
 void whenTabIsUnhidden(Function onShow) {
   document.addEventListener('visibilitychange', (event) {
     if (document.visibilityState != 'hidden') {
+      print('Calling the listener callback to whenTabIsUnhidden');
       onShow();
     }
   });

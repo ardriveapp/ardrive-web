@@ -48,7 +48,6 @@ class ProfileCubit extends Cubit<ProfileState> {
       emit(ProfilePromptAdd());
       return;
     }
-
     // json wallet present - route to login screen
     if (profile.profileType != ProfileType.ArConnect.index) {
       emit(ProfilePromptLogIn());
@@ -169,9 +168,9 @@ class ProfileCubit extends Cubit<ProfileState> {
         print(e);
       }
     }
+    emit(ProfileLoggingOut());
 
     await deleteTables();
-    emit(ProfileLoggingOut());
 
     unawaited(promptToAuthenticate());
   }
@@ -179,7 +178,9 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> deleteTables() async {
     // Delete all table data.
     await _db.transaction(() async {
+      print('Is table empty: ${_db.allTables.isEmpty}');
       for (final table in _db.allTables) {
+        print('deleting table: ${table.actualTableName}');
         await _db.delete(table).go();
       }
     });
