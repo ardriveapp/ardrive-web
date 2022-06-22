@@ -6,11 +6,11 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
+import 'package:ardrive/utils/mime_lookup.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:http/http.dart' as http;
-import 'package:mime/mime.dart';
 import 'package:moor/moor.dart';
 
 part 'fs_entry_preview_state.dart';
