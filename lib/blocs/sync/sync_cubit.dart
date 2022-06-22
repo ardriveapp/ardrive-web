@@ -19,6 +19,8 @@ import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 import 'package:retry/retry.dart';
 
+import '../../utils/html/implementations/html_web.dart';
+
 part 'sync_state.dart';
 
 abstract class LinearProgress {
@@ -140,21 +142,24 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void restartSyncOnFocus() {
-    syncFormatedPrint('Restarting sync on focus...');
+    whenBrowserTabIsUnhidden(_restartSync);
+  }
 
-    whenBrowserTabIsUnhidden(() {
+  void _restartSync() {
+    syncFormatedPrint(
+        'Trying to create a sync subscription when window get focused again. This Cubit is active? ${!isClosed}');
+
+    if ((_lastSync != null &&
+            DateTime.now().difference(_lastSync!).inMinutes <
+                kSyncTimerDuration) ||
+        isClosed) {
       syncFormatedPrint(
-          'Trying to create a sync subscription when window get focused again. This Cubit is active? ${!isClosed}');
+          'Not possible restart sync when window get focused due to: is current active? ${!isClosed} or the last sync was ${DateTime.now().difference(_lastSync!).inMinutes} minutes ago. It should be $kSyncTimerDuration');
+      return;
+    }
 
-      if ((_lastSync != null &&
-              DateTime.now().difference(_lastSync!).inMinutes <
-                  kSyncTimerDuration) ||
-          isClosed) {
-        return;
-      }
-      Future.delayed(const Duration(seconds: 2)).then((value) {
-        createSyncStream();
-      });
+    Future.delayed(const Duration(seconds: 2)).then((value) {
+      createSyncStream();
     });
   }
 
@@ -1207,6 +1212,7 @@ class SyncCubit extends Cubit<SyncState> {
     syncFormatedPrint('Closing SyncCubit...');
     await _syncSub?.cancel();
     await _arconnectSyncSub?.cancel();
+    await closeVisibilityChangeStream();
     await super.close();
   }
 
