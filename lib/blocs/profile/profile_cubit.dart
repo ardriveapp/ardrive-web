@@ -168,9 +168,10 @@ class ProfileCubit extends Cubit<ProfileState> {
         print(e);
       }
     }
-    emit(ProfileLoggingOut());
 
     await deleteTables();
+
+    emit(ProfileLoggingOut());
 
     unawaited(promptToAuthenticate());
   }
