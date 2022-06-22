@@ -1,12 +1,13 @@
 import 'package:mime/mime.dart';
 
-final tarGzRegexp = RegExp('.tar.gz^');
+/// Matches all strings that ends with `.tar.gz` and has at least one character before that
+final tarGzRegexp = RegExp('.\\.tar\\.gz\$');
+
 const applicationXTar = 'application/x-tar';
 
 String? customLookupMimeType(String path, {List<int>? headerBytes}) {
   final pathMatch = tarGzRegexp.firstMatch(path);
-  final doesTheNameHaveMoreCharsBeforeTheExtension = path.length > 7;
-  if (pathMatch != null && doesTheNameHaveMoreCharsBeforeTheExtension) {
+  if (pathMatch != null) {
     return applicationXTar;
   }
   return lookupMimeType(path, headerBytes: headerBytes);
