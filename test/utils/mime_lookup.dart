@@ -3,32 +3,23 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('lookupMimeType function', () {
-    const tarGzPaths = [
-      '.my.file.tar.gz',
-      'another file that is cool.tar.gz',
-      'abcdefghijklmnñopqrstuvwxyz.tar.gz',
-      'path/to/my/file.tar.gz',
-    ];
-    const nonTarGzPaths = [
-      '.tar.gz',
-      'my.non.tar.gz.file',
-      'ardrive.png',
-      'where\'s waldo.tar.gz.',
-      'path/to/my/non tar/file.iso',
-    ];
+    const pathToMimeMapping = <String, String?>{
+      '.my.file.tar.gz': 'application/x-tar',
+      'abcdefghijklmnñopqrstuvwxyz.tar.gz': 'application/x-tar',
+      'path/to/my/file.tar.gz': 'application/x-tar',
+      'path/to/my/non tar/file.iso': 'application/x-iso9660-image',
+      'ardrive.png': 'image/png',
+      '.tar.gz': null,
+      'my.non.tar.gz.file': null,
+      'where\'s waldo.tar.gz.': null,
+    };
 
-    test('returns the expected value for .tar.gz files', () {
-      tarGzPaths.forEach((path) {
+    test('returns the expected mime type', () {
+      for (final path in pathToMimeMapping.keys) {
+        final expectedMime = pathToMimeMapping[path];
         final mime = lookupMimeType(path);
-        expect(mime, applicationXTar);
-      });
-    });
-
-    test('returns the expected value for NON .tar.gz files', () {
-      nonTarGzPaths.forEach((path) {
-        final mime = lookupMimeType(path);
-        expect(mime == applicationXTar, false);
-      });
+        expect(mime, expectedMime);
+      }
     });
   });
 }
