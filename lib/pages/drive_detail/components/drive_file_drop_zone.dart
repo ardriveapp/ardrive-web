@@ -125,7 +125,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
               profileCubit: context.read<ProfileCubit>(),
               driveDao: context.read<DriveDao>(),
             )..startUploadPreparation(),
-            child: UploadForm(),
+            child: const UploadForm(),
           ),
           barrierDismissible: false,
         ).then((value) => isCurrentlyShown = false),

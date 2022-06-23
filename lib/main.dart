@@ -81,6 +81,7 @@ class _AppState extends State<App> {
             supportedLocales: const [
               Locale('en', ''), // English, no country code
               Locale('es', ''), // Spanish, no country code
+              Locale('zh', ''), // Chinese (Mandarin), no country code
             ],
             builder: (context, child) => ListTileTheme(
               textColor: kOnSurfaceBodyTextColor,

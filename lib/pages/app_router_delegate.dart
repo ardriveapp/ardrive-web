@@ -56,6 +56,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   Widget build(BuildContext context) =>
       BlocConsumer<ProfileCubit, ProfileState>(
         listener: (context, state) {
+          // Clear state to prevent the last drive from being attached on new login
+          if (state is ProfileLoggingOut) {
+            clearState();
+          }
+
           final anonymouslyShowDriveDetail =
               state is! ProfileLoggedIn && canAnonymouslyShowDriveDetail(state);
 
