@@ -5,6 +5,7 @@ class R {
   static const manifestLearnMoreLink =
       'https://ardrive.atlassian.net/wiki/spaces/help/pages/359530513/Arweave+Manifests';
   static const infernoRulesLink = 'https://ardrive.io/inferno/';
+  static const helpLink = 'https://ardrive.zendesk.com/';
 }
 
 class Images {

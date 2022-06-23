@@ -132,8 +132,7 @@ class AppDrawer extends StatelessWidget {
                                 child: FloatingActionButton(
                                   elevation: 0,
                                   tooltip: appLocalizationsOf(context).help,
-                                  onPressed: () =>
-                                      launch('https://ardrive.zendesk.com/'),
+                                  onPressed: () => launch(R.helpLink),
                                   child: const Icon(Icons.help_outline),
                                 ),
                               ),
