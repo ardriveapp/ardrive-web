@@ -172,6 +172,8 @@ class AppDrawer extends StatelessWidget {
                                   bottom: 8.0,
                                 ),
                                 child: IconButton(
+                                  tooltip: appLocalizationsOf(context)
+                                      .infernoIsInFullSwing,
                                   onPressed: () {
                                     launchInfernoRulesURL();
                                   },

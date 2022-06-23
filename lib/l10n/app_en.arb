@@ -1291,5 +1291,9 @@
         "example": "Shared Drive A"
       }
     }
+  },
+  "infernoIsInFullSwing": "The Inferno Rewards Program is in full swing! Click here to check out the rules for participation!",
+  "@infernoIsInFullSwing": {
+    "description": "The text invites users to go read the Inferno rules"
   }
 }
