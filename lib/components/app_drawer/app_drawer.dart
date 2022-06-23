@@ -32,11 +32,11 @@ class AppDrawer extends StatelessWidget {
                   Expanded(
                     child: Column(
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           height: 32,
                         ),
                         _buildLogo(),
-                        SizedBox(
+                        const SizedBox(
                           height: 32,
                         ),
                         BlocBuilder<ProfileCubit, ProfileState>(
@@ -48,8 +48,10 @@ class AppDrawer extends StatelessWidget {
                           Expanded(
                             child: Scrollbar(
                               child: ListView(
-                                padding: EdgeInsets.all(21),
-                                key: PageStorageKey<String>('driveScrollView'),
+                                padding: const EdgeInsets.all(21),
+                                key: const PageStorageKey<String>(
+                                  'driveScrollView',
+                                ),
                                 children: [
                                   if (state.userDrives.isNotEmpty ||
                                       state.sharedDrives.isEmpty) ...{
@@ -116,45 +118,72 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: EdgeInsets.all(21),
-                    alignment: Alignment.centerLeft,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: FloatingActionButton(
-                            elevation: 0,
-                            tooltip: appLocalizationsOf(context).help,
-                            onPressed: () =>
-                                launch('https://ardrive.zendesk.com/'),
-                            child: const Icon(Icons.help_outline),
-                          ),
-                        ),
-                        FutureBuilder(
-                          future: PackageInfo.fromPlatform(),
-                          builder: (BuildContext context,
-                              AsyncSnapshot<PackageInfo> snapshot) {
-                            if (snapshot.hasData) {
-                              return Padding(
+                      padding: const EdgeInsets.all(21),
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
                                 padding: const EdgeInsets.all(8.0),
-                                child: Text(
-                                  appLocalizationsOf(context)
-                                      .appVersion(snapshot.data!.version),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .caption!
-                                      .copyWith(color: Colors.grey),
+                                child: FloatingActionButton(
+                                  elevation: 0,
+                                  tooltip: appLocalizationsOf(context).help,
+                                  onPressed: () =>
+                                      launch('https://ardrive.zendesk.com/'),
+                                  child: const Icon(Icons.help_outline),
                                 ),
-                              );
-                            } else {
-                              return SizedBox(height: 32, width: 32);
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
+                              ),
+                              FutureBuilder(
+                                future: PackageInfo.fromPlatform(),
+                                builder: (BuildContext context,
+                                    AsyncSnapshot<PackageInfo> snapshot) {
+                                  if (snapshot.hasData) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        appLocalizationsOf(context)
+                                            .appVersion(snapshot.data!.version),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .caption!
+                                            .copyWith(color: Colors.grey),
+                                      ),
+                                    );
+                                  } else {
+                                    return const SizedBox(
+                                        height: 32, width: 32);
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 8.0,
+                                  right: 16.0,
+                                  left: 8.0,
+                                  bottom: 8.0,
+                                ),
+                                child: IconButton(
+                                  onPressed: () {
+                                    print('TODO: open inferno rules');
+                                  },
+                                  icon: const Icon(Icons.local_fire_department),
+                                  color: Colors.deepOrange,
+                                  iconSize: 50,
+                                ),
+                              ),
+                              const SizedBox(height: 32, width: 32),
+                            ],
+                          )
+                        ],
+                      )),
                 ],
               ),
             ),
@@ -196,10 +225,10 @@ class AppDrawer extends StatelessWidget {
                     itemBuilder: (context) => [
                       if (state is DriveDetailLoadSuccess) ...{
                         _buildNewFolderItem(context, state, hasMinBalance),
-                        PopupMenuDivider(),
+                        const PopupMenuDivider(key: Key('divider-1')),
                         _buildUploadFileItem(context, state, hasMinBalance),
                         _buildUploadFolderItem(context, state, hasMinBalance),
-                        PopupMenuDivider(),
+                        const PopupMenuDivider(key: Key('divider-2')),
                       },
                       if (drivesState is DrivesLoadSuccess) ...{
                         _buildCreateDrive(context, drivesState, hasMinBalance),
@@ -231,7 +260,7 @@ class AppDrawer extends StatelessWidget {
               onPressed: () => launch(R.arHelpLink),
               child: Text(
                 appLocalizationsOf(context).howDoIGetAR,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.grey,
                   decoration: TextDecoration.underline,
                 ),
@@ -351,7 +380,7 @@ class AppDrawer extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         label: Text(
           appLocalizationsOf(context).newStringEmphasized,
-          style: TextStyle(
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
         ),
