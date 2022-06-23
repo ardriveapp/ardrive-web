@@ -4,6 +4,7 @@ import 'package:ardrive/components/components.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/launch_inferno_rules.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -172,7 +173,7 @@ class AppDrawer extends StatelessWidget {
                                 ),
                                 child: IconButton(
                                   onPressed: () {
-                                    print('TODO: open inferno rules');
+                                    launchInfernoRulesURL();
                                   },
                                   icon: const Icon(Icons.local_fire_department),
                                   color: Colors.deepOrange,
