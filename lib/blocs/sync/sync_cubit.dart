@@ -148,16 +148,17 @@ class SyncCubit extends Cubit<SyncState> {
   void _restartSync() {
     syncFormatedPrint(
         'Trying to create a sync subscription when window get focused again. This Cubit is active? ${!isClosed}');
+    final isTimerDurationReadyToSync = _lastSync != null &&
+        DateTime.now().difference(_lastSync!).inMinutes >= kSyncTimerDuration;
 
-    if ((_lastSync != null &&
-            DateTime.now().difference(_lastSync!).inMinutes <
-                kSyncTimerDuration) ||
-        isClosed) {
+    if (!isTimerDurationReadyToSync) {
       syncFormatedPrint(
           'Not possible restart sync when window get focused due to: is current active? ${!isClosed} or the last sync was ${DateTime.now().difference(_lastSync!).inMinutes} minutes ago. It should be $kSyncTimerDuration');
       return;
     }
 
+    /// This delay is for don't abruptly open the modal when the user is back
+    ///  to ArDrive browser tab
     Future.delayed(const Duration(seconds: 2)).then((value) {
       createSyncStream();
     });
@@ -187,7 +188,7 @@ class SyncCubit extends Cubit<SyncState> {
   void restartArConnectSyncOnFocus() async {
     if (await _profileCubit.isCurrentProfileArConnect()) {
       whenBrowserTabIsUnhidden(() {
-        Future.delayed(Duration(seconds: 2))
+        Future.delayed(const Duration(seconds: 2))
             .then((value) => createArConnectSyncStream());
       });
     }
@@ -458,8 +459,6 @@ class SyncCubit extends Cubit<SyncState> {
     /// First phase of the sync
     /// Here we get all transactions from its drive.
     await for (var t in transactionsStream) {
-      late int currentPageBlockHeight;
-
       if (t.isEmpty) continue;
 
       double _calculatePercentageBasedOnBlockHeights() => (1 -
@@ -470,8 +469,6 @@ class SyncCubit extends Cubit<SyncState> {
         firstBlockHeight = t.first.node.block!.height;
         totalBlockHeightDifference = currentBlockheight - firstBlockHeight;
       }
-
-      currentPageBlockHeight = t.last.node.block!.height;
 
       transactions.addAll(t);
 
@@ -571,7 +568,7 @@ class SyncCubit extends Cubit<SyncState> {
       await _driveDao.writeToDrive(DrivesCompanion(
         id: Value(drive.id),
         lastBlockHeight: Value(currentBlockHeight),
-        syncCursor: Value(null),
+        syncCursor: const Value(null),
       ));
 
       /// If there's nothing to sync, we assume that all were synced
@@ -631,7 +628,7 @@ class SyncCubit extends Cubit<SyncState> {
             await _driveDao.writeToDrive(DrivesCompanion(
               id: Value(drive.id),
               lastBlockHeight: Value(currentBlockHeight),
-              syncCursor: Value(null),
+              syncCursor: const Value(null),
             ));
           }
 
@@ -793,7 +790,7 @@ class SyncCubit extends Cubit<SyncState> {
                 (rev) => NetworkTransactionsCompanion.insert(
                   transactionDateCreated: rev.dateCreated,
                   id: rev.metadataTxId.value,
-                  status: Value(TransactionStatus.confirmed),
+                  status: const Value(TransactionStatus.confirmed),
                 ),
               )
               .toList());
@@ -846,7 +843,7 @@ class SyncCubit extends Cubit<SyncState> {
                 (rev) => NetworkTransactionsCompanion.insert(
                   transactionDateCreated: rev.dateCreated,
                   id: rev.metadataTxId.value,
-                  status: Value(TransactionStatus.confirmed),
+                  status: const Value(TransactionStatus.confirmed),
                 ),
               )
               .toList());
@@ -1125,7 +1122,7 @@ class SyncCubit extends Cubit<SyncState> {
               confirmations[txId]! >= kRequiredTxConfirmationCount;
           final txNotFound = confirmations[txId]! < 0;
 
-          var txStatus;
+          String? txStatus;
 
           DateTime? transactionDateCreated;
 
