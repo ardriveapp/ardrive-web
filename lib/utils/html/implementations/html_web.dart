@@ -9,8 +9,9 @@ late StreamSubscription _onVisibilityChangeStream;
 
 void whenTabIsUnhidden(Function onShow) {
   _onVisibilityChangeStream = document.onVisibilityChange.listen((event) {
-    print('listening visibility change ${event.toString()}');
-    if (!isTabHidden()) onShow();
+    if (!isTabHidden()) {
+      onShow();
+    }
   });
 }
 
