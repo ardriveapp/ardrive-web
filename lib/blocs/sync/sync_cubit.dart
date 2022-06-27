@@ -451,7 +451,7 @@ class SyncCubit extends Cubit<SyncState> {
 
     /// In order to measure the sync progress by the block height, we use the difference
     /// between the first block and the `currentBlockheight`
-    int? totalBlockHeightDifference;
+    late int totalBlockHeightDifference;
 
     /// This percentage is based on block heights.
     var fetchPhasePercentage = 0.0;
@@ -463,7 +463,7 @@ class SyncCubit extends Cubit<SyncState> {
 
       double _calculatePercentageBasedOnBlockHeights() => (1 -
           ((currentBlockheight - t.last.node.block!.height) /
-              totalBlockHeightDifference!));
+              totalBlockHeightDifference));
 
       if (firstBlockHeight == null) {
         firstBlockHeight = t.first.node.block!.height;
@@ -482,7 +482,7 @@ class SyncCubit extends Cubit<SyncState> {
 
       yield _syncProgress;
 
-      if (totalBlockHeightDifference! > 0) {
+      if (totalBlockHeightDifference > 0) {
         fetchPhasePercentage += _calculatePercentageProgress(
             fetchPhasePercentage, _calculatePercentageBasedOnBlockHeights());
       } else {
