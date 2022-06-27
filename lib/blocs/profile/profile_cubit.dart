@@ -179,9 +179,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> deleteTables() async {
     // Delete all table data.
     await _db.transaction(() async {
-      print('Is table empty: ${_db.allTables.isEmpty}');
       for (final table in _db.allTables) {
-        print('deleting table: ${table.actualTableName}');
         await _db.delete(table).go();
       }
     });
