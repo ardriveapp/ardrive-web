@@ -9,7 +9,7 @@ void main() {
   final rateLimit = Response('body', 429);
   final unknownError = Response('body', 400);
   final serverError502 = Response('body', 502);
-  group('description', () {
+  group('Testing NetworkErrorHandler class', () {
     test('should return ServerError', () {
       expect(ServerError(statusCode: 502, reasonPhrase: ''),
           sut.handle(serverError502));
