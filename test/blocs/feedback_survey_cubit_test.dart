@@ -65,7 +65,7 @@ void main() {
     blocTest<FeedbackSurveyCubit, FeedbackSurveyState>(
       'no thanks! dont remind me again',
       build: () => feedbackCubit,
-      act: (bloc) async => await bloc.closeDontRemindMe(),
+      act: (bloc) async => bloc.closeDontRemindMe(),
       expect: () => [
         FeedbackSurveyDontRemindMe(isOpen: false),
       ],
