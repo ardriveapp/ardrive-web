@@ -45,6 +45,9 @@ class _FileShareDialogState extends State<FileShareDialog> {
           }
         },
         builder: (context, state) => AppDialog(
+          onWillPopCallback: () async {
+            context.read<FeedbackSurveyCubit>().openRemindMe();
+          },
           title: appLocalizationsOf(context).shareFileWithOthers,
           content: SizedBox(
             width: kLargeDialogWidth,
