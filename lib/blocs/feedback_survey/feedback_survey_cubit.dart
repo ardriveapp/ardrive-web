@@ -51,4 +51,8 @@ class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
     await (await _store).putBool(dontRemindMeAgainKey, true);
     emit(FeedbackSurveyDontRemindMe(isOpen: false));
   }
+
+  void reset() {
+    _hasAlreadyBeenOpened = false;
+  }
 }

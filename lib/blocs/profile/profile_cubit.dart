@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/entities/profileTypes.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
@@ -19,14 +20,17 @@ class ProfileCubit extends Cubit<ProfileState> {
   final ArweaveService _arweave;
   final ProfileDao _profileDao;
   final Database _db;
+  final FeedbackSurveyCubit _feedbackSurveyCubit;
 
   ProfileCubit({
     required ArweaveService arweave,
     required ProfileDao profileDao,
     required Database db,
+    required FeedbackSurveyCubit feedbackSurveyCubit,
   })  : _arweave = arweave,
         _profileDao = profileDao,
         _db = db,
+        _feedbackSurveyCubit = feedbackSurveyCubit,
         super(ProfileCheckingAvailability()) {
     promptToAuthenticate();
   }
@@ -161,6 +165,8 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<void> logoutProfile() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
     final arconnect = ArConnectService();
+
+    _feedbackSurveyCubit.reset();
 
     if (profile != null && profile.profileType == ProfileType.ArConnect.index) {
       try {
