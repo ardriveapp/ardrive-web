@@ -3,7 +3,10 @@ import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/error.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
+import 'package:ardrive/utils/http_retry.dart';
+import 'package:ardrive/utils/network_error_handler.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -24,6 +27,7 @@ class ArweaveService {
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     _graphQLRetry = GraphQLRetry(_gql);
+    httpRetry = HttpRetry(NetworkErrorHandler());
   }
 
   int bytesToChunks(int bytes) {
@@ -31,6 +35,7 @@ class ArweaveService {
   }
 
   late GraphQLRetry _graphQLRetry;
+  late HttpRetry httpRetry;
 
   /// Returns the onchain balance of the specified address.
   Future<BigInt> getWalletBalance(String address) => client.api
@@ -48,7 +53,7 @@ class ArweaveService {
 
   Future<int> getMempoolSizeFromArweave() async {
     final response = await client.api.get('tx/pending');
-    
+
     if (response.statusCode == 200) {
       return (json.decode(response.body) as List).length;
     }
@@ -120,18 +125,12 @@ class ArweaveService {
       int lastBlockHeight) async {
     final entityTxs = <
         DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>[];
+
     entityTxs.addAll(queryEdges.map((e) => e.node).toList());
 
     final responses = await Future.wait(
       entityTxs.map((e) async {
-        return retry(
-          () => client.api.getSandboxedTx(e.id),
-          onRetry: (exception) {
-            print(
-              'Retrying for get ${e.id} metadata on exception ${exception.toString()}',
-            );
-          },
-        );
+        return httpRetry.call(() => client.api.getSandboxedTx(e.id));
       }),
     );
 
@@ -154,15 +153,6 @@ class ArweaveService {
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
         final entityResponse = responses[i];
-
-        if (entityResponse.statusCode != 200) {
-          throw EntityTransactionDataNetworkException(
-            transactionId: transaction.id,
-            statusCode: entityResponse.statusCode,
-            reasonPhrase: entityResponse.reasonPhrase,
-          );
-        }
-
         final rawEntityData = entityResponse.bodyBytes;
 
         Entity? entity;
@@ -193,10 +183,10 @@ class ArweaveService {
           'Failed to parse transaction '
           'with id ${parseException.transactionId}',
         );
-      } on EntityTransactionDataNetworkException catch (fetchException) {
+      } on NetworkError catch (fetchException) {
         print(
           'Failed to fetch entity data '
-          'for transaction ${fetchException.transactionId}, '
+          'for transaction ${transaction.id}, '
           'with status ${fetchException.statusCode} '
           'and reason ${fetchException.reasonPhrase}',
         );
