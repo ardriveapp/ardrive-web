@@ -43,12 +43,12 @@ class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
     emit(FeedbackSurveyDontRemindMe(isOpen: false));
   }
 
-  void dontRemindMe() {
+  Future<void> dontRemindMe() async {
+    await (await _store).putBool(dontRemindMeAgainKey, true);
     emit(FeedbackSurveyDontRemindMe(isOpen: true));
   }
 
-  Future<void> closeDontRemindMe() async {
-    await (await _store).putBool(dontRemindMeAgainKey, true);
+  void closeDontRemindMe() {
     emit(FeedbackSurveyDontRemindMe(isOpen: false));
   }
 }
