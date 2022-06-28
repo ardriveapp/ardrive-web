@@ -51,4 +51,8 @@ class FeedbackSurveyCubit extends Cubit<FeedbackSurveyState> {
   void closeDontRemindMe() {
     emit(FeedbackSurveyDontRemindMe(isOpen: false));
   }
+
+  void reset() {
+    _hasAlreadyBeenOpened = false;
+  }
 }

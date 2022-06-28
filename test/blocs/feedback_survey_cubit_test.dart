@@ -35,20 +35,30 @@ void main() {
     );
 
     blocTest<FeedbackSurveyCubit, FeedbackSurveyState>(
-      'leave feedback',
-      build: () => feedbackCubit,
-      act: (bloc) async => await bloc.leaveFeedback(),
-      expect: () => [
-        FeedbackSurveyDontRemindMe(isOpen: false),
-      ],
-    );
-
-    blocTest<FeedbackSurveyCubit, FeedbackSurveyState>(
       'dismiss modal',
       build: () => feedbackCubit,
       act: (bloc) => bloc.closeRemindMe(),
       expect: () => [
         FeedbackSurveyRemindMe(isOpen: false),
+      ],
+    );
+
+    blocTest<FeedbackSurveyCubit, FeedbackSurveyState>(
+      'the modal will be opened again if reset was called',
+      build: () => feedbackCubit,
+      act: (bloc) async {
+        bloc.reset();
+        await bloc.openRemindMe();
+      },
+      expect: () => [FeedbackSurveyRemindMe(isOpen: true)],
+    );
+
+    blocTest<FeedbackSurveyCubit, FeedbackSurveyState>(
+      'leave feedback',
+      build: () => feedbackCubit,
+      act: (bloc) async => await bloc.leaveFeedback(),
+      expect: () => [
+        FeedbackSurveyDontRemindMe(isOpen: false),
       ],
     );
 
@@ -60,29 +70,9 @@ void main() {
         FeedbackSurveyDontRemindMe(isOpen: false),
       ],
     );
-  });
-
-  group('FeedbackSurveyCubit preferences', () {
-    late KeyValueStore store;
-    late FeedbackSurveyCubit feedbackCubit;
-
-    setUp(() async {
-      registerFallbackValue(SyncStateFake());
-      registerFallbackValue(ProfileStateFake());
-
-      Map<String, Object> values = <String, Object>{
-        FeedbackSurveyCubit.dontRemindMeAgainKey: true
-      };
-      SharedPreferences.setMockInitialValues(values);
-      final fakePrefs = await SharedPreferences.getInstance();
-      store = await LocalKeyValueStore.getInstance(prefs: fakePrefs);
-
-      feedbackCubit =
-          FeedbackSurveyCubit(FeedbackSurveyInitialState(), store: store);
-    });
 
     blocTest<FeedbackSurveyCubit, FeedbackSurveyState>(
-      'won\'t open modal when set',
+      'won\'t open modal when the preference is set to false',
       build: () => feedbackCubit,
       act: (bloc) async => await bloc.openRemindMe(),
       expect: () => [],

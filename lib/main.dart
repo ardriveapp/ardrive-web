@@ -57,6 +57,7 @@ class _AppState extends State<App> {
                 arweave: context.read<ArweaveService>(),
                 profileDao: context.read<ProfileDao>(),
                 db: context.read<Database>(),
+                feedbackSurveyCubit: context.read<FeedbackSurveyCubit>(),
               ),
             ),
             BlocProvider(
