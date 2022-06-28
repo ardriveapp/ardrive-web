@@ -6,6 +6,7 @@ class AppDialog extends StatelessWidget {
   final EdgeInsetsGeometry contentPadding;
   final Widget content;
   final List<Widget> actions;
+  final Future<void> Function()? onWillPopCallback;
 
   final bool dismissable;
 
@@ -13,13 +14,19 @@ class AppDialog extends StatelessWidget {
     required this.title,
     this.contentPadding = const EdgeInsets.fromLTRB(24, 20, 24, 24),
     required this.content,
+    this.onWillPopCallback,
     this.actions = const [],
     this.dismissable = true,
   });
 
   @override
   Widget build(BuildContext context) => WillPopScope(
-        onWillPop: () async => dismissable,
+        onWillPop: () async {
+          if (onWillPopCallback is Function) {
+            await onWillPopCallback!();
+          }
+          return dismissable;
+        },
         child: AlertDialog(
           titlePadding: EdgeInsets.zero,
           title: Container(
