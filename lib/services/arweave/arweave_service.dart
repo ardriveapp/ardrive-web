@@ -6,7 +6,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/error.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
-import 'package:ardrive/utils/network_error_handler.dart';
+import 'package:ardrive/utils/response_handler.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -27,7 +27,7 @@ class ArweaveService {
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     _graphQLRetry = GraphQLRetry(_gql);
-    httpRetry = HttpRetry(NetworkErrorHandler());
+    httpRetry = HttpRetry(GatewayResponseHandler());
   }
 
   int bytesToChunks(int bytes) {
@@ -130,7 +130,7 @@ class ArweaveService {
 
     final responses = await Future.wait(
       entityTxs.map((e) async {
-        return httpRetry.call(() => client.api.getSandboxedTx(e.id));
+        return httpRetry.processRequest(() => client.api.getSandboxedTx(e.id));
       }),
     );
 

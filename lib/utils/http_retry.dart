@@ -2,22 +2,18 @@ import 'package:http/http.dart';
 import 'package:retry/retry.dart';
 
 import 'error.dart';
-import 'network_error_handler.dart';
+import 'response_handler.dart';
 
 class HttpRetry {
-  HttpRetry(this.errorHandler);
+  HttpRetry(this.responseHandler);
 
-  final NetworkErrorHandler errorHandler;
+  final GatewayResponseHandler responseHandler;
 
-  Future<Response> call(Future<Response> Function() request) {
+  Future<Response> processRequest(Future<Response> Function() request) {
     return retry(() async {
       final response = await request();
 
-      if (response.statusCode == 200) {
-        return response;
-      }
-
-      throw errorHandler.handle(response);
+      return responseHandler.handle(response);
     }, onRetry: (exception) {
       if (exception is NetworkError) {
         print(
