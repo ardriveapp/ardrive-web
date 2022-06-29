@@ -185,7 +185,7 @@ class AppDrawer extends StatelessWidget {
                                         image: AssetImage(
                                           'images/inferno/flame_icon.png',
                                         ),
-                                        color: null,
+                                        color: Color(kPrimaryValue),
                                         height: 50.0,
                                         width: 50.0,
                                       ),
