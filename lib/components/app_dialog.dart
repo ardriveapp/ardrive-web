@@ -19,7 +19,8 @@ class AppDialog extends StatelessWidget {
     this.onWillPopCallback,
     this.actions = const [],
     this.dismissable = true,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) => WillPopScope(
