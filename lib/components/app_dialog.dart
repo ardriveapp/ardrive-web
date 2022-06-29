@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 
@@ -6,7 +8,7 @@ class AppDialog extends StatelessWidget {
   final EdgeInsetsGeometry contentPadding;
   final Widget content;
   final List<Widget> actions;
-  final Future<void> Function()? onWillPopCallback;
+  final FutureOr<void> Function()? onWillPopCallback;
 
   final bool dismissable;
 
