@@ -175,6 +175,13 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                           }
                         },
                       ),
+                      BlocListener<ProfileCubit, ProfileState>(
+                        listener: ((context, state) {
+                          if (state is ProfileLoggingOut) {
+                            context.read<FeedbackSurveyCubit>().reset();
+                          }
+                        }),
+                      ),
                     ],
                     child: AppShell(page: shellPage),
                   ),
