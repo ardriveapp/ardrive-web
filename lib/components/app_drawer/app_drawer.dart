@@ -119,73 +119,101 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   Container(
-                      padding: const EdgeInsets.all(21),
-                      alignment: Alignment.centerLeft,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: FloatingActionButton(
-                                  elevation: 0,
-                                  tooltip: appLocalizationsOf(context).help,
-                                  onPressed: () => launch(R.helpLink),
-                                  child: const Icon(Icons.help_outline),
-                                ),
+                    padding: const EdgeInsets.all(21),
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: FloatingActionButton(
+                                elevation: 0,
+                                tooltip: appLocalizationsOf(context).help,
+                                onPressed: () => launch(R.helpLink),
+                                child: const Icon(Icons.help_outline),
                               ),
-                              FutureBuilder(
-                                future: PackageInfo.fromPlatform(),
-                                builder: (BuildContext context,
-                                    AsyncSnapshot<PackageInfo> snapshot) {
-                                  if (snapshot.hasData) {
-                                    return Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Text(
-                                        appLocalizationsOf(context)
-                                            .appVersion(snapshot.data!.version),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .caption!
-                                            .copyWith(color: Colors.grey),
-                                      ),
-                                    );
-                                  } else {
-                                    return const SizedBox(
-                                        height: 32, width: 32);
-                                  }
+                            ),
+                            FutureBuilder(
+                              future: PackageInfo.fromPlatform(),
+                              builder: (BuildContext context,
+                                  AsyncSnapshot<PackageInfo> snapshot) {
+                                if (snapshot.hasData) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      appLocalizationsOf(context)
+                                          .appVersion(snapshot.data!.version),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .caption!
+                                          .copyWith(color: Colors.grey),
+                                    ),
+                                  );
+                                } else {
+                                  return const SizedBox(
+                                    height: 32,
+                                    width: 32,
+                                  );
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            top: 8.0,
+                            right: 16.0,
+                            left: 8.0,
+                            bottom: 8.0,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              TextButton(
+                                onPressed: () {
+                                  launchInfernoRulesURL();
                                 },
+                                child: Tooltip(
+                                  message: appLocalizationsOf(context)
+                                      .infernoIsInFullSwing,
+                                  child: Column(
+                                    children: [
+                                      const Image(
+                                        image: AssetImage(
+                                          'images/inferno/flame_icon.png',
+                                        ),
+                                        color: null,
+                                        height: 50.0,
+                                        width: 50.0,
+                                      ),
+                                      SizedBox(
+                                        height: 32,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 16.0,
+                                          ),
+                                          child: Text(
+                                            'Inferno',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .caption!
+                                                .copyWith(color: Colors.grey),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ],
                           ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  top: 8.0,
-                                  right: 16.0,
-                                  left: 8.0,
-                                  bottom: 8.0,
-                                ),
-                                child: IconButton(
-                                  tooltip: appLocalizationsOf(context)
-                                      .infernoIsInFullSwing,
-                                  onPressed: () {
-                                    launchInfernoRulesURL();
-                                  },
-                                  icon: const Icon(Icons.local_fire_department),
-                                  color: Colors.deepOrange,
-                                  iconSize: 50,
-                                ),
-                              ),
-                              const SizedBox(height: 32, width: 32),
-                            ],
-                          )
-                        ],
-                      )),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
