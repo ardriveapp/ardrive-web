@@ -25,9 +25,7 @@ class AppDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) => WillPopScope(
         onWillPop: () async {
-          if (onWillPopCallback is Function) {
-            await onWillPopCallback!();
-          }
+          await onWillPopCallback?.call();
           return dismissable;
         },
         child: AlertDialog(
