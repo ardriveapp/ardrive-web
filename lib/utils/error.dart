@@ -1,4 +1,3 @@
-// TODO(@thiagocarvalhodev): Add more error constants
 import 'package:equatable/equatable.dart';
 
 // ignore: constant_identifier_names
