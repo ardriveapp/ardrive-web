@@ -44,9 +44,15 @@ class ProfileOverlay extends StatelessWidget {
                                     ),
                               ),
                               TextButton(
-                                  onPressed: () => launchSurveyURL(),
-                                  child: Text(appLocalizationsOf(context)
-                                      .leaveFeedback))
+                                style: ButtonStyle(
+                                  padding:
+                                      MaterialStateProperty.all<EdgeInsets>(
+                                          const EdgeInsets.only(left: 0)),
+                                ),
+                                onPressed: () => launchSurveyURL(),
+                                child: Text(
+                                    appLocalizationsOf(context).leaveFeedback),
+                              ),
                             ],
                           ),
                           trailing: IconButton(
@@ -64,9 +70,15 @@ class ProfileOverlay extends StatelessWidget {
                               Text(appLocalizationsOf(context)
                                   .logInToExperienceFeatures),
                               TextButton(
-                                  onPressed: () => launchSurveyURL(),
-                                  child: Text(appLocalizationsOf(context)
-                                      .leaveFeedback))
+                                style: ButtonStyle(
+                                  padding:
+                                      MaterialStateProperty.all<EdgeInsets>(
+                                          const EdgeInsets.only(left: 0)),
+                                ),
+                                onPressed: () => launchSurveyURL(),
+                                child: Text(
+                                    appLocalizationsOf(context).leaveFeedback),
+                              ),
                             ],
                           ),
                           trailing: IconButton(
