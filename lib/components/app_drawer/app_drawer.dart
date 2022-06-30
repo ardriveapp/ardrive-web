@@ -119,7 +119,7 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.all(21),
+                    padding: const EdgeInsets.all(21 + 8),
                     alignment: Alignment.centerLeft,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -162,55 +162,53 @@ class AppDrawer extends StatelessWidget {
                             ),
                           ],
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            top: 8.0,
-                            right: 16.0,
-                            left: 8.0,
-                            bottom: 8.0,
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              TextButton(
-                                onPressed: () {
-                                  launchInfernoRulesURL();
-                                },
-                                child: Tooltip(
-                                  message: appLocalizationsOf(context)
-                                      .infernoIsInFullSwing,
-                                  child: Column(
-                                    children: [
-                                      const Image(
-                                        image: AssetImage(
-                                          'images/inferno/fire_icon.png',
-                                        ),
-                                        color: Color(kPrimaryValue),
-                                        colorBlendMode: BlendMode.srcIn,
-                                        height: 50.0,
-                                        width: 50.0,
-                                      ),
-                                      SizedBox(
-                                        height: 32,
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 16.0,
-                                          ),
-                                          child: Text(
-                                            'Inferno',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .caption!
-                                                .copyWith(color: Colors.grey),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.only(
+                                  top: 8.0,
+                                  bottom: 8.0,
                                 ),
                               ),
-                            ],
-                          ),
+                              onPressed: () {
+                                launchInfernoRulesURL();
+                              },
+                              child: Tooltip(
+                                message: appLocalizationsOf(context)
+                                    .infernoIsInFullSwing,
+                                child: Column(
+                                  children: [
+                                    const Image(
+                                      image: AssetImage(
+                                        'images/inferno/fire_icon.png',
+                                      ),
+                                      color: Color(kPrimaryValue),
+                                      colorBlendMode: BlendMode.srcIn,
+                                      height: 50.0,
+                                      width: 50.0,
+                                    ),
+                                    SizedBox(
+                                      height: 32,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          top: 16.0,
+                                        ),
+                                        child: Text(
+                                          'Inferno',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .caption!
+                                              .copyWith(color: Colors.grey),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
