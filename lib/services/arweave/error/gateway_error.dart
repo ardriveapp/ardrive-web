@@ -20,16 +20,15 @@ abstract class GatewayError extends Equatable implements Exception {
     if (response.statusCode >= 500) {
       return ServerError(
           statusCode: statusCode,
-          requestRoute: requestUrl,
+          requestUrl: requestUrl,
           reasonPhrase: reasonPhrase);
     }
     if (response.statusCode == 429) {
-      return RateLimitError(
-          requestRoute: requestUrl, reasonPhrase: reasonPhrase);
+      return RateLimitError(requestUrl: requestUrl, reasonPhrase: reasonPhrase);
     }
     return UnknownNetworkError(
         statusCode: statusCode,
-        requestRoute: requestUrl,
+        requestUrl: requestUrl,
         reasonPhrase: reasonPhrase);
   }
 }
@@ -39,23 +38,23 @@ class ServerError extends GatewayError {
   const ServerError(
       {required int statusCode,
       required String reasonPhrase,
-      String? requestRoute})
+      String? requestUrl})
       : assert(statusCode >= 500),
         super(
             reasonPhrase: reasonPhrase,
             statusCode: statusCode,
-            requestUrl: requestRoute);
+            requestUrl: requestUrl);
   @override
   List<Object?> get props => [statusCode, reasonPhrase, requestUrl];
 }
 
 /// 429s Errors
 class RateLimitError extends GatewayError {
-  const RateLimitError({required String reasonPhrase, String? requestRoute})
+  const RateLimitError({required String reasonPhrase, String? requestUrl})
       : super(
             reasonPhrase: reasonPhrase,
             statusCode: RATE_LIMIT_ERROR,
-            requestUrl: requestRoute);
+            requestUrl: requestUrl);
 
   @override
   List<Object?> get props => [statusCode, reasonPhrase, requestUrl];
@@ -65,11 +64,11 @@ class UnknownNetworkError extends GatewayError {
   const UnknownNetworkError(
       {required int statusCode,
       required String reasonPhrase,
-      String? requestRoute})
+      String? requestUrl})
       : super(
             reasonPhrase: reasonPhrase,
             statusCode: statusCode,
-            requestUrl: requestRoute);
+            requestUrl: requestUrl);
 
   @override
   List<Object?> get props => [statusCode, reasonPhrase, requestUrl];
