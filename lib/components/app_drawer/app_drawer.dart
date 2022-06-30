@@ -180,12 +180,8 @@ class AppDrawer extends StatelessWidget {
                                     .infernoIsInFullSwing,
                                 child: Column(
                                   children: [
-                                    const Image(
-                                      image: AssetImage(
-                                        'images/inferno/fire_icon.png',
-                                      ),
-                                      color: Color(kPrimaryValue),
-                                      colorBlendMode: BlendMode.srcIn,
+                                    Image.asset(
+                                      'images/inferno/fire_icon.png',
                                       height: 50.0,
                                       width: 50.0,
                                     ),
