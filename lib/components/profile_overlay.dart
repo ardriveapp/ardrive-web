@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -43,15 +45,23 @@ class ProfileOverlay extends StatelessWidget {
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
+                              SizedBox(
+                                width: 32,
+                                height: 32,
+                              ),
                               TextButton(
-                                style: ButtonStyle(
-                                  padding:
-                                      MaterialStateProperty.all<EdgeInsets>(
-                                          const EdgeInsets.only(left: 0)),
+                                style: TextButton.styleFrom(
+                                  minimumSize: Size.zero,
+                                  padding: const EdgeInsets.only(left: 0.0),
+                                  textStyle: const TextStyle(
+                                    decoration: TextDecoration.underline,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 onPressed: () => launchSurveyURL(),
                                 child: Text(
-                                    appLocalizationsOf(context).leaveFeedback),
+                                  appLocalizationsOf(context).leaveFeedback,
+                                ),
                               ),
                             ],
                           ),
@@ -69,15 +79,23 @@ class ProfileOverlay extends StatelessWidget {
                             children: [
                               Text(appLocalizationsOf(context)
                                   .logInToExperienceFeatures),
+                              SizedBox(
+                                width: 32,
+                                height: 32,
+                              ),
                               TextButton(
-                                style: ButtonStyle(
-                                  padding:
-                                      MaterialStateProperty.all<EdgeInsets>(
-                                          const EdgeInsets.only(left: 0)),
+                                style: TextButton.styleFrom(
+                                  minimumSize: Size.zero,
+                                  padding: const EdgeInsets.only(left: 0.0),
+                                  textStyle: const TextStyle(
+                                    decoration: TextDecoration.underline,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 onPressed: () => launchSurveyURL(),
                                 child: Text(
-                                    appLocalizationsOf(context).leaveFeedback),
+                                  appLocalizationsOf(context).leaveFeedback,
+                                ),
                               ),
                             ],
                           ),
