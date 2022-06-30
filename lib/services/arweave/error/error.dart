@@ -5,15 +5,15 @@ import 'package:http/http.dart';
 const int RATE_LIMIT_ERROR = 429;
 
 /// Handles `http` exceptions in the gateway context
-abstract class GatewayNetworkError extends Equatable implements Exception {
-  const GatewayNetworkError(
+abstract class GatewayError extends Equatable implements Exception {
+  const GatewayError(
       {this.requestUrl, required this.statusCode, required this.reasonPhrase});
 
   final int statusCode;
   final String? requestUrl;
   final String reasonPhrase;
 
-  factory GatewayNetworkError.fromResponse(Response response) {
+  factory GatewayError.fromResponse(Response response) {
     final requestUrl = response.request?.url.path;
     final statusCode = response.statusCode;
     final reasonPhrase = response.reasonPhrase ?? '';
@@ -35,7 +35,7 @@ abstract class GatewayNetworkError extends Equatable implements Exception {
 }
 
 /// 5xx Errors
-class ServerError extends GatewayNetworkError {
+class ServerError extends GatewayError {
   const ServerError(
       {required int statusCode,
       required String reasonPhrase,
@@ -50,7 +50,7 @@ class ServerError extends GatewayNetworkError {
 }
 
 /// 429s Errors
-class RateLimitError extends GatewayNetworkError {
+class RateLimitError extends GatewayError {
   const RateLimitError({required String reasonPhrase, String? requestRoute})
       : super(
             reasonPhrase: reasonPhrase,
@@ -61,7 +61,7 @@ class RateLimitError extends GatewayNetworkError {
   List<Object?> get props => [statusCode, reasonPhrase, requestUrl];
 }
 
-class UnknownNetworkError extends GatewayNetworkError {
+class UnknownNetworkError extends GatewayError {
   const UnknownNetworkError(
       {required int statusCode,
       required String reasonPhrase,

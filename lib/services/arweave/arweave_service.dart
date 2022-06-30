@@ -184,7 +184,7 @@ class ArweaveService {
           'Failed to parse transaction '
           'with id ${parseException.transactionId}',
         );
-      } on GatewayNetworkError catch (fetchException) {
+      } on GatewayError catch (fetchException) {
         print(
           'Failed to fetch entity data with the exception ${fetchException.runtimeType}'
           'for transaction ${transaction.id}, '

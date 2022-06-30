@@ -7,13 +7,13 @@ abstract class ResponseHandler {
   void handle(Response response);
 }
 
-/// Throws a `GatewayNetworkError` exception for `statusCode` different from 200
-/// 
+/// Throws a `GatewayError` exception for `statusCode` different from 200
+///
 class GatewayResponseHandler implements ResponseHandler {
   @override
   void handle(Response response) {
     if (response.statusCode != 200) {
-      throw GatewayNetworkError.fromResponse(response);
+      throw GatewayError.fromResponse(response);
     }
   }
 }

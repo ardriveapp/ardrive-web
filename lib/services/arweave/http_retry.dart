@@ -17,7 +17,7 @@ class HttpRetry {
 
       return response;
     }, onRetry: (exception) {
-      if (exception is GatewayNetworkError) {
+      if (exception is GatewayError) {
         print(
           'Retrying for ${exception.runtimeType} exception\n'
           'for route ${exception.requestUrl}\n'
