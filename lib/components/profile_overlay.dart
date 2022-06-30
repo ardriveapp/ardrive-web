@@ -45,7 +45,7 @@ class ProfileOverlay extends StatelessWidget {
                                       fontWeight: FontWeight.bold,
                                     ),
                               ),
-                              SizedBox(
+                              const SizedBox(
                                 width: 32,
                                 height: 32,
                               ),
@@ -76,10 +76,11 @@ class ProfileOverlay extends StatelessWidget {
                           contentPadding: EdgeInsets.zero,
                           title: Text(appLocalizationsOf(context).notLoggedIn),
                           subtitle: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               Text(appLocalizationsOf(context)
                                   .logInToExperienceFeatures),
-                              SizedBox(
+                              const SizedBox(
                                 width: 32,
                                 height: 32,
                               ),
