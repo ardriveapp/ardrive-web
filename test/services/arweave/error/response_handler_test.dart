@@ -6,14 +6,30 @@ import 'package:http/http.dart';
 void main() {
   final sut = GatewayResponseHandler();
   final success = Response('body', 200);
+  final success250 = Response('body', 250);
+  final success201 = Response('body', 201);
+
   final rateLimit = Response('body', 429);
   final unknownError = Response('body', 400);
+  final unknownError300 = Response('body', 300);
   final serverError502 = Response('body', 502);
   group('Testing GatewayResponseHandler class', () {
     test('should return the response for success', () {
       /// Should not throw exception. We can do `expect(null, null);` safely here as this function
       /// doesnt return nothing in case of success.
       sut.handle(success);
+      expect(null, null);
+    });
+    test('should return the response for success', () {
+      /// Should not throw exception. We can do `expect(null, null);` safely here as this function
+      /// doesnt return nothing in case of success.
+      sut.handle(success250);
+      expect(null, null);
+    });
+    test('should return the response for success', () {
+      /// Should not throw exception. We can do `expect(null, null);` safely here as this function
+      /// doesnt return nothing in case of success.
+      sut.handle(success201);
       expect(null, null);
     });
     test('should throws a ServerError', () {
@@ -26,6 +42,10 @@ void main() {
     });
     test('should return UnknowNetworkError', () {
       expect(() => sut.handle(unknownError),
+          throwsA(const TypeMatcher<UnknownNetworkError>()));
+    });
+    test('should return UnknowNetworkError', () {
+      expect(() => sut.handle(unknownError300),
           throwsA(const TypeMatcher<UnknownNetworkError>()));
     });
   });
