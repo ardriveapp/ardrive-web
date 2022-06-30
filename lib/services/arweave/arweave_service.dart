@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/services/arweave/error/error.dart';
-import 'package:ardrive/services/arweave/http_retry.dart';
+import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
+import 'package:ardrive/utils/http_retry.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -14,7 +14,7 @@ import 'package:moor/moor.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:retry/retry.dart';
 
-import 'error/response_handler.dart';
+import 'error/gateway_response_handler.dart';
 
 const byteCountPerChunk = 262144; // 256 KiB
 
@@ -130,9 +130,25 @@ class ArweaveService {
     entityTxs.addAll(queryEdges.map((e) => e.node).toList());
 
     final responses = await Future.wait(
-      entityTxs.map((e) async {
-        return httpRetry.processRequest(() => client.api.getSandboxedTx(e.id));
-      }),
+      entityTxs.map(
+        (e) async {
+          return httpRetry.processRequest(() => client.api.getSandboxedTx(e.id),
+              onRetry: (exception) {
+            if (exception is GatewayError) {
+              print(
+                'Retrying for ${exception.runtimeType} exception\n'
+                'for route ${exception.requestUrl}\n'
+                'and status code ${exception.statusCode}',
+              );
+              return;
+            }
+
+            print('Retrying for unknown exception: ${exception.toString()}');
+          }, retryIf: (exception) {
+            return exception is! RateLimitError;
+          });
+        },
+      ),
     );
 
     final blockHistory = <BlockEntities>[];

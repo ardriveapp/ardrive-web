@@ -1,5 +1,5 @@
-import 'package:ardrive/services/arweave/error/error.dart';
-import 'package:ardrive/services/arweave/error/response_handler.dart';
+import 'package:ardrive/services/arweave/error/gateway_error.dart';
+import 'package:ardrive/services/arweave/error/gateway_response_handler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart';
 
