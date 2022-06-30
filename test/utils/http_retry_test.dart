@@ -7,6 +7,8 @@ import 'package:mocktail/mocktail.dart';
 class MockResponseHandler extends Mock implements ResponseHandler {}
 
 void main() {
+  const timeoutForWaitRetries = Timeout(Duration(minutes: 1));
+
   final mockResponseHandler = MockResponseHandler();
   HttpRetry sut = HttpRetry(mockResponseHandler);
 
@@ -28,6 +30,6 @@ void main() {
 
       expect(await sut.processRequest(() async => tResponse),
           throwsA(const TypeMatcher<Exception>()));
-    });
+    }, timeout: timeoutForWaitRetries);
   });
 }
