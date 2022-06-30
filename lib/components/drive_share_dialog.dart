@@ -38,6 +38,9 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
   Widget build(BuildContext context) =>
       BlocBuilder<DriveShareCubit, DriveShareState>(
         builder: (context, state) => AppDialog(
+          onWillPopCallback: () {
+            context.read<FeedbackSurveyCubit>().openRemindMe();
+          },
           title: appLocalizationsOf(context).shareDriveWithOthers,
           content: SizedBox(
             width: kLargeDialogWidth,
