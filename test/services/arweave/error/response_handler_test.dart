@@ -14,19 +14,19 @@ void main() {
   final unknownError300 = Response('body', 300);
   final serverError502 = Response('body', 502);
   group('Testing GatewayResponseHandler class', () {
-    test('should return the response for success', () {
+    test('should return null for success', () {
       /// Should not throw exception. We can do `expect(null, null);` safely here as this function
       /// doesnt return nothing in case of success.
       sut.handle(success);
       expect(null, null);
     });
-    test('should return the response for success', () {
+    test('should return null for success', () {
       /// Should not throw exception. We can do `expect(null, null);` safely here as this function
       /// doesnt return nothing in case of success.
       sut.handle(success250);
       expect(null, null);
     });
-    test('should return the response for success', () {
+    test('should return null for success', () {
       /// Should not throw exception. We can do `expect(null, null);` safely here as this function
       /// doesnt return nothing in case of success.
       sut.handle(success201);
