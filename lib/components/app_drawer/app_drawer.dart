@@ -184,6 +184,7 @@ class AppDrawer extends StatelessWidget {
                                       'images/inferno/fire_icon.png',
                                       height: 50.0,
                                       width: 50.0,
+                                      fit: BoxFit.contain,
                                     ),
                                     SizedBox(
                                       height: 32,
