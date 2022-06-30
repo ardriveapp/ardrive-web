@@ -183,7 +183,7 @@ class AppDrawer extends StatelessWidget {
                                     children: [
                                       const Image(
                                         image: AssetImage(
-                                          'images/inferno/flame_icon.png',
+                                          'images/inferno/fire_icon.png',
                                         ),
                                         color: Color(kPrimaryValue),
                                         colorBlendMode: BlendMode.srcIn,
