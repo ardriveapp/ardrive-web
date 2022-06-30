@@ -28,7 +28,7 @@ void main() {
     test('Should retry and throw when ResponseHandler throws', () async {
       when(() => mockResponseHandler.handle(any())).thenThrow(Exception());
 
-      expect(await sut.processRequest(() async => tResponse),
+      expect(() => sut.processRequest(() async => tResponse),
           throwsA(const TypeMatcher<Exception>()));
     }, timeout: timeoutForWaitRetries);
   });
