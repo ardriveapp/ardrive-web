@@ -6,7 +6,7 @@ import 'package:http/http.dart';
 void main() {
   final sut = GatewayResponseHandler();
   final success = Response('body', 200);
-  final success250 = Response('body', 250);
+  final success299 = Response('body', 299);
   final success201 = Response('body', 201);
 
   final rateLimit = Response('body', 429);
@@ -23,7 +23,7 @@ void main() {
     test('should return null for success', () {
       /// Should not throw exception. We can do `expect(null, null);` safely here as this function
       /// doesnt return nothing in case of success.
-      sut.handle(success250);
+      sut.handle(success299);
       expect(null, null);
     });
     test('should return null for success', () {
