@@ -181,7 +181,7 @@ class AppDrawer extends StatelessWidget {
                                 child: Column(
                                   children: [
                                     Image.asset(
-                                      'images/inferno/fire_icon.png',
+                                      R.images.inferno.fire,
                                       height: 50.0,
                                       width: 50.0,
                                       fit: BoxFit.contain,
