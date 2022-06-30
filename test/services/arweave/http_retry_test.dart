@@ -1,6 +1,6 @@
-import 'package:ardrive/utils/error.dart';
-import 'package:ardrive/utils/http_retry.dart';
-import 'package:ardrive/utils/response_handler.dart';
+import 'package:ardrive/services/arweave/error/error.dart';
+import 'package:ardrive/services/arweave/error/response_handler.dart';
+import 'package:ardrive/services/arweave/http_retry.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart';
 

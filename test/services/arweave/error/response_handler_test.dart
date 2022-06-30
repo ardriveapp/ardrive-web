@@ -1,5 +1,5 @@
-import 'package:ardrive/utils/error.dart';
-import 'package:ardrive/utils/response_handler.dart';
+import 'package:ardrive/services/arweave/error/error.dart';
+import 'package:ardrive/services/arweave/error/response_handler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart';
 
@@ -11,7 +11,10 @@ void main() {
   final serverError502 = Response('body', 502);
   group('Testing GatewayResponseHandler class', () {
     test('should return the response for success', () {
-      expect(success, sut.handle(success));
+      /// Should not throw exception. We can do `expect(null, null);` safely here as this function
+      /// doesnt return nothing in case of success.
+      sut.handle(success);
+      expect(null, null);
     });
     test('should throws a ServerError', () {
       expect(() => sut.handle(serverError502),

@@ -1,0 +1,76 @@
+import 'package:equatable/equatable.dart';
+import 'package:http/http.dart';
+
+// ignore: constant_identifier_names
+const int RATE_LIMIT_ERROR = 429;
+
+/// Handles `http` exceptions in the gateway context
+abstract class GatewayNetworkError extends Equatable implements Exception {
+  const GatewayNetworkError(
+      {this.requestUrl, required this.statusCode, required this.reasonPhrase});
+
+  final int statusCode;
+  final String? requestUrl;
+  final String reasonPhrase;
+
+  factory GatewayNetworkError.fromResponse(Response response) {
+    final requestUrl = response.request?.url.path;
+    final statusCode = response.statusCode;
+    final reasonPhrase = response.reasonPhrase ?? '';
+    if (response.statusCode >= 500) {
+      return ServerError(
+          statusCode: statusCode,
+          requestRoute: requestUrl,
+          reasonPhrase: reasonPhrase);
+    }
+    if (response.statusCode == 429) {
+      return RateLimitError(
+          requestRoute: requestUrl, reasonPhrase: reasonPhrase);
+    }
+    return UnknownNetworkError(
+        statusCode: statusCode,
+        requestRoute: requestUrl,
+        reasonPhrase: reasonPhrase);
+  }
+}
+
+/// 5xx Errors
+class ServerError extends GatewayNetworkError {
+  const ServerError(
+      {required int statusCode,
+      required String reasonPhrase,
+      String? requestRoute})
+      : assert(statusCode >= 500),
+        super(
+            reasonPhrase: reasonPhrase,
+            statusCode: statusCode,
+            requestUrl: requestRoute);
+  @override
+  List<Object?> get props => [statusCode, reasonPhrase, requestUrl];
+}
+
+/// 429s Errors
+class RateLimitError extends GatewayNetworkError {
+  const RateLimitError({required String reasonPhrase, String? requestRoute})
+      : super(
+            reasonPhrase: reasonPhrase,
+            statusCode: RATE_LIMIT_ERROR,
+            requestUrl: requestRoute);
+
+  @override
+  List<Object?> get props => [statusCode, reasonPhrase, requestUrl];
+}
+
+class UnknownNetworkError extends GatewayNetworkError {
+  const UnknownNetworkError(
+      {required int statusCode,
+      required String reasonPhrase,
+      String? requestRoute})
+      : super(
+            reasonPhrase: reasonPhrase,
+            statusCode: statusCode,
+            requestUrl: requestRoute);
+
+  @override
+  List<Object?> get props => [statusCode, reasonPhrase, requestUrl];
+}
