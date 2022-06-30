@@ -2,11 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/services/arweave/error/error.dart';
+import 'package:ardrive/services/arweave/http_retry.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/error.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
-import 'package:ardrive/utils/http_retry.dart';
-import 'package:ardrive/utils/response_handler.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -14,6 +13,8 @@ import 'package:http/http.dart' as http;
 import 'package:moor/moor.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:retry/retry.dart';
+
+import 'error/response_handler.dart';
 
 const byteCountPerChunk = 262144; // 256 KiB
 
@@ -183,9 +184,9 @@ class ArweaveService {
           'Failed to parse transaction '
           'with id ${parseException.transactionId}',
         );
-      } on NetworkError catch (fetchException) {
+      } on GatewayNetworkError catch (fetchException) {
         print(
-          'Failed to fetch entity data '
+          'Failed to fetch entity data with the exception ${fetchException.runtimeType}'
           'for transaction ${transaction.id}, '
           'with status ${fetchException.statusCode} '
           'and reason ${fetchException.reasonPhrase}',
