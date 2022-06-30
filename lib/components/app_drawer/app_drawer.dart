@@ -119,7 +119,10 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.all(21 + 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 21 + 8,
+                      vertical: 21,
+                    ),
                     alignment: Alignment.centerLeft,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
