@@ -76,7 +76,8 @@ class ProfileOverlay extends StatelessWidget {
                           contentPadding: EdgeInsets.zero,
                           title: Text(appLocalizationsOf(context).notLoggedIn),
                           subtitle: Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(appLocalizationsOf(context)
                                   .logInToExperienceFeatures),
