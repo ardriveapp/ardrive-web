@@ -176,7 +176,7 @@ class AppDrawer extends StatelessWidget {
                                 ),
                               ),
                               onPressed: () {
-                                launchInfernoRulesURL();
+                                launchInfernoRulesURL(context);
                               },
                               child: Tooltip(
                                 message: appLocalizationsOf(context)
