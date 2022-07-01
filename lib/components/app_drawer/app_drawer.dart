@@ -457,7 +457,10 @@ class AppDrawer extends StatelessWidget {
   Widget _buildSyncButton() => BlocBuilder<SyncCubit, SyncState>(
         builder: (context, syncState) => IconButton(
           icon: const Icon(Icons.refresh),
-          onPressed: () => context.read<SyncCubit>().startSync(),
+          onPressed: () {
+            print('Starting Sync Manually');
+            context.read<SyncCubit>().startSync();
+          },
           tooltip: appLocalizationsOf(context).sync,
         ),
       );
