@@ -13,6 +13,7 @@ class Images {
 
   final brand = const Brand();
   final profile = const Profile();
+  final inferno = const Inferno();
 }
 
 class Brand {
@@ -44,4 +45,10 @@ class Profile {
   final newUserUpload = 'assets/images/profile/profile_new_user_upload.png';
   final newUserPrivate = 'assets/images/profile/profile_new_user_private.png';
   final newUserDelete = 'assets/images/profile/profile_new_user_delete.png';
+}
+
+class Inferno {
+  const Inferno();
+
+  final fire = 'assets/images/inferno/fire_icon.png';
 }
