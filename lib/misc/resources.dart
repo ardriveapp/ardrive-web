@@ -1,9 +1,11 @@
 class R {
   static final images = Images();
-  static final arHelpLink =
+  static const arHelpLink =
       'https://ardrive.io/questions/where-do-i-get-additional-arweave-tokens/';
-  static final manifestLearnMoreLink =
+  static const manifestLearnMoreLink =
       'https://ardrive.atlassian.net/wiki/spaces/help/pages/359530513/Arweave+Manifests';
+  static const infernoRulesLink = 'https://ardrive.io/inferno/';
+  static const helpLink = 'https://ardrive.zendesk.com/';
 }
 
 class Images {
@@ -11,6 +13,7 @@ class Images {
 
   final brand = const Brand();
   final profile = const Profile();
+  final inferno = const Inferno();
 }
 
 class Brand {
@@ -42,4 +45,10 @@ class Profile {
   final newUserUpload = 'assets/images/profile/profile_new_user_upload.png';
   final newUserPrivate = 'assets/images/profile/profile_new_user_private.png';
   final newUserDelete = 'assets/images/profile/profile_new_user_delete.png';
+}
+
+class Inferno {
+  const Inferno();
+
+  final fire = 'assets/images/inferno/fire_icon.png';
 }
