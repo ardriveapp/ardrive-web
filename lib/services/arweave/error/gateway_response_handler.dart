@@ -7,7 +7,7 @@ import 'package:http/http.dart';
 class GatewayResponseHandler implements ResponseHandler {
   @override
   void handle(Response response) {
-    if (response.statusCode >= 200 && response.statusCode < 300) {
+    if (response.statusCode >= 200 && response.statusCode <= 208) {
       return;
     }
 
