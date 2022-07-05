@@ -406,14 +406,12 @@ class ArweaveService {
     final fileOwner =
         firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
-    final latestFileQuery = await _gql.execute(AllFileEntitiesWithIdQuery(
-      variables: AllFileEntitiesWithIdArguments(
-        fileId: fileId,
-        owner: fileOwner,
-      ),
-    ));
+    final latestFileQuery = await _gql.execute(LatestFileEntityWithIdQuery(
+        variables:
+            LatestFileEntityWithIdArguments(fileId: fileId, owner: fileOwner)));
 
     final queryEdges = latestFileQuery.data!.transactions.edges;
+
     if (queryEdges.isEmpty) {
       return null;
     }
