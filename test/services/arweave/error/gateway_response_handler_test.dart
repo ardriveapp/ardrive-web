@@ -38,9 +38,9 @@ void main() {
       expect(() => sut.handle(serverError502),
           throwsA(const TypeMatcher<ServerError>()));
     });
-    test('should throws a UnExpectedRedirection', () {
+    test('should throws a UnexpectedRedirection', () {
       expect(() => sut.handle(unExpectedRedirection),
-          throwsA(const TypeMatcher<UnExpectedRedirection>()));
+          throwsA(const TypeMatcher<UnexpectedRedirection>()));
     });
     test('should return RateLimitError', () {
       expect(() => sut.handle(rateLimit),

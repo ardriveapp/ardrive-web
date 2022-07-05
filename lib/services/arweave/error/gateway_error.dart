@@ -29,7 +29,7 @@ abstract class GatewayError extends Equatable implements Exception {
       return RateLimitError(requestUrl: requestUrl, reasonPhrase: reasonPhrase);
     }
     if (statusCode == 302) {
-      return UnExpectedRedirection(
+      return UnexpectedRedirection(
           reasonPhrase: reasonPhrase, requestUrl: requestUrl);
     }
     return UnknownNetworkError(
@@ -39,8 +39,8 @@ abstract class GatewayError extends Equatable implements Exception {
   }
 }
 
-class UnExpectedRedirection extends GatewayError {
-  const UnExpectedRedirection(
+class UnexpectedRedirection extends GatewayError {
+  const UnexpectedRedirection(
       {required String reasonPhrase, String? requestUrl})
       : super(
             statusCode: UNEXPECTED_REDIRECTION,
