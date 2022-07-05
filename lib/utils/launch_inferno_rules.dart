@@ -1,10 +1,8 @@
 import 'package:ardrive/misc/resources.dart';
-import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-Future<void> launchInfernoRulesURL(BuildContext context) async {
-  final url = _getUrlForCurrentLocalization(context);
+Future<void> launchInfernoRulesURL(String localeName) async {
+  final url = getUrlForCurrentLocalization(localeName);
   if (await canLaunch(url)) {
     await launch(url);
   } else {
@@ -12,14 +10,13 @@ Future<void> launchInfernoRulesURL(BuildContext context) async {
   }
 }
 
-String _getUrlForCurrentLocalization(BuildContext context) {
+String getUrlForCurrentLocalization(String localeName) {
   final _infernoRulesLinkMap = {
-    'zh': R.infernoRulesLinkZh,
-    'en': R.infernoRulesLinkEn
+    'zh': Resources.infernoRulesLinkZh,
+    'en': Resources.infernoRulesLinkEn
   };
 
-  final urlForCurrentLocalization =
-      _infernoRulesLinkMap[appLocalizationsOf(context).localeName];
+  final urlForCurrentLocalization = _infernoRulesLinkMap[localeName];
 
-  return urlForCurrentLocalization ?? R.infernoRulesLinkEn;
+  return urlForCurrentLocalization ?? Resources.infernoRulesLinkEn;
 }

@@ -1,5 +1,5 @@
-class R {
-  static final images = Images();
+class Resources {
+  static const images = Images();
   static const arHelpLink =
       'https://ardrive.io/questions/where-do-i-get-additional-arweave-tokens/';
   static const manifestLearnMoreLink =

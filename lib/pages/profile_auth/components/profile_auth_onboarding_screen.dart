@@ -22,7 +22,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
         return ProfileAuthShell(
           illustration: _buildIllustrationSection(
             Image.asset(
-              R.images.profile.newUserPermanent,
+              Resources.images.profile.newUserPermanent,
               fit: BoxFit.contain,
             ),
           ),
@@ -54,7 +54,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
         return ProfileAuthShell(
           illustration: _buildIllustrationSection(
             Image.asset(
-              R.images.profile.newUserPayment,
+              Resources.images.profile.newUserPayment,
               fit: BoxFit.contain,
             ),
           ),
@@ -83,7 +83,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
         return ProfileAuthShell(
           illustration: _buildIllustrationSection(
             Image.asset(
-              R.images.profile.newUserUpload,
+              Resources.images.profile.newUserUpload,
               fit: BoxFit.contain,
             ),
           ),
@@ -112,7 +112,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
         return ProfileAuthShell(
           illustration: _buildIllustrationSection(
             Image.asset(
-              R.images.profile.newUserPrivate,
+              Resources.images.profile.newUserPrivate,
               fit: BoxFit.contain,
             ),
           ),
@@ -141,7 +141,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
         return ProfileAuthShell(
           illustration: _buildIllustrationSection(
             Image.asset(
-              R.images.profile.newUserDelete,
+              Resources.images.profile.newUserDelete,
               fit: BoxFit.contain,
             ),
           ),
