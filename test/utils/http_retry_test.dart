@@ -6,14 +6,14 @@ import 'package:mocktail/mocktail.dart';
 
 class MockResponseHandler extends Mock implements ResponseHandler {}
 
-class MockRetryHttpOptions extends Mock implements HttpRetryOptions {}
+class MockHttpRetryOptions extends Mock implements HttpRetryOptions {}
 
 void main() {
   const timeoutForWaitRetries = Timeout(Duration(minutes: 1));
   const retryMaxAttempts = 8;
 
   final mockResponseHandler = MockResponseHandler();
-  final mockRetryHttpOptions = MockRetryHttpOptions();
+  final mockRetryHttpOptions = MockHttpRetryOptions();
 
   HttpRetry sut = HttpRetry(mockResponseHandler, mockRetryHttpOptions);
 
