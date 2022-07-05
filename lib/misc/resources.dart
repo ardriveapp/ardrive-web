@@ -4,6 +4,8 @@ class Resources {
       'https://ardrive.io/questions/where-do-i-get-additional-arweave-tokens/';
   static const manifestLearnMoreLink =
       'https://ardrive.atlassian.net/wiki/spaces/help/pages/359530513/Arweave+Manifests';
+  static const surveyFeedbackFormUrl =
+      'https://ardrive.typeform.com/UserSurvey';
   static const infernoRulesLinkEn = 'https://ardrive.io/inferno/';
   static const infernoRulesLinkZh = 'https://cn.ardrive.io/inferno/';
 

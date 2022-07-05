@@ -16,8 +16,8 @@ void main() {
     late DrivesCubit drivesCubit;
 
     setUp(() {
-      registerFallbackValue(SyncStatefake());
-      registerFallbackValue(ProfileStatefake());
+      registerFallbackValue(SyncStateFake());
+      registerFallbackValue(ProfileStateFake());
       db = getTestDb();
       driveDao = db.driveDao;
 
