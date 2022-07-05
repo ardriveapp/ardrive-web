@@ -3,6 +3,8 @@ import 'package:http/http.dart';
 
 // ignore: constant_identifier_names
 const int RATE_LIMIT_ERROR = 429;
+// ignore: constant_identifier_names
+const int UNEXPECTED_REDIRECTION = 302;
 
 /// Handles `http` exceptions in the gateway context
 abstract class GatewayError extends Equatable implements Exception {
@@ -31,6 +33,18 @@ abstract class GatewayError extends Equatable implements Exception {
         requestUrl: requestUrl,
         reasonPhrase: reasonPhrase);
   }
+}
+
+class UnExpectedRedirection extends GatewayError {
+  const UnExpectedRedirection(
+      {required String reasonPhrase, String? requestUrl})
+      : super(
+            statusCode: UNEXPECTED_REDIRECTION,
+            reasonPhrase: reasonPhrase,
+            requestUrl: requestUrl);
+
+  @override
+  List<Object?> get props => [statusCode, reasonPhrase, requestUrl];
 }
 
 /// 5xx Errors
