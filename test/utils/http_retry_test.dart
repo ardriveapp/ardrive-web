@@ -39,7 +39,8 @@ void main() {
           throwsA(const TypeMatcher<Exception>()));
 
       /// Verifies if has retried the expected times
-      /// On the last time trying, it will return the response in case of success
+      /// 
+      /// On the last attempt, it will return the response in case of success
       /// or throw the exception in case of failure, so the `onRetry` function
       /// won't be called in the last time.
       verify(
