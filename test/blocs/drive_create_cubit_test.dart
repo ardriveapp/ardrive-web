@@ -26,8 +26,8 @@ void main() {
     const validDriveName = 'valid-drive-name';
 
     setUp(() async {
-      registerFallbackValue(DrivesStatefake());
-      registerFallbackValue(ProfileStatefake());
+      registerFallbackValue(DrivesStateFake());
+      registerFallbackValue(ProfileStateFake());
 
       db = getTestDb();
       driveDao = db.driveDao;

@@ -74,8 +74,6 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
 
   @override
   RouteInformation restoreRouteInformation(AppRoutePath path) {
-    print('AppRoutePath: ${path.driveId}');
-
     if (path.signingIn) {
       return const RouteInformation(location: '/sign-in');
     } else if (path.driveId != null) {
