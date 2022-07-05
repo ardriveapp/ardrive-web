@@ -6,13 +6,15 @@ import 'package:http/http.dart';
 void main() {
   final sut = GatewayResponseHandler();
   final success = Response('body', 200);
-  final success299 = Response('body', 299);
+  final success208 = Response('body', 208);
   final success201 = Response('body', 201);
 
   final rateLimit = Response('body', 429);
   final unknownError = Response('body', 400);
   final unknownError300 = Response('body', 300);
   final serverError502 = Response('body', 502);
+  final unExpectedRedirection = Response('body', 302);
+
   group('Testing GatewayResponseHandler class', () {
     test('should return null for success', () {
       /// Should not throw exception. We can do `expect(null, null);` safely here as this function
@@ -23,7 +25,7 @@ void main() {
     test('should return null for success', () {
       /// Should not throw exception. We can do `expect(null, null);` safely here as this function
       /// doesnt return nothing in case of success.
-      sut.handle(success299);
+      sut.handle(success208);
       expect(null, null);
     });
     test('should return null for success', () {
@@ -35,6 +37,10 @@ void main() {
     test('should throws a ServerError', () {
       expect(() => sut.handle(serverError502),
           throwsA(const TypeMatcher<ServerError>()));
+    });
+    test('should throws a UnExpectedRedirection', () {
+      expect(() => sut.handle(unExpectedRedirection),
+          throwsA(const TypeMatcher<UnExpectedRedirection>()));
     });
     test('should return RateLimitError', () {
       expect(() => sut.handle(rateLimit),

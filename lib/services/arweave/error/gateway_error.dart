@@ -19,14 +19,18 @@ abstract class GatewayError extends Equatable implements Exception {
     final requestUrl = response.request?.url.path;
     final statusCode = response.statusCode;
     final reasonPhrase = response.reasonPhrase ?? '';
-    if (response.statusCode >= 500) {
+    if (statusCode >= 500) {
       return ServerError(
           statusCode: statusCode,
           requestUrl: requestUrl,
           reasonPhrase: reasonPhrase);
     }
-    if (response.statusCode == 429) {
+    if (statusCode == 429) {
       return RateLimitError(requestUrl: requestUrl, reasonPhrase: reasonPhrase);
+    }
+    if (statusCode == 302) {
+      return UnExpectedRedirection(
+          reasonPhrase: reasonPhrase, requestUrl: requestUrl);
     }
     return UnknownNetworkError(
         statusCode: statusCode,
