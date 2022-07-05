@@ -28,7 +28,22 @@ class ArweaveService {
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     _graphQLRetry = GraphQLRetry(_gql);
-    httpRetry = HttpRetry(GatewayResponseHandler());
+    httpRetry = HttpRetry(
+        GatewayResponseHandler(),
+        HttpRetryOptions(onRetry: (exception) {
+          if (exception is GatewayError) {
+            print(
+              'Retrying for ${exception.runtimeType} exception\n'
+              'for route ${exception.requestUrl}\n'
+              'and status code ${exception.statusCode}',
+            );
+            return;
+          }
+
+          print('Retrying for unknown exception: ${exception.toString()}');
+        }, retryIf: (exception) {
+          return exception is! RateLimitError;
+        }));
   }
 
   int bytesToChunks(int bytes) {
@@ -129,27 +144,9 @@ class ArweaveService {
 
     entityTxs.addAll(queryEdges.map((e) => e.node).toList());
 
-    final responses = await Future.wait(
-      entityTxs.map(
-        (e) async {
-          return httpRetry.processRequest(() => client.api.getSandboxedTx(e.id),
-              onRetry: (exception) {
-            if (exception is GatewayError) {
-              print(
-                'Retrying for ${exception.runtimeType} exception\n'
-                'for route ${exception.requestUrl}\n'
-                'and status code ${exception.statusCode}',
-              );
-              return;
-            }
-
-            print('Retrying for unknown exception: ${exception.toString()}');
-          }, retryIf: (exception) {
-            return exception is! RateLimitError;
-          });
-        },
-      ),
-    );
+    final responses = await Future.wait(entityTxs.map((e) async {
+      return httpRetry.processRequest(() => client.api.getSandboxedTx(e.id));
+    }));
 
     final blockHistory = <BlockEntities>[];
 
