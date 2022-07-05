@@ -1,11 +1,13 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:reactive_forms/reactive_forms.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// [SharedFilePage] displays details of a shared file and controls for downloading and previewing it
@@ -36,6 +38,31 @@ class SharedFilePage extends StatelessWidget {
                     fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 32),
+                  if (state is SharedFileIsPrivate) ...[
+                    const Text('This file is encrypted'),
+                    const SizedBox(height: 16),
+                    ReactiveForm(
+                      formGroup: context.watch<SharedFileCubit>().form,
+                      child: ReactiveTextField(
+                        formControlName: 'fileKey',
+                        autofocus: true,
+                        obscureText: true,
+                        decoration:
+                            const InputDecoration(labelText: 'File Key'),
+                        validationMessages: (_) =>
+                            kValidationMessages(appLocalizationsOf(context)),
+                        onEditingComplete: () => context
+                            .read<SharedFileCubit>()
+                            .form
+                            .updateValueAndValidity(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => context.read<SharedFileCubit>().submit(),
+                      child: Text(appLocalizationsOf(context).unlockEmphasized),
+                    ),
+                  ],
                   if (state is SharedFileLoadInProgress)
                     const CircularProgressIndicator()
                   else if (state is SharedFileLoadSuccess) ...{
@@ -47,7 +74,7 @@ class SharedFilePage extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton.icon(
-                      icon: Icon(Icons.file_download),
+                      icon: const Icon(Icons.file_download),
                       label: Text(appLocalizationsOf(context).download),
                       onPressed: () => promptToDownloadSharedFile(
                         context: context,
@@ -78,6 +105,6 @@ class SharedFilePage extends StatelessWidget {
 
   Widget _buildReturnToAppLink() => TextButton(
         onPressed: () => launch('https://ardrive.io/'),
-        child: Text('Learn more about ArDrive'),
+        child: const Text('Learn more about ArDrive'),
       );
 }
