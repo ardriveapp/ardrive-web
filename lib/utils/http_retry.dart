@@ -18,7 +18,7 @@ class HttpRetry {
   final HttpRetryOptions httpRetryOptions;
 
   Future<Response> processRequest(Future<Response> Function() request) {
-    int retryTimes = 0;
+    int retryAttempts = 0;
     return retry(
         () async {
           final response = await request();
@@ -26,15 +26,15 @@ class HttpRetry {
           /// Handle errors if have
           responseHandler.handle(response);
 
-          if (retryTimes > 0) {
-            print('Succesfully get the response after $retryTimes');
+          if (retryAttempts > 0) {
+            print('Succesfully get the response after $retryAttempts');
           }
 
           return response;
         },
         randomizationFactor: 0,
         onRetry: (e) {
-          ++retryTimes;
+          ++retryAttempts;
           httpRetryOptions.onRetry?.call(e);
         },
         retryIf: httpRetryOptions.retryIf);

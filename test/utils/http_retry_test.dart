@@ -17,21 +17,21 @@ void main() {
 
   HttpRetry sut = HttpRetry(mockResponseHandler, mockRetryHttpOptions);
 
-  group('Testing HttpRetry class', () {
+  group('testing HttpRetry class', () {
     final tResponse = Response('body', 200);
 
     setUp(() {
       registerFallbackValue(tResponse);
     });
 
-    test('Should return the response when dont have any errors', () async {
+    test('should return the response when dont have any errors', () async {
       when(() => mockResponseHandler.handle(any())).thenAnswer((i) => Null);
 
       final response = await sut.processRequest(() async => tResponse);
       expect(response, tResponse);
     });
 
-    test('Should retry and throw when ResponseHandler throws', () async {
+    test('should retry $retryMaxAttempts times and then throw when ResponseHandler throws', () async {
       when(() => mockResponseHandler.handle(any())).thenThrow(Exception());
       when(() => mockRetryHttpOptions.onRetry!(any()))
           .thenAnswer((i) => print('calling the callback...'));
