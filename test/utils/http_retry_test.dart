@@ -10,7 +10,7 @@ class MockHttpRetryOptions extends Mock implements HttpRetryOptions {}
 
 void main() {
   const timeoutForWaitRetries = Timeout(Duration(minutes: 1));
-  const retryMaxAttempts = 8;
+  const retryMaxAttempts = 3;
 
   final mockResponseHandler = MockResponseHandler();
   final mockRetryHttpOptions = MockHttpRetryOptions();
@@ -22,6 +22,7 @@ void main() {
 
     setUp(() {
       registerFallbackValue(tResponse);
+      when(() => mockRetryHttpOptions.maxAttempts).thenReturn(retryMaxAttempts);
     });
 
     test('should return the response when dont have any errors', () async {
@@ -31,7 +32,9 @@ void main() {
       expect(response, tResponse);
     });
 
-    test('should retry $retryMaxAttempts times and then throw when ResponseHandler throws', () async {
+    test(
+        'should retry $retryMaxAttempts times and then throw when ResponseHandler throws',
+        () async {
       when(() => mockResponseHandler.handle(any())).thenThrow(Exception());
       when(() => mockRetryHttpOptions.onRetry!(any()))
           .thenAnswer((i) => print('calling the callback...'));
@@ -39,13 +42,32 @@ void main() {
           throwsA(const TypeMatcher<Exception>()));
 
       /// Verifies if has retried the expected times
-      /// 
+      ///
       /// On the last attempt, it will return the response in case of success
       /// or throw the exception in case of failure, so the `onRetry` function
       /// won't be called in the last time.
       verify(
         () => mockRetryHttpOptions.onRetry?.call(any()),
       ).called(retryMaxAttempts - 1);
+    }, timeout: timeoutForWaitRetries);
+    test(
+        'should retry one time and then return the response after getting the succesful response',
+        () async {
+      when(() => mockResponseHandler.handle(any())).thenThrow(Exception());
+
+      when(() => mockRetryHttpOptions.onRetry!(any())).thenAnswer((i) =>
+          when(() => mockResponseHandler.handle(any()))
+              .thenAnswer((i) => Null));
+
+      final response = await sut.processRequest(() async => tResponse);
+
+      expect(response, tResponse);
+
+      /// Verifies if has retried only one time, because we are setting a successful
+      /// response after the first retry
+      verify(
+        () => mockRetryHttpOptions.onRetry?.call(any()),
+      ).called(1);
     }, timeout: timeoutForWaitRetries);
   });
 }
