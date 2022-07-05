@@ -13,8 +13,13 @@ Future<void> launchInfernoRulesURL(BuildContext context) async {
 }
 
 String _getUrlForCurrentLocalization(BuildContext context) {
-  if (appLocalizationsOf(context).localeName == 'zh') {
-    return R.infernoRulesLinkZh;
-  }
-  return R.infernoRulesLinkEn;
+  final _infernoRulesLinkMap = {
+    'zh': R.infernoRulesLinkZh,
+    'en': R.infernoRulesLinkEn
+  };
+
+  final urlForCurrentLocalization =
+      _infernoRulesLinkMap[appLocalizationsOf(context).localeName];
+
+  return urlForCurrentLocalization ?? R.infernoRulesLinkEn;
 }
