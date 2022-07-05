@@ -1319,5 +1319,9 @@
   "gotIt": "Got it!",
   "@gotIt": {
     "description": "Example similar phrases: I've got it, I understood, OK"
+  },
+  "infernoIsInFullSwing": "The Inferno Rewards Program is in full swing! Click here to check out the rules for participation!",
+  "@infernoIsInFullSwing": {
+    "description": "Text inviting the users to go read the Inferno rules"
   }
 }

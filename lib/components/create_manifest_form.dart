@@ -226,8 +226,8 @@ class CreateManifestForm extends StatelessWidget {
                                     fontWeight: FontWeight.bold,
                                     decoration: TextDecoration.underline),
                                 recognizer: TapGestureRecognizer()
-                                  ..onTap =
-                                      () => launch(R.manifestLearnMoreLink)),
+                                  ..onTap = () =>
+                                      launch(Resources.manifestLearnMoreLink)),
                           ]),
                         ),
                         manifestNameForm()

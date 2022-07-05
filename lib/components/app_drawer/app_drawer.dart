@@ -4,6 +4,7 @@ import 'package:ardrive/components/components.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/launch_inferno_rules.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -32,11 +33,11 @@ class AppDrawer extends StatelessWidget {
                   Expanded(
                     child: Column(
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           height: 32,
                         ),
                         _buildLogo(),
-                        SizedBox(
+                        const SizedBox(
                           height: 32,
                         ),
                         BlocBuilder<ProfileCubit, ProfileState>(
@@ -48,8 +49,10 @@ class AppDrawer extends StatelessWidget {
                           Expanded(
                             child: Scrollbar(
                               child: ListView(
-                                padding: EdgeInsets.all(21),
-                                key: PageStorageKey<String>('driveScrollView'),
+                                padding: const EdgeInsets.all(21),
+                                key: const PageStorageKey<String>(
+                                  'driveScrollView',
+                                ),
                                 children: [
                                   if (state.userDrives.isNotEmpty ||
                                       state.sharedDrives.isEmpty) ...{
@@ -116,41 +119,97 @@ class AppDrawer extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: EdgeInsets.all(21),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 21 + 8,
+                      vertical: 21,
+                    ),
                     alignment: Alignment.centerLeft,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: FloatingActionButton(
-                            elevation: 0,
-                            tooltip: appLocalizationsOf(context).help,
-                            onPressed: () =>
-                                launch('https://ardrive.zendesk.com/'),
-                            child: const Icon(Icons.help_outline),
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: FloatingActionButton(
+                                elevation: 0,
+                                tooltip: appLocalizationsOf(context).help,
+                                onPressed: () => launch(Resources.helpLink),
+                                child: const Icon(Icons.help_outline),
+                              ),
+                            ),
+                            FutureBuilder(
+                              future: PackageInfo.fromPlatform(),
+                              builder: (BuildContext context,
+                                  AsyncSnapshot<PackageInfo> snapshot) {
+                                if (snapshot.hasData) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      appLocalizationsOf(context)
+                                          .appVersion(snapshot.data!.version),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .caption!
+                                          .copyWith(color: Colors.grey),
+                                    ),
+                                  );
+                                } else {
+                                  return const SizedBox(
+                                    height: 32,
+                                    width: 32,
+                                  );
+                                }
+                              },
+                            ),
+                          ],
                         ),
-                        FutureBuilder(
-                          future: PackageInfo.fromPlatform(),
-                          builder: (BuildContext context,
-                              AsyncSnapshot<PackageInfo> snapshot) {
-                            if (snapshot.hasData) {
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(
-                                  appLocalizationsOf(context)
-                                      .appVersion(snapshot.data!.version),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .caption!
-                                      .copyWith(color: Colors.grey),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.only(
+                                  top: 8.0,
+                                  bottom: 8.0,
                                 ),
-                              );
-                            } else {
-                              return SizedBox(height: 32, width: 32);
-                            }
-                          },
+                              ),
+                              onPressed: () {
+                                launchInfernoRulesURL(
+                                    appLocalizationsOf(context).localeName);
+                              },
+                              child: Tooltip(
+                                message: appLocalizationsOf(context)
+                                    .infernoIsInFullSwing,
+                                child: Column(
+                                  children: [
+                                    Image.asset(
+                                      Resources.images.inferno.fire,
+                                      height: 50.0,
+                                      width: 50.0,
+                                      fit: BoxFit.contain,
+                                    ),
+                                    SizedBox(
+                                      height: 32,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                          top: 16.0,
+                                        ),
+                                        child: Text(
+                                          'Inferno',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .caption!
+                                              .copyWith(color: Colors.grey),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -165,7 +224,7 @@ class AppDrawer extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Image.asset(
-        R.images.brand.logoHorizontalNoSubtitleDark,
+        Resources.images.brand.logoHorizontalNoSubtitleDark,
         height: 32,
         fit: BoxFit.contain,
       ),
@@ -196,10 +255,10 @@ class AppDrawer extends StatelessWidget {
                     itemBuilder: (context) => [
                       if (state is DriveDetailLoadSuccess) ...{
                         _buildNewFolderItem(context, state, hasMinBalance),
-                        PopupMenuDivider(),
+                        const PopupMenuDivider(key: Key('divider-1')),
                         _buildUploadFileItem(context, state, hasMinBalance),
                         _buildUploadFolderItem(context, state, hasMinBalance),
-                        PopupMenuDivider(),
+                        const PopupMenuDivider(key: Key('divider-2')),
                       },
                       if (drivesState is DrivesLoadSuccess) ...{
                         _buildCreateDrive(context, drivesState, hasMinBalance),
@@ -228,10 +287,10 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () => launch(R.arHelpLink),
+              onPressed: () => launch(Resources.arHelpLink),
               child: Text(
                 appLocalizationsOf(context).howDoIGetAR,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.grey,
                   decoration: TextDecoration.underline,
                 ),
@@ -351,7 +410,7 @@ class AppDrawer extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         label: Text(
           appLocalizationsOf(context).newStringEmphasized,
-          style: TextStyle(
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -399,7 +458,10 @@ class AppDrawer extends StatelessWidget {
   Widget _buildSyncButton() => BlocBuilder<SyncCubit, SyncState>(
         builder: (context, syncState) => IconButton(
           icon: const Icon(Icons.refresh),
-          onPressed: () => context.read<SyncCubit>().startSync(),
+          onPressed: () {
+            print('Starting Sync Manually');
+            context.read<SyncCubit>().startSync();
+          },
           tooltip: appLocalizationsOf(context).sync,
         ),
       );

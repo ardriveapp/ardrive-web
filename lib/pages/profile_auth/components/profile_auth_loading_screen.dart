@@ -12,7 +12,7 @@ class ProfileAuthLoadingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ProfileAuthShell(
         illustration: Image.asset(
-          R.images.profile.profileUnlock,
+          Resources.images.profile.profileUnlock,
           fit: BoxFit.contain,
         ),
         content: Column(

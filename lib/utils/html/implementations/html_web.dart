@@ -1,16 +1,22 @@
+import 'dart:async';
 import 'dart:html';
 
 bool isTabHidden() {
   return window.document.visibilityState != 'visible';
 }
 
+late StreamSubscription _onVisibilityChangeStream;
+
 void whenTabIsUnhidden(Function onShow) {
-  document.addEventListener('visibilitychange', (event) {
-    if (document.visibilityState != 'hidden') {
+  _onVisibilityChangeStream = document.onVisibilityChange.listen((event) {
+    if (!isTabHidden()) {
       onShow();
     }
   });
 }
+
+Future<void> closeVisibilityChangeStream() async =>
+    await _onVisibilityChangeStream.cancel();
 
 void refreshPageAtInterval(Duration duration) {
   Future.delayed(duration, () {

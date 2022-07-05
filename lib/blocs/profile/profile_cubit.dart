@@ -48,7 +48,6 @@ class ProfileCubit extends Cubit<ProfileState> {
       emit(ProfilePromptAdd());
       return;
     }
-
     // json wallet present - route to login screen
     if (profile.profileType != ProfileType.ArConnect.index) {
       emit(ProfilePromptLogIn());
@@ -171,6 +170,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     await deleteTables();
+
     emit(ProfileLoggingOut());
 
     unawaited(promptToAuthenticate());

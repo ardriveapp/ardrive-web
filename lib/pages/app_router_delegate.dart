@@ -211,6 +211,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           );
 
           if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
+            print('Injecting SyncCubit');
             return MultiBlocProvider(
               providers: [
                 BlocProvider(
