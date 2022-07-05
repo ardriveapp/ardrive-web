@@ -135,7 +135,7 @@ class AppDrawer extends StatelessWidget {
                               child: FloatingActionButton(
                                 elevation: 0,
                                 tooltip: appLocalizationsOf(context).help,
-                                onPressed: () => launch(R.helpLink),
+                                onPressed: () => launch(Resources.helpLink),
                                 child: const Icon(Icons.help_outline),
                               ),
                             ),
@@ -176,7 +176,8 @@ class AppDrawer extends StatelessWidget {
                                 ),
                               ),
                               onPressed: () {
-                                launchInfernoRulesURL();
+                                launchInfernoRulesURL(
+                                    appLocalizationsOf(context).localeName);
                               },
                               child: Tooltip(
                                 message: appLocalizationsOf(context)
@@ -184,7 +185,7 @@ class AppDrawer extends StatelessWidget {
                                 child: Column(
                                   children: [
                                     Image.asset(
-                                      R.images.inferno.fire,
+                                      Resources.images.inferno.fire,
                                       height: 50.0,
                                       width: 50.0,
                                       fit: BoxFit.contain,
@@ -223,7 +224,7 @@ class AppDrawer extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Image.asset(
-        R.images.brand.logoHorizontalNoSubtitleDark,
+        Resources.images.brand.logoHorizontalNoSubtitleDark,
         height: 32,
         fit: BoxFit.contain,
       ),
@@ -286,7 +287,7 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () => launch(R.arHelpLink),
+              onPressed: () => launch(Resources.arHelpLink),
               child: Text(
                 appLocalizationsOf(context).howDoIGetAR,
                 style: const TextStyle(

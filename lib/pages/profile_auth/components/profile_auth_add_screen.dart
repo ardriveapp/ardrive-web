@@ -16,7 +16,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
         builder: (context, state) => state is ProfileAddPromptDetails
             ? ProfileAuthShell(
                 illustration: Image.asset(
-                  R.images.profile.profileAdd,
+                  Resources.images.profile.profileAdd,
                   fit: BoxFit.contain,
                 ),
                 contentWidthFactor: 0.5,

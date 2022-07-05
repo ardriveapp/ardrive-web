@@ -32,7 +32,7 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
             } else {
               return ProfileAuthShell(
                 illustration: Image.asset(
-                  R.images.profile.profileUnlock,
+                  Resources.images.profile.profileUnlock,
                   fit: BoxFit.contain,
                 ),
                 contentWidthFactor: 0.5,
