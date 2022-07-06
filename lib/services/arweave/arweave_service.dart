@@ -3,8 +3,10 @@ import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
+import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
+import 'package:ardrive/utils/http_retry.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -12,6 +14,8 @@ import 'package:http/http.dart' as http;
 import 'package:moor/moor.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:retry/retry.dart';
+
+import 'error/gateway_response_handler.dart';
 
 const byteCountPerChunk = 262144; // 256 KiB
 
@@ -25,6 +29,22 @@ class ArweaveService {
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     _graphQLRetry = GraphQLRetry(_gql);
+    httpRetry = HttpRetry(
+        GatewayResponseHandler(),
+        HttpRetryOptions(onRetry: (exception) {
+          if (exception is GatewayError) {
+            print(
+              'Retrying for ${exception.runtimeType} exception\n'
+              'for route ${exception.requestUrl}\n'
+              'and status code ${exception.statusCode}',
+            );
+            return;
+          }
+
+          print('Retrying for unknown exception: ${exception.toString()}');
+        }, retryIf: (exception) {
+          return exception is! RateLimitError;
+        }));
   }
 
   int bytesToChunks(int bytes) {
@@ -32,6 +52,7 @@ class ArweaveService {
   }
 
   late GraphQLRetry _graphQLRetry;
+  late HttpRetry httpRetry;
 
   /// Returns the onchain balance of the specified address.
   Future<BigInt> getWalletBalance(String address) => client.api
@@ -121,20 +142,12 @@ class ArweaveService {
       int lastBlockHeight) async {
     final entityTxs = <
         DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>[];
+
     entityTxs.addAll(queryEdges.map((e) => e.node).toList());
 
-    final responses = await Future.wait(
-      entityTxs.map((e) async {
-        return retry(
-          () => client.api.getSandboxedTx(e.id),
-          onRetry: (exception) {
-            print(
-              'Retrying for get ${e.id} metadata on exception ${exception.toString()}',
-            );
-          },
-        );
-      }),
-    );
+    final responses = await Future.wait(entityTxs.map((e) async {
+      return httpRetry.processRequest(() => client.api.getSandboxedTx(e.id));
+    }));
 
     final blockHistory = <BlockEntities>[];
 
@@ -155,15 +168,6 @@ class ArweaveService {
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
         final entityResponse = responses[i];
-
-        if (entityResponse.statusCode != 200) {
-          throw EntityTransactionDataNetworkException(
-            transactionId: transaction.id,
-            statusCode: entityResponse.statusCode,
-            reasonPhrase: entityResponse.reasonPhrase,
-          );
-        }
-
         final rawEntityData = entityResponse.bodyBytes;
 
         Entity? entity;
@@ -194,10 +198,10 @@ class ArweaveService {
           'Failed to parse transaction '
           'with id ${parseException.transactionId}',
         );
-      } on EntityTransactionDataNetworkException catch (fetchException) {
+      } on GatewayError catch (fetchException) {
         print(
-          'Failed to fetch entity data '
-          'for transaction ${fetchException.transactionId}, '
+          'Failed to fetch entity data with the exception ${fetchException.runtimeType}'
+          'for transaction ${transaction.id}, '
           'with status ${fetchException.statusCode} '
           'and reason ${fetchException.reasonPhrase}',
         );

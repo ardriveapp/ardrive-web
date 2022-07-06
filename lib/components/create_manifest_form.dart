@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
+import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
@@ -52,6 +53,7 @@ class CreateManifestForm extends StatelessWidget {
             state is CreateManifestPrivacyMismatch) {
           Navigator.pop(context);
           Navigator.pop(context);
+          context.read<FeedbackSurveyCubit>().openRemindMe();
         }
       }, builder: (context, state) {
         final readCubitContext = context.read<CreateManifestCubit>();
@@ -224,8 +226,8 @@ class CreateManifestForm extends StatelessWidget {
                                     fontWeight: FontWeight.bold,
                                     decoration: TextDecoration.underline),
                                 recognizer: TapGestureRecognizer()
-                                  ..onTap =
-                                      () => launch(R.manifestLearnMoreLink)),
+                                  ..onTap = () =>
+                                      launch(Resources.manifestLearnMoreLink)),
                           ]),
                         ),
                         manifestNameForm()

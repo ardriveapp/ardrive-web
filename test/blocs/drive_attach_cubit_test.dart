@@ -43,9 +43,9 @@ void main() {
     const notFoundDriveId = 'not-found-drive-id';
 
     setUp(() {
-      registerFallbackValue(SyncStatefake());
-      registerFallbackValue(ProfileStatefake());
-      registerFallbackValue(DrivesStatefake());
+      registerFallbackValue(SyncStateFake());
+      registerFallbackValue(ProfileStateFake());
+      registerFallbackValue(DrivesStateFake());
 
       db = getTestDb();
       driveDao = db.driveDao;

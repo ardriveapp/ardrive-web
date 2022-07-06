@@ -17,7 +17,7 @@ class ScreenNotSupportedPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Image.asset(
-                  R.images.brand.logoHorizontalNoSubtitleLight,
+                  Resources.images.brand.logoHorizontalNoSubtitleLight,
                   height: 126,
                   fit: BoxFit.contain,
                 ),
