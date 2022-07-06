@@ -13,6 +13,8 @@ import 'package:url_launcher/url_launcher.dart';
 /// [SharedFilePage] displays details of a shared file and controls for downloading and previewing it
 /// from a parent [SharedFileCubit].
 class SharedFilePage extends StatelessWidget {
+  const SharedFilePage({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -39,7 +41,7 @@ class SharedFilePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 32),
                   if (state is SharedFileIsPrivate) ...[
-                    const Text('This file is encrypted'),
+                    Text(appLocalizationsOf(context).sharedFileIsEnrypted),
                     const SizedBox(height: 16),
                     ReactiveForm(
                       formGroup: context.watch<SharedFileCubit>().form,
@@ -47,8 +49,9 @@ class SharedFilePage extends StatelessWidget {
                         formControlName: 'fileKey',
                         autofocus: true,
                         obscureText: true,
-                        decoration:
-                            const InputDecoration(labelText: 'File Key'),
+                        decoration: InputDecoration(
+                          labelText: appLocalizationsOf(context).fileKey,
+                        ),
                         validationMessages: (_) =>
                             kValidationMessages(appLocalizationsOf(context)),
                         onEditingComplete: () => context

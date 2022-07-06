@@ -625,9 +625,17 @@
   "@driveName": {
     "description": "The name of certain drive"
   },
+  "driveKey": "Drive Key",
+  "@driveKey": {
+    "description": "Drive Key form field label"
+  },
   "shareDrive": "Share Drive",
   "@shareDrive": {
     "description": "The action of sharing a drive link"
+  },
+  "fileKey": "File Key",
+  "@fileKey": {
+    "description": "File Key form field label"
   },
   "shareDriveWithOthers": "Share drive with others",
   "@shareDriveWithOthers": {
@@ -982,6 +990,14 @@
   "specifiedFileDoesNotExist": "The specified file does not exist.",
   "@specifiedFileDoesNotExist": {
     "description": "The shared file the user is trying to access does not exist"
+  },
+  "sharedFileInvalidFileKey": "The file key is invalid.",
+  "@sharedFileInvalidFileKey": {
+    "description": "The user entered an incorrect file key"
+  },
+  "sharedFileIsEnrypted": "This file is encrypted.",
+  "@sharedFileIsEnrypted": {
+    "description": "Description that says the file is encrypted on shared file page"
   },
   "failedToSyncDrive": "Failed to sync drive contents.",
   "@failedToSyncDrive": {
