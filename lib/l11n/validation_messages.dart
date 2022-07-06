@@ -19,7 +19,8 @@ Map<String, String> kValidationMessages(AppLocalizations localizations) {
         localizations.validationDriveNameAlreadyPresent,
     AppValidationMessage.fsEntryNameUnchanged:
         localizations.validationNameUnchanged,
-    AppValidationMessage.sharedFileInvalidFileKey: localizations.shareFile
+    AppValidationMessage.sharedFileInvalidFileKey:
+        localizations.sharedFileInvalidFileKey
   };
 }
 

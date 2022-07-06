@@ -50,8 +50,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     try {
       fileKey = SecretKey(decodeBase64ToBytes(fileKeyControl.value));
     } catch (_) {
-      return null;
+      fileKeyControl.markAsTouched();
+      return {AppValidationMessage.sharedFileInvalidFileKey: true};
     }
+    
     final file = await _arweave!.getLatestFileEntityWithId(fileId, fileKey);
 
     if (file == null) {
