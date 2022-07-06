@@ -47,8 +47,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v3.2.0"
-      resolved-ref: f2bd7b2046847899404be7db6c2e8afaf44a8a38
+      ref: PE-1811
+      resolved-ref: a039e71aeb6ccf37d2cbf9ec0329370f83677f9f
       url: "https://github.com/ardriveapp/arweave-dart"
     source: git
     version: "3.2.0"
@@ -572,13 +572,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.12.11"
-  material_color_utilities:
-    dependency: transitive
-    description:
-      name: material_color_utilities
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.1.3"
   meta:
     dependency: "direct overridden"
     description:
@@ -739,7 +732,7 @@ packages:
       name: platform
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.1.0"
+    version: "3.0.2"
   plugin_platform_interface:
     dependency: transitive
     description:
@@ -1024,21 +1017,21 @@ packages:
       name: test
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.19.5"
+    version: "1.17.12"
   test_api:
     dependency: transitive
     description:
       name: test_api
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.8"
+    version: "0.4.3"
   test_core:
     dependency: transitive
     description:
       name: test_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.9"
+    version: "0.4.2"
   timeago:
     dependency: "direct main"
     description:
@@ -1122,7 +1115,7 @@ packages:
       name: vm_service
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "7.5.0"
+    version: "7.3.0"
   watcher:
     dependency: transitive
     description:
