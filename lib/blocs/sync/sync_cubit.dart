@@ -465,29 +465,35 @@ class SyncCubit extends Cubit<SyncState> {
           ((currentBlockheight - t.last.node.block!.height) /
               totalBlockHeightDifference));
 
+      /// Initialize only once `firstBlockHeight` and `totalBlockHeightDifference`
       if (firstBlockHeight == null) {
-        firstBlockHeight = t.first.node.block!.height;
-        totalBlockHeightDifference = currentBlockheight - firstBlockHeight;
+        if (t.first.node.block?.height != null) {
+          firstBlockHeight = t.first.node.block!.height;
+          totalBlockHeightDifference = currentBlockheight - firstBlockHeight;
+        }
       }
 
       transactions.addAll(t);
 
-      _totalProgress += _calculateProgressInFetchPhasePercentage(
-          _calculatePercentageProgress(
-              fetchPhasePercentage, _calculatePercentageBasedOnBlockHeights()));
+      /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
+      if (firstBlockHeight != null) {
+        _totalProgress += _calculateProgressInFetchPhasePercentage(
+            _calculatePercentageProgress(fetchPhasePercentage,
+                _calculatePercentageBasedOnBlockHeights()));
 
-      _syncProgress = _syncProgress.copyWith(
-          progress: _totalProgress,
-          entitiesNumber: _syncProgress.entitiesNumber + t.length);
+        _syncProgress = _syncProgress.copyWith(
+            progress: _totalProgress,
+            entitiesNumber: _syncProgress.entitiesNumber + t.length);
 
-      yield _syncProgress;
+        yield _syncProgress;
 
-      if (totalBlockHeightDifference > 0) {
-        fetchPhasePercentage += _calculatePercentageProgress(
-            fetchPhasePercentage, _calculatePercentageBasedOnBlockHeights());
-      } else {
-        // If the difference is zero means that the first phase was concluded.
-        fetchPhasePercentage = 1;
+        if (totalBlockHeightDifference > 0) {
+          fetchPhasePercentage += _calculatePercentageProgress(
+              fetchPhasePercentage, _calculatePercentageBasedOnBlockHeights());
+        } else {
+          // If the difference is zero means that the first phase was concluded.
+          fetchPhasePercentage = 1;
+        }
       }
     }
 
