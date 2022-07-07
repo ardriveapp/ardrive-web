@@ -459,12 +459,13 @@ class SyncCubit extends Cubit<SyncState> {
     /// First phase of the sync
     /// Here we get all transactions from its drive.
     await for (var t in transactionsStream) {
+      t.first.node.block = null;
+
       if (t.isEmpty) continue;
 
       double _calculatePercentageBasedOnBlockHeights() => (1 -
           ((currentBlockheight - t.last.node.block!.height) /
               totalBlockHeightDifference));
-
       if (firstBlockHeight == null) {
         firstBlockHeight = t.first.node.block!.height;
         totalBlockHeightDifference = currentBlockheight - firstBlockHeight;
