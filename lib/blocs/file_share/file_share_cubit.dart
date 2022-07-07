@@ -33,8 +33,22 @@ class FileShareCubit extends Cubit<FileShareState> {
     emit(FileShareLoadInProgress());
 
     final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+
     final file =
         await _driveDao.fileById(driveId: driveId, fileId: fileId).getSingle();
+
+    final dataTxStatus = (await (_driveDao.select(_driveDao.networkTransactions)
+              ..where((entry) => entry.id.equals(file.dataTxId)))
+            .getSingle())
+        .status;
+
+    if (dataTxStatus == TransactionStatus.failed) {
+      emit(FileShareLoadedFailedFile());
+      return;
+    } else if (dataTxStatus == TransactionStatus.pending) {
+      emit(FileShareLoadedPendingFile());
+      return;
+    }
 
     late Uri fileShareLink;
     SecretKey? fileKey;
