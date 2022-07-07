@@ -21,9 +21,9 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   /// `null` if the file is public.
   final SecretKey? fileKey;
 
-  final ArweaveService? _arweave;
+  final ArweaveService _arweave;
 
-  SharedFileCubit({required this.fileId, this.fileKey, ArweaveService? arweave})
+  SharedFileCubit({required this.fileId, this.fileKey, required arweave})
       : _arweave = arweave,
         super(SharedFileLoadInProgress()) {
     loadFileDetails();
@@ -53,8 +53,8 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       fileKeyControl.markAsTouched();
       return {AppValidationMessage.sharedFileInvalidFileKey: true};
     }
-    
-    final file = await _arweave!.getLatestFileEntityWithId(fileId, fileKey);
+
+    final file = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
 
     if (file == null) {
       fileKeyControl.markAsTouched();
@@ -66,11 +66,11 @@ class SharedFileCubit extends Cubit<SharedFileState> {
 
   Future<void> loadFileDetails() async {
     emit(SharedFileLoadInProgress());
-    final privacy = await _arweave?.getFilePrivacyForId(fileId);
+    final privacy = await _arweave.getFilePrivacyForId(fileId);
     if (fileKey == null && privacy == DrivePrivacy.private) {
       emit(SharedFileIsPrivate());
     } else {
-      final file = await _arweave!.getLatestFileEntityWithId(fileId, fileKey);
+      final file = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
 
       if (file != null) {
         emit(SharedFileLoadSuccess(file: file, fileKey: fileKey));
@@ -90,7 +90,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     emit(SharedFileLoadInProgress());
     final String? fileKeyBase64 = form.control('fileKey').value;
     final fileKey = SecretKey(decodeBase64ToBytes(fileKeyBase64!));
-    final file = await _arweave!.getLatestFileEntityWithId(fileId, fileKey);
+    final file = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
 
     if (file != null) {
       emit(SharedFileLoadSuccess(file: file, fileKey: fileKey));
