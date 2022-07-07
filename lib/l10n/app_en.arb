@@ -995,9 +995,13 @@
   "@sharedFileInvalidFileKey": {
     "description": "The user entered an incorrect file key"
   },
-  "sharedFileIsEnrypted": "This file is encrypted.",
-  "@sharedFileIsEnrypted": {
+  "sharedFileIsEncrypted": "This file is encrypted.",
+  "@sharedFileIsEncrypted": {
     "description": "Description that says the file is encrypted on shared file page"
+  },
+  "learnMoreAboutArDrive": "Learn more about ArDrive.",
+  "@learnMoreAboutArDrive": {
+    "description": "Learn more about ArDrive link on shared file page"
   },
   "failedToSyncDrive": "Failed to sync drive contents.",
   "@failedToSyncDrive": {

@@ -41,7 +41,7 @@ class SharedFilePage extends StatelessWidget {
                   ),
                   const SizedBox(height: 32),
                   if (state is SharedFileIsPrivate) ...[
-                    Text(appLocalizationsOf(context).sharedFileIsEnrypted),
+                    Text(appLocalizationsOf(context).sharedFileIsEncrypted),
                     const SizedBox(height: 16),
                     ReactiveForm(
                       formGroup: context.watch<SharedFileCubit>().form,
@@ -86,7 +86,7 @@ class SharedFilePage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _buildReturnToAppLink(),
+                    _buildReturnToAppLink(context),
                   } else if (state is SharedFileNotFound) ...{
                     const Icon(Icons.error_outline, size: 36),
                     const SizedBox(height: 16),
@@ -95,7 +95,7 @@ class SharedFilePage extends StatelessWidget {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
-                    _buildReturnToAppLink(),
+                    _buildReturnToAppLink(context),
                   }
                 ],
               ),
@@ -106,8 +106,8 @@ class SharedFilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildReturnToAppLink() => TextButton(
-        onPressed: () => launch('https://ardrive.io/'),
-        child: const Text('Learn more about ArDrive'),
+  Widget _buildReturnToAppLink(BuildContext context) => TextButton(
+        onPressed: () => launchUrl(Uri.https('ardrive.io', '')),
+        child: Text(appLocalizationsOf(context).learnMoreAboutArDrive),
       );
 }
