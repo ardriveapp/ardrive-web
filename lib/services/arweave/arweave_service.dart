@@ -324,8 +324,11 @@ class ArweaveService {
     String driveId, [
     SecretKey? driveKey,
   ]) async {
-    final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
-        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
+    final firstOwnerQuery = await _graphQLRetry.execute(
+      FirstDriveEntityWithIdOwnerQuery(
+        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId),
+      ),
+    );
 
     if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
       return null;
@@ -334,9 +337,10 @@ class ArweaveService {
     final driveOwner =
         firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
-    final latestDriveQuery = await _gql.execute(LatestDriveEntityWithIdQuery(
-        variables: LatestDriveEntityWithIdArguments(
-            driveId: driveId, owner: driveOwner)));
+    final latestDriveQuery = await _graphQLRetry.execute(
+        LatestDriveEntityWithIdQuery(
+            variables: LatestDriveEntityWithIdArguments(
+                driveId: driveId, owner: driveOwner)));
 
     final queryEdges = latestDriveQuery.data!.transactions.edges;
     if (queryEdges.isEmpty) {
@@ -366,8 +370,9 @@ class ArweaveService {
   ///
   /// Returns `null` if no valid drive is found.
   Future<String?> getDrivePrivacyForId(String driveId) async {
-    final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
-        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
+    final firstOwnerQuery = await _graphQLRetry.execute(
+        FirstDriveEntityWithIdOwnerQuery(
+            variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
 
     if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
       return null;
@@ -376,9 +381,10 @@ class ArweaveService {
     final driveOwner =
         firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
-    final latestDriveQuery = await _gql.execute(LatestDriveEntityWithIdQuery(
-        variables: LatestDriveEntityWithIdArguments(
-            driveId: driveId, owner: driveOwner)));
+    final latestDriveQuery = await _graphQLRetry.execute(
+        LatestDriveEntityWithIdQuery(
+            variables: LatestDriveEntityWithIdArguments(
+                driveId: driveId, owner: driveOwner)));
 
     final queryEdges = latestDriveQuery.data!.transactions.edges;
     if (queryEdges.isEmpty) {
@@ -440,8 +446,9 @@ class ArweaveService {
   /// Returns `null` if no valid file is found or the provided `fileKey` is incorrect.
   Future<FileEntity?> getLatestFileEntityWithId(String fileId,
       [SecretKey? fileKey]) async {
-    final firstOwnerQuery = await _gql.execute(FirstFileEntityWithIdOwnerQuery(
-        variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
+    final firstOwnerQuery = await _graphQLRetry.execute(
+        FirstFileEntityWithIdOwnerQuery(
+            variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
 
     if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
       return null;
@@ -450,9 +457,10 @@ class ArweaveService {
     final fileOwner =
         firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
-    final latestFileQuery = await _gql.execute(LatestFileEntityWithIdQuery(
-        variables:
-            LatestFileEntityWithIdArguments(fileId: fileId, owner: fileOwner)));
+    final latestFileQuery = await _graphQLRetry.execute(
+        LatestFileEntityWithIdQuery(
+            variables: LatestFileEntityWithIdArguments(
+                fileId: fileId, owner: fileOwner)));
 
     final queryEdges = latestFileQuery.data!.transactions.edges;
     if (queryEdges.isEmpty) {
