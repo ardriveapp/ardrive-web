@@ -7,6 +7,7 @@ import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -56,8 +57,15 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     emit(ProfileAddUserStateLoadInProgress());
     _profileType = ProfileType.JSON;
     _wallet = Wallet.fromJwk(json.decode(walletJson));
-    _driveTxs =
-        await _arweave.getUniqueUserDriveEntityTxs(await _wallet.getAddress());
+    _driveTxs = await _arweave
+        .getUniqueUserDriveEntityTxs(await _wallet.getAddress())
+        .catchError(
+      (error, _) {
+        if (error is GraphQLRetryException) {
+          emit(ProfileAddFailiure());
+        }
+      },
+    );
 
     if (_driveTxs.isEmpty) {
       emit(ProfileAddOnboardingNewUser());
@@ -80,8 +88,15 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       _wallet = ArConnectWallet();
       _lastKnownWalletAddress = await _wallet.getAddress();
 
-      _driveTxs =
-          await _arweave.getUniqueUserDriveEntityTxs(_lastKnownWalletAddress!);
+      _driveTxs = await _arweave
+          .getUniqueUserDriveEntityTxs(_lastKnownWalletAddress!)
+          .catchError(
+        (error, _) {
+          if (error is GraphQLRetryException) {
+            emit(ProfileAddFailiure());
+          }
+        },
+      );
 
       if (_driveTxs.isEmpty) {
         emit(ProfileAddOnboardingNewUser());
@@ -155,9 +170,14 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
           password,
         );
 
-        final privateDrive = await _arweave.getLatestDriveEntityWithId(
-          checkDriveId,
-          checkDriveKey,
+        final privateDrive = await _arweave
+            .getLatestDriveEntityWithId(checkDriveId, checkDriveKey)
+            .catchError(
+          (error, _) {
+            if (error is GraphQLRetryException) {
+              emit(ProfileAddFailiure());
+            }
+          },
         );
 
         // If the private drive could not be decoded, the password is incorrect.
