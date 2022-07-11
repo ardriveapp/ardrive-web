@@ -503,7 +503,7 @@
   "@fileHadANewRevision": {
     "description": "File activity (journal): new revision"
   },
-  "personalDrivesEmphasized": "私人网盘",
+  "personalDrivesEmphasized": "个人网盘",
   "@personalDrives": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
@@ -932,7 +932,7 @@
       }
     }
   },
-  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{此文件已被上传并公开.} =other{这些文件已被上传并公开.}}",
+  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{此文件将被上传并公开.} =other{这些文件将被上传并公开.}}",
   "@filesWillBeUploadedPublicly": {
     "description": "Warning for files that will be public after uploaded",
     "placeholders": {
@@ -1233,7 +1233,7 @@
   "@validationInvalidKey": {
     "description": "Input validation error: The given drive key is wrong"
   },
-  "validationAttachUserLoggedOut": "你需要登录才可以导入私人网盘.",
+  "validationAttachUserLoggedOut": "你需要登录才可以导入个人网盘.",
   "@validationAttachUserLoggedOut": {
     "description": "Input validation error: the user cannot attach a drive when not logged in"
   },
@@ -1291,5 +1291,37 @@
         "example": "Shared Drive A"
       }
     }
+  },
+  "feedbackTitle": "感谢使用ArDrive!",
+  "@feedbackTitle": {
+    "description": "We thank the user"
+  },
+  "feedbackContent": "你希望为本应用的使用体验留下评价吗?",
+  "@feedbackContent": {
+    "description": "Asks for feedback"
+  },
+  "leaveFeedback": "留下评价",
+  "@leaveFeedback": {
+    "description": "The action of leaving feedback"
+  },
+  "noThanks": "不用了谢谢!不再显示该提示",
+  "@noThanks": {
+    "description": "Don't leave feedback, and don't ask again for it"
+  },
+  "weWontRemindYou": "好的!我们不会再显示该提示.",
+  "@weWontRemindYou": {
+    "description": "We let the user know that we won't remind them to leave feedback again"
+  },
+  "weWontRemindYouDescription": "如果你改变了主意, 想在之后留下反馈, 可以使用菜单中的链接.",
+  "@weWontRemindYouDescription": {
+    "description": "We let the user know where to find the 'Leave Feedback' button"
+  },
+  "gotIt": "明白!",
+  "@gotIt": {
+    "description": "Example similar phrases: I've got it, I understood, OK"
+  },
+  "infernoIsInFullSwing": "Inferno奖励计划正在全面展开! 点击这里查看参与规则!",
+  "@infernoIsInFullSwing": {
+    "description": "Text inviting the users to go read the Inferno rules"
   }
 }
