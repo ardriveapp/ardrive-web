@@ -63,7 +63,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       _driveTxs = await _arweave
           .getUniqueUserDriveEntityTxs(await _wallet.getAddress());
     } catch (e) {
-      emit(ProfileAddFailiure());
+      emit(ProfileAddFailure());
       return;
     }
 
@@ -82,7 +82,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       _profileType = ProfileType.ArConnect;
 
       if (!(await arconnect.checkPermissions())) {
-        emit(ProfileAddFailiure());
+        emit(ProfileAddFailure());
         return;
       }
       _wallet = ArConnectWallet();
@@ -93,7 +93,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
           .catchError(
         (error, _) {
           if (error is GraphQLRetryException) {
-            emit(ProfileAddFailiure());
+            emit(ProfileAddFailure());
           }
         },
       );
@@ -105,7 +105,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         setupForm(withPasswordConfirmation: false);
       }
     } catch (e) {
-      emit(ProfileAddFailiure());
+      emit(ProfileAddFailure());
     }
   }
 
@@ -147,7 +147,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
               !(await arconnect.checkPermissions()))) {
         //Wallet was switched or deleted before login from another tab
 
-        emit(ProfileAddFailiure());
+        emit(ProfileAddFailure());
         return;
       }
       final previousState = state;
@@ -174,7 +174,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
           privateDrive = await _arweave.getLatestDriveEntityWithId(
               checkDriveId, checkDriveKey);
         } catch (e) {
-          emit(ProfileAddFailiure());
+          emit(ProfileAddFailure());
           return;
         }
 
