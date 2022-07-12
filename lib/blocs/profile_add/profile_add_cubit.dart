@@ -57,15 +57,15 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     emit(ProfileAddUserStateLoadInProgress());
     _profileType = ProfileType.JSON;
     _wallet = Wallet.fromJwk(json.decode(walletJson));
-    _driveTxs = await _arweave
-        .getUniqueUserDriveEntityTxs(await _wallet.getAddress())
-        .catchError(
-      (error, _) {
-        if (error is GraphQLRetryException) {
-          emit(ProfileAddFailiure());
-        }
-      },
-    );
+
+    List<TransactionCommonMixin> _driveTxs;
+    try {
+      _driveTxs = await _arweave
+          .getUniqueUserDriveEntityTxs(await _wallet.getAddress());
+    } catch (e) {
+      emit(ProfileAddFailiure());
+      return;
+    }
 
     if (_driveTxs.isEmpty) {
       emit(ProfileAddOnboardingNewUser());
@@ -169,16 +169,14 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
           checkDriveId,
           password,
         );
-
-        final privateDrive = await _arweave
-            .getLatestDriveEntityWithId(checkDriveId, checkDriveKey)
-            .catchError(
-          (error, _) {
-            if (error is GraphQLRetryException) {
-              emit(ProfileAddFailiure());
-            }
-          },
-        );
+        DriveEntity? privateDrive;
+        try {
+          privateDrive = await _arweave.getLatestDriveEntityWithId(
+              checkDriveId, checkDriveKey);
+        } catch (e) {
+          emit(ProfileAddFailiure());
+          return;
+        }
 
         // If the private drive could not be decoded, the password is incorrect.
         if (privateDrive == null) {
