@@ -461,9 +461,20 @@ class SyncCubit extends Cubit<SyncState> {
     await for (var t in transactionsStream) {
       if (t.isEmpty) continue;
 
-      double _calculatePercentageBasedOnBlockHeights() => (1 -
-          ((currentBlockheight - t.last.node.block!.height) /
-              totalBlockHeightDifference));
+      double _calculatePercentageBasedOnBlockHeights() {
+        final block = t.last.node.block;
+
+        if (block != null) {
+          return (1 -
+              ((currentBlockheight - block.height) /
+                  totalBlockHeightDifference));
+        }
+        syncFormatedPrint(
+            'The transaction block is null.\nTransaction node id: ${t.first.node.id}');
+
+        /// if the block is null, we don't calculate and keep the same percentage
+        return fetchPhasePercentage;
+      }
 
       /// Initialize only once `firstBlockHeight` and `totalBlockHeightDifference`
       if (firstBlockHeight == null) {
