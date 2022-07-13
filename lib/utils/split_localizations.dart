@@ -1,13 +1,13 @@
 import 'package:ardrive/utils/text_partitions.dart';
-import 'package:flutter/material.dart';
 
-typedef WidgetFactory = Widget Function(String text);
+typedef WidgetFactory<T> = T Function(String text);
 
-List<Widget> splitTranslationsWithMultipleStyles(
-  String originalText,
-  WidgetFactory defaultMapper,
-  Map<String, WidgetFactory> parts,
-) {
+List<T> splitTranslationsWithMultipleStyles<T>({
+  required String originalText,
+  required WidgetFactory defaultMapper,
+  required Map<String, WidgetFactory> parts,
+  T? separator,
+}) {
   final partitions = TextPartitions(wholeText: originalText);
 
   /// Add the specified parts first
@@ -15,7 +15,7 @@ List<Widget> splitTranslationsWithMultipleStyles(
     partitions.setSegment(stringSegment);
   });
 
-  final widgets = <Widget>[];
+  final mappedParts = <T>[];
 
   final numSegments = partitions.amount;
   for (var segmentIndex = 0; segmentIndex < numSegments; segmentIndex++) {
@@ -23,12 +23,15 @@ List<Widget> splitTranslationsWithMultipleStyles(
     final customMapper = parts[segment];
     if (customMapper == null) {
       /// It's not a custom part, use default mapper
-      widgets.add(defaultMapper(segment));
+      mappedParts.add(defaultMapper(segment));
     } else {
       /// It's a given part, use specified mapper
-      widgets.add(customMapper(segment));
+      mappedParts.add(customMapper(segment));
+    }
+    if (separator != null && segmentIndex + 1 < numSegments) {
+      mappedParts.add(separator);
     }
   }
 
-  return widgets;
+  return mappedParts;
 }
