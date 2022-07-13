@@ -467,9 +467,14 @@ class SyncCubit extends Cubit<SyncState> {
 
       /// Initialize only once `firstBlockHeight` and `totalBlockHeightDifference`
       if (firstBlockHeight == null) {
-        if (t.first.node.block?.height != null) {
-          firstBlockHeight = t.first.node.block!.height;
+        final block = t.first.node.block;
+
+        if (block != null) {
+          firstBlockHeight = block.height;
           totalBlockHeightDifference = currentBlockheight - firstBlockHeight;
+        } else {
+          syncFormatedPrint(
+              'The transaction block is null.\nTransaction node id: ${t.first.node.id}');
         }
       }
 
