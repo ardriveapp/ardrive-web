@@ -17,7 +17,7 @@ import 'package:retry/retry.dart';
 import 'error/gateway_response_handler.dart';
 
 const byteCountPerChunk = 262144; // 256 KiB
-
+const defaultMaxRetries = 8;
 const kMaxNumberOfTransactionsPerPage = 100;
 
 class ArweaveService {
@@ -223,10 +223,14 @@ class ArweaveService {
 
   // Gets the unique drive entity transactions for a particular user.
   Future<List<TransactionCommonMixin>> getUniqueUserDriveEntityTxs(
-      String userAddress) async {
+    String userAddress, {
+    int maxRetries = defaultMaxRetries,
+  }) async {
     final userDriveEntitiesQuery = await _graphQLRetry.execute(
       UserDriveEntitiesQuery(
-          variables: UserDriveEntitiesArguments(owner: userAddress)),
+        variables: UserDriveEntitiesArguments(owner: userAddress),
+      ),
+      maxAttempts: maxRetries,
     );
 
     return userDriveEntitiesQuery.data!.transactions.edges
@@ -323,11 +327,13 @@ class ArweaveService {
   Future<DriveEntity?> getLatestDriveEntityWithId(
     String driveId, [
     SecretKey? driveKey,
+    int maxRetries = defaultMaxRetries,
   ]) async {
     final firstOwnerQuery = await _graphQLRetry.execute(
       FirstDriveEntityWithIdOwnerQuery(
         variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId),
       ),
+      maxAttempts: maxRetries,
     );
 
     if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
@@ -338,9 +344,12 @@ class ArweaveService {
         firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
     final latestDriveQuery = await _graphQLRetry.execute(
-        LatestDriveEntityWithIdQuery(
-            variables: LatestDriveEntityWithIdArguments(
-                driveId: driveId, owner: driveOwner)));
+      LatestDriveEntityWithIdQuery(
+        variables: LatestDriveEntityWithIdArguments(
+            driveId: driveId, owner: driveOwner),
+      ),
+      maxAttempts: maxRetries,
+    );
 
     final queryEdges = latestDriveQuery.data!.transactions.edges;
     if (queryEdges.isEmpty) {

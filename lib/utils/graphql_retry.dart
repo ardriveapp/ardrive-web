@@ -11,11 +11,14 @@ class GraphQLRetry {
   final ArtemisClient _client;
 
   Future<GraphQLResponse<T>> execute<T, U extends JsonSerializable>(
-      GraphQLQuery<T, U> query,
-      {Function(Exception e)? onRetry}) async {
+    GraphQLQuery<T, U> query, {
+    Function(Exception e)? onRetry,
+    int maxAttempts = 8,
+  }) async {
     try {
       final queryResponse = await retry(
         () async => await _client.execute(query),
+        maxAttempts: maxAttempts,
         onRetry: (exception) {
           onRetry?.call(exception);
           print(
