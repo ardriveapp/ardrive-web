@@ -29,7 +29,7 @@ class ProfileAuthShell extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Image.asset(
-                    R.images.brand.logoHorizontalNoSubtitleLight,
+                    Resources.images.brand.logoHorizontalNoSubtitleLight,
                     height: 126,
                     fit: BoxFit.contain,
                   ),
@@ -52,7 +52,7 @@ class ProfileAuthShell extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset(R.images.profile.permahillsBg),
+                  Image.asset(Resources.images.profile.permahillsBg),
                   SizedBox(height: 128),
                 ],
               ),

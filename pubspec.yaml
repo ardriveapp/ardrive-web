@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 1.23.0
+version: 1.24.0
 
 environment:
   sdk: '>=2.15.0 <3.0.0'
@@ -18,7 +18,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart
-      ref: v3.2.0
+      ref: v3.3.0
   cryptography: ^2.0.1
   flutter_bloc: ^8.0.1
   flutter_portal: ^0.4.0
@@ -50,6 +50,7 @@ dependencies:
   cooky: ^2.0.0
   flutter_lints: ^1.0.4
   retry: ^3.1.0
+  shared_preferences: ^2.0.15
 
 dev_dependencies:
   flutter_test:
@@ -74,3 +75,4 @@ flutter:
     - assets/fonts/
     - assets/images/brand/
     - assets/images/profile/
+    - assets/images/inferno/

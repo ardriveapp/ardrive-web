@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -37,6 +38,9 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
   Widget build(BuildContext context) =>
       BlocBuilder<DriveShareCubit, DriveShareState>(
         builder: (context, state) => AppDialog(
+          onWillPopCallback: () {
+            context.read<FeedbackSurveyCubit>().openRemindMe();
+          },
           title: appLocalizationsOf(context).shareDriveWithOthers,
           content: SizedBox(
             width: kLargeDialogWidth,
@@ -97,7 +101,10 @@ class _DriveShareDialogState extends State<DriveShareDialog> {
           actions: [
             if (state is DriveShareLoadSuccess)
               ElevatedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.read<FeedbackSurveyCubit>().openRemindMe();
+                },
                 child: Text(appLocalizationsOf(context).doneEmphasized),
               ),
           ],

@@ -21,7 +21,7 @@ void main() {
     const wrongPassword = 'wrong-password';
 
     setUp(() {
-      registerFallbackValue(ProfileStatefake());
+      registerFallbackValue(ProfileStateFake());
 
       profileDao = MockProfileDao();
       profileCubit = MockProfileCubit();
