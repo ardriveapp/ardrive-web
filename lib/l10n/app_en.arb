@@ -677,6 +677,14 @@
   "@shareFile": {
     "description": "The action of sharing a file link"
   },
+  "sharePendingFile": "The file you are trying to share is currently pending and can’t be shared at this time.",
+  "@sharePendingFile": {
+    "description": "Pending file share dialog text"
+  },
+  "shareFailedFile": "The file you are attempting to share is invalid and cannot be shared.",
+  "@shareFailedFile": {
+    "description": "Failed file share dialog text"
+  },
   "shareFileWithOthers": "Share file with others",
   "@shareFileWithOthers": {
     "description": "To share a file link"
