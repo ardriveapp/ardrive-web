@@ -45,22 +45,14 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   }
 
   Future<Map<String, dynamic>?> _fileKeyValidator(
-      AbstractControl<dynamic> fileKeyControl) async {
-    late SecretKey fileKey;
+    AbstractControl<dynamic> fileKeyControl,
+  ) async {
     try {
-      fileKey = SecretKey(decodeBase64ToBytes(fileKeyControl.value));
+      SecretKey(decodeBase64ToBytes(fileKeyControl.value));
     } catch (_) {
       fileKeyControl.markAsTouched();
       return {AppValidationMessage.sharedFileInvalidFileKey: true};
     }
-
-    final file = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
-
-    if (file == null) {
-      fileKeyControl.markAsTouched();
-      return {AppValidationMessage.sharedFileInvalidFileKey: true};
-    }
-
     return null;
   }
 
