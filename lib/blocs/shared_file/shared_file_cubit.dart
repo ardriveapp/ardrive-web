@@ -87,6 +87,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     if (file != null) {
       emit(SharedFileLoadSuccess(file: file, fileKey: fileKey));
     } else {
+      emit(SharedFileIsPrivate());
       form
           .control('fileKey')
           .setErrors({AppValidationMessage.sharedFileIncorrectFileKey: true});
