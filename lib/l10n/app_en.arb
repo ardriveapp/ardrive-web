@@ -991,8 +991,8 @@
   "@specifiedFileDoesNotExist": {
     "description": "The shared file the user is trying to access does not exist"
   },
-  "sharedFileInvalidFileKey": "The file key is invalid.",
-  "@sharedFileInvalidFileKey": {
+  "validationSharedFileIncorrectFileKey": "Incorrect key, please try again.",
+  "@validationSharedFileIncorrectFileKey": {
     "description": "The user entered an incorrect file key"
   },
   "sharedFileIsEncrypted": "This file is encrypted.",
