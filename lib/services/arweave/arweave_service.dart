@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
@@ -365,7 +366,7 @@ class ArweaveService {
   /// by that owner.
   ///
   /// Returns `null` if no valid drive is found.
-  Future<String?> getDrivePrivacyForId(String driveId) async {
+  Future<Privacy?> getDrivePrivacyForId(String driveId) async {
     final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
         variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
 
@@ -388,6 +389,42 @@ class ArweaveService {
     final driveTx = queryEdges.first.node;
 
     return driveTx.getTag(EntityTag.drivePrivacy);
+  }
+
+  /// Gets the file privacy of the latest file entity with the provided id.
+  ///
+  /// This function first checks for the owner of the first instance of the [FileEntity]
+  /// with the specified id and then queries for the latest instance of the [FileEntity]
+  /// by that owner.
+  ///
+  /// Returns `null` if no valid file is found.
+
+  Future<Privacy?> getFilePrivacyForId(String fileId) async {
+    final firstOwnerQuery = await _gql.execute(FirstFileEntityWithIdOwnerQuery(
+        variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
+
+    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    final fileOwner =
+        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
+
+    final latestFileQuery = await _gql.execute(LatestFileEntityWithIdQuery(
+        variables:
+            LatestFileEntityWithIdArguments(fileId: fileId, owner: fileOwner)));
+
+    final queryEdges = latestFileQuery.data!.transactions.edges;
+
+    if (queryEdges.isEmpty) {
+      return null;
+    }
+
+    final fileTx = queryEdges.first.node;
+
+    return fileTx.getTag(EntityTag.cipherIv) != null
+        ? DrivePrivacy.private
+        : DrivePrivacy.public;
   }
 
   /// Gets the owner of the drive sorted by blockheight.
