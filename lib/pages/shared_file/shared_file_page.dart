@@ -63,7 +63,7 @@ class SharedFilePage extends StatelessWidget {
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => context.read<SharedFileCubit>().submit(),
-                      child: Text(appLocalizationsOf(context).unlockEmphasized),
+                      child: Text(appLocalizationsOf(context).unlock),
                     ),
                   ],
                   if (state is SharedFileLoadInProgress)

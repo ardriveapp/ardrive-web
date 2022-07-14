@@ -178,6 +178,10 @@
       }
     }
   },
+  "unlock": "Unlock",
+  "@unlock": {
+    "description": "Unlock a file or drive."
+  },
   "unlockEmphasized": "UNLOCK",
   "@unlockEmphasized": {
     "description": "Unlock the wallet with its password. Emphasized with upper case"
