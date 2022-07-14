@@ -50,7 +50,7 @@ class SharedFilePage extends StatelessWidget {
                         autofocus: true,
                         obscureText: true,
                         decoration: InputDecoration(
-                          labelText: appLocalizationsOf(context).fileKey,
+                          labelText: appLocalizationsOf(context).enterFileKey,
                         ),
                         validationMessages: (_) =>
                             kValidationMessages(appLocalizationsOf(context)),
@@ -108,6 +108,6 @@ class SharedFilePage extends StatelessWidget {
 
   Widget _buildReturnToAppLink(BuildContext context) => TextButton(
         onPressed: () => launch('https://ardrive.io/'),
-        child: Text(appLocalizationsOf(context).learnMoreAboutArDrive),
+        child: Text(appLocalizationsOf(context).whatIsArDrive),
       );
 }
