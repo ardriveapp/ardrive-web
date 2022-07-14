@@ -178,6 +178,10 @@
       }
     }
   },
+  "unlock": "Unlock",
+  "@unlock": {
+    "description": "Unlock a file or drive."
+  },
   "unlockEmphasized": "UNLOCK",
   "@unlockEmphasized": {
     "description": "Unlock the wallet with its password. Emphasized with upper case"
@@ -633,8 +637,8 @@
   "@shareDrive": {
     "description": "The action of sharing a drive link"
   },
-  "fileKey": "File Key",
-  "@fileKey": {
+  "enterFileKey": "Enter file Key",
+  "@enterFileKey": {
     "description": "File Key form field label"
   },
   "shareDriveWithOthers": "Share drive with others",
@@ -991,17 +995,17 @@
   "@specifiedFileDoesNotExist": {
     "description": "The shared file the user is trying to access does not exist"
   },
-  "sharedFileInvalidFileKey": "The file key is invalid.",
-  "@sharedFileInvalidFileKey": {
+  "validationSharedFileIncorrectFileKey": "Incorrect key, please try again.",
+  "@validationSharedFileIncorrectFileKey": {
     "description": "The user entered an incorrect file key"
   },
   "sharedFileIsEncrypted": "This file is encrypted.",
   "@sharedFileIsEncrypted": {
     "description": "Description that says the file is encrypted on shared file page"
   },
-  "learnMoreAboutArDrive": "Learn more about ArDrive.",
-  "@learnMoreAboutArDrive": {
-    "description": "Learn more about ArDrive link on shared file page"
+  "whatIsArDrive": "What is ArDrive?",
+  "@whatIsArDrive": {
+    "description": "What is ArDrive? link on shared file page"
   },
   "failedToSyncDrive": "Failed to sync drive contents.",
   "@failedToSyncDrive": {

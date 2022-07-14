@@ -19,8 +19,8 @@ Map<String, String> kValidationMessages(AppLocalizations localizations) {
         localizations.validationDriveNameAlreadyPresent,
     AppValidationMessage.fsEntryNameUnchanged:
         localizations.validationNameUnchanged,
-    AppValidationMessage.sharedFileInvalidFileKey:
-        localizations.sharedFileInvalidFileKey
+    AppValidationMessage.sharedFileIncorrectFileKey:
+        localizations.validationSharedFileIncorrectFileKey,
   };
 }
 
@@ -30,7 +30,8 @@ class AppValidationMessage {
   static const String driveAttachUserLoggedOut = 'drive-attach-user-logged-out';
   static const String driveAttachInvalidDriveKey =
       'drive-attach-invalid-drive-key';
-  static const String sharedFileInvalidFileKey = 'shared-file-invalid-file-key';
+  static const String sharedFileIncorrectFileKey =
+      'shared-file-incorrect-file-key';
   static const String fsEntryNameAlreadyPresent = 'name-already-present';
   static const String fsEntryNameUnchanged = 'name-unchanged';
   static const String driveNameAlreadyPresent = 'drive-name-already-present';

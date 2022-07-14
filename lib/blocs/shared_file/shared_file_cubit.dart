@@ -51,7 +51,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       SecretKey(decodeBase64ToBytes(fileKeyControl.value));
     } catch (_) {
       fileKeyControl.markAsTouched();
-      return {AppValidationMessage.sharedFileInvalidFileKey: true};
+      return {AppValidationMessage.sharedFileIncorrectFileKey: true};
     }
     return null;
   }
@@ -87,7 +87,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     if (file != null) {
       emit(SharedFileLoadSuccess(file: file, fileKey: fileKey));
     } else {
-      emit(SharedFileNotFound());
+      emit(SharedFileIsPrivate());
+      form
+          .control('fileKey')
+          .setErrors({AppValidationMessage.sharedFileIncorrectFileKey: true});
     }
   }
 }
