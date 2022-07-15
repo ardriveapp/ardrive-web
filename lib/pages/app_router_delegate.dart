@@ -97,7 +97,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             shell = BlocProvider<SharedFileCubit>(
               key: ValueKey(sharedFileId),
               create: (_) => SharedFileCubit(
-                fileId: sharedFileId,
+                fileId: sharedFileId!,
                 fileKey: sharedFileKey,
                 arweave: context.read<ArweaveService>(),
               ),

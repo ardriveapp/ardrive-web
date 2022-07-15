@@ -178,6 +178,10 @@
       }
     }
   },
+  "unlock": "Unlock",
+  "@unlock": {
+    "description": "Unlock a file or drive."
+  },
   "unlockEmphasized": "UNLOCK",
   "@unlockEmphasized": {
     "description": "Unlock the wallet with its password. Emphasized with upper case"
@@ -625,9 +629,17 @@
   "@driveName": {
     "description": "The name of certain drive"
   },
+  "driveKey": "Drive Key",
+  "@driveKey": {
+    "description": "Drive Key form field label"
+  },
   "shareDrive": "Share Drive",
   "@shareDrive": {
     "description": "The action of sharing a drive link"
+  },
+  "enterFileKey": "Enter file Key",
+  "@enterFileKey": {
+    "description": "File Key form field label"
   },
   "shareDriveWithOthers": "Share drive with others",
   "@shareDriveWithOthers": {
@@ -664,6 +676,14 @@
   "shareFile": "Share File",
   "@shareFile": {
     "description": "The action of sharing a file link"
+  },
+  "sharePendingFile": "The file you are trying to share is currently pending and can’t be shared at this time.",
+  "@sharePendingFile": {
+    "description": "Pending file share dialog text"
+  },
+  "shareFailedFile": "The file you are attempting to share is invalid and cannot be shared.",
+  "@shareFailedFile": {
+    "description": "Failed file share dialog text"
   },
   "shareFileWithOthers": "Share file with others",
   "@shareFileWithOthers": {
@@ -982,6 +1002,18 @@
   "specifiedFileDoesNotExist": "The specified file does not exist.",
   "@specifiedFileDoesNotExist": {
     "description": "The shared file the user is trying to access does not exist"
+  },
+  "validationSharedFileIncorrectFileKey": "Incorrect key, please try again.",
+  "@validationSharedFileIncorrectFileKey": {
+    "description": "The user entered an incorrect file key"
+  },
+  "sharedFileIsEncrypted": "This file is encrypted.",
+  "@sharedFileIsEncrypted": {
+    "description": "Description that says the file is encrypted on shared file page"
+  },
+  "whatIsArDrive": "What is ArDrive?",
+  "@whatIsArDrive": {
+    "description": "What is ArDrive? link on shared file page"
   },
   "failedToSyncDrive": "Failed to sync drive contents.",
   "@failedToSyncDrive": {
