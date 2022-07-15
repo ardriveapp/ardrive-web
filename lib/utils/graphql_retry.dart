@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/extensions.dart';
 import 'package:artemis/client.dart';
 import 'package:artemis/schema/graphql_query.dart';
 import 'package:artemis/schema/graphql_response.dart';
@@ -21,8 +22,11 @@ class GraphQLRetry {
         maxAttempts: maxAttempts,
         onRetry: (exception) {
           onRetry?.call(exception);
-          print(
-              'Retrying for query ${query.toString()} on Exception ${exception.toString()}');
+          """
+          Retrying Query: ${query.toString()}\n
+          On Exception: ${exception.toString()}
+          """
+              .logError();
         },
       );
 
@@ -34,15 +38,14 @@ class GraphQLRetry {
       } else {
         exception = e;
       }
-      print(
-          'Fatal error while querying ${query.operationName}. Number of retries has been exceeded. Exception ${exception.toString()}');
-      throw GraphQLRetryException(exception.toString());
+
+      """
+      Fatal error while querying: ${query.operationName}\n
+      Number of retries exceeded.
+      Exception: ${exception.toString()}
+      """
+          .logError();
+      rethrow;
     }
   }
-}
-
-class GraphQLRetryException implements Exception {
-  GraphQLRetryException(this.message);
-
-  final String message;
 }

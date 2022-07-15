@@ -19,13 +19,6 @@ part 'profile_add_state.dart';
 const profileQueryMaxRetries = 6;
 
 class ProfileAddCubit extends Cubit<ProfileAddState> {
-  late FormGroup form;
-
-  late Wallet _wallet;
-  late ProfileType _profileType;
-  String? _lastKnownWalletAddress;
-  late List<TransactionCommonMixin> _driveTxs;
-
   final ProfileCubit _profileCubit;
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
@@ -40,6 +33,13 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         super(ProfileAddPromptWallet());
 
   final arconnect = ArConnectService();
+
+  late FormGroup form;
+  late Wallet _wallet;
+  late ProfileType _profileType;
+  late List<TransactionCommonMixin> _driveTxs;
+
+  String? _lastKnownWalletAddress;
 
   bool isArconnectInstalled() {
     return arconnect.isExtensionPresent();
@@ -59,7 +59,6 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     _profileType = ProfileType.JSON;
     _wallet = Wallet.fromJwk(json.decode(walletJson));
 
-    List<TransactionCommonMixin> _driveTxs;
     try {
       _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(
         await _wallet.getAddress(),
