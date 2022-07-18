@@ -68,7 +68,7 @@ class IOFileAdapter {
         contentType: contentType,
         fileExtension: fileExtension,
         path: path ?? '',
-        lastModifiedDate: DateTime.now(),
+        lastModifiedDate: lastModified,
         name: name);
   }
 }

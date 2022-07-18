@@ -69,4 +69,25 @@ void main() {
       expect(await iofile.readAsBytes(), await file.readAsBytes());
     });
   });
+  group('test class IOFileAdapter method fromData', () {
+    test('should return a correct IOFile', () async {
+      final bytes = ByteData(1024).buffer.asUint8List();
+      final dateCreated = DateTime.parse('2020-02-11');
+      final iofile = await sut.fromData(bytes,
+          contentType: 'image/jpeg',
+          fileExtension: 'jpg',
+          lastModified: dateCreated,
+          path: 'path',
+          name: 'some_name');
+
+      expect(iofile.name, 'some_name');
+      expect(iofile.fileExtension, 'jpg');
+      expect(iofile.contentType, 'image/jpeg');
+      expect(iofile.path, 'path');
+      expect(dateCreated, iofile.lastModifiedDate);
+
+      /// ensure that is the same content
+      expect(bytes, await iofile.readAsBytes());
+    });
+  });
 }
