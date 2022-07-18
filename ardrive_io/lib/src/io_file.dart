@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -54,6 +55,22 @@ class IOFileAdapter {
         contentType: contentType,
         lastModifiedDate: lastModified);
   }
+
+  /// Mounts a `IOFile` with the given information
+  /// `path` is optional since it will be stored in memory
+  Future<IOFile> fromData(Uint8List bytes,
+      {required String name,
+      String? path,
+      required String contentType,
+      required DateTime lastModified,
+      required String fileExtension}) async {
+    return _DataFile(bytes,
+        contentType: contentType,
+        fileExtension: fileExtension,
+        path: path ?? '',
+        lastModifiedDate: DateTime.now(),
+        name: name);
+  }
 }
 
 class _CommonFile implements IOFile {
@@ -96,4 +113,40 @@ class _CommonFile implements IOFile {
 
   @override
   final String contentType;
+}
+
+/// `IOFile` implementation with the given `bytes`.
+class _DataFile implements IOFile {
+  _DataFile(this.bytes,
+      {required this.contentType,
+      required this.fileExtension,
+      required this.lastModifiedDate,
+      required this.name,
+      required this.path});
+
+  final Uint8List bytes;
+
+  @override
+  final String contentType;
+  @override
+  final String fileExtension;
+
+  @override
+  final DateTime lastModifiedDate;
+
+  @override
+  final String name;
+
+  @override
+  final String path;
+
+  @override
+  Future<Uint8List> readAsBytes() async {
+    return bytes;
+  }
+
+  @override
+  Future<String> readAsString() async {
+    return utf8.decode(bytes);
+  }
 }

@@ -71,17 +71,24 @@ class MobileIO implements ArDriveIO {
   }
 }
 
+/// Saves a file on default download location
+///
+/// throws a `EntityPathException` if the file name is invalid
 class AndroidFileSaver implements FileSaver {
   @override
   Future<void> save(IOFile file) async {
-    Directory generalDownloadDir = Directory('/storage/emulated/0/Download');
+    if (file.name.isEmpty) {
+      throw EntityPathException();
+    }
+
+    Directory generalDownloadDir = Directory('/storage/emulated/0/Download/');
 
     await Permission.manageExternalStorage.request();
     await Permission.storage.request();
 
     if (await Permission.manageExternalStorage.isGranted &&
         await Permission.storage.isGranted) {
-      await File(generalDownloadDir.path + '/test' + file.name)
+      await File(generalDownloadDir.path + file.name)
           .writeAsBytes(await file.readAsBytes());
       return;
     }
