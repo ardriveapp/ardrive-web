@@ -43,10 +43,7 @@ void main() {
 
       /// It differs in some milisseconds, as we get the lastModifiedDate through
       /// the cross_file package
-      expect(
-          iofile.lastModifiedDate.difference(file.statSync().modified) <
-              const Duration(seconds: 1),
-          true);
+      expect(iofile.lastModifiedDate, await file.lastModified());
 
       /// ensure that is the same content
       expect(await iofile.readAsBytes(), await file.readAsBytes());
@@ -66,12 +63,7 @@ void main() {
       expect(iofile.path, filePath);
       expect(iofile.contentType, 'image/jpeg');
 
-      /// It differs in some milisseconds as we get the lastModifiedDate through
-      /// the cross_file package.
-      expect(
-          iofile.lastModifiedDate.difference(file.statSync().modified) <
-              const Duration(seconds: 1),
-          true);
+      expect(iofile.lastModifiedDate, await file.lastModified());
 
       /// ensure that is the same content
       expect(await iofile.readAsBytes(), await file.readAsBytes());
