@@ -25,10 +25,9 @@ class IOFileAdapter {
       throw EntityPathException();
     }
 
-    final xfile = XFile(resultFilePath);
     File file = File(resultFilePath);
 
-    final lastModified = await xfile.lastModified();
+    final lastModified = await file.lastModified();
     final fileName = result.name;
     final contentType = lookupMimeTypeWithDefaultType(file.path);
 
@@ -42,9 +41,9 @@ class IOFileAdapter {
   }
 
   Future<IOFile> fromFile(File file) async {
+    /// TODO(@thiagocarvalhodev): Verify if we need an method for that to decouple it from xFILE
     final xfile = XFile(file.path);
-
-    final lastModified = await xfile.lastModified();
+    final lastModified = await file.lastModified();
     final contentType = lookupMimeTypeWithDefaultType(file.path);
 
     return _CommonFile(
