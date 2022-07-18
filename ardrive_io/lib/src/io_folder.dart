@@ -4,10 +4,21 @@ import 'dart:io';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:equatable/equatable.dart';
 
+/// Base class for agnostic platform folders.
+///
+/// `listContent` should return a list of `IOEntity` where it can be both
+/// `IOFile` and `IOFolder`
 abstract class IOFolder extends Equatable implements IOEntity {
   Future<List<IOEntity>> listContent();
 }
 
+/// Handle the dart:io API `FileSystemEntities` and mounts the folder hierachy
+/// to the given folder.
+///
+/// `_mountFolderChildren` mounts recursiverly the folder hierarchy. It gets only
+/// the current level entities loading only `IOFile` and `IOFolder`. To get the content
+/// of a folder under this, you should call `listContent` and get the child's folder
+/// content
 class _FileSystemFolder extends IOFolder {
   _FileSystemFolder._({
     required this.name,
@@ -66,6 +77,7 @@ class _FileSystemFolder extends IOFolder {
 }
 
 class IOFolderAdapter {
+  /// Initialize loading the folder hierachy and return an `_FileSystemFolder` instance
   Future<IOFolder> fromFileSystemDirectory(Directory directory) async {
     final content = directory.listSync();
     final selectedDirectoryPath = directory.path;
