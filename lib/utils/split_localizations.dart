@@ -18,7 +18,7 @@ List<T> splitTranslationsWithMultipleStyles<T>({
   final mappedParts = <T>[];
 
   final numSegments = partitions.amount;
-  for (var segmentIndex = 0; segmentIndex < numSegments; segmentIndex++) {
+  for (int segmentIndex = 0; segmentIndex < numSegments; segmentIndex++) {
     final segment = partitions.getSegment(segmentIndex);
     final customMapper = parts[segment];
     if (customMapper == null) {
