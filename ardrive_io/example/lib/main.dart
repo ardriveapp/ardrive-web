@@ -26,47 +26,70 @@ class ArDriveIOExample extends StatefulWidget {
 
 class _ArDriveIOExampleState extends State<ArDriveIOExample> {
   String? fileDescription;
+  IOFile? currentFile;
+  IOFolder? currentFolder;
+
   Future<void> pickFile() async {
     final file = await ArDriveIO().pickFile();
 
     setState(() {
-      fileDescription = file.name;
+      currentFile = file;
+      currentFolder = null;
     });
-
-    await ArDriveIO().saveFile(file);
   }
 
   Future<void> pickFolder() async {
     final folder = await ArDriveIO().pickFolder();
-    final children = await folder.listContent();
+    setState(() {
+      currentFolder = folder;
+      currentFile = null;
+    });
+  }
 
-    for (var entity in children) {
-      if (entity is IOFile) {
-        print(await entity.readAsBytes()
-          ..length);
-      }
-    }
+  Future<void> saveFile(BuildContext context) async {
+    // creates a new file and save on O.S.
+    await ArDriveIO().saveFile(currentFile!);
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('File saved')));
+
+    setState(() {
+      currentFile = null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(fileDescription ?? ''),
-            ElevatedButton(
-                onPressed: () async {
-                  await pickFile();
-                },
-                child: const Text('Pick file')),
-            ElevatedButton(
-                onPressed: () async {
-                  await pickFolder();
-                },
-                child: const Text('Pick folder')),
-          ]),
+      appBar: AppBar(
+        centerTitle: true,
+        title: Text(
+            '${currentFile != null ? currentFile!.name : currentFolder != null ? currentFolder!.name : 'ArDriveIO'} '),
+      ),
+      body: Center(
+        child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(fileDescription ?? ''),
+              ElevatedButton(
+                  onPressed: () async {
+                    await pickFile();
+                  },
+                  child: const Text('Pick file')),
+              ElevatedButton(
+                  onPressed: () async {
+                    await pickFolder();
+                  },
+                  child: const Text('Pick folder')),
+              if (currentFile != null)
+                ElevatedButton(
+                    onPressed: () async {
+                      await saveFile(context);
+                    },
+                    child: const Text('save file')),
+            ]),
+      ),
     );
   }
 }
