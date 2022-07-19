@@ -1,5 +1,5 @@
 {
-  "@@locale": "zh_Hant",
+  "@@locale": "zh_HK",
   "welcomeTo_body": "歡迎來到你的安全私人空間: 一個去中心化, 只按實質用量收費, 絕無網絡審查的永久硬盤",
   "@welcomeTo_body": {
     "description": "Welcoming message just after the ArDrive logo"
