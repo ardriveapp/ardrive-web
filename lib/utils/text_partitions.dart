@@ -8,8 +8,9 @@ class TextPartitions {
     if (wholeText == '') {
       throw Exception('Text is empty');
     }
-    _indexes.add(0);
-    _indexes.add(wholeText.length);
+
+    /// Set the beginning and end indexes of the whole text
+    setSegment(wholeText);
   }
 
   List<int> get indexes {
