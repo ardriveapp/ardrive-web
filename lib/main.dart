@@ -25,7 +25,7 @@ void main() async {
 
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
-  refreshHTMLPageAtInterval(Duration(hours: 12));
+  refreshHTMLPageAtInterval(const Duration(hours: 12));
   runApp(App());
 }
 
