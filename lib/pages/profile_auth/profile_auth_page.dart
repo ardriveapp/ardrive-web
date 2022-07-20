@@ -1,4 +1,3 @@
-
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/wallet_switch_dialog.dart';
 import 'package:ardrive/entities/profileTypes.dart';
@@ -67,7 +66,7 @@ class _ProfileAuthPageState extends State<ProfileAuthPage> {
                         (context.read<ProfileAddCubit>().getProfileType() ==
                             ProfileType.ArConnect),
                   );
-                } else if (state is ProfileAddFailiure) {
+                } else if (state is ProfileAddFailure) {
                   return ProfileAuthFailScreen();
                 }
 

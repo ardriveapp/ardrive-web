@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/extensions.dart';
 import 'package:artemis/client.dart';
 import 'package:artemis/schema/graphql_query.dart';
 import 'package:artemis/schema/graphql_response.dart';
@@ -11,15 +12,21 @@ class GraphQLRetry {
   final ArtemisClient _client;
 
   Future<GraphQLResponse<T>> execute<T, U extends JsonSerializable>(
-      GraphQLQuery<T, U> query,
-      {Function(Exception e)? onRetry}) async {
+    GraphQLQuery<T, U> query, {
+    Function(Exception e)? onRetry,
+    int maxAttempts = 8,
+  }) async {
     try {
       final queryResponse = await retry(
         () async => await _client.execute(query),
+        maxAttempts: maxAttempts,
         onRetry: (exception) {
           onRetry?.call(exception);
-          print(
-              'Retrying for query ${query.toString()} on Exception ${exception.toString()}');
+          """
+          Retrying Query: ${query.toString()}\n
+          On Exception: ${exception.toString()}
+          """
+              .logError();
         },
       );
 
@@ -31,9 +38,14 @@ class GraphQLRetry {
       } else {
         exception = e;
       }
-      print(
-          'Fatal error while querying ${query.operationName}. Number of retries has been exceeded. Exception ${exception.toString()}');
-      throw exception;
+
+      """
+      Fatal error while querying: ${query.operationName}\n
+      Number of retries exceeded.
+      Exception: ${exception.toString()}
+      """
+          .logError();
+      rethrow;
     }
   }
 }
