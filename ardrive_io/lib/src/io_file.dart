@@ -4,18 +4,16 @@ import 'dart:typed_data';
 
 import 'package:ardrive_io/src/io_entity.dart';
 import 'package:ardrive_io/src/io_exception.dart';
-import 'package:ardrive_io/src/utils/file_path_utils.dart';
 import 'package:ardrive_io/src/utils/mime_type_utils.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as path;
 
 abstract class IOFile implements IOEntity {
-  IOFile({required this.fileExtension, required this.contentType});
+  IOFile({required this.contentType});
 
   Future<Uint8List> readAsBytes();
   Future<String> readAsString();
   final String contentType;
-  final String fileExtension;
 }
 
 class IOFileAdapter {
@@ -35,7 +33,6 @@ class IOFileAdapter {
     return _CommonFile(
         file: file,
         name: fileName,
-        fileExtension: getExtensionFromPath(resultFilePath),
         path: file.path,
         contentType: contentType,
         lastModifiedDate: lastModified);
@@ -48,7 +45,6 @@ class IOFileAdapter {
     return _CommonFile(
         file: file,
         name: path.basename(file.path),
-        fileExtension: getExtensionFromPath(file.path),
         path: file.path,
         contentType: contentType,
         lastModifiedDate: lastModified);
@@ -77,7 +73,6 @@ class _CommonFile implements IOFile {
       required this.name,
       required this.lastModifiedDate,
       required this.path,
-      required this.fileExtension,
       required this.contentType});
 
   @override
@@ -102,11 +97,8 @@ class _CommonFile implements IOFile {
   String path;
 
   @override
-  String fileExtension;
-
-  @override
   String toString() {
-    return 'file name: $name\nfile extension: $fileExtension\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}';
+    return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}';
   }
 
   @override

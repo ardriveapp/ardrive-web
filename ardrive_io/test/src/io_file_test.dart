@@ -37,7 +37,6 @@ void main() {
       final iofile = await sut.fromFilePicker(mockPlatformFile);
 
       expect(iofile.name, 'name_from_file_picker');
-      expect(iofile.fileExtension, 'jpg');
       expect(iofile.path, filePath);
       expect(iofile.contentType, 'image/jpeg');
 
@@ -59,7 +58,6 @@ void main() {
       final iofile = await sut.fromFile(file);
 
       expect(iofile.name, filePath);
-      expect(iofile.fileExtension, 'jpg');
       expect(iofile.path, filePath);
       expect(iofile.contentType, 'image/jpeg');
 
@@ -81,7 +79,6 @@ void main() {
           name: 'some_name');
 
       expect(iofile.name, 'some_name');
-      expect(iofile.fileExtension, 'jpg');
       expect(iofile.contentType, 'image/jpeg');
       expect(iofile.path, 'path');
       expect(dateCreated, iofile.lastModifiedDate);
