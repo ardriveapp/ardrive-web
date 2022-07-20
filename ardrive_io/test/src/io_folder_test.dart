@@ -49,6 +49,8 @@ void main() {
 
       expect(firstLevelFolder.name, 'first-level');
       expect(firstLevelFolder.path, 'first-level');
+      expect(firstLevelFolder.lastModifiedDate,
+          firstLevelDirectory.statSync().modified);
 
       /// First level folder content
       /// first-level/
@@ -63,6 +65,8 @@ void main() {
       final secondLevelFolder = firstLevelContent.whereType<IOFolder>().first;
       expect(secondLevelFolder.name, 'subdirectory-level');
       expect(secondLevelFolder.path, 'first-level/subdirectory-level');
+      expect(secondLevelFolder.lastModifiedDate,
+          secondLevelDirectory.statSync().modified);
 
       /// get the second level and verify its content
       final secondLevelContent = await secondLevelFolder.listContent();
