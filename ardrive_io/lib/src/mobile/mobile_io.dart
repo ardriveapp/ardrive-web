@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/io_exception.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:file_saver/file_saver.dart' as file_saver;
 import 'package:permission_handler/permission_handler.dart';
 
 class MobileIO implements ArDriveIO {
@@ -71,10 +72,10 @@ class MobileIO implements ArDriveIO {
   }
 }
 
-/// Saves a file on default download location
+/// Saves a file on default download location at **/storage/emulated/0/Download/**
 ///
-/// throws a `EntityPathException` if the file name is invalid
-class AndroidFileSaver implements FileSaver {
+/// throws a `EntityPathException` if the file name is invalid.
+class AndroidDownloadsFileSaver implements FileSaver {
   @override
   Future<void> save(IOFile file) async {
     if (file.name.isEmpty) {
@@ -97,10 +98,34 @@ class AndroidFileSaver implements FileSaver {
   }
 }
 
+/// Opens the file picker dialog to select the folder to save.
+///
+/// It uses the `file_saver` package.
+class AndroidSelectableFolderFileSaver implements FileSaver {
+  @override
+  Future<void> save(IOFile file) async {
+    await Permission.manageExternalStorage.request();
+    await Permission.storage.request();
+
+    if (await Permission.manageExternalStorage.isGranted &&
+        await Permission.storage.isGranted) {
+      await file_saver.FileSaver.instance.saveAs(
+          file.name,
+          await file.readAsBytes(),
+          file.contentType,
+          getMimeTypeFromString(file.contentType));
+
+      return;
+    }
+
+    throw FileSystemPermissionDeniedException();
+  }
+}
+
 class IOSFileSaver implements FileSaver {
   @override
-  Future<void> save(IOFile file) {
-    // TODO: implement save
+  Future<void> save(IOFile file) async {
+    /// TODO: implement save
     throw UnimplementedError();
   }
 }
@@ -108,7 +133,7 @@ class IOSFileSaver implements FileSaver {
 abstract class FileSaver {
   factory FileSaver() {
     if (Platform.isAndroid) {
-      return AndroidFileSaver();
+      return AndroidSelectableFolderFileSaver();
     }
     if (Platform.isIOS) {
       return IOSFileSaver();
