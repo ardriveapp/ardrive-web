@@ -431,8 +431,27 @@ class UploadForm extends StatelessWidget {
                 ),
               ),
             );
+          } else if (state is UploadFailure) {
+            return AppDialog(
+              title: appLocalizationsOf(context).uploadFailed,
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(appLocalizationsOf(context).yourUploadFailed),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(appLocalizationsOf(context).okEmphasized),
+                ),
+              ],
+            );
           }
-
           return const SizedBox();
         },
       );
