@@ -16,4 +16,16 @@ void main() {
           throwsA(const TypeMatcher<EntityPathException>()));
     });
   });
+  group('test method getFolderNameFromPath', () {
+    test('should return correct folder name', () {
+      expect(getFolderNameFromPath('some-folder'), 'some-folder');
+      expect(getExtensionFromPath('/some-folder'), 'some-folder');
+      expect(getExtensionFromPath('some_directory/some-folder'), 'some-folder');
+    });
+
+    test('should throw an EntityPathException when got a empty path', () {
+      expect(() => getExtensionFromPath(''),
+          throwsA(const TypeMatcher<EntityPathException>()));
+    });
+  });
 }

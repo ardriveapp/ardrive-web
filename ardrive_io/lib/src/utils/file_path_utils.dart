@@ -6,3 +6,10 @@ String getExtensionFromPath(String path) {
   }
   return path.split('/').last.split('.').last;
 }
+
+String getFolderNameFromPath(String path) {
+  if (path.isEmpty) {
+    throw EntityPathException();
+  }
+  return path.split('/').last;
+}
