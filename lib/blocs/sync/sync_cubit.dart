@@ -12,11 +12,11 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
-import 'package:drift/drift.dart';
 import 'package:retry/retry.dart';
 
 import '../../utils/html/implementations/html_web.dart';
@@ -283,7 +283,6 @@ class SyncCubit extends Cubit<SyncState> {
       });
 
       _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
-
       syncFormatedPrint('Current block height number $currentBlockHeight');
 
       final driveSyncProcesses = drives.map((drive) => _syncDrive(
@@ -341,6 +340,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   int calculateSyncLastBlockHeight(int lastBlockHeight) {
+    syncFormatedPrint('Last Block Height: $lastBlockHeight');
     if (_lastSync != null) {
       return lastBlockHeight;
     } else {
