@@ -18,32 +18,20 @@ class MobileIO implements ArDriveIO {
 
   @override
   Future<IOFile> pickFile({List<String>? allowedExtensions}) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-        allowedExtensions: allowedExtensions,
-        allowMultiple: false,
-        type: allowedExtensions == null ? FileType.any : FileType.custom);
+    FilePickerResult result =
+        await _pickFile(allowedExtensions: allowedExtensions);
 
-    if (result != null) {
-      return fileAdapter.fromFilePicker(result.files.first);
-    }
-
-    throw ActionCanceledException();
+    return fileAdapter.fromFilePicker(result.files.first);
   }
 
   @override
   Future<List<IOFile>> pickFiles({List<String>? allowedExtensions}) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-        allowedExtensions: allowedExtensions,
-        allowMultiple: true,
-        type: allowedExtensions == null ? FileType.any : FileType.custom);
+    FilePickerResult result = await _pickFile(
+        allowedExtensions: allowedExtensions, allowMultiple: true);
 
-    if (result != null) {
-      return Future.wait(result.files.map((e) async {
-        return fileAdapter.fromFilePicker(e);
-      }).toList());
-    }
-
-    throw ActionCanceledException();
+    return Future.wait(result.files.map((e) async {
+      return fileAdapter.fromFilePicker(e);
+    }).toList());
   }
 
   @override
@@ -62,6 +50,20 @@ class MobileIO implements ArDriveIO {
     return folder;
   }
 
+  Future<FilePickerResult> _pickFile(
+      {List<String>? allowedExtensions, bool allowMultiple = false}) async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowedExtensions: allowedExtensions,
+        allowMultiple: allowMultiple,
+        type: allowedExtensions == null ? FileType.any : FileType.custom);
+
+    if (result != null) {
+      return result;
+    }
+
+    throw ActionCanceledException();
+  }
+
   @override
   Future<void> saveFile(IOFile file) async {
     try {
@@ -69,32 +71,6 @@ class MobileIO implements ArDriveIO {
     } catch (e) {
       rethrow;
     }
-  }
-}
-
-/// Saves a file on default download location at **/storage/emulated/0/Download/**
-///
-/// throws a `EntityPathException` if the file name is invalid.
-class AndroidDownloadsFileSaver implements FileSaver {
-  @override
-  Future<void> save(IOFile file) async {
-    if (file.name.isEmpty) {
-      throw EntityPathException();
-    }
-
-    Directory generalDownloadDir = Directory('/storage/emulated/0/Download/');
-
-    await Permission.manageExternalStorage.request();
-    await Permission.storage.request();
-
-    if (await Permission.manageExternalStorage.isGranted &&
-        await Permission.storage.isGranted) {
-      await File(generalDownloadDir.path + file.name)
-          .writeAsBytes(await file.readAsBytes());
-      return;
-    }
-
-    throw FileSystemPermissionDeniedException();
   }
 }
 
