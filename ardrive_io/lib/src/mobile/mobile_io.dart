@@ -89,9 +89,6 @@ class AndroidSelectableFolderFileSaver implements FileSaver {
       await file_saver.FileSaver.instance.saveAs(
           file.name,
           await file.readAsBytes(),
-
-          /// TODO(@thiagocarvalhodev): implement a function to get the extension
-
           mime.extensionFromMime(file.contentType),
           getMimeTypeFromString(file.contentType));
 
