@@ -76,15 +76,14 @@ class BundleUploadHandle implements UploadHandle {
   }
 
   /// Uploads the bundle, emitting an event whenever the progress is updated.
-  // ignore: prefer_void_to_null
-  Stream<Null> upload(ArweaveService arweave) async* {
-    await for (final upload in arweave.client.transactions.upload(
-      bundleTx,
-      maxConcurrentUploadCount: maxConcurrentUploadCount,
-    )) {
+
+  Stream<double> upload(ArweaveService arweave) async* {
+    yield* arweave.client.transactions
+        .upload(bundleTx, maxConcurrentUploadCount: maxConcurrentUploadCount)
+        .map((upload) {
       uploadProgress = upload.progress;
-      yield null;
-    }
+      return uploadProgress;
+    });
   }
 
   void dispose() {

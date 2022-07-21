@@ -321,7 +321,7 @@ class UploadCubit extends Cubit<UploadState> {
       await for (final _ in bundleHandle
           .upload(_arweave)
           .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) => handleStreamError('Fatal upload error.'))) {
+          .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       bundleHandle.dispose();
@@ -342,7 +342,7 @@ class UploadCubit extends Cubit<UploadState> {
       await for (final _ in uploadHandle
           .upload(_arweave)
           .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) => handleStreamError('Fatal upload error.'))) {
+          .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       uploadHandle.dispose();
@@ -365,11 +365,6 @@ class UploadCubit extends Cubit<UploadState> {
 
   void _removeFilesWithFolderNameConflicts() {
     files.removeWhere((file) => conflictingFolders.contains(file.name));
-  }
-
-  void handleStreamError(Object error) {
-    addError(error);
-    throw error;
   }
 
   @override
