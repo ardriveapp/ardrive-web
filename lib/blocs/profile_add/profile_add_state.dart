@@ -25,6 +25,6 @@ class ProfileAddPromptDetails extends ProfileAddState {
 /// The user's profile details is being validated and added.
 class ProfileAddInProgress extends ProfileAddState {}
 
-class ProfileAddFailiure extends ProfileAddState {}
+class ProfileAddFailure extends ProfileAddState {}
 
 class ProfileAddWalletMismatch extends ProfileAddState {}

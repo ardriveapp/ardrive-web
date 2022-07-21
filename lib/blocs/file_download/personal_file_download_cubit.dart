@@ -87,7 +87,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
           file: XFile.fromData(
             dataBytes,
             name: file.name,
-            mimeType: lookupMimeType(file.name),
+            mimeType: file.dataContentType ?? lookupMimeType(file.name),
             length: dataBytes.lengthInBytes,
             lastModified: file.lastModifiedDate,
           ),
