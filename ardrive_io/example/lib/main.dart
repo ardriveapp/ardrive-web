@@ -40,6 +40,7 @@ class _ArDriveIOExampleState extends State<ArDriveIOExample> {
 
   Future<void> pickFolder() async {
     final folder = await ArDriveIO().pickFolder();
+    
     setState(() {
       currentFolder = folder;
       currentFile = null;
