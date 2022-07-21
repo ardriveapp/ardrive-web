@@ -22,23 +22,24 @@ void main() {
     late Directory firstLevelDirectory = Directory('first-level');
 
     late Directory secondLevelDirectory =
-        Directory('first-level/subdirectory-level');
+        Directory('${firstLevelDirectory.path}/subdirectory-level');
 
     /// Create file system entities
     setUp(() {
       firstLevelDirectory.createSync();
       secondLevelDirectory.createSync();
 
-      File('first-level/first-level-file.xpto').createSync();
-      File('first-level/subdirectory-level/subdirectory-file').createSync();
-      File('first-level/subdirectory-level/subdirectory-file-1.xpto')
+      File('${firstLevelDirectory.path}/first-level-file.xpto').createSync();
+      File('${secondLevelDirectory.path}/subdirectory-file').createSync();
+      File('${secondLevelDirectory.path}/subdirectory-file-1.xpto')
           .createSync();
     });
 
     tearDown(() async {
-      firstLevelDirectory.delete(recursive: true);
-      secondLevelDirectory.delete(recursive: true);
+      firstLevelDirectory.delete(
+          recursive: true); // will delete all files and folders
     });
+
     test(
         'fromFileSystemDirectory method should return the folder hierachy correctly',
         () async {
@@ -64,7 +65,7 @@ void main() {
       ///     subdirectory-file-1.xpto
       final secondLevelFolder = firstLevelContent.whereType<IOFolder>().first;
       expect(secondLevelFolder.name, 'subdirectory-level');
-      expect(secondLevelFolder.path, 'first-level/subdirectory-level');
+      expect(secondLevelFolder.path, secondLevelDirectory.path);
       expect(secondLevelFolder.lastModifiedDate,
           secondLevelDirectory.statSync().modified);
 

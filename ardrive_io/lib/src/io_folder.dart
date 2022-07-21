@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_io/src/utils/file_path_utils.dart';
 import 'package:equatable/equatable.dart';
+import 'package:path/path.dart' as path;
 
 /// Base class for agnostic platform folders.
 ///
@@ -84,7 +84,7 @@ class IOFolderAdapter {
     final selectedDirectoryPath = directory.path;
 
     final folder = _FileSystemFolder._(
-        name: getFolderNameFromPath(selectedDirectoryPath),
+        name: path.basename(selectedDirectoryPath),
         lastModifiedDate: (await directory.stat()).modified,
         path: selectedDirectoryPath,
         folderContent: content);
