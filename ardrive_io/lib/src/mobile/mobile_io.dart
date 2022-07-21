@@ -81,21 +81,39 @@ class MobileIO implements ArDriveIO {
 class AndroidSelectableFolderFileSaver implements FileSaver {
   @override
   Future<void> save(IOFile file) async {
-    await Permission.manageExternalStorage.request();
-    await Permission.storage.request();
+    await _requestPermissions();
+    await _verifyPermissions();
 
+    await file_saver.FileSaver.instance.saveAs(
+        file.name,
+        await file.readAsBytes(),
+        mime.extensionFromMime(file.contentType),
+        getMimeTypeFromString(file.contentType));
+
+    return;
+  }
+
+  Future<void> _verifyPermissions() async {
     if (await Permission.manageExternalStorage.isGranted &&
         await Permission.storage.isGranted) {
-      await file_saver.FileSaver.instance.saveAs(
-          file.name,
-          await file.readAsBytes(),
-          mime.extensionFromMime(file.contentType),
-          getMimeTypeFromString(file.contentType));
-
       return;
     }
+    
+    final deniedPermissions = <Permission>[];
 
-    throw FileSystemPermissionDeniedException();
+    if (await Permission.manageExternalStorage.isDenied) {
+      deniedPermissions.add(Permission.manageExternalStorage);
+    }
+    if (await Permission.storage.isDenied) {
+      deniedPermissions.add(Permission.storage);
+    }
+
+    throw FileSystemPermissionDeniedException(deniedPermissions);
+  }
+
+  Future<void> _requestPermissions() async {
+    await Permission.manageExternalStorage.request();
+    await Permission.storage.request();
   }
 }
 
