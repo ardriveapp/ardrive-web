@@ -2,6 +2,8 @@ import 'package:file_saver/file_saver.dart';
 import 'package:mime/mime.dart' as mime;
 
 /// Matches all strings that ends with `.gz` or `.tgz` and has at least one character before that
+///
+/// We should remove this after [mime#66](dart-lang/mime#66) released.
 final gZipRegExp = RegExp('.\\.(gz|tgz)\$');
 
 const applicationGZip = 'application/gzip';
