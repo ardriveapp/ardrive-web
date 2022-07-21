@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -320,7 +321,7 @@ class UploadCubit extends Cubit<UploadState> {
       await for (final _ in bundleHandle
           .upload(_arweave)
           .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) => addError('Fatal upload error.'))) {
+          .handleError((_) => handleStreamError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       bundleHandle.dispose();
@@ -341,7 +342,7 @@ class UploadCubit extends Cubit<UploadState> {
       await for (final _ in uploadHandle
           .upload(_arweave)
           .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) => addError('Fatal upload error.'))) {
+          .handleError((_) => handleStreamError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       uploadHandle.dispose();
@@ -366,11 +367,15 @@ class UploadCubit extends Cubit<UploadState> {
     files.removeWhere((file) => conflictingFolders.contains(file.name));
   }
 
+  void handleStreamError(Object error) {
+    addError(error);
+    throw error;
+  }
+
   @override
   void onError(Object error, StackTrace stackTrace) {
     emit(UploadFailure());
+    'Failed to upload file: $error $stackTrace'.logError();
     super.onError(error, stackTrace);
-
-    print('Failed to upload file: $error $stackTrace');
   }
 }

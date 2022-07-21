@@ -104,7 +104,7 @@ class FileV2UploadHandle implements UploadHandle {
   }
 
   /// Uploads the file, emitting an event whenever the progress is updated.
-  Stream<Null> upload(ArweaveService arweave) async* {
+  Stream<void> upload(ArweaveService arweave) async* {
     await arweave.postTx(entityTx);
 
     await for (final upload in arweave.client.transactions.upload(
