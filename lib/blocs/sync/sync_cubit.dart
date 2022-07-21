@@ -16,7 +16,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 import 'package:retry/retry.dart';
 
 import '../../utils/html/implementations/html_web.dart';

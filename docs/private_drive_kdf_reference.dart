@@ -9,7 +9,6 @@ import 'package:cryptography/cryptography.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
-
   final keyByteLength = 256 ~/ 8;
   final kdf = Hkdf(hmac: Hmac(Sha256()), outputLength: keyByteLength);
 

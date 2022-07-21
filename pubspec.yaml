@@ -30,7 +30,7 @@ dependencies:
   intl: ^0.17.0
   json_annotation: ^4.1.0
   mime: ^1.0.0
-  moor: ^4.4.1
+  drift: ^1.5.0
   path_provider: ^2.0.2
   pedantic: ^1.11.1
   reactive_forms: ^10.4.1
@@ -60,12 +60,9 @@ dev_dependencies:
   test: ^1.16.8
   bloc_test: ^9.0.2
   build_runner: ^2.0.4
-  moor_generator: ^4.4.1
+  drift_dev: ^1.0.0
   mocktail: ^0.2.0
   json_serializable: ^6.1.4
-
-dependency_overrides:
-  meta: 1.7.0
 
 flutter:
   uses-material-design: true

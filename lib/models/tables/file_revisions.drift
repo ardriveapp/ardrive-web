@@ -1,4 +1,4 @@
-import 'network_transactions.moor';
+import 'network_transactions.drift';
 
 CREATE TABLE file_revisions (
     fileId TEXT NOT NULL,

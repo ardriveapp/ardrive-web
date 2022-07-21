@@ -3,7 +3,7 @@ library arconnect;
 
 import 'package:js/js.dart';
 import 'package:js/js_util.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 
 @JS('isExtensionPresent')
 external bool isExtensionPresent();

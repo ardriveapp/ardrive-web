@@ -133,7 +133,7 @@ class UploadCubit extends Cubit<UploadState> {
       ));
       return;
     }
-    
+
     // If we don't have any file above limit, we can check conflicts
     checkConflicts();
   }

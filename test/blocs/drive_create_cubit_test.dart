@@ -7,7 +7,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/helpers.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 import 'package:test/test.dart';
 
 import '../test_utils/fakes.dart';

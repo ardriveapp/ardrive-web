@@ -8,7 +8,7 @@ import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:stash/stash_api.dart';
 import 'package:stash_memory/stash_memory.dart';
@@ -20,9 +20,7 @@ part 'drive_order.dart';
 part 'folder_node.dart';
 part 'folder_with_contents.dart';
 
-@UseDao(include: {
-  '../../queries/drive_queries.moor',
-})
+@DriftAccessor(include: {'../../queries/drive_queries.drift'})
 class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   final _uuid = Uuid();
 

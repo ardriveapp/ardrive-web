@@ -11,7 +11,7 @@ import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:http/http.dart' as http;
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 
 part 'fs_entry_preview_state.dart';
 

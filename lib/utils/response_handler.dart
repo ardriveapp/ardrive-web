@@ -6,4 +6,3 @@ import 'package:http/http.dart';
 abstract class ResponseHandler {
   void handle(Response response);
 }
-

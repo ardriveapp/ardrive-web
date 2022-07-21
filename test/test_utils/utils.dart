@@ -5,13 +5,13 @@ import 'dart:math';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:arweave/arweave.dart';
-import 'package:moor/ffi.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/native.dart';
+import 'package:drift/drift.dart';
 
 export 'matchers.dart';
 export 'mocks.dart';
 
-Database getTestDb() => Database(VmDatabase.memory());
+Database getTestDb() => Database(NativeDatabase.memory());
 
 Wallet getTestWallet() {
   final walletJwk = json.decode('''
