@@ -4,6 +4,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/io_exception.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_saver/file_saver.dart' as file_saver;
+import 'package:mime/mime.dart' as mime;
 import 'package:permission_handler/permission_handler.dart';
 
 class MobileIO implements ArDriveIO {
@@ -91,7 +92,7 @@ class AndroidSelectableFolderFileSaver implements FileSaver {
 
           /// TODO(@thiagocarvalhodev): implement a function to get the extension
 
-          file.contentType,
+          mime.extensionFromMime(file.contentType),
           getMimeTypeFromString(file.contentType));
 
       return;
