@@ -30,8 +30,7 @@ class IOFileAdapter {
     final fileName = result.name;
     final contentType = lookupMimeTypeWithDefaultType(file.path);
 
-    return _CommonFile(
-        file: file,
+    return _IOFile(file,
         name: fileName,
         path: file.path,
         contentType: contentType,
@@ -42,8 +41,7 @@ class IOFileAdapter {
     final lastModified = await file.lastModified();
     final contentType = lookupMimeTypeWithDefaultType(file.path);
 
-    return _CommonFile(
-        file: file,
+    return _IOFile(file,
         name: path.basename(file.path),
         path: file.path,
         contentType: contentType,
@@ -60,32 +58,22 @@ class IOFileAdapter {
       required String fileExtension}) async {
     return _DataFile(bytes,
         contentType: contentType,
-        fileExtension: fileExtension,
         path: path ?? '',
         lastModifiedDate: lastModified,
         name: name);
   }
 }
 
-class _CommonFile implements IOFile {
-  _CommonFile(
-      {required this.file,
-      required this.name,
+/// An implementation class that uses `dart:io` `File`
+class _IOFile implements IOFile {
+  _IOFile(File file,
+      {required this.name,
       required this.lastModifiedDate,
       required this.path,
-      required this.contentType});
+      required this.contentType})
+      : _file = file;
 
-  @override
-  Future<Uint8List> readAsBytes() {
-    return file.readAsBytes();
-  }
-
-  @override
-  Future<String> readAsString() {
-    return file.readAsString();
-  }
-
-  final File file;
+  final File _file;
 
   @override
   String name;
@@ -97,19 +85,28 @@ class _CommonFile implements IOFile {
   String path;
 
   @override
-  String toString() {
-    return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}';
+  final String contentType;
+
+  @override
+  Future<Uint8List> readAsBytes() {
+    return _file.readAsBytes();
   }
 
   @override
-  final String contentType;
+  Future<String> readAsString() {
+    return _file.readAsString();
+  }
+
+  @override
+  String toString() {
+    return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}';
+  }
 }
 
 /// `IOFile` implementation with the given `bytes`.
 class _DataFile implements IOFile {
   _DataFile(this.bytes,
       {required this.contentType,
-      required this.fileExtension,
       required this.lastModifiedDate,
       required this.name,
       required this.path});
@@ -118,8 +115,6 @@ class _DataFile implements IOFile {
 
   @override
   final String contentType;
-  @override
-  final String fileExtension;
 
   @override
   final DateTime lastModifiedDate;
@@ -138,5 +133,10 @@ class _DataFile implements IOFile {
   @override
   Future<String> readAsString() async {
     return utf8.decode(bytes);
+  }
+
+  @override
+  String toString() {
+    return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}';
   }
 }
