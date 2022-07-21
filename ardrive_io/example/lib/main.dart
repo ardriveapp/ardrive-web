@@ -34,6 +34,7 @@ class _ArDriveIOExampleState extends State<ArDriveIOExample> {
 
     setState(() {
       currentFile = file;
+      print(currentFile.toString());
       currentFolder = null;
     });
   }
