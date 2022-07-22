@@ -13,8 +13,8 @@ import 'package:path/path.dart' as path;
 /// `files()` gets all files from this folder tree
 abstract class IOFolder extends Equatable implements IOEntity {
   Future<List<IOEntity>> listContent();
-  Future<List<IOFolder>> subfolders();
-  Future<List<IOFile>> files();
+  Future<List<IOFolder>> listSubfolders();
+  Future<List<IOFile>> listFiles();
 }
 
 /// Handle the dart:io API `FileSystemEntities` and mounts the folder hierachy
@@ -81,12 +81,12 @@ class _FileSystemFolder extends IOFolder {
   List<Object?> get props => [name, path];
 
   @override
-  Future<List<IOFile>> files() async {
+  Future<List<IOFile>> listFiles() async {
     return _getAllEntitiesFromType<IOFile>(this);
   }
 
   @override
-  Future<List<IOFolder>> subfolders() async {
+  Future<List<IOFolder>> listSubfolders() async {
     return _getAllEntitiesFromType<IOFolder>(this);
   }
 

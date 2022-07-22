@@ -69,10 +69,10 @@ void main() {
       expect(secondLevelContent.whereType<IOFile>().length, 2);
       expect(secondLevelContent.whereType<IOFolder>().length, 0);
 
-      final files1stLevel = await firstLevelFolder.files();
-      final folders1stLevel = await firstLevelFolder.subfolders();
-      final files2stLevel = await secondLevelFolder.files();
-      final folders2stLevel = await secondLevelFolder.subfolders();
+      final files1stLevel = await firstLevelFolder.listFiles();
+      final folders1stLevel = await firstLevelFolder.listSubfolders();
+      final files2stLevel = await secondLevelFolder.listFiles();
+      final folders2stLevel = await secondLevelFolder.listSubfolders();
 
       /// See the folder structure
       expect(files1stLevel.length, 3);
