@@ -74,6 +74,6 @@ MimeType getMimeTypeFromString(String mimeType) {
     case 'text/csv':
       return MimeType.CSV;
     default:
-      throw Exception('Unreconized MIME type for $mimeType');
+      return MimeType.OTHER;
   }
 }
