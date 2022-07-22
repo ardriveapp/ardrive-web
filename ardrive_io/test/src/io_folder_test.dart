@@ -69,6 +69,7 @@ void main() {
       expect(secondLevelContent.whereType<IOFile>().length, 2);
       expect(secondLevelContent.whereType<IOFolder>().length, 0);
 
+      /// Test if `listFiles()` and `listSubfolders()` were mounted correctly
       final files1stLevel = await firstLevelFolder.listFiles();
       final folders1stLevel = await firstLevelFolder.listSubfolders();
       final files2stLevel = await secondLevelFolder.listFiles();

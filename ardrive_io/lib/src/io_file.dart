@@ -8,6 +8,9 @@ import 'package:ardrive_io/src/utils/mime_type_utils.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as path;
 
+/// Base class for agnostic platform Files.
+///
+/// `contentType` is the file's MIME-TYPE
 abstract class IOFile implements IOEntity {
   IOFile({required this.contentType});
 
@@ -27,6 +30,12 @@ abstract class IOFile implements IOEntity {
       );
 }
 
+/// Adapts the `IOFile` from different I/O sources.
+///
+/// Those are:
+/// - file_picker: `PlatformFile`
+/// - dart:io: `File`
+/// - using an Uint8List to mount a file using its bytes in memory
 class IOFileAdapter {
   Future<IOFile> fromFilePicker(PlatformFile result) async {
     final resultFilePath = result.path;
@@ -63,8 +72,8 @@ class IOFileAdapter {
     );
   }
 
-  /// Mounts a `IOFile` with the given information
-  /// `path` is optional since it will be stored in memory
+  /// Mounts a `_DataFile` with the given bytes.
+  /// The path will always we a empty string since it only abstract the bytes in memory into a `_DataFile`
   Future<IOFile> fromData(Uint8List bytes,
       {required String name, required DateTime lastModifiedDate}) async {
     final contentType = lookupMimeTypeWithDefaultType(name);

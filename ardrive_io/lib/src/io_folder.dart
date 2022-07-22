@@ -9,8 +9,9 @@ import 'package:path/path.dart' as path;
 ///
 /// `listContent` returns the folder structure in a tree of `IOEntity`.
 ///
-/// `subFolders()` gets all folders from this folder tree
-/// `files()` gets all files from this folder tree
+/// `listSubfolders()` gets all folders from this folder tree
+///
+/// `listFiles()` gets all files from this folder tree
 abstract class IOFolder extends Equatable implements IOEntity {
   Future<List<IOEntity>> listContent();
   Future<List<IOFolder>> listSubfolders();
@@ -19,11 +20,6 @@ abstract class IOFolder extends Equatable implements IOEntity {
 
 /// Handle the dart:io API `FileSystemEntities` and mounts the folder hierachy
 /// to the given folder.
-///
-/// `_mountFolderChildren` mounts recursiverly the folder hierarchy. It gets only
-/// the current level entities loading only `IOFile` and `IOFolder`. To get the content
-/// of a folder under this, you should call `listContent` and get the child's folder
-/// content
 class _FileSystemFolder extends IOFolder {
   _FileSystemFolder._({
     required this.name,
@@ -52,6 +48,8 @@ class _FileSystemFolder extends IOFolder {
 
   final List<FileSystemEntity> _folderContent;
 
+  /// `_mountFolderChildren` mounts recursiverly the folder hierarchy. It gets only
+  /// the current level entities loading only `IOFile` and `IOFolder`
   Future<List<IOEntity>> _mountFolderChildren() async {
     List<IOEntity> _children = [];
 
@@ -76,9 +74,6 @@ class _FileSystemFolder extends IOFolder {
 
     return ioFile;
   }
-
-  @override
-  List<Object?> get props => [name, path];
 
   @override
   Future<List<IOFile>> listFiles() async {
@@ -107,8 +102,12 @@ class _FileSystemFolder extends IOFolder {
 
     return entities;
   }
+
+  @override
+  List<Object?> get props => [name, path];
 }
 
+/// Adapts the `IOFolder` from different I/O sources
 class IOFolderAdapter {
   /// Initialize loading the folder hierachy and return an `_FileSystemFolder` instance
   Future<IOFolder> fromFileSystemDirectory(Directory directory) async {
