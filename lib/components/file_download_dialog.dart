@@ -60,12 +60,10 @@ class FileDownloadDialog extends StatelessWidget {
           if (state is FileDownloadSuccess) {
             final ArDriveIO io = ArDriveIO();
 
-            await io.saveFile(await IOFileAdapter().fromData(
+            await io.saveFile(await IOFile.fromData(
                 await state.file.readAsBytes(),
                 name: state.fileName,
-                contentType: state.file.mimeType ?? '',
-                fileExtension: state.file.mimeType ?? '',
-                lastModified: DateTime.now()));
+                lastModifiedDate: DateTime.now()));
 
             // if (savePath != null) {
             //   unawaited(state.file.saveTo(savePath));

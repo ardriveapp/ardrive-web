@@ -50,15 +50,12 @@ dependencies:
   # cooky: ^2.0.0
   flutter_lints: ^1.0.4
   retry: ^3.1.0
-<<<<<<< HEAD
   sqlite3_flutter_libs: ^0.5.7
   ardrive_io:
-    path: ../../ardriveweb/ardrive_io
+    path: ./ardrive_io
+  shared_preferences: ^2.0.15
   # flutter_webview_plugin: ^0.4.0
 
-=======
-  shared_preferences: ^2.0.15
->>>>>>> dev
 
 dev_dependencies:
   flutter_test:
