@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/material.dart';
 
@@ -28,9 +30,10 @@ class _ArDriveIOExampleState extends State<ArDriveIOExample> {
   String? fileDescription;
   IOFile? currentFile;
   IOFolder? currentFolder;
+  ArDriveIO arDriveIO = ArDriveIO();
 
   Future<void> pickFile() async {
-    final file = await ArDriveIO().pickFile();
+    final file = await arDriveIO.pickFile();
 
     setState(() {
       currentFile = file;
@@ -40,8 +43,8 @@ class _ArDriveIOExampleState extends State<ArDriveIOExample> {
   }
 
   Future<void> pickFolder() async {
-    final folder = await ArDriveIO().pickFolder();
-    
+    final folder = await arDriveIO.pickFolder();
+
     setState(() {
       currentFolder = folder;
       currentFile = null;
@@ -50,7 +53,7 @@ class _ArDriveIOExampleState extends State<ArDriveIOExample> {
 
   Future<void> saveFile(BuildContext context) async {
     // creates a new file and save on O.S.
-    await ArDriveIO().saveFile(currentFile!);
+    await arDriveIO.saveFile(currentFile!);
 
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('File saved')));
@@ -58,6 +61,19 @@ class _ArDriveIOExampleState extends State<ArDriveIOExample> {
     setState(() {
       currentFile = null;
     });
+  }
+
+  /// Creates a text file
+  Future<void> createFile() async {
+    final ioFile = await IOFile.fromData(
+        Uint8List.fromList('ArDrive is the best! :)'.codeUnits),
+        name: 'created_file.txt',
+        lastModifiedDate: DateTime.now());
+
+    await arDriveIO.saveFile(ioFile);
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('File saved')));
   }
 
   @override
@@ -73,6 +89,11 @@ class _ArDriveIOExampleState extends State<ArDriveIOExample> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              ElevatedButton(
+                  onPressed: () async {
+                    await createFile();
+                  },
+                  child: const Text('Create file')),
               Text(fileDescription ?? ''),
               ElevatedButton(
                   onPressed: () async {
