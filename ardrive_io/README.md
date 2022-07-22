@@ -1,39 +1,70 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/guides/libraries/writing-package-pages). 
-
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-library-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/developing-packages). 
--->
-
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
-
+# ArDriveIO
+Standart library to perform I/O operations at ArDrive Web
 ## Features
+The following methods performs the I/O operations supported in this package:
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+### Pick a file(s) or an folder on O.S.
+- pickFile() 
+- pickFiles()
+- pickFolder()
+
+### Save a file on O.S.
+- saveFile()
 
 ## Getting started
+Before using this package you should follow the follwing instrunctions
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+### Android
+For pickFile(s) or folders nothing is required, but is worth to read the [file_picker Setup](https://github.com/miguelpruivo/flutter_file_picker/wiki/Setup#--android).
+
+Add those permissions to AndroidManifest to be able to use the `saveFile()` function on Android.
+
+```xml
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+```
+
+### iOS
+TODO: Explain the setup on iOS once we have the iOS implementation
+
+### Web
 
 ## Usage
+An example application is provided at `/example` folder.
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
-
+It's easy to pick a file. It will opens the O.S. file picker and returns the `IOFile`.
 ```dart
-const like = 'sample';
+final file = await arDriveIO.pickFile();
+```
+It's possible to filter the files using the `allowedExtensions` parameter
+```dart
+final file = await arDriveIO.pickFile(allowedExtensions: ['json']);
+```
+
+To pick a folder just need to call `pickFolders()` function 
+```dart
+final folder = await arDriveIO.pickFolder();
+```
+To get its content, call `listContent()`, it will recursiverly mounts the folder hierachy returning the current folder structure in a tree of `IOEntity`.
+```dart
+final files = await folder.listContent();
+```
+
+It's possible to list all files or folders without handling the complexity of get it recursiverly with the methods
+`listFiles()` and `listSubfolders()`:
+```dart
+/// [IOFile]
+final files = await folder.listFiles();
+/// [IOFolder]
+final subfolders = await folder.listSubfolders();
 ```
 
 ## Additional information
 
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+### IOFile
+Base class for every file from / to O.S.
+
+### IOFolder
+Base class for every folder from O.S.
