@@ -1360,8 +1360,8 @@
   "@uploadFailed": {
     "description": "Upload Failed dialog title"
   },
-  "yourUploadFailed": "Upload Failed",
+  "yourUploadFailed": "Your upload failed. You have not been charged for the failed attempt.",
   "@yourUploadFailed": {
-    "description": "Your upload failed. You have not been charged for the failed attempt."
+    "description": "Upload fail dialog description."
   }
 }
