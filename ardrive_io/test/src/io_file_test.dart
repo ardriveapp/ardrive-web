@@ -39,6 +39,7 @@ void main() {
       expect(iofile.name, 'name_from_file_picker');
       expect(iofile.path, filePath);
       expect(iofile.contentType, 'image/jpeg');
+      expect(iofile.length, file.lengthSync());
 
       /// It differs in some milisseconds, as we get the lastModifiedDate through
       /// the cross_file package
@@ -60,8 +61,8 @@ void main() {
       expect(iofile.name, filePath);
       expect(iofile.path, filePath);
       expect(iofile.contentType, 'image/jpeg');
-
       expect(iofile.lastModifiedDate, await file.lastModified());
+      expect(iofile.length, file.lengthSync());
 
       /// ensure that is the same content
       expect(await iofile.readAsBytes(), await file.readAsBytes());
@@ -72,16 +73,31 @@ void main() {
       final bytes = ByteData(1024).buffer.asUint8List();
       final dateCreated = DateTime.parse('2020-02-11');
       final iofile = await sut.fromData(bytes,
-          contentType: 'image/jpeg',
-          fileExtension: 'jpg',
-          lastModified: dateCreated,
-          path: 'path',
-          name: 'some_name');
+          lastModifiedDate: dateCreated, name: 'some_name.txt');
 
-      expect(iofile.name, 'some_name');
-      expect(iofile.contentType, 'image/jpeg');
-      expect(iofile.path, 'path');
+      expect(iofile.name, 'some_name.txt');
+      expect(iofile.contentType, 'text/plain');
+      expect(iofile.path, '');
       expect(dateCreated, iofile.lastModifiedDate);
+      expect(iofile.length, bytes.length);
+
+      /// ensure that is the same content
+      expect(bytes, await iofile.readAsBytes());
+    });
+  });
+
+  group('test class IOFile method fromData', () {
+    test('should return a correct IOFile', () async {
+      final bytes = ByteData(1024).buffer.asUint8List();
+      final dateCreated = DateTime.parse('2020-02-11');
+      final iofile = await IOFile.fromData(bytes,
+          lastModifiedDate: dateCreated, name: 'some_name.txt');
+
+      expect(iofile.name, 'some_name.txt');
+      expect(iofile.contentType, 'text/plain');
+      expect(iofile.path, '');
+      expect(dateCreated, iofile.lastModifiedDate);
+      expect(iofile.length, bytes.length);
 
       /// ensure that is the same content
       expect(bytes, await iofile.readAsBytes());

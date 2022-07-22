@@ -11,9 +11,20 @@ import 'package:path/path.dart' as path;
 abstract class IOFile implements IOEntity {
   IOFile({required this.contentType});
 
+  final String contentType;
+  int get length;
   Future<Uint8List> readAsBytes();
   Future<String> readAsString();
-  final String contentType;
+
+  static final IOFileAdapter _ioFileAdapter = IOFileAdapter();
+
+  static Future<IOFile> fromData(Uint8List bytes,
+          {required String name, required DateTime lastModifiedDate}) async =>
+      _ioFileAdapter.fromData(
+        bytes,
+        name: name,
+        lastModifiedDate: lastModifiedDate,
+      );
 }
 
 class IOFileAdapter {
@@ -30,48 +41,53 @@ class IOFileAdapter {
     final fileName = result.name;
     final contentType = lookupMimeTypeWithDefaultType(file.path);
 
-    return _IOFile(file,
-        name: fileName,
-        path: file.path,
-        contentType: contentType,
-        lastModifiedDate: lastModified);
+    return _IOFile(
+      file,
+      name: fileName,
+      path: file.path,
+      contentType: contentType,
+      lastModifiedDate: lastModified,
+    );
   }
 
   Future<IOFile> fromFile(File file) async {
     final lastModified = await file.lastModified();
     final contentType = lookupMimeTypeWithDefaultType(file.path);
 
-    return _IOFile(file,
-        name: path.basename(file.path),
-        path: file.path,
-        contentType: contentType,
-        lastModifiedDate: lastModified);
+    return _IOFile(
+      file,
+      name: path.basename(file.path),
+      path: file.path,
+      contentType: contentType,
+      lastModifiedDate: lastModified,
+    );
   }
 
   /// Mounts a `IOFile` with the given information
   /// `path` is optional since it will be stored in memory
   Future<IOFile> fromData(Uint8List bytes,
-      {required String name,
-      String? path,
-      required String contentType,
-      required DateTime lastModified,
-      required String fileExtension}) async {
-    return _DataFile(bytes,
-        contentType: contentType,
-        path: path ?? '',
-        lastModifiedDate: lastModified,
-        name: name);
+      {required String name, required DateTime lastModifiedDate}) async {
+    final contentType = lookupMimeTypeWithDefaultType(name);
+
+    return _DataFile(
+      bytes,
+      contentType: contentType,
+      path: '',
+      lastModifiedDate: lastModifiedDate,
+      name: name,
+    );
   }
 }
 
 /// An implementation class that uses `dart:io` `File`
 class _IOFile implements IOFile {
-  _IOFile(File file,
-      {required this.name,
-      required this.lastModifiedDate,
-      required this.path,
-      required this.contentType})
-      : _file = file;
+  _IOFile(
+    File file, {
+    required this.name,
+    required this.lastModifiedDate,
+    required this.path,
+    required this.contentType,
+  }) : _file = file;
 
   final File _file;
 
@@ -99,19 +115,24 @@ class _IOFile implements IOFile {
 
   @override
   String toString() {
-    return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}';
+    return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}\nlength: $length';
   }
+
+  @override
+  int get length => _file.lengthSync();
 }
 
 /// `IOFile` implementation with the given `bytes`.
 class _DataFile implements IOFile {
-  _DataFile(this.bytes,
-      {required this.contentType,
-      required this.lastModifiedDate,
-      required this.name,
-      required this.path});
+  _DataFile(
+    this._bytes, {
+    required this.contentType,
+    required this.lastModifiedDate,
+    required this.name,
+    required this.path,
+  });
 
-  final Uint8List bytes;
+  final Uint8List _bytes;
 
   @override
   final String contentType;
@@ -127,16 +148,19 @@ class _DataFile implements IOFile {
 
   @override
   Future<Uint8List> readAsBytes() async {
-    return bytes;
+    return _bytes;
   }
 
   @override
   Future<String> readAsString() async {
-    return utf8.decode(bytes);
+    return utf8.decode(_bytes);
   }
 
   @override
+  int get length => _bytes.length;
+
+  @override
   String toString() {
-    return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}';
+    return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}\nlength: $length';
   }
 }
