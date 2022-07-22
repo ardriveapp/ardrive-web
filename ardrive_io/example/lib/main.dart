@@ -37,6 +37,7 @@ class _ArDriveIOExampleState extends State<ArDriveIOExample> {
 
     setState(() {
       currentFile = file;
+      fileDescription = null;
       print(currentFile.toString());
       currentFolder = null;
     });
@@ -44,9 +45,11 @@ class _ArDriveIOExampleState extends State<ArDriveIOExample> {
 
   Future<void> pickFolder() async {
     final folder = await arDriveIO.pickFolder();
+    final files = await folder.files();
 
     setState(() {
       currentFolder = folder;
+      fileDescription = files.map((e) => e.name).join('\n\n');
       currentFile = null;
     });
   }
@@ -85,33 +88,33 @@ class _ArDriveIOExampleState extends State<ArDriveIOExample> {
             '${currentFile != null ? currentFile!.name : currentFolder != null ? currentFolder!.name : 'ArDriveIO'} '),
       ),
       body: Center(
-        child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                  onPressed: () async {
-                    await createFile();
-                  },
-                  child: const Text('Create file')),
-              Text(fileDescription ?? ''),
-              ElevatedButton(
-                  onPressed: () async {
-                    await pickFile();
-                  },
-                  child: const Text('Pick file')),
-              ElevatedButton(
-                  onPressed: () async {
-                    await pickFolder();
-                  },
-                  child: const Text('Pick folder')),
-              if (currentFile != null)
-                ElevatedButton(
-                    onPressed: () async {
-                      await saveFile(context);
-                    },
-                    child: const Text('save file')),
-            ]),
+        child: ListView(padding: const EdgeInsets.all(16), children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(fileDescription ?? ''),
+          ),
+          ElevatedButton(
+              onPressed: () async {
+                await createFile();
+              },
+              child: const Text('Create file')),
+          ElevatedButton(
+              onPressed: () async {
+                await pickFile();
+              },
+              child: const Text('Pick file')),
+          ElevatedButton(
+              onPressed: () async {
+                await pickFolder();
+              },
+              child: const Text('Pick folder')),
+          if (currentFile != null)
+            ElevatedButton(
+                onPressed: () async {
+                  await saveFile(context);
+                },
+                child: const Text('save file')),
+        ]),
       ),
     );
   }
