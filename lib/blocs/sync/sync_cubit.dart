@@ -179,10 +179,10 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> arconnectSync() async {
-    if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
-      emit(SyncWalletMismatch());
-      return;
-    }
+    // if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
+    //   emit(SyncWalletMismatch());
+    //   return;
+    // }
   }
 
   void restartArConnectSyncOnFocus() async {
