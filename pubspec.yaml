@@ -3,20 +3,11 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-# The following defines the version and build number for your application.
-# A version number is three numbers separated by dots, like 1.2.43
-# followed by an optional build number separated by a +.
-# Both the version and the builder number may be overridden in flutter
-# build by specifying --build-name and --build-number, respectively.
-# In Android, build-name is used as versionName while build-number used as versionCode.
-# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
-# In iOS, build-name is used as CFBundleShortVersionString while build-number used as CFBundleVersion.
-# Read more about iOS versioning at
-# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
-version: 1.19.0
+version: 1.26.0
 
 environment:
-  sdk: '>=2.13.0 <3.0.0'
+  sdk: '>=2.15.0 <3.0.0'
+  flutter: 2.8.1
 
 dependencies:
   flutter:
@@ -25,7 +16,9 @@ dependencies:
     sdk: flutter
   artemis: ^7.0.0-beta.13
   arweave:
-    path: ../../serialize-native/arweave-dart
+    git:
+      url: https://github.com/ardriveapp/arweave-dart
+      ref: v3.3.0
   cryptography: ^2.0.1
   flutter_bloc: ^8.0.1
   flutter_portal: ^0.4.0
@@ -57,11 +50,15 @@ dependencies:
   # cooky: ^2.0.0
   flutter_lints: ^1.0.4
   retry: ^3.1.0
+<<<<<<< HEAD
   sqlite3_flutter_libs: ^0.5.7
   ardrive_io:
     path: ../../ardriveweb/ardrive_io
   # flutter_webview_plugin: ^0.4.0
 
+=======
+  shared_preferences: ^2.0.15
+>>>>>>> dev
 
 dev_dependencies:
   flutter_test:
@@ -86,3 +83,4 @@ flutter:
     - assets/fonts/
     - assets/images/brand/
     - assets/images/profile/
+    - assets/images/inferno/

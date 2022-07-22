@@ -1,6 +1,7 @@
 // import 'dart:html';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/blocs/upload/models/io_file.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -76,7 +77,7 @@ Future<void> promptToUpload(
           ),
           driveId: driveId,
           folderId: folderId,
-          files: ioFiles.where((element) => element != null).toList(),
+          files: ioFiles,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
           pst: context.read<PstService>(),
@@ -91,13 +92,16 @@ Future<void> promptToUpload(
 }
 
 class UploadForm extends StatelessWidget {
+  const UploadForm({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) => BlocConsumer<UploadCubit, UploadState>(
         listener: (context, state) async {
           if (state is UploadComplete || state is UploadWalletMismatch) {
             Navigator.pop(context);
+            await context.read<FeedbackSurveyCubit>().openRemindMe();
           } else if (state is UploadPreparationInitialized) {
-            await context.read<UploadCubit>().checkConflictingFolders();
+            context.read<UploadCubit>().checkFilesAboveLimit();
           }
           if (state is UploadWalletMismatch) {
             Navigator.pop(context);
@@ -191,8 +195,7 @@ class UploadForm extends StatelessWidget {
                       onPressed: () => context
                           .read<UploadCubit>()
                           .prepareUploadPlanAndCostEstimates(
-                              conflictingFileAction:
-                                  ConflictingFileActions.Skip),
+                              uploadAction: UploadActions.Skip),
                       child: Text(appLocalizationsOf(context).skipEmphasized),
                     ),
                   TextButton(
@@ -203,8 +206,7 @@ class UploadForm extends StatelessWidget {
                     onPressed: () => context
                         .read<UploadCubit>()
                         .prepareUploadPlanAndCostEstimates(
-                            conflictingFileAction:
-                                ConflictingFileActions.Replace),
+                            uploadAction: UploadActions.Replace),
                     child: Text(appLocalizationsOf(context).replaceEmphasized),
                   ),
                 ]);
@@ -235,8 +237,16 @@ class UploadForm extends StatelessWidget {
               actions: <Widget>[
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(appLocalizationsOf(context).ok),
+                  child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
+                if (state.hasFilesToUpload)
+                  TextButton(
+                    onPressed: () {
+                      context.read<UploadCubit>().removeBigFiles();
+                      context.read<UploadCubit>().checkConflicts();
+                    },
+                    child: Text(appLocalizationsOf(context).skipEmphasized),
+                  ),
               ],
             );
           } else if (state is UploadPreparationInProgress ||
@@ -258,23 +268,6 @@ class UploadForm extends StatelessWidget {
                   ],
                 ),
               ),
-            );
-          } else if (state is UploadPreparationFailure) {
-            return AppDialog(
-              title: appLocalizationsOf(context).failedToPrepareFileUpload,
-              content: SizedBox(
-                width: kMediumDialogWidth,
-                child: Text(
-                  appLocalizationsOf(context)
-                      .failedToPrepareFileUploadExplanation,
-                ),
-              ),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: Text(appLocalizationsOf(context).closeEmphasized),
-                ),
-              ],
             );
           } else if (state is UploadReady) {
             final numberOfFilesInBundles =

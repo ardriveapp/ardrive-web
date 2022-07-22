@@ -19,6 +19,8 @@ import 'package:meta/meta.dart';
 import 'package:moor/moor.dart';
 import 'package:retry/retry.dart';
 
+import '../../utils/html/implementations/html_web.dart';
+
 part 'sync_state.dart';
 
 abstract class LinearProgress {
@@ -114,6 +116,8 @@ class SyncCubit extends Cubit<SyncState> {
         _db = db,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
+    syncFormatedPrint('Building Sync Cubit...');
+
     createSyncStream();
     restartSyncOnFocus();
     // Sync ArConnect
@@ -121,23 +125,42 @@ class SyncCubit extends Cubit<SyncState> {
     restartArConnectSyncOnFocus();
   }
 
-  void createSyncStream() {
-    _syncSub?.cancel();
+  void createSyncStream() async {
+    syncFormatedPrint(
+        'Creating sync stream to periodically call sync automatically');
+
+    await _syncSub?.cancel();
+
     _syncSub = Stream.periodic(const Duration(minutes: kSyncTimerDuration))
         // Do not start another sync until the previous sync has completed.
         .map((value) => Stream.fromFuture(startSync()))
-        .listen((_) {});
+        .listen((_) {
+      syncFormatedPrint('Listening to startSync periodic stream');
+    });
+
     startSync();
   }
 
   void restartSyncOnFocus() {
-    whenBrowserTabIsUnhidden(() {
-      if (_lastSync != null &&
-          DateTime.now().difference(_lastSync!).inMinutes <
-              kSyncTimerDuration) {
-        return;
-      }
-      Future.delayed(Duration(seconds: 2)).then((value) => createSyncStream());
+    whenBrowserTabIsUnhidden(_restartSync);
+  }
+
+  void _restartSync() {
+    syncFormatedPrint(
+        'Trying to create a sync subscription when window get focused again. This Cubit is active? ${!isClosed}');
+    final isTimerDurationReadyToSync = _lastSync != null &&
+        DateTime.now().difference(_lastSync!).inMinutes >= kSyncTimerDuration;
+
+    if (!isTimerDurationReadyToSync) {
+      syncFormatedPrint(
+          'Not possible restart sync when window get focused due to: is current active? ${!isClosed} or the last sync was ${DateTime.now().difference(_lastSync!).inMinutes} minutes ago. It should be $kSyncTimerDuration');
+      return;
+    }
+
+    /// This delay is for don't abruptly open the modal when the user is back
+    ///  to ArDrive browser tab
+    Future.delayed(const Duration(seconds: 2)).then((value) {
+      createSyncStream();
     });
   }
 
@@ -165,7 +188,7 @@ class SyncCubit extends Cubit<SyncState> {
   void restartArConnectSyncOnFocus() async {
     if (await _profileCubit.isCurrentProfileArConnect()) {
       whenBrowserTabIsUnhidden(() {
-        Future.delayed(Duration(seconds: 2))
+        Future.delayed(const Duration(seconds: 2))
             .then((value) => createArConnectSyncStream());
       });
     }
@@ -178,7 +201,12 @@ class SyncCubit extends Cubit<SyncState> {
   late double _totalProgress;
 
   Future<void> startSync() async {
+    syncFormatedPrint('Starting Sync');
+    syncFormatedPrint('SyncCubit is currently active? ${!isClosed}');
+
     if (state is SyncInProgress) {
+      syncFormatedPrint('Sync state is SyncInProgress, aborting sync...');
+
       return;
     }
 
@@ -191,22 +219,34 @@ class SyncCubit extends Cubit<SyncState> {
       String? ownerAddress;
 
       _initSync = DateTime.now();
-      print('Syncing...');
+
+      syncFormatedPrint('Emiting SyncInProgress state');
+
       emit(SyncInProgress());
       // Only sync in drives owned by the user if they're logged in.
+      syncFormatedPrint('Checking if user is logged in...');
+
       if (profile is ProfileLoggedIn) {
+        syncFormatedPrint('User is logged in');
+
         //Check if profile is ArConnect to skip sync while tab is hidden
         ownerAddress = profile.walletAddress;
+
+        syncFormatedPrint('Checking if user is from ar connect...');
+
         final isArConnect = await _profileCubit.isCurrentProfileArConnect();
 
+        syncFormatedPrint('User is ar connect? $isArConnect');
+
         if (isArConnect && isBrowserTabHidden()) {
-          print('Tab hidden, skipping sync...');
+          syncFormatedPrint('Tab hidden, skipping sync...');
           emit(SyncIdle());
           return;
         }
 
         if (_activityCubit.state is ActivityInProgress) {
-          print('Uninterruptable activity in progress, skipping sync...');
+          syncFormatedPrint(
+              'Uninterruptable activity in progress, skipping sync...');
           emit(SyncIdle());
           return;
         }
@@ -230,9 +270,6 @@ class SyncCubit extends Cubit<SyncState> {
 
         syncProgressController.add(_syncProgress);
 
-        // To show 100% loaded to the user
-        await Future.delayed(Duration(milliseconds: 1000));
-
         emit(SyncIdle());
 
         return;
@@ -240,14 +277,14 @@ class SyncCubit extends Cubit<SyncState> {
 
       final currentBlockHeight = await retry(
           () async => await getCurrentBlockHeight(), onRetry: (exception) {
-        print(
+        syncFormatedPrint(
           'Retrying for get the current block height on exception ${exception.toString()}',
         );
       });
 
       _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
 
-      print('Current block height number $currentBlockHeight');
+      syncFormatedPrint('Current block height number $currentBlockHeight');
 
       final driveSyncProcesses = drives.map((drive) => _syncDrive(
             drive.id,
@@ -256,8 +293,8 @@ class SyncCubit extends Cubit<SyncState> {
             ),
             currentBlockheight: currentBlockHeight,
           ).handleError((error, stackTrace) {
-            print(
-                'Error syncing drive with id ${drive.id}. Skipping sync on this drive.\nException: ${onError.toString()}\nStackTrace: ${stackTrace.toString()}');
+            syncFormatedPrint(
+                'Error syncing drive with id ${drive.id}. Skipping sync on this drive.\nException: ${error.toString()}\nStackTrace: ${stackTrace.toString()}');
             addError(error!);
           }));
 
@@ -270,26 +307,34 @@ class SyncCubit extends Cubit<SyncState> {
         syncProgressController.add(_syncProgress);
       }));
 
-      print(
-          'Syncing drives finished.\nDrives quantity: ${_syncProgress.drivesCount}\n'
-          'The total progress was ${(_syncProgress.progress * 100).roundToDouble()}');
+      syncFormatedPrint('Creating ghosts...');
 
       await createGhosts(ownerAddress: ownerAddress);
 
-      /// In order to have a smooth transition at the end.
-      await Future.delayed(const Duration(milliseconds: 1000));
+      ghostFolders.clear();
+      ghostFoldersByDrive.clear();
+
+      syncFormatedPrint('Ghosts created...');
+
+      syncFormatedPrint('Updating transaction statuses...');
 
       await Future.wait([
         if (profile is ProfileLoggedIn) _profileCubit.refreshBalance(),
         _updateTransactionStatuses(),
       ]);
+
+      syncFormatedPrint('Transaction statuses updated');
+
+      syncFormatedPrint(
+          'Syncing drives finished.\nDrives quantity: ${_syncProgress.drivesCount}\n'
+          'The total progress was ${(_syncProgress.progress * 100).roundToDouble()}');
     } catch (err, stackTrace) {
       _printSyncError(err, stackTrace);
       addError(err);
     }
     _lastSync = DateTime.now();
 
-    print('The sync process took: '
+    syncFormatedPrint('The sync process took: '
         '${_lastSync!.difference(_initSync).inMilliseconds} milliseconds to finish.\n');
 
     emit(SyncIdle());
@@ -316,11 +361,12 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> createGhosts({String? ownerAddress}) async {
     //Finalize missing parent list
     for (final ghostFolder in ghostFolders.values) {
-      final folderExists = (await _driveDao
-              .folderById(
-                  driveId: ghostFolder.driveId, folderId: ghostFolder.folderId)
-              .getSingleOrNull()) !=
-          null;
+      final folder = await _driveDao
+          .folderById(
+              driveId: ghostFolder.driveId, folderId: ghostFolder.folderId)
+          .getSingleOrNull();
+
+      final folderExists = folder != null;
 
       if (folderExists) {
         continue;
@@ -349,7 +395,6 @@ class SyncCubit extends Cubit<SyncState> {
         isGhost: true,
         dateCreated: DateTime.now(),
       );
-
       await _driveDao.into(_driveDao.folderEntries).insert(folderEntry);
       ghostFoldersByDrive.putIfAbsent(
           drive.id, () => {folderEntry.id: folderEntry.toCompanion(false)});
@@ -370,7 +415,7 @@ class SyncCubit extends Cubit<SyncState> {
 
     final startSyncDT = DateTime.now();
 
-    print('$startSyncDT: Starting Drive ${drive.name} sync.');
+    syncFormatedPrint('Starting Drive ${drive.name} sync.');
 
     SecretKey? driveKey;
 
@@ -389,8 +434,8 @@ class SyncCubit extends Cubit<SyncState> {
     }
     final fetchPhaseStartDT = DateTime.now();
 
-    print(
-        '${DateTime.now()} : Getting all information about the drive ${drive.name}\n');
+    syncFormatedPrint(
+        'Getting all information about the drive ${drive.name}\n');
 
     final transactions =
         <DriveEntityHistory$Query$TransactionConnection$TransactionEdge>[];
@@ -406,7 +451,7 @@ class SyncCubit extends Cubit<SyncState> {
 
     /// In order to measure the sync progress by the block height, we use the difference
     /// between the first block and the `currentBlockheight`
-    int? totalBlockHeightDifference;
+    late int totalBlockHeightDifference;
 
     /// This percentage is based on block heights.
     var fetchPhasePercentage = 0.0;
@@ -414,73 +459,81 @@ class SyncCubit extends Cubit<SyncState> {
     /// First phase of the sync
     /// Here we get all transactions from its drive.
     await for (var t in transactionsStream) {
-      late int currentPageBlockHeight;
-
       if (t.isEmpty) continue;
 
-      double _calculatePercentageBasedOnBlockHeights() => (1 -
-          ((currentBlockheight - t.last.node.block!.height) /
-              totalBlockHeightDifference!));
+      double _calculatePercentageBasedOnBlockHeights() {
+        final block = t.last.node.block;
 
-      if (firstBlockHeight == null) {
-        if (t.first.node.block == null) {
-          print('block null');
+        if (block != null) {
+          return (1 -
+              ((currentBlockheight - block.height) /
+                  totalBlockHeightDifference));
         }
-        firstBlockHeight = t.first.node.block!.height;
-        totalBlockHeightDifference = currentBlockheight - firstBlockHeight;
-        print('firstBlockHeight $firstBlockHeight\n'
-            'totalBlockHeightDifference $totalBlockHeightDifference\n'
-            'lastBlockHeight $lastBlockHeight\n');
+        syncFormatedPrint(
+            'The transaction block is null.\nTransaction node id: ${t.first.node.id}');
+
+        /// if the block is null, we don't calculate and keep the same percentage
+        return fetchPhasePercentage;
       }
 
-      currentPageBlockHeight = t.last.node.block!.height;
+      /// Initialize only once `firstBlockHeight` and `totalBlockHeightDifference`
+      if (firstBlockHeight == null) {
+        final block = t.first.node.block;
+
+        if (block != null) {
+          firstBlockHeight = block.height;
+          totalBlockHeightDifference = currentBlockheight - firstBlockHeight;
+        } else {
+          syncFormatedPrint(
+              'The transaction block is null.\nTransaction node id: ${t.first.node.id}');
+        }
+      }
 
       transactions.addAll(t);
 
-      print('firstBlockHeight $firstBlockHeight\n'
-          'currentBlockheight $currentBlockheight\n'
-          'totalBlockHeightDifference $totalBlockHeightDifference\n'
-          'currentPageBlockHeight $currentPageBlockHeight\n'
-          'percentage based on block height: ${(1 - ((currentBlockheight - currentPageBlockHeight) / totalBlockHeightDifference!)) * 100}');
+      /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
+      if (firstBlockHeight != null) {
+        _totalProgress += _calculateProgressInFetchPhasePercentage(
+            _calculatePercentageProgress(fetchPhasePercentage,
+                _calculatePercentageBasedOnBlockHeights()));
 
-      _totalProgress += _calculateProgressInFetchPhasePercentage(
-          _calculatePercentageProgress(
-              fetchPhasePercentage, _calculatePercentageBasedOnBlockHeights()));
+        _syncProgress = _syncProgress.copyWith(
+            progress: _totalProgress,
+            entitiesNumber: _syncProgress.entitiesNumber + t.length);
 
-      _syncProgress = _syncProgress.copyWith(
-          progress: _totalProgress,
-          entitiesNumber: _syncProgress.entitiesNumber + t.length);
+        yield _syncProgress;
 
-      yield _syncProgress;
-
-      if (totalBlockHeightDifference > 0) {
-        fetchPhasePercentage += _calculatePercentageProgress(
-            fetchPhasePercentage, _calculatePercentageBasedOnBlockHeights());
-      } else {
-        // If the difference is zero means that the first phase was concluded.
-        fetchPhasePercentage = 1;
+        if (totalBlockHeightDifference > 0) {
+          fetchPhasePercentage += _calculatePercentageProgress(
+              fetchPhasePercentage, _calculatePercentageBasedOnBlockHeights());
+        } else {
+          // If the difference is zero means that the first phase was concluded.
+          fetchPhasePercentage = 1;
+        }
       }
     }
 
     final fetchPhaseTotalTime =
         DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
 
-    print(
+    syncFormatedPrint(
         'It tooks $fetchPhaseTotalTime milliseconds to get all ${drive.name}\'s transactions.\n');
 
-    print('FetchPhasePercentage: $fetchPhasePercentage\n');
+    syncFormatedPrint('Percentage based on blocks: $fetchPhasePercentage\n');
 
     /// Fill the remaining percentage.
     /// It is needed because the phase one isn't accurate and possibly will not
     /// match 100% everytime
     _totalProgress +=
         _calculateProgressInFetchPhasePercentage((1 - fetchPhasePercentage));
-    print('Total progress after fetch phase: $_totalProgress');
+
+    syncFormatedPrint('Total progress after fetch phase: $_totalProgress');
+
     _syncProgress = _syncProgress.copyWith(progress: _totalProgress);
 
     yield _syncProgress;
 
-    print('Drive ${drive.name} is going to the 2nd phase\n');
+    syncFormatedPrint('Drive ${drive.name} is going to the 2nd phase\n');
 
     _syncProgress = _syncProgress.copyWith(
         numberOfDrivesAtGetMetadataPhase:
@@ -493,17 +546,17 @@ class SyncCubit extends Cubit<SyncState> {
         currentBlockHeight: currentBlockheight,
         lastBlockHeight: lastBlockHeight);
 
-    print('Drive ${drive.name} passed the 2nd phase\n');
+    syncFormatedPrint('Drive ${drive.name} ended the 2nd phase succesfully\n');
 
     final syncDriveTotalTime =
         DateTime.now().difference(startSyncDT).inMilliseconds;
 
-    print(
+    syncFormatedPrint(
         'It tooks $syncDriveTotalTime in milleseconds to sync the ${drive.name}.\n');
 
     final averageBetweenFetchAndGet = fetchPhaseTotalTime / syncDriveTotalTime;
 
-    print(
+    syncFormatedPrint(
         'The fetch phase took: ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of the entire drive process.\n');
 
     _syncProgress = _syncProgress.copyWith(
@@ -530,16 +583,14 @@ class SyncCubit extends Cubit<SyncState> {
     var currentDriveEntitiesSynced = 0;
     var driveSyncProgress = 0.0;
 
-    print(
-        'number of drives at 2 phase : ${_syncProgress.numberOfDrivesAtGetMetadataPhase}');
-
-    print('Transactions list length: ${transactions.length}');
+    syncFormatedPrint(
+        'number of drives at get metadata phase : ${_syncProgress.numberOfDrivesAtGetMetadataPhase}');
 
     if (transactions.isEmpty) {
       await _driveDao.writeToDrive(DrivesCompanion(
         id: Value(drive.id),
         lastBlockHeight: Value(currentBlockHeight),
-        syncCursor: Value(null),
+        syncCursor: const Value(null),
       ));
 
       /// If there's nothing to sync, we assume that all were synced
@@ -550,7 +601,7 @@ class SyncCubit extends Cubit<SyncState> {
     }
     final currentDriveEntitiesCounter = transactions.length;
 
-    print(
+    syncFormatedPrint(
         'The total number of entities of the drive ${drive.name} to be synced is: $currentDriveEntitiesCounter\n');
 
     final owner = await arweave.getOwnerForDriveEntityWithId(drive.id);
@@ -566,7 +617,7 @@ class SyncCubit extends Cubit<SyncState> {
         list: transactions,
         pageCount: pageCount,
         itemsPerPageCallback: (items) async* {
-          print('${DateTime.now()} Getting metadata from drive ${drive.name}');
+          syncFormatedPrint('Getting metadata from drive ${drive.name}');
 
           final entityHistory =
               await _arweave.createDriveEntityHistoryFromTransactions(
@@ -599,7 +650,7 @@ class SyncCubit extends Cubit<SyncState> {
             await _driveDao.writeToDrive(DrivesCompanion(
               id: Value(drive.id),
               lastBlockHeight: Value(currentBlockHeight),
-              syncCursor: Value(null),
+              syncCursor: const Value(null),
             ));
           }
 
@@ -673,7 +724,7 @@ class SyncCubit extends Cubit<SyncState> {
 
           yield _syncProgress;
         });
-    print('''
+    syncFormatedPrint('''
         ${'- - ' * 10}
         Drive: ${drive.name} sync finishes.\n
         The progress was:                     ${driveSyncProgress * 100}
@@ -761,7 +812,7 @@ class SyncCubit extends Cubit<SyncState> {
                 (rev) => NetworkTransactionsCompanion.insert(
                   transactionDateCreated: rev.dateCreated,
                   id: rev.metadataTxId.value,
-                  status: Value(TransactionStatus.confirmed),
+                  status: const Value(TransactionStatus.confirmed),
                 ),
               )
               .toList());
@@ -814,7 +865,7 @@ class SyncCubit extends Cubit<SyncState> {
                 (rev) => NetworkTransactionsCompanion.insert(
                   transactionDateCreated: rev.dateCreated,
                   id: rev.metadataTxId.value,
-                  status: Value(TransactionStatus.confirmed),
+                  status: const Value(TransactionStatus.confirmed),
                 ),
               )
               .toList());
@@ -1017,6 +1068,7 @@ class SyncCubit extends Cubit<SyncState> {
       if (parentPath != null) {
         await updateFolderTree(treeRoot, parentPath);
       } else {
+        syncFormatedPrint('Add missing folder: ${treeRoot.folder.name}');
         await addMissingFolder(
           treeRoot.folder.parentFolderId!,
         );
@@ -1043,6 +1095,10 @@ class SyncCubit extends Cubit<SyncState> {
               driveId: staleOrphanFile.driveId,
               path: Value(filePath)));
         } else {
+          syncFormatedPrint(
+              'Add missing folder to file: ${staleOrphanFile.name.value}'
+              'folder id: ${staleOrphanFile.id.value}');
+
           await addMissingFolder(
             staleOrphanFile.parentFolderId.value,
           );
@@ -1088,7 +1144,7 @@ class SyncCubit extends Cubit<SyncState> {
               confirmations[txId]! >= kRequiredTxConfirmationCount;
           final txNotFound = confirmations[txId]! < 0;
 
-          var txStatus;
+          String? txStatus;
 
           DateTime? transactionDateCreated;
 
@@ -1154,23 +1210,32 @@ class SyncCubit extends Cubit<SyncState> {
   @override
   void onError(Object error, StackTrace stackTrace) {
     _printSyncError(error, stackTrace);
-    print('Emiting SyncFailure state');
+    syncFormatedPrint('Emiting SyncFailure state');
+    if (isClosed) {
+      return;
+    }
     emit(SyncFailure(error: error, stackTrace: stackTrace));
 
-    print('Emiting SyncIdle state');
+    syncFormatedPrint('Emiting SyncIdle state');
     emit(SyncIdle());
     super.onError(error, stackTrace);
   }
 
   void _printSyncError(Object error, StackTrace stackTrace) {
-    print(
+    syncFormatedPrint(
         'An error occurs while sync.\nError: ${error.toString()}\nStacktrace${stackTrace.toString()}');
   }
 
   @override
-  Future<void> close() {
-    _syncSub?.cancel();
-    _arconnectSyncSub?.cancel();
-    return super.close();
+  Future<void> close() async {
+    syncFormatedPrint('Closing SyncCubit...');
+    await _syncSub?.cancel();
+    await _arconnectSyncSub?.cancel();
+    await closeVisibilityChangeStream();
+    await super.close();
+  }
+
+  void syncFormatedPrint(String message) {
+    print('$hashCode Sync context: ' + message);
   }
 }

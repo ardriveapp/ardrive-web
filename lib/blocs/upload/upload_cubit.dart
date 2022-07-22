@@ -18,7 +18,7 @@ import 'enums/conflicting_files_actions.dart';
 
 part 'upload_state.dart';
 
-final privateFileSizeLimit = 104857600;
+const privateFileSizeLimit = 104857600;
 final publicFileSizeLimit = 1.25 * math.pow(10, 9);
 final filesNamesToExclude = ['.DS_Store'];
 
@@ -71,11 +71,18 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadPreparationInitialized());
   }
 
+  Future<void> checkConflicts() async {
+    if (uploadFolders) {
+      return await checkConflictingFolders();
+    }
+
+    await checkConflictingFiles();
+  }
+
   /// Tries to find a files that conflict with the files in the target folder.
   ///
   /// If there's one, prompt the user to upload the file as a version of the existing one.
   /// If there isn't one, prepare to upload the file.
-
   Future<void> checkConflictingFolders() async {
     emit(UploadPreparationInProgress());
     if (uploadFolders) {
@@ -113,6 +120,25 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
+  void checkFilesAboveLimit() {
+    final tooLargeFiles = [
+      for (final file in files)
+        if (file.size > sizeLimit) file.name
+    ];
+
+    if (tooLargeFiles.isNotEmpty) {
+      emit(UploadFileTooLarge(
+        hasFilesToUpload: files.length > tooLargeFiles.length,
+        tooLargeFileNames: tooLargeFiles,
+        isPrivate: _targetDrive.isPrivate,
+      ));
+      return;
+    }
+    
+    // If we don't have any file above limit, we can check conflicts
+    checkConflicts();
+  }
+
   Future<void> checkConflictingFiles() async {
     emit(UploadPreparationInProgress());
 
@@ -133,7 +159,6 @@ class UploadCubit extends Cubit<UploadState> {
         conflictingFiles[file.getIdentifier()] = existingFileId;
       }
     }
-
     if (conflictingFiles.isNotEmpty) {
       emit(
         UploadFileConflict(
@@ -147,7 +172,6 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   /// Generate Folders and assign parentFolderIds
-
   Future<FolderPrepareResult> generateFoldersAndAssignParentsForFiles(
     List<UploadFile> files,
   ) async {
@@ -203,9 +227,8 @@ class UploadCubit extends Cubit<UploadState> {
     return FolderPrepareResult(files: filesToUpload, foldersByPath: folders);
   }
 
-  /// If `conflictingFileAction` is null, means that had no conflict.
   Future<void> prepareUploadPlanAndCostEstimates({
-    ConflictingFileActions? conflictingFileAction,
+    UploadActions? uploadAction,
   }) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
@@ -219,24 +242,9 @@ class UploadCubit extends Cubit<UploadState> {
         isArConnect: await _profileCubit.isCurrentProfileArConnect(),
       ),
     );
-    final sizeLimit =
-        _targetDrive.isPrivate ? privateFileSizeLimit : publicFileSizeLimit;
 
-    if (conflictingFileAction == ConflictingFileActions.Skip) {
+    if (uploadAction == UploadActions.Skip) {
       _removeFilesWithFileNameConflicts();
-    }
-
-    final tooLargeFiles = [
-      for (final file in files)
-        if (file.size > sizeLimit) file.name
-    ];
-
-    if (tooLargeFiles.isNotEmpty) {
-      emit(UploadFileTooLarge(
-        tooLargeFileNames: tooLargeFiles,
-        isPrivate: _targetDrive.isPrivate,
-      ));
-      return;
     }
 
     final uploadPlan = await _uploadPlanUtils.filesToUploadPlan(
@@ -299,7 +307,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
       await for (final _ in bundleHandle
           .upload(_arweave)
-          .debounceTime(Duration(milliseconds: 500))
+          .debounceTime(const Duration(milliseconds: 500))
           .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
@@ -315,7 +323,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
       await for (final _ in uploadHandle
           .upload(_arweave)
-          .debounceTime(Duration(milliseconds: 500))
+          .debounceTime(const Duration(milliseconds: 500))
           .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
@@ -326,10 +334,16 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
+  void removeBigFiles() =>
+      files.removeWhere((element) => element.size > sizeLimit);
+
   void _removeFilesWithFileNameConflicts() {
     files.removeWhere((file) => conflictingFiles
         .containsKey(file.path.isEmpty ? file.name : file.path));
   }
+
+  num get sizeLimit =>
+      _targetDrive.isPrivate ? privateFileSizeLimit : publicFileSizeLimit;
 
   void _removeFilesWithFolderNameConflicts() {
     files.removeWhere((file) => conflictingFolders.contains(file.name));

@@ -3,4 +3,9 @@ pre-push:
   commands:
     database-check:
       run: ./lefthook/database_checker.sh
-    
+
+pre-commit:
+  parallel: true
+  commands:
+    version_check:
+      run: ./lefthook/version_checker.sh

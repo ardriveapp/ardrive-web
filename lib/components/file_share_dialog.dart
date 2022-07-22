@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'components.dart';
 
 Future<void> promptToShareFile({
@@ -22,12 +23,14 @@ Future<void> promptToShareFile({
           profileCubit: context.read<ProfileCubit>(),
           driveDao: context.read<DriveDao>(),
         ),
-        child: FileShareDialog(),
+        child: const FileShareDialog(),
       ),
     );
 
 /// Depends on a provided [FileShareCubit] for business logic.
 class FileShareDialog extends StatefulWidget {
+  const FileShareDialog({Key? key}) : super(key: key);
+
   @override
   _FileShareDialogState createState() => _FileShareDialogState();
 }
@@ -44,6 +47,9 @@ class _FileShareDialogState extends State<FileShareDialog> {
           }
         },
         builder: (context, state) => AppDialog(
+          onWillPopCallback: () {
+            context.read<FeedbackSurveyCubit>().openRemindMe();
+          },
           title: appLocalizationsOf(context).shareFileWithOthers,
           content: SizedBox(
             width: kLargeDialogWidth,
@@ -53,6 +59,10 @@ class _FileShareDialogState extends State<FileShareDialog> {
               children: [
                 if (state is FileShareLoadInProgress)
                   const Center(child: CircularProgressIndicator())
+                else if (state is FileShareLoadedFailedFile)
+                  Text(appLocalizationsOf(context).shareFailedFile)
+                else if (state is FileShareLoadedPendingFile)
+                  Text(appLocalizationsOf(context).sharePendingFile)
                 else if (state is FileShareLoadSuccess) ...{
                   ListTile(
                     title: Text(state.fileName),
@@ -98,8 +108,19 @@ class _FileShareDialogState extends State<FileShareDialog> {
           actions: [
             if (state is FileShareLoadSuccess)
               ElevatedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.read<FeedbackSurveyCubit>().openRemindMe();
+                },
                 child: Text(appLocalizationsOf(context).doneEmphasized),
+              )
+            else if (state is FileShareLoadedFailedFile ||
+                state is FileShareLoadedPendingFile)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text(appLocalizationsOf(context).ok),
               ),
           ],
         ),

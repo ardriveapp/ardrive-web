@@ -12,7 +12,7 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ProfileAuthShell(
         illustration: Image.asset(
-          R.images.profile.profileWelcome,
+          Resources.images.profile.profileWelcome,
           fit: BoxFit.contain,
         ),
         contentWidthFactor: 0.5,

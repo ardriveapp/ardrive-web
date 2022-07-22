@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
+import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
@@ -60,7 +61,7 @@ void main() async {
 
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
-  refreshHTMLPageAtInterval(Duration(hours: 12));
+  refreshHTMLPageAtInterval(const Duration(hours: 12));
   runApp(App());
 }
 
@@ -97,6 +98,10 @@ class _AppState extends State<App> {
             BlocProvider(
               create: (context) => ActivityCubit(),
             ),
+            BlocProvider(
+              create: (context) =>
+                  FeedbackSurveyCubit(FeedbackSurveyInitialState()),
+            ),
           ],
           child: MaterialApp.router(
             title: 'ArDrive',
@@ -104,14 +109,15 @@ class _AppState extends State<App> {
             debugShowCheckedModeBanner: false,
             routeInformationParser: _routeInformationParser,
             routerDelegate: _routerDelegate,
-            localizationsDelegates: [
+            localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
             ],
-            supportedLocales: [
-              const Locale('en', ''), // English, no country code
-              const Locale('es', ''), // Spanish, no country code
+            supportedLocales: const [
+              Locale('en', ''), // English, no country code
+              Locale('es', ''), // Spanish, no country code
+              Locale('zh', ''), // Chinese (Mandarin), no country code
             ],
             builder: (context, child) => ListTileTheme(
               textColor: kOnSurfaceBodyTextColor,

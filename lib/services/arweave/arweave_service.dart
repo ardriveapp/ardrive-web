@@ -2,19 +2,23 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/string_types.dart';
+import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
+import 'package:ardrive/utils/http_retry.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart' as http;
 import 'package:moor/moor.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:pedantic/pedantic.dart';
 import 'package:retry/retry.dart';
 
-const byteCountPerChunk = 262144; // 256 KiB
+import 'error/gateway_response_handler.dart';
 
+const byteCountPerChunk = 262144; // 256 KiB
+const defaultMaxRetries = 8;
 const kMaxNumberOfTransactionsPerPage = 100;
 
 class ArweaveService {
@@ -22,12 +26,25 @@ class ArweaveService {
 
   final ArtemisClient _gql;
 
-  int _mempoolSize = 0;
-
   ArweaveService(this.client)
       : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
-    unawaited(initializeMempoolStream());
     _graphQLRetry = GraphQLRetry(_gql);
+    httpRetry = HttpRetry(
+        GatewayResponseHandler(),
+        HttpRetryOptions(onRetry: (exception) {
+          if (exception is GatewayError) {
+            print(
+              'Retrying for ${exception.runtimeType} exception\n'
+              'for route ${exception.requestUrl}\n'
+              'and status code ${exception.statusCode}',
+            );
+            return;
+          }
+
+          print('Retrying for unknown exception: ${exception.toString()}');
+        }, retryIf: (exception) {
+          return exception is! RateLimitError;
+        }));
   }
 
   int bytesToChunks(int bytes) {
@@ -35,6 +52,7 @@ class ArweaveService {
   }
 
   late GraphQLRetry _graphQLRetry;
+  late HttpRetry httpRetry;
 
   /// Returns the onchain balance of the specified address.
   Future<BigInt> getWalletBalance(String address) => client.api
@@ -44,43 +62,20 @@ class ArweaveService {
   Future<int> getCurrentBlockHeight() =>
       client.api.get('/').then((res) => json.decode(res.body)['height']);
 
-  Future<void> initializeMempoolStream() async {
-    Stream.periodic(const Duration(minutes: 1, seconds: 44))
-        .asyncMap((event) => getMempoolAverage())
-        .listen((mempoolSize) {
-      _mempoolSize = mempoolSize;
-    });
-    _mempoolSize = await getMempoolAverage();
-  }
-
   Future<BigInt> getPrice({required int byteSize}) {
     return client.api
         .get('/price/$byteSize')
         .then((res) => BigInt.parse(res.body));
   }
 
-  // Spread requests across time to avoid getting load balanced to the same gateway
-  Future<int> getMempoolAverage() async {
-    return await Stream.periodic(Duration(seconds: 4))
-            .asyncMap((event) => getMempoolSizeFromArweave())
-            .take(4)
-            .reduce((next, acc) => acc += next) ~/
-        4;
-  }
-
   Future<int> getMempoolSizeFromArweave() async {
-    try {
-      return await client.api
-          .get('tx/pending')
-          .then((res) => (json.decode(res.body) as List).length);
-    } catch (_) {
-      print('Error fetching mempool size');
-      return 0;
-    }
-  }
+    final response = await client.api.get('tx/pending');
 
-  Future<int> getCachedMempoolSize() async {
-    return _mempoolSize;
+    if (response.statusCode == 200) {
+      return (json.decode(response.body) as List).length;
+    }
+
+    throw Exception('Error fetching mempool size');
   }
 
   /// Returns the pending transaction fees of the specified address that is not reflected by `getWalletBalance()`.
@@ -148,20 +143,12 @@ class ArweaveService {
       int lastBlockHeight) async {
     final entityTxs = <
         DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>[];
+
     entityTxs.addAll(queryEdges.map((e) => e.node).toList());
 
-    final responses = await Future.wait(
-      entityTxs.map((e) async {
-        return retry(
-          () => client.api.getSandboxedTx(e.id),
-          onRetry: (exception) {
-            print(
-              'Retrying for get ${e.id} metadata on exception ${exception.toString()}',
-            );
-          },
-        );
-      }),
-    );
+    final responses = await Future.wait(entityTxs.map((e) async {
+      return httpRetry.processRequest(() => client.api.getSandboxedTx(e.id));
+    }));
 
     final blockHistory = <BlockEntities>[];
 
@@ -182,15 +169,6 @@ class ArweaveService {
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
         final entityResponse = responses[i];
-
-        if (entityResponse.statusCode != 200) {
-          throw EntityTransactionDataNetworkException(
-            transactionId: transaction.id,
-            statusCode: entityResponse.statusCode,
-            reasonPhrase: entityResponse.reasonPhrase,
-          );
-        }
-
         final rawEntityData = entityResponse.bodyBytes;
 
         Entity? entity;
@@ -221,10 +199,10 @@ class ArweaveService {
           'Failed to parse transaction '
           'with id ${parseException.transactionId}',
         );
-      } on EntityTransactionDataNetworkException catch (fetchException) {
+      } on GatewayError catch (fetchException) {
         print(
-          'Failed to fetch entity data '
-          'for transaction ${fetchException.transactionId}, '
+          'Failed to fetch entity data with the exception ${fetchException.runtimeType}'
+          'for transaction ${transaction.id}, '
           'with status ${fetchException.statusCode} '
           'and reason ${fetchException.reasonPhrase}',
         );
@@ -247,10 +225,14 @@ class ArweaveService {
 
   // Gets the unique drive entity transactions for a particular user.
   Future<List<TransactionCommonMixin>> getUniqueUserDriveEntityTxs(
-      String userAddress) async {
+    String userAddress, {
+    int maxRetries = defaultMaxRetries,
+  }) async {
     final userDriveEntitiesQuery = await _graphQLRetry.execute(
       UserDriveEntitiesQuery(
-          variables: UserDriveEntitiesArguments(owner: userAddress)),
+        variables: UserDriveEntitiesArguments(owner: userAddress),
+      ),
+      maxAttempts: maxRetries,
     );
 
     return userDriveEntitiesQuery.data!.transactions.edges
@@ -347,9 +329,14 @@ class ArweaveService {
   Future<DriveEntity?> getLatestDriveEntityWithId(
     String driveId, [
     SecretKey? driveKey,
+    int maxRetries = defaultMaxRetries,
   ]) async {
-    final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
-        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
+    final firstOwnerQuery = await _graphQLRetry.execute(
+      FirstDriveEntityWithIdOwnerQuery(
+        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId),
+      ),
+      maxAttempts: maxRetries,
+    );
 
     if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
       return null;
@@ -358,9 +345,13 @@ class ArweaveService {
     final driveOwner =
         firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
-    final latestDriveQuery = await _gql.execute(LatestDriveEntityWithIdQuery(
+    final latestDriveQuery = await _graphQLRetry.execute(
+      LatestDriveEntityWithIdQuery(
         variables: LatestDriveEntityWithIdArguments(
-            driveId: driveId, owner: driveOwner)));
+            driveId: driveId, owner: driveOwner),
+      ),
+      maxAttempts: maxRetries,
+    );
 
     final queryEdges = latestDriveQuery.data!.transactions.edges;
     if (queryEdges.isEmpty) {
@@ -389,9 +380,12 @@ class ArweaveService {
   /// by that owner.
   ///
   /// Returns `null` if no valid drive is found.
-  Future<String?> getDrivePrivacyForId(String driveId) async {
-    final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
-        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
+  Future<Privacy?> getDrivePrivacyForId(String driveId) async {
+    final firstOwnerQuery = await _gql.execute(
+      FirstDriveEntityWithIdOwnerQuery(
+        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId),
+      ),
+    );
 
     if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
       return null;
@@ -400,9 +394,10 @@ class ArweaveService {
     final driveOwner =
         firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
-    final latestDriveQuery = await _gql.execute(LatestDriveEntityWithIdQuery(
-        variables: LatestDriveEntityWithIdArguments(
-            driveId: driveId, owner: driveOwner)));
+    final latestDriveQuery = await _graphQLRetry.execute(
+        LatestDriveEntityWithIdQuery(
+            variables: LatestDriveEntityWithIdArguments(
+                driveId: driveId, owner: driveOwner)));
 
     final queryEdges = latestDriveQuery.data!.transactions.edges;
     if (queryEdges.isEmpty) {
@@ -412,6 +407,42 @@ class ArweaveService {
     final driveTx = queryEdges.first.node;
 
     return driveTx.getTag(EntityTag.drivePrivacy);
+  }
+
+  /// Gets the file privacy of the latest file entity with the provided id.
+  ///
+  /// This function first checks for the owner of the first instance of the [FileEntity]
+  /// with the specified id and then queries for the latest instance of the [FileEntity]
+  /// by that owner.
+  ///
+  /// Returns `null` if no valid file is found.
+
+  Future<Privacy?> getFilePrivacyForId(String fileId) async {
+    final firstOwnerQuery = await _gql.execute(FirstFileEntityWithIdOwnerQuery(
+        variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
+
+    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    final fileOwner =
+        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
+
+    final latestFileQuery = await _gql.execute(LatestFileEntityWithIdQuery(
+        variables:
+            LatestFileEntityWithIdArguments(fileId: fileId, owner: fileOwner)));
+
+    final queryEdges = latestFileQuery.data!.transactions.edges;
+
+    if (queryEdges.isEmpty) {
+      return null;
+    }
+
+    final fileTx = queryEdges.first.node;
+
+    return fileTx.getTag(EntityTag.cipherIv) != null
+        ? DrivePrivacy.private
+        : DrivePrivacy.public;
   }
 
   /// Gets the owner of the drive sorted by blockheight.
@@ -464,8 +495,9 @@ class ArweaveService {
   /// Returns `null` if no valid file is found or the provided `fileKey` is incorrect.
   Future<FileEntity?> getLatestFileEntityWithId(String fileId,
       [SecretKey? fileKey]) async {
-    final firstOwnerQuery = await _gql.execute(FirstFileEntityWithIdOwnerQuery(
-        variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
+    final firstOwnerQuery = await _graphQLRetry.execute(
+        FirstFileEntityWithIdOwnerQuery(
+            variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
 
     if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
       return null;
@@ -474,9 +506,10 @@ class ArweaveService {
     final fileOwner =
         firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
-    final latestFileQuery = await _gql.execute(LatestFileEntityWithIdQuery(
-        variables:
-            LatestFileEntityWithIdArguments(fileId: fileId, owner: fileOwner)));
+    final latestFileQuery = await _graphQLRetry.execute(
+        LatestFileEntityWithIdQuery(
+            variables: LatestFileEntityWithIdArguments(
+                fileId: fileId, owner: fileOwner)));
 
     final queryEdges = latestFileQuery.data!.transactions.edges;
     if (queryEdges.isEmpty) {

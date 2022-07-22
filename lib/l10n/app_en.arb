@@ -178,6 +178,10 @@
       }
     }
   },
+  "unlock": "Unlock",
+  "@unlock": {
+    "description": "Unlock a file or drive."
+  },
   "unlockEmphasized": "UNLOCK",
   "@unlockEmphasized": {
     "description": "Unlock the wallet with its password. Emphasized with upper case"
@@ -625,9 +629,17 @@
   "@driveName": {
     "description": "The name of certain drive"
   },
+  "driveKey": "Drive Key",
+  "@driveKey": {
+    "description": "Drive Key form field label"
+  },
   "shareDrive": "Share Drive",
   "@shareDrive": {
     "description": "The action of sharing a drive link"
+  },
+  "enterFileKey": "Enter file Key",
+  "@enterFileKey": {
+    "description": "File Key form field label"
   },
   "shareDriveWithOthers": "Share drive with others",
   "@shareDriveWithOthers": {
@@ -649,10 +661,6 @@
   "@doneEmphaseized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
-  "errorLog": "Error log",
-  "@errorLog": {
-    "description": "Error dialog"
-  },
   "downloadingFile": "Downloading file...",
   "@downloadingFile": {
     "description": "File is being downloaded"
@@ -668,6 +676,14 @@
   "shareFile": "Share File",
   "@shareFile": {
     "description": "The action of sharing a file link"
+  },
+  "sharePendingFile": "The file you are trying to share is currently pending and can’t be shared at this time.",
+  "@sharePendingFile": {
+    "description": "Pending file share dialog text"
+  },
+  "shareFailedFile": "The file you are attempting to share is invalid and cannot be shared.",
+  "@shareFailedFile": {
+    "description": "Failed file share dialog text"
   },
   "shareFileWithOthers": "Share file with others",
   "@shareFileWithOthers": {
@@ -876,11 +892,11 @@
       }
     }
   },
-  "filesTooLargeExplanationPrivate": "ArDrive on web currently only supports file uploads smaller than 100 MB for private drives",
+  "filesTooLargeExplanationPrivate": "ArDrive on web currently only supports file uploads smaller than 100 MiB for private drives",
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "ArDrive on web currently only supports file uploads smaller than 1.25 GB for public drives",
+  "filesTooLargeExplanationPublic": "ArDrive on web currently only supports file uploads smaller than 1.25 GiB for public drives",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
@@ -899,14 +915,6 @@
   "thisMayTakeAWhile": "This may take a while...",
   "@thisMayTakeAWhile": {
     "description": "Uploading may take a while"
-  },
-  "failedToPrepareFileUpload": "Failed to prepare file upload",
-  "@failedToPrepareFileUpload": {
-    "description": "Error message for when it failed to prepare the upload"
-  },
-  "failedToPrepareFileUploadExplanation": "An error occurred while preparing your file upload. Please use the desktop app for now instead or try uploading a smaller file.",
-  "@failedToPrepareFileUploadExplanation": {
-    "description": "Error message for when it failed to prepare the upload"
   },
   "closeEmphasized": "CLOSE",
   "@closeEmphasized": {
@@ -994,6 +1002,18 @@
   "specifiedFileDoesNotExist": "The specified file does not exist.",
   "@specifiedFileDoesNotExist": {
     "description": "The shared file the user is trying to access does not exist"
+  },
+  "validationSharedFileIncorrectFileKey": "Incorrect key, please try again.",
+  "@validationSharedFileIncorrectFileKey": {
+    "description": "The user entered an incorrect file key"
+  },
+  "sharedFileIsEncrypted": "This file is encrypted.",
+  "@sharedFileIsEncrypted": {
+    "description": "Description that says the file is encrypted on shared file page"
+  },
+  "whatIsArDrive": "What is ArDrive?",
+  "@whatIsArDrive": {
+    "description": "What is ArDrive? link on shared file page"
   },
   "failedToSyncDrive": "Failed to sync drive contents.",
   "@failedToSyncDrive": {
@@ -1154,7 +1174,7 @@
     "description": "Show that needs funds to create a Drive"
   },
   "insufficientFundsForCreateAFolder": "You do not have sufficient funds to create a Folder at this time. Please go to the top up page to add funds to your account.",
-  "@insufficientFundsForCreateADrive": {
+  "@insufficientFundsForCreateAFolder": {
     "description": "Show that needs funds to create a Folder"
   },
   "insufficientFundsForCreateAManifest": "You do not have sufficient funds to create a Manifest at this time. Please go to the top up page to add funds to your account.",
@@ -1285,5 +1305,55 @@
         "example": "100"
       }
     }
+  },
+  "detachEmphasized": "DETACH",
+  "@detachEmphasized": {
+    "description": "Example: To DETACH a drive. Emphasized in upper case"
+  },
+  "detachDrive": "Detach Drive?",
+  "@detachDrive": {
+    "description": "Detach Drive Title"
+  },
+  "detachDriveQuestion": "Are you sure you want to detach '{driveName}'?",
+  "@detachDriveQuestion": {
+    "description": "Ask for user confirmation to detach drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Shared Drive A"
+      }
+    }
+  },
+  "feedbackTitle": "Thank you for using ArDrive!",
+  "@feedbackTitle": {
+    "description": "We thank the user"
+  },
+  "feedbackContent": "Would you be willing to leave feedback on your experience using the app?",
+  "@feedbackContent": {
+    "description": "Asks for feedback"
+  },
+  "leaveFeedback": "Leave Feedback",
+  "@leaveFeedback": {
+    "description": "The action of leaving feedback"
+  },
+  "noThanks": "No thanks! Don't remind me again",
+  "@noThanks": {
+    "description": "Don't leave feedback, and don't ask again for it"
+  },
+  "weWontRemindYou": "Ok cool! We won't remind you again.",
+  "@weWontRemindYou": {
+    "description": "We let the user know that we won't remind them to leave feedback again"
+  },
+  "weWontRemindYouDescription": "If you ever change your mind and want to leave feedback at a later date, you can do so via the link in your menu.",
+  "@weWontRemindYouDescription": {
+    "description": "We let the user know where to find the 'Leave Feedback' button"
+  },
+  "gotIt": "Got it!",
+  "@gotIt": {
+    "description": "Example similar phrases: I've got it, I understood, OK"
+  },
+  "infernoIsInFullSwing": "The Inferno Rewards Program is in full swing! Click here to check out the rules for participation!",
+  "@infernoIsInFullSwing": {
+    "description": "Text inviting the users to go read the Inferno rules"
   }
 }

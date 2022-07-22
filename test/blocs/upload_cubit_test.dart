@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/blocs/upload/models/io_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
+import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:arweave/arweave.dart';
@@ -294,7 +296,8 @@ void main() {
     );
 
     blocTest<UploadCubit, UploadState>(
-      'should emit UploadFileTooLarge when a file larger than publicFileSizeLimit'
+      'should emit UploadFileTooLarge with hasFilesToUpload false when we have'
+      ' only a file larger than publicFileSizeLimit'
       ' is intended to upload',
       setUp: () async {
         final tFile = File('some_file.txt');
@@ -319,7 +322,67 @@ void main() {
         UploadPreparationInitialized(),
         TypeMatcher<UploadPreparationInProgress>(),
         UploadFileTooLarge(
-            tooLargeFileNames: [tTooLargeFiles.first.name], isPrivate: false)
+            hasFilesToUpload: false,
+            tooLargeFileNames: [tTooLargeFiles.first.name],
+            isPrivate: false)
+      ],
+    );
+
+    blocTest<UploadCubit, UploadState>(
+      'should emit UploadFileTooLarge with hasFilesToUpload true when we have'
+      ' others files not too large to upload',
+      setUp: () async {
+        final tFile = File('some_file.txt');
+        tFile.writeAsBytesSync(Uint8List(publicFileSizeLimit.toInt() + 1));
+        tTooLargeFile = await IOFile.fromXFile(
+          XFile(tFile.path),
+          tRootFolderId,
+        );
+      },
+      build: () {
+        final tTooLargeFilesWithNoConflictingFiles = tNoConflictingFiles
+          ..add(tTooLargeFile);
+
+        return getUploadCubitInstanceWith(tTooLargeFilesWithNoConflictingFiles);
+      },
+      tearDown: () {
+        File('some_file.txt').deleteSync();
+      },
+      act: (cubit) async {
+        await cubit.startUploadPreparation();
+        await cubit.prepareUploadPlanAndCostEstimates();
+      },
+      expect: () => <dynamic>[
+        UploadPreparationInitialized(),
+        TypeMatcher<UploadPreparationInProgress>(),
+        UploadFileTooLarge(
+            hasFilesToUpload: false,
+            tooLargeFileNames: [tTooLargeFiles.first.name],
+            isPrivate: false)
+      ],
+    );
+
+    blocTest<UploadCubit, UploadState>(
+      'should emit UploadReady when we have too large files but at least a not too large'
+      ' and select the UploadAction skipBigFiles to skip those ',
+      setUp: () {
+        when(() => mockProfileCubit!.isCurrentProfileArConnect())
+            .thenAnswer((i) => Future.value(false));
+      },
+      build: () {
+        return getUploadCubitInstanceWith(
+            tNoConflictingFiles..add(tTooLargeFile));
+      },
+      act: (cubit) async {
+        // TODO(@thiagocarvalhodev): Review
+        await cubit.startUploadPreparation();
+        await cubit.prepareUploadPlanAndCostEstimates(
+            uploadAction: UploadActions.Skip);
+      },
+      expect: () => <dynamic>[
+        UploadPreparationInitialized(),
+        UploadPreparationInProgress(isArConnect: false),
+        TypeMatcher<UploadReady>()
       ],
     );
 
