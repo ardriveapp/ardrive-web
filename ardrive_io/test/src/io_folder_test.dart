@@ -2,11 +2,6 @@ import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-
-class MockDirectory extends Mock implements Directory {}
-
-class MockFile extends Mock implements File {}
 
 void main() {
   final IOFolderAdapter sut;
@@ -73,6 +68,17 @@ void main() {
       final secondLevelContent = await secondLevelFolder.listContent();
       expect(secondLevelContent.whereType<IOFile>().length, 2);
       expect(secondLevelContent.whereType<IOFolder>().length, 0);
+
+      final files1stLevel = await firstLevelFolder.files();
+      final folders1stLevel = await firstLevelFolder.subfolders();
+      final files2stLevel = await secondLevelFolder.files();
+      final folders2stLevel = await secondLevelFolder.subfolders();
+
+      /// See the folder structure
+      expect(files1stLevel.length, 3);
+      expect(folders1stLevel.length, 1);
+      expect(files2stLevel.length, 2);
+      expect(folders2stLevel.isEmpty, true);
     });
   });
 }

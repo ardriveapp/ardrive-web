@@ -7,10 +7,14 @@ import 'package:path/path.dart' as path;
 
 /// Base class for agnostic platform folders.
 ///
-/// `listContent` should return a list of `IOEntity` where it can be both
-/// `IOFile` and `IOFolder`
+/// `listContent` returns the folder structure in a tree of `IOEntity`.
+///
+/// `subFolders()` gets all folders from this folder tree
+/// `files()` gets all files from this folder tree
 abstract class IOFolder extends Equatable implements IOEntity {
   Future<List<IOEntity>> listContent();
+  Future<List<IOFolder>> subfolders();
+  Future<List<IOFile>> files();
 }
 
 /// Handle the dart:io API `FileSystemEntities` and mounts the folder hierachy
@@ -61,7 +65,6 @@ class _FileSystemFolder extends IOFolder {
   Future<IOEntity> _addFolderNode(FileSystemEntity fsEntity) async {
     if (fsEntity is Directory) {
       final newNode = await IOFolderAdapter().fromFileSystemDirectory(fsEntity);
-
       for (var fs in fsEntity.listSync()) {
         final children = await newNode.listContent();
         children.add(await _addFolderNode(fs));
@@ -69,12 +72,41 @@ class _FileSystemFolder extends IOFolder {
 
       return newNode;
     }
+    final ioFile = await IOFileAdapter().fromFile(fsEntity as File);
 
-    return IOFileAdapter().fromFile(fsEntity as File);
+    return ioFile;
   }
 
   @override
   List<Object?> get props => [name, path];
+
+  @override
+  Future<List<IOFile>> files() async {
+    return _getAllEntitiesFromType<IOFile>(this);
+  }
+
+  @override
+  Future<List<IOFolder>> subfolders() async {
+    return _getAllEntitiesFromType<IOFolder>(this);
+  }
+
+  /// recursively get all entities from this folder filtering by the `IOEntity` `T` type
+  Future<List<T>> _getAllEntitiesFromType<T extends IOEntity>(
+      IOFolder ioFolder) async {
+    final content = await ioFolder.listContent();
+    final subFolders = content.whereType<IOFolder>();
+    final entities = <T>[];
+
+    if (subFolders.isNotEmpty) {
+      for (IOFolder iof in subFolders) {
+        entities.addAll(await _getAllEntitiesFromType(iof));
+      }
+    }
+
+    entities.addAll(content.whereType<T>());
+
+    return entities;
+  }
 }
 
 class IOFolderAdapter {
