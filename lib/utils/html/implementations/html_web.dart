@@ -1,29 +1,22 @@
-import 'dart:html';
+// import 'dart:html';
 
 bool isTabHidden() {
-  return window.document.visibilityState != 'visible';
+  throw UnimplementedError();
+  // return window.document.visibilityState != 'visible';
 }
 
 void whenTabIsUnhidden(Function onShow) {
-  document.addEventListener('visibilitychange', (event) {
-    if (document.visibilityState != 'hidden') {
-      onShow();
-    }
-  });
+  throw UnimplementedError();
 }
 
 void refreshPageAtInterval(Duration duration) {
-  Future.delayed(duration, () {
-    window.location.reload();
-  });
+  throw UnimplementedError();
 }
 
 void onWalletSwitch(Function onWalletSwitch) {
-  window.addEventListener('walletSwitch', (event) {
-    onWalletSwitch();
-  });
+  throw UnimplementedError();
 }
 
 void reload() {
-  window.location.reload();
+  throw UnimplementedError();
 }

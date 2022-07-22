@@ -1,8 +1,11 @@
+import 'package:ardrive/main.dart';
 import 'package:arweave/arweave.dart';
 
 import '../services.dart';
-import 'implementations/pst_web.dart'
-    if (dart.library.io) 'implementations/pst_stub.dart' as implementation;
+
+// import 'implementations/pst_web.dart'
+//     if (dart.library.io) 'implementations/pst_stub.dart'
+//     as implementation;
 
 export 'enums.dart';
 
@@ -10,11 +13,11 @@ final minimumPstTip = BigInt.from(10000000);
 
 class PstService {
   /// Returns the fee percentage of the app PST as a decimal percentage.
-  Future<double> getPstFeePercentage() => implementation.getPstFeePercentage();
+  // Future<double> getPstFeePercentage() => implementation.getPstFeePercentage();
+  Future<double> getPstFeePercentage() async => pst.fee;
 
   /// Returns a randomly selected address for the holder of the app PST weighted by their holdings.
-  Future<String> getWeightedPstHolder() =>
-      implementation.getWeightedPstHolder();
+  Future<String> getWeightedPstHolder() async => pst.weightedPstHolder;
 
   Future<BigInt> getPSTFee(BigInt uploadCost) async {
     final pstFee = await _getPSTFee(uploadCost);
@@ -25,8 +28,7 @@ class PstService {
   }
 
   Future<BigInt> _getPSTFee(BigInt uploadCost) async {
-    return await implementation
-        .getPstFeePercentage()
+    return await getPstFeePercentage()
         .then((feePercentage) =>
             // Workaround [BigInt] percentage division problems
             // by first multiplying by the percentage * 100 and then dividing by 100.

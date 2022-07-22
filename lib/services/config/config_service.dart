@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:cooky/cooky.dart' as cookie;
+// import 'package:cooky/cooky.dart' as cookie;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -15,11 +15,13 @@ class ConfigService {
       final configContent =
           await rootBundle.loadString('assets/config/$environment.json');
 
-      final gatewayCookie = cookie.get('arweaveGatewayUrl');
+      // final gatewayCookie = cookie.get('arweaveGatewayUrl');
 
-      _config = AppConfig.fromJson(gatewayCookie != null
-          ? {'defaultArweaveGatewayUrl': gatewayCookie}
-          : json.decode(configContent));
+      _config = AppConfig.fromJson(
+          // gatewayCookie != null
+          // ? {'defaultArweaveGatewayUrl': gatewayCookie}
+          // :
+          json.decode(configContent));
     }
 
     return _config!;

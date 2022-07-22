@@ -63,15 +63,15 @@ class DataExportCubit extends Cubit<DataExportState> {
     final dataBytes =
         utf8.encode((await getFilesInDriveAsCSV(driveId))) as Uint8List;
     emit(DataExportSuccess(
-      file: XFile.fromData(
-        dataBytes,
-        // FIXME: context is not available here. Internationalization cannot be applied
-        // name: appLocalizationsOf(context).exportFromCSV(driveId, DateTime.now().toString()),
-        name: 'Export from $driveId ${DateTime.now().toString()}.csv',
-        mimeType: 'text/csv',
-        length: dataBytes.lengthInBytes,
-        lastModified: DateTime.now(),
-      ),
-    ));
+        file: XFile.fromData(
+          dataBytes,
+          // FIXME: context is not available here. Internationalization cannot be applied
+          // name: appLocalizationsOf(context).exportFromCSV(driveId, DateTime.now().toString()),
+          name: 'Export from $driveId ${DateTime.now().toString()}.csv',
+          mimeType: 'text/csv',
+          length: dataBytes.lengthInBytes,
+          lastModified: DateTime.now(),
+        ),
+        fileName: 'export.csv'));
   }
 }

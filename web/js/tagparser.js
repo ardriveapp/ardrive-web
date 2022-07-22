@@ -38,7 +38,6 @@ function deserializeTagsFromBuffer(buffer) {
       { name: 'value', type: 'string' },
     ],
   });
-
   const tagsSchema = avro.Type.forSchema({
     type: 'array',
     items: tagSchema,

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/cost_estimate.dart';
+import 'package:ardrive/blocs/upload/models/io_file.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -151,7 +152,7 @@ class UploadCubit extends Cubit<UploadState> {
     List<UploadFile> files,
   ) async {
     final folders = UploadPlanUtils.generateFoldersForFiles(
-      files as List<WebFile>,
+      files as List<IOFile>,
     );
     final foldersToSkip = [];
     for (var folder in folders.values) {
@@ -190,18 +191,13 @@ class UploadCubit extends Cubit<UploadState> {
           ? '${_targetFolder.path}/${folder.parentFolderPath}/${folder.name}'
           : '${_targetFolder.path}/${folder.name}';
     }
-    final filesToUpload = <WebFile>[];
+    final filesToUpload = <IOFile>[];
     files.forEach((file) {
       // Splits the file path, gets rid of the file name and rejoins the strings
       // to get parent folder path.
       // eg: Test/A/B/C/file.txt becomes Test/A/B/C
       final fileFolder = (file.path.split('/')..removeLast()).join('/');
-      filesToUpload.add(
-        WebFile(
-          file.file,
-          folders[fileFolder]?.id ?? _targetFolder.id,
-        ),
-      );
+      filesToUpload.add(file);
     });
     folders.removeWhere((key, value) => foldersToSkip.contains(value));
     return FolderPrepareResult(files: filesToUpload, foldersByPath: folders);

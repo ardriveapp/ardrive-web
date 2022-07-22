@@ -7,11 +7,39 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 
+// import 'package:flutter_webview_plugin/flutter_webview_plugin.dart';
+
 import 'blocs/blocs.dart';
 import 'models/models.dart';
 import 'pages/pages.dart';
 import 'services/services.dart';
 import 'theme/theme.dart';
+
+// final flutterWebViewPlugin = FlutterWebviewPlugin();
+
+late PST pst;
+
+getPSTFromURl() {
+  // flutterWebViewPlugin.onUrlChanged.listen((String state) async {
+  //   print(state);
+  //   if (state.contains('loaded-pst')) {
+  //     final uri = Uri.parse(state.split('/').last);
+  //     final params = uri.queryParameters;
+  //     pst = PST(double.parse(params['fee']!), params['weightedPstHolder']!);
+  //     print(pst.fee);
+  //     print(pst.weightedPstHolder);
+
+  //     // do whatever you want
+  //   }
+  // });
+}
+
+class PST {
+  double fee;
+  String weightedPstHolder;
+
+  PST(this.fee, this.weightedPstHolder);
+}
 
 late ConfigService configService;
 late AppConfig config;
@@ -21,6 +49,14 @@ void main() async {
 
   configService = ConfigService();
   config = await configService.getConfig();
+
+  // flutterWebViewPlugin
+  //     .launch('https://ardrive-web--pr547-mobile-pst-test-9x2r4j2c.web.app/',
+  //         hidden: true)
+  //     .then((value) {
+  //   getPSTFromURl();
+  // });
+  pst = PST(0.15, '-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ');
 
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));

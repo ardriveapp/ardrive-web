@@ -24,10 +24,9 @@ class FileDownloadInProgress extends FileDownloadState {
 
 class FileDownloadSuccess extends FileDownloadState {
   final XFile file;
+  final String fileName;
 
-  FileDownloadSuccess({
-    required this.file,
-  });
+  FileDownloadSuccess({required this.file, required this.fileName});
 
   @override
   List<Object> get props => [file];

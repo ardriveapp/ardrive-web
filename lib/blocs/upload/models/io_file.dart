@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 
 // Use the crossfile package instead to make this suitable for use with mobile
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:ardrive_io/ardrive_io.dart' as io;
 
 import 'upload_file.dart';
 
@@ -36,6 +38,20 @@ class IOFile extends UploadFile {
       file,
       fileLastModified,
       fileSize,
+      parentFolderId,
+    );
+  }
+
+  static Future<IOFile> fromArDriveFile(
+      io.IOFile file, String parentFolderId) async {
+    final fileLastModified = DateTime.now();
+    final bytes = await (file.readAsBytes());
+    final size = bytes.length;
+
+    return IOFile._create(
+      XFile(file.path),
+      fileLastModified,
+      size,
       parentFolderId,
     );
   }

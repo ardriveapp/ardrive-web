@@ -18,10 +18,9 @@ class DataExportInProgress extends DataExportState {
 
 class DataExportSuccess extends DataExportState {
   final XFile file;
+  final String fileName;
 
-  DataExportSuccess({
-    required this.file,
-  });
+  DataExportSuccess({required this.file, required this.fileName});
 
   @override
   List<Object> get props => [file];

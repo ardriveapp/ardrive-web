@@ -84,14 +84,14 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
       emit(
         FileDownloadSuccess(
-          file: XFile.fromData(
-            dataBytes,
-            name: file.name,
-            mimeType: lookupMimeType(file.name),
-            length: dataBytes.lengthInBytes,
-            lastModified: file.lastModifiedDate,
-          ),
-        ),
+            file: XFile.fromData(
+              dataBytes,
+              name: file.name,
+              mimeType: lookupMimeType(file.name),
+              length: dataBytes.lengthInBytes,
+              lastModified: file.lastModifiedDate,
+            ),
+            fileName: file.name),
       );
     } catch (err) {
       addError(err);

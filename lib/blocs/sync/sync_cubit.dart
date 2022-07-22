@@ -423,6 +423,9 @@ class SyncCubit extends Cubit<SyncState> {
               totalBlockHeightDifference!));
 
       if (firstBlockHeight == null) {
+        if (t.first.node.block == null) {
+          print('block null');
+        }
         firstBlockHeight = t.first.node.block!.height;
         totalBlockHeightDifference = currentBlockheight - firstBlockHeight;
         print('firstBlockHeight $firstBlockHeight\n'
@@ -1167,6 +1170,7 @@ class SyncCubit extends Cubit<SyncState> {
   @override
   Future<void> close() {
     _syncSub?.cancel();
+    _arconnectSyncSub?.cancel();
     return super.close();
   }
 }

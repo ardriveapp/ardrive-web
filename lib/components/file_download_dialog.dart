@@ -7,11 +7,10 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pedantic/pedantic.dart';
 
 import 'components.dart';
 
@@ -59,10 +58,18 @@ class FileDownloadDialog extends StatelessWidget {
       BlocConsumer<FileDownloadCubit, FileDownloadState>(
         listener: (context, state) async {
           if (state is FileDownloadSuccess) {
-            final savePath = await getSavePath();
-            if (savePath != null) {
-              unawaited(state.file.saveTo(savePath));
-            }
+            final ArDriveIO io = ArDriveIO();
+
+            await io.saveFile(await IOFileAdapter().fromData(
+                await state.file.readAsBytes(),
+                name: state.fileName,
+                contentType: state.file.mimeType ?? '',
+                fileExtension: state.file.mimeType ?? '',
+                lastModified: DateTime.now()));
+
+            // if (savePath != null) {
+            //   unawaited(state.file.saveTo(savePath));
+            // }
 
             Navigator.pop(context);
           }

@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/upload/models/io_file.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -103,12 +104,12 @@ class UploadPlanUtils {
 
   ///Returns a sorted list of folders (root folder first) from a list of files
   ///with paths
-  static Map<String, WebFolder> generateFoldersForFiles(List<WebFile> files) {
+  static Map<String, WebFolder> generateFoldersForFiles(List<IOFile> files) {
     final foldersByPath = <String, WebFolder>{};
 
     // Generate folders
     for (var file in files) {
-      final path = file.file.relativePath!;
+      final path = file.path;
       final folderPath = path.split('/');
       folderPath.removeLast();
       for (var i = 0; i < folderPath.length; i++) {

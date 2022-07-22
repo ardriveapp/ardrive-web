@@ -122,6 +122,7 @@ class ArweaveService {
         ),
       );
 
+
       yield driveEntityHistoryQuery.data!.transactions.edges;
 
       cursor = driveEntityHistoryQuery.data!.transactions.edges.isNotEmpty
