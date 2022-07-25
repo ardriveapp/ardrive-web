@@ -1,19 +1,19 @@
 
 # ArDriveIO
-Standart library to perform I/O operations at ArDrive Web
+Custom library to perform I/O operations at ArDrive Web
 ## Features
-The following methods performs the I/O operations supported in this package:
+The following methods perform the I/O operations supported in this package:
 
-### Pick a file(s) or an folder on O.S.
+### Pick a folder, a file or multiple files from the native storage
 - pickFile() 
 - pickFiles()
 - pickFolder()
 
-### Save a file on O.S.
+### Save a file to the native storage
 - saveFile()
 
 ## Getting started
-Before using this package you should follow the follwing instrunctions
+In order to use this package you must follow these instructions:
 
 ### Android
 For pickFile(s) or folders nothing is required, but is worth to read the [file_picker Setup](https://github.com/miguelpruivo/flutter_file_picker/wiki/Setup#--android).
@@ -34,14 +34,15 @@ TODO: Explain the setup on iOS once we have the iOS implementation
 ## Usage
 An example application is provided at `/example` folder.
 
-It's easy to pick a file. It will opens the O.S. file picker and returns the `IOFile`.
+It's easy to pick a file. It will opens the native file picker and returns an `IOFile`.
 ```dart
 final arDriveIO = ArDriveIO();
 
 final file = await arDriveIO.pickFile();
 ```
 
-It's possible to filter the files using the `allowedExtensions` parameter
+It's possible to filter the files by using the `allowedExtensions` parameter
+
 ```dart
 final arDriveIO = ArDriveIO();
 
@@ -78,7 +79,7 @@ final subfolders = await folder.listSubfolders();
 ## Additional information
 
 ### IOFile
-Base class for every file from / to O.S.
+Base class representing a local File
 
 ### IOFolder
-Base class for every folder from O.S.
+Base class represeting a local Directory
