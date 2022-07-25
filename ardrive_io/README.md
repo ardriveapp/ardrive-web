@@ -59,6 +59,7 @@ To get its content, call `listContent()`, it will recursiverly mounts the folder
 ```dart
 final arDriveIO = ArDriveIO();
 
+final folder = await arDriveIO.pickFolder();
 final files = await folder.listContent();
 ```
 
