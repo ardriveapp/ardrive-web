@@ -55,7 +55,7 @@ final arDriveIO = ArDriveIO();
 final folder = await arDriveIO.pickFolder();
 
 ```
-To get its content, call `listContent()`, it will recursiverly mounts the folder hierachy returning the current folder structure in a tree of `IOEntity`s.
+To get its content, call `listContent()`. It will recursively mount the folder hierarchy and return the folder structure as a tree of `IOEntity`s.
 ```dart
 final arDriveIO = ArDriveIO();
 
