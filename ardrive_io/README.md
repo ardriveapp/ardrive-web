@@ -48,7 +48,7 @@ final arDriveIO = ArDriveIO();
 final file = await arDriveIO.pickFile(allowedExtensions: ['json']);
 ```
 
-To pick a folder just need to call `pickFolders()` function 
+To pick a folder you just need to call the `pickFolder()` function 
 ```dart
 final arDriveIO = ArDriveIO();
 
