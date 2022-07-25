@@ -36,28 +36,41 @@ An example application is provided at `/example` folder.
 
 It's easy to pick a file. It will opens the O.S. file picker and returns the `IOFile`.
 ```dart
+final arDriveIO = ArDriveIO();
+
 final file = await arDriveIO.pickFile();
 ```
+
 It's possible to filter the files using the `allowedExtensions` parameter
 ```dart
+final arDriveIO = ArDriveIO();
+
 final file = await arDriveIO.pickFile(allowedExtensions: ['json']);
 ```
 
 To pick a folder just need to call `pickFolders()` function 
 ```dart
+final arDriveIO = ArDriveIO();
+
 final folder = await arDriveIO.pickFolder();
+
 ```
-To get its content, call `listContent()`, it will recursiverly mounts the folder hierachy returning the current folder structure in a tree of `IOEntity`.
+To get its content, call `listContent()`, it will recursiverly mounts the folder hierachy returning the current folder structure in a tree of `IOEntity`s.
 ```dart
+final arDriveIO = ArDriveIO();
+
 final files = await folder.listContent();
 ```
 
 It's possible to list all files or folders without handling the complexity of get it recursiverly with the methods
 `listFiles()` and `listSubfolders()`:
 ```dart
-/// [IOFile]
+final arDriveIO = ArDriveIO();
+
+final folder = await arDriveIO.pickFolder();
+/// A list of all files inside this folder
 final files = await folder.listFiles();
-/// [IOFolder]
+/// A list of all subfolders
 final subfolders = await folder.listSubfolders();
 ```
 
