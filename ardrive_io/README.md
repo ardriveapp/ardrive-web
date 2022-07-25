@@ -62,7 +62,7 @@ final arDriveIO = ArDriveIO();
 final files = await folder.listContent();
 ```
 
-It's possible to list all files or folders without handling the complexity of get it recursiverly with the methods
+It's possible to list all files and folders without handling the complexity of getting it recursively with the methods
 `listFiles()` and `listSubfolders()`:
 ```dart
 final arDriveIO = ArDriveIO();
