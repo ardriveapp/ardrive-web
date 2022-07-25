@@ -35,6 +35,7 @@ TODO: Explain the setup on iOS once we have the iOS implementation
 An example application is provided at `/example` folder.
 
 It's easy to pick a file. It will opens the native file picker and returns an `IOFile`.
+
 ```dart
 final arDriveIO = ArDriveIO();
 
@@ -50,6 +51,7 @@ final file = await arDriveIO.pickFile(allowedExtensions: ['json']);
 ```
 
 To pick a folder you just need to call the `pickFolder()` function 
+
 ```dart
 final arDriveIO = ArDriveIO();
 
@@ -57,6 +59,7 @@ final folder = await arDriveIO.pickFolder();
 
 ```
 To get its content, call `listContent()`. It will recursively mount the folder hierarchy and return the folder structure as a tree of `IOEntity`s.
+
 ```dart
 final arDriveIO = ArDriveIO();
 
@@ -67,6 +70,7 @@ final files = await folder.listContent();
 It's possible to list all files and folders without handling the complexity of getting it recursively with the methods
 `listFiles()` and `listSubfolders()`:
 ```dart
+
 final arDriveIO = ArDriveIO();
 
 final folder = await arDriveIO.pickFolder();
