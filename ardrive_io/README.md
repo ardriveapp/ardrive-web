@@ -18,11 +18,10 @@ In order to use this package you must follow these instructions:
 ### Android
 For pickFile(s) or folders nothing is required, but is worth to read the [file_picker Setup](https://github.com/miguelpruivo/flutter_file_picker/wiki/Setup#--android).
 
-Add those permissions to AndroidManifest to be able to use the `saveFile()` function on Android.
+Add those permissions to AndroidManifest
 
 ```xml
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 ```
 

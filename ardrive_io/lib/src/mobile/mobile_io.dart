@@ -94,25 +94,14 @@ class AndroidSelectableFolderFileSaver implements FileSaver {
   }
 
   Future<void> _verifyPermissions() async {
-    if (await Permission.manageExternalStorage.isGranted &&
-        await Permission.storage.isGranted) {
+    if (await Permission.storage.isGranted) {
       return;
     }
-    
-    final deniedPermissions = <Permission>[];
 
-    if (await Permission.manageExternalStorage.isDenied) {
-      deniedPermissions.add(Permission.manageExternalStorage);
-    }
-    if (await Permission.storage.isDenied) {
-      deniedPermissions.add(Permission.storage);
-    }
-
-    throw FileSystemPermissionDeniedException(deniedPermissions);
+    throw FileSystemPermissionDeniedException([Permission.storage]);
   }
 
   Future<void> _requestPermissions() async {
-    await Permission.manageExternalStorage.request();
     await Permission.storage.request();
   }
 }
@@ -120,7 +109,6 @@ class AndroidSelectableFolderFileSaver implements FileSaver {
 class IOSFileSaver implements FileSaver {
   @override
   Future<void> save(IOFile file) async {
-    /// TODO: implement save
     throw UnimplementedError();
   }
 }
