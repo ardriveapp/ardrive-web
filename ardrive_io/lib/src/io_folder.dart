@@ -28,10 +28,8 @@ class _FileSystemFolder extends IOFolder {
     required List<FileSystemEntity> folderContent,
   }) : _folderContent = folderContent;
 
-  Future<void> initFolder() async {
-    await _mountFolderStructure();
-  }
-
+  final List<FileSystemEntity> _folderContent;
+  
   @override
   final String name;
 
@@ -41,12 +39,24 @@ class _FileSystemFolder extends IOFolder {
   @override
   final String path;
 
+  Future<void> initFolder() async {
+    await _mountFolderStructure();
+  }
+
   @override
   Future<List<IOEntity>> listContent() async {
     return _mountFolderStructure();
   }
 
-  final List<FileSystemEntity> _folderContent;
+  @override
+  Future<List<IOFile>> listFiles() async {
+    return _getAllEntitiesFromType<IOFile>(this);
+  }
+
+  @override
+  Future<List<IOFolder>> listSubfolders() async {
+    return _getAllEntitiesFromType<IOFolder>(this);
+  }
 
   /// `_mountFolderChildren` mounts recursiverly the folder hierarchy. It gets only
   /// the current level entities loading only `IOFile` and `IOFolder`
@@ -73,16 +83,6 @@ class _FileSystemFolder extends IOFolder {
     final ioFile = await IOFileAdapter().fromFile(fsEntity as File);
 
     return ioFile;
-  }
-
-  @override
-  Future<List<IOFile>> listFiles() async {
-    return _getAllEntitiesFromType<IOFile>(this);
-  }
-
-  @override
-  Future<List<IOFolder>> listSubfolders() async {
-    return _getAllEntitiesFromType<IOFolder>(this);
   }
 
   /// recursively get all entities from this folder filtering by the `IOEntity` `T` type
