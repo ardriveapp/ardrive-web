@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:equatable/equatable.dart';
-import 'package:path/path.dart' as path;
 
 /// Base class for agnostic platform folders.
 ///
@@ -29,7 +28,7 @@ class _FileSystemFolder extends IOFolder {
   }) : _folderContent = folderContent;
 
   final List<FileSystemEntity> _folderContent;
-  
+
   @override
   final String name;
 
@@ -115,7 +114,7 @@ class IOFolderAdapter {
     final selectedDirectoryPath = directory.path;
 
     final folder = _FileSystemFolder._(
-        name: path.basename(selectedDirectoryPath),
+        name: getFolderNameFromPath(selectedDirectoryPath),
         lastModifiedDate: (await directory.stat()).modified,
         path: selectedDirectoryPath,
         folderContent: content);
