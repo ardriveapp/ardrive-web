@@ -67,8 +67,6 @@ MimeType getMimeTypeFromString(String mimeType) {
       return MimeType.ASICE;
     case 'application/vnd.etsi.asic-s+zip':
       return MimeType.ASICS;
-    case "application/octet-stream":
-      return MimeType.OTHER;
     case 'text/plain':
       return MimeType.TEXT;
     case 'text/csv':
