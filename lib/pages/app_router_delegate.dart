@@ -87,7 +87,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           final lastLoggedInUser =
               state is ProfileLoggedIn ? state.walletAddress : null;
           if (lastLoggedInUser != null) {
-            print('deleteSharedPrivateDrives $lastLoggedInUser');
             context
                 .read<DriveDao>()
                 .deleteSharedPrivateDrives(lastLoggedInUser);
