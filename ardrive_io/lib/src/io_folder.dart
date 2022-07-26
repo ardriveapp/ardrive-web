@@ -29,7 +29,7 @@ class _FileSystemFolder extends IOFolder {
   }) : _folderContent = folderContent;
 
   Future<void> initFolder() async {
-    await _mountFolderChildren();
+    await _mountFolderStructure();
   }
 
   @override
@@ -43,14 +43,14 @@ class _FileSystemFolder extends IOFolder {
 
   @override
   Future<List<IOEntity>> listContent() async {
-    return _mountFolderChildren();
+    return _mountFolderStructure();
   }
 
   final List<FileSystemEntity> _folderContent;
 
   /// `_mountFolderChildren` mounts recursiverly the folder hierarchy. It gets only
   /// the current level entities loading only `IOFile` and `IOFolder`
-  Future<List<IOEntity>> _mountFolderChildren() async {
+  Future<List<IOEntity>> _mountFolderStructure() async {
     List<IOEntity> _children = [];
 
     for (var fs in _folderContent) {
