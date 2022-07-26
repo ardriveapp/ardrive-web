@@ -286,6 +286,10 @@ class SyncCubit extends Cubit<SyncState> {
 
       syncFormatedPrint('Current block height number $currentBlockHeight');
 
+      drives.forEach((drive) {
+        syncFormatedPrint('Drive last block height: ${drive.lastBlockHeight!}');
+      });
+
       final driveSyncProcesses = drives.map((drive) => _syncDrive(
             drive.id,
             lastBlockHeight: calculateSyncLastBlockHeight(
@@ -582,6 +586,7 @@ class SyncCubit extends Cubit<SyncState> {
         200 ~/ (_syncProgress.drivesCount - _syncProgress.drivesSynced);
     var currentDriveEntitiesSynced = 0;
     var driveSyncProgress = 0.0;
+    syncFormatedPrint('_syncSecondPhase: $currentBlockHeight');
 
     syncFormatedPrint(
         'number of drives at get metadata phase : ${_syncProgress.numberOfDrivesAtGetMetadataPhase}');
@@ -645,6 +650,8 @@ class SyncCubit extends Cubit<SyncState> {
 
           // Handle the last page of newEntities, i.e; There's nothing more to sync
           if (newEntities.length < pageCount) {
+            syncFormatedPrint(
+                'Saving last block height at _paginateProcess. $currentBlockHeight');
             // Reset the sync cursor after every sync to pick up files from other instances of the app.
             // (Different tab, different window, mobile, desktop etc)
             await _driveDao.writeToDrive(DrivesCompanion(
