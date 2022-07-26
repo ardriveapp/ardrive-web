@@ -30,9 +30,8 @@ class MobileIO implements ArDriveIO {
     FilePickerResult result = await _pickFile(
         allowedExtensions: allowedExtensions, allowMultiple: true);
 
-    return Future.wait(result.files.map((e) async {
-      return fileAdapter.fromFilePicker(e);
-    }).toList());
+    return Future.wait(
+        result.files.map((file) => fileAdapter.fromFilePicker(file)).toList());
   }
 
   @override
