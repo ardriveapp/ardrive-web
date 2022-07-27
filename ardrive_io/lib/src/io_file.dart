@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -6,6 +7,7 @@ import 'package:ardrive_io/src/io_entity.dart';
 import 'package:ardrive_io/src/io_exception.dart';
 import 'package:ardrive_io/src/utils/mime_type_utils.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:path/path.dart' as path;
 
 /// Base class for agnostic platform Files.
@@ -15,7 +17,7 @@ abstract class IOFile implements IOEntity {
   IOFile({required this.contentType});
 
   final String contentType;
-  int get length;
+  FutureOr<int> get length;
   Future<Uint8List> readAsBytes();
   Future<String> readAsString();
 
@@ -67,6 +69,19 @@ class IOFileAdapter {
       file,
       name: path.basename(file.path),
       path: file.path,
+      contentType: contentType,
+      lastModifiedDate: lastModified,
+    );
+  }
+
+  Future<IOFile> fromWebXFile(XFile xfile) async {
+    final lastModified = await xfile.lastModified();
+    final contentType = lookupMimeTypeWithDefaultType(xfile.path);
+
+    return _WebXFile(
+      xfile,
+      name: path.basename(xfile.path),
+      path: xfile.path,
       contentType: contentType,
       lastModifiedDate: lastModified,
     );
@@ -172,4 +187,46 @@ class _DataFile implements IOFile {
   String toString() {
     return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}\nlength: $length';
   }
+}
+
+class _WebXFile implements IOFile {
+  _WebXFile(
+    XFile file, {
+    required this.name,
+    required this.lastModifiedDate,
+    required this.path,
+    required this.contentType,
+  }) : _file = file;
+
+  final XFile _file;
+
+  @override
+  String name;
+
+  @override
+  DateTime lastModifiedDate;
+
+  @override
+  String path;
+
+  @override
+  final String contentType;
+
+  @override
+  Future<Uint8List> readAsBytes() {
+    return _file.readAsBytes();
+  }
+
+  @override
+  Future<String> readAsString() {
+    return _file.readAsString();
+  }
+
+  @override
+  String toString() {
+    return 'file name: $name\nfile path: $path\nlast modified date: ${lastModifiedDate.toIso8601String()}\nlength: $length';
+  }
+
+  @override
+  Future<int> get length => _file.length();
 }
