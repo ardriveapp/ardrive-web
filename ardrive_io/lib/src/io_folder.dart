@@ -106,6 +106,40 @@ class _FileSystemFolder extends IOFolder {
   List<Object?> get props => [name, path];
 }
 
+class _WebFolder extends IOFolder {
+  _WebFolder(
+    List<IOFile> files,
+  ) : _files = files;
+  @override
+  final DateTime lastModifiedDate = DateTime.now();
+
+  final List<IOFile> _files;
+
+  @override
+  Future<List<IOEntity>> listContent() {
+    return Future.value(_files);
+  }
+
+  @override
+  Future<List<IOFile>> listFiles() {
+    return Future.value(_files);
+  }
+
+  @override
+  Future<List<IOFolder>> listSubfolders() {
+    throw UnimplementedError('IOFolder doesnt support list subfolders on Web');
+  }
+
+  @override
+  final String name = '';
+
+  @override
+  final String path = '';
+
+  @override
+  List<Object?> get props => [name, path];
+}
+
 /// Adapts the `IOFolder` from different I/O sources
 class IOFolderAdapter {
   /// Initialize loading the folder hierachy and return an `_FileSystemFolder` instance
@@ -122,5 +156,11 @@ class IOFolderAdapter {
     await folder.initFolder();
 
     return folder;
+  }
+
+  IOFolder fromIOFiles(List<IOFile> files) {
+    return _WebFolder(
+      files,
+    );
   }
 }

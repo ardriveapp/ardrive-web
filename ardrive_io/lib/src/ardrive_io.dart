@@ -15,7 +15,10 @@ abstract class ArDriveIO {
 
   factory ArDriveIO() {
     if (kIsWeb) {
-      return WebIO(fileAdapter: IOFileAdapter());
+      return WebIO(
+          fileAdapter: IOFileAdapter(),
+          folderAdapter: IOFolderAdapter(),
+          folderPicker: FolderPicker());
     }
 
     return MobileIO(

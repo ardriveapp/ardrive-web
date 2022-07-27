@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:ardrive_io/ardrive_io.dart';
 
 class WebIO implements ArDriveIO {
-  WebIO({required IOFileAdapter fileAdapter});
+  WebIO(
+      {required IOFileAdapter fileAdapter,
+      required FolderPicker folderPicker,
+      required IOFolderAdapter folderAdapter});
 
   @override
   Future<IOFile> pickFile({List<String>? allowedExtensions}) {
@@ -24,6 +29,12 @@ class WebIO implements ArDriveIO {
   @override
   Future<void> saveFile(IOFile file) {
     // TODO: implement saveFile
+    throw UnimplementedError();
+  }
+}
+
+class FolderPicker {
+  Future pickFolderFiles(Function(List<IOFile> files) getFilesCallback) async {
     throw UnimplementedError();
   }
 }
