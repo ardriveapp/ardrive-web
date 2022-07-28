@@ -17,14 +17,19 @@ class DataExportInProgress extends DataExportState {
 }
 
 class DataExportSuccess extends DataExportState {
-  final XFile file;
+  const DataExportSuccess(
+      {required this.fileName,
+      required this.bytes,
+      required this.mimeType,
+      required this.lastModified});
 
-  DataExportSuccess({
-    required this.file,
-  });
+  final String fileName;
+  final String mimeType;
+  final Uint8List bytes;
+  final DateTime lastModified;
 
   @override
-  List<Object> get props => [file];
+  List<Object> get props => [fileName];
 }
 
 class DataExportFailure extends DataExportState {}

@@ -4,7 +4,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:bloc/bloc.dart';
 import 'package:csv/csv.dart';
 import 'package:equatable/equatable.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:moor/moor.dart';
 
 part 'data_export_state.dart';
@@ -59,19 +58,14 @@ class DataExportCubit extends Cubit<DataExportState> {
 
   Future<void> exportData() async {
     emit(DataExportInProgress());
-
+    final fileName = 'Export from $driveId ${DateTime.now().toString()}.csv';
     final dataBytes =
         utf8.encode((await getFilesInDriveAsCSV(driveId))) as Uint8List;
     emit(DataExportSuccess(
-      file: XFile.fromData(
-        dataBytes,
-        // FIXME: context is not available here. Internationalization cannot be applied
-        // name: appLocalizationsOf(context).exportFromCSV(driveId, DateTime.now().toString()),
-        name: 'Export from $driveId ${DateTime.now().toString()}.csv',
-        mimeType: 'text/csv',
-        length: dataBytes.lengthInBytes,
-        lastModified: DateTime.now(),
-      ),
+      bytes: dataBytes,
+      fileName: fileName,
+      mimeType: 'text/csv',
+      lastModified: DateTime.now(),
     ));
   }
 }
