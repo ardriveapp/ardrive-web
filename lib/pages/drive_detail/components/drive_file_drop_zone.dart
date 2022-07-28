@@ -1,12 +1,12 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/upload/models/io_file.dart';
+import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
-import 'package:file_selector/file_selector.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
@@ -42,7 +42,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
           children: [
             if (isHovering) _buildDropZoneOnHover(),
             DropzoneView(
-              key: Key('dropZone'),
+              key: const Key('dropZone'),
               onCreated: (ctrl) => controller = ctrl,
               operation: DragOperation.all,
               onDrop: (htmlFile) => _onDrop(
@@ -71,23 +71,16 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
       isCurrentlyShown = true;
       _onLeave();
 
-      final fileName = await controller.getFilename(htmlFile);
-      final fileMIME = await controller.getFileMIME(htmlFile);
-      final fileLength = await controller.getFileSize(htmlFile);
-      final fileLastModified = await controller.getFileLastModified(htmlFile);
-
-      final htmlUrl = await controller.createFileUrl(htmlFile);
-      final fileToUpload = XFile(
-        htmlUrl,
-        name: fileName,
-        mimeType: fileMIME,
-        lastModified: fileLastModified,
-        length: fileLength,
-      );
-      final selectedFiles = [await IOFile.fromXFile(fileToUpload, folderId)];
+      final ioFile = await IOFile.fromData(
+          await controller.getFileData(htmlFile),
+          name: await controller.getFilename(htmlFile),
+          lastModifiedDate: await controller.getFileLastModified(htmlFile));
+      final selectedFiles = [
+        UploadFile(ioFile: ioFile, parentFolderId: folderId)
+      ];
       try {
         //This is the only way to know whether the dropped file is a folder
-        await fileToUpload.readAsBytes();
+        await ioFile.readAsBytes();
       } catch (e) {
         await showDialog(
           context: context,
@@ -137,8 +130,8 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
   void _onLeave() => setState(() => isHovering = false);
   Widget _buildDropZoneOnHover() => Center(
         child: Container(
-          margin: EdgeInsets.all(16),
-          padding: EdgeInsets.all(16),
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           width: MediaQuery.of(context).size.width / 2,
           height: MediaQuery.of(context).size.width / 4,
           decoration: BoxDecoration(
@@ -157,7 +150,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
                 size: 64,
                 color: Theme.of(context).primaryColor,
               ),
-              SizedBox(
+              const SizedBox(
                 width: 16,
               ),
               Text(
