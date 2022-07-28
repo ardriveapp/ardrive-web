@@ -80,7 +80,7 @@ class IOFileAdapter {
 
     return _WebXFile(
       xfile,
-      name: path.basename(xfile.path),
+      name: xfile.name,
       path: xfile.path,
       contentType: contentType,
       lastModifiedDate: lastModified,

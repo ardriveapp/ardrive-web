@@ -5,8 +5,9 @@ import 'dart:typed_data';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/io_exception.dart';
+import 'package:file_saver/file_saver.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
-import 'package:file_selector/file_selector.dart';
+import 'package:mime/mime.dart' as mime;
 
 /// Web implementation to use `ArDriveIO` API
 ///
@@ -68,12 +69,9 @@ class WebIO implements ArDriveIO {
 
   @override
   Future<void> saveFile(IOFile file) async {
-    final savePath = await getSavePath();
-    if (savePath == null) {
-      throw EntityPathException();
-    }
-
-    file_selector.XFile(file.path).saveTo(savePath);
+    await FileSaver.instance.saveFile(file.name, await file.readAsBytes(),
+        mime.extensionFromMime(file.contentType),
+        mimeType: getMimeTypeFromString(file.contentType));
   }
 }
 
