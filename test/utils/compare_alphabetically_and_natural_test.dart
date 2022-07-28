@@ -22,7 +22,7 @@ void main() {
     });
 
     test('should return -1 when 1a1 is before 9a9', () {
-      expect(compareAlphabeticallyAndNatural('10a', '99a'), -1);
+      expect(compareAlphabeticallyAndNatural('1a1', '9a9'), -1);
     });
 
     test('should return -1 when aaaa1 is before aaaa2', () {
