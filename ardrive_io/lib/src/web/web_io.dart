@@ -86,15 +86,15 @@ class FolderPicker {
     /// Set the stream to get the files
     getFiles(_folderController.stream);
 
-    final uploadInput = FileUploadInputElement();
+    final folderInput = FileUploadInputElement();
 
-    uploadInput.setAttribute('webkitdirectory', true);
+    folderInput.setAttribute('webkitdirectory', true);
 
-    uploadInput.click();
+    folderInput.click();
 
-    uploadInput.onChange.listen((e) async {
+    folderInput.onChange.listen((e) async {
       // read file content as dataURL
-      final files = uploadInput.files;
+      final files = folderInput.files;
 
       if (files == null) {
         throw ActionCanceledException();
@@ -111,9 +111,9 @@ class FolderPicker {
       /// Closes to finish the stream with all files
       _folderController.close();
 
-      uploadInput.removeAttribute('webkitdirectory');
-      uploadInput.removeEventListener('webkitdirectory', (event) => null);
-
+      folderInput.removeAttribute('webkitdirectory');
+      folderInput.removeEventListener('webkitdirectory', (event) => null);
+      folderInput.remove();
       return;
     });
   }
