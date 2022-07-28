@@ -18,7 +18,7 @@ import 'package:retry/retry.dart';
 import 'error/gateway_response_handler.dart';
 
 const byteCountPerChunk = 262144; // 256 KiB
-
+const defaultMaxRetries = 8;
 const kMaxNumberOfTransactionsPerPage = 100;
 
 class ArweaveService {
@@ -224,10 +224,14 @@ class ArweaveService {
 
   // Gets the unique drive entity transactions for a particular user.
   Future<List<TransactionCommonMixin>> getUniqueUserDriveEntityTxs(
-      String userAddress) async {
+    String userAddress, {
+    int maxRetries = defaultMaxRetries,
+  }) async {
     final userDriveEntitiesQuery = await _graphQLRetry.execute(
       UserDriveEntitiesQuery(
-          variables: UserDriveEntitiesArguments(owner: userAddress)),
+        variables: UserDriveEntitiesArguments(owner: userAddress),
+      ),
+      maxAttempts: maxRetries,
     );
 
     return userDriveEntitiesQuery.data!.transactions.edges
@@ -324,9 +328,14 @@ class ArweaveService {
   Future<DriveEntity?> getLatestDriveEntityWithId(
     String driveId, [
     SecretKey? driveKey,
+    int maxRetries = defaultMaxRetries,
   ]) async {
-    final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
-        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
+    final firstOwnerQuery = await _graphQLRetry.execute(
+      FirstDriveEntityWithIdOwnerQuery(
+        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId),
+      ),
+      maxAttempts: maxRetries,
+    );
 
     if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
       return null;
@@ -335,9 +344,13 @@ class ArweaveService {
     final driveOwner =
         firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
-    final latestDriveQuery = await _gql.execute(LatestDriveEntityWithIdQuery(
+    final latestDriveQuery = await _graphQLRetry.execute(
+      LatestDriveEntityWithIdQuery(
         variables: LatestDriveEntityWithIdArguments(
-            driveId: driveId, owner: driveOwner)));
+            driveId: driveId, owner: driveOwner),
+      ),
+      maxAttempts: maxRetries,
+    );
 
     final queryEdges = latestDriveQuery.data!.transactions.edges;
     if (queryEdges.isEmpty) {
@@ -367,8 +380,11 @@ class ArweaveService {
   ///
   /// Returns `null` if no valid drive is found.
   Future<Privacy?> getDrivePrivacyForId(String driveId) async {
-    final firstOwnerQuery = await _gql.execute(FirstDriveEntityWithIdOwnerQuery(
-        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId)));
+    final firstOwnerQuery = await _gql.execute(
+      FirstDriveEntityWithIdOwnerQuery(
+        variables: FirstDriveEntityWithIdOwnerArguments(driveId: driveId),
+      ),
+    );
 
     if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
       return null;
@@ -377,9 +393,10 @@ class ArweaveService {
     final driveOwner =
         firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
-    final latestDriveQuery = await _gql.execute(LatestDriveEntityWithIdQuery(
-        variables: LatestDriveEntityWithIdArguments(
-            driveId: driveId, owner: driveOwner)));
+    final latestDriveQuery = await _graphQLRetry.execute(
+        LatestDriveEntityWithIdQuery(
+            variables: LatestDriveEntityWithIdArguments(
+                driveId: driveId, owner: driveOwner)));
 
     final queryEdges = latestDriveQuery.data!.transactions.edges;
     if (queryEdges.isEmpty) {
@@ -477,8 +494,9 @@ class ArweaveService {
   /// Returns `null` if no valid file is found or the provided `fileKey` is incorrect.
   Future<FileEntity?> getLatestFileEntityWithId(String fileId,
       [SecretKey? fileKey]) async {
-    final firstOwnerQuery = await _gql.execute(FirstFileEntityWithIdOwnerQuery(
-        variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
+    final firstOwnerQuery = await _graphQLRetry.execute(
+        FirstFileEntityWithIdOwnerQuery(
+            variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
 
     if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
       return null;
@@ -487,9 +505,10 @@ class ArweaveService {
     final fileOwner =
         firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
 
-    final latestFileQuery = await _gql.execute(LatestFileEntityWithIdQuery(
-        variables:
-            LatestFileEntityWithIdArguments(fileId: fileId, owner: fileOwner)));
+    final latestFileQuery = await _graphQLRetry.execute(
+        LatestFileEntityWithIdQuery(
+            variables: LatestFileEntityWithIdArguments(
+                fileId: fileId, owner: fileOwner)));
 
     final queryEdges = latestFileQuery.data!.transactions.edges;
     if (queryEdges.isEmpty) {
