@@ -5,7 +5,6 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
-import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:moor/moor.dart';
@@ -13,6 +12,8 @@ import 'package:rxdart/rxdart.dart';
 import 'package:stash/stash_api.dart';
 import 'package:stash_memory/stash_memory.dart';
 import 'package:uuid/uuid.dart';
+
+import '../../../utils/compare_alphabetically_and_natural.dart';
 
 part 'create_drive_result.dart';
 part 'drive_dao.g.dart';
@@ -24,7 +25,7 @@ part 'folder_with_contents.dart';
   '../../queries/drive_queries.moor',
 })
 class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
-  final _uuid = Uuid();
+  final _uuid = const Uuid();
 
   late Vault<SecretKey> _driveKeyVault;
 
@@ -319,10 +320,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       /// it requires triggers, regex spliiting names and creating index fields
       /// and ordering by that index plus interfacing that with moor
       if (orderBy == DriveOrder.name) {
-        subfolders.sort((a, b) =>
-            compareNatural(a.name.toLowerCase(), b.name.toLowerCase()));
-        files.sort((a, b) =>
-            compareNatural(a.name.toLowerCase(), b.name.toLowerCase()));
+        subfolders
+            .sort((a, b) => compareAlphabeticallyAndNatural(a.name, b.name));
+        files.sort((a, b) => compareAlphabeticallyAndNatural(a.name, b.name));
         if (orderingMode == OrderingMode.desc) {
           subfolders = subfolders.reversed.toList();
           files = files.reversed.toList();
