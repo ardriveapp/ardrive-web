@@ -34,17 +34,17 @@ class UploadPlanUtils {
     final driveKey =
         private ? await driveDao.getDriveKey(targetDrive.id, cipherKey) : null;
     for (var file in files) {
-      final fileName = file.name;
+      final fileName = file.ioFile.name;
 
       // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
       final filePath = '${targetFolder.path}/${file.getIdentifier()}';
 
-      final fileSize = file.size;
+      final fileSize = await file.ioFile.length;
       final fileEntity = FileEntity(
         driveId: targetDrive.id,
         name: fileName,
         size: fileSize,
-        lastModifiedDate: file.lastModifiedDate,
+        lastModifiedDate: file.ioFile.lastModifiedDate,
         parentFolderId: file.parentFolderId,
         dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
       );
@@ -103,12 +103,13 @@ class UploadPlanUtils {
 
   ///Returns a sorted list of folders (root folder first) from a list of files
   ///with paths
-  static Map<String, WebFolder> generateFoldersForFiles(List<WebFile> files) {
+  static Map<String, WebFolder> generateFoldersForFiles(
+      List<UploadFile> files) {
     final foldersByPath = <String, WebFolder>{};
 
     // Generate folders
     for (var file in files) {
-      final path = file.file.relativePath!;
+      final path = file.ioFile.path;
       final folderPath = path.split('/');
       folderPath.removeLast();
       for (var i = 0; i < folderPath.length; i++) {
