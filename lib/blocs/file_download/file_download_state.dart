@@ -23,14 +23,19 @@ class FileDownloadInProgress extends FileDownloadState {
 }
 
 class FileDownloadSuccess extends FileDownloadState {
-  final XFile file;
+  const FileDownloadSuccess(
+      {required this.fileName,
+      required this.bytes,
+      required this.mimeType,
+      required this.lastModified});
 
-  FileDownloadSuccess({
-    required this.file,
-  });
+  final String fileName;
+  final String? mimeType;
+  final Uint8List bytes;
+  final DateTime lastModified;
 
   @override
-  List<Object> get props => [file];
+  List<Object> get props => [fileName];
 }
 
 class FileDownloadFailure extends FileDownloadState {}

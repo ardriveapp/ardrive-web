@@ -38,15 +38,13 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
             await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey!);
       }
 
+      /// TODO(@thiagocarvalhodev): how handle null and empty data here?
       emit(
         FileDownloadSuccess(
-          file: XFile.fromData(
-            dataBytes,
-            name: file.name,
-            mimeType: lookupMimeType(file.name!),
-            length: dataBytes.lengthInBytes,
-            lastModified: file.lastModifiedDate,
-          ),
+          bytes: dataBytes,
+          fileName: file.name ?? '',
+          mimeType: lookupMimeType(file.name!),
+          lastModified: file.lastModifiedDate ?? DateTime.now(),
         ),
       );
     } catch (err) {
