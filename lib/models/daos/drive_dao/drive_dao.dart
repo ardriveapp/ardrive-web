@@ -319,8 +319,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       /// it requires triggers, regex spliiting names and creating index fields
       /// and ordering by that index plus interfacing that with moor
       if (orderBy == DriveOrder.name) {
-        subfolders.sort((a, b) => compareNatural(a.name, b.name));
-        files.sort((a, b) => compareNatural(a.name, b.name));
+        subfolders.sort((a, b) =>
+            compareNatural(a.name.toLowerCase(), b.name.toLowerCase()));
+        files.sort((a, b) =>
+            compareNatural(a.name.toLowerCase(), b.name.toLowerCase()));
         if (orderingMode == OrderingMode.desc) {
           subfolders = subfolders.reversed.toList();
           files = files.reversed.toList();
