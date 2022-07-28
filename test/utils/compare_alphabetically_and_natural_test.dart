@@ -26,7 +26,7 @@ void main() {
     });
 
     test('should return -1 when aaaa1 is before aaaa2', () {
-      expect(compareAlphabeticallyAndNatural('10a', '99a'), -1);
+      expect(compareAlphabeticallyAndNatural('aaaa1', 'aaaa2'), -1);
     });
     test('should return 0 when both strings are equal', () {
       expect(compareAlphabeticallyAndNatural('A', 'A'), 0);
