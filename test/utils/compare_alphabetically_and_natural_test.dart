@@ -33,7 +33,7 @@ void main() {
     });
 
     test(
-        'should return 0 when both strings are the same latter regarless if its upper case',
+        'should return 0 when both strings are the same letter regarless if its upper case',
         () {
       expect(compareAlphabeticallyAndNatural('A', 'a'), 0);
     });
