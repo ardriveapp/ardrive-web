@@ -22,7 +22,6 @@ class WebIO implements ArDriveIO {
 
   final IOFileAdapter _fileAdapter;
   final IOFolderAdapter _folderAdapter;
-
   final FolderPicker _folderPicker;
 
   @override
@@ -141,14 +140,15 @@ class WebFile implements IOFile {
 
   @override
   Future<Uint8List> readAsBytes() async {
-    if (_bytes == null) {
+    final bytes = _bytes;
+    if (bytes == null) {
       final reader = FileReader();
       reader.readAsArrayBuffer(_file);
       await reader.onLoad.first;
       return reader.result as Uint8List;
     }
 
-    return _bytes!;
+    return bytes;
   }
 
   @override
@@ -157,13 +157,7 @@ class WebFile implements IOFile {
   }
 
   @override
-  FutureOr<int> get length => _length();
-
-  Future<int> _length() async {
-    final bytes = await readAsBytes();
-
-    return bytes.length;
-  }
+  FutureOr<int> get length async => (await readAsBytes()).length;
 
   @override
   String toString() {
