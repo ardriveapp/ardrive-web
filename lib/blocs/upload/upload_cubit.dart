@@ -7,6 +7,7 @@ import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:meta/meta.dart';
@@ -214,10 +215,7 @@ class UploadCubit extends Cubit<UploadState> {
     }
     final filesToUpload = <UploadFile>[];
     for (var file in files) {
-      // Splits the file path, gets rid of the file name and rejoins the strings
-      // to get parent folder path.
-      // eg: Test/A/B/C/file.txt becomes Test/A/B/C
-      final fileFolder = (file.ioFile.path.split('/')..removeLast()).join('/');
+      final fileFolder = getDirname(file.ioFile.path);
       filesToUpload.add(
         UploadFile(
           ioFile: file.ioFile,
