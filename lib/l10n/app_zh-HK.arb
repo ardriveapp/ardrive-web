@@ -1,158 +1,158 @@
 {
-  "@@locale": "zh",
-  "welcomeTo_body": "欢迎来到你的私密、去中心化、即付即用、抗审查的永久网盘",
+  "@@locale": "zh_HK",
+  "welcomeTo_body": "歡迎來到你的安全私人空間: 一個去中心化, 只按實質用量收費, 絕無網絡審查的永久硬盤",
   "@welcomeTo_body": {
     "description": "Welcoming message just after the ArDrive logo"
   },
-  "welcomeTo_main": "欢迎",
+  "welcomeTo_main": "歡迎來到",
   "@welcomeTo_main": {
     "description": "Highly emphasized text giving welcome"
   },
-  "welcomeTo_description": "你的私密、去中心化、即付即用、抗审查的永久网盘",
+  "welcomeTo_description": "你的安全私人空間: 一個去中心化, 只按實質用量收費, 絕無網絡審查的永久硬盤",
   "@welcomeTo_description": {
     "description": "Brief description of ArDrive as welcoming"
   },
-  "selectWalletEmphasized": "导入钱包文件",
+  "selectWalletEmphasized": "選擇錢包",
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
-  "useArconnectEmphasized": "使用ARCONNECT登入",
+  "useArconnectEmphasized": "使用 ARCONNECT",
   "@useArconnectEmphasized": {
     "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
   },
-  "getAWallet": "没有AR钱包? 快速创建!",
+  "getAWallet": "未有錢包? 從這裡獲取 !",
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
-  "welcomeToThePermawebEmphasized": "欢迎来到PERMAWEB",
+  "welcomeToThePermawebEmphasized": "歡迎來到 PERMAWEB ( 永久網絡空間 )",
   "@welcomeToThePermawebEmphasized": {
     "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
   },
-  "ardriveIsntJustAnotherCloudSyncApp": "ArDrive不止是一个普通云盘, 而是一个永久网盘.",
+  "ardriveIsntJustAnotherCloudSyncApp": "ArDrive 並非一般的雲端同步應用程式。它是使用永久硬盤的起步點。",
   "@ardriveIsntJustAnotherCloudSyncApp": {
     "description": "Description about the permanence and uniqueness of ArDrive"
   },
-  "anyFilesWillOutliveYou": "任何你上传的文件都会永久存储!",
+  "anyFilesWillOutliveYou": "所有上載到這裏的檔案, 都會比你於這地球上存在得更耐 !",
   "@anyFilesWillOutliveYou": {
     "description": "Files on the Weave will exist there forever"
   },
-  "weDoAFewThingsDifferently": "这也意味着我们有一些不同的事.",
+  "weDoAFewThingsDifferently": "這也意味著, 我們會有點不同的安排",
   "@weDoAFewThingsDifferently": {
     "description": "What ArDrive does differently"
   },
-  "payPerFileEmphasized": "按文件数量付款",
+  "payPerFileEmphasized": "按檔案收費",
   "@payPerFileEmphasized": {
     "description": "Payment philosophy. Emphasized with upper case"
   },
-  "noSubscriptions": "无需任何订阅!",
+  "noSubscriptions": "毋須付款訂閱",
   "@noSubscriptions": {
     "description": "Payment philosophy"
   },
-  "monthlyCharges": "你无需为了未使用的网盘空间而每月付款. 一次性付几美分, 就可以将文件永久存储在ArDrive上.",
+  "monthlyCharges": "不再為當月沒有使用的空間繳付月費, 轉為按上載檔案量計算付費, 每次只須繳付小額費用。",
   "@monthlyCharges": {
     "description": "Payment philosophy"
   },
-  "secondsFromForeverEmphasized": "等待后, 获取真正永久的存储",
+  "secondsFromForeverEmphasized": "幾秒之間, 就能恒永留存",
   "@secondsFromForeverEmphasized": {
     "description": "Shows how close you are from permanence. Emphasized with upper case"
   },
-  "decentralizedPermanent": "去中心化的永久数据存储需要一些耐心来等待.",
+  "decentralizedPermanent": "去中心化及永久數據儲存, 並非瞬間發生。",
   "@decentralizedPermanent": {
     "description": "Permanence requires patience"
   },
-  "greenCheckMark": "当文件旁的绿色图标亮起, 就代表它被上传到永久网络了.",
+  "greenCheckMark": "當綠色的標記顯示在你的檔案旁邊, 這表示檔案已被儲存到永久網絡空間。",
   "@greenCheckMark": {
     "description": "Describes the indicator of the status of uploaded files"
   },
-  "totalPrivacyControlEmphasized": "完全隐私控制",
+  "totalPrivacyControlEmphasized": "完全掌控私隱",
   "@totalPrivacyControlEmphasized": {
     "description": "Title for talking about privacy. Emphasized with upper case"
   },
-  "yourChoice": "你的选择: 让文件公开, 或者通过最安全的加密来让文件隐私.",
+  "yourChoice": "由你選擇 : 將檔案公開, 或以絕佳的加密技術設為私人檔案。",
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
-  "noOneWillSee": "没有人能看到你选择私密的文件.",
+  "noOneWillSee": "從此, 你不想其他人看見的, 都不會被看見。",
   "@noOneWillSee": {
     "description": "Indicates that private content won't reach to the wrong hands"
   },
-  "neverDeletedEmphasized": "永不会被删除",
+  "neverDeletedEmphasized": "永遠不會被删除",
   "@neverDeletedEmphasized": {
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
   },
-  "noDeleteButton": "要注意: 对你和任何人来说都不存在删除按钮!",
+  "noDeleteButton": "記著: 這裡没有删除按鍵 ( 無論是你本人或是我們, 都没有 )",
   "@noDeleteButton": {
     "description": "Uploaded items cannot be deleted"
   },
-  "onceUploadedCantBeRemoved": "上传后, 你的数据就无法被下架.",
+  "onceUploadedCantBeRemoved": "一經上載, 數據將不能被移除",
   "@onceUploadedCantBeRemoved": {
     "description": "Uploaded items cannot be deleted"
   },
-  "thinkTwiceBeforeUploading": "上传你的黑历史之前要三思...",
+  "thinkTwiceBeforeUploading": "在上載你的少年情詩之前, 請再三考慮清楚",
   "@thinkTwiceBeforeUploading": {
     "description": "Uploaded items cannot be deleted"
   },
-  "pleaseRemainOnThisTab": "加载中... 请保持在标签页.",
+  "pleaseRemainOnThisTab": "上載中, 請保持停留在這格介面",
   "@pleaseRemainOnThisTab": {
     "description": "Circular progress indicator"
   },
-  "loginFailed": "登录失败",
+  "loginFailed": "登入失敗",
   "@loginFailed": {
     "description": "Text for when the user tried to login with wrong credentials"
   },
-  "sorryLoginFailed": "抱歉, 登录失败. 请重试.",
+  "sorryLoginFailed": "對不起, 登入失敗。請再試。",
   "@sorryLoginFailed": {
     "description": "Text for when the user tried to login with wrong credentials"
   },
-  "logIn": "登录",
+  "logIn": "登入",
   "@logIn": {
     "description": "The action of logging in. Imperative form"
   },
-  "welcomeBackEmphasized": "欢迎回来",
+  "welcomeBackEmphasized": "歡迎你返嚟",
   "@welcomeBackEmphasized": {
     "description": "Welcoming for an existing user. Emphasized with upper case"
   },
-  "letsGetStartedEmphasized": "开始创建",
+  "letsGetStartedEmphasized": "開始吧",
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
   },
-  "pleaseProvideSamePassword": "请输入你之前所使用的密码.",
+  "pleaseProvideSamePassword": "請提供你一直源用的相同密碼。",
   "@pleaseProvideSamePassword": {
     "description": "Asks for the wallet password"
   },
-  "passwordCanNeverBeChanged": "你的密码无法被更改或还原. 请妥善保管!",
+  "passwordCanNeverBeChanged": "你的密碼將不能被更改或修復, 請好好保管",
   "@passwordCanNeverBeChanged": {
     "description": "Explains that the password cannot be changed as it is the one of the wallet"
   },
-  "password": "密码",
+  "password": "密碼",
   "@password": {
     "description": "Label for the 'password' input"
   },
-  "confirmPassword": "重复输入密码",
+  "confirmPassword": "確定密碼",
   "@confirmPassword": {
     "description": "Label for repeating the password again"
   },
-  "username": "用户名",
+  "username": "用戶名稱",
   "@username": {
     "description": "Label for the username"
   },
-  "passwordMismatch": "重复输入的密码有误.",
+  "passwordMismatch": "確定密碼不符",
   "@passwordMismatch": {
     "description": "Error message for when the confirmation password doesn't match the actual pass"
   },
-  "aggreeToTerms_body": "我同意ArDrive的服务条款与隐私政策.",
+  "aggreeToTerms_body": "我同意 ArDrive 的使用及私隱條例",
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aggreeToTerms_main": "我同意",
+  "aggreeToTerms_main": "我同意 ",
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aggreeToTerms_link": "ArDrive的服务条款与隐私政策",
+  "aggreeToTerms_link": "ArDrive 的使用及私隱條例",
   "@aggreeToTerms_link": {
     "description": "Segment of text representing a link to the legal documents"
   },
-  "addProfileEmphasized": "创建账户",
+  "addProfileEmphasized": "加設個人簡況",
   "@addProfileEmphasized": {
     "description": "Add a wallet. Emphasized with upper case"
   },
@@ -164,11 +164,11 @@
   "@logOutEmphasized": {
     "description": "The action of logging out. Emphasized with upper case"
   },
-  "changeWallet": "切换钱包",
+  "changeWallet": "轉換錢包",
   "@changeWallet": {
     "description": "To use a different wallet"
   },
-  "welcomeBackUserEmphasized": "欢迎回来, {username}",
+  "welcomeBackUserEmphasized": "歡迎你返嚟, {username}",
   "@welcomeBackUserEmphasized": {
     "description": "Welcoming to the user. Emphasized with upper case",
     "placeholders": {
@@ -178,71 +178,71 @@
       }
     }
   },
-  "unlockEmphasized": "解锁",
+  "unlockEmphasized": "解鎖",
   "@unlockEmphasized": {
     "description": "Unlock the wallet with its password. Emphasized with upper case"
   },
-  "forgetWallet": "忘记钱包并切换账户",
+  "forgetWallet": "忘記錢包及更改個人簡況",
   "@forgetWallet": {
     "description": "Use a different wallet by forgetting the current one"
   },
-  "newString": "创建",
+  "newString": "新",
   "@newString": {
     "description": "New entity (folder, file, drive, manifest, attached drive)"
   },
-  "newStringEmphasized": "创建",
+  "newStringEmphasized": "新",
   "@newStringEmphasized": {
     "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
   },
-  "noDrives": "你没有个人创建的或导入的网盘.\n点击 \"new\" 来创建一个!",
+  "noDrives": "你未有個人或附加的檔案盤。點擊 '' 新 '' 按鍵以添加 !",
   "@noDrives": {
     "description": "Text for when the wallet has no on-chain drives to display"
   },
-  "rowsPerPage": "每页行数",
+  "rowsPerPage": "每頁行數",
   "@rowsPerPage": {
     "description": "How many rows per page to use"
   },
-  "goToFirst": "回到第一页",
+  "goToFirst": "至首頁",
   "@goToFirst": {
     "description": "Action of going to the first page"
   },
-  "previous": "前一页",
+  "previous": "前一頁",
   "@previous": {
     "description": "Action of going to the previous page"
   },
-  "next": "下一页",
+  "next": "後一頁",
   "@next": {
     "description": "Action of going to the next page"
   },
-  "nextEmphasized": "下一步",
+  "nextEmphasized": "後一頁",
   "@nextEmphasized": {
     "description": "Next step"
   },
-  "goToLast": "最后一页",
+  "goToLast": "至尾頁",
   "@goToLast": {
     "description": "Action of going to the latest page"
   },
-  "exportDriveContents": "导出网盘内容",
+  "exportDriveContents": "輸出檔案盤內容",
   "@exportDriveContents": {
     "description": "Export the data of a drive into a CSV file"
   },
-  "download": "下载",
+  "download": "下載",
   "@download": {
     "description": "Action of downloading a file"
   },
-  "preview": "预览",
+  "preview": "預覽",
   "@preview": {
     "description": "Action of previewing a file"
   },
-  "move": "移动",
+  "move": "移動",
   "@move": {
     "description": "Action of moving certain file or folder"
   },
-  "viewOnly": "只读",
+  "viewOnly": "只供閱覽",
   "@viewOnly": {
     "description": "The user has no permission to edit, only to view"
   },
-  "privacy": "隐私",
+  "privacy": "私隠",
   "@privacy": {
     "description": "The privacy attribute of entities (e.g.: private drive, public folder)"
   },
@@ -250,19 +250,19 @@
   "@private": {
     "description": "A private entity"
   },
-  "public": "公开",
+  "public": "公開",
   "@public": {
     "description": "A public entity"
   },
-  "viewInfo": "查看信息",
+  "viewInfo": "閲覽資料",
   "@viewInfo": {
     "description": "View the activity and details of the entity"
   },
-  "driveRoot": "网盘根文件",
+  "driveRoot": "根檔案盤",
   "@driveRoot": {
     "description": "The folder entity that is at the top of the folder hierarchy"
   },
-  "lastModifiedDate": "上次更新时间为 {date}",
+  "lastModifiedDate": "最後修訂 {date}",
   "@lastModifiedDate": {
     "description": "Last modified date of the file in the local disk",
     "placeholders": {
@@ -271,23 +271,23 @@
       }
     }
   },
-  "pending": "处理中",
+  "pending": "待完成",
   "@pending": {
     "description": "Status tooltip for transactions which are waiting to be minted"
   },
-  "confirmed": "已确认",
+  "confirmed": "確定",
   "@confirmed": {
     "description": "Status tooltip for transactions that are confirmed by the network"
   },
-  "failed": "失败",
+  "failed": "失敗",
   "@failed": {
     "description": "Status tooltip for failed transactions"
   },
-  "name": "名称",
+  "name": "名字",
   "@name": {
     "description": "Name of certain entity"
   },
-  "fileSize": "文件大小",
+  "fileSize": "檔案大小",
   "@fileSize": {
     "description": "The size of a file"
   },
@@ -295,131 +295,131 @@
   "@size": {
     "description": "The size of a file, folder or drive"
   },
-  "lastUpdated": "上次更新",
+  "lastUpdated": "最近更新",
   "@lastUpdated": {
     "description": "The timestamp of the transaction"
   },
-  "addSomeFiles": "此处为空. 点击 \"new\" 来添加文件.",
+  "addSomeFiles": "這裡没有什麼可看。點擊 '' 新 '' 以添加新檔案。",
   "@addSomeFiles": {
     "description": "Empty folder"
   },
-  "noFiles": "此处为空.",
+  "noFiles": "這裡没有什麼可看。",
   "@noFiles": {
     "description": "Empty folder"
   },
-  "error": "错误",
+  "error": "錯誤",
   "@error": {
     "description": "Indicates that something went wrong"
   },
-  "errorDragAndDropFolder": "暂时不支持文件夹的拖拽上传",
+  "errorDragAndDropFolder": "我們暫時不支援 '' 拖拉文件夾 ''",
   "@errorDragAndDropFolder": {
     "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
   },
-  "ok": "OK",
+  "ok": "可以",
   "@ok": {
     "description": "OK button"
   },
-  "okEmphasized": "OK",
+  "okEmphasized": "可以",
   "@okEmphasized": {
     "description": "OK button. Emphasized in upper case"
   },
-  "uploadDragAndDrop": "上传文件",
+  "uploadDragAndDrop": "上載檔案",
   "@uploadDragAndDrop": {
     "description": "The action of uploading a file"
   },
-  "itemPreviewEmphasized": "预览",
+  "itemPreviewEmphasized": "預覽",
   "@itemPreviewEmphasized": {
     "description": "Item preview"
   },
-  "itemDetailsEmphasized": "细节",
+  "itemDetailsEmphasized": "詳情",
   "@itemDetailsEmphasized": {
     "description": "Item details such as dates, transaction IDs and entity IDs. Emphasized with upper case"
   },
-  "itemActivityEmphasized": "活动",
+  "itemActivityEmphasized": "活動",
   "@itemActivityEmphasized": {
     "description": "The journal of the entity (created, renamed, moved, revision uploaded). Emphasized with upper case"
   },
-  "itemContains": "拥有",
+  "itemContains": "包含",
   "@itemContains": {
     "description": "Used like so: 'Contains 15 folders, 10 files'"
   },
-  "driveID": "网盘ID",
+  "driveID": "檔案盤識別碼",
   "@driveID": {
     "description": "The Drive-ID tag"
   },
-  "copyDriveID": "复制网盘ID",
+  "copyDriveID": "複製檔案盤識別碼",
   "@copyDriveID": {
     "description": "Tooltip of the copy icon for the Drive ID"
   },
-  "folderID": "文件夹ID",
+  "folderID": "資料夾識別碼",
   "@folderID": {
     "description": "The Entity-ID tag of folders"
   },
-  "copyFolderID": "复制文件夹ID",
+  "copyFolderID": "複製資料夾識別碼",
   "@copyFolderID": {
     "description": "Tooltip of the copy icon for the Folder ID"
   },
-  "fileID": "文件ID",
+  "fileID": "檔案識別碼",
   "@fileID": {
     "description": "The Entity-ID tag of files"
   },
-  "copyFileID": "复制文件ID",
+  "copyFileID": "複製檔案識別碼",
   "@copyFileID": {
     "description": "Tooltip of the copy icon for the File ID"
   },
-  "lastModified": "上次修改",
+  "lastModified": "最後修訂 ",
   "@lastModified": {
     "description": "Last modified date of the file in the local disk"
   },
-  "dateCreated": "创建日期",
+  "dateCreated": "建立日期",
   "@dateCreated": {
     "description": "Creation time of the entity revision"
   },
-  "driveTxID": "网盘交易ID",
+  "driveTxID": "檔案盤的交易識別碼",
   "@driveTxID": {
     "description": "The transaction ID of the drive"
   },
-  "copyDriveTxID": "复制网盘交易ID",
+  "copyDriveTxID": "複製檔案盤的交易識別碼",
   "@copyDriveTxID": {
     "description": "Copy transaction ID of Drive tooltip"
   },
-  "rootFolderTxID": "根文件夹交易ID",
+  "rootFolderTxID": "根資料夾的交易識別碼",
   "@rootFolderTxID": {
     "description": "The transaction ID of the Root Folder entity"
   },
-  "copyRootFolderTxID": "复制根文件夹交易ID",
+  "copyRootFolderTxID": "複製根資料夾的交易識別碼",
   "@copyRootFolderTxID": {
     "description": "Copy transaction ID of Root Folder tooltip"
   },
-  "bundleTxID": "打包交易ID",
+  "bundleTxID": "捆綁批次 的交易識別碼",
   "@bundleTxID": {
     "description": "The bundle transaction ID of the bundled item"
   },
-  "copyBundleTxID": "复制打包交易ID",
+  "copyBundleTxID": "複製捆綁批次 的交易識別碼",
   "@copyBundleTxID": {
     "description": "Copy transaction ID of the Bundle transaction"
   },
-  "metadataTxID": "元数据交易ID",
+  "metadataTxID": "元資料 的交易識別碼",
   "@metadataTxID": {
     "description": "The transaction ID of the entity Metadata transaction"
   },
-  "copyMetadataTxID": "复制元数据交易ID",
+  "copyMetadataTxID": "複製元資料 的交易識別碼",
   "@copyMetadataTxID": {
     "description": "Copy the transaction ID of the Metadata transaction"
   },
-  "dataTxID": "数据交易ID",
+  "dataTxID": "資料的交易識別碼",
   "@dataTxID": {
     "description": "The transaction ID of the entity Data transaction"
   },
-  "copyDataTxID": "复制数据交易ID",
+  "copyDataTxID": "複製資料的交易識別碼",
   "@copyDataTxID": {
     "description": "Copy the transaction ID of the Data transaction"
   },
-  "itemIsBeingProcesed": "文件正在被处理...",
+  "itemIsBeingProcesed": "現正處理此項目 ...",
   "@itemIsBeingProcesed": {
     "description": "The entity is being processed, no details to display yet"
   },
-  "driveWasCreatedWithName": "这个网盘创建时名称为{driveName}.",
+  "driveWasCreatedWithName": "此檔案盤與 {driveName} 的用名重覆。",
   "@driveWasCreatedWithName": {
     "description": "Drive activity (journal) entry: created",
     "placeholders": {
@@ -429,7 +429,7 @@
       }
     }
   },
-  "driveWasRenamed": "这个网盘被重命名为{driveName}.",
+  "driveWasRenamed": "此檔案盤已被重新命名為 {driveName} 。",
   "@driveWasRenamed": {
     "description": "Drive activity (journal) entry: renamed",
     "placeholders": {
@@ -439,11 +439,11 @@
       }
     }
   },
-  "driveWasModified": "这个网盘被修改.",
+  "driveWasModified": "此檔案盤已被修改。",
   "@driveWasModified": {
     "description": "Drive activity (journal) entry: modified"
   },
-  "folderWasCreatedWithName": "这个文件夹创建时名称为{folderName}.",
+  "folderWasCreatedWithName": "此資料夾與 {folderName} 的用名重覆。",
   "@folderWasCreatedWithName": {
     "description": "Folder activity (journal) entry: created",
     "placeholders": {
@@ -453,7 +453,7 @@
       }
     }
   },
-  "folderWasRenamed": "这个文件夹被重命名为{folderName}.",
+  "folderWasRenamed": "此資料夾已被重新命名為 {folderName} 。",
   "@folderWasRenamed": {
     "description": "Folder activity (journal): renamed",
     "placeholders": {
@@ -463,15 +463,15 @@
       }
     }
   },
-  "folderWasModified": "这个文件夹被修改过.",
+  "folderWasModified": "此資料夾已被修改。",
   "@folderWasModified": {
     "description": "Folder activity (journal): modified"
   },
-  "folderWasMoved": "这个文件夹被移动过.",
+  "folderWasMoved": "此資料夾已被移動。",
   "@folderWasMoved": {
     "description": "Folder activity (journal): moved"
   },
-  "fileWasCreatedWithName": "这个文件创建时名称为{fileName}.",
+  "fileWasCreatedWithName": "此檔案與 {fileName} 的用名重覆。",
   "@fileWasCreatedWithName": {
     "description": "File activity (journal): created",
     "placeholders": {
@@ -481,7 +481,7 @@
       }
     }
   },
-  "fileWasRenamed": "这个文件被重命名为{fileName}.",
+  "fileWasRenamed": "此檔案已被重新命名為 {fileName} 。",
   "@fileWasRenamed": {
     "description": "File activity (journal): renamed",
     "placeholders": {
@@ -491,31 +491,31 @@
       }
     }
   },
-  "fileWasModified": "这个文件被修改过.",
+  "fileWasModified": "此檔案已被修改。",
   "@fileWasModified": {
     "description": "File activity (journal): modified"
   },
-  "fileWasMoved": "这个文件被移动过.",
+  "fileWasMoved": "此檔案已被移動。",
   "@fileWasMoved": {
     "description": "File activity (journal): moved"
   },
-  "fileHadANewRevision": "本文件的新版被上传.",
+  "fileHadANewRevision": "此檔案的新版本, 已被上載。",
   "@fileHadANewRevision": {
     "description": "File activity (journal): new revision"
   },
-  "personalDrivesEmphasized": "个人网盘",
+  "personalDrivesEmphasized": "個人檔案盤",
   "@personalDrives": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
-  "sharedDrivesEmphasized": "分享网盘",
+  "sharedDrivesEmphasized": "共用檔案盤",
   "@sharedDrives": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
-  "help": "帮助中心",
+  "help": "求助",
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
-  "appVersion": "版本 {version}.",
+  "appVersion": "版本 {version} ",
   "@appVersion": {
     "description": "App version number",
     "placeholders": {
@@ -525,31 +525,31 @@
       }
     }
   },
-  "newFolder": "新文件夹",
+  "newFolder": "新資料夾",
   "@newFolder": {
     "description": "Create a new folder entity"
   },
-  "uploadFiles": "上传文件",
+  "uploadFiles": "上載檔案",
   "@uploadFiles": {
     "description": "Upload files to the Weave"
   },
-  "uploadFolder": "上传文件夹",
+  "uploadFolder": "上載資料夾",
   "@uploadFolder": {
     "description": "Upload a folder and every subfolder alongside files inside them"
   },
-  "newDrive": "创建网盘",
+  "newDrive": "新檔案盤",
   "@newDrive": {
     "description": "Create a new drive entity"
   },
-  "attachDrive": "导入网盘",
+  "attachDrive": "附加檔案盤",
   "@attachDrive": {
     "description": "Attach a shared drive"
   },
-  "attachDriveEmphasized": "导入网盘",
+  "attachDriveEmphasized": "附加檔案盤",
   "@attachDriveEmphasized": {
     "description": "Attach a shared drive. Emphasized with upper case"
   },
-  "howDoIGetAR": "如何获取AR代币?",
+  "howDoIGetAR": "如何取得 AR ?",
   "@howDoIGetAR": {
     "description": "Link to a help page explaining how to get Arweave tokens"
   },
@@ -557,11 +557,11 @@
   "@sync": {
     "description": "Sync button tooltip"
   },
-  "driveIssuesDetected": "我们检测到了这个网盘的一些问题. 请进入网盘来解决它们",
+  "driveIssuesDetected": "我們偵測到此檔案盤有問題。瀏覽檔案盤作出解決。",
   "@driveIssuesDetected": {
     "description": "Orphan folders detected, the user must navigate through the contents to reach them"
   },
-  "downloadingCSV": "下载CSV中...",
+  "downloadingCSV": "正在下載 CSV ...",
   "@downloadingCSV": {
     "description": "The CSV file is being downloaded"
   },
@@ -569,15 +569,15 @@
   "@cancel": {
     "description": "Cancel button"
   },
-  "exportingData": "导出数据中, 请耐心等待.",
+  "exportingData": "正在輸出你的資料, 請稍候",
   "@exportingData": {
     "description": "The drive data is being processed"
   },
-  "fileDownloadFailed": "文件下载失败",
+  "fileDownloadFailed": "檔案下載失敗",
   "@fileDownloadFailed": {
     "description": "Could not export the CSV data"
   },
-  "attachingDriveEmphasized": "导入网盘中...",
+  "attachingDriveEmphasized": "正在附加檔案盤 ...",
   "@attachingDriveEmphasized": {
     "description": "Drive attach form. Emphasized with upper case"
   },
@@ -585,63 +585,71 @@
   "@cancelEmphasized": {
     "description": "Cancel button. Emphasized with upper case"
   },
-  "attachEmphasized": "导入",
+  "attachEmphasized": "附加",
   "@attachEmphasized": {
     "description": "The action of attaching a drive. Emphasized with upper case"
   },
-  "creatingDriveEmphasized": "创建网盘中...",
+  "creatingDriveEmphasized": "正在建立檔案盤",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"
   },
-  "createDriveEmphasized": "创建网盘",
+  "createDriveEmphasized": "建立檔案盤",
   "@createDriveEmphasized": {
     "description": "Action of creating a new drive. Emphasized with upper case"
   },
-  "insufficientARToCreateDrive": "你的AR余额不足, 无法创建网盘.",
+  "insufficientARToCreateDrive": "你沒有足夠的 AR 去建立檔案盤",
   "@insufficientARToCreateDrive": {
     "description": "Not enough balance"
   },
-  "create": "创建",
+  "create": "建立",
   "@create": {
     "description": "Create an drive"
   },
-  "createEmphasized": "创建",
+  "createEmphasized": "建立",
   "@createEmphasized": {
     "description": "Create a drive. Emphasized with upper case"
   },
-  "renamingDriveEmphasized": "重命名网盘中...",
+  "renamingDriveEmphasized": "正在重新命名檔案盤",
   "@renamingDriveEmphasized": {
     "description": "The drive is being renamed. Emphasized with upper case"
   },
-  "renameDrive": "重命名网盘",
+  "renameDrive": "重新命名檔案盤",
   "@renameDrive": {
     "description": "The action of renaming a drive"
   },
-  "renameDriveEmphasized": "重命名网盘",
+  "renameDriveEmphasized": "重新命名檔案盤",
   "@renameDriveEmphasized": {
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
-  "driveName": "网盘名称",
+  "driveName": "檔案盤用名",
   "@driveName": {
     "description": "The name of certain drive"
   },
-  "shareDrive": "分享网盘",
+  "driveKey": "Drive Key",
+  "@driveKey": {
+    "description": "Drive Key form field label"
+  },
+  "shareDrive": "共用檔案盤",
   "@shareDrive": {
     "description": "The action of sharing a drive link"
   },
-  "shareDriveWithOthers": "与他人分享网盘",
+  "fileKey": "File Key",
+  "@fileKey": {
+    "description": "File Key form field label"
+  },
+  "shareDriveWithOthers": "與他人共用檔案盤",
   "@shareDriveWithOthers": {
     "description": "The action of sharing a drive link"
   },
-  "copyLink": "复制链接",
+  "copyLink": "複製連結",
   "@copyLink": {
     "description": "Copy the link for sharing an entity"
   },
-  "anyoneCanAccessThisDrivePublic": "任何人都可以使用此链接来访问公开网盘.",
+  "anyoneCanAccessThisDrivePublic": "任何人都可從以上連結, 取得此共用檔案盤的資料。",
   "@anyoneCanAccessThisDrivePublic": {
     "description": "Warning for the user that is about to share a drive"
   },
-  "anyoneCanAccessThisDrivePrivate": "任何人都可以使用此链接来访问私人网盘.",
+  "anyoneCanAccessThisDrivePrivate": "任何人都可從以上連結, 取得此私人檔案盤的資料。",
   "@anyoneCanAccessThisDrivePrivate": {
     "description": "Warning for the user that is about to share a drive"
   },
@@ -649,55 +657,55 @@
   "@doneEmphaseized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
-  "downloadingFile": "下载文件中...",
+  "downloadingFile": "正在下載檔案",
   "@downloadingFile": {
     "description": "File is being downloaded"
   },
-  "fileFailedToDownload": "下载文件失败",
+  "fileFailedToDownload": "檔案下載失敗",
   "@fileFailedToDownload": {
     "description": "Error message for failed downloads"
   },
-  "tryAgainDownloadingFile": "这可能发生于文件刚上传后. 请重试.",
+  "tryAgainDownloadingFile": "新近上載的檔案, 可能會遇到這個情況。請於稍後再試。",
   "@tryAgainDownloadingFile": {
     "description": "The data is still being replicated between nodes of the network and it's yet not available"
   },
-  "shareFile": "分享文件",
+  "shareFile": "共用檔案",
   "@shareFile": {
     "description": "The action of sharing a file link"
   },
-  "shareFileWithOthers": "与他人分享文件",
+  "shareFileWithOthers": "與其他人分享檔案",
   "@shareFileWithOthers": {
     "description": "To share a file link"
   },
-  "anyoneCanAccessThisFile": "任何人都可以使用此链接来访问此文件.",
+  "anyoneCanAccessThisFile": "任何人都可從以上連結, 取得此檔案。",
   "@anyoneCanAccessThisFile": {
     "description": "Warning for the user that is about to share a file"
   },
-  "creatingFolderEmphasized": "创建文件夹中...",
+  "creatingFolderEmphasized": "正在建立資料夾",
   "@creatingFolderEmphasized": {
     "description": "Folder is being created. Emphasized with upper case"
   },
-  "createFolderEmphasized": "创建文件夹",
+  "createFolderEmphasized": "建立資料夾",
   "@createFolderEmphasized": {
     "description": "The action of creating a folder. Emphasized with upper case"
   },
-  "folderName": "文件夹名称",
+  "folderName": "資料夾用名",
   "@folderName": {
     "description": "The name of certain folder"
   },
-  "movingFolderEmphasized": "移动文件夹中...",
+  "movingFolderEmphasized": "正在移動資料夾",
   "@movingFolderEmphasized": {
     "description": "The action of moving a folder. Emphasized with upper case"
   },
-  "movingFileEmphasized": "移动文件中...",
+  "movingFileEmphasized": "正在移動檔案",
   "@movingFileEmphasized": {
     "description": "The action of moving a file. Emphasized with upper case"
   },
-  "nameConflict": "名称冲突",
+  "nameConflict": "用名相沖",
   "@nameConflict": {
     "description": "A conflict of names between two entities"
   },
-  "entityAlreadyExists": "在目的地已经存在名为{entityName}的文件! 请重命名文件或者文件夹再重试.",
+  "entityAlreadyExists": "在資料夾或檔案移到的目標位置中, 此單位名字 {entityName} 已被使用。請重新命名。",
   "@entityAlreadyExists": {
     "description": "Message warning the user that the given entity name already exists. Then requests that the user to choose a new name for the entity.",
     "placeholders": {
@@ -707,19 +715,19 @@
       }
     }
   },
-  "moveHereEmphasized": "移动到此处",
+  "moveHereEmphasized": "於這裡移動",
   "@moveHereEmphasized": {
     "description": "Move the entity to the current folder. Emphasized with upper case"
   },
-  "moveFolderEmphasized": "移动文件夹",
+  "moveFolderEmphasized": "移動資料夾",
   "@moveFolderEmphasized": {
     "description": "The action of moving a folder. Emphasized with upper case"
   },
-  "moveFileEmphasized": "移动文件",
+  "moveFileEmphasized": "移動檔案",
   "@moveFileEmphasized": {
     "description": "The action of moving a file. Emphasized with upper case"
   },
-  "backToFolder": "回到{entityName}文件夹",
+  "backToFolder": "回到 {entityName} 資料夾",
   "@backToFolder": {
     "description": "Go back to folder",
     "placeholders": {
@@ -729,51 +737,51 @@
       }
     }
   },
-  "renamingFolderEmphasized": "重命名文件夹中...",
+  "renamingFolderEmphasized": "正在重新命名資料夾",
   "@renamingFolderEmphasized": {
     "description": "Folder is being renamed. Emphasized with upper case"
   },
-  "renamingFileEmphasized": "重命名文件...",
+  "renamingFileEmphasized": "正在重新命名檔案",
   "@renamingFileEmphasized": {
     "description": "File is being renamed. Emphasized with upper case"
   },
-  "renameFolderEmphasized": "重命名文件夹",
+  "renameFolderEmphasized": "重新命名資料夾",
   "@renameFolderEmphasized": {
     "description": "The action of renaming a folder. Emphasized with upper case"
   },
-  "renameFileEmphasized": "重命名文件",
+  "renameFileEmphasized": "重新命名檔案",
   "@renameFileEmphasized": {
     "description": "The action of renaming a file. Emphasized with upper case"
   },
-  "rename": "重命名",
+  "rename": "重新命名",
   "@rename": {
     "description": "The action of renaming; imperative form"
   },
-  "renameEmphasized": "重命名",
+  "renameEmphasized": "重新命名",
   "@renameEmphasized": {
     "description": "The action of renaming; imperative form. Emphasized with upper case"
   },
-  "fileName": "文件名称",
+  "fileName": "檔案用名",
   "@fileName": {
     "description": "The name of certain file"
   },
-  "recreateFolderEmphasized": "重新创建文件夹",
+  "recreateFolderEmphasized": "重新建立資料夾",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"
   },
-  "recreatingFolderEmphasized": "重新创建文件夹中...",
+  "recreatingFolderEmphasized": "正在重新建立資料夾 ...",
   "@recreatingFolderEmphasized": {
     "description": "Folder is being recreated. Emphasized with upper case"
   },
-  "fix": "修复",
+  "fix": "修正",
   "@fix": {
     "description": "Fix an orphan item"
   },
-  "fixEmphasized": "修复",
+  "fixEmphasized": "修正",
   "@fixEmphasized": {
     "description": "Fix an orphan item. Emphasized with upper case"
   },
-  "targetFolderEmphasized": "目标文件夹",
+  "targetFolderEmphasized": "目標資料夾",
   "@targetFolderEmphasized": {
     "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
   },
@@ -789,19 +797,19 @@
   "@logout": {
     "description": "The logout process"
   },
-  "notLoggedIn": "你没有登录",
+  "notLoggedIn": "你没有登入",
   "@notLoggedIn": {
     "description": "User has not logged in"
   },
-  "logInToExperienceFeatures": "登录后体验所有ArDrive功能!",
+  "logInToExperienceFeatures": "登入以體驗 ArDrive 的所有獨特功能 ! ",
   "@logInToExperienceFeatures": {
     "description": "User must login to use the features of ArDrive"
   },
-  "login": "登录",
+  "login": "登入",
   "@login": {
     "description": "The login process"
   },
-  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{找到一个重复文件} =other{找到多个重复文件}}",
+  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{發現重覆的檔案} =other{發現重覆的檔案}}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -812,7 +820,7 @@
       }
     }
   },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{本路径已有相同名称的文件. 你是否想要继续并更新文件版本?} =other{本路径已有{numberOfFiles}个相同名称的文件. 你是否想要继续并更新这些文件的版本??}}",
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{同命檔案已於相同位置存在。你想繼續上載這檔案, 作為新的版本嗎?} =other{{numberOfFiles} 同命檔案已於相同位置存在。你想繼續上載這檔案, 作為新的版本嗎?}}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
@@ -823,7 +831,7 @@
       }
     }
   },
-  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{找到了一个重复文件夹} =other{找到多个重复文件夹}}",
+  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{發現重覆的資料夾} =other{發現重覆的資料夾}}",
   "@duplicateFolders": {
     "description": "Folder name conflict dialog title",
     "placeholders": {
@@ -834,7 +842,7 @@
       }
     }
   },
-  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{本路径已有相同名称的文件夹. 请修改名称并重新上传.}  =other{本路径已有{numberOfFolders}个相同名称的文件夹. 请修改名称并重新上传.}}",
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{同命資料夾已於相同位置存在。請為其重新命名並再次上載} =other{{numberOfFolders} 請為其重新命名並再次上載。}}",
   "@foldersWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with folder name conflicts",
     "placeholders": {
@@ -845,23 +853,23 @@
       }
     }
   },
-  "conflictingFiles": "冲突文件:",
+  "conflictingFiles": "檔案相沖。",
   "@conflictingFiles": {
     "description": "Files conflict with already existing items"
   },
-  "upload": "上传",
+  "upload": "上載",
   "@upload": {
     "description": "The action of uploading certain item"
   },
-  "uploadEmphasized": "上传",
+  "uploadEmphasized": "上載",
   "@uploadEmphasized": {
     "description": "The action of uploading certain item"
   },
-  "continueEmphasized": "继续",
+  "continueEmphasized": "繼續",
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
-  "filesTooLarge": "{numberOfFiles,plural, =1{文件大小过大} =other{{numberOfFiles}个文件大小过大}}",
+  "filesTooLarge": "{numberOfFiles,plural, =1{1個檔案過大} =other{{numberOfFiles} 檔案過大}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
     "placeholders": {
@@ -872,35 +880,35 @@
       }
     }
   },
-  "filesTooLargeExplanationPrivate": "ArDrive网页客户端中, 私人网盘目前只支持小于100MB的文件上传",
+  "filesTooLargeExplanationPrivate": "現階段, ArDrive 於網頁只支援上載少於100 MiB 的私人檔案盤",
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "ArDrive网页客户端中, 公开网盘目前只支持小于1.5GB的文件上传",
+  "filesTooLargeExplanationPublic": "現階段, ArDrive 於網頁只支援上載少於1.25 GiB 的共公檔案盤",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
-  "tooLargeForUpload": "文件过大无法上传:",
+  "tooLargeForUpload": "內容過大, 不能上載。",
   "@tooLargeForUpload": {
     "description": "Files too large for upload"
   },
-  "preparingUpload": "准备上传中...",
+  "preparingUpload": "正在準備上載 ...",
   "@preparingUpload": {
     "description": "The upload is being processed"
   },
-  "arConnectRemainOnThisTab": "注意: 你的Web3钱包正在处理交易. 请在当前页面中等待.",
+  "arConnectRemainOnThisTab": "注意: 你正在以 Web3 錢包繳付交易。請停留在這介面, 直至交易完成。",
   "@arConnectRemainOnThisTab": {
     "description": "Warning for the user to do not leave the tab"
   },
-  "thisMayTakeAWhile": "这可能会需要一些时间...",
+  "thisMayTakeAWhile": "這可能要一點時間 ...",
   "@thisMayTakeAWhile": {
     "description": "Uploading may take a while"
   },
-  "closeEmphasized": "关闭",
+  "closeEmphasized": "結束",
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
-  "uploadNFiles": "{numberOfFiles,plural, =1{上传1个文件} =other{上传{numberOfFiles}个文件}}",
+  "uploadNFiles": "{numberOfFiles,plural, =1{上載 1 個檔案} =other{上載 {numberOfFiles} 檔案}}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",
     "placeholders": {
@@ -911,7 +919,7 @@
       }
     }
   },
-  "uploadingNFiles": "{numberOfFiles,plural, =1{上传1个文件中...} =other{上传{numberOfFiles}个文件中...}}",
+  "uploadingNFiles": "{numberOfFiles,plural, =1{正在上載 1 個檔案} =other{正在上載 {numberOfFiles} 檔案...}}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
@@ -922,7 +930,7 @@
       }
     }
   },
-  "cost": "花费: {arPrice} AR",
+  "cost": "價錢: {arPrice} AR",
   "@cost": {
     "description": "The total cost estimation of the upload quoted in AR",
     "placeholders": {
@@ -932,7 +940,7 @@
       }
     }
   },
-  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{此文件将被上传并公开.} =other{这些文件将被上传并公开.}}",
+  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{此檔案會公開地上載.} =other{這些檔案會公開地上載。}}",
   "@filesWillBeUploadedPublicly": {
     "description": "Warning for files that will be public after uploaded",
     "placeholders": {
@@ -943,87 +951,99 @@
       }
     }
   },
-  "insufficientARForUpload": "AR余额不足, 无法上传.",
+  "insufficientARForUpload": "AR不足, 未能上載",
   "@insufficientARForUpload": {
     "description": "The wallet does not have enough balance"
   },
-  "bundlingAndSigningUpload": "正在打包与为交易签名",
+  "bundlingAndSigningUpload": "捆綁批次及簽批上載",
   "@bundlingAndSigningUpload": {
     "description": "The app is bundling together and signing the transactions"
   },
-  "signingUpload": "签署上传交易中",
+  "signingUpload": "簽批上載",
   "@signingUpload": {
     "description": "The app is signing the transactions"
   },
-  "walletSwitch": "切换钱包",
+  "walletSwitch": "轉換錢包",
   "@walletSwitch": {
     "description": "The wallet has changed. The user must log in again"
   },
-  "walletChangeDetected": "检测到钱包切换. 请重新登录. ",
+  "walletChangeDetected": "偵測到錢包有變。請登出後再度登入。",
   "@walletChangeDetected": {
     "description": "The wallet has changed. The user must log in again"
   },
-  "weReSorryEmphasized": "对不起!",
+  "weReSorryEmphasized": "很對不起 !",
   "@weReSorryEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
   },
-  "ardriveIsOptimizedForLargeScreens": "ArDrive目前仅支持更大屏幕.",
+  "ardriveIsOptimizedForLargeScreens": "現階段, ArDrive 只支援較大的螢幕。",
   "@ardriveIsOptimizedForLargeScreens": {
     "description": "Screen not supported page"
   },
-  "tryOnAnotherDevice": "请使用其他设备或者通过订阅我们的newletter来跟踪移动设备适配的消息.",
+  "tryOnAnotherDevice": "請以其他設備再嘗試。亦可訂閱我們的推廣通訊, 率先體驗快將推出的流動應用程式。",
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
   },
-  "subscribeEmphasized": "订阅",
+  "subscribeEmphasized": "訂閱",
   "@subscribeEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
   },
-  "specifiedFileDoesNotExist": "此文件不存在.",
+  "specifiedFileDoesNotExist": "所指定的檔案並不存在。",
   "@specifiedFileDoesNotExist": {
     "description": "The shared file the user is trying to access does not exist"
   },
-  "failedToSyncDrive": "无法同步网盘内容.",
+  "sharedFileInvalidFileKey": "The file key is invalid.",
+  "@sharedFileInvalidFileKey": {
+    "description": "The user entered an incorrect file key"
+  },
+  "sharedFileIsEncrypted": "This file is encrypted.",
+  "@sharedFileIsEncrypted": {
+    "description": "Description that says the file is encrypted on shared file page"
+  },
+  "learnMoreAboutArDrive": "Learn more about ArDrive.",
+  "@learnMoreAboutArDrive": {
+    "description": "Learn more about ArDrive link on shared file page"
+  },
+  "failedToSyncDrive": "未能同步檔案盤的內容。",
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
   },
-  "tryAgainEmphasized": "重试",
+  "tryAgainEmphasized": "再嘗試",
   "@tryAgainEmphasized": {
     "description": "Try it again. Emphasized with upper case"
   },
-  "warningEmphasized": "注意",
+  "warningEmphasized": "警告",
   "@warningEmphasized": {
     "description": "Congestion warning. Emphasized with upper case"
   },
-  "congestionWarning": "Arweave网络目前阻塞, 你的上传很可能会失败.",
+  "congestionWarning": "現在 Arweave 正處於嚴重擠塞。當下能成功上載的機會較低。",
   "@congestionWarning": {
     "description": "Congestion warning"
   },
-  "tryLaterCongestionEmphasized": "重试",
+  "tryLaterCongestionEmphasized": "稍後再試",
   "@tryLaterCongestionEmphasized": {
     "description": "Try to upload later. Emphasized with upper case"
   },
-  "proceedCongestionEmphasized": "仍然继续",
+  "proceedCongestionEmphasized": "繼續進行",
   "@proceedCongestionEmphasized": {
     "description": "Proceed being aware of the network congestion. Emphasized with upper case"
   },
-  "profile": "账户",
+  "profile": "簡況",
   "@profile": {
     "description": "The user profile: user name, wallet address and wallet balance"
   },
-  "syncingPleaseRemainOnThisTab": "同步中... 请留在本页面.",
+  "syncingPleaseRemainOnThisTab": "正在同步處理, 請停留在現處頁介面。",
   "@syncingPleaseRemainOnThisTab": {
     "description": "Syncing drives"
   },
-  "syncingPleaseWait": "同步中... 请等待.",
+  "syncingPleaseWait": "正在同步處理, 請稍候。",
   "@syncingPleaseWait": {
     "description": "Syncing drives"
   },
-  "syncingOnlyOneDrive": "同步你的网盘中...",
+  "syncingOnlyOneDrive": "正在同步處理你的檔案盤 ...",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
   },
-  "driveSyncedOfDrivesCount": "{drivesCount} 个网盘中的 {drivesSynced} 个已被同步",
+  "driveSyncedOfDrivesCount": "{drivesCount} 中的 {drivesSynced} 檔案盤已被同步處理",
   "@driveSyncedOfDrivesCount": {
     "description": "Show the number of drives synced and the number of user's drives",
     "placeholders": {
@@ -1039,7 +1059,7 @@
       }
     }
   },
-  "syncProgressPercentage": "{percentage}% 完成度",
+  "syncProgressPercentage": "{percentage}% 完成",
   "@syncProgressPercentage": {
     "description": "The sync progress percentage",
     "placeholders": {
@@ -1049,7 +1069,7 @@
       }
     }
   },
-  "exportFromCSV": "从{driveId}中导出{timestamp}.csv",
+  "exportFromCSV": "由{driveId} 中輸出 {timestamp}.csv",
   "@exportFromCSV": {
     "description": "Filename of the CSV data export",
     "placeholders": {
@@ -1062,266 +1082,5 @@
         "example": "1646828373148"
       }
     }
-  },
-  "folderCount": "{folderCount,plural, =0{无文件夹} =1{1个文件夹} other{{folderCount}个文件夹}",
-  "@folderCount": {
-    "description": "Plurals for the folder count. First character in lower case",
-    "placeholders": {
-      "folderCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "2"
-      }
-    }
-  },
-  "fileCount": "{fileCount,plural, =0{无文件} =1{1个文件} other{{fileCount}个文件}}",
-  "@fileCount": {
-    "description": "Plurals for the file count. First character in lower case",
-    "placeholders": {
-      "fileCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "2"
-      }
-    }
-  },
-  "folderAndFileCountComposite": "{folderCountString}, {fileCountString}",
-  "@folderAndFileCountComposite": {
-    "description": "Composite of the folder and file counts. Comma separated for English",
-    "placeholders": {
-      "folderCountString": {
-        "type": "String",
-        "example": "10 folders"
-      },
-      "fileCountString": {
-        "type": "String",
-        "example": "10 files"
-      }
-    }
-  },
-  "uploadingManifestEmphasized": "上传MANIFEST中...",
-  "@uploadingManifestEmphasized": {
-    "description": "The manifest is being uploaded"
-  },
-  "preparingManifestEmphasized": "准备MANIFEST中...",
-  "@preparingManifestEmphasized": {
-    "description": "The manifest is being prepared for the upload"
-  },
-  "manifestName": "Manifest名称",
-  "@manifestName": {
-    "description": "The name of the manifest"
-  },
-  "failedToCreateManifestEmphasized": "创建MANIFEST失败",
-  "@failedToCreateManifestEmphasized": {
-    "description": "The manifest could not be created"
-  },
-  "walletChangedDuringManifestCreation": "创建MANIFEST时钱包被异常切换...",
-  "@walletChangedDuringManifestCreation": {
-    "description": "The wallet has been changed while the creation of the manifest was in process"
-  },
-  "manifestTransactionUnexpectedlyFailed": "Manifest交易在上传到Arweave网络过程中失败...",
-  "@manifestTransactionUnexpectedlyFailed": {
-    "description": "The manifest transaction did not succeed being uploaded"
-  },
-  "insufficientBalanceForManifest": "所使用的钱包内的{walletBalance}AR不足以支付manifest交易所需要的{totalCost}AR...",
-  "@insufficientBalanceForManifest": {
-    "description": "The amount of AR the wallet has is not enough to upload the manifest transaction",
-    "placeholders": {
-      "walletBalance": {
-        "type": "String",
-        "example": "0"
-      },
-      "totalCost": {
-        "type": "String",
-        "example": "1.2"
-      }
-    }
-  },
-  "insufficientFundsForCreateADrive": "你没有足够的余额来创建网盘. 请到账户的充值页面进行充值.",
-  "@insufficientFundsForCreateADrive": {
-    "description": "Show that needs funds to create a Drive"
-  },
-  "insufficientFundsForCreateAFolder": "你没有足够的余额来创建文件夹. 请到账户的充值页面进行充值.",
-  "@insufficientFundsForCreateAFolder": {
-    "description": "Show that needs funds to create a Folder"
-  },
-  "insufficientFundsForCreateAManifest": "你没有足够的余额来创建Manifest. 请到账户的充值页面进行充值.",
-  "@insufficientFundsForCreateAManifest": {
-    "description": "Show that needs funds to create a Manifest"
-  },
-  "insufficientFundsForUploadFiles": "你没有足够的余额来上传文件. 请到账户的充值页面进行充值.",
-  "@insufficientFundsForUploadFiles": {
-    "description": "Show that needs funds to upload files"
-  },
-  "insufficientFundsForUploadFolders": "你没有足够的余额来上传文件夹. 请到账户的充值页面进行充值.",
-  "@insufficientFundsForUploadFolders": {
-    "description": "Show that needs funds to upload folders"
-  },
-  "conflictingNameFound": "名称有冲突",
-  "@conflictingNameFound": {
-    "description": "There is a non-manifest entity with the same name"
-  },
-  "conflictingNameFoundChooseNewName": "名称已经在此处存在. 请重新命名.",
-  "@conflictingNameFoundChooseNewName": {
-    "description": "The given name is conflicting with some entity, the user must type a non-conflicting name"
-  },
-  "conflictingManifestFound": "manifest有冲突",
-  "@conflictingManifestFound": {
-    "description": "There is an on-chain entity with the same name"
-  },
-  "conflictingManifestFoundChooseNewName": "同名manifest已在此处存在. 你想要继续并且将manifest进行更新吗?",
-  "@conflictingManifestFoundChooseNewName": {
-    "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
-  },
-  "addnewManifestEmphasized": "添加新的MANIFEST",
-  "@addnewManifestEmphasized": {
-    "description": "There is a non-manifest entity with the same name"
-  },
-  "aManifestIsASpecialKindOfFile": "一个manifest是一种特殊的文件, 可以将一些Arweave交易处理为可使用的路径.",
-  "@aManifestIsASpecialKindOfFile": {
-    "description": "Simple explanation of what a manifest is"
-  },
-  "learnMore": "了解更多",
-  "@learnMore": {
-    "description": "Link to a document explaining manifests in detail"
-  },
-  "createManifestEmphasized": "创建MANIFEST",
-  "@createManifestEmphasized": {
-    "description": "To create a manifest"
-  },
-  "createManifest": "创建manifest",
-  "@createManifest": {
-    "description": "To create a manifest"
-  },
-  "filesWillBePermanentlyPublicWarning": "此处上传的文件会在互联网上被永久公开存储. 请确认是否需要公开此文件.",
-  "@filesWillBePermanentlyPublicWarning": {
-    "description": "Make the user aware that it is uploading permanent data publicly"
-  },
-  "createHereEmphasized": "在此创建",
-  "@createHereEmphasized": {
-    "description": "Create the manifest in the current selected folder"
-  },
-  "confirmEmphasized": "确认",
-  "@confirmEmphasized": {
-    "description": "Confirm the prompted question"
-  },
-  "skipEmphasized": "跳过",
-  "@skipEmphasized": {
-    "description": "Example: to SKIP a conflict"
-  },
-  "replaceEmphasized": "替换",
-  "@replaceEmphasized": {
-    "description": "Example: to REPLACE an entity"
-  },
-  "validationRequired": "此栏不能为空.",
-  "@validationRequired": {
-    "description": "Input validation error: the field is empty, but it's required"
-  },
-  "validationInvalid": "此栏输入格式不合法.",
-  "@validationInvalid": {
-    "description": "Input validation error: the field has invalid data"
-  },
-  "validationPasswordIncorrect": "此密码错误.",
-  "@validationPasswordIncorrect": {
-    "description": "Input validation error: the given password is wrong"
-  },
-  "validationAttachDriveCouldNotBeFound": "无法找到网盘.",
-  "@validationAttachDriveCouldNotBeFound": {
-    "description": "Input validation error: The given drive ID does not exist"
-  },
-  "validationInvalidKey": "网盘key无效.",
-  "@validationInvalidKey": {
-    "description": "Input validation error: The given drive key is wrong"
-  },
-  "validationAttachUserLoggedOut": "你需要登录才可以导入个人网盘.",
-  "@validationAttachUserLoggedOut": {
-    "description": "Input validation error: the user cannot attach a drive when not logged in"
-  },
-  "validationEntityNameAlreadyPresent": "一个同名的文件/文件夹已在此处存在.",
-  "@validationEntityNameAlreadyPresent": {
-    "description": "Input validation error: The given name is already in use by some exising entity"
-  },
-  "validationDriveNameAlreadyPresent": "一个同名的网盘已在此处存在.",
-  "@validationDriveNameAlreadyPresent": {
-    "description": "Input validation error: The given name is already in use by some exising drive"
-  },
-  "validationNameUnchanged": "本名称与此前名称相同",
-  "@validationNameUnchanged": {
-    "description": "Input validation error: The given name is exactly the same"
-  },
-  "insufficientARWarning": "金额不足",
-  "@insufficientARWarning": {
-    "description": "Warns the user that the wallet balance is less than minimum AR required to make a transaction"
-  },
-  "displayedPaginatedData": "{total} 中的 {from} 到 {to}",
-  "@displayedPaginatedData": {
-    "description": "Indicates the user what items of a list are being displayed. Example: 1 - 25 of 100",
-    "placeholders": {
-      "from": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "1"
-      },
-      "to": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "25"
-      },
-      "total": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "100"
-      }
-    }
-  },
-  "detachEmphasized": "移除",
-  "@detachEmphasized": {
-    "description": "Example: To DETACH a drive. Emphasized in upper case"
-  },
-  "detachDrive": "是否移除网盘?",
-  "@detachDrive": {
-    "description": "Detach Drive Title"
-  },
-  "detachDriveQuestion": "你确定要移除名为'{driveName}'的网盘吗?",
-  "@detachDriveQuestion": {
-    "description": "Ask for user confirmation to detach drive",
-    "placeholders": {
-      "driveName": {
-        "type": "String",
-        "example": "Shared Drive A"
-      }
-    }
-  },
-  "feedbackTitle": "感谢使用ArDrive!",
-  "@feedbackTitle": {
-    "description": "We thank the user"
-  },
-  "feedbackContent": "你希望为本应用的使用体验留下评价吗?",
-  "@feedbackContent": {
-    "description": "Asks for feedback"
-  },
-  "leaveFeedback": "留下评价",
-  "@leaveFeedback": {
-    "description": "The action of leaving feedback"
-  },
-  "noThanks": "不用了谢谢!不再显示该提示",
-  "@noThanks": {
-    "description": "Don't leave feedback, and don't ask again for it"
-  },
-  "weWontRemindYou": "好的!我们不会再显示该提示.",
-  "@weWontRemindYou": {
-    "description": "We let the user know that we won't remind them to leave feedback again"
-  },
-  "weWontRemindYouDescription": "如果你改变了主意, 想在之后留下反馈, 可以使用菜单中的链接.",
-  "@weWontRemindYouDescription": {
-    "description": "We let the user know where to find the 'Leave Feedback' button"
-  },
-  "gotIt": "明白!",
-  "@gotIt": {
-    "description": "Example similar phrases: I've got it, I understood, OK"
-  },
-  "infernoIsInFullSwing": "Inferno奖励计划正在全面展开! 点击这里查看参与规则!",
-  "@infernoIsInFullSwing": {
-    "description": "Text inviting the users to go read the Inferno rules"
   }
 }
