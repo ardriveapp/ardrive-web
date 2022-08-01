@@ -74,6 +74,8 @@ class WebIO implements ArDriveIO {
   }
 }
 
+/// Pass a stream to the `getFiles` callback to stream files
+/// When the file picker window is closed it will return a list of `IOFile`
 class FolderPicker {
   Future<void> pickFolderFiles(
       Function(Stream<List<IOFile>> stream) getFiles) async {
@@ -97,13 +99,19 @@ class FolderPicker {
         throw ActionCanceledException();
       }
 
-      _folderController.add(files
-          .map((e) => WebFile(e,
-              name: e.name,
-              lastModifiedDate: e.lastModifiedDate,
-              path: e.relativePath!,
-              contentType: lookupMimeTypeWithDefaultType(e.relativePath!)))
-          .toList());
+      /// To avoid the `IOFileAdapter` imports dart:html, this file will be mounted
+      /// here.
+      _folderController.add(files.map((e) {
+        final path = e.relativePath;
+        if (path == null) {
+          throw EntityPathException();
+        }
+        return WebFile(e,
+            name: e.name,
+            lastModifiedDate: e.lastModifiedDate,
+            path: path,
+            contentType: lookupMimeTypeWithDefaultType(path));
+      }).toList());
 
       /// Closes to finish the stream with all files
       _folderController.close();
