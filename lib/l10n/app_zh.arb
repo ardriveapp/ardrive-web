@@ -140,7 +140,7 @@
   "@passwordMismatch": {
     "description": "Error message for when the confirmation password doesn't match the actual pass"
   },
-  "aggreeToTerms_body": "我同意ArDrive的服务条款与隐私政策",
+  "aggreeToTerms_body": "我同意ArDrive的服务条款与隐私政策.",
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
