@@ -10,9 +10,10 @@ import 'package:ardrive/utils/mime_lookup.dart';
 import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:http/http.dart' as http;
 import 'package:moor/moor.dart';
+
+import '../../entities/file_entity.dart';
 
 part 'file_download_state.dart';
 part 'personal_file_download_cubit.dart';

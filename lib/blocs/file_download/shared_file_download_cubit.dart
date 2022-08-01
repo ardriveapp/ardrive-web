@@ -19,7 +19,10 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   Future<void> download() async {
     try {
-      final file = (await _arweave.getLatestFileEntityWithId(fileId, fileKey))!;
+      final file = _validateDownload(
+          (await _arweave.getLatestFileEntityWithId(fileId, fileKey)));
+
+      /// We can use the ! operator because we already validated on `_validateDownload`
 
       emit(FileDownloadInProgress(
           fileName: file.name!, totalByteCount: file.size!));
@@ -38,18 +41,29 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
             await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey!);
       }
 
-      /// TODO(@thiagocarvalhodev): how handle null and empty data here?
       emit(
         FileDownloadSuccess(
           bytes: dataBytes,
-          fileName: file.name ?? '',
+          fileName: file.name!,
           mimeType: lookupMimeType(file.name!),
-          lastModified: file.lastModifiedDate ?? DateTime.now(),
+          lastModified: file.lastModifiedDate!,
         ),
       );
     } catch (err) {
       addError(err);
     }
+  }
+
+  FileEntity _validateDownload(FileEntity? file) {
+    if (file == null ||
+        file.name == null ||
+        file.lastModifiedDate == null ||
+        file.dataTxId == null ||
+        file.size == null) {
+      throw Exception('Malformed FileEntity to download');
+    }
+
+    return file;
   }
 
   @override

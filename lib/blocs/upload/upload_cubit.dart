@@ -335,12 +335,11 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   void removeBigFiles() async {
-    for (var file in files) {
+    for (final file in files) {
       if (await file.ioFile.length > sizeLimit) {
         files.remove(file);
       }
     }
-    // files.removeWhere((element) => element.size > sizeLimit);
   }
 
   void _removeFilesWithFileNameConflicts() {
