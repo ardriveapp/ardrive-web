@@ -108,11 +108,8 @@ class FolderPicker {
 
       /// Closes to finish the stream with all files
       _folderController.close();
-
       folderInput.removeAttribute('webkitdirectory');
-      folderInput.removeEventListener('webkitdirectory', (event) => null);
       folderInput.remove();
-      return;
     });
   }
 }
@@ -127,6 +124,7 @@ class WebFile implements IOFile {
   }) : _file = file;
 
   final File _file;
+
   Uint8List? _bytes;
 
   @override
