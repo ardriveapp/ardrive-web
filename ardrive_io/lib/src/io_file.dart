@@ -3,12 +3,13 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:ardrive_io/src/io_entity.dart';
 import 'package:ardrive_io/src/io_exception.dart';
 import 'package:ardrive_io/src/utils/mime_type_utils.dart';
+import 'package:ardrive_io/src/utils/path_utils.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:path/path.dart' as path;
+
+import 'io_entity.dart';
 
 /// Base class for agnostic platform Files.
 ///
@@ -67,7 +68,7 @@ class IOFileAdapter {
 
     return _IOFile(
       file,
-      name: path.basename(file.path),
+      name: getBasenameFromPath(file.path),
       path: file.path,
       contentType: contentType,
       lastModifiedDate: lastModified,

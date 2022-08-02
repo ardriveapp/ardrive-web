@@ -148,7 +148,7 @@ class IOFolderAdapter {
     final selectedDirectoryPath = directory.path;
 
     final folder = _FileSystemFolder._(
-        name: getFolderNameFromPath(selectedDirectoryPath),
+        name: getBasenameFromPath(selectedDirectoryPath),
         lastModifiedDate: (await directory.stat()).modified,
         path: selectedDirectoryPath,
         folderContent: content);

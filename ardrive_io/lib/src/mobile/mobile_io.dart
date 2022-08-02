@@ -9,20 +9,23 @@ import 'package:permission_handler/permission_handler.dart';
 
 class MobileIO implements ArDriveIO {
   MobileIO(
-      {required this.fileAdapter,
-      required this.fileSaver,
-      required this.folderAdapter});
+      {required IOFileAdapter fileAdapter,
+      required FileSaver fileSaver,
+      required IOFolderAdapter folderAdapter})
+      : _fileAdapter = fileAdapter,
+        _fileSaver = fileSaver,
+        _folderAdapter = folderAdapter;
 
-  final FileSaver fileSaver;
-  final IOFileAdapter fileAdapter;
-  final IOFolderAdapter folderAdapter;
+  final FileSaver _fileSaver;
+  final IOFileAdapter _fileAdapter;
+  final IOFolderAdapter _folderAdapter;
 
   @override
   Future<IOFile> pickFile({List<String>? allowedExtensions}) async {
     FilePickerResult result =
         await _pickFile(allowedExtensions: allowedExtensions);
 
-    return fileAdapter.fromFilePicker(result.files.first);
+    return _fileAdapter.fromFilePicker(result.files.first);
   }
 
   @override
@@ -31,7 +34,7 @@ class MobileIO implements ArDriveIO {
         allowedExtensions: allowedExtensions, allowMultiple: true);
 
     return Future.wait(
-        result.files.map((file) => fileAdapter.fromFilePicker(file)).toList());
+        result.files.map((file) => _fileAdapter.fromFilePicker(file)).toList());
   }
 
   @override
@@ -45,7 +48,7 @@ class MobileIO implements ArDriveIO {
 
     final selectedDirectory = Directory(selectedDirectoryPath);
 
-    final folder = folderAdapter.fromFileSystemDirectory(selectedDirectory);
+    final folder = _folderAdapter.fromFileSystemDirectory(selectedDirectory);
 
     return folder;
   }
@@ -67,7 +70,7 @@ class MobileIO implements ArDriveIO {
   @override
   Future<void> saveFile(IOFile file) async {
     try {
-      await fileSaver.save(file);
+      await _fileSaver.save(file);
     } catch (e) {
       rethrow;
     }
