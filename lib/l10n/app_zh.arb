@@ -1323,5 +1323,13 @@
   "infernoIsInFullSwing": "Inferno奖励计划正在全面展开! 点击这里查看参与规则!",
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
+  },
+  "uploadFailed": "上传失败",
+  "@uploadFailed": {
+    "description": "Upload Failed dialog title"
+  },
+  "yourUploadFailed": "文件上传失败， 本次上传不会被扣费。",
+  "@yourUploadFailed": {
+    "description": "Upload fail dialog description."
   }
 }
