@@ -1323,5 +1323,25 @@
   "infernoIsInFullSwing": "Inferno奖励计划正在全面展开! 点击这里查看参与规则!",
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
+  },
+  "validationSharedFileIncorrectFileKey": "密码错误, 请重试.",
+  "@validationSharedFileIncorrectFileKey": {
+    "description": "The user entered an incorrect file key"
+  },
+  "sharedFileIsEncrypted": "此文件已加密.",
+  "@sharedFileIsEncrypted": {
+    "description": "Description that says the file is encrypted on shared file page"
+  },
+  "enterFileKey": "输入密码",
+  "@enterFileKey": {
+    "description": "File Key form field label"
+  },
+  "whatIsArDrive": "什么是ArDrive?",
+  "@whatIsArDrive": {
+    "description": "What is ArDrive? link on shared file page"
+  },
+  "unlock": "解锁",
+  "@unlock": {
+    "description": "Unlock a file or drive."
   }
 }
