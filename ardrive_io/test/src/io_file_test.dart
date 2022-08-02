@@ -100,7 +100,7 @@ void main() {
       expect(await iofile.length, await file.length());
 
       /// ensure that is the same content
-      expect(await iofile.readAsBytes(), await iofile.readAsBytes());
+      expect(await file.readAsBytes(), await iofile.readAsBytes());
     });
   });
 
