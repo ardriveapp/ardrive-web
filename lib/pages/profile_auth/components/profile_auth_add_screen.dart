@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/split_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -108,23 +109,26 @@ class ProfileAuthAddScreen extends StatelessWidget {
                                   ),
                                   child: Text.rich(
                                     TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          // TODO replace at PE-1125
-                                          text: appLocalizationsOf(context)
-                                              .aggreeToTerms_main,
-                                        ),
-                                        TextSpan(
-                                          // TODO replace at PE-1125
-                                          text: appLocalizationsOf(context)
-                                              .aggreeToTerms_link,
-                                          style: TextStyle(
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                        ),
-                                        TextSpan(text: '.'),
-                                      ],
+                                      children:
+                                          splitTranslationsWithMultipleStyles<
+                                              InlineSpan>(
+                                        originalText:
+                                            appLocalizationsOf(context)
+                                                .aggreeToTerms_body,
+                                        defaultMapper: (text) =>
+                                            TextSpan(text: text),
+                                        parts: {
+                                          appLocalizationsOf(context)
+                                                  .aggreeToTerms_link:
+                                              (text) => TextSpan(
+                                                    text: text,
+                                                    style: const TextStyle(
+                                                      decoration: TextDecoration
+                                                          .underline,
+                                                    ),
+                                                  ),
+                                        },
+                                      ),
                                     ),
                                   ),
                                 ),

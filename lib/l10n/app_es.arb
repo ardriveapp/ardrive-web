@@ -140,7 +140,7 @@
   "@passwordMismatch": {
     "description": "Error message for when the confirmation password don't match the actual pass"
   },
-  "aggreeToTerms_body": "Acepto los términos de servicio y la política de privacidad de ArDrive",
+  "aggreeToTerms_body": "Acepto los términos de servicio y la política de privacidad de ArDrive.",
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing the terms of of service and privacy policy"
   },
@@ -1319,5 +1319,25 @@
   "gotIt": "¡Entendido!",
   "@gotIt": {
     "description": "Example similar phrases: I've got it, I understood, OK"
+  },
+  "validationSharedFileIncorrectFileKey": "Clave incorrecta. Por favor, inténtalo nuevamente.",
+  "@validationSharedFileIncorrectFileKey": {
+    "description": "The user entered an incorrect file key"
+  },
+  "sharedFileIsEncrypted": "El archivo está cifrado.",
+  "@sharedFileIsEncrypted": {
+    "description": "Description that says the file is encrypted on shared file page"
+  },
+  "enterFileKey": "Introduce la clave del archivo",
+  "@enterFileKey": {
+    "description": "File Key form field label"
+  },
+  "whatIsArDrive": "¿Qué es ArDrive?",
+  "@whatIsArDrive": {
+    "description": "What is ArDrive? link on shared file page"
+  },
+  "unlock": "Desbloquear",
+  "@unlock": {
+    "description": "Unlock a file or drive."
   }
 }
