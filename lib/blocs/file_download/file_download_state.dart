@@ -10,13 +10,13 @@ abstract class FileDownloadState extends Equatable {
 class FileDownloadStarting extends FileDownloadState {}
 
 class FileDownloadInProgress extends FileDownloadState {
-  final String fileName;
-  final int totalByteCount;
-
-  FileDownloadInProgress({
+  const FileDownloadInProgress({
     required this.fileName,
     required this.totalByteCount,
   });
+
+  final String fileName;
+  final int totalByteCount;
 
   @override
   List<Object> get props => [fileName, totalByteCount];
@@ -26,7 +26,7 @@ class FileDownloadSuccess extends FileDownloadState {
   const FileDownloadSuccess(
       {required this.fileName,
       required this.bytes,
-      required this.mimeType,
+      this.mimeType,
       required this.lastModified});
 
   final String fileName;
