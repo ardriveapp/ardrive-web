@@ -6,7 +6,7 @@ class LocalKeyValueStore implements KeyValueStore {
 
   LocalKeyValueStore._create();
 
-  static Future<KeyValueStore> getInstance({
+  static Future<LocalKeyValueStore> getInstance({
     /// takes a SharedPreferences for testing purposes
     SharedPreferences? prefs,
   }) async {

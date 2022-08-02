@@ -9,14 +9,13 @@ import 'config.dart';
 class ConfigService {
   AppConfig? _config;
 
-  Future<AppConfig> getConfig() async {
+  Future<AppConfig> getConfig({required LocalKeyValueStore localStore}) async {
     if (_config == null) {
       const environment = kReleaseMode ? 'prod' : 'dev';
       final configContent =
           await rootBundle.loadString('assets/config/$environment.json');
 
-      final localStorage = await LocalKeyValueStore.getInstance();
-      final gatewayUrl = localStorage.getString('arweaveGatewayUrl');
+      final gatewayUrl = localStore.getString('arweaveGatewayUrl');
 
       _config = AppConfig.fromJson(gatewayUrl != null
           ? {'defaultArweaveGatewayUrl': gatewayUrl}
