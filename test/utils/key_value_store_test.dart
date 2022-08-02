@@ -17,6 +17,13 @@ void main() {
       store = await LocalKeyValueStore.getInstance(prefs: fakePrefs);
     });
 
+    group('getKeys method', () {
+      test('lists all non-null item\'s keys', () async {
+        final allKeys = store.getKeys();
+        expect(allKeys, ['isItTrue', 'aStringValue']);
+      });
+    });
+
     group('putBool method', () {
       test('replaces the previous value', () async {
         var currentValue = store.getBool('isItTrue');
