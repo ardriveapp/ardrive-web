@@ -8,7 +8,10 @@ void main() {
     late KeyValueStore store;
 
     setUp(() async {
-      Map<String, Object> values = <String, Object>{'isItTrue': false};
+      Map<String, Object> values = <String, Object>{
+        'isItTrue': false,
+        'aStringValue': 'IM THE STRING!',
+      };
       SharedPreferences.setMockInitialValues(values);
       final fakePrefs = await SharedPreferences.getInstance();
       store = await LocalKeyValueStore.getInstance(prefs: fakePrefs);
@@ -24,14 +27,28 @@ void main() {
       });
     });
 
+    group('putString method', () {
+      test('replaces the previous value', () async {
+        var currentValue = store.getString('aStringValue');
+        expect(currentValue, 'IM THE STRING!');
+        await store.putString('aStringValue', 'DIFFERENT STRING!');
+        currentValue = store.getString('aStringValue');
+        expect(currentValue, 'DIFFERENT STRING!');
+      });
+    });
+
     group('remove method', () {
       test(
         'returns true when sucessfully removed and the value turns null',
         () async {
-          final success = await store.remove('isItTrue');
-          expect(success, true);
-          var currentValue = store.getBool('isItTrue');
-          expect(currentValue, null);
+          final successBoolean = await store.remove('isItTrue');
+          final successString = await store.remove('aStringValue');
+          expect(successBoolean, true);
+          expect(successString, true);
+          var currentBoolValue = store.getBool('isItTrue');
+          var currentStringValue = store.getBool('aStringValue');
+          expect(currentBoolValue, null);
+          expect(currentStringValue, null);
         },
       );
     });
@@ -39,6 +56,13 @@ void main() {
     group('getBool method', () {
       test('returns null if the key is not present', () async {
         var currentValue = store.getBool('isItTrue');
+        expect(currentValue, null);
+      });
+    });
+
+    group('getString method', () {
+      test('returns null if the key is not present', () async {
+        var currentValue = store.getString('aStringValue');
         expect(currentValue, null);
       });
     });
