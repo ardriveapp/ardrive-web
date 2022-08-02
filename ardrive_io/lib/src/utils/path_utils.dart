@@ -4,10 +4,10 @@ import 'package:path/path.dart' as path;
 /// Returns the folder name to the given path
 ///
 /// Accepts a non empty String
-String getFolderNameFromPath(String folderPath) {
-  if (folderPath.isEmpty) {
+String getBasenameFromPath(String entityPath) {
+  if (entityPath.isEmpty) {
     throw EntityPathException();
   }
 
-  return path.basename(folderPath);
+  return path.basename(entityPath);
 }
