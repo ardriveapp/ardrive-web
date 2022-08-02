@@ -59,9 +59,9 @@ This will trigger a GitHub Action that will deploy `master` to production.
 
 ## Using a custom Arweave Gateway URL
 
-You can use a custom gateway URL by setting the `flutter.arweaveGatewayUrl` item in your local storage.
+You can use a custom gateway URL by setting the `flutter.arweaveGatewayUrl` key in your browser's Local Storage.
 
-In web you can use this example in the JavaScript console of your browser:
+With the web app opened you can access the browser's JavaScript console to run the follow examples:
 
 ```js
 // To set the item
