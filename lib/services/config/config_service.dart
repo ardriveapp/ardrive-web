@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:cooky/cooky.dart' as cookie;
+import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -11,14 +11,15 @@ class ConfigService {
 
   Future<AppConfig> getConfig() async {
     if (_config == null) {
-      final environment = kReleaseMode ? 'prod' : 'dev';
+      const environment = kReleaseMode ? 'prod' : 'dev';
       final configContent =
           await rootBundle.loadString('assets/config/$environment.json');
 
-      final gatewayCookie = cookie.get('arweaveGatewayUrl');
+      final localStorage = await LocalKeyValueStore.getInstance();
+      final gatewayUrl = localStorage.getString('arweaveGatewayUrl');
 
-      _config = AppConfig.fromJson(gatewayCookie != null
-          ? {'defaultArweaveGatewayUrl': gatewayCookie}
+      _config = AppConfig.fromJson(gatewayUrl != null
+          ? {'defaultArweaveGatewayUrl': gatewayUrl}
           : json.decode(configContent));
     }
 
