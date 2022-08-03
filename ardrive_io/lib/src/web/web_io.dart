@@ -106,9 +106,20 @@ class FolderPicker {
         if (path == null) {
           throw EntityPathException();
         }
+
+        DateTime lastModifiedDate;
+
+        /// Needs on safari. Some files doesn't have the lastModified and an exception
+        /// is thrown
+        try {
+          lastModifiedDate = e.lastModifiedDate;
+        } catch (e) {
+          lastModifiedDate = DateTime.now();
+        }
+
         return WebFile(e,
             name: e.name,
-            lastModifiedDate: e.lastModifiedDate,
+            lastModifiedDate: lastModifiedDate,
             path: path,
             contentType: lookupMimeTypeWithDefaultType(path));
       }).toList());
