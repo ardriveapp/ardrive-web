@@ -101,34 +101,35 @@ class FolderPicker {
 
       /// To avoid the `IOFileAdapter` imports dart:html, this file will be mounted
       /// here.
-      _folderController.add(files.map((e) {
-        final path = e.relativePath;
-        if (path == null) {
-          throw EntityPathException();
-        }
-
-        DateTime lastModifiedDate;
-
-        /// Needs on safari. Some files doesn't have the lastModified and an exception
-        /// is thrown
-        try {
-          lastModifiedDate = e.lastModifiedDate;
-        } catch (e) {
-          lastModifiedDate = DateTime.now();
-        }
-
-        return WebFile(e,
-            name: e.name,
-            lastModifiedDate: lastModifiedDate,
-            path: path,
-            contentType: lookupMimeTypeWithDefaultType(path));
-      }).toList());
+      _folderController.add(files.map((e) => _mountFile(e)).toList());
 
       /// Closes to finish the stream with all files
       _folderController.close();
       folderInput.removeAttribute('webkitdirectory');
       folderInput.remove();
     });
+  }
+
+  WebFile _mountFile(File e) {
+    final path = e.relativePath;
+    if (path == null) {
+      throw EntityPathException();
+    }
+
+    /// Needs on safari. Some files doesn't have the lastModified and an exception
+    /// is thrown
+    DateTime lastModifiedDate;
+    try {
+      lastModifiedDate = e.lastModifiedDate;
+    } catch (e) {
+      lastModifiedDate = DateTime.now();
+    }
+
+    return WebFile(e,
+        name: e.name,
+        lastModifiedDate: lastModifiedDate,
+        path: path,
+        contentType: lookupMimeTypeWithDefaultType(path));
   }
 }
 
