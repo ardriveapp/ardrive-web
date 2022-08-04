@@ -5,6 +5,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:artemis/artemis.dart';
@@ -530,6 +531,42 @@ class ArweaveService {
         'with id ${parseException.transactionId}',
       );
       return null;
+    }
+  }
+
+  Future<FileEntity?> getAllFileEntitiesWithId(
+      String fileId, int? lastBlockHeight,
+      [SecretKey? fileKey]) async {
+    final allFileEntitiesQuery = await _graphQLRetry.execute(
+      AllFileEntitiesWithIdQuery(
+        variables: AllFileEntitiesWithIdArguments(
+          fileId: fileId,
+          lastBlockHeight: lastBlockHeight,
+        ),
+      ),
+    );
+
+    final queryEdges = allFileEntitiesQuery.data!.transactions.edges;
+    if (queryEdges.isEmpty) {
+      return null;
+    }
+    List<FileEntity> fileEntities = [];
+    for (var edge in queryEdges) {
+      final fileTx = edge.node;
+      final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
+
+      try {
+        fileEntities.add(
+          await FileEntity.fromTransaction(
+            fileTx,
+            fileDataRes.bodyBytes,
+            fileKey: fileKey,
+          ),
+        );
+      } on EntityTransactionParseException catch (parseException) {
+        'Failed to parse transaction with id ${parseException.transactionId}'
+            .logError();
+      }
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/utils.dart';
 import 'package:bloc/bloc.dart';
@@ -70,6 +71,40 @@ class SharedFileCubit extends Cubit<SharedFileState> {
         emit(SharedFileNotFound());
       }
     }
+  }
+
+  /// Computes the new file revisions from the provided entities, inserts them into the database,
+  /// and returns only the latest revisions.
+  Future<List<FileRevision>> computeRevisionsFromEntities(
+    List<FileEntity> fileEntities,
+  ) async {
+    late FileRevisionsCompanion oldestRevision;
+
+    fileEntities.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    oldestRevision = fileEntities.first.toRevisionCompanion(
+      performedAction: RevisionAction.create,
+    );
+    fileEntities.removeAt(0);
+    final newRevisions = <FileRevision>[];
+    for (final entity in fileEntities) {
+      final revisionPerformedAction =
+          entity.getPerformedRevisionAction(oldestRevision);
+      if (revisionPerformedAction == null) {
+        continue;
+      }
+
+      entity.parentFolderId = entity.parentFolderId ?? rootPath;
+      final revision =
+          entity.toRevision(performedAction: revisionPerformedAction);
+
+      if (revision.action.isEmpty) {
+        continue;
+      }
+
+      newRevisions.add(revision);
+    }
+
+    return newRevisions;
   }
 
   void submit() async {
