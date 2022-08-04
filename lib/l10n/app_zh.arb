@@ -140,7 +140,7 @@
   "@passwordMismatch": {
     "description": "Error message for when the confirmation password doesn't match the actual pass"
   },
-  "aggreeToTerms_body": "我同意ArDrive的服务条款与隐私政策",
+  "aggreeToTerms_body": "我同意ArDrive的服务条款与隐私政策.",
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
@@ -1331,5 +1331,33 @@
   "yourUploadFailed": "文件上传失败， 本次上传不会被扣费。",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
+  },
+  "sharePendingFile": "你所要分享的文件目前未被网络确认，暂时无 法被分享。请稍后重试。",
+  "@sharePendingFile": {
+    "description": "Pending file share dialog text"
+  },
+  "shareFailedFile": "你所要分享的文件状态显示为无效，无法被分 享。",
+  "@shareFailedFile": {
+    "description": "Failed file share dialog text"
+  },
+  "validationSharedFileIncorrectFileKey": "密码错误, 请重试.",
+  "@validationSharedFileIncorrectFileKey": {
+    "description": "The user entered an incorrect file key"
+  },
+  "sharedFileIsEncrypted": "此文件已加密.",
+  "@sharedFileIsEncrypted": {
+    "description": "Description that says the file is encrypted on shared file page"
+  },
+  "enterFileKey": "输入密码",
+  "@enterFileKey": {
+    "description": "File Key form field label"
+  },
+  "whatIsArDrive": "什么是ArDrive?",
+  "@whatIsArDrive": {
+    "description": "What is ArDrive? link on shared file page"
+  },
+  "unlock": "解锁",
+  "@unlock": {
+    "description": "Unlock a file or drive."
   }
 }

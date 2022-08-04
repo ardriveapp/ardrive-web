@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/split_localizations.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,18 +20,21 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              // TODO replace at PE-1125
-              appLocalizationsOf(context).welcomeTo_main,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headline5,
-            ),
-            const SizedBox(height: 32),
-            Text(
-              // TODO replace at PE-1125
-              appLocalizationsOf(context).welcomeTo_description,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.headline6,
+            ...splitTranslationsWithMultipleStyles<Widget>(
+              originalText: appLocalizationsOf(context).welcomeTo_body,
+              defaultMapper: (text) => Text(
+                text,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headline6,
+              ),
+              parts: {
+                appLocalizationsOf(context).welcomeTo_main: (text) => Text(
+                      text,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headline5,
+                    ),
+              },
+              separator: const SizedBox(height: 32),
             ),
             const SizedBox(height: 32),
             ElevatedButton(

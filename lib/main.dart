@@ -26,10 +26,12 @@ void main() async {
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
   refreshHTMLPageAtInterval(const Duration(hours: 12));
-  runApp(App());
+  runApp(const App());
 }
 
 class App extends StatefulWidget {
+  const App({Key? key}) : super(key: key);
+
   @override
   _AppState createState() => _AppState();
 }
@@ -81,7 +83,11 @@ class _AppState extends State<App> {
             supportedLocales: const [
               Locale('en', ''), // English, no country code
               Locale('es', ''), // Spanish, no country code
-              Locale('zh', ''), // Chinese (Mandarin), no country code
+              Locale.fromSubtags(languageCode: 'zh'), // generic Chinese 'zh'
+              Locale.fromSubtags(
+                languageCode: 'zh',
+                countryCode: 'HK',
+              ), // generic traditional Chinese 'zh_Hant'
             ],
             builder: (context, child) => ListTileTheme(
               textColor: kOnSurfaceBodyTextColor,
