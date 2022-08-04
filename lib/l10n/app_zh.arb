@@ -1324,6 +1324,14 @@
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
   },
+  "sharePendingFile": "你所要分享的文件目前未被网络确认，暂时无 法被分享。请稍后重试。",
+  "@sharePendingFile": {
+    "description": "Pending file share dialog text"
+  },
+  "shareFailedFile": "你所要分享的文件状态显示为无效，无法被分 享。",
+  "@shareFailedFile": {
+    "description": "Failed file share dialog text"
+  },
   "validationSharedFileIncorrectFileKey": "密码错误, 请重试.",
   "@validationSharedFileIncorrectFileKey": {
     "description": "The user entered an incorrect file key"
