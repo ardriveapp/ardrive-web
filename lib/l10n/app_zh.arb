@@ -1324,6 +1324,14 @@
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
   },
+  "uploadFailed": "上传失败",
+  "@uploadFailed": {
+    "description": "Upload Failed dialog title"
+  },
+  "yourUploadFailed": "文件上传失败， 本次上传不会被扣费。",
+  "@yourUploadFailed": {
+    "description": "Upload fail dialog description."
+  },
   "sharePendingFile": "你所要分享的文件目前未被网络确认，暂时无 法被分享。请稍后重试。",
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
