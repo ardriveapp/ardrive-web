@@ -110,7 +110,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             contentOrderingMode: contentOrderingMode,
             rowsPerPage: availableRowsPerPage.first,
             availableRowsPerPage: availableRowsPerPage,
-            maybeSelectedItem: maybeSelectedItem,
+            selectedItems: maybeSelectedItem != null ? [maybeSelectedItem] : [],
           ));
         } else {
           emit(DriveDetailLoadSuccess(
@@ -122,7 +122,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             contentOrderingMode: contentOrderingMode,
             rowsPerPage: availableRowsPerPage.first,
             availableRowsPerPage: availableRowsPerPage,
-            maybeSelectedItem: maybeSelectedItem,
+            selectedItems: maybeSelectedItem != null ? [maybeSelectedItem] : [],
             driveIsEmpty: rootFolderNode.isEmpty(),
           ));
         }
@@ -154,7 +154,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   Future<void> selectItem(SelectedItem selectedItem) async {
     var state = this.state as DriveDetailLoadSuccess;
 
-    state = state.copyWith(maybeSelectedItem: selectedItem);
+    state =
+        state.copyWith(selectedItems: [selectedItem, ...state.selectedItems]);
     if (state.currentDrive.isPublic && selectedItem is SelectedFile) {
       final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
         driveId: driveId,

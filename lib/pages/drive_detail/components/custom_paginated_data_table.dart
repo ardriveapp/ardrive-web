@@ -9,6 +9,7 @@ class CustomPaginatedDataTable extends StatefulWidget {
   CustomPaginatedDataTable({
     Key? key,
     required this.columns,
+    required this.showCheckboxColumn,
     this.sortColumnIndex,
     this.sortAscending = true,
     this.dataRowHeight = kMinInteractiveDimension,
@@ -57,6 +58,7 @@ class CustomPaginatedDataTable extends StatefulWidget {
   ///
   /// See [DataTable.sortAscending].
   final bool sortAscending;
+  final bool showCheckboxColumn;
 
   /// The height of each row (excluding the row that contains column headings).
   ///
@@ -485,7 +487,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
               child: DataTable(
                 key: widget.tableKey,
                 columns: widget.columns,
-                showCheckboxColumn: false,
+                showCheckboxColumn: widget.showCheckboxColumn,
                 sortColumnIndex: widget.sortColumnIndex,
                 sortAscending: widget.sortAscending,
                 dataRowHeight: widget.dataRowHeight,

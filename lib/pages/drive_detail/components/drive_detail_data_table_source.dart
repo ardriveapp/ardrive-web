@@ -111,9 +111,9 @@ DataRow _buildFolderRow({
       DataCell(
         Row(
           children: [
-            Padding(
-              padding: const EdgeInsetsDirectional.only(end: 8.0),
-              child: const Icon(Icons.folder),
+            const Padding(
+              padding: EdgeInsetsDirectional.only(end: 8.0),
+              child: Icon(Icons.folder),
             ),
             Text(
               trimName(name: folder.name, context: context),
@@ -121,14 +121,14 @@ DataRow _buildFolderRow({
           ],
         ),
       ),
-      DataCell(Text('-')),
+      const DataCell(Text('-')),
       folder.isGhost
           ? DataCell(
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   primary: LightColors.kOnLightSurfaceMediumEmphasis,
-                  textStyle:
-                      TextStyle(color: LightColors.kOnDarkSurfaceHighEmphasis),
+                  textStyle: const TextStyle(
+                      color: LightColors.kOnDarkSurfaceHighEmphasis),
                 ),
                 onPressed: () => showCongestionDependentModalDialog(
                   context,
@@ -137,7 +137,7 @@ DataRow _buildFolderRow({
                 child: Text(appLocalizationsOf(context).fix),
               ),
             )
-          : DataCell(Text('-')),
+          : const DataCell(Text('-')),
     ],
   );
 }

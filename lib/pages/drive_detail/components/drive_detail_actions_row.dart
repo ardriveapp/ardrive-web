@@ -11,9 +11,8 @@ class DriveDetailActionRow extends StatelessWidget {
     return BlocBuilder<DriveDetailCubit, DriveDetailState>(
       builder: (context, state) {
         if (state is DriveDetailLoadSuccess) {
-          final selectedItem = state.maybeSelectedItem;
           final fsActions = <Widget>[
-            if (state.hasWritePermissions && selectedItem == null) ...[
+            if (state.hasWritePermissions && state.selectedItems.isEmpty) ...[
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () {
@@ -35,7 +34,7 @@ class DriveDetailActionRow extends StatelessWidget {
                 tooltip: appLocalizationsOf(context).detachDrive,
               ),
             ],
-            if (selectedItem == null)
+            if (state.selectedItems.isEmpty)
               IconButton(
                   icon: const Icon(Icons.table_chart),
                   onPressed: () {
@@ -44,15 +43,15 @@ class DriveDetailActionRow extends StatelessWidget {
                   },
                   tooltip: appLocalizationsOf(context).exportDriveContents),
             // A folder/file is selected.
-            if (selectedItem != null) ...{
-              if (selectedItem is SelectedFile) ...{
+            if (state.selectedItems.isNotEmpty) ...{
+              if (state.selectedItems.first is SelectedFile) ...{
                 IconButton(
                   icon: const Icon(Icons.file_download),
                   onPressed: () => promptToDownloadProfileFile(
                     context: context,
                     driveId: state.currentDrive.id,
-                    fileId: selectedItem.id,
-                    dataTxId: selectedItem.item.dataTxId,
+                    fileId: state.selectedItems.first.id,
+                    dataTxId: state.selectedItems.first.item.dataTxId,
                   ),
                   tooltip: appLocalizationsOf(context).download,
                 ),
@@ -62,7 +61,7 @@ class DriveDetailActionRow extends StatelessWidget {
                   onPressed: () => promptToShareFile(
                     context: context,
                     driveId: state.currentDrive.id,
-                    fileId: selectedItem.id,
+                    fileId: state.selectedItems.first.id,
                   ),
                 ),
                 if (state.currentDrive.isPublic)
@@ -77,18 +76,18 @@ class DriveDetailActionRow extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.drive_file_rename_outline),
                   onPressed: () {
-                    if (selectedItem is SelectedFolder &&
-                        !selectedItem.item.isGhost) {
+                    if (state.selectedItems.first is SelectedFolder &&
+                        !state.selectedItems.first.item.isGhost) {
                       promptToRenameFolder(
                         context,
                         driveId: state.currentDrive.id,
-                        folderId: selectedItem.id,
+                        folderId: state.selectedItems.first.id,
                       );
                     } else {
                       promptToRenameFile(
                         context,
                         driveId: state.currentDrive.id,
-                        fileId: selectedItem.id,
+                        fileId: state.selectedItems.first.id,
                       );
                     }
                   },
@@ -97,17 +96,17 @@ class DriveDetailActionRow extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.drive_file_move),
                   onPressed: () {
-                    if (selectedItem is SelectedFolder) {
+                    if (state.selectedItems.first is SelectedFolder) {
                       promptToMoveFolder(
                         context,
                         driveId: state.currentDrive.id,
-                        folderId: selectedItem.id,
+                        folderId: state.selectedItems.first.id,
                       );
                     } else {
                       promptToMoveFile(
                         context,
                         driveId: state.currentDrive.id,
-                        fileId: selectedItem.id,
+                        fileId: state.selectedItems.first.id,
                       );
                     }
                   },

@@ -7,10 +7,12 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
           (folder) => _buildFolderListTile(
             context: context,
             folder: folder,
-            selected: folder.id == state.maybeSelectedItem?.id,
+            selected: state.selectedItems.isNotEmpty &&
+                folder.id == state.selectedItems.first.id,
             onPressed: () {
               final bloc = context.read<DriveDetailCubit>();
-              if (folder.id == state.maybeSelectedItem?.id) {
+              if (state.selectedItems.isNotEmpty &&
+                  folder.id == state.selectedItems.first.id) {
                 bloc.openFolder(path: folder.path);
               } else {
                 bloc.selectItem(SelectedFolder(folder: folder));
@@ -22,10 +24,11 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
           (file) => _buildFileListTile(
             context: context,
             file: file,
-            selected: file.id == state.maybeSelectedItem?.id,
+            selected: state.selectedItems.isNotEmpty &&
+                file.id == state.selectedItems.first.id,
             onPressed: () async {
               final bloc = context.read<DriveDetailCubit>();
-              if (file.id == state.maybeSelectedItem?.id) {
+              if (file.id == state.selectedItems.first.id) {
                 bloc.toggleSelectedItemDetails();
               } else {
                 await bloc.selectItem(SelectedFile(file: file));
@@ -33,7 +36,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
             },
           ),
         )
-      ].intersperse(Divider()).toList(),
+      ].intersperse(const Divider()).toList(),
     );
 
 Widget _buildFolderListTile({
@@ -45,17 +48,17 @@ Widget _buildFolderListTile({
     ListTile(
       onTap: () => onPressed(),
       selected: selected,
-      leading: Padding(
-        padding: const EdgeInsetsDirectional.only(end: 8.0),
-        child: const Icon(Icons.folder),
+      leading: const Padding(
+        padding: EdgeInsetsDirectional.only(end: 8.0),
+        child: Icon(Icons.folder),
       ),
       title: Text(folder.name),
       trailing: folder.isGhost
           ? ElevatedButton(
               style: ElevatedButton.styleFrom(
                 primary: LightColors.kOnLightSurfaceMediumEmphasis,
-                textStyle:
-                    TextStyle(color: LightColors.kOnDarkSurfaceHighEmphasis),
+                textStyle: const TextStyle(
+                    color: LightColors.kOnDarkSurfaceHighEmphasis),
               ),
               onPressed: () => showCongestionDependentModalDialog(
                 context,

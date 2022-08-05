@@ -18,7 +18,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final DriveOrder contentOrderBy;
   final OrderingMode contentOrderingMode;
 
-  final SelectedItem? maybeSelectedItem;
+  final List<SelectedItem> selectedItems;
   final bool showSelectedItemDetails;
 
   /// The preview URL for the selected file.
@@ -38,7 +38,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.contentOrderingMode,
     required this.rowsPerPage,
     required this.availableRowsPerPage,
-    this.maybeSelectedItem,
+    this.selectedItems = const [],
     this.showSelectedItemDetails = false,
     this.selectedFilePreviewUrl,
     required this.driveIsEmpty,
@@ -50,7 +50,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     FolderWithContents? folderInView,
     DriveOrder? contentOrderBy,
     OrderingMode? contentOrderingMode,
-    SelectedItem? maybeSelectedItem,
+    List<SelectedItem>? selectedItems,
     bool? showSelectedItemDetails,
     Uri? selectedFilePreviewUrl,
     int? rowsPerPage,
@@ -63,7 +63,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         folderInView: folderInView ?? this.folderInView,
         contentOrderBy: contentOrderBy ?? this.contentOrderBy,
         contentOrderingMode: contentOrderingMode ?? this.contentOrderingMode,
-        maybeSelectedItem: maybeSelectedItem ?? this.maybeSelectedItem,
+        selectedItems: selectedItems ?? this.selectedItems,
         showSelectedItemDetails:
             showSelectedItemDetails ?? this.showSelectedItemDetails,
         selectedFilePreviewUrl:
@@ -83,7 +83,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         selectedFilePreviewUrl,
         rowsPerPage,
         availableRowsPerPage,
-        maybeSelectedItem,
+        selectedItems,
         _equatableBust,
         driveIsEmpty,
       ];

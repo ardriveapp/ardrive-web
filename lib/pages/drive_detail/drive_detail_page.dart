@@ -109,7 +109,7 @@ class DriveDetailPage extends StatelessWidget {
                           FsEntrySideSheet(
                             driveId: state.currentDrive.id,
                             drivePrivacy: state.currentDrive.privacy,
-                            maybeSelectedItem: state.maybeSelectedItem,
+                            maybeSelectedItem: state.selectedItems.first,
                           ),
                         }
                       ],
@@ -167,10 +167,9 @@ class DriveDetailPage extends StatelessWidget {
                     if (state.showSelectedItemDetails)
                       Expanded(
                         child: FsEntrySideSheet(
-                          driveId: state.currentDrive.id,
-                          drivePrivacy: state.currentDrive.privacy,
-                          maybeSelectedItem: state.maybeSelectedItem,
-                        ),
+                            driveId: state.currentDrive.id,
+                            drivePrivacy: state.currentDrive.privacy,
+                            maybeSelectedItem: state.selectedItems.first),
                       )
                   ],
                 ),
