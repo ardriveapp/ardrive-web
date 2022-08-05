@@ -15,13 +15,13 @@ class SharedFileIsPrivate extends SharedFileState {}
 /// [SharedFileLoadSuccess] indicates that the shared file being viewed has been
 /// loaded successfully.
 class SharedFileLoadSuccess extends SharedFileState {
-  final FileEntity file;
+  final List<FileRevision> fileRevisions;
   final SecretKey? fileKey;
 
-  const SharedFileLoadSuccess({required this.file, this.fileKey});
+  const SharedFileLoadSuccess({required this.fileRevisions, this.fileKey});
 
   @override
-  List<Object?> get props => [file, fileKey];
+  List<Object?> get props => [fileRevisions, fileKey];
 }
 
 class SharedFileNotFound extends SharedFileState {}

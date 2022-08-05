@@ -534,14 +534,14 @@ class ArweaveService {
     }
   }
 
-  Future<FileEntity?> getAllFileEntitiesWithId(
+  Future<List<FileEntity>?> getAllFileEntitiesWithId(
       String fileId, int? lastBlockHeight,
       [SecretKey? fileKey]) async {
     final allFileEntitiesQuery = await _graphQLRetry.execute(
       AllFileEntitiesWithIdQuery(
         variables: AllFileEntitiesWithIdArguments(
           fileId: fileId,
-          lastBlockHeight: lastBlockHeight,
+          lastBlockHeight: null,
         ),
       ),
     );
@@ -568,6 +568,7 @@ class ArweaveService {
             .logError();
       }
     }
+    return fileEntities;
   }
 
   /// Returns the number of confirmations each specified transaction has as a map,

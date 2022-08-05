@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -11,7 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SharedFileSideSheet extends StatefulWidget {
   final List<FileRevision> revisions;
-  final DrivePrivacy privacy;
+  final Privacy privacy;
   const SharedFileSideSheet({
     Key? key,
     required this.revisions,

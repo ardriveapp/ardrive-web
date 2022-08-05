@@ -24,10 +24,13 @@ class SharedFileCubit extends Cubit<SharedFileState> {
 
   final ArweaveService _arweave;
 
-  SharedFileCubit({required this.fileId, this.fileKey, required arweave})
-      : _arweave = arweave,
+  SharedFileCubit({
+    required this.fileId,
+    this.fileKey,
+    required arweave,
+  })  : _arweave = arweave,
         super(SharedFileLoadInProgress()) {
-    loadFileDetails();
+    loadFileDetails(fileKey);
     initializeForm();
   }
 
@@ -57,20 +60,20 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     return null;
   }
 
-  Future<void> loadFileDetails() async {
-    emit(SharedFileLoadInProgress());
-    final privacy = await _arweave.getFilePrivacyForId(fileId);
-    if (fileKey == null && privacy == DrivePrivacy.private) {
-      emit(SharedFileIsPrivate());
-    } else {
-      final file = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
-
-      if (file != null) {
-        emit(SharedFileLoadSuccess(file: file, fileKey: fileKey));
-      } else {
-        emit(SharedFileNotFound());
+  /// Returns the action performed on the file that lead to the new revision.
+  String getPerformedRevisionAction(FileEntity entity,
+      [FileRevision? previousRevision]) {
+    if (previousRevision != null) {
+      if (entity.name != previousRevision.name) {
+        return RevisionAction.rename;
+      } else if (entity.parentFolderId != previousRevision.parentFolderId) {
+        return RevisionAction.move;
+      } else if (entity.dataTxId != previousRevision.dataTxId) {
+        return RevisionAction.uploadNewVersion;
       }
     }
+
+    return RevisionAction.create;
   }
 
   /// Computes the new file revisions from the provided entities, inserts them into the database,
@@ -78,33 +81,53 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   Future<List<FileRevision>> computeRevisionsFromEntities(
     List<FileEntity> fileEntities,
   ) async {
-    late FileRevisionsCompanion oldestRevision;
+    late FileRevision oldestRevision;
 
     fileEntities.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    oldestRevision = fileEntities.first.toRevisionCompanion(
+    oldestRevision = fileEntities.first.toRevision(
       performedAction: RevisionAction.create,
     );
     fileEntities.removeAt(0);
-    final newRevisions = <FileRevision>[];
+    final revisions = <FileRevision>[oldestRevision];
     for (final entity in fileEntities) {
-      final revisionPerformedAction =
-          entity.getPerformedRevisionAction(oldestRevision);
-      if (revisionPerformedAction == null) {
-        continue;
-      }
+      final revisionPerformedAction = getPerformedRevisionAction(
+        entity,
+        revisions.last,
+      );
 
       entity.parentFolderId = entity.parentFolderId ?? rootPath;
-      final revision =
-          entity.toRevision(performedAction: revisionPerformedAction);
+      final revision = entity.toRevision(
+        performedAction: revisionPerformedAction,
+      );
 
       if (revision.action.isEmpty) {
         continue;
       }
 
-      newRevisions.add(revision);
+      revisions.add(revision);
     }
 
-    return newRevisions;
+    return revisions;
+  }
+
+  Future<void> loadFileDetails(SecretKey? fileKey) async {
+    emit(SharedFileLoadInProgress());
+    final privacy = await _arweave.getFilePrivacyForId(fileId);
+    if (fileKey == null && privacy == DrivePrivacy.private) {
+      emit(SharedFileIsPrivate());
+      return;
+    }
+    final allEntities =
+        await _arweave.getAllFileEntitiesWithId(fileId, 0, fileKey);
+    if (allEntities != null) {
+      {
+        final revisions = await computeRevisionsFromEntities(allEntities);
+
+        emit(SharedFileLoadSuccess(fileRevisions: revisions, fileKey: fileKey));
+        return;
+      }
+    }
+    emit(SharedFileNotFound());
   }
 
   void submit() async {
@@ -120,7 +143,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     final file = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
 
     if (file != null) {
-      emit(SharedFileLoadSuccess(file: file, fileKey: fileKey));
+      loadFileDetails(fileKey);
     } else {
       emit(SharedFileIsPrivate());
       form
