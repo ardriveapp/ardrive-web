@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import 'crypto.dart';
@@ -39,7 +40,7 @@ Future<SecretKey> deriveDriveKey(
   return hkdf.deriveKey(
     secretKey: SecretKey(walletSignature),
     info: utf8.encode(password),
-    nonce: Uint8List(0),
+    nonce: Uint8List(kIsWeb ? 0 : 1),
   );
 }
 
@@ -49,7 +50,7 @@ Future<SecretKey> deriveFileKey(SecretKey driveKey, String fileId) async {
   return hkdf.deriveKey(
     secretKey: driveKey,
     info: fileIdBytes,
-    nonce: Uint8List(0),
+    nonce: Uint8List(kIsWeb ? 0 : 1),
   );
 }
 

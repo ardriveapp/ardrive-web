@@ -286,6 +286,10 @@ class SyncCubit extends Cubit<SyncState> {
 
       syncFormatedPrint('Current block height number $currentBlockHeight');
 
+      drives.forEach((drive) {
+        syncFormatedPrint('Drive last block height: ${drive.lastBlockHeight!}');
+      });
+
       final driveSyncProcesses = drives.map((drive) => _syncDrive(
             drive.id,
             lastBlockHeight: calculateSyncLastBlockHeight(
@@ -461,33 +465,55 @@ class SyncCubit extends Cubit<SyncState> {
     await for (var t in transactionsStream) {
       if (t.isEmpty) continue;
 
-      double _calculatePercentageBasedOnBlockHeights() => (1 -
-          ((currentBlockheight - t.last.node.block!.height) /
-              totalBlockHeightDifference));
+      double _calculatePercentageBasedOnBlockHeights() {
+        final block = t.last.node.block;
 
+        if (block != null) {
+          return (1 -
+              ((currentBlockheight - block.height) /
+                  totalBlockHeightDifference));
+        }
+        syncFormatedPrint(
+            'The transaction block is null.\nTransaction node id: ${t.first.node.id}');
+
+        /// if the block is null, we don't calculate and keep the same percentage
+        return fetchPhasePercentage;
+      }
+
+      /// Initialize only once `firstBlockHeight` and `totalBlockHeightDifference`
       if (firstBlockHeight == null) {
-        firstBlockHeight = t.first.node.block!.height;
-        totalBlockHeightDifference = currentBlockheight - firstBlockHeight;
+        final block = t.first.node.block;
+
+        if (block != null) {
+          firstBlockHeight = block.height;
+          totalBlockHeightDifference = currentBlockheight - firstBlockHeight;
+        } else {
+          syncFormatedPrint(
+              'The transaction block is null.\nTransaction node id: ${t.first.node.id}');
+        }
       }
 
       transactions.addAll(t);
 
-      _totalProgress += _calculateProgressInFetchPhasePercentage(
-          _calculatePercentageProgress(
-              fetchPhasePercentage, _calculatePercentageBasedOnBlockHeights()));
+      /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
+      if (firstBlockHeight != null) {
+        _totalProgress += _calculateProgressInFetchPhasePercentage(
+            _calculatePercentageProgress(fetchPhasePercentage,
+                _calculatePercentageBasedOnBlockHeights()));
 
-      _syncProgress = _syncProgress.copyWith(
-          progress: _totalProgress,
-          entitiesNumber: _syncProgress.entitiesNumber + t.length);
+        _syncProgress = _syncProgress.copyWith(
+            progress: _totalProgress,
+            entitiesNumber: _syncProgress.entitiesNumber + t.length);
 
-      yield _syncProgress;
+        yield _syncProgress;
 
-      if (totalBlockHeightDifference > 0) {
-        fetchPhasePercentage += _calculatePercentageProgress(
-            fetchPhasePercentage, _calculatePercentageBasedOnBlockHeights());
-      } else {
-        // If the difference is zero means that the first phase was concluded.
-        fetchPhasePercentage = 1;
+        if (totalBlockHeightDifference > 0) {
+          fetchPhasePercentage += _calculatePercentageProgress(
+              fetchPhasePercentage, _calculatePercentageBasedOnBlockHeights());
+        } else {
+          // If the difference is zero means that the first phase was concluded.
+          fetchPhasePercentage = 1;
+        }
       }
     }
 
@@ -560,6 +586,7 @@ class SyncCubit extends Cubit<SyncState> {
         200 ~/ (_syncProgress.drivesCount - _syncProgress.drivesSynced);
     var currentDriveEntitiesSynced = 0;
     var driveSyncProgress = 0.0;
+    syncFormatedPrint('_syncSecondPhase: $currentBlockHeight');
 
     syncFormatedPrint(
         'number of drives at get metadata phase : ${_syncProgress.numberOfDrivesAtGetMetadataPhase}');
@@ -623,6 +650,8 @@ class SyncCubit extends Cubit<SyncState> {
 
           // Handle the last page of newEntities, i.e; There's nothing more to sync
           if (newEntities.length < pageCount) {
+            syncFormatedPrint(
+                'Saving last block height at _paginateProcess. $currentBlockHeight');
             // Reset the sync cursor after every sync to pick up files from other instances of the app.
             // (Different tab, different window, mobile, desktop etc)
             await _driveDao.writeToDrive(DrivesCompanion(

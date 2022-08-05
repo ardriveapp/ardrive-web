@@ -86,7 +86,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           // TODO: Find a better place to do this
           final lastLoggedInUser =
               state is ProfileLoggedIn ? state.walletAddress : null;
-          context.read<DriveDao>().deleteSharedPrivateDrives(lastLoggedInUser);
+          if (lastLoggedInUser != null) {
+            print('deleteSharedPrivateDrives $lastLoggedInUser');
+            context
+                .read<DriveDao>()
+                .deleteSharedPrivateDrives(lastLoggedInUser);
+          }
         },
         builder: (context, state) {
           Widget? shell;
@@ -97,7 +102,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             shell = BlocProvider<SharedFileCubit>(
               key: ValueKey(sharedFileId),
               create: (_) => SharedFileCubit(
-                fileId: sharedFileId,
+                fileId: sharedFileId!,
                 fileKey: sharedFileKey,
                 arweave: context.read<ArweaveService>(),
               ),
