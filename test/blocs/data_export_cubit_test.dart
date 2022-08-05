@@ -56,7 +56,7 @@ void main() {
         verify: (cubit) async {
           final state = cubit.state as DataExportSuccess;
           expect(
-            (await state.file.readAsString()),
+            (await state.bytes.readAsString()),
             equals(dataExportSnapshot),
           );
         });
