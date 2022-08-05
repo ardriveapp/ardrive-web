@@ -2,6 +2,8 @@ import 'package:equatable/equatable.dart';
 
 RegExp addressRegExp = RegExp('^[a-zA-Z0-9_-]{43}\$');
 
+typedef ArweaveAddressType = ArweaveAddress;
+
 class ArweaveAddress extends Equatable {
   final String _addr;
 
