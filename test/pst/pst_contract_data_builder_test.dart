@@ -14,8 +14,16 @@ void main() {
       expect(output.name, 'ArDrive');
       expect(output.ticker, 'ARDRIVE');
 
+      final firstBalanceAddress = output.balances.keys.first;
+      final firstBalanceValue = output.balances.values.first;
       expect(output.balances, isA<Map<ArweaveAddressType, int>>());
       expect(output.balances.length, 1288);
+      expect(
+          firstBalanceAddress,
+          ArweaveAddress(
+            '-0HTOR6F-lebzMQDwSvfaS1VIapN49MKkYVLHxKwWAQ',
+          ));
+      expect(firstBalanceValue, 10);
 
       expect(output.settings, isA<CommunityContractSettings>());
       expect(output.settings.quorum, 0.15);
