@@ -145,7 +145,7 @@ void main() {
           )));
     });
 
-    test('throws if the votes value are not a valid integer', () {
+    test('throws if the votes field is not an array', () {
       final builder = CommunityContractDataBuilder(
         rawContractDataWrongVotesType,
       );
@@ -158,6 +158,27 @@ void main() {
 
     test('throws if the votes schema is wrong', () {
       rawContractDataWrongVoteFiledsExpectations
+          .forEach((rawData, expectedException) {
+        final builder = CommunityContractDataBuilder(
+          rawData,
+        );
+        expect(() => builder.parse(), throwsA(expectedException));
+      });
+    });
+
+    test('throws if the settings field is not an array', () {
+      final builder = CommunityContractDataBuilder(
+        rawContractDataWrongSettingsType,
+      );
+      expect(
+          () => builder.parse(),
+          throwsA(const InvalidCommunityContractData(
+            reason: 'Expected the field .settings to be an array',
+          )));
+    });
+
+    test('throws if the settings schema is wrong', () {
+      rawContractDataWrongSettingsFiledsExpectations
           .forEach((rawData, expectedException) {
         final builder = CommunityContractDataBuilder(
           rawData,
