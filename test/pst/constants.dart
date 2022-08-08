@@ -1,3 +1,5 @@
+import 'package:ardrive/pst/pst_contract_data_builder.dart';
+
 const Map rawHealthyContractData = {
   "balances": {
     "-0HTOR6F-lebzMQDwSvfaS1VIapN49MKkYVLHxKwWAQ": 10,
@@ -3806,5 +3808,638 @@ const Map rawHealthyContractData = {
       "start": 987622,
       "totalWeight": 2698566217399
     }
-  ]
+  ],
+};
+
+const Map rawContractDataWrongName = {
+  "name": 'FAKE NAME',
+  "ticker": 'ARDRIVE',
+  "balances": {},
+  "votes": [],
+  "settings": [
+    ["quorum", 0.1],
+    ["support", 0.1],
+    ["voteLength", 10],
+    ["lockMinLength", 100],
+    ["lockMaxLength", 100],
+    ["communityAppUrl", "https://ardrive.io"],
+    [
+      "communityDiscussionLinks",
+      ["https://discord.gg/ya4hf2H"]
+    ],
+    [
+      "communityDescription",
+      "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+    ],
+    ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+    ["fee", 15]
+  ],
+  "vault": {},
+};
+
+const Map rawContractDataWrongTicker = {
+  "name": 'ArDrive',
+  "ticker": 'FAKE TICKER',
+  "balances": {},
+  "votes": [],
+  "settings": [
+    ["quorum", 0.1],
+    ["support", 0.1],
+    ["voteLength", 10],
+    ["lockMinLength", 100],
+    ["lockMaxLength", 100],
+    ["communityAppUrl", "https://ardrive.io"],
+    [
+      "communityDiscussionLinks",
+      ["https://discord.gg/ya4hf2H"]
+    ],
+    [
+      "communityDescription",
+      "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+    ],
+    ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+    ["fee", 15]
+  ],
+  "vault": {},
+};
+
+const Map rawContractDataWrongBalancesType = {
+  "name": 'ArDrive',
+  "ticker": 'ARDRIVE',
+  "balances": ['an array is not valid!'],
+  "votes": [],
+  "settings": [
+    ["quorum", 0.1],
+    ["support", 0.1],
+    ["voteLength", 10],
+    ["lockMinLength", 100],
+    ["lockMaxLength", 100],
+    ["communityAppUrl", "https://ardrive.io"],
+    [
+      "communityDiscussionLinks",
+      ["https://discord.gg/ya4hf2H"]
+    ],
+    [
+      "communityDescription",
+      "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+    ],
+    ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+    ["fee", 15]
+  ],
+  "vault": {},
+};
+
+const Map rawContractDataWrongBalancesKey = {
+  "name": 'ArDrive',
+  "ticker": 'ARDRIVE',
+  "balances": {
+    'not an address': 100,
+  },
+  "votes": [],
+  "settings": [
+    ["quorum", 0.1],
+    ["support", 0.1],
+    ["voteLength", 10],
+    ["lockMinLength", 100],
+    ["lockMaxLength", 100],
+    ["communityAppUrl", "https://ardrive.io"],
+    [
+      "communityDiscussionLinks",
+      ["https://discord.gg/ya4hf2H"]
+    ],
+    [
+      "communityDescription",
+      "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+    ],
+    ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+    ["fee", 15]
+  ],
+  "vault": {},
+};
+
+const Map rawContractDataWrongBalancesValue = {
+  "name": 'ArDrive',
+  "ticker": 'ARDRIVE',
+  "balances": {
+    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': "not an integer",
+  },
+  "votes": [],
+  "settings": [
+    ["quorum", 0.1],
+    ["support", 0.1],
+    ["voteLength", 10],
+    ["lockMinLength", 100],
+    ["lockMaxLength", 100],
+    ["communityAppUrl", "https://ardrive.io"],
+    [
+      "communityDiscussionLinks",
+      ["https://discord.gg/ya4hf2H"]
+    ],
+    [
+      "communityDescription",
+      "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+    ],
+    ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+    ["fee", 15]
+  ],
+  "vault": {}
+};
+
+const Map rawContractDataWrongVotesType = {
+  "name": 'ArDrive',
+  "ticker": 'ARDRIVE',
+  "balances": {},
+  "votes": {'a map': 'is a wrong .votes schema'},
+  "settings": [
+    ["quorum", 0.1],
+    ["support", 0.1],
+    ["voteLength", 10],
+    ["lockMinLength", 100],
+    ["lockMaxLength", 100],
+    ["communityAppUrl", "https://ardrive.io"],
+    [
+      "communityDiscussionLinks",
+      ["https://discord.gg/ya4hf2H"]
+    ],
+    [
+      "communityDescription",
+      "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+    ],
+    ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+    ["fee", 15]
+  ],
+  "vault": {}
+};
+
+const Map<Map, InvalidCommunityContractData>
+    rawContractDataWrongVoteFiledsExpectations = {
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [
+      {
+        "nays": 0,
+        "note": "Advisory tokens, 12 month lockup",
+        "start": 516926,
+        "status": 50,
+        "totalWeight": 1182600000000,
+        "type": "mintLocked",
+        "voted": ["Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4"],
+        "yays": 1182600000000
+      },
+    ],
+    "settings": [
+      ["quorum", 0.1],
+      ["support", 0.1],
+      ["voteLength", 10],
+      ["lockMinLength", 100],
+      ["lockMaxLength", 100],
+      ["communityAppUrl", "https://ardrive.io"],
+      [
+        "communityDiscussionLinks",
+        ["https://discord.gg/ya4hf2H"]
+      ],
+      [
+        "communityDescription",
+        "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+      ],
+      ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+      ["fee", 15]
+    ],
+    "vault": {}
+  }: InvalidCommunityContractData(
+    reason: 'Expected the field .votes[number].status to be a string, got 50',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [
+      {
+        "nays": 0,
+        "note": "Advisory tokens, 12 month lockup",
+        "start": 516926,
+        "status": "passed",
+        "totalWeight": 1182600000000,
+        "type": 50,
+        "voted": ["Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4"],
+        "yays": 1182600000000
+      },
+    ],
+    "settings": [
+      ["quorum", 0.1],
+      ["support", 0.1],
+      ["voteLength", 10],
+      ["lockMinLength", 100],
+      ["lockMaxLength", 100],
+      ["communityAppUrl", "https://ardrive.io"],
+      [
+        "communityDiscussionLinks",
+        ["https://discord.gg/ya4hf2H"]
+      ],
+      [
+        "communityDescription",
+        "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+      ],
+      ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+      ["fee", 15]
+    ],
+    "vault": {}
+  }: InvalidCommunityContractData(
+    reason: 'Expected the field .votes[number].type to be a string, got 50',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [
+      {
+        "nays": 0,
+        "note": 50,
+        "start": 516926,
+        "status": "passed",
+        "totalWeight": 1182600000000,
+        "type": "mintLocked",
+        "voted": ["Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4"],
+        "yays": 1182600000000
+      },
+    ],
+    "settings": [
+      ["quorum", 0.1],
+      ["support", 0.1],
+      ["voteLength", 10],
+      ["lockMinLength", 100],
+      ["lockMaxLength", 100],
+      ["communityAppUrl", "https://ardrive.io"],
+      [
+        "communityDiscussionLinks",
+        ["https://discord.gg/ya4hf2H"]
+      ],
+      [
+        "communityDescription",
+        "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+      ],
+      ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+      ["fee", 15]
+    ],
+    "vault": {}
+  }: InvalidCommunityContractData(
+    reason: 'Expected the field .votes[number].note to be a string, got 50',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [
+      {
+        "nays": 0,
+        "note": "Advisory tokens, 12 month lockup",
+        "start": 516926,
+        "status": "passed",
+        "totalWeight": 1182600000000,
+        "type": "mintLocked",
+        "voted": ["Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4"],
+        "yays": 1182600000000,
+        "key": 50
+      },
+    ],
+    "settings": [
+      ["quorum", 0.1],
+      ["support", 0.1],
+      ["voteLength", 10],
+      ["lockMinLength", 100],
+      ["lockMaxLength", 100],
+      ["communityAppUrl", "https://ardrive.io"],
+      [
+        "communityDiscussionLinks",
+        ["https://discord.gg/ya4hf2H"]
+      ],
+      [
+        "communityDescription",
+        "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+      ],
+      ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+      ["fee", 15]
+    ],
+    "vault": {}
+  }: InvalidCommunityContractData(
+    reason: 'Expected the field .votes[number].key to be a string, got 50',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [
+      {
+        "nays": 0,
+        "note": "Advisory tokens, 12 month lockup",
+        "start": 516926,
+        "status": "passed",
+        "totalWeight": 1182600000000,
+        "type": "mintLocked",
+        "voted": ["Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4"],
+        "yays": 1182600000000,
+        "recipient": 50
+      },
+    ],
+    "settings": [
+      ["quorum", 0.1],
+      ["support", 0.1],
+      ["voteLength", 10],
+      ["lockMinLength", 100],
+      ["lockMaxLength", 100],
+      ["communityAppUrl", "https://ardrive.io"],
+      [
+        "communityDiscussionLinks",
+        ["https://discord.gg/ya4hf2H"]
+      ],
+      [
+        "communityDescription",
+        "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+      ],
+      ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+      ["fee", 15]
+    ],
+    "vault": {}
+  }: InvalidCommunityContractData(
+    reason:
+        'Expected the field .votes[number].recipient to be a nullable string, got 50',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [
+      {
+        "nays": 0,
+        "note": "Advisory tokens, 12 month lockup",
+        "start": 516926,
+        "status": "passed",
+        "totalWeight": 1182600000000,
+        "type": "mintLocked",
+        "voted": ["Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4"],
+        "yays": 1182600000000,
+        "target": 50
+      },
+    ],
+    "settings": [
+      ["quorum", 0.1],
+      ["support", 0.1],
+      ["voteLength", 10],
+      ["lockMinLength", 100],
+      ["lockMaxLength", 100],
+      ["communityAppUrl", "https://ardrive.io"],
+      [
+        "communityDiscussionLinks",
+        ["https://discord.gg/ya4hf2H"]
+      ],
+      [
+        "communityDescription",
+        "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+      ],
+      ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+      ["fee", 15]
+    ],
+    "vault": {}
+  }: InvalidCommunityContractData(
+    reason:
+        'Expected the field .votes[number].target to be a nullable string, got 50',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [
+      {
+        "nays": 0,
+        "note": "Advisory tokens, 12 month lockup",
+        "start": 516926,
+        "status": "passed",
+        "totalWeight": 1182600000000,
+        "type": "mintLocked",
+        "voted": ["Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4"],
+        "yays": 1182600000000,
+        "qty": "not a number"
+      },
+    ],
+    "settings": [
+      ["quorum", 0.1],
+      ["support", 0.1],
+      ["voteLength", 10],
+      ["lockMinLength", 100],
+      ["lockMaxLength", 100],
+      ["communityAppUrl", "https://ardrive.io"],
+      [
+        "communityDiscussionLinks",
+        ["https://discord.gg/ya4hf2H"]
+      ],
+      [
+        "communityDescription",
+        "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+      ],
+      ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+      ["fee", 15]
+    ],
+    "vault": {}
+  }: InvalidCommunityContractData(
+    reason:
+        'Expected the field .votes[number].qty to be a nullable integer, got not a number',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [
+      {
+        "nays": 0,
+        "note": "Advisory tokens, 12 month lockup",
+        "start": 516926,
+        "status": "passed",
+        "totalWeight": 1182600000000,
+        "type": "mintLocked",
+        "voted": ["Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4"],
+        "yays": 1182600000000,
+        "lockLength": "not a number"
+      },
+    ],
+    "settings": [
+      ["quorum", 0.1],
+      ["support", 0.1],
+      ["voteLength", 10],
+      ["lockMinLength", 100],
+      ["lockMaxLength", 100],
+      ["communityAppUrl", "https://ardrive.io"],
+      [
+        "communityDiscussionLinks",
+        ["https://discord.gg/ya4hf2H"]
+      ],
+      [
+        "communityDescription",
+        "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+      ],
+      ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+      ["fee", 15]
+    ],
+    "vault": {}
+  }: InvalidCommunityContractData(
+    reason:
+        'Expected the field .votes[number].lockLength to be a nullable integer, got not a number',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [
+      {
+        "nays": 0,
+        "note": "Advisory tokens, 12 month lockup",
+        "start": 516926,
+        "status": "passed",
+        "totalWeight": 1182600000000,
+        "type": "mintLocked",
+        "voted": ["Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4"],
+        "yays": "not a number",
+      },
+    ],
+    "settings": [
+      ["quorum", 0.1],
+      ["support", 0.1],
+      ["voteLength", 10],
+      ["lockMinLength", 100],
+      ["lockMaxLength", 100],
+      ["communityAppUrl", "https://ardrive.io"],
+      [
+        "communityDiscussionLinks",
+        ["https://discord.gg/ya4hf2H"]
+      ],
+      [
+        "communityDescription",
+        "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+      ],
+      ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+      ["fee", 15]
+    ],
+    "vault": {}
+  }: InvalidCommunityContractData(
+    reason:
+        'Expected the field .votes[number].yays to be an integer, got not a number',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [
+      {
+        "nays": "not a number",
+        "note": "Advisory tokens, 12 month lockup",
+        "start": 516926,
+        "status": "passed",
+        "totalWeight": 1182600000000,
+        "type": "mintLocked",
+        "voted": ["Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4"],
+        "yays": 1182600000000,
+      },
+    ],
+    "settings": [
+      ["quorum", 0.1],
+      ["support", 0.1],
+      ["voteLength", 10],
+      ["lockMinLength", 100],
+      ["lockMaxLength", 100],
+      ["communityAppUrl", "https://ardrive.io"],
+      [
+        "communityDiscussionLinks",
+        ["https://discord.gg/ya4hf2H"]
+      ],
+      [
+        "communityDescription",
+        "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+      ],
+      ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+      ["fee", 15]
+    ],
+    "vault": {}
+  }: InvalidCommunityContractData(
+    reason:
+        'Expected the field .votes[number].nays to be an integer, got not a number',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [
+      {
+        "nays": 0,
+        "note": "Advisory tokens, 12 month lockup",
+        "start": "not a number",
+        "status": "passed",
+        "totalWeight": 1182600000000,
+        "type": "mintLocked",
+        "voted": ["Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4"],
+        "yays": 1182600000000,
+      },
+    ],
+    "settings": [
+      ["quorum", 0.1],
+      ["support", 0.1],
+      ["voteLength", 10],
+      ["lockMinLength", 100],
+      ["lockMaxLength", 100],
+      ["communityAppUrl", "https://ardrive.io"],
+      [
+        "communityDiscussionLinks",
+        ["https://discord.gg/ya4hf2H"]
+      ],
+      [
+        "communityDescription",
+        "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+      ],
+      ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+      ["fee", 15]
+    ],
+    "vault": {}
+  }: InvalidCommunityContractData(
+    reason:
+        'Expected the field .votes[number].start to be an integer, got not a number',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [
+      {
+        "nays": 0,
+        "note": "Advisory tokens, 12 month lockup",
+        "start": 516926,
+        "status": "passed",
+        "totalWeight": "not a number",
+        "type": "mintLocked",
+        "voted": ["Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4"],
+        "yays": 1182600000000,
+      },
+    ],
+    "settings": [
+      ["quorum", 0.1],
+      ["support", 0.1],
+      ["voteLength", 10],
+      ["lockMinLength", 100],
+      ["lockMaxLength", 100],
+      ["communityAppUrl", "https://ardrive.io"],
+      [
+        "communityDiscussionLinks",
+        ["https://discord.gg/ya4hf2H"]
+      ],
+      [
+        "communityDescription",
+        "We are a community focused on building the best private, secure, decentralized, pay-as-you-go, censorship-resistant and permanent data storage solution, for everyone.  With ArDrive's desktop, mobile and web apps, you can easily sync and share your public and private files from the PermaWeb."
+      ],
+      ["communityLogo", "tN4vheZxrAIjqCfbs3MDdWTXg8a_57JUNyoqA4uwr1k"],
+      ["fee", 15]
+    ],
+    "vault": {}
+  }: InvalidCommunityContractData(
+    reason:
+        'Expected the field .votes[number].totalWeight to be an integer, got not a number',
+  )
 };

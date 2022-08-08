@@ -91,5 +91,79 @@ void main() {
       expect(firstVote.qty, 50000);
       expect(firstVote.lockLength, 262800);
     });
+
+    test('throws if the name is not ArDrive', () {
+      final builder = CommunityContractDataBuilder(rawContractDataWrongName);
+      expect(
+          () => builder.parse(),
+          throwsA(const InvalidCommunityContractData(
+            reason: 'Expected the field .name to be "ArDrive"',
+          )));
+    });
+
+    test('throws if the ticker is not ARDRIVE', () {
+      final builder = CommunityContractDataBuilder(rawContractDataWrongTicker);
+      expect(
+          () => builder.parse(),
+          throwsA(const InvalidCommunityContractData(
+            reason: 'Expected the field .ticker to be "ARDRIVE"',
+          )));
+    });
+
+    test('throws if the balances is not a Map', () {
+      final builder = CommunityContractDataBuilder(
+        rawContractDataWrongBalancesType,
+      );
+      expect(
+          () => builder.parse(),
+          throwsA(const InvalidCommunityContractData(
+            reason: 'Expected the field .balances to be an object',
+          )));
+    });
+
+    test('throws if the balances\' key are not a valid Arweave address', () {
+      final builder = CommunityContractDataBuilder(
+        rawContractDataWrongBalancesKey,
+      );
+      expect(
+          () => builder.parse(),
+          throwsA(const InvalidCommunityContractData(
+            reason:
+                'Expected the key of the field .balances[address] to be a string, got not an address',
+          )));
+    });
+
+    test('throws if the balances\' value are not a valid integer', () {
+      final builder = CommunityContractDataBuilder(
+        rawContractDataWrongBalancesValue,
+      );
+      expect(
+          () => builder.parse(),
+          throwsA(const InvalidCommunityContractData(
+            reason:
+                'Expected the field .balances[address] to be an integer, got not an integer',
+          )));
+    });
+
+    test('throws if the votes value are not a valid integer', () {
+      final builder = CommunityContractDataBuilder(
+        rawContractDataWrongVotesType,
+      );
+      expect(
+          () => builder.parse(),
+          throwsA(const InvalidCommunityContractData(
+            reason: 'Expected the field .votes to be an array',
+          )));
+    });
+
+    test('throws if the votes schema is wrong', () {
+      rawContractDataWrongVoteFiledsExpectations
+          .forEach((rawData, expectedException) {
+        final builder = CommunityContractDataBuilder(
+          rawData,
+        );
+        expect(() => builder.parse(), throwsA(expectedException));
+      });
+    });
   });
 }
