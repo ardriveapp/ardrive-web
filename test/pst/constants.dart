@@ -4718,3 +4718,97 @@ const Map<Map, InvalidCommunityContractData>
         'Expected the field .settings[number][1] (fee) to be an integer, got not a number',
   )
 };
+
+const rawContractDataWrongVaultType = {
+  "name": 'ArDrive',
+  "ticker": 'ARDRIVE',
+  "balances": {},
+  "votes": [],
+  "settings": [],
+  "vault": ['an array is invalid']
+};
+
+const Map<Map, InvalidCommunityContractData>
+    rawContractDataWrongVaultFieldsExpectations = {
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [],
+    "settings": [],
+    "vault": {'not an address': []}
+  }: InvalidCommunityContractData(
+    reason:
+        'Expected the key of the field .vault[address] to be a string, got not an address',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [],
+    "settings": [],
+    "vault": {
+      'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': {'not an': 'array'}
+    }
+  }: InvalidCommunityContractData(
+    reason:
+        'Expected the field .vault[address] to be an array, got {not an: array}',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [],
+    "settings": [],
+    "vault": {
+      'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': [
+        {
+          "balance": "not a number",
+          "start": 10,
+          "end": 10,
+        },
+      ]
+    }
+  }: InvalidCommunityContractData(
+    reason:
+        'Expected the field .vault[address][number].balance to be in integer, got not a number',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [],
+    "settings": [],
+    "vault": {
+      'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': [
+        {
+          "start": "not a number",
+          "balance": 10,
+          "end": 10,
+        },
+      ]
+    }
+  }: InvalidCommunityContractData(
+    reason:
+        'Expected the field .vault[address][number].start to be in integer, got not a number',
+  ),
+  {
+    "name": 'ArDrive',
+    "ticker": 'ARDRIVE',
+    "balances": {},
+    "votes": [],
+    "settings": [],
+    "vault": {
+      'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA': [
+        {
+          "end": "not a number",
+          "start": 10,
+          "balance": 10,
+        },
+      ]
+    }
+  }: InvalidCommunityContractData(
+    reason:
+        'Expected the field .vault[address][number].end to be in integer, got not a number',
+  ),
+};

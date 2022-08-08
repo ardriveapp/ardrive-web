@@ -186,5 +186,26 @@ void main() {
         expect(() => builder.parse(), throwsA(expectedException));
       });
     });
+
+    test('throws if the vaults field is not a map', () {
+      final builder = CommunityContractDataBuilder(
+        rawContractDataWrongVaultType,
+      );
+      expect(
+          () => builder.parse(),
+          throwsA(const InvalidCommunityContractData(
+            reason: 'Expected the field .vault to be an object',
+          )));
+    });
+
+    test('throws if the settings schema is wrong', () {
+      rawContractDataWrongVaultFieldsExpectations
+          .forEach((rawData, expectedException) {
+        final builder = CommunityContractDataBuilder(
+          rawData,
+        );
+        expect(() => builder.parse(), throwsA(expectedException));
+      });
+    });
   });
 }
