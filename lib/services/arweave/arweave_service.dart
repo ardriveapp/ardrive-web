@@ -534,41 +534,53 @@ class ArweaveService {
     }
   }
 
-  Future<List<FileEntity>?> getAllFileEntitiesWithId(
-      String fileId, int? lastBlockHeight,
+  Future<List<FileEntity>?> getAllFileEntitiesWithId(String fileId,
       [SecretKey? fileKey]) async {
-    final allFileEntitiesQuery = await _graphQLRetry.execute(
-      AllFileEntitiesWithIdQuery(
-        variables: AllFileEntitiesWithIdArguments(
-          fileId: fileId,
-          lastBlockHeight: null,
-        ),
-      ),
-    );
-
-    final queryEdges = allFileEntitiesQuery.data!.transactions.edges;
-    if (queryEdges.isEmpty) {
-      return null;
-    }
+    String? cursor;
+    int? lastBlockHeight;
     List<FileEntity> fileEntities = [];
-    for (var edge in queryEdges) {
-      final fileTx = edge.node;
-      final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
 
-      try {
-        fileEntities.add(
-          await FileEntity.fromTransaction(
-            fileTx,
-            fileDataRes.bodyBytes,
-            fileKey: fileKey,
+    while (true) {
+      // Get a page of 100 transactions
+      final allFileEntitiesQuery = await _graphQLRetry.execute(
+        AllFileEntitiesWithIdQuery(
+          variables: AllFileEntitiesWithIdArguments(
+            fileId: fileId,
+            lastBlockHeight: lastBlockHeight,
+            after: cursor,
           ),
-        );
-      } on EntityTransactionParseException catch (parseException) {
-        'Failed to parse transaction with id ${parseException.transactionId}'
-            .logError();
+        ),
+      );
+      final queryEdges = allFileEntitiesQuery.data!.transactions.edges;
+      if (queryEdges.isEmpty) {
+        break;
+      }
+      for (var edge in queryEdges) {
+        final fileTx = edge.node;
+        final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
+
+        try {
+          fileEntities.add(
+            await FileEntity.fromTransaction(
+              fileTx,
+              fileDataRes.bodyBytes,
+              fileKey: fileKey,
+            ),
+          );
+        } on EntityTransactionParseException catch (parseException) {
+          'Failed to parse transaction with id ${parseException.transactionId}'
+              .logError();
+        }
+      }
+
+      cursor = queryEdges.last.cursor;
+
+      if (!allFileEntitiesQuery.data!.transactions.pageInfo.hasNextPage) {
+        break;
       }
     }
-    return fileEntities;
+
+    return fileEntities.isEmpty ? null : fileEntities;
   }
 
   /// Returns the number of confirmations each specified transaction has as a map,

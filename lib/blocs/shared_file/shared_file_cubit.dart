@@ -60,7 +60,6 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     return null;
   }
 
-  /// Returns the action performed on the file that lead to the new revision.
   String getPerformedRevisionAction(FileEntity entity,
       [FileRevision? previousRevision]) {
     if (previousRevision != null) {
@@ -76,8 +75,6 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     return RevisionAction.create;
   }
 
-  /// Computes the new file revisions from the provided entities, inserts them into the database,
-  /// and returns only the latest revisions.
   Future<List<FileRevision>> computeRevisionsFromEntities(
     List<FileEntity> fileEntities,
   ) async {
@@ -117,8 +114,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       emit(SharedFileIsPrivate());
       return;
     }
-    final allEntities =
-        await _arweave.getAllFileEntitiesWithId(fileId, 0, fileKey);
+    final allEntities = await _arweave.getAllFileEntitiesWithId(
+      fileId,
+      fileKey,
+    );
     if (allEntities != null) {
       {
         final revisions = await computeRevisionsFromEntities(allEntities);
