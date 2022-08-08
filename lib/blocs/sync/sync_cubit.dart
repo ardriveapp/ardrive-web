@@ -284,8 +284,6 @@ class SyncCubit extends Cubit<SyncState> {
 
       _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
 
-      syncFormatedPrint('Current block height number $currentBlockHeight');
-
       final driveSyncProcesses = drives.map((drive) => _syncDrive(
             drive.id,
             lastBlockHeight: calculateSyncLastBlockHeight(
@@ -582,7 +580,6 @@ class SyncCubit extends Cubit<SyncState> {
         200 ~/ (_syncProgress.drivesCount - _syncProgress.drivesSynced);
     var currentDriveEntitiesSynced = 0;
     var driveSyncProgress = 0.0;
-
     syncFormatedPrint(
         'number of drives at get metadata phase : ${_syncProgress.numberOfDrivesAtGetMetadataPhase}');
 
