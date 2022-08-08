@@ -25,8 +25,8 @@ class SharedFileSideSheet extends StatefulWidget {
 
 class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
   @override
-  Widget build(BuildContext context) => Drawer(
-        elevation: 1,
+  Widget build(BuildContext context) => Container(
+        width: 300,
         child: DefaultTabController(
             length: 2,
             child: Column(
@@ -37,11 +37,11 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
                 TabBar(
                   tabs: [
                     Tab(
-                        text:
-                            appLocalizationsOf(context).itemDetailsEmphasized),
+                      text: appLocalizationsOf(context).itemDetailsEmphasized,
+                    ),
                     Tab(
-                        text:
-                            appLocalizationsOf(context).itemActivityEmphasized),
+                      text: appLocalizationsOf(context).itemActivityEmphasized,
+                    ),
                   ],
                 ),
                 Expanded(
