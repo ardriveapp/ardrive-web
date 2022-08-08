@@ -132,7 +132,7 @@ class CommunityContractDataBuilder {
         case 'status':
         case 'type':
         case 'note':
-        case 'key':
+        case 'key': // FIXME: this field is nullable
           if (value is! String) {
             throw InvalidCommunityContractData(
               reason:

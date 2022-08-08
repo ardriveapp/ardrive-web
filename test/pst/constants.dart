@@ -3972,7 +3972,7 @@ const Map rawContractDataWrongVotesType = {
 };
 
 const Map<Map, InvalidCommunityContractData>
-    rawContractDataWrongVoteFiledsExpectations = {
+    rawContractDataWrongVotesFiledsExpectations = {
   {
     "name": 'ArDrive',
     "ticker": 'ARDRIVE',
@@ -4124,7 +4124,8 @@ const Map<Map, InvalidCommunityContractData>
     ],
     "vault": {}
   }: InvalidCommunityContractData(
-    reason: 'Expected the field .votes[number].key to be a string, got 50',
+    reason:
+        'Expected the field .votes[number].key to be a nullable string, got 50',
   ),
   {
     "name": 'ArDrive',

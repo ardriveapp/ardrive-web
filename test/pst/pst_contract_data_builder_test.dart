@@ -157,7 +157,7 @@ void main() {
     });
 
     test('throws if the votes schema is wrong', () {
-      rawContractDataWrongVoteFiledsExpectations
+      rawContractDataWrongVotesFiledsExpectations
           .forEach((rawData, expectedException) {
         final builder = CommunityContractDataBuilder(
           rawData,
