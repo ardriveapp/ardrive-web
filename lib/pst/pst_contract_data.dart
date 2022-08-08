@@ -3,7 +3,7 @@ import 'package:equatable/equatable.dart';
 
 typedef CommunityTipPercentage = double;
 
-/// Shape of the ArDrive Community Smart Contract
+/// Shape of the ArDrive Community Smart Contract data
 class CommunityContractData {
   CommunityContractData({
     required this.votes,
