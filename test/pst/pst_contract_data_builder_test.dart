@@ -42,14 +42,23 @@ void main() {
       final firstVault = output.vault.entries.toList()[0];
       final firstVaultAddress = firstVault.key;
       final firstVaultItems = firstVault.value;
+      final firstVaultItem = firstVaultItems[0];
       expect(output.vault, isA<Map<ArweaveAddressType, List<VaultItem>>>());
       expect(
         firstVaultAddress,
         ArweaveAddress('-OtTqVqAGqTBzhviZptnUTys7rWenNrnQcjGtvDBDdo'),
       );
       expect(
-        firstVaultItems,
-        const [VaultItem(balance: 500000, start: 645563, end: 1433963)],
+        firstVaultItem.balance,
+        500000,
+      );
+      expect(
+        firstVaultItem.start,
+        645563,
+      );
+      expect(
+        firstVaultItem.end,
+        1433963,
       );
 
       final firstVote = output.votes[0];

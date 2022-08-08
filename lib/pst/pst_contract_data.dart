@@ -1,5 +1,4 @@
 import 'package:ardrive/types/arweave_address.dart';
-import 'package:equatable/equatable.dart';
 
 typedef CommunityTipPercentage = double;
 
@@ -89,7 +88,7 @@ class CommunityContractSettings {
   final int fee;
 }
 
-class VaultItem extends Equatable {
+class VaultItem {
   const VaultItem({
     required this.balance,
     required this.start,
@@ -99,7 +98,4 @@ class VaultItem extends Equatable {
   final int balance;
   final int start;
   final int end;
-
-  @override
-  List<Object?> get props => [balance, start, end];
 }
