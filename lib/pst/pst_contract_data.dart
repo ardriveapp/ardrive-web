@@ -29,9 +29,10 @@ class CommunityContractVotes {
     required this.voted,
     required this.start,
     required this.totalWeight,
-    required this.recipient,
-    required this.qty,
-    required this.lockLength,
+    this.recipient,
+    this.qty,
+    this.lockLength,
+    this.key,
   });
 
   final VoteStatus status;
@@ -45,6 +46,7 @@ class CommunityContractVotes {
   final ArweaveAddressType? recipient;
   final int? qty;
   final int? lockLength;
+  final String? key;
 }
 
 enum VoteStatus {
