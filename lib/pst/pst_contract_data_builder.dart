@@ -1,5 +1,6 @@
 import 'package:ardrive/pst/pst_contract_data.dart';
 import 'package:ardrive/types/arweave_address.dart';
+import 'package:equatable/equatable.dart';
 
 class CommunityContractDataBuilder {
   final Map _rawData;
@@ -98,7 +99,7 @@ class CommunityContractDataBuilder {
 
   void _validateName() {
     if (_rawData['name'] != 'ArDrive') {
-      throw InvalidCommnutyContractData(
+      throw const InvalidCommunityContractData(
         reason: 'Expected the field .name to be "ArDrive"',
       );
     }
@@ -106,7 +107,7 @@ class CommunityContractDataBuilder {
 
   void _validateTicker() {
     if (_rawData['ticker'] != 'ARDRIVE') {
-      throw InvalidCommnutyContractData(
+      throw const InvalidCommunityContractData(
         reason: 'Expected the field .ticker to be "ARDRIVE"',
       );
     }
@@ -115,7 +116,7 @@ class CommunityContractDataBuilder {
   void _validateVotes() {
     final votes = _rawData['votes'];
     if (votes is! List) {
-      throw InvalidCommnutyContractData(
+      throw const InvalidCommunityContractData(
         reason: 'Expected the field .votes to be an array',
       );
     } else {
@@ -133,7 +134,7 @@ class CommunityContractDataBuilder {
         case 'note':
         case 'key':
           if (value is! String) {
-            throw InvalidCommnutyContractData(
+            throw InvalidCommunityContractData(
               reason:
                   'Expected the field .votes[number].$key to be a string, got $value',
             );
@@ -143,7 +144,7 @@ class CommunityContractDataBuilder {
         case 'recipient':
         case 'target':
           if (value is! String && value != null) {
-            throw InvalidCommnutyContractData(
+            throw InvalidCommunityContractData(
               reason:
                   'Expected the field .votes[number].$key to be a nullable string, got $value',
             );
@@ -153,7 +154,7 @@ class CommunityContractDataBuilder {
         case 'qty':
         case 'lockLength':
           if (value is! int && value != null) {
-            throw InvalidCommnutyContractData(
+            throw InvalidCommunityContractData(
               reason:
                   'Expected the field .votes[number].$key to be a nullable integer, got $value',
             );
@@ -165,7 +166,7 @@ class CommunityContractDataBuilder {
         case 'start':
         case 'totalWeight':
           if (value is! int) {
-            throw InvalidCommnutyContractData(
+            throw InvalidCommunityContractData(
               reason:
                   'Expected the field .votes[number].$key to be an integer, got $value',
             );
@@ -174,7 +175,7 @@ class CommunityContractDataBuilder {
 
         case 'voted':
           if (value is! List) {
-            throw InvalidCommnutyContractData(
+            throw InvalidCommunityContractData(
               reason:
                   'Expected the field .votes[number].$key to be an array, got $value',
             );
@@ -184,7 +185,7 @@ class CommunityContractDataBuilder {
         case 'value':
           // TODO: can it be a boolean? Can it be null?
           if (value is! num && value is! String && value is! List) {
-            throw InvalidCommnutyContractData(
+            throw InvalidCommunityContractData(
               reason:
                   'Expected the field .votes[number].$key to be a string, integer, or array, got $value',
             );
@@ -202,13 +203,13 @@ class CommunityContractDataBuilder {
   void _validateSettings() {
     final settings = _rawData['settings'];
     if (settings is! List) {
-      throw InvalidCommnutyContractData(
+      throw const InvalidCommunityContractData(
         reason: 'Expected the field .settings to be an array',
       );
     } else {
       for (final dynamic settingsItem in settings) {
         if (settingsItem is! List || settingsItem.length != 2) {
-          throw InvalidCommnutyContractData(
+          throw const InvalidCommunityContractData(
             reason:
                 'Expected the field .settings[number] to be an array with two elements',
           );
@@ -221,7 +222,7 @@ class CommunityContractDataBuilder {
           case 'communityDescription':
           case 'communityLogo':
             if (value is! String) {
-              throw InvalidCommnutyContractData(
+              throw InvalidCommunityContractData(
                 reason:
                     'Expected the field .settings[number][1] ($key) to be a string, got $value',
               );
@@ -235,7 +236,7 @@ class CommunityContractDataBuilder {
           case 'lockMinLength':
           case 'fee':
             if (value is! num) {
-              throw InvalidCommnutyContractData(
+              throw InvalidCommunityContractData(
                 reason:
                     'Expected the field .settings[number][1] ($key) to be an integer, got $value',
               );
@@ -244,7 +245,7 @@ class CommunityContractDataBuilder {
 
           case 'communityDiscussionLinks':
             if (value is! List) {
-              throw InvalidCommnutyContractData(
+              throw InvalidCommunityContractData(
                 reason:
                     'Expected the field .settings[number][1] ($key) to be an array, got $value',
               );
@@ -265,21 +266,24 @@ class CommunityContractDataBuilder {
   void _validateBalances() {
     final balances = _rawData['balances'];
     if (balances is! Map) {
-      throw InvalidCommnutyContractData(
+      throw const InvalidCommunityContractData(
         reason: 'Expected the field .balances to be an object',
       );
     } else {
       final addresses = balances.keys;
       for (final address in addresses) {
         final balance = balances[address];
-        if (address is! String) {
-          throw InvalidCommnutyContractData(
+
+        try {
+          ArweaveAddress(address);
+        } on InvalidAddress {
+          throw InvalidCommunityContractData(
             reason:
                 'Expected the key of the field .balances[address] to be a string, got $address',
           );
         }
         if (balance is! int) {
-          throw InvalidCommnutyContractData(
+          throw InvalidCommunityContractData(
             reason:
                 'Expected the field .balances[address] to be an integer, got $balance',
           );
@@ -291,21 +295,23 @@ class CommunityContractDataBuilder {
   void _validateVaults() {
     final vault = _rawData['vault'];
     if (vault is! Map) {
-      throw InvalidCommnutyContractData(
+      throw const InvalidCommunityContractData(
         reason: 'Expected the field .vault to be an object',
       );
     } else {
       final addresses = vault.keys;
       for (final address in addresses) {
         final vaultsOfAddress = vault[address];
-        if (address is! String) {
-          throw InvalidCommnutyContractData(
+        try {
+          ArweaveAddress(address);
+        } on InvalidAddress {
+          throw InvalidCommunityContractData(
             reason:
                 'Expected the key of the field .vault[address] to be a string, got $address',
           );
         }
         if (vaultsOfAddress is! List) {
-          throw InvalidCommnutyContractData(
+          throw InvalidCommunityContractData(
             reason:
                 'Expected the field .vault[address] to be an array, got $vaultsOfAddress',
           );
@@ -325,7 +331,7 @@ class CommunityContractDataBuilder {
         case 'start':
         case 'end':
           if (value is! int) {
-            throw InvalidCommnutyContractData(
+            throw InvalidCommunityContractData(
               reason:
                   'Expected the field .vault[address][number].$key to be in integer, got $value',
             );
@@ -337,17 +343,13 @@ class CommunityContractDataBuilder {
       }
     });
   }
-
-  // MapEntry getEntry(String key) {
-  //   return _rawData.entries.firstWhere((entry) => entry.key == key);
-  // }
 }
 
-class InvalidCommnutyContractData implements Exception {
-  final String _errorMessage = 'Invalid community contract data';
+class InvalidCommunityContractData extends Equatable implements Exception {
+  static const String _errorMessage = 'Invalid community contract data';
   final String? _reason;
 
-  InvalidCommnutyContractData({String? reason}) : _reason = reason;
+  const InvalidCommunityContractData({String? reason}) : _reason = reason;
 
   @override
   String toString() {
@@ -355,4 +357,7 @@ class InvalidCommnutyContractData implements Exception {
         _reason != null ? '$_errorMessage. $_reason' : _errorMessage;
     return errorMessage;
   }
+
+  @override
+  List<Object?> get props => [_reason];
 }
