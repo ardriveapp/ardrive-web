@@ -1,5 +1,6 @@
 import 'package:ardrive/pst/contract_oracle.dart';
 import 'package:ardrive/pst/pst_contract_data.dart';
+import 'package:equatable/equatable.dart';
 
 const maxReadContractAttempts = 3;
 
@@ -9,7 +10,7 @@ class ArDriveContractOracle implements ContractOracle {
   ArDriveContractOracle(List<ContractOracle> contractOracles)
       : _contractOracles = contractOracles {
     if (contractOracles.isEmpty) {
-      throw EmptyContractOracles();
+      throw const EmptyContractOracles();
     }
   }
 
@@ -19,7 +20,7 @@ class ArDriveContractOracle implements ContractOracle {
     int contractOracleIndex = 0;
     CommunityContractData? data;
 
-    while (data == null && _contractOracles.length < contractOracleIndex) {
+    while (data == null && _contractOracles.length > contractOracleIndex) {
       final contractOracle = _contractOracles[contractOracleIndex];
       readContractAttempts = 0;
 
@@ -50,15 +51,20 @@ class ArDriveContractOracle implements ContractOracle {
   }
 }
 
-class EmptyContractOracles implements Exception {
+class EmptyContractOracles extends Equatable implements Exception {
+  const EmptyContractOracles();
+
   @override
   String toString() {
     return 'Expected at least one contract reader';
   }
+
+  @override
+  List<Object?> get props => [];
 }
 
-class CouldNotReadContractState implements Exception {
-  final String _errMessage = 'Expected at least one contract reader';
+class CouldNotReadContractState extends Equatable implements Exception {
+  final String _errMessage = 'Could not read contract state';
   final String? _reason;
 
   const CouldNotReadContractState({String? reason}) : _reason = reason;
@@ -67,4 +73,7 @@ class CouldNotReadContractState implements Exception {
   String toString() {
     return _reason != null ? '$_errMessage. $_reason' : _errMessage;
   }
+
+  @override
+  List<Object?> get props => [_reason];
 }
