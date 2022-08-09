@@ -85,7 +85,11 @@ class CommunityContractDataBuilder {
     );
 
     return CommunityContractData(
-        votes: votes, settings: settings, balances: balances, vault: vault);
+      votes: votes,
+      settings: settings,
+      balances: balances,
+      vault: vault,
+    );
   }
 
   void _validate() {
