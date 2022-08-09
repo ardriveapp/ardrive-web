@@ -2,7 +2,7 @@ import 'package:ardrive/types/arweave_address.dart';
 
 typedef CommunityTipPercentage = double;
 
-/// Shape of the ArDrive Community Smart Contract data
+/// Shape of the ArDrive Community Smart Contract state
 class CommunityContractData {
   CommunityContractData({
     required this.votes,
