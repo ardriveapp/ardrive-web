@@ -105,6 +105,18 @@ void main() {
 
         expect(contract, isA<CommunityContractData>());
       });
+
+      test('throws if it fails to read the contract', () async {
+        final communityContractOracle =
+            ArDriveContractOracle([myBrokenContractOracle]);
+
+        expect(
+          () => communityContractOracle.getCommunityContract(),
+          throwsA(const CouldNotReadContractState(
+            reason: 'Max retry attempts reached',
+          )),
+        );
+      });
     });
   });
 }
