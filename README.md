@@ -64,8 +64,8 @@ You can use a custom gateway URL by setting the `flutter.arweaveGatewayUrl` key 
 With the web app opened you can access the browser's JavaScript console to run the follow examples:
 
 ```js
-// To set the item
-localStorage.setItem('flutter.arweaveGatewayUrl', 'https://my.custom.url');
+// To set the item. Note that the value is wrapped in double quotes
+localStorage.setItem('flutter.arweaveGatewayUrl', '"https://my.custom.url"');
 
 // To remove it (set the default)
 localStorage.removeItem('flutter.arweaveGatewayUrl');
