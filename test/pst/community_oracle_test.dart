@@ -28,7 +28,7 @@ void main() {
         'ContractOracle is expected to call the ARDRIVE Smart Contract only!',
       ));
 
-      // returns the healthy data when the correct TxTD is passed
+      // returns the healthy data when the correct TxID is passed
       when(() => myContractReader.readContract(pstTransactionId))
           .thenAnswer((_) => Future.value(rawHealthyContractData));
 
