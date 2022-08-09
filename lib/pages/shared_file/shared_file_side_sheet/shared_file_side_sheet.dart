@@ -25,42 +25,39 @@ class SharedFileSideSheet extends StatefulWidget {
 
 class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
   @override
-  Widget build(BuildContext context) => Container(
-        width: 300,
-        child: DefaultTabController(
-            length: 2,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget build(BuildContext context) => DefaultTabController(
+      length: 2,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 8),
+          TabBar(
+            tabs: [
+              Tab(
+                text: appLocalizationsOf(context).itemDetailsEmphasized,
+              ),
+              Tab(
+                text: appLocalizationsOf(context).itemActivityEmphasized,
+              ),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
               children: [
-                const SizedBox(height: 8),
-                TabBar(
-                  tabs: [
-                    Tab(
-                      text: appLocalizationsOf(context).itemDetailsEmphasized,
-                    ),
-                    Tab(
-                      text: appLocalizationsOf(context).itemActivityEmphasized,
-                    ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildInfoTable(context, widget.revisions),
+                    _buildTxTable(context, widget.revisions),
                   ],
                 ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildInfoTable(context, widget.revisions),
-                          _buildTxTable(context, widget.revisions),
-                        ],
-                      ),
-                      _buildActivityTab(context, widget.revisions),
-                    ],
-                  ),
-                )
+                _buildActivityTab(context, widget.revisions),
               ],
-            )),
-      );
+            ),
+          )
+        ],
+      ));
 
   Widget _buildInfoTable(BuildContext context, List<FileRevision> revisions) =>
       DataTable(
