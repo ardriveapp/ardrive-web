@@ -4576,7 +4576,7 @@ const Map<Map, InvalidCommunityContractData>
     "vault": {}
   }: InvalidCommunityContractData(
     reason:
-        'Expected the field .settings[number][1] (quorum) to be an integer, got not a number',
+        'Expected the field .settings[number][1] (quorum) to be a decimal, got not a number',
   ),
   {
     "name": 'ArDrive',
@@ -4604,7 +4604,7 @@ const Map<Map, InvalidCommunityContractData>
     "vault": {}
   }: InvalidCommunityContractData(
     reason:
-        'Expected the field .settings[number][1] (support) to be an integer, got not a number',
+        'Expected the field .settings[number][1] (support) to be a decimal, got not a number',
   ),
   {
     "name": 'ArDrive',
@@ -4716,7 +4716,7 @@ const Map<Map, InvalidCommunityContractData>
     "vault": {}
   }: InvalidCommunityContractData(
     reason:
-        'Expected the field .settings[number][1] (fee) to be an integer, got not a number',
+        'Expected the field .settings[number][1] (fee) to be a decimal, got not a number',
   )
 };
 

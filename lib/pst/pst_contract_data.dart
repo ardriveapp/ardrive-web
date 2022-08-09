@@ -87,7 +87,7 @@ class CommunityContractSettings {
   final List<String> communityDiscussionLinks;
   final String communityDescription;
   final ArweaveAddressType communityLogo;
-  final int fee;
+  final double fee;
 }
 
 class VaultItem {

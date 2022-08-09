@@ -53,8 +53,8 @@ class CommunityContractDataBuilder {
           lockLength: lockLength);
     }).toList(growable: false);
     final CommunityContractSettings settings = CommunityContractSettings(
-      quorum: rawSettings['quorum'],
-      support: rawSettings['support'],
+      quorum: rawSettings['quorum'].toDouble(),
+      support: rawSettings['support'].toDouble(),
       voteLength: rawSettings['voteLength'],
       lockMinLength: rawSettings['lockMinLength'],
       lockMaxLength: rawSettings['lockMaxLength'],
@@ -62,7 +62,7 @@ class CommunityContractDataBuilder {
       communityDiscussionLinks: rawSettings['communityDiscussionLinks'],
       communityDescription: rawSettings['communityDescription'],
       communityLogo: ArweaveAddress(rawSettings['communityLogo']),
-      fee: rawSettings['fee'],
+      fee: rawSettings['fee'].toDouble(),
     );
     final Map<ArweaveAddressType, int> balances = Map.fromEntries(
       rawBalances.entries.map(
@@ -229,16 +229,24 @@ class CommunityContractDataBuilder {
             }
             break;
 
-          case 'quorum':
-          case 'support':
           case 'voteLength':
           case 'lockMaxLength':
           case 'lockMinLength':
-          case 'fee':
-            if (value is! num) {
+            if (value is! int) {
               throw InvalidCommunityContractData(
                 reason:
                     'Expected the field .settings[number][1] ($key) to be an integer, got $value',
+              );
+            }
+            break;
+
+          case 'quorum':
+          case 'support':
+          case 'fee':
+            if (value is! double && value is! int) {
+              throw InvalidCommunityContractData(
+                reason:
+                    'Expected the field .settings[number][1] ($key) to be a decimal, got $value',
               );
             }
             break;
