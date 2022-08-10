@@ -18,27 +18,46 @@ class ArDriveContractOracle implements ContractOracle {
   Future<CommunityContractData> getCommunityContract() async {
     int readContractAttempts = 0;
     int contractOracleIndex = 0;
-    CommunityContractData? data;
 
-    while (data == null && _contractOracles.length > contractOracleIndex) {
-      final contractOracle = _contractOracles[contractOracleIndex];
-      readContractAttempts = 0;
-
-      while (data == null && readContractAttempts < _maxReadContractAttempts) {
-        try {
-          data = await contractOracle.getCommunityContract();
-        } catch (_) {
-          readContractAttempts++;
-        }
-      }
-
-      contractOracleIndex++;
-    }
+    CommunityContractData? data = await _getContractFromOracles();
 
     if (data == null) {
       throw const CouldNotReadContractState(
         reason: 'Max retry attempts reached',
       );
+    }
+
+    return data;
+  }
+
+  /// iterates over all contract readers attempting to read the contract
+  Future<CommunityContractData?> _getContractFromOracles() async {
+    int contractOracleIndex = 0;
+    CommunityContractData? data;
+
+    while (data == null && _contractOracles.length > contractOracleIndex) {
+      final contractOracle = _contractOracles[contractOracleIndex];
+      data = await _getContractWithRetries(contractOracle);
+      contractOracleIndex++;
+    }
+
+    return data;
+  }
+
+  /// attempts multiple retries to read the given contract oracle
+  Future<CommunityContractData?> _getContractWithRetries(
+    ContractOracle contractOracle, {
+    int maxAttempts = _maxReadContractAttempts,
+  }) async {
+    CommunityContractData? data;
+    int readContractAttempts = 0;
+
+    while (data == null && readContractAttempts < maxAttempts) {
+      try {
+        data = await contractOracle.getCommunityContract();
+      } catch (_) {
+        readContractAttempts++;
+      }
     }
 
     return data;
