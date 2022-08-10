@@ -16,9 +16,6 @@ class ArDriveContractOracle implements ContractOracle {
 
   @override
   Future<CommunityContractData> getCommunityContract() async {
-    int readContractAttempts = 0;
-    int contractOracleIndex = 0;
-
     CommunityContractData? data = await _getContractFromOracles();
 
     if (data == null) {
