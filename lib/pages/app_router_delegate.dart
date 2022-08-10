@@ -125,8 +125,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               builder: (context, state) {
                 Widget? shellPage;
                 if (state is DrivesLoadSuccess) {
-                  shellPage =
-                      !state.hasNoDrives ? const DriveDetailPage() : const NoDrivesPage();
+                  shellPage = !state.hasNoDrives
+                      ? const DriveDetailPage()
+                      : const NoDrivesPage();
                   driveId = state.selectedDriveId;
                 }
 

@@ -12,7 +12,8 @@ Uri generatePublicDriveShareLink({
   // Elsewhere, link to app.ardrive.io.
   final linkOrigin = kIsWeb ? Uri.base.origin : linkOriginProduction;
 
-  final driveShareLink = '$linkOrigin/#/drives/$driveId?name=${Uri.encodeQueryComponent(driveName)}';
+  final driveShareLink =
+      '$linkOrigin/#/drives/$driveId?name=${Uri.encodeQueryComponent(driveName)}';
   return Uri.parse(driveShareLink);
 }
 

@@ -15,8 +15,7 @@ class ProfileAuthUnlockScreen extends StatefulWidget {
   const ProfileAuthUnlockScreen({Key? key}) : super(key: key);
 
   @override
-  ProfileAuthUnlockScreenState createState() =>
-      ProfileAuthUnlockScreenState();
+  ProfileAuthUnlockScreenState createState() => ProfileAuthUnlockScreenState();
 }
 
 class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {

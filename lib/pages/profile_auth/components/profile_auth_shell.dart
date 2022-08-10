@@ -10,7 +10,8 @@ class ProfileAuthShell extends StatelessWidget {
   final double? contentWidthFactor;
   final Widget? contentFooter;
 
-  const ProfileAuthShell({Key? key, 
+  const ProfileAuthShell({
+    Key? key,
     required this.illustration,
     required this.content,
     this.contentWidthFactor,
