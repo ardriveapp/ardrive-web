@@ -189,8 +189,9 @@ class FsEntryMoveForm extends StatelessWidget {
                                       onTap: () => context
                                           .read<FsEntryMoveCubit>()
                                           .loadFolder(f.id),
-                                      trailing:
-                                          Icon(Icons.keyboard_arrow_right),
+                                      trailing: const Icon(
+                                        Icons.keyboard_arrow_right,
+                                      ),
                                       // Do not allow users to navigate into the folder they are currently trying to move.
                                       enabled: f.id != state.movingEntryId,
                                     ),
@@ -198,7 +199,8 @@ class FsEntryMoveForm extends StatelessWidget {
                                   ...state.viewingFolder.files.map(
                                     (f) => ListTile(
                                       key: ValueKey(f.id),
-                                      leading: Icon(Icons.insert_drive_file),
+                                      leading:
+                                          const Icon(Icons.insert_drive_file),
                                       title: Text(f.name),
                                       enabled: false,
                                       dense: true,
@@ -209,7 +211,7 @@ class FsEntryMoveForm extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Divider(),
+                        const Divider(),
                         Padding(
                           padding: const EdgeInsets.only(right: 16),
                           child: Wrap(

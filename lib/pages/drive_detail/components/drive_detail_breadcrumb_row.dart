@@ -8,11 +8,11 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mobileBreadcrumbCount = 2;
-    final desktopBreadcrumbCount = 4;
+    const mobileBreadcrumbCount = 2;
+    const desktopBreadcrumbCount = 4;
 
     final theme = Theme.of(context);
-    final segmentButtonPadding = const EdgeInsets.symmetric(vertical: 16);
+    const segmentButtonPadding = EdgeInsets.symmetric(vertical: 16);
 
     final selectedSegmentTheme = TextButton.styleFrom(
       primary: kOnSurfaceBodyTextColor,
@@ -24,7 +24,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
         children: [
           if (_pathSegments.length >= breadCrumbcount) ...[
             PopupMenuButton(
-              icon: Icon(Icons.navigate_before),
+              icon: const Icon(Icons.navigate_before),
               itemBuilder: (context) {
                 return <PopupMenuItem>[
                   PopupMenuItem(
@@ -77,8 +77,8 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
                   child: Text(s.value),
                 ),
                 if (!isLastSegment)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
                     child: Text('/'),
                   ),
               ];
@@ -93,8 +93,8 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
               ),
             ),
             if (_pathSegments.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
                 child: Text('/'),
               ),
             ..._pathSegments.asMap().entries.expand((s) {
@@ -109,8 +109,8 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
                   child: Text(s.value),
                 ),
                 if (!isLastSegment)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
                     child: Text('/'),
                   ),
               ];

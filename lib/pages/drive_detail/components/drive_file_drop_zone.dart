@@ -32,7 +32,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 128, horizontal: 128),
-      /* 
+      /*
             Added padding here so that the drop zone doesn't overlap with the
             Link widget.
             */
@@ -42,7 +42,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
           children: [
             if (isHovering) _buildDropZoneOnHover(),
             DropzoneView(
-              key: Key('dropZone'),
+              key: const Key('dropZone'),
               onCreated: (ctrl) => controller = ctrl,
               operation: DragOperation.all,
               onDrop: (htmlFile) => _onDrop(
@@ -137,8 +137,8 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
   void _onLeave() => setState(() => isHovering = false);
   Widget _buildDropZoneOnHover() => Center(
         child: Container(
-          margin: EdgeInsets.all(16),
-          padding: EdgeInsets.all(16),
+          margin: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           width: MediaQuery.of(context).size.width / 2,
           height: MediaQuery.of(context).size.width / 4,
           decoration: BoxDecoration(
@@ -157,7 +157,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
                 size: 64,
                 color: Theme.of(context).primaryColor,
               ),
-              SizedBox(
+              const SizedBox(
                 width: 16,
               ),
               Text(

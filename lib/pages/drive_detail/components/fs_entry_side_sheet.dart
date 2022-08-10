@@ -466,13 +466,13 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                                   ? [
                                       Text(
                                           appLocalizationsOf(context).download),
-                                      SizedBox(width: 4),
-                                      Icon(Icons.download),
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.download),
                                     ]
                                   : [
                                       Text(appLocalizationsOf(context).preview),
-                                      SizedBox(width: 4),
-                                      Icon(Icons.open_in_new)
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.open_in_new)
                                     ],
                             ),
                           ),
@@ -554,7 +554,7 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                         trailing: statusIcon,
                       );
                     },
-                    separatorBuilder: (context, index) => Divider(),
+                    separatorBuilder: (context, index) => const Divider(),
                     itemCount: state.revisions.length,
                   );
                 } else {
@@ -598,7 +598,7 @@ class CopyIconButton extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         alignment: Alignment.centerRight,
         child: IconButton(
-          icon: Icon(Icons.copy, color: Colors.black54),
+          icon: const Icon(Icons.copy, color: Colors.black54),
           tooltip: tooltip,
           onPressed: () => Clipboard.setData(ClipboardData(text: value)),
         ),

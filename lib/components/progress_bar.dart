@@ -39,11 +39,11 @@ class _ProgressBarState extends State<ProgressBar> {
             animation: true,
             animateFromLastPercent: true,
             lineHeight: 10.0,
-            barRadius: Radius.circular(5),
-            backgroundColor: Color(0xffFAFAFA),
+            barRadius: const Radius.circular(5),
+            backgroundColor: const Color(0xffFAFAFA),
             animationDuration: 1000,
             percent: _percentage,
-            progressColor: Color(0xff3C3C3C),
+            progressColor: const Color(0xff3C3C3C),
           );
         });
   }

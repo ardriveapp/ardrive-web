@@ -18,13 +18,13 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
+import 'package:drift/drift.dart' show OrderingMode;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intersperse/intersperse.dart';
-import 'package:drift/drift.dart' show OrderingMode;
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -65,7 +65,7 @@ class DriveDetailPage extends StatelessWidget {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
-                                      child: Container(
+                                      child: SizedBox(
                                         width: 400,
                                         child: Text(
                                           state.currentDrive.name,
@@ -76,7 +76,7 @@ class DriveDetailPage extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-                                    DriveDetailActionRow(),
+                                    const DriveDetailActionRow(),
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
@@ -105,7 +105,7 @@ class DriveDetailPage extends StatelessWidget {
                           ),
                         ),
                         if (state.showSelectedItemDetails) ...{
-                          VerticalDivider(width: 1),
+                          const VerticalDivider(width: 1),
                           FsEntrySideSheet(
                             driveId: state.currentDrive.id,
                             drivePrivacy: state.currentDrive.privacy,
@@ -141,10 +141,10 @@ class DriveDetailPage extends StatelessWidget {
                                       style:
                                           Theme.of(context).textTheme.headline5,
                                     ),
-                                    SizedBox(
+                                    const SizedBox(
                                       height: 16,
                                     ),
-                                    DriveDetailActionRow()
+                                    const DriveDetailActionRow()
                                   ],
                                 ),
                                 DriveDetailBreadcrumbRow(
