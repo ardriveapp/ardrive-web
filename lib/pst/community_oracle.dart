@@ -8,7 +8,7 @@ import '../types/arweave_address.dart';
 
 /// Minimum ArDrive community tip from the Community Improvement Proposal Doc:
 /// https://arweave.net/Yop13NrLwqlm36P_FDCdMaTBwSlj0sdNGAC4FqfRUgo
-final minArDriveCommunityWinstonTip = Winston(10000000);
+final minArDriveCommunityWinstonTip = Winston(BigInt.from(10000000));
 
 class CommunityOracle {
   final ContractOracle _contractOracle;
@@ -17,12 +17,12 @@ class CommunityOracle {
       : _contractOracle = contractOracle;
 
   Future<Winston> getCommunityWinstonTip(Winston winstonCost) async {
-    final contractState = await _contractOracle.getTipPercentageFromContract();
+    final tipPercentage = await _contractOracle.getTipPercentageFromContract();
     final value = max<int>(
-      (winstonCost.asInteger * contractState).floor(),
-      minArDriveCommunityWinstonTip.asInteger,
+      (winstonCost.value.toInt() * tipPercentage).floor(),
+      minArDriveCommunityWinstonTip.value.toInt(),
     );
-    return Winston(value);
+    return Winston(BigInt.from(value));
   }
 
   Future<ArweaveAddress> selectTokenHolder() async {

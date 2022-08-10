@@ -1,13 +1,13 @@
 import 'package:equatable/equatable.dart';
 
 class Winston extends Equatable {
-  final int _amount;
+  final BigInt _amount;
 
   @override
   List<Object?> get props => [_amount];
 
-  Winston(int amount) : _amount = amount {
-    if (amount < 0) {
+  Winston(BigInt amount) : _amount = amount {
+    if (amount < BigInt.zero || !amount.isValidInt) {
       throw InvalidWinstonValue();
     }
   }
@@ -29,11 +29,12 @@ class Winston extends Equatable {
     RoundStrategy round = RoundStrategy.roundCeil,
   }) {
     double nonRounded = _amount / winston._amount;
+    // BigInt.from always rounds down the doubles
     switch (round) {
       case RoundStrategy.roundCeil:
-        return Winston(nonRounded.ceil());
+        return Winston(BigInt.from(nonRounded + 1));
       case RoundStrategy.roundDown:
-        return Winston(nonRounded.floor());
+        return Winston(BigInt.from(nonRounded));
       default:
         throw NoSuchRoundStrategy();
     }
@@ -49,10 +50,10 @@ class Winston extends Equatable {
 
   @override
   String toString() {
-    return '$_amount';
+    return '${_amount.toInt()}';
   }
 
-  int get asInteger {
+  BigInt get value {
     return _amount;
   }
 
