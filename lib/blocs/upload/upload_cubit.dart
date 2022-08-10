@@ -6,6 +6,7 @@ import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -260,27 +261,30 @@ class UploadCubit extends Cubit<UploadState> {
       conflictingFiles: conflictingFiles,
       foldersByPath: foldersByPath,
     );
-
-    final costEstimate = await CostEstimate.create(
-      uploadPlan: uploadPlan,
-      arweaveService: _arweave,
-      pstService: _pst,
-      wallet: profile.wallet,
-    );
-
-    if (await _profileCubit.checkIfWalletMismatch()) {
-      emit(UploadWalletMismatch());
-      return;
-    }
-
-    emit(
-      UploadReady(
-        costEstimate: costEstimate,
-        uploadIsPublic: _targetDrive.isPublic,
-        sufficientArBalance: profile.walletBalance >= costEstimate.totalCost,
+    try {
+      final costEstimate = await CostEstimate.create(
         uploadPlan: uploadPlan,
-      ),
-    );
+        arweaveService: _arweave,
+        pstService: _pst,
+        wallet: profile.wallet,
+      );
+
+      if (await _profileCubit.checkIfWalletMismatch()) {
+        emit(UploadWalletMismatch());
+        return;
+      }
+
+      emit(
+        UploadReady(
+          costEstimate: costEstimate,
+          uploadIsPublic: _targetDrive.isPublic,
+          sufficientArBalance: profile.walletBalance >= costEstimate.totalCost,
+          uploadPlan: uploadPlan,
+        ),
+      );
+    } catch (error) {
+      addError(error);
+    }
   }
 
   Future<void> startUpload({
@@ -303,12 +307,17 @@ class UploadCubit extends Cubit<UploadState> {
 
     // Upload Bundles
     for (var bundleHandle in uploadPlan.bundleUploadHandles) {
-      await bundleHandle.prepareAndSignBundleTransaction(
-        arweaveService: _arweave,
-        driveDao: _driveDao,
-        pstService: _pst,
-        wallet: profile.wallet,
-      );
+      try {
+        await bundleHandle.prepareAndSignBundleTransaction(
+          arweaveService: _arweave,
+          driveDao: _driveDao,
+          pstService: _pst,
+          wallet: profile.wallet,
+        );
+      } catch (error) {
+        addError(error);
+      }
+
       await for (final _ in bundleHandle
           .upload(_arweave)
           .debounceTime(const Duration(milliseconds: 500))
@@ -320,11 +329,16 @@ class UploadCubit extends Cubit<UploadState> {
 
     // Upload V2 Files
     for (final uploadHandle in uploadPlan.fileV2UploadHandles.values) {
-      await uploadHandle.prepareAndSignTransactions(
-          arweaveService: _arweave, wallet: profile.wallet, pstService: _pst);
-      await uploadHandle.writeFileEntityToDatabase(
-        driveDao: _driveDao,
-      );
+      try {
+        await uploadHandle.prepareAndSignTransactions(
+            arweaveService: _arweave, wallet: profile.wallet, pstService: _pst);
+        await uploadHandle.writeFileEntityToDatabase(
+          driveDao: _driveDao,
+        );
+      } catch (error) {
+        addError(error);
+      }
+
       await for (final _ in uploadHandle
           .upload(_arweave)
           .debounceTime(const Duration(milliseconds: 500))
@@ -356,8 +370,7 @@ class UploadCubit extends Cubit<UploadState> {
   @override
   void onError(Object error, StackTrace stackTrace) {
     emit(UploadFailure());
+    'Failed to upload file: $error $stackTrace'.logError();
     super.onError(error, stackTrace);
-
-    print('Failed to upload file: $error $stackTrace');
   }
 }

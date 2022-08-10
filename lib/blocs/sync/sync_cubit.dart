@@ -582,7 +582,6 @@ class SyncCubit extends Cubit<SyncState> {
         200 ~/ (_syncProgress.drivesCount - _syncProgress.drivesSynced);
     var currentDriveEntitiesSynced = 0;
     var driveSyncProgress = 0.0;
-
     syncFormatedPrint(
         'number of drives at get metadata phase : ${_syncProgress.numberOfDrivesAtGetMetadataPhase}');
 
