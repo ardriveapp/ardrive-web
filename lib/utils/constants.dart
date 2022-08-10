@@ -6,3 +6,6 @@ const List<String> supportedImageTypesInFilePreview = [
   'image/bmp',
   'image/vnd.wap.wbmp',
 ];
+
+const String googleChrome = 'Google Chrome';
+const String mozillaFirefox = 'Firefox';

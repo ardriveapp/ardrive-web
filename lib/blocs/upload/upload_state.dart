@@ -90,6 +90,17 @@ class UploadReady extends UploadState {
       ];
 }
 
+class UploadFileNumberAboveLimit extends UploadState {
+  UploadFileNumberAboveLimit(
+      {required this.limit,
+      required this.numberOfFiles,
+      required this.browserDescription});
+
+  final int limit;
+  final int numberOfFiles;
+  final String browserDescription;
+}
+
 class UploadInProgress extends UploadState {
   final UploadPlan uploadPlan;
   final int _equatableBust = DateTime.now().millisecondsSinceEpoch;

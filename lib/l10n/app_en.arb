@@ -892,6 +892,30 @@
       }
     }
   },
+  "uploadLimitExceeded": "Upload Limit Exceeded",
+  "@uploadLimitExceeded": {
+    "description": "Limit how many files we can upload"
+  },
+  "uploadLimitExceededDescription": "Your upload of {numberOfFiles} files exceeds the maximum permitted via {browser} of {limit}.",
+  "@uploadLimitExceededDescription": {
+    "description": "Limit how many files we can upload",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      },
+      "limit": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      },
+      "browser": {
+        "type": "String",
+        "example": "Google Chrome"
+      }
+    }
+  },
   "filesTooLargeExplanationPrivate": "ArDrive on web currently only supports file uploads smaller than 100 MiB for private drives",
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"

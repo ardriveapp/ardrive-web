@@ -6,12 +6,15 @@ import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:meta/meta.dart';
 import 'package:pedantic/pedantic.dart';
+import 'package:platform_detect/platform_detect.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'enums/conflicting_files_actions.dart';
@@ -21,6 +24,8 @@ part 'upload_state.dart';
 const privateFileSizeLimit = 104857600;
 final publicFileSizeLimit = 1.25 * math.pow(10, 9);
 final filesNamesToExclude = ['.DS_Store'];
+const int chromeFilesLimit = 1400;
+const int firefoxFilesLimit = 9600;
 
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
@@ -137,6 +142,29 @@ class UploadCubit extends Cubit<UploadState> {
 
     // If we don't have any file above limit, we can check conflicts
     checkConflicts();
+  }
+
+  void checkFileNumberLimit() {
+    if (kIsWeb) {
+      final numberOfFiles = files.length;
+      if (browser.isChrome && numberOfFiles > chromeFilesLimit) {
+        emit(UploadFileNumberAboveLimit(
+            browserDescription: googleChrome,
+            limit: chromeFilesLimit,
+            numberOfFiles: numberOfFiles));
+        return;
+      }
+
+      if (browser.isFirefox && numberOfFiles > firefoxFilesLimit) {
+        emit(UploadFileNumberAboveLimit(
+            browserDescription: mozillaFirefox,
+            limit: firefoxFilesLimit,
+            numberOfFiles: numberOfFiles));
+        return;
+      }
+    }
+
+    checkFilesAboveLimit();
   }
 
   Future<void> checkConflictingFiles() async {
