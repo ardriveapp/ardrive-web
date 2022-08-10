@@ -101,17 +101,6 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
             ]),
           },
           DataRow(cells: [
-            DataCell(Text(appLocalizationsOf(context).lastUpdated)),
-            DataCell(
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  yMMdDateFormatter.format(revisions.last.dateCreated),
-                ),
-              ),
-            ),
-          ]),
-          DataRow(cells: [
             DataCell(Text(appLocalizationsOf(context).dateCreated)),
             DataCell(
               Align(
