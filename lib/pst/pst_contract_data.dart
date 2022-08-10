@@ -84,7 +84,7 @@ class CommunityContractSettings {
   final int lockMinLength;
   final int lockMaxLength;
   final String communityAppUrl;
-  final List<String> communityDiscussionLinks;
+  final List communityDiscussionLinks;
   final String communityDescription;
   final ArweaveAddressType communityLogo;
   final double fee;

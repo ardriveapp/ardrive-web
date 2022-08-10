@@ -19,7 +19,10 @@ class CommunityOracle {
   Future<Winston> getCommunityWinstonTip(Winston winstonCost) async {
     final tipPercentage = await _contractOracle.getTipPercentageFromContract();
     final value = max<int>(
-      (winstonCost.value.toInt() * tipPercentage).floor(),
+      // Workaround [BigInt] percentage division problems
+      // by first multiplying by the percentage * 100 and then dividing by 100.
+      (winstonCost.value * BigInt.from(tipPercentage * 100) ~/ BigInt.from(100))
+          .toInt(),
       minArDriveCommunityWinstonTip.value.toInt(),
     );
     return Winston(BigInt.from(value));

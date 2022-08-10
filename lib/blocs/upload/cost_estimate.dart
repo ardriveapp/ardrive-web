@@ -3,6 +3,7 @@ import 'package:ardrive/blocs/upload/upload_handles/bundle_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
+import 'package:ardrive/types/winston.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 
@@ -46,11 +47,13 @@ class CostEstimate {
 
     final bundlePstFee = await pstService.getPSTFee(dataItemsCost);
     final v2FilesPstFee = v2FilesUploadCost <= BigInt.zero
-        ? BigInt.zero
+        ? Winston(BigInt.zero)
         : await pstService.getPSTFee(v2FilesUploadCost);
 
-    final totalCost =
-        v2FilesUploadCost + dataItemsCost + bundlePstFee + v2FilesPstFee;
+    final totalCost = v2FilesUploadCost +
+        dataItemsCost +
+        bundlePstFee.value +
+        v2FilesPstFee.value;
 
     final arUploadCost = winstonToAr(totalCost);
     final usdUploadCost = await arweaveService
@@ -60,7 +63,7 @@ class CostEstimate {
     return CostEstimate._create(
       totalCost: totalCost,
       arUploadCost: arUploadCost,
-      pstFee: v2FilesPstFee + bundlePstFee,
+      pstFee: v2FilesPstFee.value + bundlePstFee.value,
       usdUploadCost: usdUploadCost,
     );
   }

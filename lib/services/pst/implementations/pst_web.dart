@@ -3,20 +3,13 @@ library pst;
 
 import 'dart:js_util';
 
+import 'package:ardrive/types/transaction_id.dart';
 import 'package:js/js.dart';
 
-@JS('getPstFeePercentage')
-external Object getPstFeePercentagePromise();
+@JS('readContractPromise')
+external Object _readContractPromise(String contractTxId);
 
-@JS('getWeightedPstHolder')
-external Object getWeightedPstHolderPromise();
-
-Future<double> getPstFeePercentage() {
-  final promise = getPstFeePercentagePromise();
-  return promiseToFuture(promise);
-}
-
-Future<String> getWeightedPstHolder() {
-  final promise = getWeightedPstHolderPromise();
+Future<dynamic> readContract(TransactionID contractTxId) {
+  final promise = _readContractPromise(contractTxId.toString());
   return promiseToFuture(promise);
 }
