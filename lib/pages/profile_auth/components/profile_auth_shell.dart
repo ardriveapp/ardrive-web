@@ -10,12 +10,12 @@ class ProfileAuthShell extends StatelessWidget {
   final double? contentWidthFactor;
   final Widget? contentFooter;
 
-  ProfileAuthShell({
+  const ProfileAuthShell({Key? key, 
     required this.illustration,
     required this.content,
     this.contentWidthFactor,
     this.contentFooter,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +53,7 @@ class ProfileAuthShell extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Image.asset(Resources.images.profile.permahillsBg),
-                  SizedBox(height: 128),
+                  const SizedBox(height: 128),
                 ],
               ),
             ),

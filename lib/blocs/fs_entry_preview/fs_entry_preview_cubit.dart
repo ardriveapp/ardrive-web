@@ -7,11 +7,11 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/mime_lookup.dart';
-import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:equatable/equatable.dart';
-import 'package:http/http.dart' as http;
 import 'package:drift/drift.dart';
+import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
 
 part 'fs_entry_preview_state.dart';
 
@@ -95,7 +95,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   Future<void> emitImagePreview(FileEntry file, String dataUrl) async {
     try {
-      emit(FsEntryPreviewLoading());
+      emit(const FsEntryPreviewLoading());
 
       final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
       if (dataTx == null) {

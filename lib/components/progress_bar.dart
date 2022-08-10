@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:percent_indicator/linear_percent_indicator.dart';
 
 class ProgressBar extends StatefulWidget {
-  ProgressBar({Key? key, required this.percentage}) : super(key: key);
+  const ProgressBar({Key? key, required this.percentage}) : super(key: key);
 
   final Stream<LinearProgress> percentage;
 

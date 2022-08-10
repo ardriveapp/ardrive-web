@@ -3,7 +3,7 @@ part of '../drive_detail_page.dart';
 class DriveDetailFolderEmptyCard extends StatelessWidget {
   final bool promptToAddFiles;
 
-  const DriveDetailFolderEmptyCard({this.promptToAddFiles = false});
+  const DriveDetailFolderEmptyCard({Key? key, this.promptToAddFiles = false}) : super(key: key);
 
   @override
   Widget build(BuildContext context) => Center(

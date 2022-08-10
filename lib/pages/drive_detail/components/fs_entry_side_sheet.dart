@@ -4,11 +4,12 @@ class FsEntrySideSheet extends StatefulWidget {
   final String driveId;
   final Privacy drivePrivacy;
   final SelectedItem? maybeSelectedItem;
-  FsEntrySideSheet({
+  const FsEntrySideSheet({
+    Key? key,
     required this.driveId,
     required this.drivePrivacy,
     this.maybeSelectedItem,
-  });
+  }) : super(key: key);
 
   @override
   State<FsEntrySideSheet> createState() => _FsEntrySideSheetState();
@@ -22,7 +23,7 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
           key: widget.maybeSelectedItem?.id != null
               ? ValueKey(
-                  widget.driveId + '${widget.maybeSelectedItem?.id}',
+                  '${widget.driveId}${widget.maybeSelectedItem?.id}',
                 )
               : UniqueKey(),
           providers: [
@@ -592,7 +593,11 @@ class CopyIconButton extends StatelessWidget {
   final String value;
   final String tooltip;
 
-  CopyIconButton({required this.value, required this.tooltip});
+  const CopyIconButton({
+    Key? key,
+    required this.value,
+    required this.tooltip,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) => Container(

@@ -21,10 +21,10 @@ class DriveFileDropZone extends StatefulWidget {
     required this.folderId,
   }) : super(key: key);
   @override
-  _DriveFileDropZoneState createState() => _DriveFileDropZoneState();
+  DriveFileDropZoneState createState() => DriveFileDropZoneState();
 }
 
-class _DriveFileDropZoneState extends State<DriveFileDropZone> {
+class DriveFileDropZoneState extends State<DriveFileDropZone> {
   late DropzoneViewController controller;
   bool isHovering = false;
   bool isCurrentlyShown = false;

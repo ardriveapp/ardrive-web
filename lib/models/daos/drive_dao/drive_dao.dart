@@ -35,7 +35,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   initVaults() async {
     // Creates a store
-    final store = newMemoryVaultStore();
+    final store = await newMemoryVaultStore();
 
     // Creates a vault from the previously created store
     _driveKeyVault = await store.vault<SecretKey>(name: 'driveKeyVault');

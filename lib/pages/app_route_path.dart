@@ -1,5 +1,5 @@
 import 'package:cryptography/cryptography.dart';
-import 'package:meta/meta.dart';
+import 'package:flutter/foundation.dart';
 
 @immutable
 class AppRoutePath {
@@ -21,7 +21,7 @@ class AppRoutePath {
   /// The private key of the corresponding shared file, encoded as Base64.
   final String? sharedRawFileKey;
 
-  AppRoutePath({
+  const AppRoutePath({
     this.signingIn = false,
     this.driveId,
     this.driveName,
@@ -34,7 +34,7 @@ class AppRoutePath {
   });
 
   /// Creates a route that lets the user sign in.
-  factory AppRoutePath.signIn() => AppRoutePath(signingIn: true);
+  factory AppRoutePath.signIn() => const AppRoutePath(signingIn: true);
 
   /// Creates a route that points to a particular drive.
   factory AppRoutePath.driveDetail({
@@ -69,5 +69,5 @@ class AppRoutePath {
         sharedRawFileKey: sharedRawFileKey,
       );
 
-  factory AppRoutePath.unknown() => AppRoutePath();
+  factory AppRoutePath.unknown() => const AppRoutePath();
 }

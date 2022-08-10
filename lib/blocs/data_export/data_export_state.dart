@@ -10,7 +10,7 @@ abstract class DataExportState extends Equatable {
 class DataExportInitial extends DataExportState {}
 
 class DataExportInProgress extends DataExportState {
-  DataExportInProgress();
+  const DataExportInProgress();
 
   @override
   List<Object> get props => [];
@@ -19,7 +19,7 @@ class DataExportInProgress extends DataExportState {
 class DataExportSuccess extends DataExportState {
   final XFile file;
 
-  DataExportSuccess({
+  const DataExportSuccess({
     required this.file,
   });
 

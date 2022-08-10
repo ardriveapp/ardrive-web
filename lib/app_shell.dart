@@ -17,10 +17,10 @@ class AppShell extends StatefulWidget {
   const AppShell({Key? key, required this.page}) : super(key: key);
 
   @override
-  _AppShellState createState() => _AppShellState();
+  AppShellState createState() => AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class AppShellState extends State<AppShell> {
   bool _showProfileOverlay = false;
   bool _showWalletSwitchDialog = true;
   @override
@@ -48,8 +48,10 @@ class _AppShellState extends State<AppShell> {
                   IconButton(
                     icon: const Icon(Icons.people_alt),
                     tooltip: 'CommunityXYZ',
-                    onPressed: () => launch(
-                      'https://community.xyz/#-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ',
+                    onPressed: () => launchUrl(
+                      Uri.parse(
+                        'https://community.xyz/#-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ',
+                      ),
                     ),
                   ),
                   IconButton(
@@ -61,8 +63,8 @@ class _AppShellState extends State<AppShell> {
                       ),
                       child: PortalEntry(
                         visible: _showProfileOverlay,
-                        portal: Padding(
-                          padding: const EdgeInsets.only(top: 56),
+                        portal: const Padding(
+                          padding: EdgeInsets.only(top: 56),
                           child: ProfileOverlay(),
                         ),
                         portalAnchor: Alignment.topRight,

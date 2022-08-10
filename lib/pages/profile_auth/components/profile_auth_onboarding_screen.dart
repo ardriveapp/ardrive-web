@@ -2,16 +2,18 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'profile_auth_shell.dart';
 
 class ProfileAuthOnboarding extends StatefulWidget {
+  const ProfileAuthOnboarding({Key? key}) : super(key: key);
+
   @override
-  _ProfileAuthOnboardingState createState() => _ProfileAuthOnboardingState();
+  ProfileAuthOnboardingState createState() => ProfileAuthOnboardingState();
 }
 
-class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
+class ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
   final int onboardingPageCount = 4;
   int _onboardingStepIndex = 0;
 

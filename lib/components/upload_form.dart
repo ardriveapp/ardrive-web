@@ -177,7 +177,7 @@ class UploadForm extends StatelessWidget {
                       onPressed: () => context
                           .read<UploadCubit>()
                           .prepareUploadPlanAndCostEstimates(
-                              uploadAction: UploadActions.Skip),
+                              uploadAction: UploadActions.skip),
                       child: Text(appLocalizationsOf(context).skipEmphasized),
                     ),
                   TextButton(
@@ -188,7 +188,7 @@ class UploadForm extends StatelessWidget {
                     onPressed: () => context
                         .read<UploadCubit>()
                         .prepareUploadPlanAndCostEstimates(
-                            uploadAction: UploadActions.Replace),
+                            uploadAction: UploadActions.replace),
                     child: Text(appLocalizationsOf(context).replaceEmphasized),
                   ),
                 ]);

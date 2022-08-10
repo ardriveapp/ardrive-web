@@ -10,6 +10,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'profile_auth_shell.dart';
 
 class ProfileAuthPromptWalletScreen extends StatelessWidget {
+  const ProfileAuthPromptWalletScreen({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) => ProfileAuthShell(
         illustration: Image.asset(
@@ -50,7 +52,11 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
             ],
             const SizedBox(height: 16),
             TextButton(
-              onPressed: () => launch('https://tokens.arweave.org'),
+              onPressed: () => launchUrl(
+                Uri.parse(
+                  'https://tokens.arweave.org',
+                ),
+              ),
               child: Text(
                 appLocalizationsOf(context).getAWallet,
                 textAlign: TextAlign.center,

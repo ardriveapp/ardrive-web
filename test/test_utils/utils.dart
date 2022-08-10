@@ -99,7 +99,7 @@ Future<void> addTestFilesToDb(
               parentFolderId: rootFolderId,
               name: fileId,
               path: '/$fileId',
-              dataTxId: fileId + 'Data',
+              dataTxId: '${fileId}Data',
               size: 500,
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
@@ -117,7 +117,7 @@ Future<void> addTestFilesToDb(
               parentFolderId: nestedFolderId,
               name: fileId,
               path: '/$nestedFolderId/$fileId',
-              dataTxId: fileId + 'Data',
+              dataTxId: '${fileId}Data',
               size: 500,
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
@@ -140,9 +140,9 @@ Future<void> addTestFilesToDb(
               driveId: driveId,
               parentFolderId: rootFolderId,
               name: fileId,
-              metadataTxId: fileId + 'Meta',
+              metadataTxId: '${fileId}Meta',
               action: RevisionAction.create,
-              dataTxId: fileId + 'Data',
+              dataTxId: '${fileId}Data',
               size: 500,
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
@@ -159,8 +159,8 @@ Future<void> addTestFilesToDb(
               driveId: driveId,
               parentFolderId: nestedFolderId,
               name: fileId,
-              dataTxId: fileId + 'Meta',
-              metadataTxId: fileId + 'Data',
+              dataTxId: '${fileId}Meta',
+              metadataTxId: '${fileId}Data',
               action: RevisionAction.create,
               size: 500,
               dateCreated: Value(defaultDate),
@@ -180,7 +180,7 @@ Future<void> addTestFilesToDb(
           (i) {
             final fileId = '$rootFolderId$i';
             return NetworkTransactionsCompanion.insert(
-              id: fileId + 'Meta',
+              id: '${fileId}Meta',
               status: const Value(TransactionStatus.confirmed),
               dateCreated: Value(defaultDate),
             );
@@ -191,7 +191,7 @@ Future<void> addTestFilesToDb(
           (i) {
             final fileId = '$rootFolderId$i';
             return NetworkTransactionsCompanion.insert(
-              id: fileId + 'Data',
+              id: '${fileId}Data',
               status: const Value(TransactionStatus.confirmed),
               dateCreated: Value(defaultDate),
             );
@@ -202,7 +202,7 @@ Future<void> addTestFilesToDb(
           (i) {
             final fileId = '$nestedFolderId$i';
             return NetworkTransactionsCompanion.insert(
-              id: fileId + 'Meta',
+              id: '${fileId}Meta',
               status: const Value(TransactionStatus.confirmed),
               dateCreated: Value(defaultDate),
             );
@@ -213,7 +213,7 @@ Future<void> addTestFilesToDb(
           (i) {
             final fileId = '$nestedFolderId$i';
             return NetworkTransactionsCompanion.insert(
-              id: fileId + 'Data',
+              id: '${fileId}Data',
               status: const Value(TransactionStatus.confirmed),
               dateCreated: Value(defaultDate),
             );

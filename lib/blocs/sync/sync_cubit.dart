@@ -10,13 +10,11 @@ import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/html/html_util.dart';
-import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:meta/meta.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:retry/retry.dart';
 
 import '../../utils/html/implementations/html_web.dart';
@@ -1032,7 +1030,7 @@ class SyncCubit extends Cubit<SyncState> {
       final folderId = node.folder.id;
       // If this is the root folder, we should not include its name as part of the path.
       final folderPath = node.folder.parentFolderId != null
-          ? parentPath + '/' + node.folder.name
+          ? '$parentPath/${node.folder.name}'
           : rootPath;
 
       await _driveDao
@@ -1040,7 +1038,7 @@ class SyncCubit extends Cubit<SyncState> {
           .write(FolderEntriesCompanion(path: Value(folderPath)));
 
       for (final staleFileId in node.files.keys) {
-        final filePath = folderPath + '/' + node.files[staleFileId]!.name;
+        final filePath = '$folderPath/${node.files[staleFileId]!.name}';
 
         await _driveDao
             .updateFileById(driveId, staleFileId)
@@ -1087,7 +1085,7 @@ class SyncCubit extends Cubit<SyncState> {
             .getSingleOrNull();
 
         if (parentPath != null) {
-          final filePath = parentPath + '/' + staleOrphanFile.name.value;
+          final filePath = '$parentPath/${staleOrphanFile.name.value}';
 
           await _driveDao.writeToFile(FileEntriesCompanion(
               id: staleOrphanFile.id,
@@ -1235,6 +1233,6 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void syncFormatedPrint(String message) {
-    print('$hashCode Sync context: ' + message);
+    print('$hashCode Sync context: $message');
   }
 }

@@ -40,7 +40,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       );
       final dataRes = await http.get(
         Uri.parse(
-          _arweave.client.api.gatewayUrl.origin + '/$dataTxId',
+          '${_arweave.client.api.gatewayUrl.origin}/$dataTxId',
         ),
       );
 

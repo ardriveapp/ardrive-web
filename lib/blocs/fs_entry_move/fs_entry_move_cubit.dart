@@ -3,9 +3,8 @@ import 'dart:async';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:pedantic/pedantic.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'fs_entry_move_state.dart';
 

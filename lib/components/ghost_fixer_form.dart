@@ -24,7 +24,7 @@ Future<void> promptToReCreateFolder(BuildContext context,
             arweave: context.read<ArweaveService>(),
             driveDao: context.read<DriveDao>(),
             syncCubit: context.read<SyncCubit>()),
-        child: GhostFixerForm(),
+        child: const GhostFixerForm(),
       ),
     );
   } else {
@@ -34,6 +34,8 @@ Future<void> promptToReCreateFolder(BuildContext context,
 }
 
 class GhostFixerForm extends StatelessWidget {
+  const GhostFixerForm({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<GhostFixerCubit, GhostFixerState>(
@@ -95,7 +97,7 @@ class GhostFixerForm extends StatelessWidget {
                                   appLocalizationsOf(context).folderName),
                           showErrors: (control) =>
                               control.dirty && control.invalid,
-                          validationMessages: (_) =>
+                          validationMessages:
                               kValidationMessages(appLocalizationsOf(context)),
                         ),
                       ),

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
+// ignore: depend_on_referenced_packages
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:uuid/uuid.dart';

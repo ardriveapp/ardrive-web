@@ -41,6 +41,8 @@ part 'components/fs_entry_preview_widget.dart';
 part 'components/fs_entry_side_sheet.dart';
 
 class DriveDetailPage extends StatelessWidget {
+  const DriveDetailPage({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) => SizedBox.expand(
         child: BlocBuilder<DriveDetailCubit, DriveDetailState>(

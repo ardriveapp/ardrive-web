@@ -11,7 +11,7 @@ class ConfigService {
 
   Future<AppConfig> getConfig() async {
     if (_config == null) {
-      final environment = kReleaseMode ? 'prod' : 'dev';
+      const environment = kReleaseMode ? 'prod' : 'dev';
       final configContent =
           await rootBundle.loadString('assets/config/$environment.json');
 

@@ -29,7 +29,7 @@ Future<void> promptToRenameFolder(
             profileCubit: context.read<ProfileCubit>(),
             syncCubit: context.read<SyncCubit>(),
           ),
-          child: FsEntryRenameForm(),
+          child: const FsEntryRenameForm(),
         ),
       ),
     );
@@ -52,11 +52,13 @@ Future<void> promptToRenameFile(
                   profileCubit: context.read<ProfileCubit>(),
                   syncCubit: context.read<SyncCubit>(),
                 ),
-                child: FsEntryRenameForm(),
+                child: const FsEntryRenameForm(),
               ),
             ));
 
 class FsEntryRenameForm extends StatelessWidget {
+  const FsEntryRenameForm({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<FsEntryRenameCubit, FsEntryRenameState>(
@@ -93,7 +95,7 @@ class FsEntryRenameForm extends StatelessWidget {
                               ? appLocalizationsOf(context).folderName
                               : appLocalizationsOf(context).fileName),
                       showErrors: (control) => control.invalid,
-                      validationMessages: (_) =>
+                      validationMessages:
                           kValidationMessages(appLocalizationsOf(context)),
                     ),
                   ),

@@ -13,7 +13,7 @@ class FileDownloadInProgress extends FileDownloadState {
   final String fileName;
   final int totalByteCount;
 
-  FileDownloadInProgress({
+  const FileDownloadInProgress({
     required this.fileName,
     required this.totalByteCount,
   });
@@ -25,7 +25,7 @@ class FileDownloadInProgress extends FileDownloadState {
 class FileDownloadSuccess extends FileDownloadState {
   final XFile file;
 
-  FileDownloadSuccess({
+  const FileDownloadSuccess({
     required this.file,
   });
 

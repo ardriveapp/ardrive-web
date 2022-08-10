@@ -29,12 +29,14 @@ Future<void> promptToCreateManifest(BuildContext context,
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
           pst: context.read<PstService>()),
-      child: CreateManifestForm(),
+      child: const CreateManifestForm(),
     ),
   );
 }
 
 class CreateManifestForm extends StatelessWidget {
+  const CreateManifestForm({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<CreateManifestCubit, CreateManifestState>(
@@ -67,7 +69,7 @@ class CreateManifestForm extends StatelessWidget {
                 labelText: appLocalizationsOf(context).manifestName,
               ),
               showErrors: (control) => control.dirty && control.invalid,
-              validationMessages: (_) =>
+              validationMessages:
                   kValidationMessages(appLocalizationsOf(context)),
             ));
 
@@ -213,21 +215,25 @@ class CreateManifestForm extends StatelessWidget {
                                     .aManifestIsASpecialKindOfFile, // trimmed spaces
                                 style: Theme.of(context).textTheme.bodyText1),
                             TextSpan(
-                                text: appLocalizationsOf(context).learnMore,
-                                style: TextStyle(
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .bodyText1
-                                        ?.color,
-                                    fontSize: Theme.of(context)
-                                        .textTheme
-                                        .bodyText1
-                                        ?.fontSize,
-                                    fontWeight: FontWeight.bold,
-                                    decoration: TextDecoration.underline),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () =>
-                                      launch(Resources.manifestLearnMoreLink)),
+                              text: appLocalizationsOf(context).learnMore,
+                              style: TextStyle(
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodyText1
+                                      ?.color,
+                                  fontSize: Theme.of(context)
+                                      .textTheme
+                                      .bodyText1
+                                      ?.fontSize,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () => launchUrl(
+                                      Uri.parse(
+                                        Resources.manifestLearnMoreLink,
+                                      ),
+                                    ),
+                            ),
                           ]),
                         ),
                         manifestNameForm()

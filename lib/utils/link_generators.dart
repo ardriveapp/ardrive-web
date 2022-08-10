@@ -12,8 +12,7 @@ Uri generatePublicDriveShareLink({
   // Elsewhere, link to app.ardrive.io.
   final linkOrigin = kIsWeb ? Uri.base.origin : linkOriginProduction;
 
-  final driveShareLink = '$linkOrigin/#/drives/$driveId?name=' +
-      Uri.encodeQueryComponent(driveName);
+  final driveShareLink = '$linkOrigin/#/drives/$driveId?name=${Uri.encodeQueryComponent(driveName)}';
   return Uri.parse(driveShareLink);
 }
 
@@ -25,9 +24,7 @@ Future<Uri> generatePrivateDriveShareLink({
   final driveKeyBase64 = encodeBytesToBase64(await driveKey.extractBytes());
 
   return Uri.parse(
-    generatePublicDriveShareLink(driveName: driveName, driveId: driveId)
-            .toString() +
-        '&driveKey=$driveKeyBase64',
+    '${generatePublicDriveShareLink(driveName: driveName, driveId: driveId)}&driveKey=$driveKeyBase64',
   );
 }
 
@@ -49,7 +46,6 @@ Future<Uri> generatePrivateFileShareLink({
   final fileKeyBase64 = encodeBytesToBase64(await fileKey.extractBytes());
 
   return Uri.parse(
-    generatePublicFileShareLink(fileId: fileId).toString() +
-        '?fileKey=$fileKeyBase64',
+    '${generatePublicFileShareLink(fileId: fileId)}?fileKey=$fileKeyBase64',
   );
 }

@@ -27,7 +27,7 @@ Future<void> promptToMoveFolder(
                   profileCubit: context.read<ProfileCubit>(),
                   syncCubit: context.read<SyncCubit>(),
                 ),
-                child: FsEntryMoveForm(),
+                child: const FsEntryMoveForm(),
               ),
             ));
 
@@ -49,12 +49,14 @@ Future<void> promptToMoveFile(
             profileCubit: context.read<ProfileCubit>(),
             syncCubit: context.read<SyncCubit>(),
           ),
-          child: FsEntryMoveForm(),
+          child: const FsEntryMoveForm(),
         ),
       ),
     );
 
 class FsEntryMoveForm extends StatelessWidget {
+  const FsEntryMoveForm({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<FsEntryMoveCubit, FsEntryMoveState>(
@@ -131,7 +133,7 @@ class FsEntryMoveForm extends StatelessWidget {
                       arweave: context.read<ArweaveService>(),
                       driveDao: context.read<DriveDao>(),
                     ),
-                    child: FolderCreateForm(),
+                    child: const FolderCreateForm(),
                   ),
                 ),
               );
