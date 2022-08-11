@@ -540,12 +540,23 @@ class ArweaveService {
     int? lastBlockHeight;
     List<FileEntity> fileEntities = [];
 
+    final firstOwnerQuery = await _graphQLRetry.execute(
+        FirstFileEntityWithIdOwnerQuery(
+            variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
+
+    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    final fileOwner =
+        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
     while (true) {
       // Get a page of 100 transactions
       final allFileEntitiesQuery = await _graphQLRetry.execute(
         AllFileEntitiesWithIdQuery(
           variables: AllFileEntitiesWithIdArguments(
             fileId: fileId,
+            owner: fileOwner,
             lastBlockHeight: lastBlockHeight,
             after: cursor,
           ),

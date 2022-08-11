@@ -1,7 +1,8 @@
-query AllFileEntitiesWithId($fileId: String!, $after: String, $lastBlockHeight: Int) {
+query AllFileEntitiesWithId($fileId: String!, $owner: String!, $after: String, $lastBlockHeight: Int) {
   transactions(
     first: 100
     sort: HEIGHT_ASC
+    owners: [$owner]
     tags: [
       { name: "ArFS", values: ["0.10", "0.11"] }
       { name: "File-Id", values: [$fileId] }
