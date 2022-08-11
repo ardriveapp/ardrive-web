@@ -11,8 +11,10 @@ void main() {
     });
 
     test('equatability', () {
-      expect(Winston(BigInt.from(10)) == Winston(BigInt.from(11)), false);
-      expect(Winston(BigInt.from(10)) == Winston(BigInt.from(10)), true);
+      final valueA = BigInt.from(10);
+      final valueB = BigInt.from(11);
+      expect(Winston(valueA) == Winston(valueB), false);
+      expect(Winston(valueA) == Winston(valueA), true);
     });
 
     test('throws if the amount is less than zero', () {
@@ -22,22 +24,22 @@ void main() {
       );
     });
 
-    test('plus function', () {
+    test('operator +', () {
       final winstonA = Winston(BigInt.from(10));
       final winstonB = Winston(BigInt.from(20));
-      expect(winstonA.plus(winstonB).value, BigInt.from(30));
+      expect((winstonA + winstonB).value, BigInt.from(30));
     });
 
-    test('minus function', () {
+    test('operator -', () {
       final winstonA = Winston(BigInt.from(10));
       final winstonB = Winston(BigInt.from(5));
-      expect(winstonA.minus(winstonB).value, BigInt.from(5));
+      expect((winstonA - winstonB).value, BigInt.from(5));
     });
 
-    test('times function', () {
+    test('operator *', () {
       final winstonA = Winston(BigInt.from(10));
       final winstonB = Winston(BigInt.from(3));
-      expect(winstonA.times(winstonB).value, BigInt.from(30));
+      expect((winstonA * winstonB).value, BigInt.from(30));
     });
 
     group('dividedBy function', () {
@@ -71,25 +73,26 @@ void main() {
       });
     });
 
-    test('isGreaterThan function', () {
+    test('operator >', () {
       final winstonA = Winston(BigInt.from(15));
       final winstonB = Winston(BigInt.from(2));
-      expect(winstonA.isGreaterThan(winstonB), true);
-      expect(winstonB.isGreaterThan(winstonA), false);
-      expect(winstonA.isGreaterThan(winstonA), false);
+      expect(winstonA > winstonB, true);
+      expect(winstonB > winstonA, false);
+      expect(winstonA > winstonA, false);
     });
 
-    test('isLessThan function', () {
+    test('operator <', () {
       final winstonA = Winston(BigInt.from(15));
       final winstonB = Winston(BigInt.from(2));
-      expect(winstonA.isLessThan(winstonB), false);
-      expect(winstonB.isLessThan(winstonA), true);
-      expect(winstonA.isLessThan(winstonA), false);
+      expect(winstonA < winstonB, false);
+      expect(winstonB < winstonA, true);
+      expect(winstonA < winstonA, false);
     });
 
     test('toString method', () {
       final winston = Winston(BigInt.from(15));
       expect(winston.toString(), '15');
+      expect('$winston', '15');
     });
 
     test('maxWinston function', () {
