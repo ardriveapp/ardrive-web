@@ -67,16 +67,22 @@ enum RoundStrategy {
   roundCeil,
 }
 
-class InvalidWinstonValue implements Exception {
+class InvalidWinstonValue extends Equatable implements Exception {
   @override
   String toString() {
     return 'Winston value should be a non-negative integer!';
   }
+
+  @override
+  List<Object?> get props => [];
 }
 
-class NoSuchRoundStrategy implements Exception {
+class NoSuchRoundStrategy extends Equatable implements Exception {
   @override
   String toString() {
     return 'No such round strategy!';
   }
+
+  @override
+  List<Object?> get props => [];
 }

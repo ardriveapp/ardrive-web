@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:ardrive/pst/contract_oracle.dart';
 import 'package:ardrive/pst/utils.dart';
 import 'package:ardrive/types/winston.dart';
+import 'package:equatable/equatable.dart';
 
 import '../types/arweave_address.dart';
 
@@ -28,7 +29,9 @@ class CommunityOracle {
     return Winston(BigInt.from(value));
   }
 
-  Future<ArweaveAddress> selectTokenHolder() async {
+  Future<ArweaveAddress> selectTokenHolder({
+    double? testingRandom, // for testing purposes only
+  }) async {
     final contract = await _contractOracle.getCommunityContract();
     final Map<ArweaveAddress, int> balances = Map.from(contract.balances);
     final vault = contract.vault;
@@ -66,7 +69,7 @@ class CommunityOracle {
     }
 
     // Get a random holder based off of the weighted list of holders
-    final randomHolder = weightedRandom(weighted);
+    final randomHolder = weightedRandom(weighted, testingRandom: testingRandom);
 
     if (randomHolder == null) {
       throw CouldNotDetermineTokenHolder();
@@ -76,7 +79,7 @@ class CommunityOracle {
   }
 }
 
-class CouldNotDetermineTokenHolder implements Exception {
+class CouldNotDetermineTokenHolder extends Equatable implements Exception {
   final String _errMessage =
       'Token holder target could not be determined for community tip distribution';
 
@@ -84,4 +87,7 @@ class CouldNotDetermineTokenHolder implements Exception {
   String toString() {
     return _errMessage;
   }
+
+  @override
+  List<Object?> get props => [];
 }
