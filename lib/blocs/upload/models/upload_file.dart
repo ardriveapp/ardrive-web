@@ -1,20 +1,18 @@
-import 'dart:typed_data';
+import 'package:ardrive_io/ardrive_io.dart';
 
-abstract class UploadFile {
-  String name;
-  String path;
-  DateTime lastModifiedDate;
-  int size;
-  String parentFolderId;
-  Future<Uint8List> readAsBytes();
+class UploadFile {
+  const UploadFile({required this.ioFile, required this.parentFolderId});
 
-  String getIdentifier();
+  final IOFile ioFile;
+  final String parentFolderId;
 
-  UploadFile({
-    required this.name,
-    required this.path,
-    required this.lastModifiedDate,
-    required this.parentFolderId,
-    required this.size,
-  });
+  String getIdentifier() {
+    return ioFile.path.isEmpty || _isPathBlobFromDragAndDrop(ioFile.path)
+        ? ioFile.name
+        : ioFile.path;
+  }
+
+  bool _isPathBlobFromDragAndDrop(String path) {
+    return path.split(':')[0] == 'blob';
+  }
 }

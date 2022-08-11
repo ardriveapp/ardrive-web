@@ -54,6 +54,8 @@ dependencies:
   http: ^0.13.5
   stash: ^4.3.2
   path: ^1.8.1
+  ardrive_io:
+    path: ./ardrive_io
 
 dev_dependencies:
   flutter_test:
