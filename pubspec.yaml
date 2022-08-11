@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 1.26.2
+version: 1.27.0
 
 environment:
   sdk: '>=2.15.0 <3.0.0'
@@ -47,7 +47,6 @@ dependencies:
   csv: 5.0.0
   stash_memory: 4.0.1
   percent_indicator: ^4.0.0
-  cooky: ^2.0.0
   flutter_lints: ^1.0.4
   retry: ^3.1.0
   shared_preferences: ^2.0.15
