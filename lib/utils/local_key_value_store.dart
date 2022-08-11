@@ -6,7 +6,7 @@ class LocalKeyValueStore implements KeyValueStore {
 
   LocalKeyValueStore._create();
 
-  static Future<KeyValueStore> getInstance({
+  static Future<LocalKeyValueStore> getInstance({
     /// takes a SharedPreferences for testing purposes
     SharedPreferences? prefs,
   }) async {
@@ -32,7 +32,22 @@ class LocalKeyValueStore implements KeyValueStore {
   }
 
   @override
+  Future<bool> putString(String key, String value) {
+    return _preferences.setString(key, value);
+  }
+
+  @override
+  String? getString(String key) {
+    return _preferences.getString(key);
+  }
+
+  @override
   Future<bool> remove(String key) {
     return _preferences.remove(key);
+  }
+
+  @override
+  Set<String> getKeys() {
+    return _preferences.getKeys();
   }
 }

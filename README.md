@@ -56,3 +56,19 @@ All changes made to `dev` will be continuously deployed to [staging.ardrive.io](
 To create a release to [app.ardrive.io](https://app.ardrive.io), first merge any changes from `dev` into `master` that are required, and publish a new release through the GitHub UI with the tag name matching the pattern `v*` eg. `v1.0.1`.
 
 This will trigger a GitHub Action that will deploy `master` to production.
+
+## Using a custom Arweave Gateway URL
+
+You can use a custom gateway URL by setting the `flutter.arweaveGatewayUrl` key in your browser's Local Storage.
+
+With the web app opened you can access the browser's JavaScript console to run the follow examples:
+
+```js
+// To set the item
+localStorage.setItem('flutter.arweaveGatewayUrl', 'https://my.custom.url');
+
+// To remove it (set the default)
+localStorage.removeItem('flutter.arweaveGatewayUrl');
+```
+
+You may need to reload to apply the change.

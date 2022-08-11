@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -25,7 +26,9 @@ void main() {
       driveDao = db.driveDao;
 
       final configService = ConfigService();
-      final config = await configService.getConfig();
+      final config = await configService.getConfig(
+        localStore: await LocalKeyValueStore.getInstance(),
+      );
 
       arweave = ArweaveService(
           Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
