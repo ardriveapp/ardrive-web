@@ -12,16 +12,24 @@ class Winston extends Equatable {
     }
   }
 
-  Winston plus(Winston winston) {
-    return Winston(_amount + winston._amount);
+  operator +(Winston other) {
+    return Winston(_amount + other._amount);
   }
 
-  Winston minus(Winston winston) {
-    return Winston(_amount - winston._amount);
+  operator -(Winston other) {
+    return Winston(_amount - other._amount);
   }
 
-  Winston times(Winston winston) {
-    return Winston(_amount * winston._amount);
+  operator *(Winston other) {
+    return Winston(_amount * other._amount);
+  }
+
+  operator >(Winston other) {
+    return _amount > other._amount;
+  }
+
+  operator <(Winston other) {
+    return _amount < other._amount;
   }
 
   Winston dividedBy(
@@ -38,14 +46,6 @@ class Winston extends Equatable {
       default:
         throw NoSuchRoundStrategy();
     }
-  }
-
-  bool isGreaterThan(Winston winston) {
-    return _amount > winston._amount;
-  }
-
-  bool isLessThan(Winston winston) {
-    return _amount < winston._amount;
   }
 
   @override
