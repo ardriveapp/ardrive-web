@@ -51,10 +51,23 @@ void main() {
     });
 
     group('selectTokenHolder method', () {
+      const double randomA = .2;
+      const double randomB = 1;
+
       test('returns a valid address', () async {
-        final addr = await myCommunityOracle.selectTokenHolder();
-        expect(addr, ArweaveAddress('the expected value'));
+        final addr =
+            await myCommunityOracle.selectTokenHolder(testingRandom: randomA);
+        expect(addr,
+            ArweaveAddress('Zznp65qgTIm2QBMjjoEaHKOmQrpTu0tfOcdbkm_qoL4'));
       });
-    }, skip: 'this method uses a random number - FIXME: make me testable');
+
+      test('throws if the token holder could not be determined', () async {
+        expect(
+          () async =>
+              await myCommunityOracle.selectTokenHolder(testingRandom: randomB),
+          throwsA(CouldNotDetermineTokenHolder()),
+        );
+      });
+    });
   });
 }
