@@ -205,7 +205,7 @@ packages:
       name: convert
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.1"
+    version: "3.0.2"
   cooky:
     dependency: "direct main"
     description:
@@ -704,7 +704,7 @@ packages:
       name: path_provider_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.17"
+    version: "2.0.18"
   path_provider_ios:
     dependency: transitive
     description:
@@ -1059,7 +1059,7 @@ packages:
       name: timeago
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.2.2"
+    version: "3.3.0"
   timing:
     dependency: transitive
     description:
