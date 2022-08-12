@@ -53,8 +53,8 @@ class CommunityContractDataBuilder {
           lockLength: lockLength);
     }).toList(growable: false);
     final CommunityContractSettings settings = CommunityContractSettings(
-      quorum: rawSettings['quorum'].toDouble(),
-      support: rawSettings['support'].toDouble(),
+      quorum: rawSettings['quorum'],
+      support: rawSettings['support'],
       voteLength: rawSettings['voteLength'],
       lockMinLength: rawSettings['lockMinLength'],
       lockMaxLength: rawSettings['lockMaxLength'],
@@ -62,7 +62,7 @@ class CommunityContractDataBuilder {
       communityDiscussionLinks: rawSettings['communityDiscussionLinks'],
       communityDescription: rawSettings['communityDescription'],
       communityLogo: ArweaveAddress(rawSettings['communityLogo']),
-      fee: rawSettings['fee'].toDouble(),
+      fee: rawSettings['fee'],
     );
     final Map<ArweaveAddressType, int> balances = Map.fromEntries(
       rawBalances.entries.map(
@@ -247,7 +247,7 @@ class CommunityContractDataBuilder {
           case 'quorum':
           case 'support':
           case 'fee':
-            if (value is! double && value is! int) {
+            if (value is! num) {
               throw InvalidCommunityContractData(
                 reason:
                     'Expected the field .settings[number][1] ($key) to be a decimal, got $value',

@@ -78,8 +78,8 @@ class CommunityContractSettings {
     required this.fee,
   });
 
-  final double quorum;
-  final double support;
+  final num quorum;
+  final num support;
   final int voteLength;
   final int lockMinLength;
   final int lockMaxLength;
@@ -87,7 +87,7 @@ class CommunityContractSettings {
   final List communityDiscussionLinks;
   final String communityDescription;
   final ArweaveAddressType communityLogo;
-  final double fee;
+  final num fee;
 }
 
 class VaultItem {
