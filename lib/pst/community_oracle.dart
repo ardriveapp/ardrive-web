@@ -44,10 +44,17 @@ class CommunityOracle {
 
     // Check for how many tokens the user has staked/vaulted
     for (final addr in vault.keys) {
-      if (vault[addr]!.isEmpty) continue;
+      final vaultValue = vault[addr];
+
+      if (vaultValue == null) {
+        // unreachable code: addr is a key of vault; just to have non-null types
+        throw Exception('The key $addr does not exist on vault');
+      }
+
+      if (vaultValue.isEmpty) continue;
 
       final vaultBalance =
-          vault[addr]!.map((a) => a.balance).reduce((a, b) => a + b);
+          vaultValue.map((a) => a.balance).reduce((a, b) => a + b);
 
       total += vaultBalance;
 
