@@ -38,9 +38,17 @@ void main() {
 
     group('getCommunityWinstonTip method', () {
       test('returns a percentage of the actual amount', () async {
-        final tipAmount = await myCommunityOracle
-            .getCommunityWinstonTip(Winston(BigInt.from(999999999999)));
-        expect(tipAmount, Winston(BigInt.from(149999999999)));
+        final inputAmount = Winston(BigInt.from(999999999999));
+        final tipAmount =
+            await myCommunityOracle.getCommunityWinstonTip(inputAmount);
+        final expectedAmount = Winston(
+          // times 100 and divided by 100 because BigInt would only accept integers as input
+          inputAmount.value * BigInt.from(0.15 * 100) ~/ BigInt.from(100),
+        );
+        expect(
+          tipAmount,
+          expectedAmount,
+        );
       });
 
       test('returns the minimum tip if the percentage is lower', () async {
