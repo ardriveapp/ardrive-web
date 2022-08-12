@@ -77,10 +77,12 @@ class MobileIO implements ArDriveIO {
   }
 }
 
-/// Opens the file picker dialog to select the folder to save.
+/// Opens the file picker dialog to select the folder to save
 ///
-/// It uses the `file_saver` package.
-class AndroidSelectableFolderFileSaver implements FileSaver {
+/// This implementation uses the `file_saver` package.
+///
+/// Throws an `FileSystemPermissionDeniedException` when user deny access to storage
+class MobileSelectableFolderFileSaver implements FileSaver {
   @override
   Future<void> save(IOFile file) async {
     await _requestPermissions();
@@ -103,25 +105,17 @@ class AndroidSelectableFolderFileSaver implements FileSaver {
     throw FileSystemPermissionDeniedException([Permission.storage]);
   }
 
+/// Request permissions related to storage on `Android` and `iOS`
   Future<void> _requestPermissions() async {
     await Permission.storage.request();
   }
 }
 
-class IOSFileSaver implements FileSaver {
-  @override
-  Future<void> save(IOFile file) async {
-    throw UnimplementedError();
-  }
-}
-
+/// Defines the API for saving `IOFile` on Storage
 abstract class FileSaver {
   factory FileSaver() {
-    if (Platform.isAndroid) {
-      return AndroidSelectableFolderFileSaver();
-    }
-    if (Platform.isIOS) {
-      return IOSFileSaver();
+    if (Platform.isAndroid || Platform.isIOS) {
+      return MobileSelectableFolderFileSaver();
     }
     throw UnsupportedPlatformException(
         'The ${Platform.operatingSystem} platform is not supported');
