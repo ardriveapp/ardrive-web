@@ -29,16 +29,13 @@ class ArDriveContractOracle implements ContractOracle {
 
   /// iterates over all contract readers attempting to read the contract
   Future<CommunityContractData?> _getContractFromOracles() async {
-    int contractOracleIndex = 0;
-    CommunityContractData? data;
-
-    while (data == null && _contractOracles.length > contractOracleIndex) {
-      final contractOracle = _contractOracles[contractOracleIndex];
-      data = await _getContractWithRetries(contractOracle);
-      contractOracleIndex++;
+    for (ContractOracle contractOracle in _contractOracles) {
+      final data = await _getContractWithRetries(contractOracle);
+      if (data != null) {
+        return data;
+      }
     }
-
-    return data;
+    return null;
   }
 
   /// attempts multiple retries to read the given contract oracle
