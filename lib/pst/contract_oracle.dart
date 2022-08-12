@@ -11,7 +11,7 @@ class ContractOracle<T extends ContractReader> {
   Future<CommunityContractData> getCommunityContract() async {
     final contractState = await _contractReader.readContract(pstTransactionId);
     final contractDataBuilder = CommunityContractDataBuilder(contractState);
-    return contractDataBuilder.parse();
+    return contractDataBuilder.build();
   }
 
   Future<CommunityTipPercentage> getTipPercentageFromContract() async {

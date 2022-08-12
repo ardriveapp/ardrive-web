@@ -7,7 +7,7 @@ class CommunityContractDataBuilder {
 
   CommunityContractDataBuilder(Map jsonData) : _rawData = jsonData;
 
-  CommunityContractData parse() {
+  CommunityContractData build() {
     _validate();
 
     final List rawVotes = _rawData['votes'];

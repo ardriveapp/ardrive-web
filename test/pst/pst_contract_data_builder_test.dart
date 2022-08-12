@@ -9,7 +9,7 @@ void main() {
   group('CommunityContractDataBuilder', () {
     test('parses a CommunityContractData when fed with healthy data', () {
       final builder = CommunityContractDataBuilder(rawHealthyContractData);
-      final output = builder.parse();
+      final output = builder.build();
 
       expect(output.name, 'ArDrive');
       expect(output.ticker, 'ARDRIVE');
@@ -95,7 +95,7 @@ void main() {
     test('throws if the name is not ArDrive', () {
       final builder = CommunityContractDataBuilder(rawContractDataWrongName);
       expect(
-          () => builder.parse(),
+          () => builder.build(),
           throwsA(const InvalidCommunityContractData(
             reason: 'Expected the field .name to be "ArDrive"',
           )));
@@ -104,7 +104,7 @@ void main() {
     test('throws if the ticker is not ARDRIVE', () {
       final builder = CommunityContractDataBuilder(rawContractDataWrongTicker);
       expect(
-          () => builder.parse(),
+          () => builder.build(),
           throwsA(const InvalidCommunityContractData(
             reason: 'Expected the field .ticker to be "ARDRIVE"',
           )));
@@ -115,7 +115,7 @@ void main() {
         rawContractDataWrongBalancesType,
       );
       expect(
-          () => builder.parse(),
+          () => builder.build(),
           throwsA(const InvalidCommunityContractData(
             reason: 'Expected the field .balances to be an object',
           )));
@@ -126,7 +126,7 @@ void main() {
         rawContractDataWrongBalancesKey,
       );
       expect(
-          () => builder.parse(),
+          () => builder.build(),
           throwsA(const InvalidCommunityContractData(
             reason:
                 'Expected the key of the field .balances[address] to be a string, got not an address',
@@ -138,7 +138,7 @@ void main() {
         rawContractDataWrongBalancesValue,
       );
       expect(
-          () => builder.parse(),
+          () => builder.build(),
           throwsA(const InvalidCommunityContractData(
             reason:
                 'Expected the field .balances[address] to be an integer, got not an integer',
@@ -150,7 +150,7 @@ void main() {
         rawContractDataWrongVotesType,
       );
       expect(
-          () => builder.parse(),
+          () => builder.build(),
           throwsA(const InvalidCommunityContractData(
             reason: 'Expected the field .votes to be an array',
           )));
@@ -162,7 +162,7 @@ void main() {
         final builder = CommunityContractDataBuilder(
           rawData,
         );
-        expect(() => builder.parse(), throwsA(expectedException));
+        expect(() => builder.build(), throwsA(expectedException));
       });
     });
 
@@ -171,7 +171,7 @@ void main() {
         rawContractDataWrongSettingsType,
       );
       expect(
-          () => builder.parse(),
+          () => builder.build(),
           throwsA(const InvalidCommunityContractData(
             reason: 'Expected the field .settings to be an array',
           )));
@@ -183,7 +183,7 @@ void main() {
         final builder = CommunityContractDataBuilder(
           rawData,
         );
-        expect(() => builder.parse(), throwsA(expectedException));
+        expect(() => builder.build(), throwsA(expectedException));
       });
     });
 
@@ -192,7 +192,7 @@ void main() {
         rawContractDataWrongVaultType,
       );
       expect(
-          () => builder.parse(),
+          () => builder.build(),
           throwsA(const InvalidCommunityContractData(
             reason: 'Expected the field .vault to be an object',
           )));
@@ -204,7 +204,7 @@ void main() {
         final builder = CommunityContractDataBuilder(
           rawData,
         );
-        expect(() => builder.parse(), throwsA(expectedException));
+        expect(() => builder.build(), throwsA(expectedException));
       });
     });
   });
