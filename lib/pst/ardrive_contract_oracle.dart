@@ -1,6 +1,7 @@
 import 'package:ardrive/pst/contract_oracle.dart';
 import 'package:ardrive/pst/pst_contract_data.dart';
 import 'package:equatable/equatable.dart';
+import 'package:retry/retry.dart';
 
 const _maxReadContractAttempts = 3;
 
@@ -43,18 +44,15 @@ class ArDriveContractOracle implements ContractOracle {
     ContractOracle contractOracle, {
     int maxAttempts = _maxReadContractAttempts,
   }) async {
-    CommunityContractData? data;
-    int readContractAttempts = 0;
-
-    while (data == null && readContractAttempts < maxAttempts) {
-      try {
-        data = await contractOracle.getCommunityContract();
-      } catch (_) {
-        readContractAttempts++;
-      }
+    try {
+      final data = await retry(
+        contractOracle.getCommunityContract,
+        maxAttempts: maxAttempts,
+      );
+      return data;
+    } catch (_) {
+      return null;
     }
-
-    return data;
   }
 
   @override
