@@ -10,16 +10,17 @@ class CommunityContractDataBuilder {
   CommunityContractData build() {
     _validate();
 
-    final List rawVotes = _rawData['votes'];
-    final Map rawSettings = Map.fromEntries(
-      (_rawData['settings'] as List).map(
-        (element) => MapEntry(element[0], element[1]),
-      ),
+    return CommunityContractData(
+      votes: _buildVotes(),
+      settings: _buildSettings(),
+      balances: _buildBalance(),
+      vault: _buildVault(),
     );
-    final Map rawBalances = _rawData['balances'];
-    final Map rawVault = _rawData['vault'];
+  }
 
-    final List<CommunityContractVotes> votes = rawVotes.map((vote) {
+  List<CommunityContractVotes> _buildVotes() {
+    final List rawVotes = _rawData['votes'];
+    return rawVotes.map((vote) {
       final VoteStatus status = VoteStatus.values.firstWhere(
           (element) => element.toString() == 'VoteStatus.' + vote['status']);
       final VoteType type = VoteType.values.firstWhere(
@@ -52,7 +53,15 @@ class CommunityContractDataBuilder {
           qty: qty,
           lockLength: lockLength);
     }).toList(growable: false);
-    final CommunityContractSettings settings = CommunityContractSettings(
+  }
+
+  CommunityContractSettings _buildSettings() {
+    final Map rawSettings = Map.fromEntries(
+      (_rawData['settings'] as List).map(
+        (element) => MapEntry(element[0], element[1]),
+      ),
+    );
+    return CommunityContractSettings(
       quorum: rawSettings['quorum'],
       support: rawSettings['support'],
       voteLength: rawSettings['voteLength'],
@@ -64,12 +73,20 @@ class CommunityContractDataBuilder {
       communityLogo: ArweaveAddress(rawSettings['communityLogo']),
       fee: rawSettings['fee'],
     );
-    final Map<ArweaveAddressType, int> balances = Map.fromEntries(
+  }
+
+  Map<ArweaveAddress, int> _buildBalance() {
+    final Map rawBalances = _rawData['balances'];
+    return Map.fromEntries(
       rawBalances.entries.map(
         (entry) => MapEntry(ArweaveAddress(entry.key), entry.value),
       ),
     );
-    final Map<ArweaveAddressType, List<VaultItem>> vault = Map.fromEntries(
+  }
+
+  Map<ArweaveAddressType, List<VaultItem>> _buildVault() {
+    final Map rawVault = _rawData['vault'];
+    return Map.fromEntries(
       rawVault.entries.map<MapEntry<ArweaveAddressType, List<VaultItem>>>(
         (entry) {
           final key = ArweaveAddress(entry.key);
@@ -82,13 +99,6 @@ class CommunityContractDataBuilder {
           return MapEntry(key, value);
         },
       ),
-    );
-
-    return CommunityContractData(
-      votes: votes,
-      settings: settings,
-      balances: balances,
-      vault: vault,
     );
   }
 
