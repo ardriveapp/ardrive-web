@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 
 const cacheUrl = 'v2.cache.verto.exchange';
 
-class VertoContractReader extends ContractReader {
+class VertoContractReader implements ContractReader {
   @override
   Future<dynamic> readContract(TransactionID txId) async {
     final apiUrl = Uri.https(cacheUrl, '$txId');

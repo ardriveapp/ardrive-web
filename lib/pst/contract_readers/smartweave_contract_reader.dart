@@ -4,7 +4,7 @@ import 'package:ardrive/services/pst/implementations/pst_web.dart'
     as implementation;
 import 'package:ardrive/types/transaction_id.dart';
 
-class SmartweaveContractReader extends ContractReader {
+class SmartweaveContractReader implements ContractReader {
   @override
   Future<dynamic> readContract(TransactionID txId) async {
     return implementation.readContract(txId);
