@@ -1,13 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+// ignore: avoid_web_libraries_in_flutter
 import 'dart:html';
 import 'dart:typed_data';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/io_exception.dart';
-import 'package:file_saver/file_saver.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
-import 'package:mime/mime.dart' as mime;
 
 /// Web implementation to use `ArDriveIO` API
 ///
@@ -68,9 +67,17 @@ class WebIO implements ArDriveIO {
 
   @override
   Future<void> saveFile(IOFile file) async {
-    await FileSaver.instance.saveFile(file.name, await file.readAsBytes(),
-        mime.extensionFromMime(file.contentType),
-        mimeType: getMimeTypeFromString(file.contentType));
+    final savePath = await file_selector.getSavePath();
+    if (savePath == null) {
+      throw EntityPathException();
+    }
+
+    file_selector.XFile.fromData(
+      await file.readAsBytes(),
+      lastModified: file.lastModifiedDate,
+      mimeType: file.contentType,
+      name: file.name,
+    ).saveTo(savePath);
   }
 }
 
