@@ -1,0 +1,10 @@
+dev_dependencies:
+  flutter_launcher_icons: "^0.10.0"
+
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  color: "#121212"
+  image_path_android: "assets/images/brand/launch_icon.png"
+  image_path_ios: "assets/images/brand/launch_icon.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
