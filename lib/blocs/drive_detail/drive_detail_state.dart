@@ -12,6 +12,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final Drive currentDrive;
   final bool hasWritePermissions;
   final bool driveIsEmpty;
+  final bool multiselect;
 
   final FolderWithContents folderInView;
 
@@ -38,6 +39,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.contentOrderingMode,
     required this.rowsPerPage,
     required this.availableRowsPerPage,
+    required this.multiselect,
     this.selectedItems = const [],
     this.showSelectedItemDetails = false,
     this.selectedFilePreviewUrl,
@@ -56,9 +58,11 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     int? rowsPerPage,
     List<int>? availableRowsPerPage,
     bool? driveIsEmpty,
+    bool? multiselect,
   }) =>
       DriveDetailLoadSuccess(
         currentDrive: currentDrive ?? this.currentDrive,
+        multiselect: multiselect ?? this.multiselect,
         hasWritePermissions: hasWritePermissions ?? this.hasWritePermissions,
         folderInView: folderInView ?? this.folderInView,
         contentOrderBy: contentOrderBy ?? this.contentOrderBy,
@@ -86,6 +90,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         selectedItems,
         _equatableBust,
         driveIsEmpty,
+        multiselect,
       ];
 
   bool isViewingRootFolder() =>

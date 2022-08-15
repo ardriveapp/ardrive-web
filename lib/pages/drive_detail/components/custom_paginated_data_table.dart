@@ -497,6 +497,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
                 columnSpacing: widget.columnSpacing,
                 showBottomBorder: true,
                 rows: _getRows(_firstRowIndex, widget.rowsPerPage),
+                
               ),
             ),
             DefaultTextStyle(

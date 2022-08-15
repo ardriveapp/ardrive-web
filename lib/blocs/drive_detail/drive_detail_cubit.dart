@@ -101,17 +101,20 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             await _driveDao.getFolderTree(driveId, drive.rootFolderId);
 
         if (state != null) {
-          emit(state.copyWith(
-            currentDrive: drive,
-            hasWritePermissions: profile is ProfileLoggedIn &&
-                drive.ownerAddress == profile.walletAddress,
-            folderInView: folderContents,
-            contentOrderBy: contentOrderBy,
-            contentOrderingMode: contentOrderingMode,
-            rowsPerPage: availableRowsPerPage.first,
-            availableRowsPerPage: availableRowsPerPage,
-            selectedItems: maybeSelectedItem != null ? [maybeSelectedItem] : [],
-          ));
+          emit(
+            state.copyWith(
+              currentDrive: drive,
+              hasWritePermissions: profile is ProfileLoggedIn &&
+                  drive.ownerAddress == profile.walletAddress,
+              folderInView: folderContents,
+              contentOrderBy: contentOrderBy,
+              contentOrderingMode: contentOrderingMode,
+              rowsPerPage: availableRowsPerPage.first,
+              availableRowsPerPage: availableRowsPerPage,
+              selectedItems:
+                  maybeSelectedItem != null ? [maybeSelectedItem] : [],
+            ),
+          );
         } else {
           emit(DriveDetailLoadSuccess(
             currentDrive: drive,
@@ -124,6 +127,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             availableRowsPerPage: availableRowsPerPage,
             selectedItems: maybeSelectedItem != null ? [maybeSelectedItem] : [],
             driveIsEmpty: rootFolderNode.isEmpty(),
+            multiselect: false,
           ));
         }
       },
@@ -154,8 +158,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   Future<void> selectItem(SelectedItem selectedItem) async {
     var state = this.state as DriveDetailLoadSuccess;
 
-    state =
-        state.copyWith(selectedItems: [selectedItem, ...state.selectedItems]);
+    state = state.multiselect
+        ? state.copyWith(selectedItems: [selectedItem, ...state.selectedItems])
+        : state.copyWith(selectedItems: [selectedItem]);
     if (state.currentDrive.isPublic && selectedItem is SelectedFile) {
       final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
         driveId: driveId,
@@ -190,6 +195,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     final state = this.state as DriveDetailLoadSuccess;
     emit(state.copyWith(
         showSelectedItemDetails: !state.showSelectedItemDetails));
+  }
+
+  void setMultiSelect(bool multiSelect) {
+    final state = this.state as DriveDetailLoadSuccess;
+    emit(state.copyWith(multiselect: multiSelect));
   }
 
   @override

@@ -27,21 +27,25 @@ class _DriveDataTableState extends State<DriveDataTable> {
   Widget build(BuildContext context) {
     return RawKeyboardListener(
       focusNode: _focusTable,
-      onKey: (x) async {
-        setState(() {
-          // detect if ctrl + v or cmd + v is pressed
-          if (x.isControlPressed || x.isMetaPressed) {
-            checkboxEnabled = true;
-          } else {
-            checkboxEnabled = false;
+      autofocus: true,
+      onKey: (event) async {
+        // detect if ctrl + v or cmd + v is pressed
+        if (event.isKeyPressed(LogicalKeyboardKey.metaLeft)) {
+          if (event is RawKeyDownEvent) {
+            setState(() => checkboxEnabled = true);
           }
-        });
+        } else {
+          setState(() => checkboxEnabled = false);
+        }
+        context.read<DriveDetailCubit>().setMultiSelect(checkboxEnabled);
       },
       child: CustomPaginatedDataTable(
         // The key is used to rerender the data table whenever the folderInView is
         // updated. This includes revisions on the containing files and folders,
         // transaction status updates, renames and moves.
-        tableKey: ObjectKey(widget.driveDetailState.folderInView),
+        tableKey:
+            ObjectKey([widget.driveDetailState.folderInView, checkboxEnabled]),
+
         columns: _buildTableColumns(context),
         sortColumnIndex:
             DriveOrder.values.indexOf(widget.driveDetailState.contentOrderBy),
@@ -52,16 +56,20 @@ class _DriveDataTableState extends State<DriveDataTable> {
         onRowsPerPageChanged: (value) => setState(
             () => context.read<DriveDetailCubit>().setRowsPerPage(value!)),
         showFirstLastButtons: true,
-        showCheckboxColumn: RawKeyboard.instance.keysPressed
-            .contains(LogicalKeyboardKey.controlLeft),
+        showCheckboxColumn: checkboxEnabled,
         source: DriveDetailDataTableSource(
           context: context,
           files: widget.driveDetailState.folderInView.files
               .map(
                 (file) => DriveTableFile(
                   file: file,
-                  selected: widget.driveDetailState.selectedItems.isNotEmpty &&
-                      file.id == widget.driveDetailState.selectedItems.first.id,
+                  selected: checkboxEnabled
+                      ? widget.driveDetailState.selectedItems
+                          .where((item) => item.id == file.id)
+                          .isNotEmpty
+                      : widget.driveDetailState.selectedItems.isNotEmpty &&
+                          file.id ==
+                              widget.driveDetailState.selectedItems.first.id,
                   onPressed: () async {
                     final bloc = context.read<DriveDetailCubit>();
                     if (widget.driveDetailState.selectedItems.isNotEmpty &&
@@ -79,9 +87,13 @@ class _DriveDataTableState extends State<DriveDataTable> {
               .map(
                 (folder) => DriveTableFolder(
                   folder: folder,
-                  selected: widget.driveDetailState.selectedItems.isNotEmpty &&
-                      folder.id ==
-                          widget.driveDetailState.selectedItems.first.id,
+                  selected: checkboxEnabled
+                      ? widget.driveDetailState.selectedItems
+                          .where((item) => item.id == folder.id)
+                          .isNotEmpty
+                      : widget.driveDetailState.selectedItems.isNotEmpty &&
+                          folder.id ==
+                              widget.driveDetailState.selectedItems.first.id,
                   onPressed: () {
                     final bloc = context.read<DriveDetailCubit>();
                     if (widget.driveDetailState.selectedItems.isNotEmpty &&
@@ -102,7 +114,7 @@ class _DriveDataTableState extends State<DriveDataTable> {
 }
 
 List<DataColumn> _buildTableColumns(BuildContext context) {
-  final onSort = (columnIndex, sortAscending) =>
+  onSort(columnIndex, sortAscending) =>
       context.read<DriveDetailCubit>().sortFolder(
             contentOrderBy: DriveOrder.values[columnIndex],
             contentOrderingMode:
