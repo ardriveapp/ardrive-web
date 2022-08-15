@@ -46,7 +46,6 @@ dependencies:
   csv: ^5.0.1
   stash_memory: ^4.3.2
   percent_indicator: ^4.0.0
-  cooky: ^2.0.0
   flutter_lints: 2.0.1
   retry: ^3.1.0
   shared_preferences: ^2.0.15
