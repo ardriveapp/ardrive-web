@@ -86,7 +86,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           // TODO: Find a better place to do this
           final lastLoggedInUser =
               state is ProfileLoggedIn ? state.walletAddress : null;
-          context.read<DriveDao>().deleteSharedPrivateDrives(lastLoggedInUser);
+          if (lastLoggedInUser != null) {
+            context
+                .read<DriveDao>()
+                .deleteSharedPrivateDrives(lastLoggedInUser);
+          }
         },
         builder: (context, state) {
           Widget? shell;

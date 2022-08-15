@@ -66,24 +66,24 @@ class BundleUploadHandle implements UploadHandle {
     await bundleTx.sign(wallet);
 
     // Write entities to database
-    folderDataItemUploadHandles.forEach((folder) async {
+    for (var folder in folderDataItemUploadHandles) {
       await folder.writeFolderToDatabase(driveDao: driveDao);
-    });
-    fileDataItemUploadHandles.forEach((file) async {
+    }
+    for (var file in fileDataItemUploadHandles) {
       await file.writeFileEntityToDatabase(
           bundledInTxId: bundleTx.id, driveDao: driveDao);
-    });
+    }
   }
 
   /// Uploads the bundle, emitting an event whenever the progress is updated.
-  Stream<Null> upload(ArweaveService arweave) async* {
-    await for (final upload in arweave.client.transactions.upload(
-      bundleTx,
-      maxConcurrentUploadCount: maxConcurrentUploadCount,
-    )) {
+
+  Stream<double> upload(ArweaveService arweave) async* {
+    yield* arweave.client.transactions
+        .upload(bundleTx, maxConcurrentUploadCount: maxConcurrentUploadCount)
+        .map((upload) {
       uploadProgress = upload.progress;
-      yield null;
-    }
+      return uploadProgress;
+    });
   }
 
   void dispose() {
