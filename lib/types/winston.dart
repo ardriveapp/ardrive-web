@@ -7,7 +7,7 @@ class Winston extends Equatable {
   List<Object?> get props => [_amount];
 
   Winston(BigInt amount) : _amount = amount {
-    if (amount < BigInt.zero || !amount.isValidInt) {
+    if (amount < BigInt.zero) {
       throw InvalidWinstonValue();
     }
   }
