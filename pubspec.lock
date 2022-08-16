@@ -213,16 +213,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.2"
-  cooky:
-    dependency: "direct main"
-    description:
-      name: cooky
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.0.0"
-=========
-    version: "3.0.1"
->>>>>>>>> Temporary merge branch 2
   coverage:
     dependency: transitive
     description:
@@ -735,7 +725,7 @@ packages:
       name: path_provider_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.17"
+    version: "2.0.19"
   path_provider_ios:
     dependency: transitive
     description:
@@ -1034,7 +1024,7 @@ packages:
       name: sqlite3
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.7.2"
+    version: "1.8.0"
   sqlparser:
     dependency: transitive
     description:
@@ -1268,4 +1258,4 @@ packages:
     version: "3.1.1"
 sdks:
   dart: ">=2.17.0 <3.0.0"
-  flutter: ">=3.0.0"
+  flutter: ">=3.0.5"
