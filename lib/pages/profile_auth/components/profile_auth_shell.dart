@@ -1,6 +1,7 @@
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ProfileAuthShell extends StatelessWidget {
@@ -53,7 +54,7 @@ class ProfileAuthShell extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset(Resources.images.profile.permahillsBg),
+                  SvgPicture.asset(Resources.images.profile.permahillsBg),
                   const SizedBox(height: 128),
                 ],
               ),
