@@ -49,15 +49,24 @@ class ProfileAuthShell extends StatelessWidget {
             Container(
               color: kDarkSurfaceColor,
             ),
-            FittedBox(
-              fit: BoxFit.fitWidth,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SvgPicture.asset(Resources.images.profile.permahillsBg),
-                  const SizedBox(height: 128),
-                ],
-              ),
+            SvgPicture.asset(
+              Resources.images.profile.permahillsBg,
+              fit: BoxFit.fitHeight,
+            ),
+            Container(
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  gradient: LinearGradient(
+                      begin: FractionalOffset.topCenter,
+                      end: FractionalOffset.bottomCenter,
+                      colors: [
+                        Colors.grey.withOpacity(0.0),
+                        Colors.black,
+                      ],
+                      stops: const [
+                        0.0,
+                        1.0
+                      ])),
             ),
             Center(
               child: Padding(
