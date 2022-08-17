@@ -18,7 +18,7 @@ import 'enums/conflicting_files_actions.dart';
 part 'upload_state.dart';
 
 const privateFileSizeLimit = 104857600;
-const publicFileSizeLimit = 1342177280;
+const publicFileSizeLimit = 1288490189;
 
 final filesNamesToExclude = ['.DS_Store'];
 
