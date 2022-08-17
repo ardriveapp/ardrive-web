@@ -75,7 +75,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
       try {
         final htmlUrl = await controller.createFileUrl(htmlFile);
 
-        /// We use xFile to get the bytes and also validate if it is a file
+        // We use xFile to get the bytes and also validate if it is a file
         final bytes = await XFile(htmlUrl).readAsBytes();
         final ioFile = await IOFile.fromData(bytes,
             name: await controller.getFilename(htmlFile),
