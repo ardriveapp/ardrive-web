@@ -884,7 +884,7 @@
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "現階段, ArDrive 於網頁只支援上載少於1.25 GiB 的共公檔案盤",
+  "filesTooLargeExplanationPublic": "現階段, ArDrive 於網頁只支援上載少於1.20 GiB 的共公檔案盤",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
