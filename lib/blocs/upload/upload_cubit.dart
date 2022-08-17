@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/cost_estimate.dart';
@@ -19,7 +18,8 @@ import 'enums/conflicting_files_actions.dart';
 part 'upload_state.dart';
 
 const privateFileSizeLimit = 104857600;
-final publicFileSizeLimit = 1.25 * math.pow(10, 9);
+const publicFileSizeLimit = 1342177280;
+
 final filesNamesToExclude = ['.DS_Store'];
 
 class UploadCubit extends Cubit<UploadState> {
