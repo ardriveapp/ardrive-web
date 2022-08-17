@@ -7,6 +7,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
@@ -21,10 +22,10 @@ class DriveFileDropZone extends StatefulWidget {
     required this.folderId,
   }) : super(key: key);
   @override
-  _DriveFileDropZoneState createState() => _DriveFileDropZoneState();
+  DriveFileDropZoneState createState() => DriveFileDropZoneState();
 }
 
-class _DriveFileDropZoneState extends State<DriveFileDropZone> {
+class DriveFileDropZoneState extends State<DriveFileDropZone> {
   late DropzoneViewController controller;
   bool isHovering = false;
   bool isCurrentlyShown = false;
@@ -32,7 +33,7 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 128, horizontal: 128),
-      /* 
+      /*
             Added padding here so that the drop zone doesn't overlap with the
             Link widget.
             */
@@ -70,17 +71,17 @@ class _DriveFileDropZoneState extends State<DriveFileDropZone> {
     if (!isCurrentlyShown) {
       isCurrentlyShown = true;
       _onLeave();
-
-      final ioFile = await IOFile.fromData(
-          await controller.getFileData(htmlFile),
-          name: await controller.getFilename(htmlFile),
-          lastModifiedDate: await controller.getFileLastModified(htmlFile));
-      final selectedFiles = [
-        UploadFile(ioFile: ioFile, parentFolderId: folderId)
-      ];
+      final selectedFiles = <UploadFile>[];
       try {
-        //This is the only way to know whether the dropped file is a folder
-        await ioFile.readAsBytes();
+        final htmlUrl = await controller.createFileUrl(htmlFile);
+
+        /// We use xFile to get the bytes and also validate if it is a file
+        final bytes = await XFile(htmlUrl).readAsBytes();
+        final ioFile = await IOFile.fromData(bytes,
+            name: await controller.getFilename(htmlFile),
+            lastModifiedDate: await controller.getFileLastModified(htmlFile));
+
+        selectedFiles.add(UploadFile(ioFile: ioFile, parentFolderId: folderId));
       } catch (e) {
         await showDialog(
           context: context,
