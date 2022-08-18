@@ -6,8 +6,8 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
-import 'package:moor/moor.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:stash/stash_api.dart';
 import 'package:stash_memory/stash_memory.dart';
@@ -21,9 +21,7 @@ part 'drive_order.dart';
 part 'folder_node.dart';
 part 'folder_with_contents.dart';
 
-@UseDao(include: {
-  '../../queries/drive_queries.moor',
-})
+@DriftAccessor(include: {'../../queries/drive_queries.drift'})
 class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   final _uuid = const Uuid();
 
@@ -32,12 +30,16 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   late Vault<Uint8List> _previewVault;
 
   DriveDao(Database db) : super(db) {
+    initVaults();
+  }
+
+  initVaults() async {
     // Creates a store
-    final store = newMemoryVaultStore();
+    final store = await newMemoryVaultStore();
 
     // Creates a vault from the previously created store
-    _driveKeyVault = store.vault<SecretKey>(name: 'driveKeyVault');
-    _previewVault = store.vault<Uint8List>(name: 'previewVault');
+    _driveKeyVault = await store.vault<SecretKey>(name: 'driveKeyVault');
+    _previewVault = await store.vault<Uint8List>(name: 'previewVault');
   }
 
   Future<void> deleteSharedPrivateDrives(String? owner) async {
@@ -45,9 +47,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       (drive) =>
           drive.ownerAddress != owner && drive.privacy == DrivePrivacy.private,
     );
-    drives.forEach((drive) async {
+    for (var drive in drives) {
       await detachDrive(drive.id);
-    });
+    }
   }
 
   Future<void> detachDrive(String driveId) async {

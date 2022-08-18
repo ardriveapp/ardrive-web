@@ -4,13 +4,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:arweave/arweave.dart';
+// ignore: depend_on_referenced_packages
 import 'package:convert/convert.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:uuid/uuid.dart';
 
 void main() async {
-
-  final keyByteLength = 256 ~/ 8;
+  const keyByteLength = 256 ~/ 8;
   final kdf = Hkdf(hmac: Hmac(Sha256()), outputLength: keyByteLength);
 
   final wallet = await Wallet.generate();
@@ -29,7 +29,7 @@ void main() async {
   final driveIdBytes = Uuid.parse('<drive uuid>');
   final walletSignature = await wallet
       .sign(Uint8List.fromList(utf8.encode('drive') + driveIdBytes));
-  final password = '<password provided by user>';
+  const password = '<password provided by user>';
 
   final driveKey = await kdf.deriveKey(
     secretKey: SecretKey(walletSignature),

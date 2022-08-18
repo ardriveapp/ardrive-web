@@ -27,7 +27,7 @@ Future<void> promptToMoveFolder(
                   profileCubit: context.read<ProfileCubit>(),
                   syncCubit: context.read<SyncCubit>(),
                 ),
-                child: FsEntryMoveForm(),
+                child: const FsEntryMoveForm(),
               ),
             ));
 
@@ -49,12 +49,14 @@ Future<void> promptToMoveFile(
             profileCubit: context.read<ProfileCubit>(),
             syncCubit: context.read<SyncCubit>(),
           ),
-          child: FsEntryMoveForm(),
+          child: const FsEntryMoveForm(),
         ),
       ),
     );
 
 class FsEntryMoveForm extends StatelessWidget {
+  const FsEntryMoveForm({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<FsEntryMoveCubit, FsEntryMoveState>(
@@ -131,7 +133,7 @@ class FsEntryMoveForm extends StatelessWidget {
                       arweave: context.read<ArweaveService>(),
                       driveDao: context.read<DriveDao>(),
                     ),
-                    child: FolderCreateForm(),
+                    child: const FolderCreateForm(),
                   ),
                 ),
               );
@@ -189,8 +191,9 @@ class FsEntryMoveForm extends StatelessWidget {
                                       onTap: () => context
                                           .read<FsEntryMoveCubit>()
                                           .loadFolder(f.id),
-                                      trailing:
-                                          Icon(Icons.keyboard_arrow_right),
+                                      trailing: const Icon(
+                                        Icons.keyboard_arrow_right,
+                                      ),
                                       // Do not allow users to navigate into the folder they are currently trying to move.
                                       enabled: f.id != state.movingEntryId,
                                     ),
@@ -198,7 +201,8 @@ class FsEntryMoveForm extends StatelessWidget {
                                   ...state.viewingFolder.files.map(
                                     (f) => ListTile(
                                       key: ValueKey(f.id),
-                                      leading: Icon(Icons.insert_drive_file),
+                                      leading:
+                                          const Icon(Icons.insert_drive_file),
                                       title: Text(f.name),
                                       enabled: false,
                                       dense: true,
@@ -209,7 +213,7 @@ class FsEntryMoveForm extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Divider(),
+                        const Divider(),
                         Padding(
                           padding: const EdgeInsets.only(right: 16),
                           child: Wrap(

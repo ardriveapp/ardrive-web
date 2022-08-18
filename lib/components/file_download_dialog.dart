@@ -11,7 +11,6 @@ import 'package:cryptography/cryptography.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pedantic/pedantic.dart';
 
 import 'components.dart';
 
@@ -32,7 +31,7 @@ Future<void> promptToDownloadProfileFile({
           driveDao: context.read<DriveDao>(),
           arweave: context.read<ArweaveService>(),
         ),
-        child: FileDownloadDialog(),
+        child: const FileDownloadDialog(),
       ),
     );
 
@@ -49,11 +48,13 @@ Future<void> promptToDownloadSharedFile({
           fileKey: fileKey,
           arweave: context.read<ArweaveService>(),
         ),
-        child: FileDownloadDialog(),
+        child: const FileDownloadDialog(),
       ),
     );
 
 class FileDownloadDialog extends StatelessWidget {
+  const FileDownloadDialog({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<FileDownloadCubit, FileDownloadState>(
@@ -74,8 +75,8 @@ class FileDownloadDialog extends StatelessWidget {
               title: appLocalizationsOf(context).downloadingFile,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Center(child: CircularProgressIndicator()),
+                children: const [
+                  Center(child: CircularProgressIndicator()),
                 ],
               ),
               actions: [

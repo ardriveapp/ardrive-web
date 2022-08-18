@@ -7,7 +7,7 @@ class FolderWithContents extends Equatable {
   // This is nullable as it can be a while between the drive being not found, then added,
   // and then the folders being loaded.
 
-  FolderWithContents(
+  const FolderWithContents(
       {required this.folder, required this.subfolders, required this.files});
 
   @override

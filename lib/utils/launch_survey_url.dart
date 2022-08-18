@@ -3,8 +3,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 Future<void> launchSurveyURL() async {
   const url = Resources.surveyFeedbackFormUrl;
-  if (await canLaunch(url)) {
-    await launch(url);
+  final uri = Uri.parse(url);
+
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri);
   } else {
     throw 'Could not launch $url';
   }

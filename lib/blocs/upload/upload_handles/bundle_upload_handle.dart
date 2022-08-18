@@ -5,7 +5,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 
 class BundleUploadHandle implements UploadHandle {
   final List<FileDataItemUploadHandle> fileDataItemUploadHandles;
@@ -76,14 +76,14 @@ class BundleUploadHandle implements UploadHandle {
   }
 
   /// Uploads the bundle, emitting an event whenever the progress is updated.
-
-  Stream<double> upload(ArweaveService arweave) async* {
-    yield* arweave.client.transactions
-        .upload(bundleTx, maxConcurrentUploadCount: maxConcurrentUploadCount)
-        .map((upload) {
+  Stream<void> upload(ArweaveService arweave) async* {
+    await for (final upload in arweave.client.transactions.upload(
+      bundleTx,
+      maxConcurrentUploadCount: maxConcurrentUploadCount,
+    )) {
       uploadProgress = upload.progress;
-      return uploadProgress;
-    });
+      yield null;
+    }
   }
 
   void dispose() {
