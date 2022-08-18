@@ -504,11 +504,11 @@
     "description": "File activity (journal): new revision"
   },
   "personalDrivesEmphasized": "个人网盘",
-  "@personalDrives": {
+  "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
   "sharedDrivesEmphasized": "分享网盘",
-  "@sharedDrives": {
+  "@sharedDrivesEmphasized": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
   "help": "帮助中心",
@@ -646,7 +646,7 @@
     "description": "Warning for the user that is about to share a drive"
   },
   "doneEmphasized": "完成",
-  "@doneEmphaseized": {
+  "@doneEmphasized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
   "downloadingFile": "下载文件中...",

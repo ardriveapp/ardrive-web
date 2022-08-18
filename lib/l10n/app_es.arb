@@ -504,11 +504,11 @@
     "description": "File activity (journal): new revision"
   },
   "personalDrivesEmphasized": "UNIDADES PERSONALES",
-  "@personalDrives": {
+  "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
   "sharedDrivesEmphasized": "UNIDADES COMPARTIDOS",
-  "@sharedDrives": {
+  "@sharedDrivesEmphasized": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
   "help": "Ayuda",
@@ -646,7 +646,7 @@
     "description": "Warning for the user that is about to share a drive"
   },
   "doneEmphasized": "HECHO",
-  "@doneEmphaseized": {
+  "@doneEmphasized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
   "downloadingFile": "Descargando archivo...",
