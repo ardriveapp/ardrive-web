@@ -7,14 +7,14 @@ packages:
       name: _fe_analyzer_shared
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "45.0.0"
+    version: "46.0.0"
   analyzer:
     dependency: transitive
     description:
       name: analyzer
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.5.0"
+    version: "4.6.0"
   analyzer_plugin:
     dependency: transitive
     description:
@@ -29,6 +29,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.1.11"
+  ardrive_io:
+    dependency: "direct main"
+    description:
+      path: ardrive_io
+      relative: true
+    source: path
+    version: "0.0.1"
   args:
     dependency: transitive
     description:
@@ -79,7 +86,7 @@ packages:
       name: bloc_test
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "9.0.3"
+    version: "9.1.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -206,13 +213,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.2"
-  cooky:
-    dependency: "direct main"
-    description:
-      name: cooky
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.0.0"
   coverage:
     dependency: transitive
     description:
@@ -303,7 +303,7 @@ packages:
       name: ffi
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.1"
+    version: "1.2.1"
   file:
     dependency: transitive
     description:
@@ -311,6 +311,20 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "6.1.2"
+  file_picker:
+    dependency: transitive
+    description:
+      name: file_picker
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "4.6.1"
+  file_saver:
+    dependency: transitive
+    description:
+      name: file_saver
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.1.1"
   file_selector:
     dependency: "direct main"
     description:
@@ -324,7 +338,7 @@ packages:
       name: file_selector_macos
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.0"
+    version: "0.9.0+1"
   file_selector_platform_interface:
     dependency: transitive
     description:
@@ -345,7 +359,7 @@ packages:
       name: file_selector_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.1"
+    version: "0.9.1+1"
   fixnum:
     dependency: transitive
     description:
@@ -364,7 +378,7 @@ packages:
       name: flutter_bloc
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "8.0.1"
+    version: "8.1.1"
   flutter_driver:
     dependency: "direct dev"
     description: flutter
@@ -403,6 +417,13 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_plugin_android_lifecycle:
+    dependency: transitive
+    description:
+      name: flutter_plugin_android_lifecycle
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.7"
   flutter_portal:
     dependency: "direct main"
     description:
@@ -416,7 +437,7 @@ packages:
       name: flutter_svg
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.3"
+    version: "1.1.4"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -655,7 +676,7 @@ packages:
       name: package_info_plus
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.4.3+1"
+    version: "1.4.2"
   package_info_plus_linux:
     dependency: transitive
     description:
@@ -690,7 +711,7 @@ packages:
       name: package_info_plus_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.0"
+    version: "1.0.5"
   path:
     dependency: "direct main"
     description:
@@ -725,7 +746,7 @@ packages:
       name: path_provider_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.18"
+    version: "2.0.19"
   path_provider_ios:
     dependency: transitive
     description:
@@ -760,7 +781,7 @@ packages:
       name: path_provider_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.2"
+    version: "2.0.7"
   percent_indicator:
     dependency: "direct main"
     description:
@@ -768,6 +789,41 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "4.2.2"
+  permission_handler:
+    dependency: transitive
+    description:
+      name: permission_handler
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "10.0.0"
+  permission_handler_android:
+    dependency: transitive
+    description:
+      name: permission_handler_android
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "10.0.0"
+  permission_handler_apple:
+    dependency: transitive
+    description:
+      name: permission_handler_apple
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "9.0.4"
+  permission_handler_platform_interface:
+    dependency: transitive
+    description:
+      name: permission_handler_platform_interface
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.7.0"
+  permission_handler_windows:
+    dependency: transitive
+    description:
+      name: permission_handler_windows
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.1.0"
   petitparser:
     dependency: transitive
     description:
@@ -830,7 +886,7 @@ packages:
       name: pubspec_parse
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.2.0"
+    version: "1.2.1"
   reactive_forms:
     dependency: "direct main"
     description:
@@ -996,7 +1052,7 @@ packages:
       name: sqlite3
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.7.2"
+    version: "1.8.0"
   sqlparser:
     dependency: transitive
     description:
@@ -1213,7 +1269,7 @@ packages:
       name: win32
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.7.0"
+    version: "2.6.1"
   xdg_directories:
     dependency: transitive
     description:

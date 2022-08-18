@@ -1,11 +1,12 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/upload/models/io_file.dart';
+import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -70,24 +71,17 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
     if (!isCurrentlyShown) {
       isCurrentlyShown = true;
       _onLeave();
-
-      final fileName = await controller.getFilename(htmlFile);
-      final fileMIME = await controller.getFileMIME(htmlFile);
-      final fileLength = await controller.getFileSize(htmlFile);
-      final fileLastModified = await controller.getFileLastModified(htmlFile);
-
-      final htmlUrl = await controller.createFileUrl(htmlFile);
-      final fileToUpload = XFile(
-        htmlUrl,
-        name: fileName,
-        mimeType: fileMIME,
-        lastModified: fileLastModified,
-        length: fileLength,
-      );
-      final selectedFiles = [await IOFile.fromXFile(fileToUpload, folderId)];
+      final selectedFiles = <UploadFile>[];
       try {
-        //This is the only way to know whether the dropped file is a folder
-        await fileToUpload.readAsBytes();
+        final htmlUrl = await controller.createFileUrl(htmlFile);
+
+        // We use xFile to get the bytes and also validate if it is a file
+        final bytes = await XFile(htmlUrl).readAsBytes();
+        final ioFile = await IOFile.fromData(bytes,
+            name: await controller.getFilename(htmlFile),
+            lastModifiedDate: await controller.getFileLastModified(htmlFile));
+
+        selectedFiles.add(UploadFile(ioFile: ioFile, parentFolderId: folderId));
       } catch (e) {
         await showDialog(
           context: context,
