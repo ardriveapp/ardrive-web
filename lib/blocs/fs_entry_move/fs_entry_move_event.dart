@@ -12,11 +12,17 @@ class FsEntryMoveInitial extends FsEntryMoveEvent {
 }
 
 class FsEntryMoveUpdateTargetFolder extends FsEntryMoveEvent {
-  const FsEntryMoveUpdateTargetFolder() : super();
+  final String folderId;
+  const FsEntryMoveUpdateTargetFolder({required this.folderId}) : super();
+  @override
+  List<Object> get props => [folderId];
 }
 
 class FsEntryMoveGoBackToParent extends FsEntryMoveEvent {
-  const FsEntryMoveGoBackToParent() : super();
+  final FolderEntry folderInView;
+  const FsEntryMoveGoBackToParent({required this.folderInView}) : super();
+  @override
+  List<Object> get props => [folderInView];
 }
 
 class FsEntryMoveSubmit extends FsEntryMoveEvent {
