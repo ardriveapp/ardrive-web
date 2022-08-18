@@ -96,17 +96,11 @@ class DriveDetailActionRow extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.drive_file_move),
                   onPressed: () {
-                    if (state.selectedItems.first is SelectedFolder) {
-                      promptToMoveFolder(
+                    if (state.selectedItems.isNotEmpty) {
+                      promptToMove(
                         context,
                         driveId: state.currentDrive.id,
-                        folderId: state.selectedItems.first.id,
-                      );
-                    } else {
-                      promptToMoveFile(
-                        context,
-                        driveId: state.currentDrive.id,
-                        fileId: state.selectedItems.first.id,
+                        selectedItems: state.selectedItems,
                       );
                     }
                   },

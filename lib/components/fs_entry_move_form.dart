@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
@@ -9,55 +10,32 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'components.dart';
 
-Future<void> promptToMoveFolder(
+Future<void> promptToMove(
   BuildContext context, {
   required String driveId,
-  required String folderId,
+  required List<SelectedItem> selectedItems,
 }) =>
     showCongestionDependentModalDialog(
         context,
         () => showDialog(
               context: context,
               builder: (_) => BlocProvider(
-                create: (context) => FsEntryMoveCubit(
+                create: (context) => FsEntryMoveBloc(
                   driveId: driveId,
-                  folderId: folderId,
+                  selectedItems: selectedItems,
                   arweave: context.read<ArweaveService>(),
                   driveDao: context.read<DriveDao>(),
                   profileCubit: context.read<ProfileCubit>(),
                   syncCubit: context.read<SyncCubit>(),
-                ),
+                )..add(const FsEntryMoveInitial()),
                 child: FsEntryMoveForm(),
               ),
             ));
 
-Future<void> promptToMoveFile(
-  BuildContext context, {
-  required String driveId,
-  required String fileId,
-}) =>
-    showCongestionDependentModalDialog(
-      context,
-      () => showDialog(
-        context: context,
-        builder: (_) => BlocProvider(
-          create: (context) => FsEntryMoveCubit(
-            driveId: driveId,
-            fileId: fileId,
-            arweave: context.read<ArweaveService>(),
-            driveDao: context.read<DriveDao>(),
-            profileCubit: context.read<ProfileCubit>(),
-            syncCubit: context.read<SyncCubit>(),
-          ),
-          child: FsEntryMoveForm(),
-        ),
-      ),
-    );
-
 class FsEntryMoveForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
-      BlocConsumer<FsEntryMoveCubit, FsEntryMoveState>(
+      BlocConsumer<FsEntryMoveBloc, FsEntryMoveState>(
         listener: (context, state) {
           if (state is FolderEntryMoveInProgress) {
             showProgressDialog(
@@ -65,12 +43,10 @@ class FsEntryMoveForm extends StatelessWidget {
           } else if (state is FileEntryMoveInProgress) {
             showProgressDialog(
                 context, appLocalizationsOf(context).movingFileEmphasized);
-          } else if (state is FolderEntryMoveSuccess ||
-              state is FileEntryMoveSuccess) {
+          } else if (state is FsEntryMoveSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);
-          } else if (state is FolderEntryMoveWalletMismatch ||
-              state is FileEntryMoveWalletMismatch) {
+          } else if (state is FsEntryMoveWalletMismatch) {
             Navigator.pop(context);
           } else if (state is FsEntryMoveNameConflict) {
             Navigator.pop(context);
@@ -111,7 +87,7 @@ class FsEntryMoveForm extends StatelessWidget {
                       child:
                           Text(appLocalizationsOf(context).cancelEmphasized)),
                   ElevatedButton(
-                    onPressed: () => context.read<FsEntryMoveCubit>().submit(),
+                    onPressed: () => context.read<FsEntryMoveBloc>().submit(),
                     child: Text(appLocalizationsOf(context).moveHereEmphasized),
                   ),
                 ],
@@ -163,7 +139,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                         Theme.of(context).textTheme.subtitle2,
                                     padding: const EdgeInsets.all(16)),
                                 onPressed: () => context
-                                    .read<FsEntryMoveCubit>()
+                                    .read<FsEntryMoveBloc>()
                                     .loadParentFolder(),
                                 child: ListTile(
                                   dense: true,
@@ -187,7 +163,7 @@ class FsEntryMoveForm extends StatelessWidget {
                                       leading: const Icon(Icons.folder),
                                       title: Text(f.name),
                                       onTap: () => context
-                                          .read<FsEntryMoveCubit>()
+                                          .read<FsEntryMoveBloc>()
                                           .loadFolder(f.id),
                                       trailing:
                                           Icon(Icons.keyboard_arrow_right),
