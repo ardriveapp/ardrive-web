@@ -1,4 +1,4 @@
-import 'network_transactions.moor';
+import 'network_transactions.drift';
 
 CREATE TABLE drive_revisions (
     driveId TEXT NOT NULL,

@@ -7,10 +7,9 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
-import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
-import 'package:pedantic/pedantic.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'enums/conflicting_files_actions.dart';
@@ -248,7 +247,7 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     );
 
-    if (uploadAction == UploadActions.Skip) {
+    if (uploadAction == UploadActions.skip) {
       _removeFilesWithFileNameConflicts();
     }
 

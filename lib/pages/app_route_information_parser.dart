@@ -94,14 +94,14 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
 
       if (path.sharedRawFileKey != null) {
         return RouteInformation(
-          location: sharedFilePath +
-              '?$fileKeyQueryParamName=${path.sharedRawFileKey}',
+          location:
+              '$sharedFilePath?$fileKeyQueryParamName=${path.sharedRawFileKey}',
         );
       } else {
         return RouteInformation(location: sharedFilePath);
       }
     }
 
-    return RouteInformation(location: '/');
+    return const RouteInformation(location: '/');
   }
 }

@@ -6,4 +6,5 @@ analyzer:
     - '**.g.dart'
 linter:
   rules:
-
+    # avoid_print: false
+    # overridden_fields: false

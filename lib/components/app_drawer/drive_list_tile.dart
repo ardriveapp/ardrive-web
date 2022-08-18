@@ -10,11 +10,12 @@ class DriveListTile extends StatelessWidget {
   final bool hasAlert;
 
   const DriveListTile({
+    Key? key,
     required this.drive,
     required this.onPressed,
     this.selected = false,
     this.hasAlert = false,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -39,7 +40,7 @@ class DriveListTile extends StatelessWidget {
               : null,
           title: Text(
             drive.name,
-            style: TextStyle(fontSize: 12),
+            style: const TextStyle(fontSize: 12),
           ),
           selected: selected,
           onTap: onPressed,

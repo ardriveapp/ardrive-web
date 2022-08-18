@@ -1,11 +1,11 @@
 import 'dart:convert';
 
 import 'package:ardrive/models/models.dart';
-import 'package:bloc/bloc.dart';
 import 'package:csv/csv.dart';
+import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:moor/moor.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'data_export_state.dart';
 
@@ -51,14 +51,14 @@ class DataExportCubit extends Cubit<DataExportState> {
         ..add(file.size.toString())
         ..add(file.dateCreated.toString())
         ..add(file.lastModifiedDate.toString())
-        ..add(Uri.parse(_gatewayURL + '/${file.dataTx.id}').toString());
+        ..add(Uri.parse('$_gatewayURL/${file.dataTx.id}').toString());
       export.add(fileContent);
     }
     return const ListToCsvConverter().convert(export);
   }
 
   Future<void> exportData() async {
-    emit(DataExportInProgress());
+    emit(const DataExportInProgress());
 
     final dataBytes =
         utf8.encode((await getFilesInDriveAsCSV(driveId))) as Uint8List;

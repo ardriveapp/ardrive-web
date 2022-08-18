@@ -1,10 +1,10 @@
-import '../tables/drives.moor';
-import '../tables/drive_revisions.moor';
-import '../tables/folder_entries.moor';
-import '../tables/folder_revisions.moor';
-import '../tables/file_entries.moor';
-import '../tables/file_revisions.moor';
-import '../tables/network_transactions.moor';
+import '../tables/drives.drift';
+import '../tables/drive_revisions.drift';
+import '../tables/folder_entries.drift';
+import '../tables/folder_revisions.drift';
+import '../tables/file_entries.drift';
+import '../tables/file_revisions.drift';
+import '../tables/network_transactions.drift';
 
 allDrives ($order = ''):
     SELECT * FROM drives

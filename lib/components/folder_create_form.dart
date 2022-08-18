@@ -28,7 +28,7 @@ Future<void> promptToCreateFolder(
             arweave: context.read<ArweaveService>(),
             driveDao: context.read<DriveDao>(),
           ),
-          child: FolderCreateForm(),
+          child: const FolderCreateForm(),
         ),
       ),
     );
@@ -48,11 +48,13 @@ Future<void> promptToCreateFolderWithoutCongestionWarning(
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
         ),
-        child: FolderCreateForm(),
+        child: const FolderCreateForm(),
       ),
     );
 
 class FolderCreateForm extends StatelessWidget {
+  const FolderCreateForm({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<FolderCreateCubit, FolderCreateState>(
@@ -79,7 +81,7 @@ class FolderCreateForm extends StatelessWidget {
                 decoration: InputDecoration(
                     labelText: appLocalizationsOf(context).folderName),
                 showErrors: (control) => control.dirty && control.invalid,
-                validationMessages: (_) =>
+                validationMessages:
                     kValidationMessages(appLocalizationsOf(context)),
               ),
             ),
