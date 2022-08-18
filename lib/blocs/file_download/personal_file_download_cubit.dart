@@ -86,7 +86,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         FileDownloadSuccess(
           bytes: dataBytes,
           fileName: file.name,
-          mimeType: lookupMimeType(file.name),
+          mimeType: file.dataContentType ?? lookupMimeType(file.name),
           lastModified: file.lastModifiedDate,
         ),
       );

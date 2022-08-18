@@ -57,7 +57,7 @@ class DataExportCubit extends Cubit<DataExportState> {
   }
 
   Future<void> exportData() async {
-    emit(DataExportInProgress());
+    emit(const DataExportInProgress());
     /// FIXME: context is not available here. Internationalization cannot be applied
     /// name: appLocalizationsOf(context).exportFromCSV(driveId, DateTime.now().toString()),
     final fileName = 'Export from $driveId ${DateTime.now().toString()}.csv';

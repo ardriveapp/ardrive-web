@@ -22,7 +22,6 @@ Future<void> promptToUpload(
   required bool isFolderUpload,
 }) async {
   final selectedFiles = <UploadFile>[];
-//   final uploadInput = FileUploadInputElement();
   final io = ArDriveIO();
   if (isFolderUpload) {
     final ioFolder = await io.pickFolder();
@@ -39,22 +38,7 @@ Future<void> promptToUpload(
     selectedFiles.addAll(uploadFiles);
   }
 
-//   uploadInput.click();
-// // Create and click upload input element
-
-//   uploadInput.onChange.listen((e) async {
-//     // read file content as dataURL
-//     final files = uploadInput.files;
-//     if (files == null) {
-//       return;
-//     }
-//     final selectedFiles = files.map((file) {
-//       return UploadFile(file, folderId);
-//     }).toList();
-//     if (selectedFiles.isEmpty) {
-//       return;
-//     }
-
+  // ignore: use_build_context_synchronously
   await showCongestionDependentModalDialog(
     context,
     () => showDialog(
@@ -79,7 +63,6 @@ Future<void> promptToUpload(
       barrierDismissible: false,
     ),
   );
-  // });
 }
 
 class UploadForm extends StatelessWidget {
