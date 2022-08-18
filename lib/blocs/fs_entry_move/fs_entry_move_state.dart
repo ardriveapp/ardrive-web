@@ -10,7 +10,7 @@ abstract class FsEntryMoveState extends Equatable {
 }
 
 class FsEntryMoveFolderLoadInProgress extends FsEntryMoveState {
-  FsEntryMoveFolderLoadInProgress({required bool isMovingFolder})
+  const FsEntryMoveFolderLoadInProgress({required bool isMovingFolder})
       : super(isMovingFolder: isMovingFolder);
 }
 
@@ -21,7 +21,7 @@ class FsEntryMoveFolderLoadSuccess extends FsEntryMoveState {
   /// The id of the folder/file entry being moved.
   final String movingEntryId;
 
-  FsEntryMoveFolderLoadSuccess({
+  const FsEntryMoveFolderLoadSuccess({
     required this.viewingRootFolder,
     required this.viewingFolder,
     required this.movingEntryId,
@@ -35,7 +35,7 @@ class FsEntryMoveFolderLoadSuccess extends FsEntryMoveState {
 
 class FsEntryMoveNameConflict extends FsEntryMoveState {
   final String name;
-  FsEntryMoveNameConflict({
+  const FsEntryMoveNameConflict({
     required this.name,
   }) : super(
           isMovingFolder: true,
@@ -45,33 +45,33 @@ class FsEntryMoveNameConflict extends FsEntryMoveState {
 }
 
 class FolderEntryMoveInProgress extends FsEntryMoveState {
-  FolderEntryMoveInProgress() : super(isMovingFolder: true);
+  const FolderEntryMoveInProgress() : super(isMovingFolder: true);
 }
 
 class FolderEntryMoveSuccess extends FsEntryMoveState {
-  FolderEntryMoveSuccess() : super(isMovingFolder: true);
+  const FolderEntryMoveSuccess() : super(isMovingFolder: true);
 }
 
 class FolderEntryMoveFailure extends FsEntryMoveState {
-  FolderEntryMoveFailure() : super(isMovingFolder: true);
+  const FolderEntryMoveFailure() : super(isMovingFolder: true);
 }
 
 class FolderEntryMoveWalletMismatch extends FsEntryMoveState {
-  FolderEntryMoveWalletMismatch() : super(isMovingFolder: true);
+  const FolderEntryMoveWalletMismatch() : super(isMovingFolder: true);
 }
 
 class FileEntryMoveInProgress extends FsEntryMoveState {
-  FileEntryMoveInProgress() : super(isMovingFolder: false);
+  const FileEntryMoveInProgress() : super(isMovingFolder: false);
 }
 
 class FileEntryMoveSuccess extends FsEntryMoveState {
-  FileEntryMoveSuccess() : super(isMovingFolder: false);
+  const FileEntryMoveSuccess() : super(isMovingFolder: false);
 }
 
 class FileEntryMoveFailure extends FsEntryMoveState {
-  FileEntryMoveFailure() : super(isMovingFolder: false);
+  const FileEntryMoveFailure() : super(isMovingFolder: false);
 }
 
 class FileEntryMoveWalletMismatch extends FsEntryMoveState {
-  FileEntryMoveWalletMismatch() : super(isMovingFolder: false);
+  const FileEntryMoveWalletMismatch() : super(isMovingFolder: false);
 }

@@ -31,7 +31,7 @@ Future<void> promptToDownloadProfileFile({
           driveDao: context.read<DriveDao>(),
           arweave: context.read<ArweaveService>(),
         ),
-        child: FileDownloadDialog(),
+        child: const FileDownloadDialog(),
       ),
     );
 
@@ -75,8 +75,8 @@ class FileDownloadDialog extends StatelessWidget {
               title: appLocalizationsOf(context).downloadingFile,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Center(child: CircularProgressIndicator()),
+                children: const [
+                  Center(child: CircularProgressIndicator()),
                 ],
               ),
               actions: [

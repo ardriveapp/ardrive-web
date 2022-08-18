@@ -10,6 +10,8 @@ abstract class SharedFileState extends Equatable {
 
 class SharedFileLoadInProgress extends SharedFileState {}
 
+class SharedFileIsPrivate extends SharedFileState {}
+
 /// [SharedFileLoadSuccess] indicates that the shared file being viewed has been
 /// loaded successfully.
 class SharedFileLoadSuccess extends SharedFileState {

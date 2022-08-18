@@ -95,7 +95,7 @@ class FileDownloadDialog extends StatelessWidget {
             return AppDialog(
               dismissable: false,
               title: appLocalizationsOf(context).fileDownloadFailed,
-              content: SizedBox(
+              content: const SizedBox(
                 width: kMediumDialogWidth,
               ),
               actions: [

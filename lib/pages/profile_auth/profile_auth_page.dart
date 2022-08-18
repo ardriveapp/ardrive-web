@@ -1,7 +1,6 @@
-
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/wallet_switch_dialog.dart';
-import 'package:ardrive/entities/profileTypes.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/profile_auth/components/profile_auth_fail_screen.dart';
 import 'package:ardrive/services/services.dart';
@@ -16,11 +15,13 @@ import 'components/profile_auth_prompt_wallet_screen.dart';
 import 'components/profile_auth_unlock_screen.dart';
 
 class ProfileAuthPage extends StatefulWidget {
+  const ProfileAuthPage({Key? key}) : super(key: key);
+
   @override
-  _ProfileAuthPageState createState() => _ProfileAuthPageState();
+  ProfileAuthPageState createState() => ProfileAuthPageState();
 }
 
-class _ProfileAuthPageState extends State<ProfileAuthPage> {
+class ProfileAuthPageState extends State<ProfileAuthPage> {
   bool _showWalletSwitchDialog = true;
 
   void listenForWalletSwitch() {
@@ -28,7 +29,7 @@ class _ProfileAuthPageState extends State<ProfileAuthPage> {
       if (_showWalletSwitchDialog) {
         showDialog(
           context: context,
-          builder: (context) => WalletSwitchDialog(
+          builder: (context) => const WalletSwitchDialog(
             fromAuthPage: true,
           ),
         );
@@ -53,22 +54,22 @@ class _ProfileAuthPageState extends State<ProfileAuthPage> {
                   builder: (context, state) {
                 if (state is ProfileAddPromptWallet ||
                     state is ProfileLoggingOut) {
-                  return ProfileAuthPromptWalletScreen();
+                  return const ProfileAuthPromptWalletScreen();
                 } else if (state is ProfileAddOnboardingNewUser) {
                   listenForWalletSwitch();
-                  return ProfileAuthOnboarding();
+                  return const ProfileAuthOnboarding();
                 } else if (state is ProfileAddPromptDetails) {
                   listenForWalletSwitch();
-                  return ProfileAuthAddScreen();
+                  return const ProfileAuthAddScreen();
                 } else if (state is ProfileAddUserStateLoadInProgress ||
                     state is ProfileAddInProgress) {
                   return ProfileAuthLoadingScreen(
                     isArConnect:
                         (context.read<ProfileAddCubit>().getProfileType() ==
-                            ProfileType.ArConnect),
+                            ProfileType.arConnect),
                   );
-                } else if (state is ProfileAddFailiure) {
-                  return ProfileAuthFailScreen();
+                } else if (state is ProfileAddFailure) {
+                  return const ProfileAuthFailScreen();
                 }
 
                 return const SizedBox();
@@ -77,9 +78,9 @@ class _ProfileAuthPageState extends State<ProfileAuthPage> {
           } else if (state is ProfilePromptLogIn) {
             listenForWalletSwitch();
 
-            return ProfileAuthUnlockScreen();
+            return const ProfileAuthUnlockScreen();
           } else {
-            return ProfileAuthLoadingScreen();
+            return const ProfileAuthLoadingScreen();
           }
         },
       );

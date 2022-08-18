@@ -135,8 +135,8 @@ class UploadForm extends StatelessWidget {
                 if (!state.areAllFilesConflicting)
                   TextButton(
                     style: ButtonStyle(
-                        fixedSize:
-                            MaterialStateProperty.all(Size.fromWidth(140))),
+                        fixedSize: MaterialStateProperty.all(
+                            const Size.fromWidth(140))),
                     onPressed: () =>
                         context.read<UploadCubit>().checkConflictingFiles(),
                     child: Text(appLocalizationsOf(context).skipEmphasized),
@@ -144,7 +144,7 @@ class UploadForm extends StatelessWidget {
                 TextButton(
                   style: ButtonStyle(
                       fixedSize:
-                          MaterialStateProperty.all(Size.fromWidth(140))),
+                          MaterialStateProperty.all(const Size.fromWidth(140))),
                   onPressed: () => Navigator.of(context).pop(false),
                   child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
@@ -186,7 +186,7 @@ class UploadForm extends StatelessWidget {
                       onPressed: () => context
                           .read<UploadCubit>()
                           .prepareUploadPlanAndCostEstimates(
-                              uploadAction: UploadActions.Skip),
+                              uploadAction: UploadActions.skip),
                       child: Text(appLocalizationsOf(context).skipEmphasized),
                     ),
                   TextButton(
@@ -197,7 +197,7 @@ class UploadForm extends StatelessWidget {
                     onPressed: () => context
                         .read<UploadCubit>()
                         .prepareUploadPlanAndCostEstimates(
-                            uploadAction: UploadActions.Replace),
+                            uploadAction: UploadActions.replace),
                     child: Text(appLocalizationsOf(context).replaceEmphasized),
                   ),
                 ]);
@@ -305,7 +305,7 @@ class UploadForm extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Divider(),
+                    const Divider(),
                     const SizedBox(height: 16),
                     Text.rich(
                       TextSpan(
@@ -440,8 +440,27 @@ class UploadForm extends StatelessWidget {
                 ),
               ),
             );
+          } else if (state is UploadFailure) {
+            return AppDialog(
+              title: appLocalizationsOf(context).uploadFailed,
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(appLocalizationsOf(context).yourUploadFailed),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(appLocalizationsOf(context).okEmphasized),
+                ),
+              ],
+            );
           }
-
           return const SizedBox();
         },
       );

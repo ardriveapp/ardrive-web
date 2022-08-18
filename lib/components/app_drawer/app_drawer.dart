@@ -135,7 +135,8 @@ class AppDrawer extends StatelessWidget {
                               child: FloatingActionButton(
                                 elevation: 0,
                                 tooltip: appLocalizationsOf(context).help,
-                                onPressed: () => launch(Resources.helpLink),
+                                onPressed: () =>
+                                    launchUrl(Uri.parse(Resources.helpLink)),
                                 child: const Icon(Icons.help_outline),
                               ),
                             ),
@@ -287,7 +288,7 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () => launch(Resources.arHelpLink),
+              onPressed: () => launchUrl(Uri.parse(Resources.arHelpLink)),
               child: Text(
                 appLocalizationsOf(context).howDoIGetAR,
                 style: const TextStyle(

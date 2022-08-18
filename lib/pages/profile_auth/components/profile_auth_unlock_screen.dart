@@ -12,12 +12,13 @@ import 'profile_auth_fail_screen.dart';
 import 'profile_auth_shell.dart';
 
 class ProfileAuthUnlockScreen extends StatefulWidget {
+  const ProfileAuthUnlockScreen({Key? key}) : super(key: key);
+
   @override
-  _ProfileAuthUnlockScreenState createState() =>
-      _ProfileAuthUnlockScreenState();
+  ProfileAuthUnlockScreenState createState() => ProfileAuthUnlockScreenState();
 }
 
-class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
+class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
   @override
   Widget build(BuildContext context) => BlocProvider<ProfileUnlockCubit>(
         create: (context) => ProfileUnlockCubit(
@@ -28,7 +29,7 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
         child: BlocBuilder<ProfileUnlockCubit, ProfileUnlockState>(
           builder: (context, state) {
             if (state is ProfileUnlockFailure) {
-              return ProfileAuthFailScreen();
+              return const ProfileAuthFailScreen();
             } else {
               return ProfileAuthShell(
                 illustration: Image.asset(
@@ -58,7 +59,9 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                       child: TextFormField(
                                         controller: TextEditingController(
                                             text: state.username),
-                                        autofillHints: [AutofillHints.username],
+                                        autofillHints: const [
+                                          AutofillHints.username
+                                        ],
                                       )),
                                 ),
                               ),
@@ -66,15 +69,15 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                 formControlName: 'password',
                                 autofocus: true,
                                 obscureText: true,
-                                autofillHints: [AutofillHints.password],
+                                autofillHints: const [AutofillHints.password],
                                 decoration: InputDecoration(
                                   labelText:
                                       appLocalizationsOf(context).password,
                                   prefixIcon: const Icon(Icons.lock),
                                 ),
-                                validationMessages: (_) => kValidationMessages(
+                                validationMessages: kValidationMessages(
                                     appLocalizationsOf(context)),
-                                onSubmitted: () =>
+                                onSubmitted: (_) =>
                                     context.read<ProfileUnlockCubit>().submit(),
                               ),
                               const SizedBox(height: 16),

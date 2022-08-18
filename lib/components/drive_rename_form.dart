@@ -28,12 +28,14 @@ Future<void> promptToRenameDrive(
             profileCubit: context.read<ProfileCubit>(),
             syncCubit: context.read<SyncCubit>(),
           ),
-          child: DriveRenameForm(),
+          child: const DriveRenameForm(),
         ),
       ),
     );
 
 class DriveRenameForm extends StatelessWidget {
+  const DriveRenameForm({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<DriveRenameCubit, DriveRenameState>(
@@ -61,7 +63,7 @@ class DriveRenameForm extends StatelessWidget {
                       decoration: InputDecoration(
                           labelText: appLocalizationsOf(context).driveName),
                       showErrors: (control) => control.invalid,
-                      validationMessages: (_) =>
+                      validationMessages:
                           kValidationMessages(appLocalizationsOf(context)),
                     ),
                   ),

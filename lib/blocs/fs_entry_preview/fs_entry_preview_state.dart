@@ -14,20 +14,20 @@ class FsEntryPreviewInitial extends FsEntryPreviewState {}
 class FsEntryPreviewSuccess extends FsEntryPreviewState {
   final String previewUrl;
 
-  FsEntryPreviewSuccess({required this.previewUrl});
+  const FsEntryPreviewSuccess({required this.previewUrl});
 
   @override
   List<Object> get props => [previewUrl];
 }
 
 class FsEntryPreviewLoading extends FsEntryPreviewSuccess {
-  FsEntryPreviewLoading() : super(previewUrl: '');
+  const FsEntryPreviewLoading() : super(previewUrl: '');
 }
 
 class FsEntryPreviewImage extends FsEntryPreviewSuccess {
   final Uint8List imageBytes;
 
-  FsEntryPreviewImage({
+  const FsEntryPreviewImage({
     required this.imageBytes,
     required String previewUrl,
   }) : super(previewUrl: previewUrl);
@@ -37,7 +37,7 @@ class FsEntryPreviewImage extends FsEntryPreviewSuccess {
 }
 
 class FsEntryPreviewAudio extends FsEntryPreviewSuccess {
-  FsEntryPreviewAudio({
+  const FsEntryPreviewAudio({
     required String previewUrl,
   }) : super(previewUrl: previewUrl);
 
@@ -46,7 +46,7 @@ class FsEntryPreviewAudio extends FsEntryPreviewSuccess {
 }
 
 class FsEntryPreviewVideo extends FsEntryPreviewSuccess {
-  FsEntryPreviewVideo({
+  const FsEntryPreviewVideo({
     required String previewUrl,
   }) : super(previewUrl: previewUrl);
 
@@ -55,7 +55,7 @@ class FsEntryPreviewVideo extends FsEntryPreviewSuccess {
 }
 
 class FsEntryPreviewText extends FsEntryPreviewSuccess {
-  FsEntryPreviewText({
+  const FsEntryPreviewText({
     required String previewUrl,
   }) : super(previewUrl: previewUrl);
 

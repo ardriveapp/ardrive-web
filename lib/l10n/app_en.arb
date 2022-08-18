@@ -140,7 +140,7 @@
   "@passwordMismatch": {
     "description": "Error message for when the confirmation password doesn't match the actual pass"
   },
-  "aggreeToTerms_body": "I agree to the ArDrive terms of service and privacy policy",
+  "aggreeToTerms_body": "I agree to the ArDrive terms of service and privacy policy.",
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
@@ -177,6 +177,10 @@
         "example": "user"
       }
     }
+  },
+  "unlock": "Unlock",
+  "@unlock": {
+    "description": "Unlock a file or drive."
   },
   "unlockEmphasized": "UNLOCK",
   "@unlockEmphasized": {
@@ -625,9 +629,17 @@
   "@driveName": {
     "description": "The name of certain drive"
   },
+  "driveKey": "Drive Key",
+  "@driveKey": {
+    "description": "Drive Key form field label"
+  },
   "shareDrive": "Share Drive",
   "@shareDrive": {
     "description": "The action of sharing a drive link"
+  },
+  "enterFileKey": "Enter file Key",
+  "@enterFileKey": {
+    "description": "File Key form field label"
   },
   "shareDriveWithOthers": "Share drive with others",
   "@shareDriveWithOthers": {
@@ -664,6 +676,14 @@
   "shareFile": "Share File",
   "@shareFile": {
     "description": "The action of sharing a file link"
+  },
+  "sharePendingFile": "The file you are trying to share is currently pending and can’t be shared at this time.",
+  "@sharePendingFile": {
+    "description": "Pending file share dialog text"
+  },
+  "shareFailedFile": "The file you are attempting to share is invalid and cannot be shared.",
+  "@shareFailedFile": {
+    "description": "Failed file share dialog text"
   },
   "shareFileWithOthers": "Share file with others",
   "@shareFileWithOthers": {
@@ -876,7 +896,7 @@
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "ArDrive on web currently only supports file uploads smaller than 1.25 GiB for public drives",
+  "filesTooLargeExplanationPublic": "ArDrive on web currently only supports file uploads smaller than 1.20 GiB for public drives",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
@@ -982,6 +1002,18 @@
   "specifiedFileDoesNotExist": "The specified file does not exist.",
   "@specifiedFileDoesNotExist": {
     "description": "The shared file the user is trying to access does not exist"
+  },
+  "validationSharedFileIncorrectFileKey": "Incorrect key, please try again.",
+  "@validationSharedFileIncorrectFileKey": {
+    "description": "The user entered an incorrect file key"
+  },
+  "sharedFileIsEncrypted": "This file is encrypted.",
+  "@sharedFileIsEncrypted": {
+    "description": "Description that says the file is encrypted on shared file page"
+  },
+  "whatIsArDrive": "What is ArDrive?",
+  "@whatIsArDrive": {
+    "description": "What is ArDrive? link on shared file page"
   },
   "failedToSyncDrive": "Failed to sync drive contents.",
   "@failedToSyncDrive": {
@@ -1323,5 +1355,13 @@
   "infernoIsInFullSwing": "The Inferno Rewards Program is in full swing! Click here to check out the rules for participation!",
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
+  },
+  "uploadFailed": "Upload Failed",
+  "@uploadFailed": {
+    "description": "Upload Failed dialog title"
+  },
+  "yourUploadFailed": "Your upload failed. You have not been charged for the failed attempt.",
+  "@yourUploadFailed": {
+    "description": "Upload fail dialog description."
   }
 }

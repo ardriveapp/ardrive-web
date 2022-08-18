@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ScreenNotSupportedPage extends StatelessWidget {
+  const ScreenNotSupportedPage({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) => Material(
         child: DefaultTextStyle(
@@ -31,8 +33,8 @@ class ScreenNotSupportedPage extends StatelessWidget {
                 Text(appLocalizationsOf(context).tryOnAnotherDevice),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () => launch(
-                    'https://ardrive.io/about/newsletter/',
+                  onPressed: () => launchUrl(
+                    Uri.parse('https://ardrive.io/about/newsletter/'),
                   ),
                   child: Text(appLocalizationsOf(context).subscribeEmphasized),
                 ),

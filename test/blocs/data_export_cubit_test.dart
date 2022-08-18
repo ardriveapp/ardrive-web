@@ -50,8 +50,8 @@ void main() {
             ),
         act: (cubit) async => await cubit.exportData(),
         expect: () => [
-              TypeMatcher<DataExportInProgress>(),
-              TypeMatcher<DataExportSuccess>()
+              const TypeMatcher<DataExportInProgress>(),
+              const TypeMatcher<DataExportSuccess>()
             ],
         verify: (cubit) async {
           final state = cubit.state as DataExportSuccess;

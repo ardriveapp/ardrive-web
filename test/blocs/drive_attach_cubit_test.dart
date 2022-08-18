@@ -132,7 +132,7 @@ void main() {
         };
         bloc.form.updateValueAndValidity();
       },
-      wait: Duration(milliseconds: 1000),
+      wait: const Duration(milliseconds: 1000),
       verify: (bloc) {
         expect(bloc.form.contains('driveKey'), isTrue);
       },
@@ -158,15 +158,15 @@ void main() {
           await Future.microtask(() {
             bloc.form.control('driveId').updateValue(validPrivateDriveId);
           });
-          await Future.delayed(Duration(milliseconds: 1000));
+          await Future.delayed(const Duration(milliseconds: 1000));
           bloc.form.control('driveKey').updateValue(invalidDriveKeyBase64);
-          await Future.delayed(Duration(milliseconds: 1000));
+          await Future.delayed(const Duration(milliseconds: 1000));
           bloc.submit();
         },
         expect: () => [
           DriveAttachPrivate(),
         ],
-        wait: Duration(milliseconds: 1200),
+        wait: const Duration(milliseconds: 1200),
         verify: (_) async {
           verifyZeroInteractions(syncBloc);
           verifyZeroInteractions(drivesBloc);
@@ -191,7 +191,7 @@ void main() {
           // This state is here after DriveAttachSuccess due to debounced validation after drive attaches
           DriveAttachPrivate(),
         ],
-        wait: Duration(milliseconds: 1200),
+        wait: const Duration(milliseconds: 1200),
         verify: (_) async {
           verify(() => syncBloc.startSync()).called(1);
           verify(() => drivesBloc.selectDrive(validPrivateDriveId)).called(1);

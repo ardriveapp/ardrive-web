@@ -29,7 +29,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       //Reinitialize here in case connection is closed with abort
 
       final dataRes = await http.get(Uri.parse(
-          _arweave.client.api.gatewayUrl.origin + '/${file.dataTxId}'));
+          '${_arweave.client.api.gatewayUrl.origin}/${file.dataTxId}'));
 
       Uint8List dataBytes;
 

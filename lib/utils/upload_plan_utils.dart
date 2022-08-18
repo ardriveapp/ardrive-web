@@ -16,7 +16,7 @@ class UploadPlanUtils {
 
   final ArweaveService arweave;
   final DriveDao driveDao;
-  final _uuid = Uuid();
+  final _uuid = const Uuid();
 
   Future<UploadPlan> filesToUploadPlan({
     required List<UploadFile> files,
@@ -27,9 +27,9 @@ class UploadPlanUtils {
     required FolderEntry targetFolder,
     Map<String, WebFolder> foldersByPath = const {},
   }) async {
-    final _fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
-    final _fileV2UploadHandles = <String, FileV2UploadHandle>{};
-    final _folderDataItemUploadHandles = <String, FolderDataItemUploadHandle>{};
+    final fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
+    final fileV2UploadHandles = <String, FileV2UploadHandle>{};
+    final folderDataItemUploadHandles = <String, FolderDataItemUploadHandle>{};
     final private = targetDrive.isPrivate;
     final driveKey =
         private ? await driveDao.getDriveKey(targetDrive.id, cipherKey) : null;
@@ -60,7 +60,7 @@ class UploadPlanUtils {
           : RevisionAction.create;
 
       if (fileSize < bundleSizeLimit) {
-        _fileDataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(
+        fileDataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(
           entity: fileEntity,
           path: filePath,
           file: file,
@@ -71,7 +71,7 @@ class UploadPlanUtils {
           revisionAction: revisionAction,
         );
       } else {
-        _fileV2UploadHandles[fileEntity.id!] = FileV2UploadHandle(
+        fileV2UploadHandles[fileEntity.id!] = FileV2UploadHandle(
           entity: fileEntity,
           path: filePath,
           file: file,
@@ -82,7 +82,7 @@ class UploadPlanUtils {
       }
     }
     foldersByPath.forEach((key, folder) async {
-      _folderDataItemUploadHandles.putIfAbsent(
+      folderDataItemUploadHandles.putIfAbsent(
         folder.id,
         () => FolderDataItemUploadHandle(
           folder: folder,
@@ -95,9 +95,9 @@ class UploadPlanUtils {
     });
 
     return UploadPlan.create(
-      fileV2UploadHandles: _fileV2UploadHandles,
-      fileDataItemUploadHandles: _fileDataItemUploadHandles,
-      folderDataItemUploadHandles: _folderDataItemUploadHandles,
+      fileV2UploadHandles: fileV2UploadHandles,
+      fileDataItemUploadHandles: fileDataItemUploadHandles,
+      folderDataItemUploadHandles: folderDataItemUploadHandles,
     );
   }
 
@@ -120,7 +120,7 @@ class UploadPlanUtils {
             currentFolder,
             () => WebFolder(
               name: folderPath[i],
-              id: Uuid().v4(),
+              id: const Uuid().v4(),
               parentFolderPath: parentFolderPath,
             ),
           );

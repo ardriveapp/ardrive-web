@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/split_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -10,6 +11,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'profile_auth_shell.dart';
 
 class ProfileAuthAddScreen extends StatelessWidget {
+  const ProfileAuthAddScreen({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) =>
       BlocBuilder<ProfileAddCubit, ProfileAddState>(
@@ -50,14 +53,14 @@ class ProfileAuthAddScreen extends StatelessWidget {
                         ReactiveTextField(
                           formControlName: 'username',
                           autofocus: true,
-                          autofillHints: [AutofillHints.username],
+                          autofillHints: const [AutofillHints.username],
                           decoration: InputDecoration(
                             labelText: appLocalizationsOf(context).username,
                             prefixIcon: const Icon(Icons.person),
                           ),
-                          onSubmitted: () =>
+                          onSubmitted: (_) =>
                               context.read<ProfileAddCubit>().submit(),
-                          validationMessages: (_) =>
+                          validationMessages:
                               kValidationMessages(appLocalizationsOf(context)),
                         ),
                         const SizedBox(height: 16),
@@ -68,10 +71,10 @@ class ProfileAuthAddScreen extends StatelessWidget {
                             labelText: appLocalizationsOf(context).password,
                             prefixIcon: const Icon(Icons.lock),
                           ),
-                          autofillHints: [AutofillHints.password],
-                          onSubmitted: () =>
+                          autofillHints: const [AutofillHints.password],
+                          onSubmitted: (_) =>
                               context.read<ProfileAddCubit>().submit(),
-                          validationMessages: (_) =>
+                          validationMessages:
                               kValidationMessages(appLocalizationsOf(context)),
                         ),
                         if (!state.isExistingUser) ...[
@@ -84,12 +87,12 @@ class ProfileAuthAddScreen extends StatelessWidget {
                                   appLocalizationsOf(context).confirmPassword,
                               prefixIcon: const Icon(Icons.lock),
                             ),
-                            onSubmitted: () =>
+                            onSubmitted: (_) =>
                                 context.read<ProfileAddCubit>().submit(),
-                            validationMessages: (_) => {
+                            validationMessages: {
                               ...kValidationMessages(
                                   appLocalizationsOf(context)),
-                              'mustMatch':
+                              'mustMatch': (_) =>
                                   appLocalizationsOf(context).passwordMismatch,
                             },
                           ),
@@ -103,28 +106,33 @@ class ProfileAuthAddScreen extends StatelessWidget {
                               const SizedBox(width: 12),
                               Flexible(
                                 child: GestureDetector(
-                                  onTap: () => launch(
-                                    'https://ardrive.io/tos-and-privacy/',
+                                  onTap: () => launchUrl(
+                                    Uri.parse(
+                                      'https://ardrive.io/tos-and-privacy/',
+                                    ),
                                   ),
                                   child: Text.rich(
                                     TextSpan(
-                                      children: [
-                                        TextSpan(
-                                          // TODO replace at PE-1125
-                                          text: appLocalizationsOf(context)
-                                              .aggreeToTerms_main,
-                                        ),
-                                        TextSpan(
-                                          // TODO replace at PE-1125
-                                          text: appLocalizationsOf(context)
-                                              .aggreeToTerms_link,
-                                          style: TextStyle(
-                                            decoration:
-                                                TextDecoration.underline,
-                                          ),
-                                        ),
-                                        TextSpan(text: '.'),
-                                      ],
+                                      children:
+                                          splitTranslationsWithMultipleStyles<
+                                              InlineSpan>(
+                                        originalText:
+                                            appLocalizationsOf(context)
+                                                .aggreeToTerms_body,
+                                        defaultMapper: (text) =>
+                                            TextSpan(text: text),
+                                        parts: {
+                                          appLocalizationsOf(context)
+                                                  .aggreeToTerms_link:
+                                              (text) => TextSpan(
+                                                    text: text,
+                                                    style: const TextStyle(
+                                                      decoration: TextDecoration
+                                                          .underline,
+                                                    ),
+                                                  ),
+                                        },
+                                      ),
                                     ),
                                   ),
                                 ),
