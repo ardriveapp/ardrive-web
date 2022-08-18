@@ -36,10 +36,10 @@ class App extends StatefulWidget {
   const App({Key? key}) : super(key: key);
 
   @override
-  _AppState createState() => _AppState();
+  AppState createState() => AppState();
 }
 
-class _AppState extends State<App> {
+class AppState extends State<App> {
   final _routerDelegate = AppRouterDelegate();
   final _routeInformationParser = AppRouteInformationParser();
 

@@ -39,7 +39,7 @@ void main() {
           [testItem]
         ];
         expect(
-          DeepCollectionEquality().equals(actualResult, expectedResult),
+          const DeepCollectionEquality().equals(actualResult, expectedResult),
           true,
         );
       });
@@ -57,7 +57,7 @@ void main() {
         printOnFailure(
             actualResult.map((e) => e.map((e) => e.size)).toString());
         expect(
-          DeepCollectionEquality().equals(actualResult, expectedResult),
+          const DeepCollectionEquality().equals(actualResult, expectedResult),
           true,
         );
       });
@@ -82,7 +82,7 @@ void main() {
         printOnFailure(
             actualResult.map((e) => e.map((e) => e.size)).toString());
         expect(
-          DeepCollectionEquality().equals(actualResult, expectedResult),
+          const DeepCollectionEquality().equals(actualResult, expectedResult),
           true,
         );
       });

@@ -17,7 +17,7 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
   Widget build(BuildContext context) {
     switch (widget.state.runtimeType) {
       case FsEntryPreviewLoading:
-        return Center(
+        return const Center(
           child: SizedBox(
             height: 24,
             width: 24,

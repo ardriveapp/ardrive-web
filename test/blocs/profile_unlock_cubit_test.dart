@@ -1,5 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/entities/profileTypes.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -47,7 +47,7 @@ void main() {
         bloc.submit();
       },
       verify: (bloc) => verify(() =>
-          profileCubit.unlockDefaultProfile(rightPassword, ProfileType.JSON)),
+          profileCubit.unlockDefaultProfile(rightPassword, ProfileType.json)),
     );
 
     blocTest<ProfileUnlockCubit, ProfileUnlockState>(

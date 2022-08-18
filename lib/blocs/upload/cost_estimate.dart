@@ -34,14 +34,14 @@ class CostEstimate {
     required PstService pstService,
     required Wallet wallet,
   }) async {
-    final _v2FileUploadHandles = uploadPlan.fileV2UploadHandles;
+    final v2FileUploadHandles = uploadPlan.fileV2UploadHandles;
 
     final dataItemsCost = await estimateCostOfAllBundles(
       bundleUploadHandles: uploadPlan.bundleUploadHandles,
       arweaveService: arweaveService,
     );
     final v2FilesUploadCost = await estimateV2UploadsCost(
-        fileUploadHandles: _v2FileUploadHandles.values.toList(),
+        fileUploadHandles: v2FileUploadHandles.values.toList(),
         arweaveService: arweaveService);
 
     final bundlePstFee = await pstService.getPSTFee(dataItemsCost);

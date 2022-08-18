@@ -41,7 +41,7 @@ class Profile {
   final profileUnlock = 'assets/images/profile/profile_unlock.png';
   final profileWelcome = 'assets/images/profile/profile_welcome.png';
 
-  final permahillsBg = 'assets/images/profile/profile_permahills_bg.png';
+  final permahillsBg = 'assets/images/profile/profile_permahills_bg.svg';
 
   final newUserPermanent =
       'assets/images/profile/profile_new_user_permanent.png';

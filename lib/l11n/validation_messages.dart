@@ -1,25 +1,26 @@
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-Map<String, String> kValidationMessages(AppLocalizations localizations) {
+Map<String, String Function(Object o)> kValidationMessages(
+    AppLocalizations localizations) {
   return {
-    ValidationMessage.required: localizations.validationRequired,
-    ValidationMessage.pattern: localizations.validationInvalid,
-    AppValidationMessage.passwordIncorrect:
+    ValidationMessage.required: (_) => localizations.validationRequired,
+    ValidationMessage.pattern: (_) => localizations.validationInvalid,
+    AppValidationMessage.passwordIncorrect: (_) =>
         localizations.validationPasswordIncorrect,
-    AppValidationMessage.driveAttachDriveNotFound:
+    AppValidationMessage.driveAttachDriveNotFound: (_) =>
         localizations.validationAttachDriveCouldNotBeFound,
-    AppValidationMessage.driveAttachInvalidDriveKey:
+    AppValidationMessage.driveAttachInvalidDriveKey: (_) =>
         localizations.validationInvalidKey,
-    AppValidationMessage.driveAttachUserLoggedOut:
+    AppValidationMessage.driveAttachUserLoggedOut: (_) =>
         localizations.validationAttachUserLoggedOut,
-    AppValidationMessage.fsEntryNameAlreadyPresent:
+    AppValidationMessage.fsEntryNameAlreadyPresent: (_) =>
         localizations.validationEntityNameAlreadyPresent,
-    AppValidationMessage.driveNameAlreadyPresent:
+    AppValidationMessage.driveNameAlreadyPresent: (_) =>
         localizations.validationDriveNameAlreadyPresent,
-    AppValidationMessage.fsEntryNameUnchanged:
+    AppValidationMessage.fsEntryNameUnchanged: (_) =>
         localizations.validationNameUnchanged,
-    AppValidationMessage.sharedFileIncorrectFileKey:
+    AppValidationMessage.sharedFileIncorrectFileKey: (_) =>
         localizations.validationSharedFileIncorrectFileKey,
   };
 }

@@ -21,17 +21,19 @@ Future<void> promptToShareDrive({
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),
         ),
-        child: DriveShareDialog(),
+        child: const DriveShareDialog(),
       ),
     );
 
 /// Depends on a provided [DriveShareCubit] for business logic.
 class DriveShareDialog extends StatefulWidget {
+  const DriveShareDialog({Key? key}) : super(key: key);
+
   @override
-  _DriveShareDialogState createState() => _DriveShareDialogState();
+  DriveShareDialogState createState() => DriveShareDialogState();
 }
 
-class _DriveShareDialogState extends State<DriveShareDialog> {
+class DriveShareDialogState extends State<DriveShareDialog> {
   final shareLinkController = TextEditingController();
 
   @override
