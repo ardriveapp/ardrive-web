@@ -40,7 +40,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       );
       final dataRes = await http.get(
         Uri.parse(
-          _arweave.client.api.gatewayUrl.origin + '/$dataTxId',
+          '${_arweave.client.api.gatewayUrl.origin}/$dataTxId',
         ),
       );
 
@@ -84,13 +84,10 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
       emit(
         FileDownloadSuccess(
-          file: XFile.fromData(
-            dataBytes,
-            name: file.name,
-            mimeType: file.dataContentType ?? lookupMimeType(file.name),
-            length: dataBytes.lengthInBytes,
-            lastModified: file.lastModifiedDate,
-          ),
+          bytes: dataBytes,
+          fileName: file.name,
+          mimeType: file.dataContentType ?? lookupMimeType(file.name),
+          lastModified: file.lastModifiedDate,
         ),
       );
     } catch (err) {

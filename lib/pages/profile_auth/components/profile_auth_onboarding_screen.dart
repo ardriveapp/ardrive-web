@@ -2,16 +2,18 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'profile_auth_shell.dart';
 
 class ProfileAuthOnboarding extends StatefulWidget {
+  const ProfileAuthOnboarding({Key? key}) : super(key: key);
+
   @override
-  _ProfileAuthOnboardingState createState() => _ProfileAuthOnboardingState();
+  ProfileAuthOnboardingState createState() => ProfileAuthOnboardingState();
 }
 
-class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
+class ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
   final int onboardingPageCount = 4;
   int _onboardingStepIndex = 0;
 
@@ -189,7 +191,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
                       height: 16,
                       width: 16,
                       duration: const Duration(milliseconds: 200),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.all(Radius.circular(20)),
                       ),
@@ -199,7 +201,7 @@ class _ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
                       height: 8,
                       width: 8,
                       duration: const Duration(milliseconds: 200),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: Colors.white70,
                         borderRadius: BorderRadius.all(Radius.circular(20)),
                       ),

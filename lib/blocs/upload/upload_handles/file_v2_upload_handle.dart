@@ -7,7 +7,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class FileV2UploadHandle implements UploadHandle {
@@ -59,7 +59,7 @@ class FileV2UploadHandle implements UploadHandle {
   }) async {
     final packageInfo = await PackageInfo.fromPlatform();
 
-    final fileData = await file.readAsBytes();
+    final fileData = await file.ioFile.readAsBytes();
     dataTx = await arweaveService.client.transactions.prepare(
       isPrivate
           ? await createEncryptedTransaction(fileData, fileKey!)

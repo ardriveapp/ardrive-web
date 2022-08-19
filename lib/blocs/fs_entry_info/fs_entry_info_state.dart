@@ -15,7 +15,7 @@ class FsEntryInfoSuccess<T> extends FsEntryInfoState {
   final DateTime dateCreated;
   final T entry;
 
-  FsEntryInfoSuccess({
+  const FsEntryInfoSuccess({
     required this.name,
     required this.lastUpdated,
     required this.dateCreated,
@@ -38,7 +38,7 @@ class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {
   final FolderRevision rootFolderRevision;
   final FolderNode rootFolderTree;
 
-  FsEntryDriveInfoSuccess({
+  const FsEntryDriveInfoSuccess({
     required this.name,
     required this.lastUpdated,
     required this.dateCreated,

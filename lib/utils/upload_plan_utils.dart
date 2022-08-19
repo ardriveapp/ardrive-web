@@ -16,7 +16,7 @@ class UploadPlanUtils {
 
   final ArweaveService arweave;
   final DriveDao driveDao;
-  final _uuid = Uuid();
+  final _uuid = const Uuid();
 
   Future<UploadPlan> filesToUploadPlan({
     required List<UploadFile> files,
@@ -27,24 +27,24 @@ class UploadPlanUtils {
     required FolderEntry targetFolder,
     Map<String, WebFolder> foldersByPath = const {},
   }) async {
-    final _fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
-    final _fileV2UploadHandles = <String, FileV2UploadHandle>{};
-    final _folderDataItemUploadHandles = <String, FolderDataItemUploadHandle>{};
+    final fileDataItemUploadHandles = <String, FileDataItemUploadHandle>{};
+    final fileV2UploadHandles = <String, FileV2UploadHandle>{};
+    final folderDataItemUploadHandles = <String, FolderDataItemUploadHandle>{};
     final private = targetDrive.isPrivate;
     final driveKey =
         private ? await driveDao.getDriveKey(targetDrive.id, cipherKey) : null;
     for (var file in files) {
-      final fileName = file.name;
+      final fileName = file.ioFile.name;
 
       // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
       final filePath = '${targetFolder.path}/${file.getIdentifier()}';
 
-      final fileSize = file.size;
+      final fileSize = await file.ioFile.length;
       final fileEntity = FileEntity(
         driveId: targetDrive.id,
         name: fileName,
         size: fileSize,
-        lastModifiedDate: file.lastModifiedDate,
+        lastModifiedDate: file.ioFile.lastModifiedDate,
         parentFolderId: file.parentFolderId,
         dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
       );
@@ -60,7 +60,7 @@ class UploadPlanUtils {
           : RevisionAction.create;
 
       if (fileSize < bundleSizeLimit) {
-        _fileDataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(
+        fileDataItemUploadHandles[fileEntity.id!] = FileDataItemUploadHandle(
           entity: fileEntity,
           path: filePath,
           file: file,
@@ -71,7 +71,7 @@ class UploadPlanUtils {
           revisionAction: revisionAction,
         );
       } else {
-        _fileV2UploadHandles[fileEntity.id!] = FileV2UploadHandle(
+        fileV2UploadHandles[fileEntity.id!] = FileV2UploadHandle(
           entity: fileEntity,
           path: filePath,
           file: file,
@@ -82,7 +82,7 @@ class UploadPlanUtils {
       }
     }
     foldersByPath.forEach((key, folder) async {
-      _folderDataItemUploadHandles.putIfAbsent(
+      folderDataItemUploadHandles.putIfAbsent(
         folder.id,
         () => FolderDataItemUploadHandle(
           folder: folder,
@@ -95,20 +95,21 @@ class UploadPlanUtils {
     });
 
     return UploadPlan.create(
-      fileV2UploadHandles: _fileV2UploadHandles,
-      fileDataItemUploadHandles: _fileDataItemUploadHandles,
-      folderDataItemUploadHandles: _folderDataItemUploadHandles,
+      fileV2UploadHandles: fileV2UploadHandles,
+      fileDataItemUploadHandles: fileDataItemUploadHandles,
+      folderDataItemUploadHandles: folderDataItemUploadHandles,
     );
   }
 
   ///Returns a sorted list of folders (root folder first) from a list of files
   ///with paths
-  static Map<String, WebFolder> generateFoldersForFiles(List<WebFile> files) {
+  static Map<String, WebFolder> generateFoldersForFiles(
+      List<UploadFile> files) {
     final foldersByPath = <String, WebFolder>{};
 
     // Generate folders
     for (var file in files) {
-      final path = file.file.relativePath!;
+      final path = file.ioFile.path;
       final folderPath = path.split('/');
       folderPath.removeLast();
       for (var i = 0; i < folderPath.length; i++) {
@@ -119,7 +120,7 @@ class UploadPlanUtils {
             currentFolder,
             () => WebFolder(
               name: folderPath[i],
-              id: Uuid().v4(),
+              id: const Uuid().v4(),
               parentFolderPath: parentFolderPath,
             ),
           );

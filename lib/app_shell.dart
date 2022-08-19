@@ -14,13 +14,13 @@ import 'utils/app_localizations_wrapper.dart';
 class AppShell extends StatefulWidget {
   final Widget page;
 
-  AppShell({Key? key, required this.page}) : super(key: key);
+  const AppShell({Key? key, required this.page}) : super(key: key);
 
   @override
-  _AppShellState createState() => _AppShellState();
+  AppShellState createState() => AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class AppShellState extends State<AppShell> {
   bool _showProfileOverlay = false;
   bool _showWalletSwitchDialog = true;
   @override
@@ -30,7 +30,7 @@ class _AppShellState extends State<AppShell> {
             if (_showWalletSwitchDialog) {
               showDialog(
                 context: context,
-                builder: (context) => WalletSwitchDialog(),
+                builder: (context) => const WalletSwitchDialog(),
               );
             }
             //Used to prevent the dialog being shown multiple times.
@@ -48,8 +48,10 @@ class _AppShellState extends State<AppShell> {
                   IconButton(
                     icon: const Icon(Icons.people_alt),
                     tooltip: 'CommunityXYZ',
-                    onPressed: () => launch(
-                      'https://community.xyz/#-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ',
+                    onPressed: () => launchUrl(
+                      Uri.parse(
+                        'https://community.xyz/#-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ',
+                      ),
                     ),
                   ),
                   IconButton(
@@ -61,8 +63,8 @@ class _AppShellState extends State<AppShell> {
                       ),
                       child: PortalEntry(
                         visible: _showProfileOverlay,
-                        portal: Padding(
-                          padding: const EdgeInsets.only(top: 56),
+                        portal: const Padding(
+                          padding: EdgeInsets.only(top: 56),
                           child: ProfileOverlay(),
                         ),
                         portalAnchor: Alignment.topRight,
@@ -123,7 +125,7 @@ class _AppShellState extends State<AppShell> {
                                                               .drivesCount)
                                                   : appLocalizationsOf(context)
                                                       .syncingOnlyOneDrive,
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold),
                                         ),
@@ -145,7 +147,7 @@ class _AppShellState extends State<AppShell> {
             desktop: _buildPage(
               Row(
                 children: [
-                  AppDrawer(),
+                  const AppDrawer(),
                   Expanded(
                     child: Scaffold(
                       appBar: _buildAppBar(),
@@ -158,7 +160,7 @@ class _AppShellState extends State<AppShell> {
             mobile: _buildPage(
               Scaffold(
                 appBar: _buildAppBar(),
-                drawer: AppDrawer(),
+                drawer: const AppDrawer(),
                 body: Row(
                   children: [
                     Expanded(

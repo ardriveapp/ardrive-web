@@ -8,6 +8,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'profile_auth_shell.dart';
 
 class ProfileAuthFailScreen extends StatelessWidget {
+  const ProfileAuthFailScreen({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) => ProfileAuthShell(
         illustration: Image.asset(

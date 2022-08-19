@@ -16,11 +16,13 @@ class ProgressDialog extends StatelessWidget {
   final Widget? progressDescription;
   final Widget? progressBar;
 
-  ProgressDialog(
-      {required this.title,
-      this.progressBar,
-      this.progressDescription,
-      this.percentageDetails});
+  const ProgressDialog({
+    Key? key,
+    required this.title,
+    this.progressBar,
+    this.progressDescription,
+    this.percentageDetails,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) => AppDialog(
@@ -32,9 +34,9 @@ class ProgressDialog extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 32),
-                child: const SizedBox(
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: SizedBox(
                     width: 74,
                     height: 74,
                     child: CircularProgressIndicator(
