@@ -876,7 +876,7 @@
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "Actualmente, las unidades públicas en ArDrive WEB soportan archivos de hasta 1.25 GiB",
+  "filesTooLargeExplanationPublic": "Actualmente, las unidades públicas en ArDrive WEB soportan archivos de hasta 1.20 GiB",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
@@ -1339,5 +1339,9 @@
   "unlock": "Desbloquear",
   "@unlock": {
     "description": "Unlock a file or drive."
+  },
+  "infernoIsInFullSwing": "¡El programa de recompensas de Inferno está en plena marcha! ¡Cliquea aquí para abrir las reglas de participación!",
+  "@infernoIsInFullSwing": {
+    "description": "Text inviting the users to go read the Inferno rules"
   }
 }

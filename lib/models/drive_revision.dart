@@ -1,5 +1,5 @@
 import 'package:ardrive/entities/entities.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 
 import 'models.dart';
 

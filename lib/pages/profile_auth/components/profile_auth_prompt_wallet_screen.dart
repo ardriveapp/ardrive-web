@@ -2,7 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/split_localizations.dart';
-import 'package:file_selector/file_selector.dart' as file_selector;
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -10,6 +10,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'profile_auth_shell.dart';
 
 class ProfileAuthPromptWalletScreen extends StatelessWidget {
+  const ProfileAuthPromptWalletScreen({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) => ProfileAuthShell(
         illustration: Image.asset(
@@ -50,7 +52,11 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
             ],
             const SizedBox(height: 16),
             TextButton(
-              onPressed: () => launch('https://tokens.arweave.org'),
+              onPressed: () => launchUrl(
+                Uri.parse(
+                  'https://tokens.arweave.org',
+                ),
+              ),
               child: Text(
                 appLocalizationsOf(context).getAWallet,
                 textAlign: TextAlign.center,
@@ -61,13 +67,9 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
       );
 
   void _pickWallet(BuildContext context) async {
-    final walletFile = await file_selector.openFile(acceptedTypeGroups: [
-      file_selector.XTypeGroup(label: 'wallet keys', extensions: ['json'])
-    ]);
+    final ardriveIO = ArDriveIO();
 
-    if (walletFile == null) {
-      return;
-    }
+    final walletFile = await ardriveIO.pickFile(allowedExtensions: ['json']);
 
     await context
         .read<ProfileAddCubit>()

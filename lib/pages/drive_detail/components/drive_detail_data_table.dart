@@ -82,7 +82,7 @@ class _DriveDataTableState extends State<DriveDataTable> {
 }
 
 List<DataColumn> _buildTableColumns(BuildContext context) {
-  final onSort = (columnIndex, sortAscending) =>
+  onSort(columnIndex, sortAscending) =>
       context.read<DriveDetailCubit>().sortFolder(
             contentOrderBy: DriveOrder.values[columnIndex],
             contentOrderingMode:

@@ -7,6 +7,7 @@ import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,7 +28,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   configService = ConfigService();
-  config = await configService.getConfig();
+  config = await configService.getConfig(
+    localStore: await LocalKeyValueStore.getInstance(),
+  );
 
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
@@ -39,10 +42,10 @@ class App extends StatefulWidget {
   const App({Key? key}) : super(key: key);
 
   @override
-  _AppState createState() => _AppState();
+  AppState createState() => AppState();
 }
 
-class _AppState extends State<App> {
+class AppState extends State<App> {
   final _routerDelegate = AppRouterDelegate();
   final _routeInformationParser = AppRouteInformationParser();
 

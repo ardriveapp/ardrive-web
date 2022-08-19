@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -10,6 +8,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileOverlay extends StatelessWidget {
+  const ProfileOverlay({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) => Column(
         mainAxisSize: MainAxisSize.min,
@@ -104,10 +104,8 @@ class ProfileOverlay extends StatelessWidget {
                           trailing: IconButton(
                             icon: const Icon(Icons.login),
                             tooltip: appLocalizationsOf(context).login,
-                            onPressed: () => launch(
-                              Uri(
-                                path: '/',
-                              ).toString(),
+                            onPressed: () => launchUrl(
+                              Uri(path: '/'),
                               webOnlyWindowName: '_self',
                             ),
                           ),

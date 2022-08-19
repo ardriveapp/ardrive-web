@@ -32,10 +32,10 @@ class FileShareDialog extends StatefulWidget {
   const FileShareDialog({Key? key}) : super(key: key);
 
   @override
-  _FileShareDialogState createState() => _FileShareDialogState();
+  FileShareDialogState createState() => FileShareDialogState();
 }
 
-class _FileShareDialogState extends State<FileShareDialog> {
+class FileShareDialogState extends State<FileShareDialog> {
   final shareLinkController = TextEditingController();
 
   @override

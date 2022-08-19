@@ -1,15 +1,14 @@
 import 'dart:async';
 
-import 'package:ardrive/entities/profileTypes.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
-import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
-import 'package:pedantic/pedantic.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'profile_state.dart';
 
@@ -34,7 +33,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<bool> isCurrentProfileArConnect() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
     if (profile != null) {
-      return profile.profileType == ProfileType.ArConnect.index;
+      return profile.profileType == ProfileType.arConnect.index;
     } else {
       return false;
     }
@@ -49,7 +48,7 @@ class ProfileCubit extends Cubit<ProfileState> {
       return;
     }
     // json wallet present - route to login screen
-    if (profile.profileType != ProfileType.ArConnect.index) {
+    if (profile.profileType != ProfileType.arConnect.index) {
       emit(ProfilePromptLogIn());
       return;
     }
@@ -85,7 +84,7 @@ class ProfileCubit extends Cubit<ProfileState> {
       return false;
     }
 
-    if (profile.profileType == ProfileType.ArConnect.index) {
+    if (profile.profileType == ProfileType.arConnect.index) {
       if (!(await arconnect.checkPermissions())) {
         return true;
       }
@@ -117,15 +116,15 @@ class ProfileCubit extends Cubit<ProfileState> {
     final profile = await _profileDao.loadDefaultProfile(password);
     final arconnect = ArConnectService();
 
-    final walletAddress = await (profileType == ProfileType.ArConnect
+    final walletAddress = await (profileType == ProfileType.arConnect
         ? arconnect.getWalletAddress()
         : profile.wallet.getAddress());
     final walletBalance = await _arweave.getWalletBalance(walletAddress);
     final wallet = () {
       switch (profileType) {
-        case ProfileType.JSON:
+        case ProfileType.json:
           return profile.wallet;
-        case ProfileType.ArConnect:
+        case ProfileType.arConnect:
           return ArConnectWallet();
       }
     }();
@@ -161,7 +160,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
     final arconnect = ArConnectService();
 
-    if (profile != null && profile.profileType == ProfileType.ArConnect.index) {
+    if (profile != null && profile.profileType == ProfileType.arConnect.index) {
       try {
         await arconnect.disconnect();
       } catch (e) {
