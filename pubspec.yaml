@@ -52,6 +52,8 @@ dependencies:
     path: ./ardrive_io
   shared_preferences: ^2.0.15
   flutter_native_splash: ^2.1.6
+  firebase_core: ^1.13.1
+  firebase_analytics: ^9.3.1
 
 dev_dependencies:
   flutter_test:
@@ -64,11 +66,11 @@ dev_dependencies:
   moor_generator: ^4.4.1
   mocktail: ^0.2.0
   json_serializable: ^6.1.4
-  flutter_launcher_icons: "^0.9.2"
+  flutter_launcher_icons: '^0.9.2'
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/images/brand/logo.png"
+  image_path: 'assets/images/brand/logo.png'
 
 dependency_overrides:
   meta: 1.7.0
@@ -95,8 +97,8 @@ flutter_native_splash:
   # of your splash screen to a solid color.  Use background_image to set the background of your
   # splash screen to a png image.  This is useful for gradients. The image will be stretch to the
   # size of the app. Only one parameter can be used, color and background_image cannot both be set.
-  color: "#121212"
-  image: "assets/images/brand/logo.png"
+  color: '#121212'
+  image: 'assets/images/brand/logo.png'
 
   # Optional parameters are listed below.  To enable a parameter, uncomment the line by removing
   # the leading # character.

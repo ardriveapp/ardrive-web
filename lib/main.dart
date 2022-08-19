@@ -1,7 +1,9 @@
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
+import 'package:ardrive/services/analytics/ardrive_analytics.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:arweave/arweave.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -12,6 +14,7 @@ import 'package:flutter_portal/flutter_portal.dart';
 // import 'package:flutter_webview_plugin/flutter_webview_plugin.dart';
 
 import 'blocs/blocs.dart';
+import 'firebase_options.dart';
 import 'models/models.dart';
 import 'pages/pages.dart';
 import 'services/services.dart';
@@ -61,9 +64,19 @@ void main() async {
   // });
   pst = PST(0.15, '-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ');
 
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e, stackTrace) {
+    print(
+        'Failed to initialize Firebase!\nError: $e\nStacktrace:\n$stackTrace');
+  }
+
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
   refreshHTMLPageAtInterval(const Duration(hours: 12));
+
   runApp(App());
 
   FlutterNativeSplash.remove();
@@ -89,6 +102,9 @@ class _AppState extends State<App> {
               create: (context) => context.read<Database>().profileDao),
           RepositoryProvider<DriveDao>(
               create: (context) => context.read<Database>().driveDao),
+          RepositoryProvider<ArDriveAnalytics>(
+              create: (_) =>
+                  CompoundArDriveAnalytics([FirebaseArDriveAnalytics()])),
         ],
         child: MultiBlocProvider(
           providers: [
