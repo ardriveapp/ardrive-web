@@ -4,7 +4,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:csv/csv.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'data_export_state.dart';
