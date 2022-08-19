@@ -1,6 +1,8 @@
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/services/analytics/ardrive_analytics.dart';
+import 'package:ardrive/services/analytics/compound_ardrive_analytics.dart';
+import 'package:ardrive/services/analytics/firebase_ardrive_analytics.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:arweave/arweave.dart';
 import 'package:firebase_core/firebase_core.dart';
