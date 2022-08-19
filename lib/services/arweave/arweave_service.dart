@@ -11,8 +11,8 @@ import 'package:ardrive/utils/http_retry.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:http/http.dart' as http;
 import 'package:drift/drift.dart';
+import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:retry/retry.dart';
 
@@ -27,8 +27,9 @@ class ArweaveService {
 
   final ArtemisClient _gql;
 
-  ArweaveService(this.client)
-      : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
+  ArweaveService(this.client, [ArtemisClient? artemisClient])
+      : _gql = artemisClient ??
+            ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     _graphQLRetry = GraphQLRetry(_gql);
     httpRetry = HttpRetry(
         GatewayResponseHandler(),
