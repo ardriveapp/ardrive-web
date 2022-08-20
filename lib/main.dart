@@ -3,6 +3,7 @@ import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/services/analytics/ardrive_analytics.dart';
 import 'package:ardrive/services/analytics/compound_ardrive_analytics.dart';
 import 'package:ardrive/services/analytics/firebase_ardrive_analytics.dart';
+import 'package:ardrive/services/analytics/logger_ardrive_analytics.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:arweave/arweave.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -105,8 +106,8 @@ class _AppState extends State<App> {
           RepositoryProvider<DriveDao>(
               create: (context) => context.read<Database>().driveDao),
           RepositoryProvider<ArDriveAnalytics>(
-              create: (_) =>
-                  CompoundArDriveAnalytics([FirebaseArDriveAnalytics()])),
+              create: (_) => CompoundArDriveAnalytics(
+                  [FirebaseArDriveAnalytics(), LoggerArDriveAnalytics()])),
         ],
         child: MultiBlocProvider(
           providers: [
