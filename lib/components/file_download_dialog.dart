@@ -7,11 +7,10 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pedantic/pedantic.dart';
 
 import 'components.dart';
 
@@ -32,7 +31,7 @@ Future<void> promptToDownloadProfileFile({
           driveDao: context.read<DriveDao>(),
           arweave: context.read<ArweaveService>(),
         ),
-        child: FileDownloadDialog(),
+        child: const FileDownloadDialog(),
       ),
     );
 
@@ -49,20 +48,22 @@ Future<void> promptToDownloadSharedFile({
           fileKey: fileKey,
           arweave: context.read<ArweaveService>(),
         ),
-        child: FileDownloadDialog(),
+        child: const FileDownloadDialog(),
       ),
     );
 
 class FileDownloadDialog extends StatelessWidget {
+  const FileDownloadDialog({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<FileDownloadCubit, FileDownloadState>(
         listener: (context, state) async {
           if (state is FileDownloadSuccess) {
-            final savePath = await getSavePath();
-            if (savePath != null) {
-              unawaited(state.file.saveTo(savePath));
-            }
+            final ArDriveIO io = ArDriveIO();
+
+            await io.saveFile(await IOFile.fromData(state.bytes,
+                name: state.fileName, lastModifiedDate: state.lastModified));
 
             Navigator.pop(context);
           }
@@ -74,8 +75,8 @@ class FileDownloadDialog extends StatelessWidget {
               title: appLocalizationsOf(context).downloadingFile,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Center(child: CircularProgressIndicator()),
+                children: const [
+                  Center(child: CircularProgressIndicator()),
                 ],
               ),
               actions: [

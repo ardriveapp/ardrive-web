@@ -1,12 +1,12 @@
 import 'dart:convert';
 
-import 'package:ardrive/entities/profileTypes.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 
 part 'profile_dao.g.dart';
 
@@ -14,7 +14,7 @@ const keyByteLength = 256 ~/ 8;
 
 class ProfilePasswordIncorrectException implements Exception {}
 
-@UseDao(include: {'../queries/profile_queries.moor'})
+@DriftAccessor(include: {'../queries/profile_queries.drift'})
 class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   ProfileDao(Database db) : super(db);
 
@@ -27,7 +27,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     final profileSalt = profile.keySalt;
     final profileKdRes = await deriveProfileKey(password, profileSalt);
     //Checks password for both JSON and ArConnect by decrypting stored public key
-    var publicKey;
+    String publicKey;
     try {
       publicKey = utf8.decode(
         await aesGcm.decrypt(
@@ -43,7 +43,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     }
     final parsedProfileType = ProfileType.values[profile.profileType];
     switch (parsedProfileType) {
-      case ProfileType.JSON:
+      case ProfileType.json:
         try {
           //Will only decrypt wallet if it's a JSON Profile
           final walletJwk = json.decode(
@@ -68,7 +68,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         } on SecretBoxAuthenticationError catch (_) {
           throw ProfilePasswordIncorrectException();
         }
-      case ProfileType.ArConnect:
+      case ProfileType.arConnect:
         return ProfileLoadDetails(
           details: profile,
           wallet: ArConnectWallet(),
@@ -90,10 +90,10 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     final profileSalt = profileKdRes.salt;
     final encryptedWallet = await () async {
       switch (profileType) {
-        case ProfileType.JSON:
+        case ProfileType.json:
           return (await encryptWallet(wallet, profileKdRes))
               .concatenation(nonce: false);
-        case ProfileType.ArConnect:
+        case ProfileType.arConnect:
           //ArConnect wallet does not contain the jwk
           return Uint8List(0);
       }

@@ -3,11 +3,11 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 1.27.1
+version: 1.29.0
 
 environment:
-  sdk: '>=2.15.0 <3.0.0'
-  flutter: 2.8.1
+  sdk: '>=2.17.0 <3.0.0'
+  flutter: 3.0.5
 
 dependencies:
   flutter:
@@ -22,50 +22,53 @@ dependencies:
   cryptography: ^2.0.1
   flutter_bloc: ^8.0.1
   flutter_portal: ^0.4.0
-  file_selector: ^0.8.2
-  file_selector_web: ^0.8.1
-  file_selector_macos: ^0.0.4
-  google_fonts: ^2.1.0
+  file_selector: ^0.9.0
+  file_selector_web: ^0.9.0
+  file_selector_macos: ^0.9.0
+  google_fonts: ^3.0.1
   intersperse: ^2.0.0
   intl: ^0.17.0
   json_annotation: ^4.1.0
   mime: ^1.0.0
-  moor: ^4.4.1
+  drift: ^1.5.0
   path_provider: ^2.0.2
-  pedantic: ^1.11.1
-  reactive_forms: ^10.4.1
+  reactive_forms: ^14.1.0
   rxdart: ^0.27.1
   timeago: ^3.1.0
   url_launcher: ^6.0.6
   uuid: ^3.0.4
   http_client: ^1.5.1
-  flutter_dropzone: 3.0.4
+  flutter_dropzone: ^3.0.5
   responsive_builder: ^0.4.1
   package_info_plus: ^1.0.3
   js: ^0.6.3
   collection: ^1.15.0-nullsafety.4
-  csv: 5.0.0
-  stash_memory: 4.0.1
+  csv: ^5.0.1
+  stash_memory: ^4.3.2
   percent_indicator: ^4.0.0
-  flutter_lints: ^1.0.4
+  flutter_lints: ^2.0.1
   retry: ^3.1.0
   shared_preferences: ^2.0.15
   flutter_launcher_icons: ^0.10.0
+  equatable: ^2.0.3
+  http: ^0.13.5
+  stash: ^4.3.2
+  path: ^1.8.1
+  flutter_svg: ^1.1.3
+  ardrive_io:
+    path: ./ardrive_io
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_driver:
     sdk: flutter
-  test: ^1.16.8
-  bloc_test: ^9.0.2
+  test: 1.21.1
+  bloc_test: ^9.0.3
   build_runner: ^2.0.4
-  moor_generator: ^4.4.1
-  mocktail: ^0.2.0
+  drift_dev: ^1.0.0
+  mocktail: 0.3.0
   json_serializable: ^6.1.4
-
-dependency_overrides:
-  meta: 1.7.0
 
 flutter:
   uses-material-design: true

@@ -1,4 +1,4 @@
-import 'network_transactions.moor';
+import 'network_transactions.drift';
 
 CREATE TABLE folder_revisions (
     folderId TEXT NOT NULL,

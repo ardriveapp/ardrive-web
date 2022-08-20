@@ -7,10 +7,10 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
-import 'package:bloc/bloc.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
-import 'package:pedantic/pedantic.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rxdart/rxdart.dart';
 
 import 'enums/conflicting_files_actions.dart';
@@ -63,7 +63,7 @@ class UploadCubit extends Cubit<UploadState> {
         super(UploadPreparationInProgress());
 
   Future<void> startUploadPreparation() async {
-    files.removeWhere((file) => filesNamesToExclude.contains(file.name));
+    files.removeWhere((file) => filesNamesToExclude.contains(file.ioFile.name));
     _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
     _targetFolder = await _driveDao
         .folderById(driveId: driveId, folderId: folderId)
@@ -92,7 +92,7 @@ class UploadCubit extends Cubit<UploadState> {
       foldersByPath = folderPrepareResult.foldersByPath;
     }
     for (final file in files) {
-      final fileName = file.name;
+      final fileName = file.ioFile.name;
 
       final existingFolderName = await _driveDao
           .foldersInFolderWithName(
@@ -120,10 +120,10 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
-  void checkFilesAboveLimit() {
+  void checkFilesAboveLimit() async {
     final tooLargeFiles = [
       for (final file in files)
-        if (file.size > sizeLimit) file.name
+        if (await file.ioFile.length > sizeLimit) file.ioFile.name
     ];
 
     if (tooLargeFiles.isNotEmpty) {
@@ -145,7 +145,7 @@ class UploadCubit extends Cubit<UploadState> {
     _removeFilesWithFolderNameConflicts();
 
     for (final file in files) {
-      final fileName = file.name;
+      final fileName = file.ioFile.name;
       final existingFileId = await _driveDao
           .filesInFolderWithName(
             driveId: _targetDrive.id,
@@ -175,9 +175,7 @@ class UploadCubit extends Cubit<UploadState> {
   Future<FolderPrepareResult> generateFoldersAndAssignParentsForFiles(
     List<UploadFile> files,
   ) async {
-    final folders = UploadPlanUtils.generateFoldersForFiles(
-      files as List<WebFile>,
-    );
+    final folders = UploadPlanUtils.generateFoldersForFiles(files);
     final foldersToSkip = [];
     for (var folder in folders.values) {
       //If The folders map contains the immediate ancestor of the current folder
@@ -215,16 +213,13 @@ class UploadCubit extends Cubit<UploadState> {
           ? '${_targetFolder.path}/${folder.parentFolderPath}/${folder.name}'
           : '${_targetFolder.path}/${folder.name}';
     }
-    final filesToUpload = <WebFile>[];
+    final filesToUpload = <UploadFile>[];
     for (var file in files) {
-      // Splits the file path, gets rid of the file name and rejoins the strings
-      // to get parent folder path.
-      // eg: Test/A/B/C/file.txt becomes Test/A/B/C
-      final fileFolder = (file.path.split('/')..removeLast()).join('/');
+      final fileFolder = getDirname(file.ioFile.path);
       filesToUpload.add(
-        WebFile(
-          file.file,
-          folders[fileFolder]?.id ?? _targetFolder.id,
+        UploadFile(
+          ioFile: file.ioFile,
+          parentFolderId: folders[fileFolder]?.id ?? _targetFolder.id,
         ),
       );
     }
@@ -248,7 +243,7 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     );
 
-    if (uploadAction == UploadActions.Skip) {
+    if (uploadAction == UploadActions.skip) {
       _removeFilesWithFileNameConflicts();
     }
 
@@ -352,19 +347,24 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
-  void removeBigFiles() =>
-      files.removeWhere((element) => element.size > sizeLimit);
+  void removeBigFiles() async {
+    for (final file in files) {
+      if (await file.ioFile.length > sizeLimit) {
+        files.remove(file);
+      }
+    }
+  }
 
   void _removeFilesWithFileNameConflicts() {
-    files.removeWhere((file) => conflictingFiles
-        .containsKey(file.path.isEmpty ? file.name : file.path));
+    files.removeWhere((file) => conflictingFiles.containsKey(
+        file.ioFile.path.isEmpty ? file.ioFile.name : file.ioFile.path));
   }
 
   num get sizeLimit =>
       _targetDrive.isPrivate ? privateFileSizeLimit : publicFileSizeLimit;
 
   void _removeFilesWithFolderNameConflicts() {
-    files.removeWhere((file) => conflictingFolders.contains(file.name));
+    files.removeWhere((file) => conflictingFolders.contains(file.ioFile.name));
   }
 
   @override

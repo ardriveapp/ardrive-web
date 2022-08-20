@@ -2,16 +2,15 @@ import 'dart:convert';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/profileTypes.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
-import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'profile_add_state.dart';
@@ -48,7 +47,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   ProfileType? getProfileType() => _profileType;
 
   Future<void> promptForWallet() async {
-    if (_profileType == ProfileType.ArConnect) {
+    if (_profileType == ProfileType.arConnect) {
       await arconnect.disconnect();
     }
     emit(ProfileAddPromptWallet());
@@ -56,7 +55,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
   Future<void> pickWallet(String walletJson) async {
     emit(ProfileAddUserStateLoadInProgress());
-    _profileType = ProfileType.JSON;
+    _profileType = ProfileType.json;
     _wallet = Wallet.fromJwk(json.decode(walletJson));
 
     try {
@@ -81,7 +80,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     try {
       await arconnect.connect();
       emit(ProfileAddUserStateLoadInProgress());
-      _profileType = ProfileType.ArConnect;
+      _profileType = ProfileType.arConnect;
 
       if (!(await arconnect.checkPermissions())) {
         emit(ProfileAddFailure());
@@ -144,7 +143,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       // Clean up any data from previous sessions
       await _profileCubit.deleteTables();
 
-      if (_profileType == ProfileType.ArConnect &&
+      if (_profileType == ProfileType.arConnect &&
           (_lastKnownWalletAddress != await arconnect.getWalletAddress() ||
               !(await arconnect.checkPermissions()))) {
         //Wallet was switched or deleted before login from another tab
