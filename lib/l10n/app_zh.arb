@@ -872,11 +872,11 @@
       }
     }
   },
-  "filesTooLargeExplanationPrivate": "ArDrive网页客户端中, 私人网盘目前只支持小于100MB的文件上传",
+  "filesTooLargeExplanationPrivate": "ArDrive网页客户端中, 私人网盘目前只支持小于100MiB的文件上传",
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "ArDrive网页客户端中, 公开网盘目前只支持小于1.5GB的文件上传",
+  "filesTooLargeExplanationPublic": "ArDrive网页客户端中, 公开网盘目前只支持小于1.20GiB的文件上传",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
