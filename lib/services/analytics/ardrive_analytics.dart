@@ -13,4 +13,5 @@ abstract class ArDriveAnalytics {
   });
 
   void setUserId(String userId);
+  void clearUserId();
 }

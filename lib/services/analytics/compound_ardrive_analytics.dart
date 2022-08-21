@@ -42,4 +42,11 @@ class CompoundArDriveAnalytics extends ArDriveAnalytics {
       implementation.setUserId(userId);
     }
   }
+
+  @override
+  void clearUserId() {
+    for (final implementation in _implementations) {
+      implementation.clearUserId();
+    }
+  }
 }

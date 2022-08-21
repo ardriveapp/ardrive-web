@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
+import '../../../services/analytics/ardrive_analytics.dart';
 import 'profile_auth_fail_screen.dart';
 import 'profile_auth_shell.dart';
 
@@ -81,9 +82,15 @@ class _ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: () => context
-                                      .read<ProfileUnlockCubit>()
-                                      .submit(),
+                                  onPressed: () {
+                                    context
+                                        .read<ArDriveAnalytics>()
+                                        .trackScreenEvent(
+                                          screenName: "unlockScreen",
+                                          eventName: "unlockButton",
+                                        );
+                                    context.read<ProfileUnlockCubit>().submit();
+                                  },
                                   child: Text(appLocalizationsOf(context)
                                       .unlockEmphasized),
                                 ),

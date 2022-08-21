@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/analytics/ardrive_analytics.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -20,6 +21,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final AppConfig _config;
+  final ArDriveAnalytics? _analytics;
+  final _screenName = "driveExplorer";
 
   StreamSubscription? _folderSubscription;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
@@ -30,9 +33,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required AppConfig config,
+    ArDriveAnalytics? analytics,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _config = config,
+        _analytics = analytics,
         super(DriveDetailLoadInProgress()) {
     if (driveId.isEmpty) {
       return;
@@ -166,10 +171,20 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'));
     }
 
+    _analytics?.trackScreenEvent(
+        screenName: _screenName,
+        eventName: "selectItem",
+        dimensions: {
+          "itemType": (selectedItem is SelectedFile) ? "file" : "folder",
+          "drivePrivacy": state.currentDrive.privacy
+        });
+
     emit(state);
   }
 
   Future<void> launchPreview(TxID dataTxId) {
+    _analytics?.trackScreenEvent(
+        screenName: "detailsPanel", eventName: "txPreview");
     return launch('${_config.defaultArweaveGatewayUrl}/$dataTxId');
   }
 
@@ -178,6 +193,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     OrderingMode contentOrderingMode = OrderingMode.asc,
   }) {
     final state = this.state as DriveDetailLoadSuccess;
+    _analytics?.trackScreenEvent(
+        screenName: _screenName,
+        eventName: "sortFolder",
+        dimensions: {
+          "orderBy": contentOrderBy.name,
+          "orderMode": contentOrderingMode.name,
+          "drivePrivacy": state.currentDrive.privacy,
+        });
     openFolder(
       path: state.folderInView.folder.path,
       contentOrderBy: contentOrderBy,
@@ -187,6 +210,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   void toggleSelectedItemDetails() {
     final state = this.state as DriveDetailLoadSuccess;
+    _analytics?.trackScreenEvent(
+      screenName: _screenName,
+      eventName: state.showSelectedItemDetails ? "hideDetails" : "showDetails",
+      dimensions: {"drivePrivacy": state.currentDrive.privacy},
+    );
     emit(state.copyWith(
         showSelectedItemDetails: !state.showSelectedItemDetails));
   }

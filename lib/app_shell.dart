@@ -1,3 +1,4 @@
+import 'package:ardrive/services/analytics/ardrive_analytics.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -48,16 +49,31 @@ class _AppShellState extends State<AppShell> {
                   IconButton(
                     icon: const Icon(Icons.people_alt),
                     tooltip: 'CommunityXYZ',
-                    onPressed: () => launch(
-                      'https://community.xyz/#-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ',
-                    ),
+                    onPressed: () {
+                      context.read<ArDriveAnalytics>().trackScreenEvent(
+                            screenName: "driveExplorer",
+                            eventName: "communityXYZButton",
+                          );
+                      launch(
+                        'https://community.xyz/#-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ',
+                      );
+                    },
                   ),
                   IconButton(
                     icon: PortalEntry(
                       visible: _showProfileOverlay,
                       portal: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: () => toggleProfileOverlay(),
+                        onTap: () {
+                          final eventName = _showProfileOverlay
+                              ? "hideProfile"
+                              : "showProfile";
+                          context.read<ArDriveAnalytics>().trackScreenEvent(
+                                screenName: "driveExplorer",
+                                eventName: eventName,
+                              );
+                          toggleProfileOverlay();
+                        },
                       ),
                       child: PortalEntry(
                         visible: _showProfileOverlay,
@@ -71,7 +87,15 @@ class _AppShellState extends State<AppShell> {
                       ),
                     ),
                     tooltip: appLocalizationsOf(context).profile,
-                    onPressed: () => toggleProfileOverlay(),
+                    onPressed: () {
+                      final eventName =
+                          _showProfileOverlay ? "hideProfile" : "showProfile";
+                      context.read<ArDriveAnalytics>().trackScreenEvent(
+                            screenName: "driveExplorer",
+                            eventName: eventName,
+                          );
+                      toggleProfileOverlay();
+                    },
                   ),
                 ],
               );

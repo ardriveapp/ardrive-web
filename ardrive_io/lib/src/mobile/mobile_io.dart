@@ -105,7 +105,7 @@ class MobileSelectableFolderFileSaver implements FileSaver {
     throw FileSystemPermissionDeniedException([Permission.storage]);
   }
 
-/// Request permissions related to storage on `Android` and `iOS`
+  /// Request permissions related to storage on `Android` and `iOS`
   Future<void> _requestPermissions() async {
     await Permission.storage.request();
   }

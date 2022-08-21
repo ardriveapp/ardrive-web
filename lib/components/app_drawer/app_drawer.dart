@@ -144,7 +144,14 @@ class AppDrawer extends StatelessWidget {
                               child: FloatingActionButton(
                                 elevation: 0,
                                 tooltip: appLocalizationsOf(context).help,
-                                onPressed: () => launch(Resources.helpLink),
+                                onPressed: () {
+                                  context
+                                      .read<ArDriveAnalytics>()
+                                      .trackScreenEvent(
+                                          screenName: "mainMenu",
+                                          eventName: "helpButton");
+                                  launch(Resources.helpLink);
+                                },
                                 child: const Icon(Icons.help_outline),
                               ),
                             ),
@@ -185,6 +192,11 @@ class AppDrawer extends StatelessWidget {
                                 ),
                               ),
                               onPressed: () {
+                                context
+                                    .read<ArDriveAnalytics>()
+                                    .trackScreenEvent(
+                                        screenName: "mainMenu",
+                                        eventName: "infernoButton");
                                 launchInfernoRulesURL(
                                     appLocalizationsOf(context).localeName);
                               },
@@ -298,7 +310,7 @@ class AppDrawer extends StatelessWidget {
             TextButton(
               onPressed: () {
                 context.read<ArDriveAnalytics>().trackScreenEvent(
-                    screenName: "mainMenu", eventName: "launchHelp");
+                    screenName: "mainMenu", eventName: "arHelpButton");
                 launch(Resources.arHelpLink);
               },
               child: Text(

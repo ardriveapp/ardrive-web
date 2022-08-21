@@ -40,4 +40,9 @@ class FirebaseArDriveAnalytics extends ArDriveAnalytics {
   void setUserId(String userId) {
     FirebaseAnalytics.instance.setUserId(id: userId);
   }
+
+  @override
+  void clearUserId() {
+    FirebaseAnalytics.instance.setUserId(id: null);
+  }
 }

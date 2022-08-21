@@ -10,7 +10,7 @@ class LoggerArDriveAnalytics extends ArDriveAnalytics {
   }) {
     print("""[A8s] Tracked Event:
     Screen: ${screenName}
-    Name: ${evenName}
+    Name: ${eventName}
     Dimensions: ${dimensions}
     Metrics: ${metrics}""");
   }
@@ -22,7 +22,7 @@ class LoggerArDriveAnalytics extends ArDriveAnalytics {
     Map<String, num> metrics = const {},
   }) {
     print("""[A8s] Tracked Event:
-    Name: ${evenName}
+    Name: ${eventName}
     Dimensions: ${dimensions}
     Metrics: ${metrics}""");
   }
@@ -30,5 +30,10 @@ class LoggerArDriveAnalytics extends ArDriveAnalytics {
   @override
   void setUserId(String userId) {
     print("[A8s] Set user ID: ${userId}");
+  }
+
+  @override
+  void clearUserId() {
+    print("[A8s] Cleared user ID");
   }
 }
