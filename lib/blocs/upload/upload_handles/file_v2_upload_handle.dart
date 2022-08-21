@@ -7,7 +7,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class FileV2UploadHandle implements UploadHandle {
@@ -104,16 +104,15 @@ class FileV2UploadHandle implements UploadHandle {
   }
 
   /// Uploads the file, emitting an event whenever the progress is updated.
-  Stream<Null> upload(ArweaveService arweave) async* {
+  Stream<double> upload(ArweaveService arweave) async* {
     await arweave.postTx(entityTx);
 
-    await for (final upload in arweave.client.transactions.upload(
-      dataTx,
-      maxConcurrentUploadCount: maxConcurrentUploadCount,
-    )) {
+    yield* arweave.client.transactions
+        .upload(dataTx, maxConcurrentUploadCount: maxConcurrentUploadCount)
+        .map((upload) {
       uploadProgress = upload.progress;
-      yield null;
-    }
+      return uploadProgress;
+    });
   }
 
   void dispose() {

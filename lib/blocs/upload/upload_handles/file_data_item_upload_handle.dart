@@ -9,7 +9,7 @@ import 'package:ardrive/utils/bundles/fake_tags.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 // Number of data items returned by this handle

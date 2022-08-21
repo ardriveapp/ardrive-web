@@ -3,4 +3,4 @@
 /// `Skip` Will ignore the files and don't upload them.
 ///
 /// `Replace` will upload the conflicting file and replace the existent.
-enum UploadActions { Skip, Replace }
+enum UploadActions { skip, replace }

@@ -6,9 +6,9 @@ import 'package:ardrive/utils/bundles/next_fit_bundle_packer.dart';
 import '../upload_handles/file_data_item_upload_handle.dart';
 import '../upload_handles/file_v2_upload_handle.dart';
 
-final bundleSizeLimit = 503316480;
-final maxBundleDataItemCount = 500;
-final maxFilesPerBundle = maxBundleDataItemCount ~/ 2;
+const bundleSizeLimit = 503316480;
+const maxBundleDataItemCount = 500;
+const maxFilesPerBundle = maxBundleDataItemCount ~/ 2;
 
 class UploadPlan {
   /// A map of [FileV2UploadHandle]s keyed by their respective file's id.

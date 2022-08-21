@@ -96,8 +96,12 @@ class DriveDetailActionRow extends StatelessWidget {
                 if (state.currentDrive.isPublic)
                   IconButton(
                     icon: const Icon(Icons.open_in_new),
-                    onPressed: () =>
-                        launch(state.selectedFilePreviewUrl.toString()),
+                    onPressed: () {
+                      final filePreviewUrl = state.selectedFilePreviewUrl;
+                      if (filePreviewUrl != null) {
+                        launchUrl(filePreviewUrl);
+                      }
+                    },
                     tooltip: appLocalizationsOf(context).preview,
                   ),
               },

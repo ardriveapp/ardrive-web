@@ -83,7 +83,7 @@ void main() {
 
       await Future.wait([
         expectLater(folderStream.map((f) => f.folder.id),
-            emits(emptyNestedFolderIdPrefix + '0')),
+            emits('${emptyNestedFolderIdPrefix}0')),
       ]);
     });
     test('watchFolder() returns correct folders inside empty folder', () async {

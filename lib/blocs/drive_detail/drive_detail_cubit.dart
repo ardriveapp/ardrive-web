@@ -7,10 +7,10 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/analytics/ardrive_analytics.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:bloc/bloc.dart';
+import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
-import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -185,7 +185,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   Future<void> launchPreview(TxID dataTxId) {
     _analytics?.trackScreenEvent(
         screenName: "detailsPanel", eventName: "txPreview");
-    return launch('${_config.defaultArweaveGatewayUrl}/$dataTxId');
+    return launchUrl(
+        Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'));
   }
 
   void sortFolder({

@@ -10,13 +10,11 @@ import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/html/html_util.dart';
-import 'package:bloc/bloc.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:meta/meta.dart';
-import 'package:moor/moor.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:retry/retry.dart';
 
 import '../../utils/html/implementations/html_web.dart';
@@ -283,12 +281,7 @@ class SyncCubit extends Cubit<SyncState> {
       });
 
       _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
-
       syncFormatedPrint('Current block height number $currentBlockHeight');
-
-      drives.forEach((drive) {
-        syncFormatedPrint('Drive last block height: ${drive.lastBlockHeight!}');
-      });
 
       final driveSyncProcesses = drives.map((drive) => _syncDrive(
             drive.id,
@@ -345,6 +338,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   int calculateSyncLastBlockHeight(int lastBlockHeight) {
+    syncFormatedPrint('Last Block Height: $lastBlockHeight');
     if (_lastSync != null) {
       return lastBlockHeight;
     } else {
@@ -586,8 +580,6 @@ class SyncCubit extends Cubit<SyncState> {
         200 ~/ (_syncProgress.drivesCount - _syncProgress.drivesSynced);
     var currentDriveEntitiesSynced = 0;
     var driveSyncProgress = 0.0;
-    syncFormatedPrint('_syncSecondPhase: $currentBlockHeight');
-
     syncFormatedPrint(
         'number of drives at get metadata phase : ${_syncProgress.numberOfDrivesAtGetMetadataPhase}');
 
@@ -650,8 +642,6 @@ class SyncCubit extends Cubit<SyncState> {
 
           // Handle the last page of newEntities, i.e; There's nothing more to sync
           if (newEntities.length < pageCount) {
-            syncFormatedPrint(
-                'Saving last block height at _paginateProcess. $currentBlockHeight');
             // Reset the sync cursor after every sync to pick up files from other instances of the app.
             // (Different tab, different window, mobile, desktop etc)
             await _driveDao.writeToDrive(DrivesCompanion(
@@ -1040,7 +1030,7 @@ class SyncCubit extends Cubit<SyncState> {
       final folderId = node.folder.id;
       // If this is the root folder, we should not include its name as part of the path.
       final folderPath = node.folder.parentFolderId != null
-          ? parentPath + '/' + node.folder.name
+          ? '$parentPath/${node.folder.name}'
           : rootPath;
 
       await _driveDao
@@ -1048,7 +1038,7 @@ class SyncCubit extends Cubit<SyncState> {
           .write(FolderEntriesCompanion(path: Value(folderPath)));
 
       for (final staleFileId in node.files.keys) {
-        final filePath = folderPath + '/' + node.files[staleFileId]!.name;
+        final filePath = '$folderPath/${node.files[staleFileId]!.name}';
 
         await _driveDao
             .updateFileById(driveId, staleFileId)
@@ -1095,7 +1085,7 @@ class SyncCubit extends Cubit<SyncState> {
             .getSingleOrNull();
 
         if (parentPath != null) {
-          final filePath = parentPath + '/' + staleOrphanFile.name.value;
+          final filePath = '$parentPath/${staleOrphanFile.name.value}';
 
           await _driveDao.writeToFile(FileEntriesCompanion(
               id: staleOrphanFile.id,
@@ -1243,6 +1233,6 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void syncFormatedPrint(String message) {
-    print('$hashCode Sync context: ' + message);
+    print('$hashCode Sync context: $message');
   }
 }

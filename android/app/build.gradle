@@ -41,9 +41,9 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.example.drive"
-        minSdkVersion 21
-        targetSdkVersion 28
+        applicationId "io.ardrive.app"
+        minSdkVersion 26
+        targetSdkVersion 32
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }

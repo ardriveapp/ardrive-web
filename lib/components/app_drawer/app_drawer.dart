@@ -150,7 +150,7 @@ class AppDrawer extends StatelessWidget {
                                       .trackScreenEvent(
                                           screenName: "mainMenu",
                                           eventName: "helpButton");
-                                  launch(Resources.helpLink);
+                                  launchUrl(Uri.parse(Resources.helpLink));
                                 },
                                 child: const Icon(Icons.help_outline),
                               ),
@@ -311,7 +311,7 @@ class AppDrawer extends StatelessWidget {
               onPressed: () {
                 context.read<ArDriveAnalytics>().trackScreenEvent(
                     screenName: "mainMenu", eventName: "arHelpButton");
-                launch(Resources.arHelpLink);
+                launchUrl(Uri.parse(Resources.arHelpLink));
               },
               child: Text(
                 appLocalizationsOf(context).howDoIGetAR,

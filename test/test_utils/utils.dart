@@ -5,13 +5,13 @@ import 'dart:math';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:arweave/arweave.dart';
-import 'package:moor/ffi.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 
 export 'matchers.dart';
 export 'mocks.dart';
 
-Database getTestDb() => Database(VmDatabase.memory());
+Database getTestDb() => Database(NativeDatabase.memory());
 
 Wallet getTestWallet() {
   final walletJwk = json.decode('''
@@ -99,11 +99,11 @@ Future<void> addTestFilesToDb(
               parentFolderId: rootFolderId,
               name: fileId,
               path: '/$fileId',
-              dataTxId: fileId + 'Data',
+              dataTxId: '${fileId}Data',
               size: 500,
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
-              dataContentType: Value(''),
+              dataContentType: const Value(''),
             );
           },
         )..shuffle(Random(0)),
@@ -117,11 +117,11 @@ Future<void> addTestFilesToDb(
               parentFolderId: nestedFolderId,
               name: fileId,
               path: '/$nestedFolderId/$fileId',
-              dataTxId: fileId + 'Data',
+              dataTxId: '${fileId}Data',
               size: 500,
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
-              dataContentType: Value(''),
+              dataContentType: const Value(''),
             );
           },
         )..shuffle(Random(0)),
@@ -140,13 +140,13 @@ Future<void> addTestFilesToDb(
               driveId: driveId,
               parentFolderId: rootFolderId,
               name: fileId,
-              metadataTxId: fileId + 'Meta',
+              metadataTxId: '${fileId}Meta',
               action: RevisionAction.create,
-              dataTxId: fileId + 'Data',
+              dataTxId: '${fileId}Data',
               size: 500,
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
-              dataContentType: Value(''),
+              dataContentType: const Value(''),
             );
           },
         )..shuffle(Random(0)),
@@ -159,13 +159,13 @@ Future<void> addTestFilesToDb(
               driveId: driveId,
               parentFolderId: nestedFolderId,
               name: fileId,
-              dataTxId: fileId + 'Meta',
-              metadataTxId: fileId + 'Data',
+              dataTxId: '${fileId}Meta',
+              metadataTxId: '${fileId}Data',
               action: RevisionAction.create,
               size: 500,
               dateCreated: Value(defaultDate),
               lastModifiedDate: defaultDate,
-              dataContentType: Value(''),
+              dataContentType: const Value(''),
             );
           },
         )..shuffle(Random(0)),
@@ -180,8 +180,8 @@ Future<void> addTestFilesToDb(
           (i) {
             final fileId = '$rootFolderId$i';
             return NetworkTransactionsCompanion.insert(
-              id: fileId + 'Meta',
-              status: Value(TransactionStatus.confirmed),
+              id: '${fileId}Meta',
+              status: const Value(TransactionStatus.confirmed),
               dateCreated: Value(defaultDate),
             );
           },
@@ -191,8 +191,8 @@ Future<void> addTestFilesToDb(
           (i) {
             final fileId = '$rootFolderId$i';
             return NetworkTransactionsCompanion.insert(
-              id: fileId + 'Data',
-              status: Value(TransactionStatus.confirmed),
+              id: '${fileId}Data',
+              status: const Value(TransactionStatus.confirmed),
               dateCreated: Value(defaultDate),
             );
           },
@@ -202,8 +202,8 @@ Future<void> addTestFilesToDb(
           (i) {
             final fileId = '$nestedFolderId$i';
             return NetworkTransactionsCompanion.insert(
-              id: fileId + 'Meta',
-              status: Value(TransactionStatus.confirmed),
+              id: '${fileId}Meta',
+              status: const Value(TransactionStatus.confirmed),
               dateCreated: Value(defaultDate),
             );
           },
@@ -213,8 +213,8 @@ Future<void> addTestFilesToDb(
           (i) {
             final fileId = '$nestedFolderId$i';
             return NetworkTransactionsCompanion.insert(
-              id: fileId + 'Data',
-              status: Value(TransactionStatus.confirmed),
+              id: '${fileId}Data',
+              status: const Value(TransactionStatus.confirmed),
               dateCreated: Value(defaultDate),
             );
           },
