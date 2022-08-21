@@ -97,6 +97,18 @@ class DriveDetailActionRow extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.open_in_new),
                     onPressed: () {
+                      context.read<ArDriveAnalytics>().trackScreenEvent(
+                        screenName: "driveExplorer",
+                        eventName: "previewButton",
+                        dimensions: {
+                          "drivePrivacy": state.currentDrive.privacy,
+                          "contentType":
+                              (state.maybeSelectedItem as SelectedFile?)
+                                      ?.item
+                                      .dataContentType ??
+                                  "unknown"
+                        },
+                      );
                       final filePreviewUrl = state.selectedFilePreviewUrl;
                       if (filePreviewUrl != null) {
                         launchUrl(filePreviewUrl);

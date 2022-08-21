@@ -80,9 +80,12 @@ class AppDrawer extends StatelessWidget {
                                           context
                                               .read<ArDriveAnalytics>()
                                               .trackScreenEvent(
-                                                screenName: "mainMenu",
-                                                eventName: "driveSelected",
-                                              );
+                                            screenName: "mainMenu",
+                                            eventName: "driveSelected",
+                                            dimensions: {
+                                              "drivePrivacy": d.privacy,
+                                            },
+                                          );
                                           context
                                               .read<DrivesCubit>()
                                               .selectDrive(d.id);

@@ -58,11 +58,17 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
             ],
             const SizedBox(height: 16),
             TextButton(
-              onPressed: () => launchUrl(
-                Uri.parse(
-                  'https://tokens.arweave.org',
-                ),
-              ),
+              onPressed: () {
+                context.read<ArDriveAnalytics>().trackScreenEvent(
+                      screenName: _screenName,
+                      eventName: "getAWalletButton",
+                    );
+                launchUrl(
+                  Uri.parse(
+                    'https://tokens.arweave.org',
+                  ),
+                );
+              },
               child: Text(
                 appLocalizationsOf(context).getAWallet,
                 textAlign: TextAlign.center,

@@ -100,9 +100,15 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                               ),
                               const SizedBox(height: 16),
                               TextButton(
-                                onPressed: () => context
-                                    .read<ProfileCubit>()
-                                    .logoutProfile(),
+                                onPressed: () {
+                                  context
+                                      .read<ArDriveAnalytics>()
+                                      .trackScreenEvent(
+                                        screenName: "unlockScreen",
+                                        eventName: "forgetWalletButton",
+                                      );
+                                  context.read<ProfileCubit>().logoutProfile();
+                                },
                                 child: Text(
                                   appLocalizationsOf(context).forgetWallet,
                                   textAlign: TextAlign.center,
