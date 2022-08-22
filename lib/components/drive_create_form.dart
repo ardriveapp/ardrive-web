@@ -23,12 +23,14 @@ Future<void> promptToCreateDrive(BuildContext context) =>
             profileCubit: context.read<ProfileCubit>(),
             drivesCubit: context.read<DrivesCubit>(),
           ),
-          child: DriveCreateForm(),
+          child: const DriveCreateForm(),
         ),
       ),
     );
 
 class DriveCreateForm extends StatelessWidget {
+  const DriveCreateForm({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<DriveCreateCubit, DriveCreateState>(
@@ -76,7 +78,7 @@ class DriveCreateForm extends StatelessWidget {
                             labelText: appLocalizationsOf(context).name),
                         showErrors: (control) =>
                             control.dirty && control.invalid,
-                        validationMessages: (_) =>
+                        validationMessages:
                             kValidationMessages(appLocalizationsOf(context)),
                       ),
                       const SizedBox(height: 16),
@@ -86,7 +88,7 @@ class DriveCreateForm extends StatelessWidget {
                             labelText: appLocalizationsOf(context).privacy),
                         showErrors: (control) =>
                             control.dirty && control.invalid,
-                        validationMessages: (_) =>
+                        validationMessages:
                             kValidationMessages(appLocalizationsOf(context)),
                         items: [
                           DropdownMenuItem(

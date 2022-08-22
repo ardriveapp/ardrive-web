@@ -4,11 +4,12 @@ class FsEntrySideSheet extends StatefulWidget {
   final String driveId;
   final Privacy drivePrivacy;
   final SelectedItem? maybeSelectedItem;
-  FsEntrySideSheet({
+  const FsEntrySideSheet({
+    Key? key,
     required this.driveId,
     required this.drivePrivacy,
     this.maybeSelectedItem,
-  });
+  }) : super(key: key);
 
   @override
   State<FsEntrySideSheet> createState() => _FsEntrySideSheetState();
@@ -22,7 +23,7 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
           key: widget.maybeSelectedItem?.id != null
               ? ValueKey(
-                  widget.driveId + '${widget.maybeSelectedItem?.id}',
+                  '${widget.driveId}${widget.maybeSelectedItem?.id}',
                 )
               : UniqueKey(),
           providers: [
@@ -466,13 +467,13 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                                   ? [
                                       Text(
                                           appLocalizationsOf(context).download),
-                                      SizedBox(width: 4),
-                                      Icon(Icons.download),
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.download),
                                     ]
                                   : [
                                       Text(appLocalizationsOf(context).preview),
-                                      SizedBox(width: 4),
-                                      Icon(Icons.open_in_new)
+                                      const SizedBox(width: 4),
+                                      const Icon(Icons.open_in_new)
                                     ],
                             ),
                           ),
@@ -554,7 +555,7 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                         trailing: statusIcon,
                       );
                     },
-                    separatorBuilder: (context, index) => Divider(),
+                    separatorBuilder: (context, index) => const Divider(),
                     itemCount: state.revisions.length,
                   );
                 } else {
@@ -592,13 +593,17 @@ class CopyIconButton extends StatelessWidget {
   final String value;
   final String tooltip;
 
-  CopyIconButton({required this.value, required this.tooltip});
+  const CopyIconButton({
+    Key? key,
+    required this.value,
+    required this.tooltip,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) => Container(
         alignment: Alignment.centerRight,
         child: IconButton(
-          icon: Icon(Icons.copy, color: Colors.black54),
+          icon: const Icon(Icons.copy, color: Colors.black54),
           tooltip: tooltip,
           onPressed: () => Clipboard.setData(ClipboardData(text: value)),
         ),

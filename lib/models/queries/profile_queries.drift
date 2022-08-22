@@ -1,4 +1,4 @@
-import '../tables/profiles.moor';
+import '../tables/profiles.drift';
 
 defaultProfile:
     SELECT * FROM profiles

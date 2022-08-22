@@ -90,9 +90,7 @@ String trimName({required String name, required BuildContext context}) {
     stringLength += 20;
   }
   return name.length > stringLength
-      ? name.substring(0, stringLength - endBuffer) +
-          ' ... ' +
-          name.substring(name.length - endBuffer)
+      ? '${name.substring(0, stringLength - endBuffer)} ... ${name.substring(name.length - endBuffer)}'
       : name;
 }
 

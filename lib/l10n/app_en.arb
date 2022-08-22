@@ -896,7 +896,7 @@
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "ArDrive on web currently only supports file uploads smaller than 1.25 GiB for public drives",
+  "filesTooLargeExplanationPublic": "ArDrive on web currently only supports file uploads smaller than 1.20 GiB for public drives",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
@@ -1355,5 +1355,13 @@
   "infernoIsInFullSwing": "The Inferno Rewards Program is in full swing! Click here to check out the rules for participation!",
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
+  },
+  "uploadFailed": "Upload Failed",
+  "@uploadFailed": {
+    "description": "Upload Failed dialog title"
+  },
+  "yourUploadFailed": "Your upload failed. You have not been charged for the failed attempt.",
+  "@yourUploadFailed": {
+    "description": "Upload fail dialog description."
   }
 }

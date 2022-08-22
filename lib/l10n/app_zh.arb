@@ -872,11 +872,11 @@
       }
     }
   },
-  "filesTooLargeExplanationPrivate": "ArDrive网页客户端中, 私人网盘目前只支持小于100MB的文件上传",
+  "filesTooLargeExplanationPrivate": "ArDrive网页客户端中, 私人网盘目前只支持小于100MiB的文件上传",
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "ArDrive网页客户端中, 公开网盘目前只支持小于1.5GB的文件上传",
+  "filesTooLargeExplanationPublic": "ArDrive网页客户端中, 公开网盘目前只支持小于1.20GiB的文件上传",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
@@ -1323,6 +1323,14 @@
   "infernoIsInFullSwing": "Inferno奖励计划正在全面展开! 点击这里查看参与规则!",
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
+  },
+  "uploadFailed": "上传失败",
+  "@uploadFailed": {
+    "description": "Upload Failed dialog title"
+  },
+  "yourUploadFailed": "文件上传失败， 本次上传不会被扣费。",
+  "@yourUploadFailed": {
+    "description": "Upload fail dialog description."
   },
   "sharePendingFile": "你所要分享的文件目前未被网络确认，暂时无 法被分享。请稍后重试。",
   "@sharePendingFile": {

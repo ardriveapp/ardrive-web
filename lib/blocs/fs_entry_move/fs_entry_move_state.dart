@@ -23,7 +23,6 @@ class FsEntryMoveLoadSuccess extends FsEntryMoveState {
     required this.viewingFolder,
     required this.itemsToMove,
   }) : super();
-
   @override
   List<Object> get props => [viewingRootFolder, viewingFolder, itemsToMove];
 }

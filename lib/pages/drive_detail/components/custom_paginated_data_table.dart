@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
-import 'package:intersperse/src/intersperse_extensions.dart';
+import 'package:intersperse/intersperse.dart';
 
 class CustomPaginatedDataTable extends StatefulWidget {
   CustomPaginatedDataTable({
@@ -249,7 +249,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
   void _resetScroll() {
     scrollController.animateTo(
       0,
-      duration: Duration(milliseconds: 10),
+      duration: const Duration(milliseconds: 10),
       curve: Curves.easeIn,
     );
   }
@@ -284,8 +284,8 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
 
   final pageButtonStyle = TextButton.styleFrom(
     padding: EdgeInsets.zero,
-    minimumSize: Size(10, 10),
-    textStyle: TextStyle(
+    minimumSize: const Size(10, 10),
+    textStyle: const TextStyle(
       color: kOnSurfaceBodyTextColor,
     ),
   );
@@ -431,7 +431,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
             Icons.skip_previous,
             color: widget.arrowHeadColor,
           ),
-          constraints: BoxConstraints(maxWidth: 20),
+          constraints: const BoxConstraints(maxWidth: 20),
           padding: EdgeInsets.zero,
           tooltip: appLocalizationsOf(context).goToFirst,
           onPressed: _firstRowIndex <= 0 ? null : _handleFirst,
@@ -442,7 +442,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
           Icons.chevron_left,
           color: widget.arrowHeadColor,
         ),
-        constraints: BoxConstraints(maxWidth: 20),
+        constraints: const BoxConstraints(maxWidth: 20),
         padding: EdgeInsets.zero,
         tooltip: appLocalizationsOf(context).previous,
         onPressed: _firstRowIndex <= 0 ? null : _handlePrevious,
@@ -454,7 +454,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
           Icons.chevron_right,
           color: widget.arrowHeadColor,
         ),
-        constraints: BoxConstraints(maxWidth: 20),
+        constraints: const BoxConstraints(maxWidth: 20),
         padding: EdgeInsets.zero,
         tooltip: appLocalizationsOf(context).next,
         onPressed: _isNextPageUnavailable() ? null : _handleNext,
@@ -466,7 +466,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
             Icons.skip_next,
             color: widget.arrowHeadColor,
           ),
-          constraints: BoxConstraints(maxWidth: 20),
+          constraints: const BoxConstraints(maxWidth: 20),
           padding: EdgeInsets.zero,
           tooltip: appLocalizationsOf(context).goToLast,
           onPressed: _isNextPageUnavailable() ? null : _handleLast,
@@ -483,7 +483,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
             ConstrainedBox(
-              constraints: BoxConstraints(minWidth: double.infinity),
+              constraints: const BoxConstraints(minWidth: double.infinity),
               child: DataTable(
                 key: widget.tableKey,
                 columns: widget.columns,
@@ -497,7 +497,6 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
                 columnSpacing: widget.columnSpacing,
                 showBottomBorder: true,
                 rows: _getRows(_firstRowIndex, widget.rowsPerPage),
-                
               ),
             ),
             DefaultTextStyle(

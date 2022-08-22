@@ -86,7 +86,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           // TODO: Find a better place to do this
           final lastLoggedInUser =
               state is ProfileLoggedIn ? state.walletAddress : null;
-          context.read<DriveDao>().deleteSharedPrivateDrives(lastLoggedInUser);
+          if (lastLoggedInUser != null) {
+            context
+                .read<DriveDao>()
+                .deleteSharedPrivateDrives(lastLoggedInUser);
+          }
         },
         builder: (context, state) {
           Widget? shell;
@@ -101,10 +105,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 fileKey: sharedFileKey,
                 arweave: context.read<ArweaveService>(),
               ),
-              child: SharedFilePage(),
+              child: const SharedFilePage(),
             );
           } else if (signingIn) {
-            shell = ProfileAuthPage();
+            shell = const ProfileAuthPage();
           } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
             shell = BlocConsumer<DrivesCubit, DrivesState>(
               listener: (context, state) {
@@ -121,8 +125,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               builder: (context, state) {
                 Widget? shellPage;
                 if (state is DrivesLoadSuccess) {
-                  shellPage =
-                      !state.hasNoDrives ? DriveDetailPage() : NoDrivesPage();
+                  shellPage = !state.hasNoDrives
+                      ? const DriveDetailPage()
+                      : const NoDrivesPage();
                   driveId = state.selectedDriveId;
                 }
 
@@ -196,7 +201,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             key: navigatorKey,
             pages: [
               MaterialPage(
-                key: ValueKey('AppShell'),
+                key: const ValueKey('AppShell'),
                 child: shell,
               ),
             ],
@@ -258,16 +263,16 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
       );
 
   @override
-  Future<void> setNewRoutePath(AppRoutePath path) async {
-    signingIn = path.signingIn;
-    driveId = path.driveId;
-    driveName = path.driveName;
-    driveFolderId = path.driveFolderId;
-    sharedDriveKey = path.sharedDriveKey;
-    sharedRawDriveKey = path.sharedRawDriveKey;
-    sharedFileId = path.sharedFileId;
-    sharedFileKey = path.sharedFileKey;
-    sharedRawFileKey = path.sharedRawFileKey;
+  Future<void> setNewRoutePath(AppRoutePath configuration) async {
+    signingIn = configuration.signingIn;
+    driveId = configuration.driveId;
+    driveName = configuration.driveName;
+    driveFolderId = configuration.driveFolderId;
+    sharedDriveKey = configuration.sharedDriveKey;
+    sharedRawDriveKey = configuration.sharedRawDriveKey;
+    sharedFileId = configuration.sharedFileId;
+    sharedFileKey = configuration.sharedFileKey;
+    sharedRawFileKey = configuration.sharedRawFileKey;
   }
 
   void clearState() {

@@ -115,7 +115,7 @@ class FsEntryMoveForm extends StatelessWidget {
                     arweave: context.read<ArweaveService>(),
                     driveDao: context.read<DriveDao>(),
                   ),
-                  child: FolderCreateForm(),
+                  child: const FolderCreateForm(),
                 ),
               ),
             );
