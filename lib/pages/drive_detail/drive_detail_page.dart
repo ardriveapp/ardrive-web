@@ -40,11 +40,24 @@ part 'components/drive_detail_folder_empty_card.dart';
 part 'components/fs_entry_preview_widget.dart';
 part 'components/fs_entry_side_sheet.dart';
 
-class DriveDetailPage extends StatelessWidget {
+class DriveDetailPage extends StatefulWidget {
   const DriveDetailPage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) => SizedBox.expand(
+  State<DriveDetailPage> createState() => _DriveDetailPageState();
+}
+
+class _DriveDetailPageState extends State<DriveDetailPage> {
+  var checkboxEnabled = false;
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.expand(
+      child: BlocListener<KeyboardListenerBloc, KeyboardListenerState>(
+        listener: (context, state) {
+          if (state is KeyboardListenerCtrlMetaPressed) {
+            setState(() => checkboxEnabled = state.isPressed);
+          }
+        },
         child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
           builder: (context, state) {
             if (state is DriveDetailLoadInProgress) {
@@ -92,8 +105,11 @@ class DriveDetailPage extends StatelessWidget {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Expanded(
-                                          child:
-                                              _buildDataTable(context, state),
+                                          child: _buildDataTable(
+                                            state: state,
+                                            context: context,
+                                            checkBoxEnabled: checkboxEnabled,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -169,9 +185,10 @@ class DriveDetailPage extends StatelessWidget {
                     if (state.showSelectedItemDetails)
                       Expanded(
                         child: FsEntrySideSheet(
-                            driveId: state.currentDrive.id,
-                            drivePrivacy: state.currentDrive.privacy,
-                            maybeSelectedItem: state.selectedItems.first),
+                          driveId: state.currentDrive.id,
+                          drivePrivacy: state.currentDrive.privacy,
+                          maybeSelectedItem: state.selectedItems.first,
+                        ),
                       )
                   ],
                 ),
@@ -181,5 +198,7 @@ class DriveDetailPage extends StatelessWidget {
             }
           },
         ),
-      );
+      ),
+    );
+  }
 }
