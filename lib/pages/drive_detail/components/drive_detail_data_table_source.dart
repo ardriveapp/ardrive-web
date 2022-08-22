@@ -4,8 +4,13 @@ class DriveDetailDataTableSource extends DataTableSource {
   final List<DriveTableFolder> folders;
   final List<DriveTableFile> files;
   final BuildContext context;
-  DriveDetailDataTableSource(
-      {required this.folders, required this.files, required this.context});
+  final bool checkBoxEnabled;
+  DriveDetailDataTableSource({
+    required this.folders,
+    required this.files,
+    required this.context,
+    required this.checkBoxEnabled,
+  });
 
   @override
   DataRow? getRow(int index) {
@@ -23,6 +28,7 @@ class DriveDetailDataTableSource extends DataTableSource {
         onPressed: folder.onPressed,
         index: index,
         selected: folder.selected,
+        checkBoxEnabled: checkBoxEnabled,
       );
     } else {
       final fileIndex = index - folders.length;
@@ -32,6 +38,7 @@ class DriveDetailDataTableSource extends DataTableSource {
         file: file.file,
         onPressed: file.onPressed,
         index: index,
+        checkBoxEnabled: checkBoxEnabled,
         selected: file.selected,
       );
     }
@@ -100,12 +107,17 @@ DataRow _buildFolderRow({
   bool selected = false,
   required Function onPressed,
   required int index,
+  required bool checkBoxEnabled,
 }) {
   return DataRow.byIndex(
     onSelectChanged: (_) => onPressed(),
     selected: selected,
     index: index,
     cells: [
+      if (checkBoxEnabled)
+        DataCell(
+          Checkbox(value: selected, onChanged: (_) {}),
+        ),
       DataCell(
         Row(
           children: [
@@ -146,12 +158,17 @@ DataRow _buildFileRow({
   bool selected = false,
   required Function onPressed,
   required int index,
+  required bool checkBoxEnabled,
 }) {
   return DataRow.byIndex(
     index: index,
     onSelectChanged: (_) => onPressed(),
     selected: selected,
     cells: [
+      if (checkBoxEnabled)
+        DataCell(
+          Checkbox(value: selected, onChanged: (_) {}),
+        ),
       DataCell(
         Row(
           children: [

@@ -41,7 +41,7 @@ class _DriveDataTableState extends State<DriveDataTable> {
         ],
       ),
 
-      columns: _buildTableColumns(context),
+      columns: _buildTableColumns(context, widget.checkBoxEnabled),
       sortColumnIndex:
           DriveOrder.values.indexOf(widget.driveDetailState.contentOrderBy),
       sortAscending:
@@ -54,6 +54,7 @@ class _DriveDataTableState extends State<DriveDataTable> {
       showCheckboxColumn: widget.checkBoxEnabled,
       source: DriveDetailDataTableSource(
         context: context,
+        checkBoxEnabled: widget.checkBoxEnabled,
         files: widget.driveDetailState.folderInView.files
             .map(
               (file) => DriveTableFile(
@@ -107,7 +108,8 @@ class _DriveDataTableState extends State<DriveDataTable> {
   }
 }
 
-List<DataColumn> _buildTableColumns(BuildContext context) {
+List<DataColumn> _buildTableColumns(
+    BuildContext context, bool checkBoxEnabled) {
   onSort(columnIndex, sortAscending) =>
       context.read<DriveDetailCubit>().sortFolder(
             contentOrderBy: DriveOrder.values[columnIndex],
@@ -115,6 +117,12 @@ List<DataColumn> _buildTableColumns(BuildContext context) {
                 sortAscending ? OrderingMode.asc : OrderingMode.desc,
           );
   return [
+    if (checkBoxEnabled)
+      const DataColumn(
+        label: SizedBox(
+          width: 24,
+        ),
+      ),
     DataColumn(
         label: Text(
           appLocalizationsOf(context).name,

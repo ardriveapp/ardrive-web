@@ -487,7 +487,7 @@ class CustomPaginatedDataTableState extends State<CustomPaginatedDataTable> {
               child: DataTable(
                 key: widget.tableKey,
                 columns: widget.columns,
-                showCheckboxColumn: widget.showCheckboxColumn,
+                showCheckboxColumn: false,
                 sortColumnIndex: widget.sortColumnIndex,
                 sortAscending: widget.sortAscending,
                 dataRowHeight: widget.dataRowHeight,
