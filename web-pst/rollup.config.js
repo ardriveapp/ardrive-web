@@ -22,7 +22,7 @@ export default {
     },
     {
       ...commonOutputOpts,
-      file: '../web/pst.min.js',
+      file: '../web/js/pst.min.js',
       plugins: [terser()],
     }
   ],
