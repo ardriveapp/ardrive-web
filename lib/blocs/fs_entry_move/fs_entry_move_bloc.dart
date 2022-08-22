@@ -59,14 +59,22 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
           emit: emit,
         );
       }
+
+      if (event is FsEntryMoveUpdateTargetFolder) {
+        loadFolder(folderId: event.folderId, emit: emit);
+      }
+
+      if (event is FsEntryMoveGoBackToParent) {
+        loadParentFolder(folder: event.folderInView, emit: emit);
+      }
     });
   }
 
   Future<void> loadParentFolder({
-    required FolderWithContents folderInView,
+    required FolderEntry folder,
     required Emitter<FsEntryMoveState> emit,
   }) async {
-    final parentFolder = folderInView.folder.parentFolderId;
+    final parentFolder = folder.parentFolderId;
     if (parentFolder != null) {
       return loadFolder(folderId: parentFolder, emit: emit);
     }
@@ -76,19 +84,16 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required String folderId,
     required Emitter<FsEntryMoveState> emit,
   }) async {
-    unawaited(_folderSubscription?.cancel());
-
-    _folderSubscription =
-        _driveDao.watchFolderContents(driveId, folderId: folderId).listen(
-      (f) {
-        emit(
-          FsEntryMoveLoadSuccess(
-            viewingRootFolder: f.folder.parentFolderId == null,
-            viewingFolder: f,
-            itemsToMove: selectedItems,
-          ),
-        );
-      },
+    await _folderSubscription?.cancel();
+    final folderStream =
+        _driveDao.watchFolderContents(driveId, folderId: folderId);
+    await emit.forEach(
+      folderStream,
+      onData: (FolderWithContents folderWithContents) => FsEntryMoveLoadSuccess(
+        viewingRootFolder: folderWithContents.folder.parentFolderId == null,
+        viewingFolder: folderWithContents,
+        itemsToMove: selectedItems,
+      ),
     );
   }
 
@@ -218,6 +223,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     await _arweave.postTx(moveTx);
 
     await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
+    emit(const FsEntryMoveSuccess());
   }
 
   @override
