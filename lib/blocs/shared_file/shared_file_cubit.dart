@@ -119,12 +119,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       fileKey,
     );
     if (allEntities != null) {
-      {
-        final revisions = await computeRevisionsFromEntities(allEntities);
+      final revisions = await computeRevisionsFromEntities(allEntities);
 
-        emit(SharedFileLoadSuccess(fileRevisions: revisions, fileKey: fileKey));
-        return;
-      }
+      emit(SharedFileLoadSuccess(fileRevisions: revisions, fileKey: fileKey));
+      return;
     }
     emit(SharedFileNotFound());
   }
