@@ -52,19 +52,24 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   @override
   Widget build(BuildContext context) {
     return SizedBox.expand(
-      child: BlocListener<KeyboardListenerBloc, KeyboardListenerState>(
-        listener: (context, state) {
-          if (state is KeyboardListenerCtrlMetaPressed) {
-            setState(() => checkboxEnabled = state.isPressed);
-          }
-        },
-        child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
-          builder: (context, state) {
-            if (state is DriveDetailLoadInProgress) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (state is DriveDetailLoadSuccess) {
-              return ScreenTypeLayout(
-                desktop: Stack(
+      child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
+        builder: (context, state) {
+          if (state is DriveDetailLoadInProgress) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is DriveDetailLoadSuccess) {
+            return ScreenTypeLayout(
+              desktop:
+                  BlocListener<KeyboardListenerBloc, KeyboardListenerState>(
+                listener: (context, state) {
+                  if (state is KeyboardListenerCtrlMetaPressed) {
+                    checkboxEnabled = state.isPressed;
+                    context
+                        .read<DriveDetailCubit>()
+                        .setMultiSelect(checkboxEnabled);
+                    setState(() => {});
+                  }
+                },
+                child: Stack(
                   children: [
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,65 +144,65 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       ),
                   ],
                 ),
-                mobile: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (!state.showSelectedItemDetails)
-                      Expanded(
-                        child: Scrollbar(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      state.currentDrive.name,
-                                      style:
-                                          Theme.of(context).textTheme.headline5,
-                                    ),
-                                    const SizedBox(
-                                      height: 16,
-                                    ),
-                                    const DriveDetailActionRow()
-                                  ],
-                                ),
-                                DriveDetailBreadcrumbRow(
-                                  path: state.folderInView.folder.path,
-                                ),
-                                if (state.folderInView.subfolders.isNotEmpty ||
-                                    state.folderInView.files.isNotEmpty)
-                                  Expanded(
-                                    child: _buildDataList(context, state),
-                                  )
-                                else
-                                  DriveDetailFolderEmptyCard(
-                                      promptToAddFiles:
-                                          state.hasWritePermissions),
-                              ],
-                            ),
+              ),
+              mobile: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!state.showSelectedItemDetails)
+                    Expanded(
+                      child: Scrollbar(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 16, horizontal: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    state.currentDrive.name,
+                                    style:
+                                        Theme.of(context).textTheme.headline5,
+                                  ),
+                                  const SizedBox(
+                                    height: 16,
+                                  ),
+                                  const DriveDetailActionRow()
+                                ],
+                              ),
+                              DriveDetailBreadcrumbRow(
+                                path: state.folderInView.folder.path,
+                              ),
+                              if (state.folderInView.subfolders.isNotEmpty ||
+                                  state.folderInView.files.isNotEmpty)
+                                Expanded(
+                                  child: _buildDataList(context, state),
+                                )
+                              else
+                                DriveDetailFolderEmptyCard(
+                                    promptToAddFiles:
+                                        state.hasWritePermissions),
+                            ],
                           ),
                         ),
                       ),
-                    if (state.showSelectedItemDetails)
-                      Expanded(
-                        child: FsEntrySideSheet(
-                          driveId: state.currentDrive.id,
-                          drivePrivacy: state.currentDrive.privacy,
-                          maybeSelectedItem: state.selectedItems.first,
-                        ),
-                      )
-                  ],
-                ),
-              );
-            } else {
-              return const SizedBox();
-            }
-          },
-        ),
+                    ),
+                  if (state.showSelectedItemDetails)
+                    Expanded(
+                      child: FsEntrySideSheet(
+                        driveId: state.currentDrive.id,
+                        drivePrivacy: state.currentDrive.privacy,
+                        maybeSelectedItem: state.selectedItems.first,
+                      ),
+                    )
+                ],
+              ),
+            );
+          } else {
+            return const SizedBox();
+          }
+        },
       ),
     );
   }
