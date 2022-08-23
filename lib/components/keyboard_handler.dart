@@ -25,7 +25,7 @@ class _KeyboardHandlerState extends State<KeyboardHandler> {
               autofocus: true,
               onKey: (event) async {
                 // detect if ctrl + v or cmd + v is pressed
-                if (event.isKeyPressed(LogicalKeyboardKey.metaLeft)) {
+                if (event.isKeyPressed(LogicalKeyboardKey.shift)) {
                   if (event is RawKeyDownEvent) {
                     setState(() => checkboxEnabled = true);
                   }
