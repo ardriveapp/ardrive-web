@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -20,8 +21,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
 
-  StreamSubscription? _folderSubscription;
-
   FsEntryMoveBloc({
     required this.driveId,
     required this.selectedItems,
@@ -36,38 +35,68 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         super(const FsEntryMoveLoadInProgress()) {
     final profile = _profileCubit.state as ProfileLoggedIn;
 
-    on<FsEntryMoveEvent>((event, emit) async {
-      if (event is FsEntryMoveInitial) {
-        final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-        await loadFolder(folderId: drive.rootFolderId, emit: emit);
-      }
+    on<FsEntryMoveEvent>(
+      (event, emit) async {
+        if (await _profileCubit.logoutIfWalletMismatch()) {
+          emit(const FsEntryMoveWalletMismatch());
+          return;
+        }
 
-      if (event is FsEntryMoveSubmit) {
-        final folderInView = event.folderInView;
-        await checkForConflicts(
-          parentFolder: folderInView,
-          profile: profile,
-          emit: emit,
-        );
-      }
+        if (event is FsEntryMoveInitial) {
+          final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+          await loadFolder(folderId: drive.rootFolderId, emit: emit);
+        }
 
-      if (event is FsEntryMoveSkipConflicts) {
-        final folderInView = event.folderInView;
-        await moveEntities(
-          parentFolder: folderInView,
-          profile: profile,
-          emit: emit,
-        );
-      }
+        if (event is FsEntryMoveSubmit) {
+          final folderInView = event.folderInView;
+          final conflictingItems = await checkForConflicts(
+            parentFolder: folderInView,
+            profile: profile,
+          );
+          if (conflictingItems.isEmpty) {
+            moveEntities(
+              conflictingItems: conflictingItems,
+              profile: profile,
+              parentFolder: folderInView,
+            );
+            emit(const FsEntryMoveSuccess());
+          } else {
+            final folderNames = conflictingItems
+                .whereType<SelectedFolder>()
+                .map((e) => e.item.name)
+                .toList();
+            final fileNames = conflictingItems
+                .whereType<SelectedFile>()
+                .map((e) => e.item.name)
+                .toList();
+            emit(
+              FsEntryMoveNameConflict(
+                folderNames: folderNames,
+                fileNames: fileNames,
+              ),
+            );
+          }
+        }
 
-      if (event is FsEntryMoveUpdateTargetFolder) {
-        loadFolder(folderId: event.folderId, emit: emit);
-      }
+        if (event is FsEntryMoveSkipConflicts) {
+          final folderInView = event.folderInView;
+          await moveEntities(
+            parentFolder: folderInView,
+            profile: profile,
+          );
+          emit(const FsEntryMoveSuccess());
+        }
 
-      if (event is FsEntryMoveGoBackToParent) {
-        loadParentFolder(folder: event.folderInView, emit: emit);
-      }
-    });
+        if (event is FsEntryMoveUpdateTargetFolder) {
+          await loadFolder(folderId: event.folderId, emit: emit);
+        }
+
+        if (event is FsEntryMoveGoBackToParent) {
+          await loadParentFolder(folder: event.folderInView, emit: emit);
+        }
+      },
+      transformer: restartable(),
+    );
   }
 
   Future<void> loadParentFolder({
@@ -84,7 +113,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required String folderId,
     required Emitter<FsEntryMoveState> emit,
   }) async {
-    await _folderSubscription?.cancel();
     final folderStream =
         _driveDao.watchFolderContents(driveId, folderId: folderId);
     await emit.forEach(
@@ -97,18 +125,12 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     );
   }
 
-  Future<void> checkForConflicts({
+  Future<List<SelectedItem>> checkForConflicts({
     required final FolderEntry parentFolder,
     required ProfileLoggedIn profile,
-    required Emitter<FsEntryMoveState> emit,
   }) async {
     final conflictingItems = <SelectedItem>[];
     try {
-      if (await _profileCubit.logoutIfWalletMismatch()) {
-        emit(const FsEntryMoveWalletMismatch());
-        return;
-      }
-
       for (var itemToMove in selectedItems) {
         final entityWithSameNameExists =
             await _driveDao.doesEntityWithNameExist(
@@ -121,24 +143,16 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
           conflictingItems.add(itemToMove);
         }
       }
-      if (conflictingItems.isEmpty) {
-        moveEntities(
-          conflictingItems: conflictingItems,
-          profile: profile,
-          parentFolder: parentFolder,
-          emit: emit,
-        );
-      }
     } catch (err) {
       addError(err);
     }
+    return conflictingItems;
   }
 
   Future<void> moveEntities({
     required FolderEntry parentFolder,
     List<SelectedItem> conflictingItems = const [],
     required ProfileLoggedIn profile,
-    required Emitter<FsEntryMoveState> emit,
   }) async {
     final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
     final moveTxDataItems = <DataItem>[];
@@ -223,12 +237,10 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     await _arweave.postTx(moveTx);
 
     await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
-    emit(const FsEntryMoveSuccess());
   }
 
   @override
   Future<void> close() {
-    _folderSubscription?.cancel();
     return super.close();
   }
 
