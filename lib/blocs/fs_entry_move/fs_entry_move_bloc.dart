@@ -53,7 +53,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             profile: profile,
           );
           if (conflictingItems.isEmpty) {
-            moveEntities(
+            await moveEntities(
               conflictingItems: conflictingItems,
               profile: profile,
               parentFolder: folderInView,

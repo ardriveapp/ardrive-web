@@ -131,7 +131,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                           FsEntrySideSheet(
                             driveId: state.currentDrive.id,
                             drivePrivacy: state.currentDrive.privacy,
-                            maybeSelectedItem: state.selectedItems.first,
+                            maybeSelectedItem: state.selectedItems.isNotEmpty
+                                ? state.selectedItems.first
+                                : null,
                           ),
                         }
                       ],
@@ -192,7 +194,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       child: FsEntrySideSheet(
                         driveId: state.currentDrive.id,
                         drivePrivacy: state.currentDrive.privacy,
-                        maybeSelectedItem: state.selectedItems.first,
+                        maybeSelectedItem: state.selectedItems.isNotEmpty
+                            ? state.selectedItems.first
+                            : null,
                       ),
                     )
                 ],
