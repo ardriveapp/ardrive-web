@@ -57,6 +57,8 @@ dependencies:
   ardrive_io:
     path: ./ardrive_io
   bloc_concurrency: ^0.2.0
+  universal_html: ^2.0.8
+  bloc_test: ^9.1.0
 
 dev_dependencies:
   flutter_test:
@@ -64,7 +66,6 @@ dev_dependencies:
   flutter_driver:
     sdk: flutter
   test: 1.21.1
-  bloc_test: ^9.0.3
   build_runner: ^2.0.4
   drift_dev: ^1.0.0
   mocktail: 0.3.0

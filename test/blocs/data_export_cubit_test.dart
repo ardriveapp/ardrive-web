@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ardrive/blocs/data_export/data_export_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -55,10 +57,7 @@ void main() {
             ],
         verify: (cubit) async {
           final state = cubit.state as DataExportSuccess;
-          expect(
-            (await state.file.readAsString()),
-            equals(dataExportSnapshot),
-          );
+          expect(utf8.decode(state.bytes), equals(dataExportSnapshot));
         });
   });
 }

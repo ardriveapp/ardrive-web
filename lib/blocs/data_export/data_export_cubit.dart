@@ -64,11 +64,13 @@ class DataExportCubit extends Cubit<DataExportState> {
     final fileName = 'Export from $driveId ${DateTime.now().toString()}.csv';
     final dataBytes =
         utf8.encode((await getFilesInDriveAsCSV(driveId))) as Uint8List;
-    emit(DataExportSuccess(
-      bytes: dataBytes,
-      fileName: fileName,
-      mimeType: 'text/csv',
-      lastModified: DateTime.now(),
-    ));
+    emit(
+      DataExportSuccess(
+        bytes: dataBytes,
+        fileName: fileName,
+        mimeType: 'text/csv',
+        lastModified: DateTime.now(),
+      ),
+    );
   }
 }

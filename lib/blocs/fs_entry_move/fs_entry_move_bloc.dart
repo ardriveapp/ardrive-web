@@ -32,6 +32,10 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
         super(const FsEntryMoveLoadInProgress()) {
+    if (selectedItems.isEmpty) {
+      addError(Exception('selectedItems cannot be empty'));
+    }
+
     final profile = _profileCubit.state as ProfileLoggedIn;
 
     on<FsEntryMoveEvent>(

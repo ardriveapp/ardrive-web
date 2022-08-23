@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:html';
+
+import 'package:universal_html/html.dart';
 
 bool isTabHidden() {
   return window.document.visibilityState != 'visible';
