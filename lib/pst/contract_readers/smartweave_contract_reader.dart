@@ -6,7 +6,7 @@ import 'package:ardrive/types/transaction_id.dart';
 
 class SmartweaveContractReader implements ContractReader {
   @override
-  Future<dynamic> readContract(TransactionID txId) async {
-    return await implementation.readContract(txId);
+  Future<dynamic> readContract(TransactionID txId) {
+    return implementation.readContract(txId);
   }
 }
