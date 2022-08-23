@@ -46,33 +46,6 @@ class FsEntryMoveForm extends StatelessWidget {
           Navigator.pop(context);
         } else if (state is FsEntryMoveWalletMismatch) {
           Navigator.pop(context);
-        } else if (state is FsEntryMoveNameConflict) {
-          Navigator.pop(context);
-          showDialog(
-            context: context,
-            builder: (BuildContext context) => AppDialog(
-              dismissable: true,
-              title: appLocalizationsOf(context).nameConflict,
-              content: SizedBox(
-                width: kSmallDialogWidth,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Center(
-                      child: Text(
-                        appLocalizationsOf(context).entityAlreadyExists(''),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(appLocalizationsOf(context).ok)),
-              ],
-            ),
-          );
         }
       },
       builder: (context, state) {
@@ -86,11 +59,9 @@ class FsEntryMoveForm extends StatelessWidget {
                 ),
               ),
               ElevatedButton(
-                onPressed: () {
-                  context
-                      .read<FsEntryMoveBloc>()
-                      .add(FsEntryMoveSubmit(folderInView: folderInView));
-                },
+                onPressed: () => context
+                    .read<FsEntryMoveBloc>()
+                    .add(FsEntryMoveSubmit(folderInView: folderInView)),
                 child: Text(appLocalizationsOf(context).moveHereEmphasized),
               ),
             ],
@@ -121,12 +92,49 @@ class FsEntryMoveForm extends StatelessWidget {
           }
         }
 
-        return AppDialog(
-          title: appLocalizationsOf(context).moveFileEmphasized,
-          contentPadding: EdgeInsets.zero,
-          content: Builder(builder: (context) {
-            if (state is FsEntryMoveLoadSuccess) {
-              return SizedBox(
+        return Builder(builder: (context) {
+          if (state is FsEntryMoveNameConflict) {
+            return AppDialog(
+              dismissable: true,
+              title: appLocalizationsOf(context).nameConflict,
+              content: SizedBox(
+                width: kSmallDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      appLocalizationsOf(context)
+                          .itemMoveNameConflict(state.folderInView.name),
+                    ),
+                    for (final itemName in state.conflictingFileNames() +
+                        state.conflictingFolderNames())
+                      Text(itemName),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(appLocalizationsOf(context).cancelEmphasized)),
+                TextButton(
+                    onPressed: () {
+                      context.read<FsEntryMoveBloc>().add(
+                            FsEntryMoveSkipConflicts(
+                              folderInView: state.folderInView,
+                              conflictingItems: state.conflictingItems,
+                            ),
+                          );
+                    },
+                    child: Text(appLocalizationsOf(context).skipEmphasized)),
+              ],
+            );
+          }
+          if (state is FsEntryMoveLoadSuccess) {
+            return AppDialog(
+              title: appLocalizationsOf(context).moveItems,
+              contentPadding: EdgeInsets.zero,
+              content: SizedBox(
                 width: kLargeDialogWidth,
                 height: 325,
                 child: Column(
@@ -213,12 +221,12 @@ class FsEntryMoveForm extends StatelessWidget {
                     )
                   ],
                 ),
-              );
-            } else {
-              return const SizedBox();
-            }
-          }),
-        );
+              ),
+            );
+          } else {
+            return const SizedBox();
+          }
+        });
       },
     );
   }

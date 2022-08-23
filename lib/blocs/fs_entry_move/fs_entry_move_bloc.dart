@@ -60,18 +60,10 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             );
             emit(const FsEntryMoveSuccess());
           } else {
-            final folderNames = conflictingItems
-                .whereType<SelectedFolder>()
-                .map((e) => e.item.name)
-                .toList();
-            final fileNames = conflictingItems
-                .whereType<SelectedFile>()
-                .map((e) => e.item.name)
-                .toList();
             emit(
               FsEntryMoveNameConflict(
-                folderNames: folderNames,
-                fileNames: fileNames,
+                conflictingItems: conflictingItems,
+                folderInView: folderInView,
               ),
             );
           }
@@ -81,6 +73,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
           final folderInView = event.folderInView;
           await moveEntities(
             parentFolder: folderInView,
+            conflictingItems: event.conflictingItems,
             profile: profile,
           );
           emit(const FsEntryMoveSuccess());

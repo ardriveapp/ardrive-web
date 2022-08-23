@@ -36,12 +36,23 @@ class FsEntryMoveSuccess extends FsEntryMoveState {
 }
 
 class FsEntryMoveNameConflict extends FsEntryMoveState {
-  final List<String> folderNames;
-  final List<String> fileNames;
+  final List<SelectedItem> conflictingItems;
+  final FolderEntry folderInView;
   const FsEntryMoveNameConflict({
-    required this.folderNames,
-    required this.fileNames,
+    required this.conflictingItems,
+    required this.folderInView,
   }) : super();
+
+  List<String> conflictingFileNames() => conflictingItems
+      .whereType<SelectedFile>()
+      .map((e) => e.item.name)
+      .toList();
+
+  List<String> conflictingFolderNames() => conflictingItems
+      .whereType<SelectedFolder>()
+      .map((e) => e.item.name)
+      .toList();
+
   @override
-  List<Object> get props => [folderNames, fileNames];
+  List<Object> get props => [conflictingItems, folderInView];
 }

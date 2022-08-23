@@ -34,7 +34,11 @@ class FsEntryMoveSubmit extends FsEntryMoveEvent {
 
 class FsEntryMoveSkipConflicts extends FsEntryMoveEvent {
   final FolderEntry folderInView;
-  const FsEntryMoveSkipConflicts({required this.folderInView}) : super();
+  final List<SelectedItem> conflictingItems;
+  const FsEntryMoveSkipConflicts({
+    required this.folderInView,
+    required this.conflictingItems,
+  }) : super();
   @override
-  List<Object> get props => [folderInView];
+  List<Object> get props => [folderInView, conflictingItems];
 }

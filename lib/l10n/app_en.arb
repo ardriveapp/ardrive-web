@@ -1363,5 +1363,19 @@
   "yourUploadFailed": "Your upload failed. You have not been charged for the failed attempt.",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
+  },
+  "moveItems": "Move Items",
+  "@moveItems": {
+    "description": "Move Items dialog title"
+  },
+  "itemMoveNameConflict": "The following item(s) could not be moved because '{destinationFolderName}' contains item(s) with the same name.",
+  "@itemMoveNameConflict": {
+    "description": "Description for dialog to skip conflicting files or cancel",
+    "placeholders": {
+      "destinationFolderName": {
+        "type": "String",
+        "example": "Folder A"
+      }
+    }
   }
 }
