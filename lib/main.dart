@@ -1,5 +1,11 @@
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
+import 'package:ardrive/pst/ardrive_contract_oracle.dart';
+import 'package:ardrive/pst/community_oracle.dart';
+import 'package:ardrive/pst/contract_oracle.dart';
+import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
+import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
+import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
@@ -48,7 +54,17 @@ class AppState extends State<App> {
   Widget build(BuildContext context) => MultiRepositoryProvider(
         providers: [
           RepositoryProvider<ArweaveService>(create: (_) => arweave),
-          RepositoryProvider<PstService>(create: (_) => PstService()),
+          RepositoryProvider<PstService>(
+            create: (_) => PstService(
+              communityOracle: CommunityOracle(
+                ArDriveContractOracle([
+                  ContractOracle(RedstoneContractReader()),
+                  ContractOracle(VertoContractReader()),
+                  ContractOracle(SmartweaveContractReader()),
+                ]),
+              ),
+            ),
+          ),
           RepositoryProvider<AppConfig>(create: (_) => config),
           RepositoryProvider<Database>(create: (_) => Database()),
           RepositoryProvider<ProfileDao>(
