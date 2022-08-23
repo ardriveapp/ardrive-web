@@ -59,6 +59,7 @@ dependencies:
   firebase_analytics: ^9.3.1
   ardrive_io:
     path: ./ardrive_io
+  sqlite3_flutter_libs: ^0.5.9
 
 dev_dependencies:
   flutter_test:

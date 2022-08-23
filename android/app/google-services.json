@@ -8,42 +8,6 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:305132849030:android:67a597a154485cb3ffce07",
-        "android_client_info": {
-          "package_name": "com.example.drive"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "305132849030-8d4hbj266o0651co9m5povg5rshdh0la.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyA87mVW7WvBginbuihMcTNONWEMbqJBGvo"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "305132849030-8d4hbj266o0651co9m5povg5rshdh0la.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "305132849030-0opn0r5k7oa3bcilmvrnqocb97328gln.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.drive"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:305132849030:android:6cf0cd5ec064fad3ffce07",
         "android_client_info": {
           "package_name": "io.ardrive.app"
