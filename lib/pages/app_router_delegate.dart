@@ -7,6 +7,7 @@ import 'package:ardrive/components/feedback_survey.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
+import 'package:ardrive/services/analytics/ardrive_analytics.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:cryptography/cryptography.dart';
@@ -56,9 +57,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   Widget build(BuildContext context) =>
       BlocConsumer<ProfileCubit, ProfileState>(
         listener: (context, state) {
+          final analytics = context.read<ArDriveAnalytics>();
           // Clear state to prevent the last drive from being attached on new login
           if (state is ProfileLoggingOut) {
             clearState();
+            analytics.clearUserId();
+            analytics.trackEvent(eventName: "loggedOut");
           }
 
           final anonymouslyShowDriveDetail =
@@ -80,6 +84,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           // Redirect the user away from sign in if they are already signed in.
           if (signingIn && state is ProfileLoggedIn) {
             signingIn = false;
+            analytics.setUserId(state.walletAddress);
+            analytics.trackEvent(eventName: "loggedIn");
             notifyListeners();
           }
           // Cleans up any shared drives from previous sessions
@@ -239,6 +245,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               child: BlocListener<SyncCubit, SyncState>(
                 listener: (context, state) {
                   if (state is SyncFailure) {
+                    context
+                        .read<ArDriveAnalytics>()
+                        .trackEvent(eventName: "syncFailed");
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(

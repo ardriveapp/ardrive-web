@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/analytics/ardrive_analytics.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
@@ -84,18 +85,30 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: () => context
-                                      .read<ProfileUnlockCubit>()
-                                      .submit(),
+                                  onPressed: () {
+                                    context
+                                        .read<ArDriveAnalytics>()
+                                        .trackScreenEvent(
+                                          screenName: "unlockScreen",
+                                          eventName: "unlockButton",
+                                        );
+                                    context.read<ProfileUnlockCubit>().submit();
+                                  },
                                   child: Text(appLocalizationsOf(context)
                                       .unlockEmphasized),
                                 ),
                               ),
                               const SizedBox(height: 16),
                               TextButton(
-                                onPressed: () => context
-                                    .read<ProfileCubit>()
-                                    .logoutProfile(),
+                                onPressed: () {
+                                  context
+                                      .read<ArDriveAnalytics>()
+                                      .trackScreenEvent(
+                                        screenName: "unlockScreen",
+                                        eventName: "forgetWalletButton",
+                                      );
+                                  context.read<ProfileCubit>().logoutProfile();
+                                },
                                 child: Text(
                                   appLocalizationsOf(context).forgetWallet,
                                   textAlign: TextAlign.center,

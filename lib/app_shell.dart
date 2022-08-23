@@ -1,3 +1,4 @@
+import 'package:ardrive/services/analytics/ardrive_analytics.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -46,35 +47,53 @@ class AppShellState extends State<AppShell> {
                 backgroundColor: Colors.transparent,
                 actions: [
                   IconButton(
-                    icon: const Icon(Icons.people_alt),
-                    tooltip: 'CommunityXYZ',
-                    onPressed: () => launchUrl(
-                      Uri.parse(
-                        'https://community.xyz/#-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ',
-                      ),
-                    ),
-                  ),
+                      icon: const Icon(Icons.people_alt),
+                      tooltip: 'CommunityXYZ',
+                      onPressed: () {
+                        context.read<ArDriveAnalytics>().trackScreenEvent(
+                              screenName: "driveExplorer",
+                              eventName: "communityXYZButton",
+                            );
+                        launchUrl(Uri.parse(
+                          'https://community.xyz/#-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ',
+                        ));
+                      }),
                   IconButton(
-                    icon: PortalEntry(
-                      visible: _showProfileOverlay,
-                      portal: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => toggleProfileOverlay(),
-                      ),
-                      child: PortalEntry(
+                      icon: PortalEntry(
                         visible: _showProfileOverlay,
-                        portal: const Padding(
-                          padding: EdgeInsets.only(top: 56),
-                          child: ProfileOverlay(),
+                        portal: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              final eventName = _showProfileOverlay
+                                  ? "hideProfile"
+                                  : "showProfile";
+                              context.read<ArDriveAnalytics>().trackScreenEvent(
+                                    screenName: "driveExplorer",
+                                    eventName: eventName,
+                                  );
+                              toggleProfileOverlay();
+                            }),
+                        child: PortalEntry(
+                          visible: _showProfileOverlay,
+                          portal: const Padding(
+                            padding: EdgeInsets.only(top: 56),
+                            child: ProfileOverlay(),
+                          ),
+                          portalAnchor: Alignment.topRight,
+                          childAnchor: Alignment.topRight,
+                          child: const Icon(Icons.account_circle),
                         ),
-                        portalAnchor: Alignment.topRight,
-                        childAnchor: Alignment.topRight,
-                        child: const Icon(Icons.account_circle),
                       ),
-                    ),
-                    tooltip: appLocalizationsOf(context).profile,
-                    onPressed: () => toggleProfileOverlay(),
-                  ),
+                      tooltip: appLocalizationsOf(context).profile,
+                      onPressed: () {
+                        final eventName =
+                            _showProfileOverlay ? "hideProfile" : "showProfile";
+                        context.read<ArDriveAnalytics>().trackScreenEvent(
+                              screenName: "driveExplorer",
+                              eventName: eventName,
+                            );
+                        toggleProfileOverlay();
+                      }),
                 ],
               );
           Widget _buildPage(scaffold) => BlocBuilder<SyncCubit, SyncState>(

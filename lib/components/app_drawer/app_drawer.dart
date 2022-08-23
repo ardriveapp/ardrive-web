@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/app_drawer/drive_list_tile.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/services/analytics/ardrive_analytics.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/launch_inferno_rules.dart';
@@ -75,9 +76,20 @@ class AppDrawer extends StatelessWidget {
                                       (d) => DriveListTile(
                                         drive: d,
                                         selected: state.selectedDriveId == d.id,
-                                        onPressed: () => context
-                                            .read<DrivesCubit>()
-                                            .selectDrive(d.id),
+                                        onPressed: () {
+                                          context
+                                              .read<ArDriveAnalytics>()
+                                              .trackScreenEvent(
+                                            screenName: "mainMenu",
+                                            eventName: "driveSelected",
+                                            dimensions: {
+                                              "drivePrivacy": d.privacy,
+                                            },
+                                          );
+                                          context
+                                              .read<DrivesCubit>()
+                                              .selectDrive(d.id);
+                                        },
                                         hasAlert: state.drivesWithAlerts
                                             .contains(d.id),
                                       ),
@@ -135,8 +147,16 @@ class AppDrawer extends StatelessWidget {
                               child: FloatingActionButton(
                                 elevation: 0,
                                 tooltip: appLocalizationsOf(context).help,
-                                onPressed: () =>
-                                    launchUrl(Uri.parse(Resources.helpLink)),
+                                onPressed: () {
+                                  context
+                                      .read<ArDriveAnalytics>()
+                                      .trackScreenEvent(
+                                          screenName: "mainMenu",
+                                          eventName: "helpButton");
+                                  launchUrl(
+                                    Uri.parse(Resources.helpLink),
+                                  );
+                                },
                                 child: const Icon(Icons.help_outline),
                               ),
                             ),
@@ -177,6 +197,11 @@ class AppDrawer extends StatelessWidget {
                                 ),
                               ),
                               onPressed: () {
+                                context
+                                    .read<ArDriveAnalytics>()
+                                    .trackScreenEvent(
+                                        screenName: "mainMenu",
+                                        eventName: "infernoButton");
                                 launchInfernoRulesURL(
                                     appLocalizationsOf(context).localeName);
                               },
@@ -288,7 +313,11 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () => launchUrl(Uri.parse(Resources.arHelpLink)),
+              onPressed: () {
+                context.read<ArDriveAnalytics>().trackScreenEvent(
+                    screenName: "mainMenu", eventName: "arHelpButton");
+                launchUrl(Uri.parse(Resources.arHelpLink));
+              },
               child: Text(
                 appLocalizationsOf(context).howDoIGetAR,
                 style: const TextStyle(
@@ -461,6 +490,8 @@ class AppDrawer extends StatelessWidget {
           icon: const Icon(Icons.refresh),
           onPressed: () {
             print('Starting Sync Manually');
+            context.read<ArDriveAnalytics>().trackScreenEvent(
+                screenName: "mainMenu", eventName: "manualSync");
             context.read<SyncCubit>().startSync();
           },
           tooltip: appLocalizationsOf(context).sync,

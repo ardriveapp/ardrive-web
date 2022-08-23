@@ -6,9 +6,14 @@ import 'package:ardrive/pst/contract_oracle.dart';
 import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
+import 'package:ardrive/services/analytics/ardrive_analytics.dart';
+import 'package:ardrive/services/analytics/compound_adrive_analytics.dart';
+import 'package:ardrive/services/analytics/firebase_ardrive_analytics.dart';
+import 'package:ardrive/services/analytics/logger_ardrive_analytics.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:arweave/arweave.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -16,6 +21,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 
 import 'blocs/blocs.dart';
+import 'firebase_options.dart';
 import 'models/models.dart';
 import 'pages/pages.dart';
 import 'services/services.dart';
@@ -31,7 +37,9 @@ void main() async {
   config = await configService.getConfig(
     localStore: await LocalKeyValueStore.getInstance(),
   );
-
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
   refreshHTMLPageAtInterval(const Duration(hours: 12));
@@ -70,6 +78,9 @@ class AppState extends State<App> {
               create: (context) => context.read<Database>().profileDao),
           RepositoryProvider<DriveDao>(
               create: (context) => context.read<Database>().driveDao),
+          RepositoryProvider<ArDriveAnalytics>(
+              create: (_) => CompoundArDriveAnalytics(
+                  [FirebaseArDriveAnalytics(), LoggerArDriveAnalytics()])),
         ],
         child: MultiBlocProvider(
           providers: [

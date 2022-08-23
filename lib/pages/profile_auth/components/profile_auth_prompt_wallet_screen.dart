@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/services/analytics/ardrive_analytics.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -11,6 +12,10 @@ import 'profile_auth_shell.dart';
 
 class ProfileAuthPromptWalletScreen extends StatelessWidget {
   const ProfileAuthPromptWalletScreen({Key? key}) : super(key: key);
+  // TODO; An object-based, maybe hierarchical way to structure these constants
+  final _screenName = "pickWallet";
+  final _pickedWalletEventName = "pickedWallet";
+  final _walletTypeDimension = "walletType";
 
   @override
   Widget build(BuildContext context) => ProfileAuthShell(
@@ -52,11 +57,17 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
             ],
             const SizedBox(height: 16),
             TextButton(
-              onPressed: () => launchUrl(
-                Uri.parse(
-                  'https://tokens.arweave.org',
-                ),
-              ),
+              onPressed: () {
+                context.read<ArDriveAnalytics>().trackScreenEvent(
+                      screenName: _screenName,
+                      eventName: "getAWalletButton",
+                    );
+                launchUrl(
+                  Uri.parse(
+                    'https://tokens.arweave.org',
+                  ),
+                );
+              },
               child: Text(
                 appLocalizationsOf(context).getAWallet,
                 textAlign: TextAlign.center,
@@ -69,6 +80,12 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
   void _pickWallet(BuildContext context) async {
     final ardriveIO = ArDriveIO();
 
+    context.read<ArDriveAnalytics>().trackScreenEvent(
+      screenName: _screenName,
+      eventName: _pickedWalletEventName,
+      dimensions: {_walletTypeDimension: "json"},
+    );
+
     final walletFile = await ardriveIO.pickFile(allowedExtensions: ['json']);
 
     await context
@@ -77,6 +94,11 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
   }
 
   void _pickWalletArconnect(BuildContext context) async {
+    context.read<ArDriveAnalytics>().trackScreenEvent(
+      screenName: _screenName,
+      eventName: _pickedWalletEventName,
+      dimensions: {_walletTypeDimension: "arconnect"},
+    );
     await context.read<ProfileAddCubit>().pickWalletFromArconnect();
   }
 }

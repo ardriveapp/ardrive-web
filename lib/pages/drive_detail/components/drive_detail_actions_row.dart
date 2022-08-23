@@ -17,6 +17,13 @@ class DriveDetailActionRow extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () {
+                  context.read<ArDriveAnalytics>().trackScreenEvent(
+                    screenName: "driveExplorer",
+                    eventName: "renameButton",
+                    dimensions: {
+                      "drivePrivacy": state.currentDrive.privacy,
+                    },
+                  );
                   promptToRenameDrive(context, driveId: state.currentDrive.id);
                 },
                 tooltip: appLocalizationsOf(context).renameDrive,
@@ -39,6 +46,13 @@ class DriveDetailActionRow extends StatelessWidget {
               IconButton(
                   icon: const Icon(Icons.table_chart),
                   onPressed: () {
+                    context.read<ArDriveAnalytics>().trackScreenEvent(
+                      screenName: "driveExplorer",
+                      eventName: "exportButton",
+                      dimensions: {
+                        "drivePrivacy": state.currentDrive.privacy,
+                      },
+                    );
                     promptToExportCSVData(
                         context: context, driveId: state.currentDrive.id);
                   },
@@ -57,18 +71,43 @@ class DriveDetailActionRow extends StatelessWidget {
                   tooltip: appLocalizationsOf(context).download,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.share),
-                  tooltip: appLocalizationsOf(context).shareFile,
-                  onPressed: () => promptToShareFile(
-                    context: context,
-                    driveId: state.currentDrive.id,
-                    fileId: selectedItem.id,
-                  ),
-                ),
+                    icon: const Icon(Icons.share),
+                    tooltip: appLocalizationsOf(context).shareFile,
+                    onPressed: () {
+                      context.read<ArDriveAnalytics>().trackScreenEvent(
+                        screenName: "driveExplorer",
+                        eventName: "shareButton",
+                        dimensions: {
+                          "drivePrivacy": state.currentDrive.privacy,
+                          "entityType": "file",
+                          "contentType": (selectedItem as SelectedFile)
+                                  .item
+                                  .dataContentType ??
+                              "unknown"
+                        },
+                      );
+                      promptToShareFile(
+                        context: context,
+                        driveId: state.currentDrive.id,
+                        fileId: selectedItem.id,
+                      );
+                    }),
                 if (state.currentDrive.isPublic)
                   IconButton(
                     icon: const Icon(Icons.open_in_new),
                     onPressed: () {
+                      context.read<ArDriveAnalytics>().trackScreenEvent(
+                        screenName: "driveExplorer",
+                        eventName: "previewButton",
+                        dimensions: {
+                          "drivePrivacy": state.currentDrive.privacy,
+                          "contentType":
+                              (state.maybeSelectedItem as SelectedFile?)
+                                      ?.item
+                                      .dataContentType ??
+                                  "unknown"
+                        },
+                      );
                       final filePreviewUrl = state.selectedFilePreviewUrl;
                       if (filePreviewUrl != null) {
                         launchUrl(filePreviewUrl);
@@ -122,10 +161,20 @@ class DriveDetailActionRow extends StatelessWidget {
             } else ...{
               IconButton(
                 icon: const Icon(Icons.share),
-                onPressed: () => promptToShareDrive(
-                  context: context,
-                  drive: state.currentDrive,
-                ),
+                onPressed: () {
+                  context.read<ArDriveAnalytics>().trackScreenEvent(
+                    screenName: "driveExplorer",
+                    eventName: "shareButton",
+                    dimensions: {
+                      "drivePrivacy": state.currentDrive.privacy,
+                      "entityType": "drive"
+                    },
+                  );
+                  promptToShareDrive(
+                    context: context,
+                    drive: state.currentDrive,
+                  );
+                },
                 tooltip: appLocalizationsOf(context).shareDrive,
               ),
             }

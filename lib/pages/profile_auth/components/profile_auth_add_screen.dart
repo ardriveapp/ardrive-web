@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/services/analytics/ardrive_analytics.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:flutter/material.dart';
@@ -152,8 +153,17 @@ class ProfileAuthAddScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         TextButton(
-                          onPressed: () =>
-                              context.read<ProfileAddCubit>().promptForWallet(),
+                          onPressed: () {
+                            final eventName = context
+                                    .read<ProfileAddCubit>()
+                                    .isArconnectInstalled()
+                                ? "logOut"
+                                : "changeWallet";
+                            context.read<ArDriveAnalytics>().trackScreenEvent(
+                                screenName: "addProfile", eventName: eventName);
+                            context.read<ProfileAddCubit>().promptForWallet();
+                            context.read<ProfileAddCubit>().promptForWallet();
+                          },
                           child: context
                                   .read<ProfileAddCubit>()
                                   .isArconnectInstalled()
