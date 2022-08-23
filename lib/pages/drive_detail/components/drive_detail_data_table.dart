@@ -41,7 +41,11 @@ class _DriveDataTableState extends State<DriveDataTable> {
         ],
       ),
 
-      columns: _buildTableColumns(context, widget.checkBoxEnabled),
+      columns: _buildTableColumns(
+        context: context,
+        checkBoxEnabled: widget.checkBoxEnabled,
+        showItemDetails: widget.driveDetailState.showSelectedItemDetails,
+      ),
       sortColumnIndex:
           DriveOrder.values.indexOf(widget.driveDetailState.contentOrderBy),
       sortAscending:
@@ -108,14 +112,23 @@ class _DriveDataTableState extends State<DriveDataTable> {
   }
 }
 
-List<DataColumn> _buildTableColumns(
-    BuildContext context, bool checkBoxEnabled) {
-  onSort(columnIndex, sortAscending) =>
-      context.read<DriveDetailCubit>().sortFolder(
-            contentOrderBy: DriveOrder.values[columnIndex],
-            contentOrderingMode:
-                sortAscending ? OrderingMode.asc : OrderingMode.desc,
-          );
+List<DataColumn> _buildTableColumns({
+  required BuildContext context,
+  required bool checkBoxEnabled,
+  required bool showItemDetails,
+}) {
+  onSort(columnIndex, sortAscending) {
+    context.read<DriveDetailCubit>().sortFolder(
+          contentOrderBy: DriveOrder.values[columnIndex],
+          contentOrderingMode:
+              sortAscending ? OrderingMode.asc : OrderingMode.desc,
+        );
+  }
+
+  const defaultDrawerWidth = 300;
+  final double width = MediaQuery.of(context).size.width -
+      (showItemDetails ? 2 * defaultDrawerWidth : defaultDrawerWidth);
+
   return [
     if (checkBoxEnabled)
       const DataColumn(
@@ -124,22 +137,34 @@ List<DataColumn> _buildTableColumns(
         ),
       ),
     DataColumn(
-        label: Text(
+      label: SizedBox(
+        width: width * .4,
+        child: Text(
           appLocalizationsOf(context).name,
           overflow: TextOverflow.ellipsis,
         ),
-        onSort: onSort),
+      ),
+      onSort: onSort,
+    ),
     DataColumn(
-        label: Text(
+      label: SizedBox(
+        width: width * .2,
+        child: Text(
           appLocalizationsOf(context).fileSize,
           overflow: TextOverflow.ellipsis,
         ),
-        onSort: onSort),
+      ),
+      onSort: onSort,
+    ),
     DataColumn(
-        label: Text(
+      label: SizedBox(
+        width: width * .2,
+        child: Text(
           appLocalizationsOf(context).lastUpdated,
           overflow: TextOverflow.ellipsis,
         ),
-        onSort: onSort),
+      ),
+      onSort: onSort,
+    ),
   ];
 }
