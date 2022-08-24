@@ -61,6 +61,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
               conflictingItems: conflictingItems,
               profile: profile,
               parentFolder: folderInView,
+              dryRun: event.dryRun,
             );
             emit(const FsEntryMoveSuccess());
           } else {
@@ -79,6 +80,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             parentFolder: folderInView,
             conflictingItems: event.conflictingItems,
             profile: profile,
+            dryRun: event.dryRun,
           );
           emit(const FsEntryMoveSuccess());
         }
@@ -149,6 +151,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required FolderEntry parentFolder,
     List<SelectedItem> conflictingItems = const [],
     required ProfileLoggedIn profile,
+    bool dryRun = false,
   }) async {
     final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
     final moveTxDataItems = <DataItem>[];
@@ -223,6 +226,10 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         folderMap.addAll({folder.id: folder.toCompanion(false)});
       }
     });
+
+    if (dryRun) {
+      return;
+    }
 
     final moveTx = await _arweave.prepareDataBundleTx(
       await DataBundle.fromDataItems(
