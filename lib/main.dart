@@ -36,6 +36,7 @@ import 'theme/theme.dart';
 late ConfigService configService;
 late AppConfig config;
 late ArweaveService arweave;
+late String pendoKey;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -44,12 +45,13 @@ void main() async {
     localStore: await LocalKeyValueStore.getInstance(),
   );
 
-  if (!kIsWeb) {
-    late String pendoKey;
+  if (kIsWeb) {
+    pendoKey = 'REPLACE_WITH_PENDO_WEB_KEY';
+  } else {
     if (Platform.isAndroid) {
-      pendoKey = 'REPLACE_WITH_ANDROID_KEY';
+      pendoKey = 'REPLACE_WITH_PENDO_ANDROID_KEY';
     } else if (Platform.isIOS) {
-      pendoKey = 'REPLACE_WITH_IOS_KEY';
+      pendoKey = 'REPLACE_WITH_PENDO_IOS_KEY';
     } else {
       throw PlatformException(code: Platform.operatingSystem);
     }
@@ -103,7 +105,7 @@ class AppState extends State<App> {
               create: (_) => CompoundArDriveAnalytics([
                     FirebaseArDriveAnalytics(),
                     LoggerArDriveAnalytics(),
-                    PendoAnalytics()
+                    kIsWeb ? PendoAPIAnalytics() : PendoAgentAnalytics()
                   ])),
         ],
         child: MultiBlocProvider(

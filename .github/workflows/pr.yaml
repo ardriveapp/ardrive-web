@@ -17,6 +17,9 @@ jobs:
       - name: Build app
         run: |
           flutter pub get
+          sed -i "s/REPLACE_WITH_PENDO_IOS_KEY/${{ secrets.PENDO_IOS_API_KEY }}/" lib/main.dart
+          sed -i "s/REPLACE_WITH_PENDO_ANDROID_KEY/${{ secrets.PENDO_ANDROID_API_KEY }}/" lib/main.dart
+          sed -i "s/REPLACE_WITH_PENDO_WEB_KEY/${{ secrets.PENDO_WEB_API_KEY }}/" lib/main.dart
           flutter pub run build_runner build
           flutter config --enable-web
           flutter build web --profile
