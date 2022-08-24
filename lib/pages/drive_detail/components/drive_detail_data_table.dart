@@ -56,6 +56,7 @@ class _DriveDataTableState extends State<DriveDataTable> {
           () => context.read<DriveDetailCubit>().setRowsPerPage(value!)),
       showFirstLastButtons: true,
       showCheckboxColumn: widget.checkBoxEnabled,
+      horizontalMargin: 0,
       source: DriveDetailDataTableSource(
         context: context,
         checkBoxEnabled: widget.checkBoxEnabled,
@@ -130,12 +131,11 @@ List<DataColumn> _buildTableColumns({
       (showItemDetails ? 2 * defaultDrawerWidth : defaultDrawerWidth);
 
   return [
-    if (checkBoxEnabled)
-      const DataColumn(
-        label: SizedBox(
-          width: 24,
-        ),
+    const DataColumn(
+      label: SizedBox(
+        width: 24,
       ),
+    ),
     DataColumn(
       label: SizedBox(
         width: width * .4,

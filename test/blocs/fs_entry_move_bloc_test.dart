@@ -27,6 +27,7 @@ void main() {
     final driveId = const Uuid().v4();
     final rootFolderId = const Uuid().v4();
     final nestedFolderId = const Uuid().v4();
+    final conflictTestFolderId = const Uuid().v4();
     const rootFolderFileCount = 3;
 
     setUp(() async {
@@ -58,6 +59,12 @@ void main() {
               parentFolderId: Value(rootFolderId),
               name: nestedFolderId,
               path: '/$nestedFolderId'),
+          FolderEntriesCompanion.insert(
+              id: conflictTestFolderId,
+              driveId: driveId,
+              parentFolderId: Value(rootFolderId),
+              name: conflictTestFolderId,
+              path: '/$conflictTestFolderId'),
         ]);
         // Insert fake files
         batch.insertAll(
@@ -80,7 +87,25 @@ void main() {
                   dataContentType: const Value(''),
                 );
               },
-            )
+            ),
+            ...List.generate(
+              rootFolderFileCount,
+              (i) {
+                final fileId = '$conflictTestFolderId$i';
+                return FileEntriesCompanion.insert(
+                  id: fileId,
+                  driveId: driveId,
+                  parentFolderId: conflictTestFolderId,
+                  name: fileId,
+                  path: '/$fileId',
+                  dataTxId: '${fileId}Data',
+                  size: 500,
+                  dateCreated: Value(defaultDate),
+                  lastModifiedDate: defaultDate,
+                  dataContentType: const Value(''),
+                );
+              },
+            ),
           ],
         );
         // Insert fake file revisions
@@ -95,6 +120,25 @@ void main() {
                   fileId: fileId,
                   driveId: driveId,
                   parentFolderId: rootFolderId,
+                  name: fileId,
+                  metadataTxId: '${fileId}Meta',
+                  action: RevisionAction.create,
+                  dataTxId: '${fileId}Data',
+                  size: 500,
+                  dateCreated: Value(defaultDate),
+                  lastModifiedDate: defaultDate,
+                  dataContentType: const Value(''),
+                );
+              },
+            ),
+            ...List.generate(
+              rootFolderFileCount,
+              (i) {
+                final fileId = '$conflictTestFolderId$i';
+                return FileRevisionsCompanion.insert(
+                  fileId: fileId,
+                  driveId: driveId,
+                  parentFolderId: conflictTestFolderId,
                   name: fileId,
                   metadataTxId: '${fileId}Meta',
                   action: RevisionAction.create,
@@ -127,6 +171,28 @@ void main() {
               rootFolderFileCount,
               (i) {
                 final fileId = '$rootFolderId$i';
+                return NetworkTransactionsCompanion.insert(
+                  id: '${fileId}Data',
+                  status: const Value(TransactionStatus.confirmed),
+                  dateCreated: Value(defaultDate),
+                );
+              },
+            ),
+            ...List.generate(
+              rootFolderFileCount,
+              (i) {
+                final fileId = '$conflictTestFolderId$i';
+                return NetworkTransactionsCompanion.insert(
+                  id: '${fileId}Meta',
+                  status: const Value(TransactionStatus.confirmed),
+                  dateCreated: Value(defaultDate),
+                );
+              },
+            ),
+            ...List.generate(
+              rootFolderFileCount,
+              (i) {
+                final fileId = '$conflictTestFolderId$i';
                 return NetworkTransactionsCompanion.insert(
                   id: '${fileId}Data',
                   status: const Value(TransactionStatus.confirmed),
@@ -224,6 +290,131 @@ void main() {
       expect: () => [
         isA<FsEntryMoveLoadSuccess>(),
         isA<FsEntryMoveSuccess>(),
+      ],
+    );
+    blocTest(
+      'prompts user to skip or cancel incase of move conflicts',
+      setUp: (() async {
+        await db.batch((batch) {
+          const noOfFilesToInsert = rootFolderFileCount + 1;
+          // Default date
+          final defaultDate = DateTime(2017, 9, 7, 17, 30);
+
+          // Insert fake files
+          batch.insertAll(
+            db.fileEntries,
+            [
+              ...List.generate(
+                noOfFilesToInsert,
+                (i) {
+                  final fileId = 'secondPass' '$rootFolderId$i';
+                  final fileName = '$rootFolderId$i';
+                  return FileEntriesCompanion.insert(
+                    id: fileId,
+                    driveId: driveId,
+                    parentFolderId: rootFolderId,
+                    name: fileName,
+                    path: '/$fileName',
+                    dataTxId: '${fileId}Data',
+                    size: 500,
+                    dateCreated: Value(defaultDate),
+                    lastModifiedDate: defaultDate,
+                    dataContentType: const Value(''),
+                  );
+                },
+              ),
+            ],
+          );
+          // Insert fake file revisions
+          batch.insertAll(
+            db.fileRevisions,
+            [
+              ...List.generate(
+                noOfFilesToInsert,
+                (i) {
+                  final fileId = 'secondPass' '$rootFolderId$i';
+                  final fileName = '$rootFolderId$i';
+
+                  return FileRevisionsCompanion.insert(
+                    fileId: fileId,
+                    driveId: driveId,
+                    parentFolderId: rootFolderId,
+                    name: fileName,
+                    metadataTxId: '${fileId}Meta',
+                    action: RevisionAction.create,
+                    dataTxId: '${fileId}Data',
+                    size: 500,
+                    dateCreated: Value(defaultDate),
+                    lastModifiedDate: defaultDate,
+                    dataContentType: const Value(''),
+                  );
+                },
+              ),
+            ],
+          );
+          // Insert fake metadata and data transactions
+          batch.insertAll(
+            db.networkTransactions,
+            [
+              ...List.generate(
+                noOfFilesToInsert,
+                (i) {
+                  final fileId = 'secondPass' '$rootFolderId$i';
+                  return NetworkTransactionsCompanion.insert(
+                    id: '${fileId}Meta',
+                    status: const Value(TransactionStatus.confirmed),
+                    dateCreated: Value(defaultDate),
+                  );
+                },
+              ),
+              ...List.generate(
+                noOfFilesToInsert,
+                (i) {
+                  final fileId = 'secondPass' '$rootFolderId$i';
+                  return NetworkTransactionsCompanion.insert(
+                    id: '${fileId}Data',
+                    status: const Value(TransactionStatus.confirmed),
+                    dateCreated: Value(defaultDate),
+                  );
+                },
+              ),
+            ],
+          );
+        });
+        final fileRevisions = await driveDao
+            .filesInFolderAtPathWithRevisionTransactions(
+              driveId: driveId,
+              path: '',
+            )
+            .get();
+        selectedItems = [
+          ...fileRevisions.map((f) => SelectedFile(file: f)),
+        ];
+      }),
+      build: () => FsEntryMoveBloc(
+        arweave: arweave,
+        syncCubit: syncBloc,
+        driveId: driveId,
+        driveDao: driveDao,
+        profileCubit: profileCubit,
+        selectedItems: selectedItems,
+      ),
+      act: (FsEntryMoveBloc bloc) async {
+        bloc.add(FsEntryMoveUpdateTargetFolder(folderId: nestedFolderId));
+        await Future.delayed(const Duration(seconds: 2));
+        if (bloc.state is FsEntryMoveLoadSuccess) {
+          bloc.add(FsEntryMoveSubmit(
+            folderInView:
+                (bloc.state as FsEntryMoveLoadSuccess).viewingFolder.folder,
+            dryRun: true,
+          ));
+        }
+      },
+      wait: const Duration(seconds: 4),
+      expect: () => [
+        isA<FsEntryMoveLoadSuccess>(),
+        isA<FsEntryMoveSuccess>(),
+        isA<FsEntryMoveNameConflict>(),
       ],
     );
   });

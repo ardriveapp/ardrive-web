@@ -117,7 +117,9 @@ DataRow _buildFolderRow({
       if (checkBoxEnabled)
         DataCell(
           AbsorbPointer(child: Checkbox(value: selected, onChanged: (_) {})),
-        ),
+        )
+      else
+        DataCell(Container()),
       DataCell(
         Row(
           children: [
@@ -168,7 +170,9 @@ DataRow _buildFileRow({
       if (checkBoxEnabled)
         DataCell(
           AbsorbPointer(child: Checkbox(value: selected, onChanged: (_) {})),
-        ),
+        )
+      else
+        DataCell(Container()),
       DataCell(
         Row(
           children: [
