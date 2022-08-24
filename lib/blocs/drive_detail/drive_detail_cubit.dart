@@ -199,7 +199,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   void setMultiSelect(bool multiSelect) {
     final state = this.state as DriveDetailLoadSuccess;
-    emit(state.copyWith(multiselect: multiSelect));
+    if (state.multiselect != multiSelect) {
+      emit(state.copyWith(multiselect: multiSelect, selectedItems: []));
+    }
   }
 
   @override
