@@ -97,7 +97,8 @@ class _DriveDataTableState extends State<DriveDataTable> {
                             widget.driveDetailState.selectedItems.first.id,
                 onPressed: () {
                   final bloc = context.read<DriveDetailCubit>();
-                  if (widget.driveDetailState.selectedItems.isNotEmpty &&
+                  if (!widget.checkBoxEnabled &&
+                      widget.driveDetailState.selectedItems.isNotEmpty &&
                       folder.id ==
                           widget.driveDetailState.selectedItems.first.id) {
                     bloc.openFolder(path: folder.path);

@@ -92,7 +92,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         driveIsEmpty,
         multiselect,
       ];
-
+  SelectedItem? maybeSelectedItem() =>
+      selectedItems.isNotEmpty ? selectedItems.first : null;
   bool isViewingRootFolder() =>
       folderInView.folder.id != currentDrive.rootFolderId;
 }
