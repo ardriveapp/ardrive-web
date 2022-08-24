@@ -1,3 +1,1 @@
-Future<double> getPstFeePercentage() => throw UnimplementedError();
-
-Future<String> getWeightedPstHolder() => throw UnimplementedError();
+Future<dynamic> readContract() => throw UnimplementedError();

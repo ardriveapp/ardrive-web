@@ -9,6 +9,7 @@ import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/types/winston.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
@@ -160,7 +161,7 @@ void main() {
       when(() => mockProfileCubit!.isCurrentProfileArConnect())
           .thenAnswer((i) => Future.value(false));
       when(() => mockPst.getPSTFee(BigInt.zero))
-          .thenAnswer((invocation) => Future.value(BigInt.zero));
+          .thenAnswer((invocation) => Future.value(Winston(BigInt.zero)));
       when(() => mockArweave.getArUsdConversionRate())
           .thenAnswer((invocation) => Future.value(10));
       setDumbUploadPlan();
@@ -236,7 +237,7 @@ void main() {
       when(() => mockProfileCubit!.checkIfWalletMismatch())
           .thenAnswer((i) => Future.value(false));
       when(() => mockPst.getPSTFee(BigInt.zero))
-          .thenAnswer((invocation) => Future.value(BigInt.zero));
+          .thenAnswer((invocation) => Future.value(Winston(BigInt.zero)));
       when(() => mockArweave.getArUsdConversionRate())
           .thenAnswer((invocation) => Future.value(10));
       when(() => mockUploadPlanUtils.filesToUploadPlan(
