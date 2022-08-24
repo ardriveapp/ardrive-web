@@ -838,6 +838,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.7"
+  pendo_sdk:
+    dependency: "direct main"
+    description:
+      name: pendo_sdk
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.17.0"
   percent_indicator:
     dependency: "direct main"
     description:

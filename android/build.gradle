@@ -1,6 +1,10 @@
 buildscript {
   ext.kotlin_version = "1.6.21"
   repositories {
+    maven {
+      url "https://software.mobi1le.pendo.io/artifactory/androidx-release"
+    }
+    mavenCentral()
     google()
     jcenter()
   }
