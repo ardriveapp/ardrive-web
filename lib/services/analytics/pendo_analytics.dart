@@ -1,5 +1,6 @@
 import 'package:ardrive/services/analytics/ardrive_analytics.dart';
 import 'package:pendo_sdk/pendo_sdk.dart';
+// import 'package:pendo_sdk/pendo_sdk.dart';
 
 class PendoAnalytics implements ArDriveAnalytics {
   String? userId;
@@ -15,8 +16,8 @@ class PendoAnalytics implements ArDriveAnalytics {
 
   @override
   void setUserId(String userId) async {
-    final dynamic visitorData = {};
-    final dynamic accountData = {};
+    final Map<String, dynamic> visitorData = {};
+    final Map<String, dynamic> accountData = {};
 
     if (this.userId != null && this.userId == userId) {
       return;

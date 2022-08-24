@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/pst/ardrive_contract_oracle.dart';
@@ -17,6 +19,7 @@ import 'package:arweave/arweave.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -42,7 +45,15 @@ void main() async {
   );
 
   if (!kIsWeb) {
-    var pendoKey = '';
+    late String pendoKey;
+    if (Platform.isAndroid) {
+      pendoKey = 'REPLACE_WITH_ANDROID_KEY';
+    } else if (Platform.isIOS) {
+      pendoKey = 'REPLACE_WITH_IOS_KEY';
+    } else {
+      throw PlatformException(code: Platform.operatingSystem);
+    }
+
     await PendoFlutterPlugin.setup(pendoKey);
   }
 
