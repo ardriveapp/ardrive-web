@@ -142,16 +142,18 @@ class SharedFilePage extends StatelessWidget {
                   }
                 ],
               ),
-              mobile: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  shareCard(),
-                  if (state is SharedFileLoadSuccess) ...{
-                    Expanded(
-                      child: activityPanel(state),
-                    ),
-                  }
-                ],
+              mobile: SingleChildScrollView(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    shareCard(),
+                    if (state is SharedFileLoadSuccess) ...{
+                      Expanded(
+                        child: activityPanel(state),
+                      ),
+                    }
+                  ],
+                ),
               ),
             ),
           );
