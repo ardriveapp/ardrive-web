@@ -10,8 +10,9 @@ const arweave = Arweave.init({
   logging: false,
 });
 
-export async function readContractPromise(
+export async function readContractAsStringPromise(
   contractId: string,
 ): Promise<unknown> {
-  return readSmartweaveContract(arweave, contractId);
+  const contract = await readSmartweaveContract(arweave, contractId);
+  return JSON.stringify(contract);
 }
