@@ -105,7 +105,9 @@ class AppState extends State<App> {
               create: (_) => CompoundArDriveAnalytics([
                     FirebaseArDriveAnalytics(),
                     LoggerArDriveAnalytics(),
-                    kIsWeb ? PendoAPIAnalytics() : PendoAgentAnalytics()
+                    kIsWeb
+                        ? PendoAPIAnalytics(pendoKey: pendoKey)
+                        : PendoAgentAnalytics()
                   ])),
         ],
         child: MultiBlocProvider(
