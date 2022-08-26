@@ -59,6 +59,7 @@ dependencies:
   bloc_concurrency: ^0.2.0
   universal_html: ^2.0.8
   bloc_test: ^9.1.0
+  device_info_plus: ^4.0.0
 
 dev_dependencies:
   flutter_test:

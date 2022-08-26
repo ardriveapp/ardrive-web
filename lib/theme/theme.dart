@@ -155,13 +155,14 @@ TooltipThemeData _buildToolTipTheme(
       ),
     );
 
-CheckboxThemeData _buildCheckboxTheme(CheckboxThemeData base) =>
-    base.copyWith(fillColor: MaterialStateColor.resolveWith(
-      (states) {
-        if (states.contains(MaterialState.error)) {
-          return errorColor;
-        }
+CheckboxThemeData _buildCheckboxTheme(CheckboxThemeData base) => base.copyWith(
+      fillColor: MaterialStateColor.resolveWith(
+        (states) {
+          if (states.contains(MaterialState.error)) {
+            return errorColor;
+          }
 
-        return kPrimarySwatch;
-      },
-    ));
+          return kOnSurfaceBodyTextColor;
+        },
+      ),
+    );
