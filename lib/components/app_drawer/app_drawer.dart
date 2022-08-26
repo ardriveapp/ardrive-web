@@ -5,6 +5,7 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/launch_inferno_rules.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -140,30 +141,7 @@ class AppDrawer extends StatelessWidget {
                                 child: const Icon(Icons.help_outline),
                               ),
                             ),
-                            FutureBuilder(
-                              future: PackageInfo.fromPlatform(),
-                              builder: (BuildContext context,
-                                  AsyncSnapshot<PackageInfo> snapshot) {
-                                if (snapshot.hasData) {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Text(
-                                      appLocalizationsOf(context)
-                                          .appVersion(snapshot.data!.version),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .caption!
-                                          .copyWith(color: Colors.grey),
-                                    ),
-                                  );
-                                } else {
-                                  return const SizedBox(
-                                    height: 32,
-                                    width: 32,
-                                  );
-                                }
-                              },
-                            ),
+                            const AppVersionWidget()
                           ],
                         ),
                         Column(
@@ -466,4 +444,35 @@ class AppDrawer extends StatelessWidget {
           tooltip: appLocalizationsOf(context).sync,
         ),
       );
+}
+
+class AppVersionWidget extends StatelessWidget {
+  const AppVersionWidget({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+        future: PackageInfo.fromPlatform(),
+        builder: (BuildContext context, AsyncSnapshot<PackageInfo> snapshot) {
+          final info = snapshot.data;
+          if (info == null) {
+            return const SizedBox(
+              height: 32,
+              width: 32,
+            );
+          }
+          final literalVersion =
+              kIsWeb ? info.version : '${info.version}.${info.buildNumber}';
+          return Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              appLocalizationsOf(context).appVersion(literalVersion),
+              style: Theme.of(context)
+                  .textTheme
+                  .caption!
+                  .copyWith(color: Colors.grey),
+            ),
+          );
+        });
+  }
 }
