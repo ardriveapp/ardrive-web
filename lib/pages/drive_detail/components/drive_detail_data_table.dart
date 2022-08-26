@@ -60,55 +60,70 @@ class _DriveDataTableState extends State<DriveDataTable> {
       source: DriveDetailDataTableSource(
         context: context,
         checkBoxEnabled: widget.checkBoxEnabled,
-        files: widget.driveDetailState.folderInView.files
-            .map(
-              (file) => DriveTableFile(
-                file: file,
-                selected: widget.checkBoxEnabled
-                    ? widget.driveDetailState.selectedItems
-                        .where((item) => item.id == file.id)
-                        .isNotEmpty
-                    : widget.driveDetailState.selectedItems.isNotEmpty &&
-                        file.id ==
-                            widget.driveDetailState.selectedItems.first.id,
-                onPressed: () async {
-                  final bloc = context.read<DriveDetailCubit>();
-                  if (widget.driveDetailState.selectedItems.isNotEmpty &&
-                      file.id ==
-                          widget.driveDetailState.selectedItems.first.id) {
+        files: widget.driveDetailState.folderInView.files.map(
+          (file) {
+            final selected = widget.checkBoxEnabled
+                ? widget.driveDetailState.selectedItems
+                    .where((item) => item.id == file.id)
+                    .isNotEmpty
+                : widget.driveDetailState.selectedItems.isNotEmpty &&
+                    file.id == widget.driveDetailState.selectedItems.first.id;
+
+            return DriveTableFile(
+              file: file,
+              selected: selected,
+              onPressed: () async {
+                final bloc = context.read<DriveDetailCubit>();
+                final showDetailsPanel = widget
+                        .driveDetailState.selectedItems.isNotEmpty &&
+                    file.id == widget.driveDetailState.selectedItems.first.id;
+
+                if (showDetailsPanel) {
+                  if (!widget.checkBoxEnabled) {
                     bloc.toggleSelectedItemDetails();
                   } else {
-                    await bloc.selectItem(SelectedFile(file: file));
+                    bloc.unselectItem(SelectedFile(file: file));
                   }
-                },
-              ),
-            )
-            .toList(),
-        folders: widget.driveDetailState.folderInView.subfolders
-            .map(
-              (folder) => DriveTableFolder(
-                folder: folder,
-                selected: widget.checkBoxEnabled
-                    ? widget.driveDetailState.selectedItems
+                } else {
+                  await bloc.selectItem(SelectedFile(file: file));
+                }
+              },
+            );
+          },
+        ).toList(),
+        folders: widget.driveDetailState.folderInView.subfolders.map(
+          (folder) {
+            return DriveTableFolder(
+              folder: folder,
+              selected: widget.checkBoxEnabled
+                  ? widget.driveDetailState.selectedItems
+                      .where((item) => item.id == folder.id)
+                      .isNotEmpty
+                  : widget.driveDetailState.maybeSelectedItem()?.id ==
+                      folder.id,
+              onPressed: () {
+                final bloc = context.read<DriveDetailCubit>();
+                final isCurrentlySelected = widget.checkBoxEnabled &&
+                    widget.driveDetailState.selectedItems
                         .where((item) => item.id == folder.id)
-                        .isNotEmpty
-                    : widget.driveDetailState.selectedItems.isNotEmpty &&
-                        folder.id ==
-                            widget.driveDetailState.selectedItems.first.id,
-                onPressed: () {
-                  final bloc = context.read<DriveDetailCubit>();
-                  if (!widget.checkBoxEnabled &&
-                      widget.driveDetailState.selectedItems.isNotEmpty &&
-                      folder.id ==
-                          widget.driveDetailState.selectedItems.first.id) {
-                    bloc.openFolder(path: folder.path);
-                  } else {
-                    bloc.selectItem(SelectedFolder(folder: folder));
-                  }
-                },
-              ),
-            )
-            .toList(),
+                        .isNotEmpty;
+                if (isCurrentlySelected) {
+                  bloc.unselectItem(SelectedFolder(folder: folder));
+                  return;
+                }
+                final openFolder =
+                    widget.driveDetailState.maybeSelectedItem()?.id ==
+                        folder.id;
+
+                if (openFolder) {
+                  bloc.openFolder(path: folder.path);
+                } else {
+                  bloc.selectItem(SelectedFolder(folder: folder));
+                }
+              },
+            );
+          },
+        ).toList(),
       ),
     );
   }
