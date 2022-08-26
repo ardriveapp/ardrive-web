@@ -15,7 +15,8 @@ class DriveDetailActionRow extends StatelessWidget {
           final maybeSelectedItem =
               state.selectedItems.isNotEmpty ? state.selectedItems.first : null;
 
-          final fsActions = multiSelectEnabled
+          final fsActions = multiSelectEnabled &&
+                  state.maybeSelectedItem() != null
               ? [
                   IconButton(
                     icon: const Icon(Icons.drive_file_move),
