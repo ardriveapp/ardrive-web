@@ -135,8 +135,9 @@ List<DataColumn> _buildTableColumns({
   required bool showItemDetails,
 }) {
   onSort(columnIndex, sortAscending) {
+    // Column index - 1 is to remove the checkbox column from being sorted.
     context.read<DriveDetailCubit>().sortFolder(
-          contentOrderBy: DriveOrder.values[columnIndex],
+          contentOrderBy: DriveOrder.values[columnIndex - 1],
           contentOrderingMode:
               sortAscending ? OrderingMode.asc : OrderingMode.desc,
         );
