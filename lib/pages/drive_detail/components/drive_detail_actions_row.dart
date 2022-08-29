@@ -34,7 +34,7 @@ class DriveDetailActionRow extends StatelessWidget {
                 ]
               : <Widget>[
                   if (state.hasWritePermissions &&
-                      maybeSelectedItem != null) ...[
+                      maybeSelectedItem == null) ...[
                     IconButton(
                       icon: const Icon(Icons.edit_outlined),
                       onPressed: () {
