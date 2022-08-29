@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/launch_survey_url.dart';
+import 'package:ardrive/utils/screen_sizes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -128,7 +129,7 @@ class FeedbackSurveyModal extends StatelessWidget {
 
         return Stack(
           children: [
-            deviceWidth <= 768
+            deviceWidth <= kMaxMobileWidth
                 ? Center(
                     child: content,
                   )
