@@ -119,7 +119,7 @@ DataRow _buildFolderRow({
           AbsorbPointer(child: Checkbox(value: selected, onChanged: (_) {})),
         )
       else
-        const DataCell(SizedBox(width: 24)),
+        const DataCell(SizedBox(width: 32)),
       DataCell(
         Row(
           children: [
@@ -172,7 +172,7 @@ DataRow _buildFileRow({
           AbsorbPointer(child: Checkbox(value: selected, onChanged: (_) {})),
         )
       else
-        const DataCell(SizedBox(width: 24)),
+        const DataCell(SizedBox(width: 32)),
       DataCell(
         Row(
           children: [
