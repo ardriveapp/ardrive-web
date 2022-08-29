@@ -462,7 +462,7 @@ class AppVersionWidget extends StatelessWidget {
             );
           }
           final literalVersion =
-              kIsWeb ? info.version : '${info.version}.${info.buildNumber}';
+              kIsWeb ? info.version : '${info.version}+${info.buildNumber}';
           return Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
