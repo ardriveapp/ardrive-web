@@ -241,14 +241,4 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
     await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
   }
-
-  @override
-  Future<void> close() {
-    return super.close();
-  }
-
-  @override
-  void onError(Object error, StackTrace stackTrace) {
-    super.onError(error, stackTrace);
-  }
 }

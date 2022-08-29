@@ -88,7 +88,7 @@ packages:
     source: hosted
     version: "0.2.0"
   bloc_test:
-    dependency: "direct main"
+    dependency: "direct dev"
     description:
       name: bloc_test
       url: "https://pub.dartlang.org"
