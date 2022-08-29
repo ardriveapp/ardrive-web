@@ -6,9 +6,6 @@ bool isBrowserTabHidden() => implementation.isTabHidden();
 void whenBrowserTabIsUnhidden(Function onShow) =>
     implementation.whenTabIsUnhidden(onShow);
 
-void refreshHTMLPageAtInterval(Duration duration) =>
-    implementation.refreshPageAtInterval(duration);
-
 void onArConnectWalletSwitch(Function onWalletSwitch) =>
     implementation.onWalletSwitch(onWalletSwitch);
 

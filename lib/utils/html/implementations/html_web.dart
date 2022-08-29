@@ -19,12 +19,6 @@ void whenTabIsUnhidden(Function onShow) {
 Future<void> closeVisibilityChangeStream() async =>
     await _onVisibilityChangeStream.cancel();
 
-void refreshPageAtInterval(Duration duration) {
-  Future.delayed(duration, () {
-    window.location.reload();
-  });
-}
-
 void onWalletSwitch(Function onWalletSwitch) {
   window.addEventListener('walletSwitch', (event) {
     onWalletSwitch();
