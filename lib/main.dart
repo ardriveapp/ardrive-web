@@ -12,6 +12,7 @@ import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -36,8 +37,13 @@ void main() async {
   );
 
   arweave = ArweaveService(
-      Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
-  refreshHTMLPageAtInterval(const Duration(hours: 12));
+    Arweave(
+      gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!),
+    ),
+  );
+  if (kIsWeb) {
+    refreshHTMLPageAtInterval(const Duration(hours: 12));
+  }
   runApp(const App());
 }
 
