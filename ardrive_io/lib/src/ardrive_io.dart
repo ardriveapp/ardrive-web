@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/foundation.dart';
 
-import 'io_exception.dart';
 import 'mobile/mobile_io.dart';
+import 'web/stub_web_io.dart' // Stub implementation
+    if (dart.library.html) 'web/web_io.dart';
 
 abstract class ArDriveIO {
   Future<IOFile> pickFile({List<String>? allowedExtensions});
@@ -15,8 +15,10 @@ abstract class ArDriveIO {
 
   factory ArDriveIO() {
     if (kIsWeb) {
-      throw UnsupportedPlatformException(
-          'The ${Platform.operatingSystem} platform is not supported.');
+      return WebIO(
+          fileAdapter: IOFileAdapter(),
+          folderAdapter: IOFolderAdapter(),
+          folderPicker: FolderPicker());
     }
 
     return MobileIO(

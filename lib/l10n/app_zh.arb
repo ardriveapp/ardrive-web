@@ -140,7 +140,7 @@
   "@passwordMismatch": {
     "description": "Error message for when the confirmation password doesn't match the actual pass"
   },
-  "aggreeToTerms_body": "我同意ArDrive的服务条款与隐私政策",
+  "aggreeToTerms_body": "我同意ArDrive的服务条款与隐私政策.",
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
@@ -872,11 +872,11 @@
       }
     }
   },
-  "filesTooLargeExplanationPrivate": "ArDrive网页客户端中, 私人网盘目前只支持小于100MB的文件上传",
+  "filesTooLargeExplanationPrivate": "ArDrive网页客户端中, 私人网盘目前只支持小于100MiB的文件上传",
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
   },
-  "filesTooLargeExplanationPublic": "ArDrive网页客户端中, 公开网盘目前只支持小于1.5GB的文件上传",
+  "filesTooLargeExplanationPublic": "ArDrive网页客户端中, 公开网盘目前只支持小于1.20GiB的文件上传",
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
@@ -1323,5 +1323,41 @@
   "infernoIsInFullSwing": "Inferno奖励计划正在全面展开! 点击这里查看参与规则!",
   "@infernoIsInFullSwing": {
     "description": "Text inviting the users to go read the Inferno rules"
+  },
+  "uploadFailed": "上传失败",
+  "@uploadFailed": {
+    "description": "Upload Failed dialog title"
+  },
+  "yourUploadFailed": "文件上传失败， 本次上传不会被扣费。",
+  "@yourUploadFailed": {
+    "description": "Upload fail dialog description."
+  },
+  "sharePendingFile": "你所要分享的文件目前未被网络确认，暂时无 法被分享。请稍后重试。",
+  "@sharePendingFile": {
+    "description": "Pending file share dialog text"
+  },
+  "shareFailedFile": "你所要分享的文件状态显示为无效，无法被分 享。",
+  "@shareFailedFile": {
+    "description": "Failed file share dialog text"
+  },
+  "validationSharedFileIncorrectFileKey": "密码错误, 请重试.",
+  "@validationSharedFileIncorrectFileKey": {
+    "description": "The user entered an incorrect file key"
+  },
+  "sharedFileIsEncrypted": "此文件已加密.",
+  "@sharedFileIsEncrypted": {
+    "description": "Description that says the file is encrypted on shared file page"
+  },
+  "enterFileKey": "输入密码",
+  "@enterFileKey": {
+    "description": "File Key form field label"
+  },
+  "whatIsArDrive": "什么是ArDrive?",
+  "@whatIsArDrive": {
+    "description": "What is ArDrive? link on shared file page"
+  },
+  "unlock": "解锁",
+  "@unlock": {
+    "description": "Unlock a file or drive."
   }
 }

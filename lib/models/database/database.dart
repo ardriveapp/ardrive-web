@@ -1,5 +1,5 @@
 import 'package:ardrive/models/daos/daos.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 
 import 'unsupported.dart'
     if (dart.library.html) 'web.dart'
@@ -7,15 +7,15 @@ import 'unsupported.dart'
 
 part 'database.g.dart';
 
-@UseMoor(
-  include: {'../tables/all.moor'},
+@DriftDatabase(
+  include: {'../tables/all.drift'},
   daos: [DriveDao, ProfileDao],
 )
 class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

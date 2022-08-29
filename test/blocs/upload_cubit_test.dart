@@ -9,6 +9,7 @@ import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/types/winston.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
@@ -78,13 +79,13 @@ void main() {
 
     // We need a real file path because in the UploadCubit we needs the size of the file
     // to know if the file is `tooLargeFiles`.
-    final _tRealPathFile =
+    final tRealPathFile =
         await IOFile.fromXFile(XFile('assets/config/dev.json'), tRootFolderId);
 
     // The `addTestFilesToDb` will generate files with this path and name, so it
     // will be a confliting file.
     final tConflictingFile =
-        await IOFile.fromXFile(XFile(tRootFolderId + '1'), tRootFolderId);
+        await IOFile.fromXFile(XFile('${tRootFolderId}1'), tRootFolderId);
 
     // Contains only conflicting files.
     tAllConflictingFiles = <UploadFile>[tConflictingFile];
@@ -95,7 +96,7 @@ void main() {
       await IOFile.fromXFile(XFile('dumb_test_path'), tRootFolderId)
     ];
 
-    tNoConflictingFiles = <UploadFile>[_tRealPathFile];
+    tNoConflictingFiles = <UploadFile>[tRealPathFile];
 
     mockArweave = MockArweaveService();
     mockPst = MockPstService();
@@ -160,7 +161,7 @@ void main() {
       when(() => mockProfileCubit!.isCurrentProfileArConnect())
           .thenAnswer((i) => Future.value(false));
       when(() => mockPst.getPSTFee(BigInt.zero))
-          .thenAnswer((invocation) => Future.value(BigInt.zero));
+          .thenAnswer((invocation) => Future.value(Winston(BigInt.zero)));
       when(() => mockArweave.getArUsdConversionRate())
           .thenAnswer((invocation) => Future.value(10));
       setDumbUploadPlan();
@@ -176,11 +177,11 @@ void main() {
           await cubit.checkConflictingFiles();
         },
         expect: () => <dynamic>[
-              TypeMatcher<UploadPreparationInitialized>(),
-              TypeMatcher<UploadPreparationInProgress>(),
+              const TypeMatcher<UploadPreparationInitialized>(),
+              const TypeMatcher<UploadPreparationInProgress>(),
               UploadFileConflict(
                   areAllFilesConflicting: true,
-                  conflictingFileNames: [tRootFolderId + '1']),
+                  conflictingFileNames: const ['${tRootFolderId}1']),
             ]);
 
     blocTest<UploadCubit, UploadState>(
@@ -195,11 +196,11 @@ void main() {
           await cubit.checkConflictingFiles();
         },
         expect: () => <dynamic>[
-              TypeMatcher<UploadPreparationInitialized>(),
-              TypeMatcher<UploadPreparationInProgress>(),
+              const TypeMatcher<UploadPreparationInitialized>(),
+              const TypeMatcher<UploadPreparationInProgress>(),
               UploadFileConflict(
                   areAllFilesConflicting: false,
-                  conflictingFileNames: [tRootFolderId + '1'])
+                  conflictingFileNames: const ['${tRootFolderId}1'])
             ]);
 
     blocTest<UploadCubit, UploadState>(
@@ -212,9 +213,9 @@ void main() {
           await cubit.checkConflictingFiles();
         },
         expect: () => <dynamic>[
-              TypeMatcher<UploadPreparationInitialized>(),
-              TypeMatcher<UploadPreparationInProgress>(),
-              TypeMatcher<UploadReady>()
+              const TypeMatcher<UploadPreparationInitialized>(),
+              const TypeMatcher<UploadPreparationInProgress>(),
+              const TypeMatcher<UploadReady>()
             ]);
   });
 
@@ -236,7 +237,7 @@ void main() {
       when(() => mockProfileCubit!.checkIfWalletMismatch())
           .thenAnswer((i) => Future.value(false));
       when(() => mockPst.getPSTFee(BigInt.zero))
-          .thenAnswer((invocation) => Future.value(BigInt.zero));
+          .thenAnswer((invocation) => Future.value(Winston(BigInt.zero)));
       when(() => mockArweave.getArUsdConversionRate())
           .thenAnswer((invocation) => Future.value(10));
       when(() => mockUploadPlanUtils.filesToUploadPlan(
@@ -271,7 +272,7 @@ void main() {
       expect: () => <dynamic>[
         UploadPreparationInitialized(),
         UploadPreparationInProgress(isArConnect: true),
-        TypeMatcher<UploadReady>()
+        const TypeMatcher<UploadReady>()
       ],
     );
     blocTest<UploadCubit, UploadState>(
@@ -291,7 +292,7 @@ void main() {
       expect: () => <dynamic>[
         UploadPreparationInitialized(),
         UploadPreparationInProgress(isArConnect: false),
-        TypeMatcher<UploadReady>()
+        const TypeMatcher<UploadReady>()
       ],
     );
 
@@ -320,7 +321,7 @@ void main() {
       },
       expect: () => <dynamic>[
         UploadPreparationInitialized(),
-        TypeMatcher<UploadPreparationInProgress>(),
+        const TypeMatcher<UploadPreparationInProgress>(),
         UploadFileTooLarge(
             hasFilesToUpload: false,
             tooLargeFileNames: [tTooLargeFiles.first.name],
@@ -354,7 +355,7 @@ void main() {
       },
       expect: () => <dynamic>[
         UploadPreparationInitialized(),
-        TypeMatcher<UploadPreparationInProgress>(),
+        const TypeMatcher<UploadPreparationInProgress>(),
         UploadFileTooLarge(
             hasFilesToUpload: false,
             tooLargeFileNames: [tTooLargeFiles.first.name],
@@ -377,12 +378,12 @@ void main() {
         // TODO(@thiagocarvalhodev): Review
         await cubit.startUploadPreparation();
         await cubit.prepareUploadPlanAndCostEstimates(
-            uploadAction: UploadActions.Skip);
+            uploadAction: UploadActions.skip);
       },
       expect: () => <dynamic>[
         UploadPreparationInitialized(),
         UploadPreparationInProgress(isArConnect: false),
-        TypeMatcher<UploadReady>()
+        const TypeMatcher<UploadReady>()
       ],
     );
 

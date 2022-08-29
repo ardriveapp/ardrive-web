@@ -14,8 +14,8 @@ Future<void> showCongestionDependentModalDialog(
   try {
     final mempoolSize =
         await context.read<ArweaveService>().getMempoolSizeFromArweave();
-    
-   warnAboutCongestion = mempoolSize > mempoolWarningSizeLimit;
+
+    warnAboutCongestion = mempoolSize > mempoolWarningSizeLimit;
   } catch (e) {
     warnAboutCongestion = false;
   }

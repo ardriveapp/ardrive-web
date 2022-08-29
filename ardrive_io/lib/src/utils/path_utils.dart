@@ -11,3 +11,13 @@ String getBasenameFromPath(String entityPath) {
 
   return path.basename(entityPath);
 }
+
+/// Returns the Gets the part of [entityPath] before the last separator.
+/// Accepts a non empty String
+String getDirname(String entityPath) {
+  if (entityPath.isEmpty) {
+    throw EntityPathException();
+  }
+
+  return path.dirname(entityPath);
+}

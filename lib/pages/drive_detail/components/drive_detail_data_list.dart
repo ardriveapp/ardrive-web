@@ -33,7 +33,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
             },
           ),
         )
-      ].intersperse(Divider()).toList(),
+      ].intersperse(const Divider()).toList(),
     );
 
 Widget _buildFolderListTile({
@@ -45,17 +45,17 @@ Widget _buildFolderListTile({
     ListTile(
       onTap: () => onPressed(),
       selected: selected,
-      leading: Padding(
-        padding: const EdgeInsetsDirectional.only(end: 8.0),
-        child: const Icon(Icons.folder),
+      leading: const Padding(
+        padding: EdgeInsetsDirectional.only(end: 8.0),
+        child: Icon(Icons.folder),
       ),
       title: Text(folder.name),
       trailing: folder.isGhost
           ? ElevatedButton(
               style: ElevatedButton.styleFrom(
                 primary: LightColors.kOnLightSurfaceMediumEmphasis,
-                textStyle:
-                    TextStyle(color: LightColors.kOnDarkSurfaceHighEmphasis),
+                textStyle: const TextStyle(
+                    color: LightColors.kOnDarkSurfaceHighEmphasis),
               ),
               onPressed: () => showCongestionDependentModalDialog(
                 context,

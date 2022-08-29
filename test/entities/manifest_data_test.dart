@@ -10,8 +10,8 @@ import '../test_utils/utils.dart';
 import 'expected_manifest_data.dart';
 
 void main() {
-  final stubEntityId = '00000000-0000-0000-0000-000000000000';
-  final stubTxId = '0000000000000000000000000000000000000000001';
+  const stubEntityId = '00000000-0000-0000-0000-000000000000';
+  const stubTxId = '0000000000000000000000000000000000000000001';
   final stubCurrentDate = DateTime.now();
 
   final stubRootFolderEntry = FolderEntry(

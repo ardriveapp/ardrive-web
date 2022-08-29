@@ -1,6 +1,13 @@
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
+import 'package:ardrive/pst/ardrive_contract_oracle.dart';
+import 'package:ardrive/pst/community_oracle.dart';
+import 'package:ardrive/pst/contract_oracle.dart';
+import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
+import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
+import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,20 +28,24 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   configService = ConfigService();
-  config = await configService.getConfig();
+  config = await configService.getConfig(
+    localStore: await LocalKeyValueStore.getInstance(),
+  );
 
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
-  refreshHTMLPageAtInterval(Duration(hours: 12));
-  runApp(App());
+  refreshHTMLPageAtInterval(const Duration(hours: 12));
+  runApp(const App());
 }
 
 class App extends StatefulWidget {
+  const App({Key? key}) : super(key: key);
+
   @override
-  _AppState createState() => _AppState();
+  AppState createState() => AppState();
 }
 
-class _AppState extends State<App> {
+class AppState extends State<App> {
   final _routerDelegate = AppRouterDelegate();
   final _routeInformationParser = AppRouteInformationParser();
 
@@ -42,7 +53,17 @@ class _AppState extends State<App> {
   Widget build(BuildContext context) => MultiRepositoryProvider(
         providers: [
           RepositoryProvider<ArweaveService>(create: (_) => arweave),
-          RepositoryProvider<PstService>(create: (_) => PstService()),
+          RepositoryProvider<PstService>(
+            create: (_) => PstService(
+              communityOracle: CommunityOracle(
+                ArDriveContractOracle([
+                  ContractOracle(RedstoneContractReader()),
+                  ContractOracle(VertoContractReader()),
+                  ContractOracle(SmartweaveContractReader()),
+                ]),
+              ),
+            ),
+          ),
           RepositoryProvider<AppConfig>(create: (_) => config),
           RepositoryProvider<Database>(create: (_) => Database()),
           RepositoryProvider<ProfileDao>(
@@ -81,7 +102,11 @@ class _AppState extends State<App> {
             supportedLocales: const [
               Locale('en', ''), // English, no country code
               Locale('es', ''), // Spanish, no country code
-              Locale('zh', ''), // Chinese (Mandarin), no country code
+              Locale.fromSubtags(languageCode: 'zh'), // generic Chinese 'zh'
+              Locale.fromSubtags(
+                languageCode: 'zh',
+                countryCode: 'HK',
+              ), // generic traditional Chinese 'zh_Hant'
             ],
             builder: (context, child) => ListTileTheme(
               textColor: kOnSurfaceBodyTextColor,

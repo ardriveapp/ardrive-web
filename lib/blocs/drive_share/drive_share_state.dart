@@ -18,7 +18,7 @@ class DriveShareLoadSuccess extends DriveShareState {
   /// The link to share access of this drive with.
   final Uri driveShareLink;
 
-  DriveShareLoadSuccess({
+  const DriveShareLoadSuccess({
     required this.drive,
     required this.driveShareLink,
   });
@@ -31,7 +31,7 @@ class DriveShareLoadSuccess extends DriveShareState {
 class DriveShareLoadFail extends DriveShareState {
   final String message;
 
-  DriveShareLoadFail({
+  const DriveShareLoadFail({
     required this.message,
   });
 

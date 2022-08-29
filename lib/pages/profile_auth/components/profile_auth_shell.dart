@@ -1,6 +1,7 @@
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ProfileAuthShell extends StatelessWidget {
@@ -10,12 +11,13 @@ class ProfileAuthShell extends StatelessWidget {
   final double? contentWidthFactor;
   final Widget? contentFooter;
 
-  ProfileAuthShell({
+  const ProfileAuthShell({
+    Key? key,
     required this.illustration,
     required this.content,
     this.contentWidthFactor,
     this.contentFooter,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -47,15 +49,24 @@ class ProfileAuthShell extends StatelessWidget {
             Container(
               color: kDarkSurfaceColor,
             ),
-            FittedBox(
-              fit: BoxFit.fitWidth,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(Resources.images.profile.permahillsBg),
-                  SizedBox(height: 128),
-                ],
-              ),
+            SvgPicture.asset(
+              Resources.images.profile.permahillsBg,
+              fit: BoxFit.fitHeight,
+            ),
+            Container(
+              decoration: BoxDecoration(
+                  color: Colors.white,
+                  gradient: LinearGradient(
+                      begin: FractionalOffset.topCenter,
+                      end: FractionalOffset.bottomCenter,
+                      colors: [
+                        Colors.grey.withOpacity(0.0),
+                        Colors.black,
+                      ],
+                      stops: const [
+                        0.0,
+                        1.0
+                      ])),
             ),
             Center(
               child: Padding(

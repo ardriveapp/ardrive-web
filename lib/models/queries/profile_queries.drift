@@ -1,0 +1,5 @@
+import '../tables/profiles.drift';
+
+defaultProfile:
+    SELECT * FROM profiles
+    LIMIT 1;

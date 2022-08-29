@@ -1,5 +1,5 @@
 import 'package:cryptography/cryptography.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 
 export 'entities.dart';
 export 'keys.dart';

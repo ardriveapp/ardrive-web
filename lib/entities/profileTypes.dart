@@ -1,4 +1,0 @@
-enum ProfileType {
-  JSON,
-  ArConnect,
-}
