@@ -3,6 +3,20 @@ import 'package:ardrive_io/src/io_exception.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 
+abstract class FileProvider {
+  Future<IOFile> pickFile({
+    List<String>? allowedExtensions,
+    required FileSource fileSource,
+  });
+}
+
+abstract class MultiFileProvider extends FileProvider {
+  Future<List<IOFile>> pickMultipleFiles({
+    List<String>? allowedExtensions,
+    required FileSource fileSource,
+  });
+}
+
 class FileProviderFactory {
   FileProvider fromSource(FileSource source) {
     switch (source) {
@@ -10,35 +24,27 @@ class FileProviderFactory {
       case FileSource.fileSystem:
         return FilePickerProvider(IOFileAdapter());
       case FileSource.camera:
-        return CameraProvider();
+        return CameraProvider(IOFileAdapter());
     }
   }
 }
 
-abstract class FileProvider {
-  Future<IOFile> pickFile(
-      {List<String>? allowedExtensions, required FileSource fileSource});
-}
-
 class CameraProvider implements FileProvider {
-    CameraProvider(this._fileAdapter);
-    
-  final IOFileAdapter _fileAdapter;
+  CameraProvider(this._fileAdapter);
 
+  final IOFileAdapter _fileAdapter;
 
   @override
   Future<IOFile> pickFile(
       {List<String>? allowedExtensions, required FileSource fileSource}) async {
     final file = await ImagePicker().pickImage(source: ImageSource.camera);
 
+    if (file == null) {
+      throw ActionCanceledException();
+    }
 
-    return _fileAdapter.from
+    return _fileAdapter.fromXFile(file);
   }
-}
-
-abstract class MultiFileProvider extends FileProvider {
-  Future<List<IOFile>> pickMultipleFiles(
-      {List<String>? allowedExtensions, required FileSource fileSource});
 }
 
 class FilePickerProvider implements MultiFileProvider {
@@ -47,8 +53,10 @@ class FilePickerProvider implements MultiFileProvider {
   final IOFileAdapter _fileAdapter;
 
   @override
-  Future<IOFile> pickFile(
-      {List<String>? allowedExtensions, required FileSource fileSource}) async {
+  Future<IOFile> pickFile({
+    List<String>? allowedExtensions,
+    required FileSource fileSource,
+  }) async {
     FilePickerResult result = await _pickFile(
         allowedExtensions: allowedExtensions, fileSource: fileSource);
 
@@ -56,8 +64,10 @@ class FilePickerProvider implements MultiFileProvider {
   }
 
   @override
-  Future<List<IOFile>> pickMultipleFiles(
-      {List<String>? allowedExtensions, required FileSource fileSource}) async {
+  Future<List<IOFile>> pickMultipleFiles({
+    List<String>? allowedExtensions,
+    required FileSource fileSource,
+  }) async {
     FilePickerResult result = await _pickFile(
       allowedExtensions: allowedExtensions,
       allowMultiple: true,
