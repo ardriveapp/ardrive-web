@@ -3,6 +3,12 @@ import 'package:ardrive_io/src/io_exception.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 
+/// `gallery` device's gallery
+/// `fileSystem` device's file system
+///
+/// on **Web** `gallery` is not supported.
+enum FileSource { gallery, fileSystem, camera }
+
 abstract class FileProvider {
   Future<IOFile> pickFile({
     List<String>? allowedExtensions,
@@ -116,9 +122,3 @@ class FilePickerProvider implements MultiFileProvider {
     }
   }
 }
-
-/// `gallery` device's gallery
-/// `fileSystem` device's file system
-///
-/// on **Web** `gallery` is not supported.
-enum FileSource { gallery, fileSystem, camera }
