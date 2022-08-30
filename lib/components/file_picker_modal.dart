@@ -1,5 +1,4 @@
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_io/src/file_provider.dart';
 import 'package:flutter/material.dart';
 
 Future<List<IOFile>> showMultipleFilesFilePickerModal(
@@ -9,7 +8,8 @@ Future<List<IOFile>> showMultipleFilesFilePickerModal(
   return _showModal<List<IOFile>>(
       context,
       () => io.pickFiles(fileSource: FileSource.fileSystem),
-      () => io.pickFiles(fileSource: FileSource.gallery));
+      () => io.pickFiles(fileSource: FileSource.gallery),
+      () async => [await (io.pickFile(fileSource: FileSource.camera))]);
 }
 
 Future<IOFile> showFilePickerModal(BuildContext context) async {
@@ -17,13 +17,15 @@ Future<IOFile> showFilePickerModal(BuildContext context) async {
   return _showModal<IOFile>(
       context,
       () => io.pickFile(fileSource: FileSource.fileSystem),
-      () => io.pickFile(fileSource: FileSource.gallery));
+      () => io.pickFile(fileSource: FileSource.gallery),
+      () => io.pickFile(fileSource: FileSource.camera));
 }
 
 Future<T> _showModal<T>(
   BuildContext context,
   Future<T> Function() pickFromFileSystem,
   Future<T> Function() pickFromGallery,
+  Future<T> Function() pickFromCamera,
 ) async {
   late T content;
 
@@ -31,12 +33,21 @@ Future<T> _showModal<T>(
       context: context,
       builder: (context) {
         return SizedBox(
-          height: 200,
+          height: 240,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 18),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
+                ListTile(
+                  onTap: () async {
+                    content = await pickFromCamera();
+
+                    Navigator.pop(context);
+                  },
+                  title: const Text('Camera'),
+                  leading: const Icon(Icons.camera),
+                ),
                 const SizedBox(
                   height: 8,
                 ),
