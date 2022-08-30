@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_io/src/file_provider.dart';
 import 'package:ardrive_io/src/io_exception.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_saver/file_saver.dart' as file_saver;
@@ -8,11 +9,11 @@ import 'package:mime/mime.dart' as mime;
 import 'package:permission_handler/permission_handler.dart';
 
 class MobileIO implements ArDriveIO {
-  MobileIO(
-      {required IOFileAdapter fileAdapter,
-      required FileSaver fileSaver,
-      required IOFolderAdapter folderAdapter})
-      : _fileAdapter = fileAdapter,
+  MobileIO({
+    required IOFileAdapter fileAdapter,
+    required FileSaver fileSaver,
+    required IOFolderAdapter folderAdapter,
+  })  : _fileAdapter = fileAdapter,
         _fileSaver = fileSaver,
         _folderAdapter = folderAdapter;
 
@@ -21,17 +22,21 @@ class MobileIO implements ArDriveIO {
   final IOFolderAdapter _folderAdapter;
 
   @override
-  Future<IOFile> pickFile({List<String>? allowedExtensions}) async {
-    FilePickerResult result =
-        await _pickFile(allowedExtensions: allowedExtensions);
+  Future<IOFile> pickFile(
+      {List<String>? allowedExtensions, required FileSource fileSource}) async {
+    FilePickerResult result = await _pickFile(
+        allowedExtensions: allowedExtensions, fileSource: fileSource);
 
     return _fileAdapter.fromFilePicker(result.files.first);
   }
 
   @override
-  Future<List<IOFile>> pickFiles({List<String>? allowedExtensions}) async {
+  Future<List<IOFile>> pickFiles(
+      {List<String>? allowedExtensions, required FileSource fileSource}) async {
     FilePickerResult result = await _pickFile(
-        allowedExtensions: allowedExtensions, allowMultiple: true);
+        allowedExtensions: allowedExtensions,
+        allowMultiple: true,
+        fileSource: fileSource);
 
     return Future.wait(
         result.files.map((file) => _fileAdapter.fromFilePicker(file)).toList());
@@ -54,11 +59,28 @@ class MobileIO implements ArDriveIO {
   }
 
   Future<FilePickerResult> _pickFile(
-      {List<String>? allowedExtensions, bool allowMultiple = false}) async {
+      {List<String>? allowedExtensions,
+      bool allowMultiple = false,
+      required FileSource fileSource}) async {
+    late FileType type;
+
+    switch (fileSource) {
+      case FileSource.gallery:
+        type = FileType.media;
+        break;
+      case FileSource.fileSystem:
+        if (allowedExtensions != null) {
+          type = FileType.custom;
+          break;
+        }
+        type = FileType.any;
+        break;
+    }
+
     FilePickerResult? result = await FilePicker.platform.pickFiles(
         allowedExtensions: allowedExtensions,
         allowMultiple: allowMultiple,
-        type: allowedExtensions == null ? FileType.any : FileType.custom);
+        type: type);
 
     if (result != null) {
       return result;
