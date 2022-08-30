@@ -75,7 +75,7 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
               DataCell(
                 CopyIconButton(
                   tooltip: appLocalizationsOf(context).copyFileID,
-                  value: revisions.last.fileId,
+                  value: revisions.first.fileId,
                 ),
               ),
             ]),
@@ -94,7 +94,7 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    yMMdDateFormatter.format(revisions.last.lastModifiedDate),
+                    yMMdDateFormatter.format(revisions.first.lastModifiedDate),
                   ),
                 ),
               )
@@ -131,7 +131,7 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
               DataCell(
                 CopyIconButton(
                   tooltip: appLocalizationsOf(context).copyMetadataTxID,
-                  value: revisions.last.metadataTxId,
+                  value: revisions.first.metadataTxId,
                 ),
               ),
             ]),
@@ -140,7 +140,7 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
               DataCell(
                 CopyIconButton(
                   tooltip: appLocalizationsOf(context).copyDataTxID,
-                  value: revisions.last.dataTxId,
+                  value: revisions.first.dataTxId,
                 ),
               ),
             ]),
