@@ -3,18 +3,17 @@ import 'dart:typed_data';
 
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
-import 'package:ardrive/blocs/upload/models/io_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/types/winston.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/helpers.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -33,6 +32,7 @@ void main() {
   const tDriveId = 'drive_id';
   const tRootFolderId = 'root-folder-id';
   const tRootFolderFileCount = 5;
+  final tDefaultDate = DateTime.now();
 
   const tNestedFolderId = 'nested-folder-id';
   const tNestedFolderFileCount = 5;
@@ -56,10 +56,10 @@ void main() {
     registerFallbackValue(Wallet());
     registerFallbackValue(FolderEntry(
         id: '',
-        dateCreated: DateTime.now(),
+        dateCreated: tDefaultDate,
         driveId: '',
         isGhost: false,
-        lastUpdated: DateTime.now(),
+        lastUpdated: tDefaultDate,
         name: '',
         parentFolderId: '',
         path: ''));
@@ -69,8 +69,8 @@ void main() {
         rootFolderId: '',
         name: '',
         ownerAddress: '',
-        dateCreated: DateTime.now(),
-        lastUpdated: DateTime.now(),
+        dateCreated: tDefaultDate,
+        lastUpdated: tDefaultDate,
         privacy: ''));
 
     tWalletAddress = await tWallet.getAddress();
@@ -79,24 +79,37 @@ void main() {
 
     // We need a real file path because in the UploadCubit we needs the size of the file
     // to know if the file is `tooLargeFiles`.
-    final tRealPathFile =
-        await IOFile.fromXFile(XFile('assets/config/dev.json'), tRootFolderId);
+    final tRealPathFile = await IOFile.fromData(
+        File('assets/config/dev.json').readAsBytesSync(),
+        lastModifiedDate: tDefaultDate,
+        name: 'file');
 
     // The `addTestFilesToDb` will generate files with this path and name, so it
     // will be a confliting file.
-    final tConflictingFile =
-        await IOFile.fromXFile(XFile('${tRootFolderId}1'), tRootFolderId);
+    final tConflictingFile = await IOFile.fromData(
+        File('${tRootFolderId}1').readAsBytesSync(),
+        lastModifiedDate: tDefaultDate,
+        name: 'file');
 
     // Contains only conflicting files.
-    tAllConflictingFiles = <UploadFile>[tConflictingFile];
+    tAllConflictingFiles = <UploadFile>[
+      UploadFile(ioFile: tConflictingFile, parentFolderId: tRootFolderId)
+    ];
+
+    final tDumbTestFile = await IOFile.fromData(
+        File('dumb_test_path').readAsBytesSync(),
+        name: 'dumb',
+        lastModifiedDate: tDefaultDate);
 
     /// This list contains conflicting and non conflicting files.
     tSomeConflictingFiles = <UploadFile>[
-      tConflictingFile,
-      await IOFile.fromXFile(XFile('dumb_test_path'), tRootFolderId)
+      UploadFile(ioFile: tConflictingFile, parentFolderId: tRootFolderId),
+      UploadFile(ioFile: tDumbTestFile, parentFolderId: tRootFolderId)
     ];
 
-    tNoConflictingFiles = <UploadFile>[tRealPathFile];
+    tNoConflictingFiles = <UploadFile>[
+      UploadFile(ioFile: tRealPathFile, parentFolderId: tRootFolderId)
+    ];
 
     mockArweave = MockArweaveService();
     mockPst = MockPstService();
@@ -303,10 +316,10 @@ void main() {
       setUp: () async {
         final tFile = File('some_file.txt');
         tFile.writeAsBytesSync(Uint8List(publicFileSizeLimit.toInt() + 1));
-        tTooLargeFile = await IOFile.fromXFile(
-          XFile(tFile.path),
-          tRootFolderId,
-        );
+        tTooLargeFile = UploadFile(
+            ioFile: await IOFile.fromData(tFile.readAsBytesSync(),
+                lastModifiedDate: tDefaultDate, name: 'test'),
+            parentFolderId: tRootFolderId);
         tTooLargeFiles = [tTooLargeFile];
       },
       build: () {
@@ -324,7 +337,7 @@ void main() {
         const TypeMatcher<UploadPreparationInProgress>(),
         UploadFileTooLarge(
             hasFilesToUpload: false,
-            tooLargeFileNames: [tTooLargeFiles.first.name],
+            tooLargeFileNames: [tTooLargeFiles.first.getIdentifier()],
             isPrivate: false)
       ],
     );
@@ -335,10 +348,10 @@ void main() {
       setUp: () async {
         final tFile = File('some_file.txt');
         tFile.writeAsBytesSync(Uint8List(publicFileSizeLimit.toInt() + 1));
-        tTooLargeFile = await IOFile.fromXFile(
-          XFile(tFile.path),
-          tRootFolderId,
-        );
+        tTooLargeFile = UploadFile(
+            ioFile: await IOFile.fromData(File(tFile.path).readAsBytesSync(),
+                lastModifiedDate: tDefaultDate, name: 'test'),
+            parentFolderId: tRootFolderId);
       },
       build: () {
         final tTooLargeFilesWithNoConflictingFiles = tNoConflictingFiles
@@ -358,7 +371,7 @@ void main() {
         const TypeMatcher<UploadPreparationInProgress>(),
         UploadFileTooLarge(
             hasFilesToUpload: false,
-            tooLargeFileNames: [tTooLargeFiles.first.name],
+            tooLargeFileNames: [tTooLargeFiles.first.getIdentifier()],
             isPrivate: false)
       ],
     );
