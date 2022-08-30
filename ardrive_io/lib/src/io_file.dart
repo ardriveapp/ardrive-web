@@ -75,6 +75,19 @@ class IOFileAdapter {
     );
   }
 
+  Future<IOFile> fromXFile(XFile file) async {
+    final lastModified = await file.lastModified();
+    final contentType = lookupMimeTypeWithDefaultType(file.path);
+
+    return _IOFile(
+      file,
+      name: getBasenameFromPath(file.path),
+      path: file.path,
+      contentType: contentType,
+      lastModifiedDate: lastModified,
+    );
+  }
+
   Future<IOFile> fromWebXFile(XFile xfile) async {
     final lastModified = await xfile.lastModified();
     final contentType = lookupMimeTypeWithDefaultType(xfile.path);
