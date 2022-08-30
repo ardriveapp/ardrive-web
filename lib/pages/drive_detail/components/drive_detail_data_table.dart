@@ -143,9 +143,10 @@ List<DataColumn> _buildTableColumns({
         );
   }
 
-  const defaultDrawerWidth = 300;
+  final defaultDrawerWidth = Theme.of(context).drawerTheme.width ?? 304.0;
   final double width = MediaQuery.of(context).size.width -
-      (showItemDetails ? 2 * defaultDrawerWidth : defaultDrawerWidth);
+      (showItemDetails ? 2 * defaultDrawerWidth : defaultDrawerWidth) -
+      48;
 
   return [
     const DataColumn(
