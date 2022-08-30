@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_io/src/file_provider.dart';
 import 'package:flutter/foundation.dart';
 
 import 'mobile/mobile_io.dart';
@@ -29,8 +28,9 @@ abstract class ArDriveIO {
     }
 
     return MobileIO(
-        fileSaver: FileSaver(),
-        fileAdapter: IOFileAdapter(),
-        folderAdapter: IOFolderAdapter());
+      fileSaver: FileSaver(),
+      folderAdapter: IOFolderAdapter(),
+      fileProviderFactory: FileProviderFactory(),
+    );
   }
 }

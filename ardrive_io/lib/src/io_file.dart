@@ -75,11 +75,24 @@ class IOFileAdapter {
     );
   }
 
+  Future<IOFile> fromXFile(XFile file) async {
+    final lastModified = await file.lastModified();
+    final contentType = lookupMimeTypeWithDefaultType(file.path);
+
+    return _XFile(
+      file,
+      name: file.name,
+      path: file.path,
+      contentType: contentType,
+      lastModifiedDate: lastModified,
+    );
+  }
+
   Future<IOFile> fromWebXFile(XFile xfile) async {
     final lastModified = await xfile.lastModified();
     final contentType = lookupMimeTypeWithDefaultType(xfile.path);
 
-    return _WebXFile(
+    return _XFile(
       xfile,
       name: xfile.name,
       path: xfile.path,
@@ -190,8 +203,8 @@ class _DataFile implements IOFile {
   }
 }
 
-class _WebXFile implements IOFile {
-  _WebXFile(
+class _XFile implements IOFile {
+  _XFile(
     XFile file, {
     required this.name,
     required this.lastModifiedDate,
