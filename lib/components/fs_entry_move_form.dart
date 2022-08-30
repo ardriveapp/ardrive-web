@@ -44,6 +44,7 @@ class FsEntryMoveForm extends StatelessWidget {
               context, appLocalizationsOf(context).movingFolderEmphasized);
         } else if (state is FsEntryMoveSuccess) {
           Navigator.pop(context);
+          Navigator.pop(context);
         } else if (state is FsEntryMoveWalletMismatch) {
           Navigator.pop(context);
         }

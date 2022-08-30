@@ -57,6 +57,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             profile: profile,
           );
           if (conflictingItems.isEmpty) {
+            emit(const FsEntryMoveLoadInProgress());
             await moveEntities(
               conflictingItems: conflictingItems,
               profile: profile,
@@ -75,6 +76,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         }
 
         if (event is FsEntryMoveSkipConflicts) {
+          emit(const FsEntryMoveLoadInProgress());
           final folderInView = event.folderInView;
           await moveEntities(
             parentFolder: folderInView,
