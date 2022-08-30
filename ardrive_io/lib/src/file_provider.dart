@@ -35,8 +35,10 @@ class CameraProvider implements FileProvider {
   final IOFileAdapter _fileAdapter;
 
   @override
-  Future<IOFile> pickFile(
-      {List<String>? allowedExtensions, required FileSource fileSource}) async {
+  Future<IOFile> pickFile({
+    List<String>? allowedExtensions,
+    FileSource fileSource = FileSource.camera,
+  }) async {
     final file = await ImagePicker().pickImage(source: ImageSource.camera);
 
     if (file == null) {
@@ -109,7 +111,8 @@ class FilePickerProvider implements MultiFileProvider {
         }
         return FileType.any;
       case FileSource.camera:
-        return FileType.any;
+        throw FileSourceException(
+            'Camera is not supported on FilePickerProvider');
     }
   }
 }
