@@ -19,6 +19,8 @@ script_runner:
   line_length: 80
   scripts:
     - setup: flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs && dart pub get
+    - check-db: lefthook/database_checker.sh
+    - check-flutter: lefthook/version_checker.sh
 
 dependencies:
   flutter:
