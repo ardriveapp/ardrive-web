@@ -69,7 +69,8 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
   void _pickWallet(BuildContext context) async {
     final ardriveIO = ArDriveIO();
 
-    final walletFile = await ardriveIO.pickFile(allowedExtensions: ['json']);
+    final walletFile = await ardriveIO.pickFile(
+        allowedExtensions: ['json'], fileSource: FileSource.fileSystem);
 
     await context
         .read<ProfileAddCubit>()
