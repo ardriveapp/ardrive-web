@@ -12,7 +12,7 @@
   "@addSomeFiles": {
     "description": "Empty folder"
   },
-  "aggreeToTerms_body": "ArDriveの利用規約とプライバシーポリシーに同意する",
+  "aggreeToTerms_body": "ArDriveのサービス利用規約とプライバシーポリシー同意する",
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
