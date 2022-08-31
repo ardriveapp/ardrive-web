@@ -8,7 +8,7 @@
   "@addProfileEmphasized": {
     "description": "Add a wallet. Emphasized with upper case"
   },
-  "addSomeFiles": "ここには何もありません ファイルを追加するには [新規作成]をクリックしてください",
+  "addSomeFiles": "ここには何もありません ファイルを追加するには「新規作成」をクリックしてください",
   "@addSomeFiles": {
     "description": "Empty folder"
   },
@@ -888,7 +888,7 @@
   "@noDeleteButton": {
     "description": "Uploaded items cannot be deleted"
   },
-  "noDrives": "個人用または接続されたドライブがありません。[新規作成]ボタンをクリックして,\n追加してください！\n",
+  "noDrives": "個人用または接続されたドライブがありません。「新規作成」ボタンをクリックして,\n追加してください！\n",
   "@noDrives": {
     "description": "Text for when the wallet has no on-chain drives to display"
   },
