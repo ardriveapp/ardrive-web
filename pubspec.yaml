@@ -58,7 +58,6 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.9
   ardrive_io:
     path: ./ardrive_io
-  sqlite3_flutter_libs: ^0.5.9
 
 dev_dependencies:
   flutter_test:
