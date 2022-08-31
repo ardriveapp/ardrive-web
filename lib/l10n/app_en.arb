@@ -1363,5 +1363,13 @@
   "yourUploadFailed": "Your upload failed. You have not been charged for the failed attempt.",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
+  },
+  "invalidWalletFile": "Invalid Wallet File",
+  "@invalidWalletFile": {
+    "description": "Wallet file is not a json or a text"
+  },
+  "pleaseSelectAJsonOrTxtFile": "The file you have chosen is invalid. Please select a json or txt file.",
+  "@pleaseSelectAJsonOrTxtFile": {
+    "description": "Invalid wallet file description"
   }
 }

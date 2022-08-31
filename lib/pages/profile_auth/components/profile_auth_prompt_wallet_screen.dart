@@ -73,16 +73,19 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
     final ardriveIO = ArDriveIO();
 
     final walletFile = await ardriveIO.pickFile(
-        allowedExtensions: !Platform.isAndroid ? ['text', 'json'] : null);
+      allowedExtensions: Platform.isAndroid ? null : ['text', 'json'],
+    );
 
     if (!_allowedWalletMimeTypes.contains(walletFile.contentType)) {
       showDialog(
           context: context,
           builder: (context) {
-            return const AppDialog(
-                title: 'Invalid file',
-                content: Text(
-                    'Your file is invalid. Please provide a json or a text file'));
+            return AppDialog(
+              title: appLocalizationsOf(context).invalidWalletFile,
+              content: Text(
+                appLocalizationsOf(context).pleaseSelectAJsonOrTxtFile,
+              ),
+            );
           });
       return;
     }
