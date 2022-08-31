@@ -6,7 +6,7 @@
     ],
     "settings": {
         "dart.additionalAnalyzerFileExtensions": [
-            "moor"
+            "drift"
         ],
         "yaml.format.singleQuote": true
     }
