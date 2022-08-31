@@ -79,7 +79,7 @@ class IOFileAdapter {
     final lastModified = await file.lastModified();
     final contentType = lookupMimeTypeWithDefaultType(file.path);
 
-    return _XFile(
+    return _FromXFile(
       file,
       name: file.name,
       path: file.path,
@@ -92,7 +92,7 @@ class IOFileAdapter {
     final lastModified = await xfile.lastModified();
     final contentType = lookupMimeTypeWithDefaultType(xfile.path);
 
-    return _XFile(
+    return _FromXFile(
       xfile,
       name: xfile.name,
       path: xfile.path,
@@ -203,8 +203,8 @@ class _DataFile implements IOFile {
   }
 }
 
-class _XFile implements IOFile {
-  _XFile(
+class _FromXFile implements IOFile {
+  _FromXFile(
     XFile file, {
     required this.name,
     required this.lastModifiedDate,
