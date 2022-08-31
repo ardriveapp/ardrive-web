@@ -1,3 +1,0 @@
-# This is a browser-only package, so test on chrome by default.
-platforms:
-  - chrome
