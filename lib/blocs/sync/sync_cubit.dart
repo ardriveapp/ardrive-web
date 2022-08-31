@@ -9,7 +9,6 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/html/html_util.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
@@ -17,7 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:retry/retry.dart';
 
-import '../../utils/html/implementations/html_web.dart';
+import '../../utils/html/html_util.dart';
 
 part 'sync_state.dart';
 
