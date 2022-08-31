@@ -69,44 +69,53 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
           DataColumn(label: Text('')),
         ],
         rows: [
-          ...{
-            DataRow(cells: [
-              DataCell(Text(appLocalizationsOf(context).fileID)),
-              DataCell(
-                CopyIconButton(
-                  tooltip: appLocalizationsOf(context).copyFileID,
-                  value: revisions.first.fileId,
+          DataRow(cells: [
+            DataCell(Text(appLocalizationsOf(context).fileID)),
+            DataCell(
+              CopyIconButton(
+                tooltip: appLocalizationsOf(context).copyFileID,
+                value: revisions.first.fileId,
+              ),
+            ),
+          ]),
+          DataRow(cells: [
+            DataCell(Text(appLocalizationsOf(context).fileSize)),
+            DataCell(
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(filesize(revisions.first.size)),
+              ),
+            )
+          ]),
+          DataRow(cells: [
+            DataCell(Text(appLocalizationsOf(context).lastModified)),
+            DataCell(
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  yMMdDateFormatter.format(revisions.first.lastModifiedDate),
                 ),
               ),
-            ]),
-            DataRow(cells: [
-              DataCell(Text(appLocalizationsOf(context).fileSize)),
-              DataCell(
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(filesize(revisions.first.size)),
+            )
+          ]),
+          DataRow(cells: [
+            DataCell(Text(appLocalizationsOf(context).lastUpdated)),
+            DataCell(
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  yMMdDateFormatter.format(revisions.first.dateCreated),
                 ),
-              )
-            ]),
-            DataRow(cells: [
-              DataCell(Text(appLocalizationsOf(context).lastModified)),
-              DataCell(
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    yMMdDateFormatter.format(revisions.first.lastModifiedDate),
-                  ),
-                ),
-              )
-            ]),
-          },
+              ),
+            )
+          ]),
           DataRow(cells: [
             DataCell(Text(appLocalizationsOf(context).dateCreated)),
             DataCell(
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  yMMdDateFormatter.format(revisions.first.dateCreated),
+                  yMMdDateFormatter.format(revisions.last.dateCreated),
                 ),
               ),
             ),
