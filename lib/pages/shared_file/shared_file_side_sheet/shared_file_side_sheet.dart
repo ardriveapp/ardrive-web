@@ -106,7 +106,7 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  yMMdDateFormatter.format(revisions.first.dateCreated),
+                  yMMdDateFormatter.format(revisions.last.dateCreated),
                 ),
               ),
             ),
