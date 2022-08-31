@@ -30,6 +30,17 @@ Then, generate the package imports with:
 ```shell
 flutter pub get
 ```
+Install script runner to have access to pubspec scripts
+```
+pub global activate script_runner
+```
+
+In order to run them we need to use ``scr`` plus a ``pubspec.yaml`` script
+
+e.g.to ``check-flutter`` script which checks if we re using the right Flutter version
+```
+scr check-flutter
+```
 
 Whenever changing branches or initially setting up, compile the codebase to resolve errors:
 
