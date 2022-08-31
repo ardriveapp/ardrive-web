@@ -39,7 +39,7 @@ Future<SecretKey> deriveDriveKey(
   return hkdf.deriveKey(
     secretKey: SecretKey(walletSignature),
     info: utf8.encode(password),
-    nonce: Uint8List(0),
+    nonce: Uint8List(1),
   );
 }
 
@@ -49,7 +49,7 @@ Future<SecretKey> deriveFileKey(SecretKey driveKey, String fileId) async {
   return hkdf.deriveKey(
     secretKey: driveKey,
     info: fileIdBytes,
-    nonce: Uint8List(0),
+    nonce: Uint8List(1),
   );
 }
 

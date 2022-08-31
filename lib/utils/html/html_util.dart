@@ -10,3 +10,6 @@ void onArConnectWalletSwitch(Function onWalletSwitch) =>
     implementation.onWalletSwitch(onWalletSwitch);
 
 void triggerHTMLPageReload() => implementation.reload();
+
+Future<void> closeVisibilityChangeStream() =>
+    implementation.closeVisibilityChangeStream();
