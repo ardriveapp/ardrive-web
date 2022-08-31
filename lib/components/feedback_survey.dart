@@ -22,8 +22,11 @@ class FeedbackSurveyModal extends StatelessWidget {
       BlocBuilder<FeedbackSurveyCubit, FeedbackSurveyState>(
           builder: (context, state) {
         final deviceWidth = MediaQuery.of(context).size.width;
+        final padding = deviceWidth <= kMaxMobileWidth
+            ? const EdgeInsets.symmetric(horizontal: 24)
+            : const EdgeInsets.only(bottom: 0, left: 0);
         final content = AlertDialog(
-          insetPadding: const EdgeInsets.only(bottom: 0, left: 0),
+          insetPadding: padding,
           titlePadding: EdgeInsets.zero,
           title: Container(
               color: kDarkSurfaceColor,
