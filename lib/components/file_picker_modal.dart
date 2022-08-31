@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/material.dart';
 
@@ -45,7 +46,7 @@ Future<T> _showModal<T>(
 
                     Navigator.pop(context);
                   },
-                  title: const Text('Camera'),
+                  title: Text(appLocalizationsOf(context).camera),
                   leading: const Icon(Icons.camera),
                 ),
                 const SizedBox(
@@ -56,7 +57,7 @@ Future<T> _showModal<T>(
                     content = await pickFromGallery();
                     Navigator.pop(context);
                   },
-                  title: const Text('Gallery'),
+                  title: Text(appLocalizationsOf(context).gallery),
                   leading: const Icon(Icons.image),
                 ),
                 const SizedBox(
@@ -68,7 +69,7 @@ Future<T> _showModal<T>(
 
                       Navigator.pop(context);
                     },
-                    title: const Text('Files'),
+                    title: Text(appLocalizationsOf(context).fileSystem),
                     leading: const Icon(Icons.file_open_sharp))
               ],
             ),

@@ -1363,5 +1363,17 @@
   "yourUploadFailed": "Your upload failed. You have not been charged for the failed attempt.",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
+  },
+  "camera": "Camera",
+  "@camera": {
+    "description": "Button label to select a file from camera"
+  },
+  "fileSystem": "Files",
+  "@fileSystem": {
+    "description": "Button label to select a file from file system"
+  },
+  "gallery": "Gallery",
+  "@gallery": {
+    "description": "Button label to select a file from gallery"
   }
 }
