@@ -84,6 +84,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     oldestRevision = fileEntities.first.toRevision(
       performedAction: RevisionAction.create,
     );
+    // Remove oldest revision from list so we dont compute it again.
     fileEntities.removeAt(0);
     final revisions = <FileRevision>[oldestRevision];
     for (final entity in fileEntities) {
@@ -103,8 +104,8 @@ class SharedFileCubit extends Cubit<SharedFileState> {
 
       revisions.add(revision);
     }
-
-    return revisions;
+    // Reverse list so it is in chronological order.
+    return revisions.reversed.toList();
   }
 
   Future<void> loadFileDetails(SecretKey? fileKey) async {
