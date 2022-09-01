@@ -4,5 +4,5 @@
   },
   "bloc.newBlocTemplate": "equatable",
   "bloc.newCubitTemplate": "equatable",
-  "dart.additionalAnalyzerFileExtensions": ["moor"]
+  "dart.additionalAnalyzerFileExtensions": ["drift"]
 }
