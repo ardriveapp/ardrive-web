@@ -12,11 +12,9 @@ class MobileIO implements ArDriveIO {
     required IOFolderAdapter folderAdapter,
     required FileProviderFactory fileProviderFactory,
   })  : _fileSaver = fileSaver,
-        _folderAdapter = folderAdapter,
         _fileProviderFactory = fileProviderFactory;
 
   final FileSaver _fileSaver;
-  final IOFolderAdapter _folderAdapter;
   final FileProviderFactory _fileProviderFactory;
 
   @override

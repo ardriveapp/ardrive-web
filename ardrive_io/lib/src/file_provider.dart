@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/io_exception.dart';
+import 'package:ardrive_io/src/web/web_io.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 /// `gallery` device's gallery
@@ -143,7 +145,20 @@ class FilePickerProvider implements MultiFileProvider {
 ///
 class FileProviderFactory {
   /// `gallery` and `fileSystem` provides a `MultiFileProvider`
+  /// In web, only `fileSystem` is allowed
   FileProvider fromSource(FileSource source) {
+    if (kIsWeb) {
+      if (source == FileSource.camera || source == FileSource.gallery) {
+        throw UnsupportedPlatformException();
+      }
+
+      return WebFileSystemProvider(
+        FolderPicker(),
+        IOFileAdapter(),
+        IOFolderAdapter(),
+      );
+    }
+
     switch (source) {
       case FileSource.gallery:
       case FileSource.fileSystem:
