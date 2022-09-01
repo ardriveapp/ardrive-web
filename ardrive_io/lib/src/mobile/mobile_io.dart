@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/io_exception.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:file_saver/file_saver.dart' as file_saver;
 import 'package:mime/mime.dart' as mime;
 import 'package:permission_handler/permission_handler.dart';
@@ -43,18 +42,10 @@ class MobileIO implements ArDriveIO {
 
   @override
   Future<IOFolder> pickFolder() async {
-    String? selectedDirectoryPath =
-        await FilePicker.platform.getDirectoryPath();
+    final provider = _fileProviderFactory.fromSource(FileSource.fileSystem)
+        as MultiFileProvider;
 
-    if (selectedDirectoryPath == null) {
-      throw ActionCanceledException();
-    }
-
-    final selectedDirectory = Directory(selectedDirectoryPath);
-
-    final folder = _folderAdapter.fromFileSystemDirectory(selectedDirectory);
-
-    return folder;
+    return provider.getFolder();
   }
 
   @override

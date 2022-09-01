@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/io_exception.dart';
 import 'package:file_picker/file_picker.dart';
@@ -16,25 +18,20 @@ abstract class FileProvider {
   });
 }
 
-abstract class MultiFileProvider extends FileProvider {
+/// Provides a `IOFolder`
+abstract class FolderProvider {
+  Future<IOFolder> getFolder();
+}
+
+/// Provides multiple `IOFiles` or an `IOFolder`
+abstract class MultiFileProvider extends FileProvider with FolderProvider {
   Future<List<IOFile>> pickMultipleFiles({
     List<String>? allowedExtensions,
     required FileSource fileSource,
   });
 }
 
-class FileProviderFactory {
-  FileProvider fromSource(FileSource source) {
-    switch (source) {
-      case FileSource.gallery:
-      case FileSource.fileSystem:
-        return FilePickerProvider(IOFileAdapter());
-      case FileSource.camera:
-        return CameraProvider(IOFileAdapter());
-    }
-  }
-}
-
+/// Pick a photo from the O.S's Camera
 class CameraProvider implements FileProvider {
   CameraProvider(this._fileAdapter);
 
@@ -55,10 +52,15 @@ class CameraProvider implements FileProvider {
   }
 }
 
+/// MultiFileProvider implemented with file_picker package.
 class FilePickerProvider implements MultiFileProvider {
-  FilePickerProvider(this._fileAdapter);
+  FilePickerProvider(
+    this._fileAdapter,
+    this._ioFolderAdapter,
+  );
 
   final IOFileAdapter _fileAdapter;
+  final IOFolderAdapter _ioFolderAdapter;
 
   @override
   Future<IOFile> pickFile({
@@ -119,6 +121,38 @@ class FilePickerProvider implements MultiFileProvider {
       case FileSource.camera:
         throw FileSourceException(
             'Camera is not supported on FilePickerProvider');
+    }
+  }
+
+  @override
+  Future<IOFolder> getFolder() async {
+    String? selectedDirectoryPath =
+        await FilePicker.platform.getDirectoryPath();
+
+    if (selectedDirectoryPath == null) {
+      throw ActionCanceledException();
+    }
+
+    final selectedDirectory = Directory(selectedDirectoryPath);
+
+    return _ioFolderAdapter.fromFileSystemDirectory(selectedDirectory);
+  }
+}
+
+/// `fromSource` can return an instance of `FileProvider` or `MultiFileProvider`
+///
+class FileProviderFactory {
+  /// `gallery` and `fileSystem` provides a `MultiFileProvider`
+  FileProvider fromSource(FileSource source) {
+    switch (source) {
+      case FileSource.gallery:
+      case FileSource.fileSystem:
+        return FilePickerProvider(
+          IOFileAdapter(),
+          IOFolderAdapter(),
+        );
+      case FileSource.camera:
+        return CameraProvider(IOFileAdapter());
     }
   }
 }
