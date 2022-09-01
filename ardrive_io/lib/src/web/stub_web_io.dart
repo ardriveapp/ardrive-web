@@ -4,10 +4,9 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/file_provider.dart';
 
 class WebIO implements ArDriveIO {
-  WebIO(
-      {required IOFileAdapter fileAdapter,
-      required FolderPicker folderPicker,
-      required IOFolderAdapter folderAdapter});
+  WebIO({
+    required FileProviderFactory fileProviderFactory,
+  });
 
   @override
   Future<IOFile> pickFile({
