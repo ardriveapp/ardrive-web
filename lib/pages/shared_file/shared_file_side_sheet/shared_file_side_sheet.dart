@@ -1,4 +1,4 @@
-import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/shared_file/shared_file_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
@@ -175,11 +175,11 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
                   {
                     final previewOrDownloadButton = InkWell(
                       onTap: () {
-                        // downloadOrPreviewRevision(
-                        //   drivePrivacy: revision.,
-                        //   context: context,
-                        //   revision: revision,
-                        // );
+                        downloadOrPreviewRevision(
+                          drivePrivacy: widget.privacy,
+                          context: context,
+                          revision: revision,
+                        );
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -269,14 +269,12 @@ void downloadOrPreviewRevision({
   required FileRevision revision,
 }) {
   if (drivePrivacy == DrivePrivacy.private) {
-    promptToDownloadProfileFile(
+    promptToDownloadSharedFile(
       context: context,
-      driveId: revision.driveId,
       fileId: revision.fileId,
-      dataTxId: revision.dataTxId,
     );
   } else {
-    context.read<DriveDetailCubit>().launchPreview(revision.dataTxId);
+    context.read<SharedFileCubit>().launchPreview(revision.dataTxId);
   }
 }
 
