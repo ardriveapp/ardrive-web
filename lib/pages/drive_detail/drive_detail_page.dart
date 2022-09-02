@@ -47,7 +47,7 @@ class DriveDetailPage extends StatefulWidget {
 }
 
 class _DriveDetailPageState extends State<DriveDetailPage> {
-  var checkboxEnabled = false;
+  bool checkboxEnabled = false;
   @override
   Widget build(BuildContext context) {
     return SizedBox.expand(

@@ -14,7 +14,7 @@ class KeyboardHandler extends StatefulWidget {
 
 class _KeyboardHandlerState extends State<KeyboardHandler> {
   final _focusTable = FocusNode();
-  var checkboxEnabled = false;
+  bool checkboxEnabled = false;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +64,7 @@ class _KeyboardHandlerState extends State<KeyboardHandler> {
 }
 
 bool isApple(String userAgent) {
-  final platforms = [
+  const platforms = [
     'Mac',
     'iPad Simulator',
     'iPhone Simulator',
