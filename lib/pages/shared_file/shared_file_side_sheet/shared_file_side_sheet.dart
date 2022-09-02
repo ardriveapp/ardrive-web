@@ -1,4 +1,4 @@
-import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/shared_file/shared_file_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
@@ -69,44 +69,53 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
           DataColumn(label: Text('')),
         ],
         rows: [
-          ...{
-            DataRow(cells: [
-              DataCell(Text(appLocalizationsOf(context).fileID)),
-              DataCell(
-                CopyIconButton(
-                  tooltip: appLocalizationsOf(context).copyFileID,
-                  value: revisions.last.fileId,
+          DataRow(cells: [
+            DataCell(Text(appLocalizationsOf(context).fileID)),
+            DataCell(
+              CopyIconButton(
+                tooltip: appLocalizationsOf(context).copyFileID,
+                value: revisions.first.fileId,
+              ),
+            ),
+          ]),
+          DataRow(cells: [
+            DataCell(Text(appLocalizationsOf(context).fileSize)),
+            DataCell(
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(filesize(revisions.first.size)),
+              ),
+            )
+          ]),
+          DataRow(cells: [
+            DataCell(Text(appLocalizationsOf(context).lastModified)),
+            DataCell(
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  yMMdDateFormatter.format(revisions.first.lastModifiedDate),
                 ),
               ),
-            ]),
-            DataRow(cells: [
-              DataCell(Text(appLocalizationsOf(context).fileSize)),
-              DataCell(
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(filesize(revisions.first.size)),
+            )
+          ]),
+          DataRow(cells: [
+            DataCell(Text(appLocalizationsOf(context).lastUpdated)),
+            DataCell(
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  yMMdDateFormatter.format(revisions.first.dateCreated),
                 ),
-              )
-            ]),
-            DataRow(cells: [
-              DataCell(Text(appLocalizationsOf(context).lastModified)),
-              DataCell(
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    yMMdDateFormatter.format(revisions.last.lastModifiedDate),
-                  ),
-                ),
-              )
-            ]),
-          },
+              ),
+            )
+          ]),
           DataRow(cells: [
             DataCell(Text(appLocalizationsOf(context).dateCreated)),
             DataCell(
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  yMMdDateFormatter.format(revisions.first.dateCreated),
+                  yMMdDateFormatter.format(revisions.last.dateCreated),
                 ),
               ),
             ),
@@ -131,7 +140,7 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
               DataCell(
                 CopyIconButton(
                   tooltip: appLocalizationsOf(context).copyMetadataTxID,
-                  value: revisions.last.metadataTxId,
+                  value: revisions.first.metadataTxId,
                 ),
               ),
             ]),
@@ -140,7 +149,7 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
               DataCell(
                 CopyIconButton(
                   tooltip: appLocalizationsOf(context).copyDataTxID,
-                  value: revisions.last.dataTxId,
+                  value: revisions.first.dataTxId,
                 ),
               ),
             ]),
@@ -175,11 +184,11 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
                   {
                     final previewOrDownloadButton = InkWell(
                       onTap: () {
-                        // downloadOrPreviewRevision(
-                        //   drivePrivacy: revision.,
-                        //   context: context,
-                        //   revision: revision,
-                        // );
+                        downloadOrPreviewRevision(
+                          drivePrivacy: widget.privacy,
+                          context: context,
+                          revision: revision,
+                        );
                       },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
@@ -269,14 +278,12 @@ void downloadOrPreviewRevision({
   required FileRevision revision,
 }) {
   if (drivePrivacy == DrivePrivacy.private) {
-    promptToDownloadProfileFile(
+    promptToDownloadSharedFile(
       context: context,
-      driveId: revision.driveId,
       fileId: revision.fileId,
-      dataTxId: revision.dataTxId,
     );
   } else {
-    context.read<DriveDetailCubit>().launchPreview(revision.dataTxId);
+    context.read<SharedFileCubit>().launchPreview(revision.dataTxId);
   }
 }
 

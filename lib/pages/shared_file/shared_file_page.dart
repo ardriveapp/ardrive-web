@@ -81,9 +81,9 @@ class SharedFilePage extends StatelessWidget {
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             leading: const Icon(Icons.text_snippet),
-                            title: Text(state.fileRevisions.last.name),
+                            title: Text(state.fileRevisions.first.name),
                             subtitle:
-                                Text(filesize(state.fileRevisions.last.size)),
+                                Text(filesize(state.fileRevisions.first.size)),
                           ),
                           const SizedBox(height: 24),
                           ElevatedButton.icon(
@@ -91,7 +91,7 @@ class SharedFilePage extends StatelessWidget {
                             label: Text(appLocalizationsOf(context).download),
                             onPressed: () => promptToDownloadSharedFile(
                               context: context,
-                              fileId: state.fileRevisions.last.fileId,
+                              fileId: state.fileRevisions.first.fileId,
                               fileKey: state.fileKey,
                             ),
                           ),
