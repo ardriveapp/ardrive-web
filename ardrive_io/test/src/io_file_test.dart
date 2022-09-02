@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/io_exception.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -83,6 +84,23 @@ void main() {
 
       /// ensure that is the same content
       expect(bytes, await iofile.readAsBytes());
+    });
+  });
+
+  group('test class IOFileAdapter fromWebXFile method ', () {
+    test('should return a correct IOFile', () async {
+      final iofile = await sut.fromWebXFile(
+        XFile(file.path),
+      );
+
+      expect(iofile.name, 'somefile.jpg');
+      expect(iofile.contentType, 'image/jpeg');
+      expect(iofile.path, file.path);
+      expect(await file.lastModified(), iofile.lastModifiedDate);
+      expect(await iofile.length, await file.length());
+
+      /// ensure that is the same content
+      expect(await file.readAsBytes(), await iofile.readAsBytes());
     });
   });
 

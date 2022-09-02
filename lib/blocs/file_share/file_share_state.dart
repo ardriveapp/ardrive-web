@@ -11,6 +11,10 @@ abstract class FileShareState extends Equatable {
 /// [FileShareLoadInProgress] means that the file share details are being loaded.
 class FileShareLoadInProgress extends FileShareState {}
 
+class FileShareLoadedPendingFile extends FileShareState {}
+
+class FileShareLoadedFailedFile extends FileShareState {}
+
 /// [FileShareLoadSuccess] provides details for the user to share the file with.
 class FileShareLoadSuccess extends FileShareState {
   final String fileName;
@@ -21,7 +25,7 @@ class FileShareLoadSuccess extends FileShareState {
   /// Whether or not this file is public ie. not encrypted on the network.
   final bool isPublicFile;
 
-  FileShareLoadSuccess({
+  const FileShareLoadSuccess({
     required this.fileName,
     required this.fileShareLink,
     required this.isPublicFile,

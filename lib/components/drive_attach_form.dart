@@ -10,7 +10,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // ignore: unused_import
-import 'package:meta/meta.dart';
+
 import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
@@ -46,7 +46,7 @@ Future<void> attachDrive({
               Navigator.pop(context);
             }
           },
-          child: DriveAttachForm(),
+          child: const DriveAttachForm(),
         ),
       ),
     ),
@@ -55,6 +55,8 @@ Future<void> attachDrive({
 
 /// Depends on a provided [DriveAttachCubit] for business logic.
 class DriveAttachForm extends StatelessWidget {
+  const DriveAttachForm({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<DriveAttachCubit, DriveAttachState>(
@@ -79,7 +81,7 @@ class DriveAttachForm extends StatelessWidget {
                     autofocus: true,
                     decoration: InputDecoration(
                         labelText: appLocalizationsOf(context).driveID),
-                    validationMessages: (_) =>
+                    validationMessages:
                         kValidationMessages(appLocalizationsOf(context)),
                   ),
                   const SizedBox(height: 16),
@@ -88,10 +90,12 @@ class DriveAttachForm extends StatelessWidget {
                       formControlName: 'driveKey',
                       autofocus: true,
                       obscureText: true,
-                      decoration: InputDecoration(labelText: 'Drive Key'),
-                      validationMessages: (_) =>
+                      decoration: InputDecoration(
+                        labelText: appLocalizationsOf(context).driveKey,
+                      ),
+                      validationMessages:
                           kValidationMessages(appLocalizationsOf(context)),
-                      onEditingComplete: () => context
+                      onEditingComplete: (_) => context
                           .read<DriveAttachCubit>()
                           .form
                           .updateValueAndValidity(),
@@ -129,7 +133,7 @@ class DriveAttachForm extends StatelessWidget {
                       suffixIconConstraints:
                           const BoxConstraints.tightFor(width: 32, height: 24),
                     ),
-                    validationMessages: (_) =>
+                    validationMessages:
                         kValidationMessages(appLocalizationsOf(context)),
                   ),
                 ],

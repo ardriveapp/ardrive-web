@@ -1,3 +1,3 @@
-Future<double> getPstFeePercentage() => throw UnimplementedError();
+import 'package:ardrive/types/transaction_id.dart';
 
-Future<String> getWeightedPstHolder() => throw UnimplementedError();
+Future<dynamic> readContract(TransactionID txId) => throw UnimplementedError();

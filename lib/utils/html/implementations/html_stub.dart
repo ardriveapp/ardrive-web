@@ -17,3 +17,5 @@ void onWalletSwitch(Function onSwitch) {
 void reload() {
   return;
 }
+
+Future<void> closeVisibilityChangeStream() async {}

@@ -23,17 +23,19 @@ Future<void> promptToShareFile({
           profileCubit: context.read<ProfileCubit>(),
           driveDao: context.read<DriveDao>(),
         ),
-        child: FileShareDialog(),
+        child: const FileShareDialog(),
       ),
     );
 
 /// Depends on a provided [FileShareCubit] for business logic.
 class FileShareDialog extends StatefulWidget {
+  const FileShareDialog({Key? key}) : super(key: key);
+
   @override
-  _FileShareDialogState createState() => _FileShareDialogState();
+  FileShareDialogState createState() => FileShareDialogState();
 }
 
-class _FileShareDialogState extends State<FileShareDialog> {
+class FileShareDialogState extends State<FileShareDialog> {
   final shareLinkController = TextEditingController();
 
   @override
@@ -57,6 +59,10 @@ class _FileShareDialogState extends State<FileShareDialog> {
               children: [
                 if (state is FileShareLoadInProgress)
                   const Center(child: CircularProgressIndicator())
+                else if (state is FileShareLoadedFailedFile)
+                  Text(appLocalizationsOf(context).shareFailedFile)
+                else if (state is FileShareLoadedPendingFile)
+                  Text(appLocalizationsOf(context).sharePendingFile)
                 else if (state is FileShareLoadSuccess) ...{
                   ListTile(
                     title: Text(state.fileName),
@@ -107,6 +113,14 @@ class _FileShareDialogState extends State<FileShareDialog> {
                   context.read<FeedbackSurveyCubit>().openRemindMe();
                 },
                 child: Text(appLocalizationsOf(context).doneEmphasized),
+              )
+            else if (state is FileShareLoadedFailedFile ||
+                state is FileShareLoadedPendingFile)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text(appLocalizationsOf(context).ok),
               ),
           ],
         ),

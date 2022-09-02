@@ -17,4 +17,18 @@ void main() {
           throwsA(const TypeMatcher<EntityPathException>()));
     });
   });
+  group('test method getDirname', () {
+    test('should return correct dirname', () {
+      expect(getDirname('/some-folder/file'), '/some-folder');
+      expect(getDirname('/some-folder/path/file.png'), '/some-folder/path');
+      expect(getDirname('/some_directory/some-folder'), '/some_directory');
+      expect(getDirname('/storage/emulated/0/Download/Upload folder'),
+          '/storage/emulated/0/Download');
+    });
+
+    test('should throw an EntityPathException when having a empty path', () {
+      expect(() => getDirname(''),
+          throwsA(const TypeMatcher<EntityPathException>()));
+    });
+  });
 }

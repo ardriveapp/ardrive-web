@@ -9,7 +9,7 @@ import 'package:ardrive/utils/bundles/fake_tags.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:moor/moor.dart';
+import 'package:drift/drift.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 // Number of data items returned by this handle
@@ -68,7 +68,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
 
   Future<List<DataItem>> prepareAndSignDataItems() async {
     final packageInfo = await PackageInfo.fromPlatform();
-    final fileData = await file.readAsBytes();
+    final fileData = await file.ioFile.readAsBytes();
     dataTx = isPrivate
         ? await createEncryptedDataItem(fileData, fileKey!)
         : DataItem.withBlobData(data: fileData);
