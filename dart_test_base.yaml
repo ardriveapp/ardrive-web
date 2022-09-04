@@ -1,0 +1,15 @@
+# Pattern that the test runner uses to find test files in directories
+filename: 'test_*.dart'
+
+# Set the default timeout. 1x is the default 30s
+timeout: 1x
+
+# Default platform. flutter tests would always be vm. Other platforms might be added in a per-package basis
+platforms: [vm]
+
+#Default reporter
+reporter: expanded
+
+# Default results folder and format
+file_reporters:
+  expanded: reports/tests.txt
