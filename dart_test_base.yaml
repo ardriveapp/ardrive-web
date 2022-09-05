@@ -12,10 +12,6 @@ platforms: [vm]
 #Default reporter
 reporter: expanded
 
-# Default results folder and format
-file_reporters:
-  expanded: reports/tests.txt
-
 # Any test file tagged as broken would be skipped.
 tags:
   broken:
