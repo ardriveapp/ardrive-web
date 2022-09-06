@@ -21,6 +21,7 @@ script_runner:
     - setup: flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
+    - build-web: flutter config --enable-web && flutter build web --profile
 
 dependencies:
   flutter:
