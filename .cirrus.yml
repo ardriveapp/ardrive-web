@@ -2,6 +2,7 @@ container:
   image: cirrusci/flutter:3.0.5
 
 task:
+  only_if: $CIRRUS_BRANCH =~ 'pull/.*'
   build_script:
     - flutter pub get
     - flutter pub run build_runner build
