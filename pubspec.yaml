@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 1.30.0
+version: 1.31.0
 
 environment:
   sdk: '>=2.17.0 <3.0.0'
@@ -68,9 +68,9 @@ dependencies:
   stash: ^4.3.2
   path: ^1.8.1
   flutter_svg: ^1.1.3
+  sqlite3_flutter_libs: ^0.5.9
   ardrive_io:
     path: ./ardrive_io
-  sqlite3_flutter_libs: ^0.5.9
 
 dev_dependencies:
   flutter_test:

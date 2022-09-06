@@ -17,7 +17,7 @@ After installing lefthook you need to enable it by running:
 lefthook install
 ```
 
-If your environment is using homebrew, install the Flutter SDK with its cask as shown below. Alternatively, visit the [Flutter Installation Instructions][https://flutter.dev/docs/get-started/install] to get the Flutter SDK up and running for your OS / local setup.
+If your environment is using homebrew, install the Flutter SDK with its cask as shown below. Alternatively, visit the [Flutter Installation Instructions](https://flutter.dev/docs/get-started/install) to get the Flutter SDK up and running for your OS / local setup.
 
 ```shell
 # with homebrew

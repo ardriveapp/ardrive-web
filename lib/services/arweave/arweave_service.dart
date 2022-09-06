@@ -5,13 +5,14 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:http/http.dart' as http;
 import 'package:drift/drift.dart';
+import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:retry/retry.dart';
 
@@ -26,8 +27,9 @@ class ArweaveService {
 
   final ArtemisClient _gql;
 
-  ArweaveService(this.client)
-      : _gql = ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
+  ArweaveService(this.client, [ArtemisClient? artemisClient])
+      : _gql = artemisClient ??
+            ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     _graphQLRetry = GraphQLRetry(_gql);
     httpRetry = HttpRetry(
         GatewayResponseHandler(),
@@ -531,6 +533,66 @@ class ArweaveService {
       );
       return null;
     }
+  }
+
+  Future<List<FileEntity>?> getAllFileEntitiesWithId(String fileId,
+      [SecretKey? fileKey]) async {
+    String? cursor;
+    int? lastBlockHeight;
+    List<FileEntity> fileEntities = [];
+
+    final firstOwnerQuery = await _graphQLRetry.execute(
+        FirstFileEntityWithIdOwnerQuery(
+            variables: FirstFileEntityWithIdOwnerArguments(fileId: fileId)));
+
+    if (firstOwnerQuery.data!.transactions.edges.isEmpty) {
+      return null;
+    }
+
+    final fileOwner =
+        firstOwnerQuery.data!.transactions.edges.first.node.owner.address;
+    while (true) {
+      // Get a page of 100 transactions
+      final allFileEntitiesQuery = await _graphQLRetry.execute(
+        AllFileEntitiesWithIdQuery(
+          variables: AllFileEntitiesWithIdArguments(
+            fileId: fileId,
+            owner: fileOwner,
+            lastBlockHeight: lastBlockHeight,
+            after: cursor,
+          ),
+        ),
+      );
+      final queryEdges = allFileEntitiesQuery.data!.transactions.edges;
+      if (queryEdges.isEmpty) {
+        break;
+      }
+      for (var edge in queryEdges) {
+        final fileTx = edge.node;
+        final fileDataRes = await client.api.getSandboxedTx(fileTx.id);
+
+        try {
+          fileEntities.add(
+            await FileEntity.fromTransaction(
+              fileTx,
+              fileDataRes.bodyBytes,
+              fileKey: fileKey,
+            ),
+          );
+        } on EntityTransactionParseException catch (parseException) {
+          'Failed to parse transaction with id ${parseException.transactionId}'
+              .logError();
+        }
+      }
+
+      cursor = queryEdges.last.cursor;
+
+      if (!allFileEntitiesQuery.data!.transactions.pageInfo.hasNextPage) {
+        break;
+      }
+    }
+
+    return fileEntities.isEmpty ? null : fileEntities;
   }
 
   /// Returns the number of confirmations each specified transaction has as a map,
