@@ -20,7 +20,3 @@ task:
     - export GOOGLE_APPLICATION_CREDENTIALS="/root/.docker/firebase_id.json"
     - firebase use $PROJECT_ID
     - firebase deploy --only hosting --debug
-#- printf '%s\n' "$SERVICE_FB" > /harness/test.json
-# export GOOGLE_APPLICATION_CREDENTIALS="/harness/test.json"
-# firebase use $PROJECT_ID //test-791eb
-# firebase deploy --only hosting --debug
