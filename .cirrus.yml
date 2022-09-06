@@ -9,10 +9,14 @@ task:
     - flutter build web --profile
     - sed -i 's/main.dart.js/main.dart.js?version='"CIRRUS_BASE_SHA"'/' build/web/index.html
   environment:
-    GOOGLE_APPLICATION_CREDENTIALS: ENCRYPTED[5cf231c01c5e881dc24c381fe103cb2a988a7b850474f6d81ec70f29fa7e7a7cc7e64b93ac4ece850e99ab076909307a]
+    FIREBASE_ID: ENCRYPTED[5cf231c01c5e881dc24c381fe103cb2a988a7b850474f6d81ec70f29fa7e7a7cc7e64b93ac4ece850e99ab076909307a]
     PROJECT_ID: test-791eb
+  firebase_id_file:
+    path: /root/.docker/firebase_id.json
+    variable_name: FIREBASE_ID
   publish_script:
     - curl -sL https://firebase.tools | bash
+    - export GOOGLE_APPLICATION_CREDENTIALS="/root/.docker/firebase_id.json"
     - firebase use $PROJECT_ID
     - firebase deploy --only hosting --debug
 #- printf '%s\n' "$SERVICE_FB" > /harness/test.json
