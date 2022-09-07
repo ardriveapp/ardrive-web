@@ -3,10 +3,14 @@ import 'package:ardrive/components/wallet_switch_dialog.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/profile_auth/components/profile_auth_fail_screen.dart';
+import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:local_auth/local_auth.dart';
 
 import 'components/profile_auth_add_screen.dart';
 import 'components/profile_auth_loading_screen.dart';
@@ -48,6 +52,12 @@ class ProfileAuthPageState extends State<ProfileAuthPage> {
                 profileCubit: context.read<ProfileCubit>(),
                 profileDao: context.read<ProfileDao>(),
                 arweave: context.read<ArweaveService>(),
+                biometricAuthentication: BiometricAuthentication(
+                  LocalAuthentication(),
+                  SecureKeyValueStore(
+                    const FlutterSecureStorage(),
+                  ),
+                ),
                 context: context,
               ),
               child: BlocBuilder<ProfileAddCubit, ProfileAddState>(
