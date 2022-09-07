@@ -50,12 +50,6 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
           ? ProfileType.arConnect
           : ProfileType.json;
       checkBiometrics();
-      emit(
-        ProfileUnlockInitial(
-          username: _profile.username,
-          autoFocus: await _biometricAuthentication.isEnabled(),
-        ),
-      );
     }();
   }
 
@@ -95,9 +89,9 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
   }
 
   Future<void> checkBiometrics() async {
-    final store = await LocalKeyValueStore.getInstance();
-    final isEnabled = store.getBool('biometricEnabled');
-    if (isEnabled ?? false) {
+    emit(ProfileUnlockInitial(username: _profile.username, autoFocus: false));
+    final isEnabled = await _biometricAuthentication.isEnabled();
+    if (isEnabled) {
       unlockWithStoredPassword();
     }
   }
@@ -111,7 +105,12 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
       if (authenticated) {
         _login((await store.getString('password'))!);
       } else {
-        emit(ProfileUnlockInitial(username: _profile.username));
+        emit(
+          ProfileUnlockInitial(
+            username: _profile.username,
+            autoFocus: true,
+          ),
+        );
       }
     } catch (e) {
       if (e is BiometricPermissionException) {
@@ -122,7 +121,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
 
   void usePasswordLogin() {
     emit(
-      ProfileUnlockInitial(username: _profile.username),
+      ProfileUnlockInitial(username: _profile.username, autoFocus: true),
     );
   }
 
