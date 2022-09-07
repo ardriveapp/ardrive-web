@@ -18,7 +18,7 @@ class ProfileUnlockInitial extends ProfileUnlockState {
   final bool autoFocus;
 
   @override
-  List<Object?> get props => [username];
+  List<Object?> get props => [username, autoFocus];
 }
 
 class ProfileUnlockWithBiometrics extends ProfileUnlockState {}

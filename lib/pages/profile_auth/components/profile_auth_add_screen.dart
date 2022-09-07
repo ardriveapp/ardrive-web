@@ -251,11 +251,11 @@ class _BiometricToggleState extends State<BiometricToggle> {
 
                     store.putBool('biometricEnabled', true);
                     widget.onEnableBiometric?.call();
+                    setState(() {
+                      _isEnabled = true;
+                    });
                   }
                 } catch (e) {
-                  setState(() {
-                    _isEnabled = false;
-                  });
                   showBiometricPermissionDialog(context);
                 }
               } else {
@@ -264,6 +264,9 @@ class _BiometricToggleState extends State<BiometricToggle> {
                 store.putBool('biometricEnabled', false);
                 widget.onDisableBiometric?.call();
               }
+              setState(() {
+                _isEnabled = false;
+              });
             },
           );
         });

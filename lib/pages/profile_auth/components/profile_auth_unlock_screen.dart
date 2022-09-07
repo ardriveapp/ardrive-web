@@ -89,6 +89,7 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                       ),
                                     ),
                                     ReactiveTextField(
+                                        key: ValueKey(state.autoFocus),
                                         formControlName: 'password',
                                         autofocus: state.autoFocus,
                                         obscureText: true,
