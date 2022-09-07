@@ -254,6 +254,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
                     setState(() {
                       _isEnabled = true;
                     });
+                    return;
                   }
                 } catch (e) {
                   showBiometricPermissionDialog(context);
