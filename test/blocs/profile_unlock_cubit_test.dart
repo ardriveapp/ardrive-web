@@ -1,3 +1,5 @@
+@Tags(['broken'])
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/l11n/l11n.dart';

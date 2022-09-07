@@ -184,7 +184,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _analytics?.trackScreenEvent(
         screenName: "detailsPanel", eventName: "txPreview");
     return launchUrl(
-        Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'));
+      Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'),
+    );
   }
 
   void sortFolder({
