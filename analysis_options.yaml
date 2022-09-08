@@ -4,6 +4,11 @@ analyzer:
   exclude:
     - 'lib/services/arweave/graphql/**'
     - '**.g.dart'
+    - 'build/**'
+  language:
+    strict-casts: false
+    strict-inference: false
+    strict-raw-types: false
 linter:
   rules:
-
+    prefer_single_quotes: true

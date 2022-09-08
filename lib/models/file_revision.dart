@@ -35,8 +35,9 @@ extension FileEntityExtensions on FileEntity {
   /// Converts the entity to an instance of [FileRevisionsCompanion].
   ///
   /// This requires a `performedAction` to be specified.
-  FileRevisionsCompanion toRevisionCompanion(
-          {required String performedAction}) =>
+  FileRevisionsCompanion toRevisionCompanion({
+    required String performedAction,
+  }) =>
       FileRevisionsCompanion.insert(
         fileId: id!,
         driveId: driveId!,
@@ -50,6 +51,24 @@ extension FileEntityExtensions on FileEntity {
         dataContentType: Value(dataContentType),
         action: performedAction,
         bundledIn: Value(bundledIn),
+      );
+
+  FileRevision toRevision({
+    required String performedAction,
+  }) =>
+      FileRevision(
+        fileId: id!,
+        driveId: driveId!,
+        name: name!,
+        parentFolderId: parentFolderId!,
+        size: size!,
+        lastModifiedDate: lastModifiedDate ?? DateTime.now(),
+        metadataTxId: txId,
+        dataTxId: dataTxId!,
+        dateCreated: createdAt,
+        dataContentType: dataContentType,
+        action: performedAction,
+        bundledIn: bundledIn,
       );
 
   /// Returns the action performed on the file that lead to the new revision.
