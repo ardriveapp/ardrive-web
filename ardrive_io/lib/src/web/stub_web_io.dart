@@ -44,3 +44,31 @@ class FolderPicker {
     throw UnimplementedError();
   }
 }
+
+class WebFileSystemProvider implements MultiFileProvider {
+  WebFileSystemProvider(
+    FolderPicker folderPicker,
+    IOFileAdapter ioFileAdapter,
+    IOFolderAdapter ioFolderAdapter,
+  );
+
+  @override
+  Future<IOFolder> getFolder() {
+    // TODO: implement getFolder
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<IOFile> pickFile(
+      {List<String>? allowedExtensions, required FileSource fileSource}) {
+    // TODO: implement pickFile
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<IOFile>> pickMultipleFiles(
+      {List<String>? allowedExtensions, required FileSource fileSource}) {
+    // TODO: implement pickMultipleFiles
+    throw UnimplementedError();
+  }
+}

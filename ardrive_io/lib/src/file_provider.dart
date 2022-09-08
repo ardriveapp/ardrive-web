@@ -2,7 +2,8 @@ import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/io_exception.dart';
-import 'package:ardrive_io/src/web/web_io.dart';
+import 'web/stub_web_io.dart' // Stub implementation
+    if (dart.library.html) 'web/web_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
