@@ -58,7 +58,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                         const SizedBox(height: 16),
                         ReactiveTextField(
                           formControlName: 'username',
-                          autofocus: true,
+                          autofocus: false,
                           autofillHints: const [AutofillHints.username],
                           decoration: InputDecoration(
                             labelText: appLocalizationsOf(context).username,
