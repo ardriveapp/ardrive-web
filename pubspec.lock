@@ -558,6 +558,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "4.0.1"
+  image:
+    dependency: transitive
+    description:
+      name: image
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.2.0"
   intersperse:
     dependency: "direct main"
     description:
@@ -732,7 +739,7 @@ packages:
       name: path_drawing
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.8.1"
+    version: "1.0.1"
   path_parsing:
     dependency: transitive
     description:

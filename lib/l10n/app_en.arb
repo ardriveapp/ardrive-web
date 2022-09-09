@@ -1368,8 +1368,8 @@
   "@invalidWalletFile": {
     "description": "Wallet file is not a json or a text"
   },
-  "pleaseSelectAJsonOrTxtFile": "The file you have chosen is invalid. Please select a json or txt file.",
-  "@pleaseSelectAJsonOrTxtFile": {
+  "invalidWalletFileDescription": "The file you have chosen is invalid.",
+  "@invalidWalletFileDescription": {
     "description": "Invalid wallet file description"
   }
 }
