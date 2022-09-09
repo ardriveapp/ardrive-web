@@ -6,6 +6,7 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -73,7 +74,9 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
     final ardriveIO = ArDriveIO();
 
     final walletFile = await ardriveIO.pickFile(
-      allowedExtensions: Platform.isAndroid ? null : ['text', 'json'],
+      // some Platform properties are crashing on web - https://github.com/flutter/flutter/issues/50845
+      allowedExtensions:
+          !kIsWeb && Platform.isAndroid ? null : ['text', 'json'],
     );
 
     if (!_allowedWalletMimeTypes.contains(walletFile.contentType)) {
