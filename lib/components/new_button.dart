@@ -9,26 +9,36 @@ import 'package:flutter/material.dart';
 
 Widget buildNewButton(
   BuildContext context, {
-  // required bool hasMinBalance,
   required Widget button,
   required DrivesState drivesState,
   required ProfileState profileState,
   required DriveDetailState driveDetailState,
-  String? title,
+  // String? title,
   bool center = false,
 }) {
   final width = MediaQuery.of(context).size.width;
-  final halfWidth = width / 2;
+  // TODO: double check if it's OK to use this context, if not then build twice
+  final menuItems = _buildItems(
+    context,
+    driveDetailState: driveDetailState,
+    profileState: profileState,
+    drivesState: drivesState,
+    // title: title,
+  );
+  double menuHeight = 0;
+  for (var element in menuItems) {
+    menuHeight += element.height;
+  }
+  const menuMargin = 16.0;
+  final offset = center ? Offset(menuMargin, -menuHeight - 80) : Offset.zero;
+  final constraints = center
+      ? BoxConstraints.tightForFinite(width: width - 2 * menuMargin)
+      : null;
   return PopupMenuButton<Function>(
-    offset: center ? Offset(-halfWidth, 0) : Offset.zero,
+    constraints: constraints,
+    offset: offset,
     onSelected: (callback) => callback(context),
-    itemBuilder: (context) => _buildItems(
-      context,
-      driveDetailState: driveDetailState,
-      profileState: profileState,
-      drivesState: drivesState,
-      title: title,
-    ),
+    itemBuilder: (context) => menuItems,
     child: button,
   );
 }
@@ -38,17 +48,33 @@ List<PopupMenuEntry<Function>> _buildItems(
   required DrivesState drivesState,
   required ProfileState profileState,
   required DriveDetailState driveDetailState,
-  String? title,
+  // String? title,
 }) {
   if (profileState.runtimeType == ProfileLoggedIn) {
     final minimumWalletBalance = BigInt.from(10000000);
     final profile = profileState as ProfileLoggedIn;
     final hasMinBalance = profile.walletBalance >= minimumWalletBalance;
     return [
-      if (title != null)
-        PopupMenuItem(
-          child: Text(title),
-        ),
+      // if (title != null)
+      //   PopupMenuItem(
+      //     enabled: false,
+      //     padding: EdgeInsets.zero,
+      //     child: Container(
+      //       color: const Color.fromARGB(255, 220, 220, 220),
+      //       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      //       child: ListTile(
+      //         title: RichText(
+      //           text: TextSpan(
+      //             text: title,
+      //             style: const TextStyle(
+      //               fontSize: 17.0,
+      //               color: Colors.black,
+      //             ),
+      //           ),
+      //         ),
+      //       ),
+      //     ),
+      //   ),
       if (driveDetailState is DriveDetailLoadSuccess) ...{
         _buildNewFolderItem(context, driveDetailState, hasMinBalance),
         const PopupMenuDivider(key: Key('divider-1')),
@@ -67,10 +93,11 @@ List<PopupMenuEntry<Function>> _buildItems(
     ];
   } else {
     return [
-      if (title != null)
-        PopupMenuItem(
-          child: Text(title),
-        ),
+      // if (title != null)
+      //   PopupMenuItem(
+      //     enabled: false,
+      //     child: Text(title),
+      //   ),
       if (drivesState is DrivesLoadSuccess) ...{
         PopupMenuItem(
           value: (context) => attachDrive(context: context),
@@ -84,7 +111,10 @@ List<PopupMenuEntry<Function>> _buildItems(
 }
 
 PopupMenuEntry<Function> _buildNewFolderItem(
-    context, DriveDetailLoadSuccess state, bool hasMinBalance) {
+  context,
+  DriveDetailLoadSuccess state,
+  bool hasMinBalance,
+) {
   return _buildMenuItemTile(
     context: context,
     isEnabled: state.hasWritePermissions && hasMinBalance,
@@ -101,7 +131,10 @@ PopupMenuEntry<Function> _buildNewFolderItem(
 }
 
 PopupMenuEntry<Function> _buildUploadFileItem(
-    context, DriveDetailLoadSuccess state, bool hasMinBalance) {
+  context,
+  DriveDetailLoadSuccess state,
+  bool hasMinBalance,
+) {
   return _buildMenuItemTile(
     context: context,
     isEnabled: state.hasWritePermissions && hasMinBalance,
@@ -119,7 +152,10 @@ PopupMenuEntry<Function> _buildUploadFileItem(
 }
 
 PopupMenuEntry<Function> _buildUploadFolderItem(
-    context, DriveDetailLoadSuccess state, bool hasMinBalance) {
+  context,
+  DriveDetailLoadSuccess state,
+  bool hasMinBalance,
+) {
   return _buildMenuItemTile(
     context: context,
     isEnabled: state.hasWritePermissions && hasMinBalance,
@@ -146,7 +182,10 @@ PopupMenuEntry<Function> _buildAttachDrive(BuildContext context) {
 }
 
 PopupMenuEntry<Function> _buildCreateDrive(
-    BuildContext context, DrivesLoadSuccess drivesState, bool hasMinBalance) {
+  BuildContext context,
+  DrivesLoadSuccess drivesState,
+  bool hasMinBalance,
+) {
   return _buildMenuItemTile(
     context: context,
     isEnabled: drivesState.canCreateNewDrive && hasMinBalance,
@@ -159,7 +198,10 @@ PopupMenuEntry<Function> _buildCreateDrive(
 }
 
 PopupMenuEntry<Function> _buildCreateManifestItem(
-    BuildContext context, DriveDetailLoadSuccess state, bool hasMinBalance) {
+  BuildContext context,
+  DriveDetailLoadSuccess state,
+  bool hasMinBalance,
+) {
   return _buildMenuItemTile(
     context: context,
     isEnabled: !state.driveIsEmpty && hasMinBalance,

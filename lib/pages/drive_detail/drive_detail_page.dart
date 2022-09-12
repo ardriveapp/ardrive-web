@@ -184,20 +184,19 @@ class DriveDetailPage extends StatelessWidget {
                                           right: 16,
                                           child: buildNewButton(
                                             context,
-                                            title: 'NEW',
                                             drivesState: drivesState,
                                             profileState: profileState,
                                             driveDetailState: driveDetailState,
+                                            center: true,
                                             button: const FloatingActionButton
                                                 .extended(
                                               shape: CircleBorder(),
                                               label: Text(
                                                 '+',
-                                                style: TextStyle(fontSize: 32),
+                                                style: TextStyle(fontSize: 48),
                                               ),
                                               onPressed: null,
                                             ),
-                                            // TODO: localize this string
                                           ),
                                         ),
                                       ),
