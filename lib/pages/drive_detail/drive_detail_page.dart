@@ -187,7 +187,7 @@ class DriveDetailPage extends StatelessWidget {
                                             drivesState: drivesState,
                                             profileState: profileState,
                                             driveDetailState: driveDetailState,
-                                            center: true,
+                                            isPlusButton: true,
                                             button: const FloatingActionButton
                                                 .extended(
                                               shape: CircleBorder(),

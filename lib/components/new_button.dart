@@ -14,7 +14,7 @@ Widget buildNewButton(
   required ProfileState profileState,
   required DriveDetailState driveDetailState,
   // String? title,
-  bool center = false,
+  bool isPlusButton = false,
 }) {
   final width = MediaQuery.of(context).size.width;
   // TODO: double check if it's OK to use this context, if not then build twice
@@ -30,17 +30,186 @@ Widget buildNewButton(
     menuHeight += element.height;
   }
   const menuMargin = 16.0;
-  final offset = center ? Offset(menuMargin, -menuHeight - 80) : Offset.zero;
-  final constraints = center
+  final offset =
+      isPlusButton ? Offset(menuMargin, -menuHeight - 80) : Offset.zero;
+  final constraints = isPlusButton
       ? BoxConstraints.tightForFinite(width: width - 2 * menuMargin)
       : null;
-  return PopupMenuButton<Function>(
+  return PopupMenuButtonRotable<Function>(
     constraints: constraints,
     offset: offset,
     onSelected: (callback) => callback(context),
     itemBuilder: (context) => menuItems,
+    rotable: isPlusButton,
     child: button,
   );
+}
+
+class PopupMenuButtonRotable<T> extends StatefulWidget {
+  final bool _rotable;
+
+  final PopupMenuItemBuilder<T> itemBuilder;
+  final T? initialValue;
+  final PopupMenuItemSelected<T>? onSelected;
+  final PopupMenuCanceled? onCanceled;
+  final String? tooltip;
+  final double? elevation;
+  final EdgeInsetsGeometry padding;
+  final double? splashRadius;
+  final Widget? child;
+  final Widget? icon;
+  final Offset offset;
+  final bool enabled;
+  final ShapeBorder? shape;
+  final Color? color;
+  final bool? enableFeedback;
+  final double? iconSize;
+  final BoxConstraints? constraints;
+  final PopupMenuPosition position;
+
+  const PopupMenuButtonRotable({
+    bool rotable = false,
+    Key? key,
+    required this.itemBuilder,
+    this.initialValue,
+    this.onSelected,
+    this.onCanceled,
+    this.tooltip,
+    this.elevation,
+    this.padding = const EdgeInsets.all(8.0),
+    this.child,
+    this.splashRadius,
+    this.icon,
+    this.iconSize,
+    this.offset = Offset.zero,
+    this.enabled = true,
+    this.shape,
+    this.color,
+    this.enableFeedback,
+    this.constraints,
+    this.position = PopupMenuPosition.over,
+  })  : _rotable = rotable,
+        super(key: key);
+
+  @override
+  PopupMenuButtonRotableState<T> createState() =>
+      PopupMenuButtonRotableState<T>();
+}
+
+class PopupMenuButtonRotableState<T> extends State<PopupMenuButtonRotable<T>> {
+  bool _opened = false;
+
+  final double _kDefaultIconSize = 24.0;
+
+  void showButtonMenu() {
+    setState(() {
+      _opened = true;
+      print('OPENED!');
+    });
+    final PopupMenuThemeData popupMenuTheme = PopupMenuTheme.of(context);
+    final RenderBox button = context.findRenderObject()! as RenderBox;
+    final RenderBox overlay =
+        Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
+    final Offset offset;
+    switch (widget.position) {
+      case PopupMenuPosition.over:
+        offset = widget.offset;
+        break;
+      case PopupMenuPosition.under:
+        offset =
+            Offset(0.0, button.size.height - (widget.padding.vertical / 2)) +
+                widget.offset;
+        break;
+    }
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(offset, ancestor: overlay),
+        button.localToGlobal(button.size.bottomRight(Offset.zero) + offset,
+            ancestor: overlay),
+      ),
+      Offset.zero & overlay.size,
+    );
+    final List<PopupMenuEntry<T>> items = widget.itemBuilder(context);
+    // Only show the menu if there is something to show
+    if (items.isNotEmpty) {
+      showMenu<T?>(
+        context: context,
+        elevation: widget.elevation ?? popupMenuTheme.elevation,
+        items: items,
+        initialValue: widget.initialValue,
+        position: position,
+        shape: widget.shape ?? popupMenuTheme.shape,
+        color: widget.color ?? popupMenuTheme.color,
+        constraints: widget.constraints,
+      ).then<void>((T? newValue) {
+        setState(() {
+          _opened = false;
+          print('CLOSED!');
+        });
+        if (!mounted) return null;
+        if (newValue == null) {
+          widget.onCanceled?.call();
+          return null;
+        }
+        widget.onSelected?.call(newValue);
+      });
+    }
+  }
+
+  bool get _canRequestFocus {
+    final NavigationMode mode = MediaQuery.maybeOf(context)?.navigationMode ??
+        NavigationMode.traditional;
+    switch (mode) {
+      case NavigationMode.traditional:
+        return widget.enabled;
+      case NavigationMode.directional:
+        return true;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final IconThemeData iconTheme = IconTheme.of(context);
+    final bool enableFeedback = widget.enableFeedback ??
+        PopupMenuTheme.of(context).enableFeedback ??
+        true;
+
+    assert(debugCheckHasMaterialLocalizations(context));
+
+    Widget w;
+
+    if (widget.child != null) {
+      w = Tooltip(
+        message:
+            widget.tooltip ?? MaterialLocalizations.of(context).showMenuTooltip,
+        child: InkWell(
+          onTap: widget.enabled ? showButtonMenu : null,
+          canRequestFocus: _canRequestFocus,
+          radius: widget.splashRadius,
+          enableFeedback: enableFeedback,
+          child: widget.child,
+        ),
+      );
+    } else {
+      w = IconButton(
+        icon: widget.icon ?? Icon(Icons.adaptive.more),
+        padding: widget.padding,
+        splashRadius: widget.splashRadius,
+        iconSize: widget.iconSize ?? iconTheme.size ?? _kDefaultIconSize,
+        tooltip:
+            widget.tooltip ?? MaterialLocalizations.of(context).showMenuTooltip,
+        onPressed: widget.enabled ? showButtonMenu : null,
+        enableFeedback: enableFeedback,
+      );
+    }
+
+    final double turns = widget._rotable && _opened ? .12 : 0;
+    return AnimatedRotation(
+      turns: turns,
+      duration: const Duration(milliseconds: 250),
+      child: w,
+    );
+  }
 }
 
 List<PopupMenuEntry<Function>> _buildItems(
