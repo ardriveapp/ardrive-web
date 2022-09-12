@@ -191,9 +191,9 @@ class DriveDetailPage extends StatelessWidget {
                                             button: const FloatingActionButton
                                                 .extended(
                                               shape: CircleBorder(),
-                                              label: Text(
-                                                '+',
-                                                style: TextStyle(fontSize: 48),
+                                              label: Icon(
+                                                Icons.add,
+                                                size: 40,
                                               ),
                                               onPressed: null,
                                             ),
