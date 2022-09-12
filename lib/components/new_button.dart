@@ -206,7 +206,8 @@ class PopupMenuButtonRotableState<T> extends State<PopupMenuButtonRotable<T>> {
     final double turns = widget._rotable && _opened ? .12 : 0;
     return AnimatedRotation(
       turns: turns,
-      duration: const Duration(milliseconds: 250),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.elasticIn,
       child: w,
     );
   }
