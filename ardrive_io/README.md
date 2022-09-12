@@ -5,7 +5,7 @@ Custom library to perform I/O operations at ArDrive Web
 The following methods perform the I/O operations supported in this package:
 
 ### Pick a folder, a file or multiple files from the native storage
-- pickFile() 
+- pickFile()
 - pickFiles()
 - pickFolder()
 
@@ -49,7 +49,7 @@ final arDriveIO = ArDriveIO();
 final file = await arDriveIO.pickFile(allowedExtensions: ['json']);
 ```
 
-To pick a folder you just need to call the `pickFolder()` function 
+To pick a folder you just need to call the `pickFolder()` function
 
 ```dart
 final arDriveIO = ArDriveIO();
