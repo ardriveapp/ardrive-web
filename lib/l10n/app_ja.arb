@@ -375,7 +375,7 @@
       }
     }
   },
-  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{重複する１個のファイルが見つかりました} =other{重複する複数のファイルが見つかりました}}\"",
+  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{重複する１個のファイルが見つかりました} =other{重複する複数のファイルが見つかりました}}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -888,7 +888,7 @@
   "@noDeleteButton": {
     "description": "Uploaded items cannot be deleted"
   },
-  "noDrives": "個人用または接続されたドライブがありません。「新規作成」ボタンをクリックして,\n追加してください！\n",
+  "noDrives": "個人用または接続されたドライブがありません。\n「新規作成」ボタンをクリックして, 追加してください！",
   "@noDrives": {
     "description": "Text for when the wallet has no on-chain drives to display"
   },
