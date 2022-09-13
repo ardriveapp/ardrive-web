@@ -190,6 +190,7 @@ class DriveDetailPage extends StatelessWidget {
                                             isPlusButton: true,
                                             button: const FloatingActionButton
                                                 .extended(
+                                              extendedPadding: EdgeInsets.zero,
                                               shape: CircleBorder(),
                                               label: Icon(
                                                 Icons.add,

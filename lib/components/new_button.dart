@@ -29,9 +29,8 @@ Widget buildNewButton(
   for (var element in menuItems) {
     menuHeight += element.height;
   }
-  const menuMargin = 16.0;
-  final offset =
-      isPlusButton ? Offset(menuMargin, -menuHeight - 80) : Offset.zero;
+  const menuMargin = 2 * 16.0 + 2;
+  final offset = isPlusButton ? Offset(-2, -menuHeight - 80) : Offset.zero;
   final constraints = isPlusButton
       ? BoxConstraints.tightForFinite(width: width - 2 * menuMargin)
       : null;
@@ -104,7 +103,6 @@ class PopupMenuButtonRotableState<T> extends State<PopupMenuButtonRotable<T>> {
   void showButtonMenu() {
     setState(() {
       _opened = true;
-      print('OPENED!');
     });
     final PopupMenuThemeData popupMenuTheme = PopupMenuTheme.of(context);
     final RenderBox button = context.findRenderObject()! as RenderBox;
@@ -144,7 +142,6 @@ class PopupMenuButtonRotableState<T> extends State<PopupMenuButtonRotable<T>> {
       ).then<void>((T? newValue) {
         setState(() {
           _opened = false;
-          print('CLOSED!');
         });
         if (!mounted) return null;
         if (newValue == null) {
