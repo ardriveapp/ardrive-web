@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/components.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -70,14 +74,44 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
     final ardriveIO = ArDriveIO();
 
     final walletFile = await ardriveIO.pickFile(
-        allowedExtensions: ['json'], fileSource: FileSource.fileSystem);
+      allowedExtensions: null,
+      fileSource: FileSource.fileSystem,
+    );
 
-    await context
-        .read<ProfileAddCubit>()
-        .pickWallet(await walletFile.readAsString());
+    int walletSize = await walletFile.length;
+    int maxWalletSizeInBits = 10000;
+
+    if (walletSize > maxWalletSizeInBits) {
+      _showInvalidWalletFileDialog(context);
+      return;
+    }
+
+    Wallet wallet;
+
+    try {
+      wallet = Wallet.fromJwk(json.decode(await walletFile.readAsString()));
+    } catch (e) {
+      _showInvalidWalletFileDialog(context);
+      return;
+    }
+
+    await context.read<ProfileAddCubit>().pickWallet(wallet);
   }
 
   void _pickWalletArconnect(BuildContext context) async {
     await context.read<ProfileAddCubit>().pickWalletFromArconnect();
+  }
+
+  void _showInvalidWalletFileDialog(BuildContext context) {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return AppDialog(
+            title: appLocalizationsOf(context).invalidWalletFile,
+            content: Text(
+              appLocalizationsOf(context).invalidWalletFileDescription,
+            ),
+          );
+        });
   }
 }
