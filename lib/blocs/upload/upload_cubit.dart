@@ -127,11 +127,13 @@ class UploadCubit extends Cubit<UploadState> {
     ];
 
     if (tooLargeFiles.isNotEmpty) {
-      emit(UploadFileTooLarge(
-        hasFilesToUpload: files.length > tooLargeFiles.length,
-        tooLargeFileNames: tooLargeFiles,
-        isPrivate: _targetDrive.isPrivate,
-      ));
+      emit(
+        UploadFileTooLarge(
+          hasFilesToUpload: files.length > tooLargeFiles.length,
+          tooLargeFileNames: tooLargeFiles,
+          isPrivate: _targetDrive.isPrivate,
+        ),
+      );
       return;
     }
 
@@ -347,12 +349,13 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
-  void removeBigFiles() async {
+  Future<void> skipLargeFiles() async {
     for (final file in files) {
       if (await file.ioFile.length > sizeLimit) {
         files.remove(file);
       }
     }
+    checkConflicts();
   }
 
   void _removeFilesWithFileNameConflicts() {
