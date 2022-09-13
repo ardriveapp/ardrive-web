@@ -349,13 +349,13 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
-  Future<void> skipLargeFiles() async {
+  Future<void> skipLargeFilesAndCheckForConflicts() async {
     for (final file in files) {
       if (await file.ioFile.length > sizeLimit) {
         files.remove(file);
       }
     }
-    checkConflicts();
+    await checkConflicts();
   }
 
   void _removeFilesWithFileNameConflicts() {
