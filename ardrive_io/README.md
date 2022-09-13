@@ -1,6 +1,6 @@
 
 # ArDriveIO
-Custom library to perform I/O operations at ArDrive Web
+Custom library to perform I/O operations for ArDrive Web
 ## Features
 The following methods perform the I/O operations supported in this package:
 
