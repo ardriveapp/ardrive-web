@@ -56,9 +56,10 @@ class MobileIO implements ArDriveIO {
   Future<FilePickerResult> _pickFile(
       {List<String>? allowedExtensions, bool allowMultiple = false}) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-        allowedExtensions: allowedExtensions,
-        allowMultiple: allowMultiple,
-        type: allowedExtensions == null ? FileType.any : FileType.custom);
+      allowedExtensions: allowedExtensions,
+      allowMultiple: allowMultiple,
+      type: allowedExtensions == null ? FileType.any : FileType.custom,
+    );
 
     if (result != null) {
       return result;
