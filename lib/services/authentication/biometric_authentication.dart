@@ -3,12 +3,7 @@ import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
-// TODO(@thiagocarvalhodev): should we keep this?
-abstract class AuthenticationService {
-  Future<bool> authenticate();
-}
-
-class BiometricAuthentication implements AuthenticationService {
+class BiometricAuthentication {
   BiometricAuthentication(
     this._auth,
     this._secureStore,

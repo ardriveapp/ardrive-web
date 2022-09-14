@@ -7,7 +7,6 @@ import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/utils/key_value_store.dart';
-import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -75,16 +74,6 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
 
     final String password = form.control('password').value;
 
-    final store = await LocalKeyValueStore.getInstance();
-
-    final isEnabled = store.getBool('biometricEnabled');
-
-    if (isEnabled ?? false) {
-      final secureStorage = SecureKeyValueStore(const FlutterSecureStorage());
-
-      secureStorage.putString('password', password);
-    }
-
     await _login(password);
   }
 
@@ -129,6 +118,14 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     try {
       //Store profile key so other private entities can be created and loaded
       await _profileDao.loadDefaultProfile(password);
+
+      final isEnabled = await _biometricAuthentication.isEnabled();
+
+      if (isEnabled) {
+        final secureStorage = SecureKeyValueStore(const FlutterSecureStorage());
+
+        secureStorage.putString('password', password);
+      }
     } on ProfilePasswordIncorrectException catch (_) {
       form
           .control('password')
