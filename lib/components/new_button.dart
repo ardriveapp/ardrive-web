@@ -215,33 +215,12 @@ List<PopupMenuEntry<Function>> _buildItems(
   required DrivesState drivesState,
   required ProfileState profileState,
   required DriveDetailState driveDetailState,
-  // String? title,
 }) {
   if (profileState.runtimeType == ProfileLoggedIn) {
     final minimumWalletBalance = BigInt.from(10000000);
     final profile = profileState as ProfileLoggedIn;
     final hasMinBalance = profile.walletBalance >= minimumWalletBalance;
     return [
-      // if (title != null)
-      //   PopupMenuItem(
-      //     enabled: false,
-      //     padding: EdgeInsets.zero,
-      //     child: Container(
-      //       color: const Color.fromARGB(255, 220, 220, 220),
-      //       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      //       child: ListTile(
-      //         title: RichText(
-      //           text: TextSpan(
-      //             text: title,
-      //             style: const TextStyle(
-      //               fontSize: 17.0,
-      //               color: Colors.black,
-      //             ),
-      //           ),
-      //         ),
-      //       ),
-      //     ),
-      //   ),
       if (driveDetailState is DriveDetailLoadSuccess) ...{
         _buildNewFolderItem(context, driveDetailState, hasMinBalance),
         const PopupMenuDivider(key: Key('divider-1')),
@@ -260,11 +239,6 @@ List<PopupMenuEntry<Function>> _buildItems(
     ];
   } else {
     return [
-      // if (title != null)
-      //   PopupMenuItem(
-      //     enabled: false,
-      //     child: Text(title),
-      //   ),
       if (drivesState is DrivesLoadSuccess) ...{
         PopupMenuItem(
           value: (context) => attachDrive(context: context),
