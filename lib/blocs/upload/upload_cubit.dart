@@ -258,7 +258,7 @@ class UploadCubit extends Cubit<UploadState> {
       conflictingFiles: conflictingFiles,
       foldersByPath: foldersByPath,
     );
-    
+
     try {
       final costEstimate = await CostEstimate.create(
         uploadPlan: uploadPlan,
@@ -353,7 +353,8 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> skipLargeFilesAndCheckForConflicts() async {
     emit(UploadPreparationInProgress());
     for (final file in files) {
-      if (await file.ioFile.length > sizeLimit) {
+      final fileSize = await file.ioFile.length;
+      if (fileSize > sizeLimit) {
         files.remove(file);
       }
     }
