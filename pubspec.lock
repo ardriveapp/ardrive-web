@@ -379,6 +379,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "8.1.1"
+  flutter_downloader:
+    dependency: transitive
+    description:
+      name: flutter_downloader
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.8.3+2"
   flutter_driver:
     dependency: "direct dev"
     description: flutter

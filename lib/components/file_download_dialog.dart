@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/progress_bar.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -82,6 +83,74 @@ class FileDownloadDialog extends StatelessWidget {
               actions: [
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context),
+                  child: Text(appLocalizationsOf(context).cancel),
+                ),
+              ],
+            );
+          }
+          // TODO(@thiagocarvalhodev): Localize and reuse the component
+          else if (state is FileDownloadFinishedWithSuccess) {
+            return AppDialog(
+              dismissable: false,
+              title: 'Download finished!',
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    state.fileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  // subtitle: Text(filesize(state.totalByteCount)),
+                  // trailing: Text('progress: ${state.progress}'),
+                ),
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () {
+                    context.read<FileDownloadCubit>().abortDownload();
+                    Navigator.pop(context);
+                  },
+                  child: Text(appLocalizationsOf(context).doneEmphasized),
+                ),
+              ],
+            );
+          } else if (state is FileDownloadWithProgress) {
+            return AppDialog(
+              dismissable: false,
+              title: appLocalizationsOf(context).downloadingFile,
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        state.fileName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(filesize(
+                              (state.fileSize * (state.progress / 100))
+                                  .round()) +
+                          ' / ' +
+                          filesize(state.fileSize)),
+                    ),
+                    ProgressBar(
+                        percentage: (context.read<FileDownloadCubit>()
+                                as ProfileFileDownloadCubit)
+                            .downloadProgress)
+                  ],
+                ),
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () {
+                    context.read<FileDownloadCubit>().abortDownload();
+                    Navigator.pop(context);
+                  },
                   child: Text(appLocalizationsOf(context).cancel),
                 ),
               ],
