@@ -1,0 +1,50 @@
+# Update fastlane
+update_fastlane
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Ad-hoc build and distribution to firebase"
+  lane :adhoc do
+    # Setup keychain if CI
+    setup_ci if ENV['CI']
+
+    # Download and install adhoc certificate and profile
+    match(
+      type: "adhoc",
+      app_identifier: "io.ardrive.app"
+    )
+
+    # Flutter build
+    Dir.chdir "../.." do
+      sh("flutter", "clean")
+      sh("flutter", "pub", "get")
+      sh("flutter", "pub", "run", "build_runner", "build", "--delete-conflicting-outputs")
+    end
+
+    # Pod install
+    sh("pod", "install")
+
+    # Set PR number as build number
+    increment_build_number(
+      build_number: ENV['BUILD_NUMBER']
+    )
+
+    # Build iOS project and generate an ad-hoc signed ipa
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      include_bitcode: true,
+      export_method: "ad-hoc",
+      clean: true,
+    )
+
+    # Distribute to Firebase
+    firebase_app_distribution(
+      app: "1:305132849030:ios:06ea33a95a2e0d42ffce07",
+      release_notes: ENV['RELEASE_NOTES'],
+      service_credentials_file: ENV['FIREBASE_JSON'],
+      groups: "Testers"
+    )
+  end
+end
