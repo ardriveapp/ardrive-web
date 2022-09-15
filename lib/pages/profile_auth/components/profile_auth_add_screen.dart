@@ -199,7 +199,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
   @override
   void initState() {
     super.initState();
-    _isBiometryEnabled();
+    _isBiometricsEnabled();
   }
 
   final auth = BiometricAuthentication(
@@ -218,7 +218,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
     return auth.checkDeviceSupport();
   }
 
-  Future<void> _isBiometryEnabled() async {
+  Future<void> _isBiometricsEnabled() async {
     final store = await LocalKeyValueStore.getInstance();
     setState(() {
       _isEnabled = store.getBool('biometricEnabled') ?? false;
