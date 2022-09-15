@@ -210,10 +210,11 @@ class _BiometricToggleState extends State<BiometricToggle> {
   );
 
   bool _isEnabled = false;
-  String get biometricText =>
-      _isEnabled ? 'Biometric Login Enabled' : 'Biometric Login Disabled';
+  String get biometricText => _isEnabled
+      ? appLocalizationsOf(context).biometricLoginEnabled
+      : appLocalizationsOf(context).biometricLoginDisabled;
 
-  Future<bool> _checkBiometricSupport() async {
+  Future<bool> _checkBiometricsSupport() async {
     return auth.checkDeviceSupport();
   }
 
@@ -227,7 +228,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
-        future: _checkBiometricSupport(),
+        future: _checkBiometricsSupport(),
         builder: (context, snapshot) {
           final hasSupport = snapshot.data;
           if (hasSupport == null || !hasSupport) {

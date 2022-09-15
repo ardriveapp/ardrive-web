@@ -1,5 +1,6 @@
 import 'package:app_settings/app_settings.dart';
 import 'package:ardrive/components/app_dialog.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 
 showBiometricPermissionDialog(
@@ -10,14 +11,12 @@ showBiometricPermissionDialog(
       context: context,
       builder: (context) {
         return AppDialog(
-          title: 'Enable Biometric Login',
+          title: appLocalizationsOf(context).enableBiometricLogin,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // TODO(@thiagocarvalhodev): Localize
-              Text(
-                'Biometric authentication has been disabled. Please enable it in Settings.',
-              ),
+              Text(appLocalizationsOf(context).enableBiometricsOnSettings),
               const SizedBox(
                 height: 24,
               ),
@@ -26,7 +25,7 @@ showBiometricPermissionDialog(
                   AppSettings.openAppSettings();
                 },
                 // TODO(@thiagocarvalhodev): Localize
-                child: const Text('Go to Settings'),
+                child: Text(appLocalizationsOf(context).goToDeviceSettings),
               ),
               TextButton(
                 onPressed: () {
@@ -34,7 +33,7 @@ showBiometricPermissionDialog(
 
                   Navigator.pop(context);
                 },
-                child: Text('Cancel'),
+                child: Text(appLocalizationsOf(context).cancel),
               )
             ],
           ),

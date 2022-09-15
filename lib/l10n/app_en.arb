@@ -1363,5 +1363,25 @@
   "yourUploadFailed": "Your upload failed. You have not been charged for the failed attempt.",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
+  },
+  "biometricLoginEnabled": "Biometric Login Enabled",
+  "@biometricLoginEnabled": {
+    "description": "Biometric Login is Enabled."
+  },
+  "biometricLoginDisabled": "Biometric Login Disabled",
+  "@biometricLoginDisabled": {
+    "description": "Biometric Login is Disabled."
+  },
+  "enableBiometricLogin": "Enable Biometric Login",
+  "@enableBiometricLogin": {
+    "description": "Enable Biometric Login"
+  },
+  "enableBiometricsOnSettings": "Biometric authentication has been disabled. Please enable it in Settings.",
+  "@enableBiometricsOnSettings": {
+    "description": "Open settings to enable biometric"
+  },
+  "goToDeviceSettings": "Go to Settings",
+  "@goToDeviceSettings": {
+    "description": "Go to device settings"
   }
 }
