@@ -40,20 +40,20 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 ----
 
 
-## iOS
+## Android
 
-### ios build_adhoc
+### android build_apk
 
 ```sh
-[bundle exec] fastlane ios build_adhoc
+[bundle exec] fastlane android build_apk
 ```
 
 
 
-### ios deploy_feature_branch
+### android deploy_feature_branch
 
 ```sh
-[bundle exec] fastlane ios deploy_feature_branch
+[bundle exec] fastlane android deploy_feature_branch
 ```
 
 

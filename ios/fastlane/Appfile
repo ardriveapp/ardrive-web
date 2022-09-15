@@ -3,6 +3,3 @@ apple_id("ci@ar.io") # Your Apple Developer Portal username
 
 itc_team_id("122681570") # App Store Connect Team ID
 team_id("CYW22YFP67") # Developer Portal Team ID
-
-# For more information about the Appfile, see:
-#     https://docs.fastlane.tools/advanced/#appfile

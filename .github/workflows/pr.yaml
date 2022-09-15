@@ -1,0 +1,124 @@
+name: 'PR build and deploy'
+on:
+  pull_request:
+    branches-ignore:
+      - gh-pages
+      - master
+
+env:
+  BUILD_NUMBER: ${{ github.run_number }}
+  RELEASE_NOTES: ${{ github.event.pull_request.title }} - ${{ github.sha }}
+  FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      # Install FLutter
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.0.5'
+          channel: 'stable'
+
+      - name: Build app
+        run: |
+          flutter pub get
+          flutter pub run build_runner build --delete-conflicting-outputs
+          flutter config --enable-web
+          flutter build web --release
+
+      # JS files cache invalidation
+      - name: main.dart.js cache invalidation
+        run: |
+          sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
+
+      # Disribute to Firebase
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
+          expires: 14d
+
+  ios:
+    runs-on: macos-latest
+    steps:
+      # Checkout
+      - uses: actions/checkout@v3
+
+      # Install Ruby
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+
+      # Install Flutter
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.0.5'
+          channel: 'stable'
+
+      - name: Set FIREBASE_JSON env var
+        run: |
+          echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
+
+      - name: Save Firebase Service Account json
+        run: |
+          echo -n "$FIREBASE_SERVICE_ACCOUNT_JSON" >> $FIREBASE_JSON
+
+      - name: Install fastlane and Cocoapods
+        working-directory: ./ios
+        run: |
+          bundle install
+
+      - name: Build iOS with fastlane
+        env:
+          MATCH_PASSWORD: ${{ secrets.FASTLANE_MATCH_PASSWORD }}
+          MATCH_GIT_PRIVATE_KEY: ${{ secrets.FASTLANE_SSH_KEY }}
+        working-directory: ./ios
+        run: |
+          bundle exec fastlane deploy_feature_branch
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout
+      - uses: actions/checkout@v3
+
+      # Install Ruby
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+
+      # Install JDK
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      # Install FLutter
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.0.5'
+          channel: 'stable'
+
+      - name: Set FIREBASE_JSON env var
+        run: |
+          echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
+
+      - name: Save Firebase Service Account json
+        run: |
+          echo -n "$FIREBASE_SERVICE_ACCOUNT_JSON" >> $FIREBASE_JSON
+
+      - name: Install fastlane
+        working-directory: ./android
+        run: |
+          bundle install
+
+      - name: Build Android with fastlane
+        working-directory: ./android
+        run: |
+          bundle exec fastlane deploy_feature_branch
