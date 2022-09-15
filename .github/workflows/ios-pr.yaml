@@ -1,0 +1,57 @@
+name: '[PR][IOS] Build and Deploy'
+on:
+  pull_request:
+    branches-ignore:
+      - gh-pages
+      - master
+jobs:
+  build-and-deploy:
+    runs-on: macos-latest
+    steps:
+      # Checkout
+      - uses: actions/checkout@v3
+
+      # Install certificate
+      - uses: apple-actions/import-codesign-certs@v1
+        with:
+          p12-file-base64: ${{ secrets.CI_IOS_AD_HOC_CERT_P12_BASE64 }}
+          p12-password: ${{ secrets.CI_IOS_AD_HOC_CERT_PASSWORD }}
+
+      - name: Install the provisioning profile
+        env:
+          PROVISIONING_CERTIFICATE_BASE64: ${{ secrets.PCI_IOS_AD_HOC_PROFILE_BASE64 }}
+        run: |
+          PP_PATH=$RUNNER_TEMP/a35996ab-5aae-43df-8daf-0c80fdb50bf4.mobileprovision
+
+          echo -n "$PROVISIONING_CERTIFICATE_BASE64" | base64 --decode --output $PP_PATH
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+
+      # Install FLutter
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.0.5'
+          channel: 'stable'
+
+      - name: Build App
+        run: |
+          flutter clean
+          flutter pub get
+          flutter pub run build_runner build --delete-conflicting-outputs
+
+      - name: Build iOS
+        run: |
+          flutter build ios --release --no-codesign
+
+      - name: Resolve Swift dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release
+
+      - name: Build xArchive
+        run: |
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release DEVELOPMENT_TEAM=CYW22YFP67 -sdk 'iphoneos' -destination 'generic/platform=iOS' -archivePath build-output/app.xcarchive PROVISIONING_PROFILE="CI Ad Hoc" clean archive CODE_SIGN_IDENTITY="Apple Distribution"
+
+      - name: Generate ipa
+        run: |
+          xcodebuild -exportArchive -archivePath build-output/app.xcarchive -exportPath build-output/ios -exportOptionsPlist ios/AdHocExportOptions.plist
