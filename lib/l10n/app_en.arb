@@ -1364,6 +1364,14 @@
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },
+  "invalidWalletFile": "Invalid Wallet File",
+  "@invalidWalletFile": {
+    "description": "Wallet file is not a json or a text"
+  },
+  "invalidWalletFileDescription": "The file you have chosen is invalid.",
+  "@invalidWalletFileDescription": {
+    "description": "Invalid wallet file description"
+  },
   "biometricLoginEnabled": "Biometric Login Enabled",
   "@biometricLoginEnabled": {
     "description": "Biometric Login is Enabled."

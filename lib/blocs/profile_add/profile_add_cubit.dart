@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profile_types.dart';
@@ -60,10 +58,10 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     emit(ProfileAddPromptWallet());
   }
 
-  Future<void> pickWallet(String walletJson) async {
+  Future<void> pickWallet(Wallet wallet) async {
     emit(ProfileAddUserStateLoadInProgress());
     _profileType = ProfileType.json;
-    _wallet = Wallet.fromJwk(json.decode(walletJson));
+    _wallet = wallet;
 
     try {
       _driveTxs = await _arweave.getUniqueUserDriveEntityTxs(
