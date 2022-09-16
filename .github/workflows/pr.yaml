@@ -11,7 +11,31 @@ env:
   FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      # Install FLutter
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.0.5'
+          channel: 'stable'
+
+      - name: Build app
+        run: |
+          flutter pub get
+          flutter pub run build_runner build --delete-conflicting-outputs
+
+      - name: Test
+        run: |
+          flutter test
+
   web:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       # Checkout
@@ -45,6 +69,7 @@ jobs:
           expires: 14d
 
   ios:
+    needs: test
     runs-on: macos-latest
     steps:
       # Checkout
@@ -83,6 +108,7 @@ jobs:
           bundle exec fastlane deploy_feature_branch
 
   android:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       # Checkout

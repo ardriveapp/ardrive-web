@@ -1,3 +1,5 @@
+@Tags(['broken'])
+
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter_test/flutter_test.dart';

@@ -69,3 +69,6 @@ app.*.map.json
 
 # scan temporary files
 **/fastlane/test_output
+
+# fvm
+/.fvm/flutter_sdk
