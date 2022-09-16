@@ -17,7 +17,6 @@ Widget buildNewButton(
   bool isPlusButton = false,
 }) {
   final width = MediaQuery.of(context).size.width;
-  // TODO: double check if it's OK to use this context, if not then build twice
   final menuItems = _buildItems(
     context,
     driveDetailState: driveDetailState,
