@@ -50,10 +50,18 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 
 
-### ios deploy_feature_branch
+### ios deploy_adhoc
 
 ```sh
-[bundle exec] fastlane ios deploy_feature_branch
+[bundle exec] fastlane ios deploy_adhoc
+```
+
+
+
+### ios latest
+
+```sh
+[bundle exec] fastlane ios latest
 ```
 
 

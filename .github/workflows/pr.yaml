@@ -7,110 +7,130 @@ on:
       - master
 
 env:
+  PR_BODY: ${{ github.event.pull_request.body }}
+  PR_TITLE: ${{ github.event.pull_request.title }}
+  PR_NUMBER: ${{ github.event.pull_request.number }}
   BUILD_NUMBER: ${{ github.run_number }}
+  GIT_SHA: ${{ github.sha }}
   RELEASE_NOTES: ${{ github.event.pull_request.title }} - ${{ github.sha }}
   FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+  FL_JIRA_SITE: ${{ secrets.FASTLANE_JIRA_SITE }}
+  FL_JIRA_USERNAME: ${{ secrets.FASTLANE_JIRA_USER }}
+  FL_JIRA_PASSWORD: ${{ secrets.FASTLANE_JIRA_API_KEY }}
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout
-      - uses: actions/checkout@v3
-        with:
-          persist-credentials: false
+  # test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     # Checkout
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         persist-credentials: false
 
-      # Install Flutter
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.0.5'
-          channel: 'stable'
+  #     # Install Flutter
+  #     - uses: subosito/flutter-action@v2
+  #       with:
+  #         flutter-version: '3.0.5'
+  #         channel: 'stable'
 
-      - name: Build app
-        run: |
-          flutter pub get
-          flutter pub run build_runner build --delete-conflicting-outputs
+  #     - name: Build app
+  #       run: |
+  #         flutter pub get
+  #         flutter pub run build_runner build --delete-conflicting-outputs
 
-      - name: Test
-        run: |
-          flutter test
+  #     - name: Test
+  #       run: |
+  #         flutter test
 
-  web:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout
-      - uses: actions/checkout@v3
-        with:
-          persist-credentials: false
+  # web:
+  #   needs: test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     # Checkout
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         persist-credentials: false
 
-      # Install Flutter
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.0.5'
-          channel: 'stable'
+  #     # Install Flutter
+  #     - uses: subosito/flutter-action@v2
+  #       with:
+  #         flutter-version: '3.0.5'
+  #         channel: 'stable'
 
-      - name: Build app
-        run: |
-          flutter pub get
-          flutter pub run build_runner build --delete-conflicting-outputs
-          flutter config --enable-web
-          flutter build web --release
+  #     - name: Build app
+  #       run: |
+  #         flutter pub get
+  #         flutter pub run build_runner build --delete-conflicting-outputs
+  #         flutter config --enable-web
+  #         flutter build web --release
 
-      # JS files cache invalidation
-      - name: main.dart.js cache invalidation
-        run: |
-          sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
+  #     # JS files cache invalidation
+  #     - name: main.dart.js cache invalidation
+  #       run: |
+  #         sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
 
-      # Disribute to Firebase
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
-          expires: 14d
+  #     # Disribute to Firebase
+  #     - uses: FirebaseExtended/action-hosting-deploy@v0
+  #       with:
+  #         repoToken: '${{ secrets.GITHUB_TOKEN }}'
+  #         firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
+  #         expires: 14d
 
-  ios:
-    needs: test
-    runs-on: macos-latest
-    steps:
-      # Checkout
-      - uses: actions/checkout@v3
+  # ios:
+  #   # needs: test
+  #   runs-on: macos-latest
+  #   outputs:
+  #     release_url: ${{ steps.url.outputs.release_url }}
+  #   steps:
+  #     # Checkout
+  #     - uses: actions/checkout@v3
 
-      # Install Ruby
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.1'
+  #     # Install Ruby
+  #     - uses: ruby/setup-ruby@v1
+  #       with:
+  #         ruby-version: '3.1'
 
-      # Install Flutter
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.0.5'
-          channel: 'stable'
+  #         # # Install Flutter
+  #         # - uses: subosito/flutter-action@v2
+  #         #   with:
+  #         #     flutter-version: '3.0.5'
+  #         #     channel: 'stable'
 
-      - name: Set FIREBASE_JSON env var
-        run: |
-          echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
+  #     - name: Set FIREBASE_JSON env var
+  #       run: |
+  #         echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
 
-      - name: Save Firebase Service Account json
-        run: |
-          echo -n "$FIREBASE_SERVICE_ACCOUNT_JSON" >> $FIREBASE_JSON
+  #     - name: Save Firebase Service Account json
+  #       run: |
+  #         echo -n "$FIREBASE_SERVICE_ACCOUNT_JSON" >> $FIREBASE_JSON
 
-      - name: Install fastlane and Cocoapods
-        working-directory: ./ios
-        run: |
-          bundle install
+  #     - name: Install fastlane and Cocoapods
+  #       working-directory: ./ios
+  #       run: |
+  #         bundle install
 
-      - name: Build iOS with fastlane
-        env:
-          MATCH_PASSWORD: ${{ secrets.FASTLANE_MATCH_PASSWORD }}
-          MATCH_GIT_PRIVATE_KEY: ${{ secrets.FASTLANE_SSH_KEY }}
-        working-directory: ./ios
-        run: |
-          bundle exec fastlane deploy_adhoc
+  #     - name: Get latest release url
+  #       working-directory: ./ios
+  #       run: |
+  #         bundle exec fastlane get_latest_firebase_release_url
+
+  #     - name: Set release url
+  #       id: url
+  #       run: echo "::set-output name=release_url::$RELEASE_URL"
+
+  #   #     - name: Build iOS with fastlane
+  #   #       env:
+  #   #         MATCH_PASSWORD: ${{ secrets.FASTLANE_MATCH_PASSWORD }}
+  #   #         MATCH_GIT_PRIVATE_KEY: ${{ secrets.FASTLANE_SSH_KEY }}
+  #   #       working-directory: ./ios
+  #   #       run: |
+  #   #         bundle exec fastlane deploy_adhoc
 
   android:
-    needs: test
+    # needs: test
     runs-on: ubuntu-latest
+    outputs:
+      release_url: ${{ steps.url.outputs.release_url }}
     steps:
       # Checkout
       - uses: actions/checkout@v3
@@ -120,32 +140,69 @@ jobs:
         with:
           ruby-version: '3.1'
 
-      # Install JDK
-      - uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '11'
+      # # Install JDK
+      # - uses: actions/setup-java@v3
+      #   with:
+      #     distribution: 'zulu'
+      #     java-version: '11'
 
-      # Install Flutter
-      - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.0.5'
-          channel: 'stable'
+      # # Install Flutter
+      # - uses: subosito/flutter-action@v2
+      #   with:
+      #     flutter-version: '3.0.5'
+      #     channel: 'stable'
 
       - name: Set FIREBASE_JSON env var
-        run: |
-          echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
+        run: echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
 
       - name: Save Firebase Service Account json
-        run: |
-          echo -n "$FIREBASE_SERVICE_ACCOUNT_JSON" >> $FIREBASE_JSON
+        run: echo -n "$FIREBASE_SERVICE_ACCOUNT_JSON" >> $FIREBASE_JSON
 
       - name: Install fastlane
         working-directory: ./android
-        run: |
-          bundle install
+        run: bundle install
 
-      - name: Build Android with fastlane
+      # - name: Get latest release url
+      #   working-directory: ./android
+      #   run: bundle exec fastlane get_latest_firebase_release_url
+
+      # - name: Set release url
+      #   id: url
+      #   run: echo "::set-output name=release_url::$RELEASE_URL"
+      - name: Update PR description
         working-directory: ./android
-        run: |
-          bundle exec fastlane deploy_apk
+        run: bundle exec fastlane update_release_url
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # - name: Build Android with fastlane
+  #   working-directory: ./android
+  #   run: |
+  #     bundle exec fastlane deploy_apk
+
+  # update-release-urls:
+  #   needs: [android, ios]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     # Checkout
+  #     - uses: actions/checkout@v3
+
+  #     # Install Ruby
+  #     - uses: ruby/setup-ruby@v1
+  #       with:
+  #         ruby-version: '3.1'
+
+  #     - name: Install fastlane
+  #       working-directory: ./android
+  #       run: |
+  #         bundle install
+
+  #     - name: Update PR description
+  #       env:
+  #         IOS_RELEASE_URL: ${{ needs.ios.outputs.release_url }}
+  #         ANDROID_RELEASE_URL: ${{ needs.android.outputs.release_url }}
+  #       working-directory: ./android
+  #       run: |
+  #         echo $IOS_RELEASE_URL
+  #         echo $ANDROID_RELEASE_URL
+  #         fastlane update_release_urls

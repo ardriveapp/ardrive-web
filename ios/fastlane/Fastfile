@@ -1,5 +1,7 @@
 import "../../Fastfile"
 
+ios_firebase_app_id = "1:305132849030:ios:06ea33a95a2e0d42ffce07"
+
 # Update fastlane
 update_fastlane
 
@@ -45,10 +47,22 @@ platform :ios do
 
     # Distribute to Firebase
     firebase_app_distribution(
-      app: "1:305132849030:ios:06ea33a95a2e0d42ffce07",
+      app: ios_firebase_app_id,
       release_notes: ENV['RELEASE_NOTES'],
       service_credentials_file: ENV['FIREBASE_JSON'],
       groups: "Testers"
     )
+  end
+
+  lane :get_latest_firebase_release_url do
+    firebase_app_distribution_get_latest_release(
+      app: ios_firebase_app_id,
+      service_credentials_file: ENV['FIREBASE_JSON']
+    )
+
+    release_name = Actions.lane_context[:FIREBASE_APP_DISTRO_LATEST_RELEASE][:name]
+    release_url = get_firebase_release_url(release_name, ios_firebase_app_id)
+
+    sh("echo RELEASE_URL=#{release_url} >> $GITHUB_ENV")
   end
 end

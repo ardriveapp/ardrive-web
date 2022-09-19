@@ -1,5 +1,7 @@
 import "../../Fastfile"
 
+android_firebase_app_id = "1:305132849030:android:6cf0cd5ec064fad3ffce07"
+
 # Update fastlane
 update_fastlane
 
@@ -24,13 +26,37 @@ platform :android do
 
     # Distribute to Firebase
     firebase_app_distribution(
-      app: "1:305132849030:android:6cf0cd5ec064fad3ffce07",
+      app: android_firebase_app_id,
       release_notes: ENV['RELEASE_NOTES'],
       service_credentials_file: ENV['FIREBASE_JSON'],
       groups: "Testers",
       android_artifact_type: "APK",
       android_artifact_path: "#{root_path}/build/app/outputs/flutter-apk/app-release.apk"
     )
+  end
+
+  lane :get_latest_firebase_release_url do
+    firebase_app_distribution_get_latest_release(
+      app: android_firebase_app_id,
+      service_credentials_file: ENV['FIREBASE_JSON']
+    )
+
+    release_name = Actions.lane_context[:FIREBASE_APP_DISTRO_LATEST_RELEASE][:name]
+    release_url = get_firebase_release_url(release_name, android_firebase_app_id)
+
+    sh("echo RELEASE_URL=#{release_url} >> $GITHUB_ENV")
+  end
+
+  lane :update_release_url do
+    firebase_app_distribution_get_latest_release(
+      app: android_firebase_app_id,
+      service_credentials_file: ENV['FIREBASE_JSON']
+    )
+
+    release_name = Actions.lane_context[:FIREBASE_APP_DISTRO_LATEST_RELEASE][:name]
+    release_url = get_firebase_release_url(release_name, android_firebase_app_id)
+
+    update_pr_description(release_url: release_url, ios: false)
   end
 end
 
