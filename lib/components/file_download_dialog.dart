@@ -102,8 +102,6 @@ class FileDownloadDialog extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  // subtitle: Text(filesize(state.totalByteCount)),
-                  // trailing: Text('progress: ${state.progress}'),
                 ),
               ),
               actions: [

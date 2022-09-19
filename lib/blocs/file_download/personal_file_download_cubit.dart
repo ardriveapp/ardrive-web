@@ -129,14 +129,6 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     );
   }
 
-  void openFile() async {
-    try {
-      await downloader.openCurrentDownload();
-    } catch (e) {
-      print('emit error');
-    }
-  }
-
   @override
   void abortDownload() {
     emit(FileDownloadAborted());
