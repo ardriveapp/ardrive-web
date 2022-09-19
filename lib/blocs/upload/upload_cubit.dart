@@ -380,9 +380,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   void _removeFilesWithFileNameConflicts() {
     files.removeWhere(
-      (file) => conflictingFiles.containsKey(
-        file.ioFile.path.isEmpty ? file.ioFile.name : file.ioFile.path,
-      ),
+      (file) => conflictingFiles.containsKey(file.getIdentifier()),
     );
   }
 
