@@ -50,9 +50,7 @@ class DriveDetailActionRow extends StatelessWidget {
                   icon: const Icon(Icons.file_download),
                   onPressed: () => promptToDownloadProfileFile(
                     context: context,
-                    driveId: state.currentDrive.id,
-                    fileId: selectedItem.id,
-                    dataTxId: selectedItem.item.dataTxId,
+                    file: selectedItem.item,
                   ),
                   tooltip: appLocalizationsOf(context).download,
                 ),
