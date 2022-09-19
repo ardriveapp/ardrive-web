@@ -17,7 +17,7 @@ After installing lefthook you need to enable it by running:
 lefthook install
 ```
 
-If your environment is using homebrew, install the Flutter SDK with its cask as shown below. Alternatively, visit the [Flutter Installation Instructions][https://flutter.dev/docs/get-started/install] to get the Flutter SDK up and running for your OS / local setup.
+If your environment is using homebrew, install the Flutter SDK with its cask as shown below. Alternatively, visit the [Flutter Installation Instructions](https://flutter.dev/docs/get-started/install) to get the Flutter SDK up and running for your OS / local setup.
 
 ```shell
 # with homebrew
@@ -29,6 +29,19 @@ Then, generate the package imports with:
 
 ```shell
 flutter pub get
+```
+Install script runner to have access to pubspec scripts
+```
+flutter pub global activate script_runner
+```
+
+Make sure to add scr to your path with ``export``
+
+In order to run them we need to use ``scr`` plus a ``pubspec.yaml`` script
+
+e.g.to ``check-flutter`` script which checks if we re using the right Flutter version
+```
+scr check-flutter
 ```
 
 Whenever changing branches or initially setting up, compile the codebase to resolve errors:

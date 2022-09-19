@@ -34,7 +34,7 @@ void main() async {
   final driveKey = await kdf.deriveKey(
     secretKey: SecretKey(walletSignature),
     info: utf8.encode(password),
-    nonce: Uint8List(0),
+    nonce: Uint8List(1),
   );
 
   // Derive a file key from the user's drive key and the file id.
@@ -45,7 +45,7 @@ void main() async {
   final fileKey = await kdf.deriveKey(
     secretKey: driveKey,
     info: fileIdBytes,
-    nonce: Uint8List(0),
+    nonce: Uint8List(1),
   );
 
   // Encrypt the data using AES256-GCM using a 96-bit IV as recommended.

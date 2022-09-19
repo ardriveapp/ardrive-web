@@ -171,7 +171,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   Future<void> launchPreview(TxID dataTxId) {
     return launchUrl(
-        Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'));
+      Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'),
+    );
   }
 
   void sortFolder({
