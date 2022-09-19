@@ -19,7 +19,7 @@ platform :android do
     end
   end
 
-  lane :deploy_feature_branch do
+  lane :deploy_apk do
     build_apk
 
     # Distribute to Firebase
