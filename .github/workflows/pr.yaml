@@ -4,27 +4,36 @@ on:
     branches-ignore:
       - gh-pages
       - master
+
+env:
+  PR_BODY: ${{ github.event.pull_request.body }}
+  PR_DESCRIPTION_RELEASES: |-
+
+    === Releases
+    1: test
+    2: another-test
+
 jobs:
-  deploy-preview:
+  update-pr-description:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
         with:
           persist-credentials: false
-      - uses: subosito/flutter-action@v1
-        with:
-          flutter-version: '3.0.5'
-      - name: Build app
+
+      - name: Set PR Description
+        id: pr_description
         run: |
-          flutter pub get
-          flutter pub run build_runner build
-          flutter config --enable-web
-          flutter build web --profile
-      - name: main.dart.js cache invalidation
-        run: |
-          sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+          PR_BODY_WITHOUT_RELEASES=$(echo "$PR_BODY" | sed -n '/=== Releases/q;p')
+
+          PR_DESCRIPTION="${PR_BODY_WITHOUT_RELEASES}
+          ${PR_DESCRIPTION_RELEASES}"
+
+          echo "PR_DESCRIPTION<<EOF" >> $GITHUB_ENV
+          echo "$PR_DESCRIPTION" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - uses: AsasInnab/pr-body-action@v1
         with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
-          expires: 14d
+          body: ${{ env.PR_DESCRIPTION }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
