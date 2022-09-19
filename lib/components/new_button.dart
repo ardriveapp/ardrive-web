@@ -13,7 +13,6 @@ Widget buildNewButton(
   required DrivesState drivesState,
   required ProfileState profileState,
   required DriveDetailState driveDetailState,
-  // String? title,
   bool isPlusButton = false,
 }) {
   final width = MediaQuery.of(context).size.width;
@@ -42,6 +41,8 @@ Widget buildNewButton(
   );
 }
 
+// TODO: use the showMenu method instead of a custom PopupMenuButtonRotable.
+// See: PE-2314
 class PopupMenuButtonRotable<T> extends StatefulWidget {
   final bool _rotable;
 
