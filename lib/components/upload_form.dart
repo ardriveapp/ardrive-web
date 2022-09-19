@@ -215,10 +215,9 @@ class UploadForm extends StatelessWidget {
                 ),
                 if (state.hasFilesToUpload)
                   TextButton(
-                    onPressed: () {
-                      context.read<UploadCubit>().removeBigFiles();
-                      context.read<UploadCubit>().checkConflicts();
-                    },
+                    onPressed: () => context
+                        .read<UploadCubit>()
+                        .skipLargeFilesAndCheckForConflicts(),
                     child: Text(appLocalizationsOf(context).skipEmphasized),
                   ),
               ],
