@@ -127,11 +127,13 @@ class UploadCubit extends Cubit<UploadState> {
     ];
 
     if (tooLargeFiles.isNotEmpty) {
-      emit(UploadFileTooLarge(
-        hasFilesToUpload: files.length > tooLargeFiles.length,
-        tooLargeFileNames: tooLargeFiles,
-        isPrivate: _targetDrive.isPrivate,
-      ));
+      emit(
+        UploadFileTooLarge(
+          hasFilesToUpload: files.length > tooLargeFiles.length,
+          tooLargeFileNames: tooLargeFiles,
+          isPrivate: _targetDrive.isPrivate,
+        ),
+      );
       return;
     }
 
@@ -256,6 +258,7 @@ class UploadCubit extends Cubit<UploadState> {
       conflictingFiles: conflictingFiles,
       foldersByPath: foldersByPath,
     );
+
     try {
       final costEstimate = await CostEstimate.create(
         uploadPlan: uploadPlan,
@@ -326,7 +329,10 @@ class UploadCubit extends Cubit<UploadState> {
     for (final uploadHandle in uploadPlan.fileV2UploadHandles.values) {
       try {
         await uploadHandle.prepareAndSignTransactions(
-            arweaveService: _arweave, wallet: profile.wallet, pstService: _pst);
+          arweaveService: _arweave,
+          wallet: profile.wallet,
+          pstService: _pst,
+        );
         await uploadHandle.writeFileEntityToDatabase(
           driveDao: _driveDao,
         );
@@ -347,17 +353,35 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadComplete());
   }
 
-  void removeBigFiles() async {
+  Future<void> skipLargeFilesAndCheckForConflicts() async {
+    emit(UploadPreparationInProgress());
+    final List<String> filesToSkip = [];
+
     for (final file in files) {
       if (await file.ioFile.length > sizeLimit) {
+        filesToSkip.add(file.ioFile.path);
+      }
+    }
+
+    files.removeWhere(
+      (file) => filesToSkip
+          .where((filePath) => filePath == file.ioFile.path)
+          .isNotEmpty,
+    );
+
+    for (final file in files) {
+      final fileSize = await file.ioFile.length;
+      if (fileSize > sizeLimit) {
         files.remove(file);
       }
     }
+    await checkConflicts();
   }
 
   void _removeFilesWithFileNameConflicts() {
-    files.removeWhere((file) => conflictingFiles.containsKey(
-        file.ioFile.path.isEmpty ? file.ioFile.name : file.ioFile.path));
+    files.removeWhere(
+      (file) => conflictingFiles.containsKey(file.getIdentifier()),
+    );
   }
 
   num get sizeLimit =>
