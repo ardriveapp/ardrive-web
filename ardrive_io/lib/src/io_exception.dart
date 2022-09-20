@@ -18,3 +18,9 @@ class UnsupportedPlatformException extends IOException {
 }
 
 class UnsupportedFileExtension extends IOException {}
+
+class FileSourceException extends IOException {
+  FileSourceException(this.exception);
+
+  final String? exception;
+}

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/progress_bar.dart';
-import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -17,17 +16,42 @@ import 'components.dart';
 
 Future<void> promptToDownloadProfileFile({
   required BuildContext context,
-  required DriveID driveId,
-  required FileID fileId,
-  required TxID dataTxId,
+  required FileWithLatestRevisionTransactions file,
 }) =>
     showDialog(
       context: context,
       builder: (_) => BlocProvider<FileDownloadCubit>(
         create: (_) => ProfileFileDownloadCubit(
-          driveId: driveId,
-          fileId: fileId,
-          dataTxId: dataTxId,
+          driveId: file.driveId,
+          fileId: file.id,
+          revisionDataTxId: file.dataTxId,
+          dataContentType: file.dataContentType,
+          fileName: file.name,
+          fileSize: file.size,
+          lastModified: file.lastModifiedDate,
+          profileCubit: context.read<ProfileCubit>(),
+          driveDao: context.read<DriveDao>(),
+          arweave: context.read<ArweaveService>(),
+        ),
+        child: const FileDownloadDialog(),
+      ),
+    );
+
+Future<void> promptToDownloadFileRevision({
+  required BuildContext context,
+  required FileRevisionWithTransactions revision,
+}) =>
+    showDialog(
+      context: context,
+      builder: (_) => BlocProvider<FileDownloadCubit>(
+        create: (_) => ProfileFileDownloadCubit(
+          driveId: revision.driveId,
+          fileId: revision.fileId,
+          revisionDataTxId: revision.dataTxId,
+          dataContentType: revision.dataContentType,
+          fileName: revision.name,
+          fileSize: revision.size,
+          lastModified: revision.lastModifiedDate,
           profileCubit: context.read<ProfileCubit>(),
           driveDao: context.read<DriveDao>(),
           arweave: context.read<ArweaveService>(),

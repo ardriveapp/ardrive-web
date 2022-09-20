@@ -11,11 +11,17 @@ class FileDownloadProgress extends LinearProgress {
 
 class ProfileFileDownloadCubit extends FileDownloadCubit {
   final DriveID driveId;
+
   final FileID fileId;
-  final TxID dataTxId;
   final StreamController<LinearProgress> _downloadProgress =
       StreamController<LinearProgress>.broadcast();
   Stream<LinearProgress> get downloadProgress => _downloadProgress.stream;
+  final String fileName;
+  final int fileSize;
+  final String? dataContentType;
+  final DateTime lastModified;
+
+  final TxID revisionDataTxId;
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
@@ -25,7 +31,11 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   ProfileFileDownloadCubit({
     required this.driveId,
     required this.fileId,
-    required this.dataTxId,
+    required this.fileName,
+    required this.fileSize,
+    required this.dataContentType,
+    required this.lastModified,
+    required this.revisionDataTxId,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required ArweaveService arweave,
@@ -39,37 +49,34 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   Future<void> download() async {
     try {
       final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-      final file = await _driveDao
-          .fileById(driveId: driveId, fileId: fileId)
-          .getSingle();
 
       switch (drive.privacy) {
         case DrivePrivacy.private:
-          await _downloadFile(file, drive);
+          await _downloadFile(fileName, fileSize, drive);
           break;
         case DrivePrivacy.public:
           if (kIsWeb) {
-            await _downloadFile(file, drive);
+            await _downloadFile(fileName, fileSize, drive);
             return;
           }
 
           final stream = downloader.downloadFile(
-            '${_arweave.client.api.gatewayUrl.origin}/$dataTxId',
-            file.name,
+            '${_arweave.client.api.gatewayUrl.origin}/$revisionDataTxId',
+            fileName,
           );
 
           await for (int progress in stream) {
             emit(
               FileDownloadWithProgress(
-                fileName: file.name,
+                fileName: fileName,
                 progress: progress,
-                fileSize: file.size,
+                fileSize: fileSize,
               ),
             );
             _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
           }
 
-          emit(FileDownloadFinishedWithSuccess(fileName: file.name));
+          emit(FileDownloadFinishedWithSuccess(fileName: fileName));
           break;
 
         default:
@@ -79,18 +86,18 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     }
   }
 
-  Future<void> _downloadFile(FileEntry file, Drive drive) async {
+  Future<void> _downloadFile(String fileName, int fileSize, Drive drive) async {
     late Uint8List dataBytes;
 
     emit(
       FileDownloadInProgress(
-        fileName: file.name,
-        totalByteCount: file.size,
+        fileName: fileName,
+        totalByteCount: fileSize,
       ),
     );
     final dataRes = await http.get(
       Uri.parse(
-        '${_arweave.client.api.gatewayUrl.origin}/$dataTxId',
+        '${_arweave.client.api.gatewayUrl.origin}/$revisionDataTxId',
       ),
     );
     final profile = _profileCubit.state;
@@ -110,7 +117,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     }
 
     final fileKey = await _driveDao.getFileKey(fileId, driveKey);
-    final dataTx = await (_arweave.getTransactionDetails(file.dataTxId));
+    final dataTx = await (_arweave.getTransactionDetails(revisionDataTxId));
 
     if (dataTx != null) {
       dataBytes = await decryptTransactionData(
@@ -122,9 +129,9 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     emit(
       FileDownloadSuccess(
         bytes: dataBytes,
-        fileName: file.name,
-        mimeType: file.dataContentType ?? lookupMimeType(file.name),
-        lastModified: file.lastModifiedDate,
+        fileName: fileName,
+        mimeType: dataContentType ?? lookupMimeType(fileName),
+        lastModified: lastModified,
       ),
     );
   }
