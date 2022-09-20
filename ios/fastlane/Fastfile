@@ -54,7 +54,7 @@ platform :ios do
     )
   end
 
-  lane :get_latest_firebase_release_url do
+  lane :update_release_url do
     firebase_app_distribution_get_latest_release(
       app: ios_firebase_app_id,
       service_credentials_file: ENV['FIREBASE_JSON']
@@ -63,6 +63,6 @@ platform :ios do
     release_name = Actions.lane_context[:FIREBASE_APP_DISTRO_LATEST_RELEASE][:name]
     release_url = get_firebase_release_url(release_name, ios_firebase_app_id)
 
-    sh("echo RELEASE_URL=#{release_url} >> $GITHUB_ENV")
+    update_pr_and_jira(release_url: release_url, ios: true)
   end
 end
