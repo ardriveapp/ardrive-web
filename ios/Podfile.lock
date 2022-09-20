@@ -41,15 +41,9 @@ PODS:
   - package_info_plus (0.4.5):
     - Flutter
   - path_provider_ios (0.0.1):
-<<<<<<< HEAD
     - Flutter
   - permission_handler_apple (9.0.4):
     - Flutter
-=======
-    - Flutter
-  - permission_handler_apple (9.0.4):
-    - Flutter
->>>>>>> origin/dev
   - SDWebImage (5.13.2):
     - SDWebImage/Core (= 5.13.2)
   - SDWebImage/Core (5.13.2)
@@ -136,6 +130,6 @@ SPEC CHECKSUMS:
   SwiftyGif: 6c3eafd0ce693cad58bb63d2b2fb9bacb8552780
   url_launcher_ios: 839c58cdb4279282219f5e248c3321761ff3c4de
 
-PODFILE CHECKSUM: b1c42df33bfbe70037640f5d4a03fc95579570e1
+PODFILE CHECKSUM: 775997f741c536251164e3eacf6e34abf2eb7a17
 
-COCOAPODS: 1.11.2
+COCOAPODS: 1.11.3
