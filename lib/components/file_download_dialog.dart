@@ -87,12 +87,10 @@ class FileDownloadDialog extends StatelessWidget {
                 ),
               ],
             );
-          }
-          // TODO(@thiagocarvalhodev): Localize and reuse the component
-          else if (state is FileDownloadFinishedWithSuccess) {
+          } else if (state is FileDownloadFinishedWithSuccess) {
             return AppDialog(
               dismissable: false,
-              title: 'Download finished!',
+              title: appLocalizationsOf(context).downloadFinished,
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: ListTile(
