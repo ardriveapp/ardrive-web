@@ -20,6 +20,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 
 import 'blocs/blocs.dart';
+import 'firebase_options.dart';
 import 'models/models.dart';
 import 'pages/pages.dart';
 import 'services/services.dart';
@@ -43,7 +44,9 @@ void main() async {
           Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
       refreshHTMLPageAtInterval(const Duration(hours: 12));
 
-      await Firebase.initializeApp();
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
 
       // Pass all uncaught errors from the framework to Crashlytics.
       FlutterError.onError =
