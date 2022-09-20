@@ -34,7 +34,13 @@
 	<array>
 		<string>fetch</string>
 	</array>
-	<key>UIFileSharingEnabled</key>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ArDrive requires access to the photo library in order to facilitate photo and video uploads to your drives.</string>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>ArDrive requires access to the music library in order to facilitate audio file uploads to your drives.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>ArDrive requires access to the camera in order to facilitate file uploads to your drives.</string>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
@@ -53,6 +59,8 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 </dict>

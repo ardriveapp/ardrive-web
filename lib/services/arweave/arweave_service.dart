@@ -64,7 +64,7 @@ class ArweaveService {
   Future<int> getCurrentBlockHeight() =>
       client.api.get('/').then((res) => json.decode(res.body)['height']);
 
-  Future<BigInt> getPrice({required int byteSize}) {
+  Future<BigInt> getPrice({required int byteSize}) async {
     return client.api
         .get('/price/$byteSize')
         .then((res) => BigInt.parse(res.body));

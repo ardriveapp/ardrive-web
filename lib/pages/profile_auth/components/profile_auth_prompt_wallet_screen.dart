@@ -75,6 +75,7 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
 
     final walletFile = await ardriveIO.pickFile(
       allowedExtensions: null,
+      fileSource: FileSource.fileSystem,
     );
 
     int walletSize = await walletFile.length;
