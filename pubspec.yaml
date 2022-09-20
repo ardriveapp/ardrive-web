@@ -71,6 +71,8 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.9
   ardrive_io:
     path: ./ardrive_io
+  firebase_crashlytics: ^2.8.10
+  firebase_core: ^1.22.0
 
 dev_dependencies:
   flutter_test:
