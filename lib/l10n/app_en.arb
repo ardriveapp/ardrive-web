@@ -1371,5 +1371,9 @@
   "invalidWalletFileDescription": "The file you have chosen is invalid.",
   "@invalidWalletFileDescription": {
     "description": "Invalid wallet file description"
+  },
+  "downloadFinished": "Download finished!",
+  "@downloadFinished": {
+    "description": "Download finished"
   }
 }
