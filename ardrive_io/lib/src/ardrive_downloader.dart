@@ -1,13 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
-import 'package:path_provider/path_provider.dart' as path_provider;
-import 'package:permission_handler/permission_handler.dart';
 
 /// Perform a download in background
 ///
@@ -22,24 +19,17 @@ class ArDriveDownloader {
   String get currentTaskId => _currentTaskId;
 
   Stream<int> downloadFile(String downloadUrl, String fileName) async* {
-    await Permission.storage.request();
-
-    final path = (await path_provider.getApplicationDocumentsDirectory()).path;
-    final downloadDir = Directory(path + '/Downloads');
-
-    if (!downloadDir.existsSync()) {
-      downloadDir.createSync();
-    }
+    final downloadDir = await getDefaultDownloadDir();
 
     final taskId = await FlutterDownloader.enqueue(
       url: downloadUrl,
-      savedDir: downloadDir.path,
+      savedDir: downloadDir,
       fileName: fileName,
       saveInPublicStorage: true,
       showNotification: true,
       openFileFromNotification: false,
     );
-    
+
     _currentTaskId = taskId!;
 
     final progress = _handleProgress(taskId);
@@ -64,8 +54,7 @@ class ArDriveDownloader {
       debugPrint('Download progress: ' + progress.toString());
 
       /// canceled and failed downloads
-      if (status == DownloadTaskStatus.failed ||
-          status == DownloadTaskStatus.canceled) {
+      if (status != DownloadTaskStatus.running) {
         controller.close();
         IsolateNameServer.removePortNameMapping('downloader_send_port');
         return;

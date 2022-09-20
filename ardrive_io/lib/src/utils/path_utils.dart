@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:ardrive_io/src/io_exception.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart' as path_provider;
+import 'package:permission_handler/permission_handler.dart';
 
 /// Returns the folder name to the given path
 ///
@@ -20,4 +24,17 @@ String getDirname(String entityPath) {
   }
 
   return path.dirname(entityPath);
+}
+
+Future<String> getDefaultDownloadDir() async {
+  await Permission.storage.request();
+
+  final path = (await path_provider.getApplicationDocumentsDirectory()).path;
+  final downloadDir = Directory(path + '/Downloads');
+
+  if (!downloadDir.existsSync()) {
+    downloadDir.createSync();
+  }
+
+  return downloadDir.path;
 }
