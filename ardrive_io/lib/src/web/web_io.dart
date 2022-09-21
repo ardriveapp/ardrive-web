@@ -11,58 +11,40 @@ import 'package:file_selector/file_selector.dart' as file_selector;
 /// Web implementation to use `ArDriveIO` API
 ///
 class WebIO implements ArDriveIO {
-  WebIO(
-      {required IOFileAdapter fileAdapter,
-      required FolderPicker folderPicker,
-      required IOFolderAdapter folderAdapter})
-      : _fileAdapter = fileAdapter,
-        _folderAdapter = folderAdapter,
-        _folderPicker = folderPicker;
+  WebIO({
+    required FileProviderFactory fileProviderFactory,
+  }) : _fileProviderFactory = fileProviderFactory;
 
-  final IOFileAdapter _fileAdapter;
-  final IOFolderAdapter _folderAdapter;
-  final FolderPicker _folderPicker;
+  final FileProviderFactory _fileProviderFactory;
 
   @override
-  Future<IOFile> pickFile({List<String>? allowedExtensions}) async {
-    final file = await file_selector.openFile(acceptedTypeGroups: [
-      file_selector.XTypeGroup(extensions: allowedExtensions)
-    ]);
+  Future<IOFile> pickFile({
+    List<String>? allowedExtensions,
+    FileSource fileSource = FileSource.fileSystem,
+  }) async {
+    final provider =
+        _fileProviderFactory.fromSource(fileSource) as MultiFileProvider;
 
-    if (file == null) {
-      throw ActionCanceledException();
-    }
-
-    return _fileAdapter.fromWebXFile(file);
+    return provider.pickFile(fileSource: fileSource);
   }
 
   @override
-  Future<List<IOFile>> pickFiles({List<String>? allowedExtensions}) async {
-    final xFiles = await file_selector.openFiles(acceptedTypeGroups: [
-      file_selector.XTypeGroup(extensions: allowedExtensions)
-    ]);
+  Future<List<IOFile>> pickFiles({
+    List<String>? allowedExtensions,
+    FileSource fileSource = FileSource.fileSystem,
+  }) async {
+    final provider =
+        _fileProviderFactory.fromSource(fileSource) as MultiFileProvider;
 
-    if (xFiles.isEmpty) {
-      throw ActionCanceledException();
-    }
-
-    return Future.wait(
-        xFiles.map((xfile) => _fileAdapter.fromWebXFile(xfile)).toList());
+    return provider.pickMultipleFiles(fileSource: fileSource);
   }
 
   @override
   Future<IOFolder> pickFolder() async {
-    final files = <IOFile>[];
+    final provider = _fileProviderFactory.fromSource(FileSource.fileSystem)
+        as MultiFileProvider;
 
-    late Stream<List<IOFile>> folderStream;
-
-    _folderPicker.pickFolderFiles((stream) => folderStream = stream);
-
-    await for (var file in folderStream) {
-      files.addAll(file);
-    }
-
-    return _folderAdapter.fromIOFiles(files);
+    return provider.getFolder();
   }
 
   @override
@@ -78,6 +60,66 @@ class WebIO implements ArDriveIO {
       mimeType: file.contentType,
       name: file.name,
     ).saveTo(savePath);
+  }
+}
+
+class WebFileSystemProvider implements MultiFileProvider {
+  WebFileSystemProvider(
+    this._folderPicker,
+    this._ioFileAdapter,
+    this._ioFolderAdapter,
+  );
+
+  final FolderPicker _folderPicker;
+  final IOFileAdapter _ioFileAdapter;
+  final IOFolderAdapter _ioFolderAdapter;
+
+  @override
+  Future<IOFolder> getFolder() async {
+    final files = <IOFile>[];
+
+    late Stream<List<IOFile>> folderStream;
+
+    _folderPicker.pickFolderFiles((stream) => folderStream = stream);
+
+    await for (var file in folderStream) {
+      files.addAll(file);
+    }
+
+    return _ioFolderAdapter.fromIOFiles(files);
+  }
+
+  @override
+  Future<IOFile> pickFile({
+    List<String>? allowedExtensions,
+    required FileSource fileSource,
+  }) async {
+    final file = await file_selector.openFile(acceptedTypeGroups: [
+      file_selector.XTypeGroup(extensions: allowedExtensions)
+    ]);
+
+    if (file == null) {
+      throw ActionCanceledException();
+    }
+
+    return _ioFileAdapter.fromWebXFile(file);
+  }
+
+  @override
+  Future<List<IOFile>> pickMultipleFiles({
+    List<String>? allowedExtensions,
+    required FileSource fileSource,
+  }) async {
+    final xFiles = await file_selector.openFiles(acceptedTypeGroups: [
+      file_selector.XTypeGroup(extensions: allowedExtensions)
+    ]);
+
+    if (xFiles.isEmpty) {
+      throw ActionCanceledException();
+    }
+
+    return Future.wait(
+        xFiles.map((xfile) => _ioFileAdapter.fromWebXFile(xfile)).toList());
   }
 }
 

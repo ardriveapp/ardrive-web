@@ -1,6 +1,7 @@
 library ardrive_io;
 
 export 'src/ardrive_io.dart';
+export 'src/file_provider.dart';
 export 'src/io_entity.dart';
 export 'src/io_exception.dart';
 export 'src/io_file.dart';

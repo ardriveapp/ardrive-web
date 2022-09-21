@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive_io/src/file_provider.dart';
 import 'package:flutter/foundation.dart';
 
 import 'io_file.dart';
@@ -13,22 +14,26 @@ import 'web/stub_web_io.dart' // Stub implementation
 /// Opens the platform specific file picker to pick files and folders, and save files using
 /// the `IOFile` and `IOFolder` APIs.
 abstract class ArDriveIO {
-  Future<IOFile> pickFile({List<String>? allowedExtensions});
-  Future<List<IOFile>> pickFiles({List<String>? allowedExtensions});
+  Future<IOFile> pickFile({
+    List<String>? allowedExtensions,
+    required FileSource fileSource,
+  });
+  Future<List<IOFile>> pickFiles({
+    List<String>? allowedExtensions,
+    required FileSource fileSource,
+  });
   Future<IOFolder> pickFolder();
   Future<void> saveFile(IOFile file);
 
   factory ArDriveIO() {
     if (kIsWeb) {
-      return WebIO(
-          fileAdapter: IOFileAdapter(),
-          folderAdapter: IOFolderAdapter(),
-          folderPicker: FolderPicker());
+      return WebIO(fileProviderFactory: FileProviderFactory());
     }
 
     return MobileIO(
-        fileSaver: FileSaver(),
-        fileAdapter: IOFileAdapter(),
-        folderAdapter: IOFolderAdapter());
+      fileSaver: FileSaver(),
+      folderAdapter: IOFolderAdapter(),
+      fileProviderFactory: FileProviderFactory(),
+    );
   }
 }
