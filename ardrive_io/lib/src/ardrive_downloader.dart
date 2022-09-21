@@ -13,6 +13,8 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 ///
 /// Cancel the current download with `cancelDownload`, if more than one download is
 /// running at the time, it will only cancel the current one.
+/// 
+// TODO: Add an interface for this class and implement a Web and mobile specific downloader 
 class ArDriveDownloader {
   late String _currentTaskId;
 
