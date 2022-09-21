@@ -98,9 +98,9 @@ class DartIOFileSaver implements FileSaver {
 
     /// handles files without extension
     if (p.extension(file.name).isEmpty) {
-      final extension = mime.extensionFromMime(file.contentType);
+      final fileExtension = mime.extensionFromMime(file.contentType);
 
-      fileName += '.$extension';
+      fileName += '.$fileExtension';
     }
 
     /// platform_specific_path/Downloads/
