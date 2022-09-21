@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 part 'colors.dart';
@@ -90,7 +91,7 @@ TextSelectionThemeData _buildTextSelectionTheme(TextSelectionThemeData base) =>
     );
 
 AppBarTheme _buildAppBarTheme(AppBarTheme appBarBase) => appBarBase.copyWith(
-      brightness: Brightness.light,
+      systemOverlayStyle: SystemUiOverlayStyle.dark,
       color: Colors.white,
       centerTitle: false,
       iconTheme: _buildIconTheme(base.iconTheme),
