@@ -37,35 +37,42 @@ String getDirname(String entityPath) {
 /// ```
 Future<String> getDefaultMobileDownloadDir() async {
   if (Platform.isAndroid) {
-    final Directory defaultAndroidDownloadDir =
-        Directory('/storage/emulated/0/Download/');
-
-    if (await Permission.manageExternalStorage.isGranted &&
-        await defaultAndroidDownloadDir.exists()) {
-      return defaultAndroidDownloadDir.path;
-    } else {
-      final externalDir = await path_provider.getExternalStorageDirectory();
-
-      if (externalDir != null) {
-        return externalDir.path;
-      } else {
-        final directory =
-            await path_provider.getApplicationDocumentsDirectory();
-        return directory.path;
-      }
-    }
+    return _getDefaultAndroidDir();
   } else if (Platform.isIOS) {
-    final iosDirectory = await path_provider.getApplicationDocumentsDirectory();
-    final iosDownloadsDirectory = Directory(iosDirectory.path + '/Downloads/');
-
-    if (!iosDownloadsDirectory.existsSync()) {
-      iosDownloadsDirectory.createSync();
-    }
-
-    return iosDownloadsDirectory.path;
+    return _getDefaultIOSDir();
   } else {
     throw UnsupportedPlatformException(
       'getDefaultMobileDownloadDir only applies to mobile.',
     );
+  }
+}
+
+Future<String> _getDefaultIOSDir() async {
+  final iosDirectory = await path_provider.getApplicationDocumentsDirectory();
+  final iosDownloadsDirectory = Directory(iosDirectory.path + '/Downloads/');
+
+  if (!iosDownloadsDirectory.existsSync()) {
+    iosDownloadsDirectory.createSync();
+  }
+
+  return iosDownloadsDirectory.path;
+}
+
+Future<String> _getDefaultAndroidDir() async {
+  final Directory defaultAndroidDownloadDir =
+      Directory('/storage/emulated/0/Download/');
+
+  if (await Permission.manageExternalStorage.isGranted &&
+      await defaultAndroidDownloadDir.exists()) {
+    return defaultAndroidDownloadDir.path;
+  } else {
+    final externalDir = await path_provider.getExternalStorageDirectory();
+
+    if (externalDir != null) {
+      return externalDir.path;
+    } else {
+      final directory = await path_provider.getApplicationDocumentsDirectory();
+      return directory.path;
+    }
   }
 }
