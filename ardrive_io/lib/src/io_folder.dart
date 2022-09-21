@@ -91,10 +91,8 @@ class _FileSystemFolder extends IOFolder {
     final subFolders = content.whereType<IOFolder>();
     final entities = <T>[];
 
-    if (subFolders.isNotEmpty) {
-      for (IOFolder iof in subFolders) {
-        entities.addAll(await _getAllEntitiesFromType(iof));
-      }
+    for (IOFolder iof in subFolders) {
+      entities.addAll(await _getAllEntitiesFromType(iof));
     }
 
     entities.addAll(content.whereType<T>());
@@ -148,13 +146,15 @@ class IOFolderAdapter {
     final selectedDirectoryPath = directory.path;
 
     final folder = _FileSystemFolder._(
-        name: getBasenameFromPath(selectedDirectoryPath),
-        lastModifiedDate: (await directory.stat()).modified,
-        path: selectedDirectoryPath,
-        folderContent: content);
+      name: getBasenameFromPath(selectedDirectoryPath),
+      lastModifiedDate: (await directory.stat()).modified,
+      path: selectedDirectoryPath,
+      folderContent: content,
+    );
 
     await folder.initFolder();
 
+    print('Picked folder: $folder');
     return folder;
   }
 

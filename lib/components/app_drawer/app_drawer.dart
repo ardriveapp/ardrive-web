@@ -334,7 +334,7 @@ class AppDrawer extends StatelessWidget {
       value: (context) => promptToUpload(
         context,
         driveId: state.currentDrive.id,
-        folderId: state.folderInView.folder.id,
+        parentFolderId: state.folderInView.folder.id,
         isFolderUpload: false,
       ),
     );
@@ -352,7 +352,7 @@ class AppDrawer extends StatelessWidget {
       value: (context) => promptToUpload(
         context,
         driveId: state.currentDrive.id,
-        folderId: state.folderInView.folder.id,
+        parentFolderId: state.folderInView.folder.id,
         isFolderUpload: true,
       ),
     );

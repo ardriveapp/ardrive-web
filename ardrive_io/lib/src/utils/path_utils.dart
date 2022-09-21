@@ -19,5 +19,7 @@ String getDirname(String entityPath) {
     throw EntityPathException();
   }
 
-  return path.dirname(entityPath);
+  final dirname = path.dirname(entityPath);
+  print('The dirname of $entityPath: $dirname');
+  return dirname;
 }

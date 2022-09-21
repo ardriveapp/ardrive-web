@@ -49,7 +49,13 @@ class MobileIO implements ArDriveIO {
     final provider = _fileProviderFactory.fromSource(FileSource.fileSystem)
         as MultiFileProvider;
 
-    return provider.getFolder();
+    final folder = await provider.getFolder();
+    print('Da picked folder: $folder');
+    print('Da path of the picked folder: ${folder.path}');
+    print('Da content of the picked folder: ${await folder.listContent()}');
+    // throw UnimplementedError();
+
+    return folder;
   }
 
   @override
