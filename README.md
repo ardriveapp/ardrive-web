@@ -32,8 +32,10 @@ flutter pub get
 ```
 Install script runner to have access to pubspec scripts
 ```
-pub global activate script_runner
+flutter pub global activate script_runner
 ```
+
+Make sure to add scr to your path with ``export``
 
 In order to run them we need to use ``scr`` plus a ``pubspec.yaml`` script
 

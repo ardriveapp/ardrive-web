@@ -578,12 +578,7 @@ void downloadOrPreviewRevision({
   required FileRevisionWithTransactions revision,
 }) {
   if (drivePrivacy == DrivePrivacy.private) {
-    promptToDownloadProfileFile(
-      context: context,
-      driveId: revision.driveId,
-      fileId: revision.fileId,
-      dataTxId: revision.dataTxId,
-    );
+    promptToDownloadFileRevision(context: context, revision: revision);
   } else {
     context.read<DriveDetailCubit>().launchPreview(revision.dataTxId);
   }

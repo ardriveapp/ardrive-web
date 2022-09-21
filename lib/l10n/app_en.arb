@@ -1363,5 +1363,25 @@
   "yourUploadFailed": "Your upload failed. You have not been charged for the failed attempt.",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
+  },
+  "camera": "Camera",
+  "@camera": {
+    "description": "Button label to select a file from camera"
+  },
+  "fileSystem": "Files",
+  "@fileSystem": {
+    "description": "Button label to select a file from file system"
+  },
+  "gallery": "Gallery",
+  "@gallery": {
+    "description": "Button label to select a file from gallery"
+  },
+  "invalidWalletFile": "Invalid Wallet File",
+  "@invalidWalletFile": {
+    "description": "Wallet file is not a json or a text"
+  },
+  "invalidWalletFileDescription": "The file you have chosen is invalid.",
+  "@invalidWalletFileDescription": {
+    "description": "Invalid wallet file description"
   }
 }
