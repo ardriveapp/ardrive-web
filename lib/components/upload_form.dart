@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
+import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
@@ -31,7 +32,7 @@ Future<void> promptToUpload(
         .toList();
     selectedFiles.addAll(uploadFiles);
   } else {
-    final ioFiles = await io.pickFiles();
+    final ioFiles = await showMultipleFilesFilePickerModal(context);
     final uploadFiles = ioFiles
         .map((file) => UploadFile(ioFile: file, parentFolderId: folderId))
         .toList();

@@ -1,4 +1,4 @@
-name: deploy
+name: 'Production deploy'
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       logLevel:
-        description: 'Log level'     
+        description: 'Log level'
         required: true
         default: 'warning'
 
@@ -15,21 +15,30 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      # Checkout
+      - uses: actions/checkout@v3
         with:
           persist-credentials: false
-      - uses: subosito/flutter-action@v1
+
+      # Install Flutter
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.0.5'
+          channel: 'stable'
+
       - name: Build app
         run: |
           flutter pub get
-          flutter pub run build_runner build
+          flutter pub run build_runner build --delete-conflicting-outputs
           flutter config --enable-web
-          flutter build web
+          flutter build web --release
+
+      # JS files cache invalidation
       - name: main.dart.js cache invalidation
         run: |
           sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
+
+      # Disribute to Firebase
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
