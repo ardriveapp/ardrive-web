@@ -55,29 +55,28 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
           await _downloadFile(fileName, fileSize, drive);
           break;
         case DrivePrivacy.public:
-          if (kIsWeb) {
-            await _downloadFile(fileName, fileSize, drive);
-            return;
-          }
-
-          final stream = downloader.downloadFile(
-            '${_arweave.client.api.gatewayUrl.origin}/$revisionDataTxId',
-            fileName,
-          );
-
-          await for (int progress in stream) {
-            emit(
-              FileDownloadWithProgress(
-                fileName: fileName,
-                progress: progress,
-                fileSize: fileSize,
-              ),
+          if (Platform.isAndroid || Platform.isIOS) {
+            final stream = downloader.downloadFile(
+              '${_arweave.client.api.gatewayUrl.origin}/$revisionDataTxId',
+              fileName,
             );
-            _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
-          }
 
-          emit(FileDownloadFinishedWithSuccess(fileName: fileName));
-          break;
+            await for (int progress in stream) {
+              emit(
+                FileDownloadWithProgress(
+                  fileName: fileName,
+                  progress: progress,
+                  fileSize: fileSize,
+                ),
+              );
+              _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
+            }
+
+            emit(FileDownloadFinishedWithSuccess(fileName: fileName));
+            break;
+          }
+          await _downloadFile(fileName, fileSize, drive);
+          return;
 
         default:
       }
