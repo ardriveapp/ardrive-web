@@ -37,11 +37,6 @@ class AppShellState extends State<AppShell> {
             _showWalletSwitchDialog = false;
           });
           AppBar _buildAppBar() => AppBar(
-                // title: Image.asset(
-                //   R.images.brand.logoHorizontalNoSubtitle,
-                //   height: 64,
-                //   fit: BoxFit.contain,
-                // ),
                 elevation: 0.0,
                 backgroundColor: Colors.transparent,
                 actions: [

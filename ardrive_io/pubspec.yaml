@@ -17,6 +17,7 @@ dependencies:
   equatable: ^2.0.3
   file_saver: ^0.1.0
   file_selector: ^0.9.0
+  image_picker: ^0.8.5+3
 dev_dependencies:
   flutter_test:
     sdk: flutter
