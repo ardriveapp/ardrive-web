@@ -29,17 +29,11 @@ Future<void> promptToUpload(
     final ioFolder = await io.pickFolder();
     final ioFiles = await ioFolder.listFiles();
     final uploadFiles = ioFiles.map((file) {
-      final uf = UploadFile(
+      return UploadFile(
         ioFile: file,
-
-        // We don't yet know the EID of its parent, this field stands for the selected folder on the UI x.x
         parentFolderId: parentFolderId,
-
-        relativeTo: getDirname(ioFolder.path),
+        relativeTo: ioFolder.path.isEmpty ? null : getDirname(ioFolder.path),
       );
-      print('The dirname of the picked folder: ${getDirname(ioFolder.path)}');
-      print('UploadFile: ${uf.relativeTo}');
-      return uf;
     }).toList();
     selectedFiles.addAll(uploadFiles);
   } else {

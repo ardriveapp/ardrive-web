@@ -189,11 +189,6 @@ class UploadCubit extends Cubit<UploadState> {
           ? folders[folder.parentFolderPath]!.id
           : _targetFolder.id;
 
-      print(
-        'Parent folder id for path ${folder.parentFolderPath}: ${folder.parentFolderId}',
-      );
-      // throw UnimplementedError();
-
       final existingFolderId = await _driveDao
           .foldersInFolderWithName(
             driveId: driveId,
@@ -229,9 +224,6 @@ class UploadCubit extends Cubit<UploadState> {
           ? file.ioFile.path.replaceFirst('${file.relativeTo}/', '')
           : file.ioFile.path);
       final parentFolderId = folders[fileFolder]?.id ?? _targetFolder.id;
-      print('The parent folder ID will be: $parentFolderId');
-      print('Path of the parent folder: $fileFolder');
-      print('Folders mapping: $folders');
       filesToUpload.add(
         UploadFile(
           ioFile: file.ioFile,
@@ -286,11 +278,6 @@ class UploadCubit extends Cubit<UploadState> {
         emit(UploadWalletMismatch());
         return;
       }
-
-      print(
-        'There are ${files.length} files and ${foldersByPath.length} folders',
-      );
-      print('Folders: $foldersByPath, files: $files');
 
       emit(
         UploadReady(

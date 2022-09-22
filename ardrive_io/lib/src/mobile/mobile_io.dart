@@ -45,17 +45,11 @@ class MobileIO implements ArDriveIO {
   }
 
   @override
-  Future<IOFolder> pickFolder() async {
+  Future<IOFolder> pickFolder() {
     final provider = _fileProviderFactory.fromSource(FileSource.fileSystem)
         as MultiFileProvider;
 
-    final folder = await provider.getFolder();
-    print('Da picked folder: $folder');
-    print('Da path of the picked folder: ${folder.path}');
-    print('Da content of the picked folder: ${await folder.listContent()}');
-    // throw UnimplementedError();
-
-    return folder;
+    return provider.getFolder();
   }
 
   @override

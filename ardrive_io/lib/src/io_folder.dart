@@ -153,8 +153,6 @@ class IOFolderAdapter {
     );
 
     await folder.initFolder();
-
-    print('Picked folder: $folder');
     return folder;
   }
 

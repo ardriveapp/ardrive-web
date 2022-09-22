@@ -9,13 +9,9 @@ class UploadFile {
 
   final String? relativeTo;
   final IOFile ioFile;
-
-  // This MF is supposed to hold the EID of its parent
   final String parentFolderId;
 
   String getIdentifier() {
-    print('File path at UploadFile: ${ioFile.path}');
-    print('relativeTo at UploadFile: $relativeTo');
     return ioFile.path.isEmpty || _isPathBlobFromDragAndDrop(ioFile.path)
         ? ioFile.name
         : (relativeTo != null

@@ -40,10 +40,6 @@ class UploadPlanUtils {
       // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
       final filePath = '${targetFolder.path}/${file.getIdentifier()}';
 
-      print('Target folder path when planning upload: ${targetFolder.path}');
-      print('File identifier when planning upload: ${file.getIdentifier()}');
-      print('File path when planning upload: $filePath');
-
       final parentFolderId = foldersByPath[getDirname(file.getIdentifier())];
 
       final fileSize = await file.ioFile.length;
@@ -89,7 +85,6 @@ class UploadPlanUtils {
       }
     }
     foldersByPath.forEach((key, folder) async {
-      print('Folder to upload: $folder');
       folderDataItemUploadHandles.putIfAbsent(
         folder.id,
         () => FolderDataItemUploadHandle(
@@ -122,9 +117,6 @@ class UploadPlanUtils {
       final path = relativeTo != null
           ? file.ioFile.path.replaceFirst('$relativeTo/', '')
           : file.ioFile.path;
-      print('Relative folder path: $path');
-      print('Relative to: $relativeTo');
-      print('File path: ${file.ioFile.path}');
       final folderPath = path.split('/');
       folderPath.removeLast();
       for (var i = 0; i < folderPath.length; i++) {

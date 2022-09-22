@@ -18,8 +18,5 @@ String getDirname(String entityPath) {
   if (entityPath.isEmpty) {
     throw EntityPathException();
   }
-
-  final dirname = path.dirname(entityPath);
-  print('The dirname of $entityPath: $dirname');
-  return dirname;
+  return path.dirname(entityPath);
 }
