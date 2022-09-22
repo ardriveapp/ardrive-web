@@ -23,5 +23,5 @@ part 'shared_file_download_cubit.dart';
 abstract class FileDownloadCubit extends Cubit<FileDownloadState> {
   FileDownloadCubit(FileDownloadState state) : super(state);
 
-  void abortDownload() {}
+  FutureOr<void> abortDownload() {}
 }

@@ -136,9 +136,9 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   }
 
   @override
-  void abortDownload() {
+  Future<void> abortDownload() async {
     emit(FileDownloadAborted());
-    downloader.cancelDownload();
+    await downloader.cancelDownload();
   }
 
   @override

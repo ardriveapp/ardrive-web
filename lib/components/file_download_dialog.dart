@@ -170,8 +170,9 @@ class FileDownloadDialog extends StatelessWidget {
       ),
       actions: [
         ElevatedButton(
-          onPressed: () {
-            context.read<FileDownloadCubit>().abortDownload();
+          onPressed: () async {
+            await context.read<FileDownloadCubit>().abortDownload();
+            // ignore: use_build_context_synchronously
             Navigator.pop(context);
           },
           child: Text(appLocalizationsOf(context).cancel),
