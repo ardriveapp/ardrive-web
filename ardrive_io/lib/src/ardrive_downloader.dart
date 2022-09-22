@@ -13,8 +13,8 @@ import 'package:flutter_downloader/flutter_downloader.dart';
 ///
 /// Cancel the current download with `cancelDownload`, if more than one download is
 /// running at the time, it will only cancel the current one.
-/// 
-// TODO: Add an interface for this class and implement a Web and mobile specific downloader 
+///
+// TODO: Add an interface for this class and implement a Web and mobile specific downloader
 class ArDriveDownloader {
   late String _currentTaskId;
 
@@ -37,7 +37,7 @@ class ArDriveDownloader {
     final progress = _handleProgress(taskId);
 
     FlutterDownloader.loadTasksWithRawQuery(
-      query: 'SELECT * FROM task WHERE taskId=$taskId',
+      query: 'SELECT * FROM task WHERE task_id="$taskId"',
     );
 
     yield* progress;
@@ -46,31 +46,32 @@ class ArDriveDownloader {
   Stream<int> _handleProgress(String taskId) {
     ReceivePort _port = ReceivePort();
     StreamController<int> controller = StreamController<int>();
+
+    /// Remove previous port and track only one download
+    IsolateNameServer.removePortNameMapping('downloader_send_port');
+
     IsolateNameServer.registerPortWithName(
         _port.sendPort, 'downloader_send_port');
-    _port.listen((dynamic data) {
-      String id = data[0];
-      DownloadTaskStatus status = data[1];
-      int progress = data[2];
-      debugPrint('Donwload $taskId status: ' + status.toString());
-      debugPrint('Download progress: ' + progress.toString());
 
-      /// canceled and failed downloads
-      if (status != DownloadTaskStatus.running) {
-        controller.close();
-        IsolateNameServer.removePortNameMapping('downloader_send_port');
-        return;
-      }
+    _port.listen((dynamic data) {
+      DownloadTaskStatus status = data[1];
+      debugPrint('Donwload $taskId status: ' + status.toString());
 
       /// only track the progress of current task id
-      if (id == taskId) {
+      if (status == DownloadTaskStatus.enqueued) {
+        controller.sink.add(0);
+      } else if (status == DownloadTaskStatus.running) {
+        int progress = data[2];
+        debugPrint('Download progress: ' + progress.toString());
         controller.sink.add(progress);
-        // download finished
-        if (progress == 100) {
-          controller.close();
-          IsolateNameServer.removePortNameMapping('downloader_send_port');
-          return;
-        }
+      } else if (status == DownloadTaskStatus.complete) {
+        controller.sink.add(100);
+        debugPrint('background download completed');
+        controller.close();
+      } else {
+        /// canceled and failed downloads
+        debugPrint('background download finished with status: $status');
+        controller.close();
       }
     });
 
@@ -79,13 +80,19 @@ class ArDriveDownloader {
 
   static Future<void> initialize() async {
     // Plugin must be initialized before using
-    await FlutterDownloader.initialize(debug: !kReleaseMode);
+    await FlutterDownloader.initialize(debug: kDebugMode);
+
+    /// As we don't handle unfinished downloads
+    /// we should cancel all when start
+    await FlutterDownloader.cancelAll();
 
     FlutterDownloader.registerCallback(downloadCallback);
   }
 
-  void cancelDownload() {
-    FlutterDownloader.cancel(taskId: _currentTaskId);
+  Future<void> cancelDownload() async {
+    IsolateNameServer.removePortNameMapping('downloader_send_port');
+    debugPrint('Current task id: $_currentTaskId');
+    await FlutterDownloader.cancel(taskId: _currentTaskId);
   }
 
   Future<void> openCurrentDownload() async {
@@ -101,5 +108,6 @@ class ArDriveDownloader {
 void downloadCallback(String id, DownloadTaskStatus status, int progress) {
   final SendPort send =
       IsolateNameServer.lookupPortByName('downloader_send_port')!;
+  debugPrint('sending message isolate downloader');
   send.send([id, status, progress]);
 }
