@@ -8,17 +8,17 @@ Future<void> requestPermissions() async {
 }
 
 Future<void> verifyPermissions() async {
-  List<Permission> deniedPErmissions = [];
+  List<Permission> deniedPermissions = [];
   if (await Permission.storage.isGranted) {
     return;
   } else {
-    deniedPErmissions.add(Permission.storage);
+    deniedPermissions.add(Permission.storage);
   }
   if (await Permission.manageExternalStorage.isGranted) {
     return;
   } else {
-    deniedPErmissions.add(Permission.manageExternalStorage);
+    deniedPermissions.add(Permission.manageExternalStorage);
   }
 
-  throw FileSystemPermissionDeniedException(deniedPErmissions);
+  throw FileSystemPermissionDeniedException(deniedPermissions);
 }
