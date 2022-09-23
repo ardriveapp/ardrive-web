@@ -18,5 +18,6 @@ String getDirname(String entityPath) {
   if (entityPath.isEmpty) {
     throw EntityPathException();
   }
+
   return path.dirname(entityPath);
 }
