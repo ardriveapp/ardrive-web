@@ -1,0 +1,1361 @@
+{
+  "@@locale": "ja",
+  "addnewManifestEmphasized": "新規マニフェストを追加する",
+  "@addnewManifestEmphasized": {
+    "description": "There is a non-manifest entity with the same name"
+  },
+  "addProfileEmphasized": "プロフィールを追加する",
+  "@addProfileEmphasized": {
+    "description": "Add a wallet. Emphasized with upper case"
+  },
+  "addSomeFiles": "ここには何もありません ファイルを追加するには「新規作成」をクリックしてください",
+  "@addSomeFiles": {
+    "description": "Empty folder"
+  },
+  "aggreeToTerms_body": "ArDriveのサービス利用規約とプライバシーポリシー同意する",
+  "@aggreeToTerms_body": {
+    "description": "Checkbox for agreeing to the terms of service and privacy policy"
+  },
+  "aggreeToTerms_link": "ArDriveのサービス利用規約とプライバシーポリシー",
+  "@aggreeToTerms_link": {
+    "description": "Segment of text representing a link to the legal documents"
+  },
+  "aggreeToTerms_main": "同意する",
+  "@aggreeToTerms_main": {
+    "description": "Checkbox for agreeing to the terms of service and privacy policy"
+  },
+  "aManifestIsASpecialKindOfFile": "マニフェストとは、任意の数のArweaveの取引をわかりやすいパス名にマッピングした特殊なファイルです。",
+  "@aManifestIsASpecialKindOfFile": {
+    "description": "Simple explanation of what a manifest is"
+  },
+  "anyFilesWillOutliveYou": "ここにアップロードされたファイルはすべて、あなたの死後も存在し続けますす!",
+  "@anyFilesWillOutliveYou": {
+    "description": "Files on the Weave will exist there forever"
+  },
+  "anyoneCanAccessThisDrivePrivate": "上記のリンクを使って誰でもこのプライベート・ドライブにアクセスすることができます。",
+  "@anyoneCanAccessThisDrivePrivate": {
+    "description": "Warning for the user that is about to share a drive"
+  },
+  "anyoneCanAccessThisDrivePublic": "上記のリンクを使って誰でもこの公開ドライブにアクセスすることができます。",
+  "@anyoneCanAccessThisDrivePublic": {
+    "description": "Warning for the user that is about to share a drive"
+  },
+  "anyoneCanAccessThisFile": "上記のリンクを使って誰でもこのファイルにアクセスすることができます。",
+  "@anyoneCanAccessThisFile": {
+    "description": "Warning for the user that is about to share a file"
+  },
+  "appVersion": "バージョン{version}",
+  "@appVersion": {
+    "description": "App version number",
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "0.0.0"
+      }
+    }
+  },
+  "arConnectRemainOnThisTab": "注意： Web3ウォレットがトランザクションに署名しています。完了するまでこのタブにとどまってください。",
+  "@arConnectRemainOnThisTab": {
+    "description": "Warning for the user to do not leave the tab"
+  },
+  "ardriveIsntJustAnotherCloudSyncApp": "ArDriveはただのクラウド同期アプリではありません。永続的なハードドライブの始まりです。",
+  "@ardriveIsntJustAnotherCloudSyncApp": {
+    "description": "Description about the permanence and uniqueness of ArDrive"
+  },
+  "ardriveIsOptimizedForLargeScreens": "ArDriveは現在大きな画面でのみ最適化されます。",
+  "@ardriveIsOptimizedForLargeScreens": {
+    "description": "Screen not supported page"
+  },
+  "attachDrive": "ドライブを接続",
+  "@attachDrive": {
+    "description": "Attach a shared drive"
+  },
+  "attachDriveEmphasized": "ドライブを接続",
+  "@attachDriveEmphasized": {
+    "description": "Attach a shared drive. Emphasized with upper case"
+  },
+  "attachEmphasized": "接続",
+  "@attachEmphasized": {
+    "description": "The action of attaching a drive. Emphasized with upper case"
+  },
+  "attachingDriveEmphasized": "ドライブを接続中…",
+  "@attachingDriveEmphasized": {
+    "description": "Drive attach form. Emphasized with upper case"
+  },
+  "back": "戻る",
+  "@back": {
+    "description": "Go back"
+  },
+  "backEmphasized": "戻る",
+  "@backEmphasized": {
+    "description": "Go back. Emphasized with upper case"
+  },
+  "backToFolder": "{entityName}フォルダに戻る",
+  "@backToFolder": {
+    "description": "Go back to folder",
+    "placeholders": {
+      "entityName": {
+        "type": "String",
+        "example": "entity name"
+      }
+    }
+  },
+  "bundleTxID": "バンドルTx ID",
+  "@bundleTxID": {
+    "description": "The bundle transaction ID of the bundled item"
+  },
+  "bundlingAndSigningUpload": "バンドルと署名のアップロード",
+  "@bundlingAndSigningUpload": {
+    "description": "The app is bundling together and signing the transactions"
+  },
+  "cancel": "キャンセル",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+  "cancelEmphasized": "キャンセル",
+  "@cancelEmphasized": {
+    "description": "Cancel button. Emphasized with upper case"
+  },
+  "changeWallet": "ウォレットを変更する",
+  "@changeWallet": {
+    "description": "To use a different wallet"
+  },
+  "closeEmphasized": "閉じる",
+  "@closeEmphasized": {
+    "description": "Close modal. Emphasized with upper case"
+  },
+  "confirmed": "確認済み",
+  "@confirmed": {
+    "description": "Status tooltip for transactions that are confirmed by the network"
+  },
+  "confirmEmphasized": "確認する",
+  "@confirmEmphasized": {
+    "description": "Confirm the prompted question"
+  },
+  "confirmPassword": "パスワードの確認",
+  "@confirmPassword": {
+    "description": "Label for repeating the password again"
+  },
+  "conflictingFiles": "重複するファイル",
+  "@conflictingFiles": {
+    "description": "Files conflict with already existing items"
+  },
+  "conflictingManifestFound": "競合するマニフェストが見つかりました",
+  "@conflictingManifestFound": {
+    "description": "There is an on-chain entity with the same name"
+  },
+  "conflictingManifestFoundChooseNewName": "同じ名前のマニフェストがすでにこの場所に存在します。続行して、このマニフェストを新しいバージョンとしてアップロードしますか？",
+  "@conflictingManifestFoundChooseNewName": {
+    "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
+  },
+  "conflictingNameFound": "競合する名前が見つかりました",
+  "@conflictingNameFound": {
+    "description": "There is a non-manifest entity with the same name"
+  },
+  "conflictingNameFoundChooseNewName": "その名前のエンティティはすでにこの場所に存在します。新しい名前を選択してください。",
+  "@conflictingNameFoundChooseNewName": {
+    "description": "The given name is conflicting with some entity, the user must type a non-conflicting name"
+  },
+  "congestionWarning": "Arweave現在大変混雑しています。現在アップロードが成功する見込みは薄いです。",
+  "@congestionWarning": {
+    "description": "Congestion warning"
+  },
+  "continueEmphasized": "続ける",
+  "@continueEmphasized": {
+    "description": "To go ahead. Emphasized with upper case"
+  },
+  "copyBundleTxID": "バンドルTx IDをコピーする",
+  "@copyBundleTxID": {
+    "description": "Copy transaction ID of the Bundle transaction"
+  },
+  "copyDataTxID": "データTx IDをコピーする",
+  "@copyDataTxID": {
+    "description": "Copy the transaction ID of the Data transaction"
+  },
+  "copyDriveID": "ドライブIDをコピーする",
+  "@copyDriveID": {
+    "description": "Tooltip of the copy icon for the Drive ID"
+  },
+  "copyDriveTxID": "ドライブTx IDをコピーする",
+  "@copyDriveTxID": {
+    "description": "Copy transaction ID of Drive tooltip"
+  },
+  "copyFileID": "ファイルIDをコピーする",
+  "@copyFileID": {
+    "description": "Tooltip of the copy icon for the File ID"
+  },
+  "copyFolderID": "フォルダIDをコピーする",
+  "@copyFolderID": {
+    "description": "Tooltip of the copy icon for the Folder ID"
+  },
+  "copyLink": "リンクをコピーする",
+  "@copyLink": {
+    "description": "Copy the link for sharing an entity"
+  },
+  "copyMetadataTxID": "メタデータTx IDをコピーする",
+  "@copyMetadataTxID": {
+    "description": "Copy the transaction ID of the Metadata transaction"
+  },
+  "copyRootFolderTxID": "ルート・フォルダTx IDをコピーする",
+  "@copyRootFolderTxID": {
+    "description": "Copy transaction ID of Root Folder tooltip"
+  },
+  "cost": "料金：{arPrice} AR",
+  "@cost": {
+    "description": "The total cost estimation of the upload quoted in AR",
+    "placeholders": {
+      "arPrice": {
+        "type": "String",
+        "example": "0"
+      }
+    }
+  },
+  "create": "作成する",
+  "@create": {
+    "description": "Create an drive"
+  },
+  "createDriveEmphasized": "ドライブを作成",
+  "@createDriveEmphasized": {
+    "description": "Action of creating a new drive. Emphasized with upper case"
+  },
+  "createEmphasized": "作成する",
+  "@createEmphasized": {
+    "description": "Create a drive. Emphasized with upper case"
+  },
+  "createFolderEmphasized": "フォルダを作成する",
+  "@createFolderEmphasized": {
+    "description": "The action of creating a folder. Emphasized with upper case"
+  },
+  "createHereEmphasized": "ここに作成する",
+  "@createHereEmphasized": {
+    "description": "Create the manifest in the current selected folder"
+  },
+  "createManifest": "マニフェストを作成する",
+  "@createManifest": {
+    "description": "To create a manifest"
+  },
+  "createManifestEmphasized": "マニフェストを作成する",
+  "@createManifestEmphasized": {
+    "description": "To create a manifest"
+  },
+  "creatingDriveEmphasized": "ドライブを作成中…",
+  "@creatingDriveEmphasized": {
+    "description": "The drive is being created. Emphasized with upper case"
+  },
+  "creatingFolderEmphasized": "フォルダ作成中…",
+  "@creatingFolderEmphasized": {
+    "description": "Folder is being created. Emphasized with upper case"
+  },
+  "dataTxID": "データTx ID",
+  "@dataTxID": {
+    "description": "The transaction ID of the entity Data transaction"
+  },
+  "dateCreated": "作成日",
+  "@dateCreated": {
+    "description": "Creation time of the entity revision"
+  },
+  "decentralizedPermanent": "分散型の永久データ保存は一瞬では実現しません。",
+  "@decentralizedPermanent": {
+    "description": "Permanence requires patience"
+  },
+  "detachDrive": "ドライブを切り離しますか？",
+  "@detachDrive": {
+    "description": "Detach Drive Title"
+  },
+  "detachDriveQuestion": "「{driveName}」を切り離してもよろしいですか？",
+  "@detachDriveQuestion": {
+    "description": "Ask for user confirmation to detach drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Shared Drive A"
+      }
+    }
+  },
+  "detachEmphasized": "切り離す",
+  "@detachEmphasized": {
+    "description": "Example: To DETACH a drive. Emphasized in upper case"
+  },
+  "displayedPaginatedData": "{total}件中の{from} ～ {to}件",
+  "@displayedPaginatedData": {
+    "description": "Indicates the user what items of a list are being displayed. Example: 1 - 25 of 100",
+    "placeholders": {
+      "from": {
+        "type": "int",
+        "example": "1",
+        "format": "decimalPattern"
+      },
+      "to": {
+        "type": "int",
+        "example": "25",
+        "format": "decimalPattern"
+      },
+      "total": {
+        "type": "int",
+        "example": "100",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "doneEmphasized": "完了",
+  "@doneEmphasized": {},
+  "download": "ダウンロード",
+  "@download": {
+    "description": "Action of downloading a file"
+  },
+  "downloadingCSV": "CSVをダウンロード中…",
+  "@downloadingCSV": {
+    "description": "The CSV file is being downloaded"
+  },
+  "downloadingFile": "ファイルのダウンロード中...",
+  "@downloadingFile": {
+    "description": "File is being downloaded"
+  },
+  "driveID": "ドライブID",
+  "@driveID": {
+    "description": "The Drive-ID tag"
+  },
+  "driveIssuesDetected": "このドライブに問題が検出されました。ドライブに移動して解決してください。",
+  "@driveIssuesDetected": {
+    "description": "Orphan folders detected, the user must navigate through the contents to reach them"
+  },
+  "driveKey": "ドライブキー",
+  "@driveKey": {
+    "description": "Drive Key form field label"
+  },
+  "driveName": "ドライブの名前",
+  "@driveName": {
+    "description": "The name of certain drive"
+  },
+  "driveRoot": "ドライブルート",
+  "@driveRoot": {
+    "description": "The folder entity that is at the top of the folder hierarchy"
+  },
+  "driveSyncedOfDrivesCount": "{drivesCount}個のドライブのうち{drivesSynced}個が同期されました。",
+  "@driveSyncedOfDrivesCount": {
+    "description": "Show the number of drives synced and the number of user's drives",
+    "placeholders": {
+      "drivesSynced": {
+        "type": "int",
+        "example": "1",
+        "format": "decimalPattern"
+      },
+      "drivesCount": {
+        "type": "int",
+        "example": "1",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "driveTxID": "ドライブTx ID",
+  "@driveTxID": {
+    "description": "The transaction ID of the drive"
+  },
+  "driveWasCreatedWithName": "このドライブは{driveName}という名前で作成されました。",
+  "@driveWasCreatedWithName": {
+    "description": "Drive activity (journal) entry: created",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "drive name"
+      }
+    }
+  },
+  "driveWasModified": "このドライブは変更されました",
+  "@driveWasModified": {
+    "description": "Drive activity (journal) entry: modified"
+  },
+  "driveWasRenamed": "このドライブは{driveName}という名前に変更されました。",
+  "@driveWasRenamed": {
+    "description": "Drive activity (journal) entry: renamed",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "drive name"
+      }
+    }
+  },
+  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{重複する１個のファイルが見つかりました} =other{重複する複数のファイルが見つかりました}}",
+  "@duplicateFiles": {
+    "description": "Count of conflicting items",
+    "placeholders": {
+      "numberOfDuplicateFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{重複するフォルダが見つかりました。} =other{複数の重複するフォルダが見つかりました}}",
+  "@duplicateFolders": {
+    "description": "Folder name conflict dialog title",
+    "placeholders": {
+      "numberOfDuplicateFolders": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "enterFileKey": "ファイルキーを入力する",
+  "@enterFileKey": {
+    "description": "File Key form field label"
+  },
+  "entityAlreadyExists": "移動先に{entityName}という名前のエンティティが既に存在します。移動しようとしているファイルまたはフォルダの名前を変更して、再度お試しください。",
+  "@entityAlreadyExists": {
+    "description": "Message warning the user that the given entity name already exists. Then requests that the user to choose a new name for the entity.",
+    "placeholders": {
+      "entityName": {
+        "type": "String",
+        "example": "entity name"
+      }
+    }
+  },
+  "error": "エラー",
+  "@error": {
+    "description": "Indicates that something went wrong"
+  },
+  "errorDragAndDropFolder": "現在、フォルダでのドラッグ＆ドロップはサポートしておりません",
+  "@errorDragAndDropFolder": {
+    "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
+  },
+  "exportDriveContents": "ドライブの内容をエクスポート",
+  "@exportDriveContents": {
+    "description": "Export the data of a drive into a CSV file"
+  },
+  "exportFromCSV": "{driveId} {timestamp}.csvからエクスポート",
+  "@exportFromCSV": {
+    "description": "Filename of the CSV data export",
+    "placeholders": {
+      "driveId": {
+        "type": "String",
+        "example": "362cbfee-feae-4835-b3fc-d5ed513eec7a"
+      },
+      "timestamp": {
+        "type": "String",
+        "example": "1646828373148"
+      }
+    }
+  },
+  "exportingData": "データをエクスポート中、お待ちください。",
+  "@exportingData": {
+    "description": "The drive data is being processed"
+  },
+  "failed": "失敗",
+  "@failed": {
+    "description": "Status tooltip for failed transactions"
+  },
+  "failedToCreateManifestEmphasized": "マニフェストの作成に失敗しました",
+  "@failedToCreateManifestEmphasized": {
+    "description": "The manifest could not be created"
+  },
+  "failedToSyncDrive": "ドライブのコンテンツの同期に失敗しました。",
+  "@failedToSyncDrive": {
+    "description": "The app wasn't able to sync the drive"
+  },
+  "feedbackContent": "このアプリを使用した体験についてフィードバックを残していただけますか？",
+  "@feedbackContent": {
+    "description": "Asks for feedback"
+  },
+  "feedbackTitle": "ArDriveをご利用いただきありがとうございます！",
+  "@feedbackTitle": {
+    "description": "We thank the user"
+  },
+  "fileCount": "{fileCount, plural, zero{ファイルなし} other{{fileCount} ファイル}}",
+  "@fileCount": {
+    "description": "Plurals for the file count. First character in lower case",
+    "placeholders": {
+      "fileCount": {
+        "type": "int",
+        "example": "2",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "fileDownloadFailed": "ファイルのダウンロードが失敗しました",
+  "@fileDownloadFailed": {
+    "description": "Could not export the CSV data"
+  },
+  "fileFailedToDownload": "ファイルのダウンロードが失敗しました",
+  "@fileFailedToDownload": {
+    "description": "Error message for failed downloads"
+  },
+  "fileHadANewRevision": "このファイルの新バージョンがアップロードされました。",
+  "@fileHadANewRevision": {
+    "description": "File activity (journal): new revision"
+  },
+  "fileID": "ファイルID",
+  "@fileID": {
+    "description": "The Entity-ID tag of files"
+  },
+  "fileName": "ファイル名",
+  "@fileName": {
+    "description": "The name of certain file"
+  },
+  "fileSize": "ファイルサイズ",
+  "@fileSize": {
+    "description": "The size of a file"
+  },
+  "filesTooLarge": "{numberOfFiles,plural, =1{ファイルのサイズが大きすぎます} =other{{numberOfFiles} 複数のファイルのサイズが大きすぎます}}",
+  "@filesTooLarge": {
+    "description": "A single or many files are too large to upload",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "filesTooLargeExplanationPrivate": "ArDrive on web は現在、プライベート・ドライブでは 100 MiB 以下のファイルのアップロードにのみ対応しています。",
+  "@filesTooLargeExplanationPrivate": {
+    "description": "Limit of size to upload"
+  },
+  "filesTooLargeExplanationPublic": "ArDrive on web は現在、パブリック・ドライブでは 1.25 GiB以下のファイルのアップロードにのみ対応しています。",
+  "@filesTooLargeExplanationPublic": {
+    "description": "Limit of size to upload"
+  },
+  "filesWillBePermanentlyPublicWarning": "ここにアップロードされたファイルは、インターネット上の誰もが永久に閲覧することができます。このデータを公開する意思があることを確認してください。",
+  "@filesWillBePermanentlyPublicWarning": {
+    "description": "Make the user aware that it is uploading permanent data publicly"
+  },
+  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{このファイルを公開ファイルとしてアップロードします。} =other{これらのファイルを公開ファイルとしてアップロードします。}}",
+  "@filesWillBeUploadedPublicly": {
+    "description": "Warning for files that will be public after uploaded",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "2",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{ 同じ名前のファイルが既にこの場所に存在します。このファイルをこのまま新しいバージョンとしてアップロードしますか？} =other{{numberOfFiles} 個の同じ名前のファイルが既にこの場所に存在します。これらのファイルをこのまま新しいバージョンとしてアップロードしますか？}}",
+  "@filesWithTheSameNameAlreadyExists": {
+    "description": "Asks the user what to do with the items conflicting names",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "fileWasCreatedWithName": "このファイルは{fileName}という名前で作成されました。",
+  "@fileWasCreatedWithName": {
+    "description": "File activity (journal): created",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "file name"
+      }
+    }
+  },
+  "fileWasModified": "このファイルは変更されました。",
+  "@fileWasModified": {
+    "description": "File activity (journal): modified"
+  },
+  "fileWasMoved": "このファイルは移動されました。",
+  "@fileWasMoved": {
+    "description": "File activity (journal): moved"
+  },
+  "fileWasRenamed": "このファイルは{fileName}という名前に変更されました。",
+  "@fileWasRenamed": {
+    "description": "File activity (journal): renamed",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "file name"
+      }
+    }
+  },
+  "fix": "修正する",
+  "@fix": {
+    "description": "Fix an orphan item"
+  },
+  "fixEmphasized": "修正する",
+  "@fixEmphasized": {
+    "description": "Fix an orphan item. Emphasized with upper case"
+  },
+  "folderAndFileCountComposite": "{folderCountString}、{fileCountString}",
+  "@folderAndFileCountComposite": {
+    "description": "Composite of the folder and file counts. Comma separated for English",
+    "placeholders": {
+      "folderCountString": {
+        "type": "String",
+        "example": "10 folders"
+      },
+      "fileCountString": {
+        "type": "String",
+        "example": "10 files"
+      }
+    }
+  },
+  "folderCount": "{folderCount, plural, zero{フォルダーなし} other{{folderCount} フォルダー}}",
+  "@folderCount": {
+    "description": "Plurals for the folder count. First character in lower case",
+    "placeholders": {
+      "folderCount": {
+        "type": "int",
+        "example": "2",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "folderID": "フォルダID",
+  "@folderID": {
+    "description": "The Entity-ID tag of folders"
+  },
+  "folderName": "フォルダの名前",
+  "@folderName": {
+    "description": "The name of certain folder"
+  },
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{ 同じ名前のフォルダが既にこの場所に存在します。名前を変更して、再度アップロードしてください。} =other{{numberOfFolders}この場所には同じ名前の複数のフォルダが既に存在しています。名前を変更して、再度アップロードしてください。}}",
+  "@foldersWithTheSameNameAlreadyExists": {
+    "description": "Asks the user what to do with folder name conflicts",
+    "placeholders": {
+      "numberOfFolders": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "folderWasCreatedWithName": "このフォルダは{folderName}という名前で作成されました。",
+  "@folderWasCreatedWithName": {
+    "description": "Folder activity (journal) entry: created",
+    "placeholders": {
+      "folderName": {
+        "type": "String",
+        "example": "folder name"
+      }
+    }
+  },
+  "folderWasModified": "このフォルダは変更されました。",
+  "@folderWasModified": {
+    "description": "Folder activity (journal): modified"
+  },
+  "folderWasMoved": "このフォルダは移動されました",
+  "@folderWasMoved": {
+    "description": "Folder activity (journal): moved"
+  },
+  "folderWasRenamed": "このフォルダは{folderName}という名前に変更されました。",
+  "@folderWasRenamed": {
+    "description": "Folder activity (journal): renamed",
+    "placeholders": {
+      "folderName": {
+        "type": "String",
+        "example": "folder name"
+      }
+    }
+  },
+  "forgetWallet": "ウォレットを忘れ、プロフィールを変更する",
+  "@forgetWallet": {
+    "description": "Use a different wallet by forgetting the current one"
+  },
+  "getAWallet": "ウォレットをお持ちでないですか？今すぐここで手に入れましょう！",
+  "@getAWallet": {
+    "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
+  },
+  "gotIt": "了解です！",
+  "@gotIt": {
+    "description": "Example similar phrases: I've got it, I understood, OK"
+  },
+  "goToFirst": "最初に戻る",
+  "@goToFirst": {
+    "description": "Action of going to the first page"
+  },
+  "goToLast": "最後に移動",
+  "@goToLast": {
+    "description": "Action of going to the latest page"
+  },
+  "greenCheckMark": "ファイルの横に緑のチェックマークが表示されたら、そのファイルはPermaWebにアップロードされています。",
+  "@greenCheckMark": {
+    "description": "Describes the indicator of the status of uploaded files"
+  },
+  "help": "ヘルプ",
+  "@help": {
+    "description": "Link to a form for collecting feedback from the user"
+  },
+  "howDoIGetAR": "ARを取得するにはどうすればいいですか",
+  "@howDoIGetAR": {
+    "description": "Link to a help page explaining how to get Arweave tokens"
+  },
+  "infernoIsInFullSwing": "インフェルノ・リワード・プログラムが本格化！参加ルールを確認するにはここをクリック！",
+  "@infernoIsInFullSwing": {
+    "description": "Text inviting the users to go read the Inferno rules"
+  },
+  "insufficientARForUpload": "ARが不足しているためアップロードできません。",
+  "@insufficientARForUpload": {
+    "description": "The wallet does not have enough balance"
+  },
+  "insufficientARToCreateDrive": "ARが不足しているため、ドライブを作成することができません。",
+  "@insufficientARToCreateDrive": {
+    "description": "Not enough balance"
+  },
+  "insufficientARWarning": "残高不足",
+  "@insufficientARWarning": {
+    "description": "Warns the user that the wallet balance is less than minimum AR required to make a transaction"
+  },
+  "insufficientBalanceForManifest": "指定されたウォレットの残高が{walletBalance} ARでは、{totalCost} ARかかるこのマニフェストの取引に十分ではありません…",
+  "@insufficientBalanceForManifest": {
+    "description": "The amount of AR the wallet has is not enough to upload the manifest transaction",
+    "placeholders": {
+      "walletBalance": {
+        "type": "String",
+        "example": "0"
+      },
+      "totalCost": {
+        "type": "String",
+        "example": "1.2"
+      }
+    }
+  },
+  "insufficientFundsForCreateADrive": "現在、ドライブを作成するための十分な資金がありません。トップアップページに移動して、アカウントに資金を追加してください。",
+  "@insufficientFundsForCreateADrive": {
+    "description": "Show that needs funds to create a Drive"
+  },
+  "insufficientFundsForCreateAFolder": "現在、フォルダーを作成するための十分な資金がありません。トップアップページに移動して、アカウントに資金を追加してください。",
+  "@insufficientFundsForCreateAFolder": {
+    "description": "Show that needs funds to create a Folder"
+  },
+  "insufficientFundsForCreateAManifest": "現在、マニフェストを作成するための十分な資金がありません。トップアップページに移動して、アカウントに資金を追加してください。",
+  "@insufficientFundsForCreateAManifest": {
+    "description": "Show that needs funds to create a Manifest"
+  },
+  "insufficientFundsForUploadFiles": "現在、ファイルをアップロードするための十分な資金がありません。トップアップページに移動して、アカウントに資金を追加してください。",
+  "@insufficientFundsForUploadFiles": {
+    "description": "Show that needs funds to upload files"
+  },
+  "insufficientFundsForUploadFolders": "現在、フォルダーをアップロードするための十分な資金がありません。トップアップページに移動して、アカウントに資金を追加してください。",
+  "@insufficientFundsForUploadFolders": {
+    "description": "Show that needs funds to upload folders"
+  },
+  "itemActivityEmphasized": "アクティビティ",
+  "@itemActivityEmphasized": {
+    "description": "The journal of the entity (created, renamed, moved, revision uploaded). Emphasized with upper case"
+  },
+  "itemContains": "含む",
+  "@itemContains": {
+    "description": "Used like so: 'Contains 15 folders, 10 files'"
+  },
+  "itemDetailsEmphasized": "詳細",
+  "@itemDetailsEmphasized": {
+    "description": "Item details such as dates, transaction IDs and entity IDs. Emphasized with upper case"
+  },
+  "itemIsBeingProcesed": "このアイテムは処理中です...",
+  "@itemIsBeingProcesed": {
+    "description": "The entity is being processed, no details to display yet"
+  },
+  "itemPreviewEmphasized": "プレビュー",
+  "@itemPreviewEmphasized": {
+    "description": "Item preview"
+  },
+  "lastModified": "最終更新日",
+  "@lastModified": {
+    "description": "Last modified date of the file in the local disk"
+  },
+  "lastModifiedDate": "最終更新{date}",
+  "@lastModifiedDate": {
+    "description": "Last modified date of the file in the local disk",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lastUpdated": "最終更新日",
+  "@lastUpdated": {
+    "description": "The timestamp of the transaction"
+  },
+  "learnMore": "さらに詳しく",
+  "@learnMore": {
+    "description": "Link to a document explaining manifests in detail"
+  },
+  "leaveFeedback": "フィードバックを残す",
+  "@leaveFeedback": {
+    "description": "The action of leaving feedback"
+  },
+  "letsGetStartedEmphasized": "始めましょう",
+  "@letsGetStartedEmphasized": {
+    "description": "Let's start setting up the account. Emphasized with upper case"
+  },
+  "login": "ログイン",
+  "@login": {
+    "description": "The login process"
+  },
+  "logIn": "ログイン",
+  "@logIn": {
+    "description": "The action of logging in. Imperative form"
+  },
+  "loginFailed": "ログインに失敗しました",
+  "@loginFailed": {
+    "description": "Text for when the user tried to login with wrong credentials"
+  },
+  "logInToExperienceFeatures": "ログインして、ArDriveのすべての機能を体験してください！",
+  "@logInToExperienceFeatures": {
+    "description": "User must login to use the features of ArDrive"
+  },
+  "logout": "ログアウト",
+  "@logout": {
+    "description": "The logout process"
+  },
+  "logOut": "ログアウト",
+  "@logOut": {
+    "description": "The action of logging out"
+  },
+  "logOutEmphasized": "ログアウト",
+  "@logOutEmphasized": {
+    "description": "The action of logging out. Emphasized with upper case"
+  },
+  "manifestName": "マニフェスト名",
+  "@manifestName": {
+    "description": "The name of the manifest"
+  },
+  "manifestTransactionUnexpectedlyFailed": "マニフェストの取引がArweaveネットワークへのアップロードに予期せずに失敗しました…",
+  "@manifestTransactionUnexpectedlyFailed": {
+    "description": "The manifest transaction did not succeed being uploaded"
+  },
+  "metadataTxID": "メタデータTx ID",
+  "@metadataTxID": {
+    "description": "The transaction ID of the entity Metadata transaction"
+  },
+  "monthlyCharges": "使わない空のスペースに毎月課金する代わりに、数セントを一度支払うだけでArDriveにファイルを永久に保存することができます。",
+  "@monthlyCharges": {
+    "description": "Payment philosophy"
+  },
+  "move": "移動する",
+  "@move": {
+    "description": "Action of moving certain file or folder"
+  },
+  "moveFileEmphasized": "ファイルを移動する",
+  "@moveFileEmphasized": {
+    "description": "The action of moving a file. Emphasized with upper case"
+  },
+  "moveFolderEmphasized": "フォルダを移動する",
+  "@moveFolderEmphasized": {
+    "description": "The action of moving a folder. Emphasized with upper case"
+  },
+  "moveHereEmphasized": "ここに移動する",
+  "@moveHereEmphasized": {
+    "description": "Move the entity to the current folder. Emphasized with upper case"
+  },
+  "movingFileEmphasized": "ファイル移動中…",
+  "@movingFileEmphasized": {
+    "description": "The action of moving a file. Emphasized with upper case"
+  },
+  "movingFolderEmphasized": "フォルダ移動中…",
+  "@movingFolderEmphasized": {
+    "description": "The action of moving a folder. Emphasized with upper case"
+  },
+  "name": "名前",
+  "@name": {
+    "description": "Name of certain entity"
+  },
+  "nameConflict": "名前の重複",
+  "@nameConflict": {
+    "description": "A conflict of names between two entities"
+  },
+  "neverDeletedEmphasized": "削除されることはありません",
+  "@neverDeletedEmphasized": {
+    "description": "Uploaded items cannot be deleted. Emphasized with upper case"
+  },
+  "newDrive": "新しいドライブ",
+  "@newDrive": {
+    "description": "Create a new drive entity"
+  },
+  "newFolder": "新しいフォルダ",
+  "@newFolder": {
+    "description": "Create a new folder entity"
+  },
+  "newString": "新規作成",
+  "@newString": {
+    "description": "New entity (folder, file, drive, manifest, attached drive)"
+  },
+  "newStringEmphasized": "新規作成",
+  "@newStringEmphasized": {
+    "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
+  },
+  "next": "次へ",
+  "@next": {
+    "description": "Action of going to the next page"
+  },
+  "nextEmphasized": "次へ",
+  "@nextEmphasized": {
+    "description": "Next step"
+  },
+  "noDeleteButton": "重要：削除ボタンはありません（あなたにも私たちにも）！",
+  "@noDeleteButton": {
+    "description": "Uploaded items cannot be deleted"
+  },
+  "noDrives": "個人用または接続されたドライブがありません。\n「新規作成」ボタンをクリックして, 追加してください！",
+  "@noDrives": {
+    "description": "Text for when the wallet has no on-chain drives to display"
+  },
+  "noFiles": "ここには何もありません。",
+  "@noFiles": {
+    "description": "Empty folder"
+  },
+  "noOneWillSee": "あなたが希望しなければ、誰も見ることができません。",
+  "@noOneWillSee": {
+    "description": "Indicates that private content won't reach to the wrong hands"
+  },
+  "noSubscriptions": "サブスクリプションは不要です！",
+  "@noSubscriptions": {
+    "description": "Payment philosophy"
+  },
+  "noThanks": "結構です！もう通知しないでください",
+  "@noThanks": {
+    "description": "Don't leave feedback, and don't ask again for it"
+  },
+  "notLoggedIn": "ログインしていません",
+  "@notLoggedIn": {
+    "description": "User has not logged in"
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button"
+  },
+  "okEmphasized": "OK",
+  "@okEmphasized": {
+    "description": "OK button. Emphasized in upper case"
+  },
+  "onceUploadedCantBeRemoved": "一度アップロードしたデータは、削除することができません。",
+  "@onceUploadedCantBeRemoved": {
+    "description": "Uploaded items cannot be deleted"
+  },
+  "password": "パスワード",
+  "@password": {
+    "description": "Label for the 'password' input"
+  },
+  "passwordCanNeverBeChanged": "パスワードは変更・復元できません。大切に保管してください！",
+  "@passwordCanNeverBeChanged": {
+    "description": "Explains that the password cannot be changed as it is the one of the wallet"
+  },
+  "passwordMismatch": "確認パスワードが一致しません。",
+  "@passwordMismatch": {
+    "description": "Error message for when the confirmation password doesn't match the actual pass"
+  },
+  "payPerFileEmphasized": "ファイルごとの支払",
+  "@payPerFileEmphasized": {
+    "description": "Payment philosophy. Emphasized with upper case"
+  },
+  "pending": "保留",
+  "@pending": {
+    "description": "Status tooltip for transactions which are waiting to be minted"
+  },
+  "personalDrivesEmphasized": "個人用ドライブ",
+  "@personalDrivesEmphasized": {},
+  "pleaseProvideSamePassword": "以前使用したのと同じパスワードを入力してください。",
+  "@pleaseProvideSamePassword": {
+    "description": "Asks for the wallet password"
+  },
+  "pleaseRemainOnThisTab": "ロード中... このタブにとどまっていてください。",
+  "@pleaseRemainOnThisTab": {
+    "description": "Circular progress indicator"
+  },
+  "preparingManifestEmphasized": "マニフェストを準備しています…",
+  "@preparingManifestEmphasized": {
+    "description": "The manifest is being prepared for the upload"
+  },
+  "preparingUpload": "アップロードの準備中…",
+  "@preparingUpload": {
+    "description": "The upload is being processed"
+  },
+  "preview": "プレビュー",
+  "@preview": {
+    "description": "Action of previewing a file"
+  },
+  "previous": "前へ",
+  "@previous": {
+    "description": "Action of going to the previous page"
+  },
+  "privacy": "プライバシー",
+  "@privacy": {
+    "description": "The privacy attribute of entities (e.g.: private drive, public folder)"
+  },
+  "private": "非公開",
+  "@private": {
+    "description": "A private entity"
+  },
+  "proceedCongestionEmphasized": "続行する",
+  "@proceedCongestionEmphasized": {
+    "description": "Proceed being aware of the network congestion. Emphasized with upper case"
+  },
+  "profile": "プロフィール",
+  "@profile": {
+    "description": "The user profile: user name, wallet address and wallet balance"
+  },
+  "public": "公開",
+  "@public": {
+    "description": "A public entity"
+  },
+  "recreateFolderEmphasized": "フォルダの再作成",
+  "@recreateFolderEmphasized": {
+    "description": "Recreate a folder that failed to be minted"
+  },
+  "recreatingFolderEmphasized": "フォルダの再作成中…",
+  "@recreatingFolderEmphasized": {
+    "description": "Folder is being recreated. Emphasized with upper case"
+  },
+  "rename": "名前を変更する",
+  "@rename": {
+    "description": "The action of renaming; imperative form"
+  },
+  "renameDrive": "ドライブの名前を変更する",
+  "@renameDrive": {
+    "description": "The action of renaming a drive"
+  },
+  "renameDriveEmphasized": "ドライブの名前を変更する",
+  "@renameDriveEmphasized": {
+    "description": "The action of renaming a drive. Emphasized with upper case"
+  },
+  "renameEmphasized": "名前を変更する",
+  "@renameEmphasized": {
+    "description": "The action of renaming; imperative form. Emphasized with upper case"
+  },
+  "renameFileEmphasized": "ファイルの名前を変更する",
+  "@renameFileEmphasized": {
+    "description": "The action of renaming a file. Emphasized with upper case"
+  },
+  "renameFolderEmphasized": "フォルダの名前を変更する",
+  "@renameFolderEmphasized": {
+    "description": "The action of renaming a folder. Emphasized with upper case"
+  },
+  "renamingDriveEmphasized": "ドライブの名前を変更中…",
+  "@renamingDriveEmphasized": {
+    "description": "The drive is being renamed. Emphasized with upper case"
+  },
+  "renamingFileEmphasized": "ファイルの名前を変更中…",
+  "@renamingFileEmphasized": {
+    "description": "File is being renamed. Emphasized with upper case"
+  },
+  "renamingFolderEmphasized": "フォルダの名前を変更中…",
+  "@renamingFolderEmphasized": {
+    "description": "Folder is being renamed. Emphasized with upper case"
+  },
+  "replaceEmphasized": "置き換える",
+  "@replaceEmphasized": {
+    "description": "Example: to REPLACE an entity"
+  },
+  "rootFolderTxID": "ルート・フォルダTx ID",
+  "@rootFolderTxID": {
+    "description": "The transaction ID of the Root Folder entity"
+  },
+  "rowsPerPage": "1 ページあたりの行数",
+  "@rowsPerPage": {
+    "description": "How many rows per page to use"
+  },
+  "secondsFromForeverEmphasized": "永遠から数秒",
+  "@secondsFromForeverEmphasized": {
+    "description": "Shows how close you are from permanence. Emphasized with upper case"
+  },
+  "selectWalletEmphasized": "ウォレットを選択",
+  "@selectWalletEmphasized": {
+    "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
+  },
+  "sharedDrivesEmphasized": "共有ドライブ",
+  "@sharedDrivesEmphasized": {},
+  "sharedFileIsEncrypted": "このファイルは暗号化されています。",
+  "@sharedFileIsEncrypted": {
+    "description": "Description that says the file is encrypted on shared file page"
+  },
+  "shareDrive": "ドライブを共有する",
+  "@shareDrive": {
+    "description": "The action of sharing a drive link"
+  },
+  "shareDriveWithOthers": "ドライブを他の人と共有する",
+  "@shareDriveWithOthers": {
+    "description": "The action of sharing a drive link"
+  },
+  "shareFailedFile": "共有しようとしているファイルは無効で、共有できません。",
+  "@shareFailedFile": {
+    "description": "Failed file share dialog text"
+  },
+  "shareFile": "ファイルを共有する",
+  "@shareFile": {
+    "description": "The action of sharing a file link"
+  },
+  "shareFileWithOthers": "他の人とファイルを共有する",
+  "@shareFileWithOthers": {
+    "description": "To share a file link"
+  },
+  "sharePendingFile": "共有しようとしているファイルは現在保留中であり、現時点では共有できません。",
+  "@sharePendingFile": {
+    "description": "Pending file share dialog text"
+  },
+  "signingUpload": "署名のアップロード",
+  "@signingUpload": {
+    "description": "The app is signing the transactions"
+  },
+  "size": "サイズ",
+  "@size": {
+    "description": "The size of a file, folder or drive"
+  },
+  "skipEmphasized": "スキップする",
+  "@skipEmphasized": {
+    "description": "Example: to SKIP a conflict"
+  },
+  "sorryLoginFailed": "申し訳ありません。ログインが失敗しました。もう一度お試しください。",
+  "@sorryLoginFailed": {
+    "description": "Text for when the user tried to login with wrong credentials"
+  },
+  "specifiedFileDoesNotExist": "指定されたファイルは存在しません。",
+  "@specifiedFileDoesNotExist": {
+    "description": "The shared file the user is trying to access does not exist"
+  },
+  "subscribeEmphasized": "購読する",
+  "@subscribeEmphasized": {
+    "description": "Screen not supported page. Emphasized with upper case"
+  },
+  "sync": "同期",
+  "@sync": {
+    "description": "Sync button tooltip"
+  },
+  "syncingOnlyOneDrive": "ドライブの同期中…",
+  "@syncingOnlyOneDrive": {
+    "description": "Show the message when the user has only one drive"
+  },
+  "syncingPleaseRemainOnThisTab": "同期中... このタブにとどまっていてください。",
+  "@syncingPleaseRemainOnThisTab": {
+    "description": "Syncing drives"
+  },
+  "syncingPleaseWait": "同期中…お待ちください。",
+  "@syncingPleaseWait": {
+    "description": "Syncing drives"
+  },
+  "syncProgressPercentage": "{percentage}%完了",
+  "@syncProgressPercentage": {
+    "description": "The sync progress percentage",
+    "placeholders": {
+      "percentage": {
+        "type": "String",
+        "example": "45.5"
+      }
+    }
+  },
+  "targetFolderEmphasized": "対象フォルダ",
+  "@targetFolderEmphasized": {
+    "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
+  },
+  "thinkTwiceBeforeUploading": "ティーン―エージャー時代の恋の詩をアップロードする前に、よく考えてください...",
+  "@thinkTwiceBeforeUploading": {
+    "description": "Uploaded items cannot be deleted"
+  },
+  "thisMayTakeAWhile": "しばらく時間がかかる場合があります…",
+  "@thisMayTakeAWhile": {
+    "description": "Uploading may take a while"
+  },
+  "tooLargeForUpload": "サイズが大きすぎるためアップロードできません",
+  "@tooLargeForUpload": {
+    "description": "Files too large for upload"
+  },
+  "totalPrivacyControlEmphasized": "完全なプライバシー管理",
+  "@totalPrivacyControlEmphasized": {
+    "description": "Title for talking about privacy. Emphasized with upper case"
+  },
+  "tryAgainDownloadingFile": "これは、ファイルが最近アップロードされたばかりの場合に発生することがあります。後でもう一度お試しください。",
+  "@tryAgainDownloadingFile": {
+    "description": "The data is still being replicated between nodes of the network and it's yet not available"
+  },
+  "tryAgainEmphasized": "もう一度やってみる",
+  "@tryAgainEmphasized": {
+    "description": "Try it again. Emphasized with upper case"
+  },
+  "tryLaterCongestionEmphasized": "後で試す",
+  "@tryLaterCongestionEmphasized": {
+    "description": "Try to upload later. Emphasized with upper case"
+  },
+  "tryOnAnotherDevice": "他のデバイスでお試しいただくか、以下のニュースレターを購読して、弊社の今後のモバイルアプリの最新情報をご確認ください。",
+  "@tryOnAnotherDevice": {
+    "description": "Screen not supported page"
+  },
+  "unlock": "ロック解除",
+  "@unlock": {
+    "description": "Unlock a file or drive."
+  },
+  "unlockEmphasized": "ロック解除",
+  "@unlockEmphasized": {
+    "description": "Unlock the wallet with its password. Emphasized with upper case"
+  },
+  "upload": "アップロード",
+  "@upload": {
+    "description": "The action of uploading certain item"
+  },
+  "uploadDragAndDrop": "ファイルをアップロードする",
+  "@uploadDragAndDrop": {
+    "description": "The action of uploading a file"
+  },
+  "uploadEmphasized": "アップロード",
+  "@uploadEmphasized": {
+    "description": "The action of uploading certain item"
+  },
+  "uploadFailed": "アップロード失敗",
+  "@uploadFailed": {
+    "description": "Upload Failed dialog title"
+  },
+  "uploadFiles": "ファイル（複数可）をアップロードする",
+  "@uploadFiles": {
+    "description": "Upload files to the Weave"
+  },
+  "uploadFolder": "フォルダをアップロードする",
+  "@uploadFolder": {
+    "description": "Upload a folder and every subfolder alongside files inside them"
+  },
+  "uploadingManifestEmphasized": "マニフェストをアップロードしています…",
+  "@uploadingManifestEmphasized": {
+    "description": "The manifest is being uploaded"
+  },
+  "uploadingNFiles": "{numberOfFiles,plural, =1{ 1個のファイルをアップロード中...} =other{ {numberOfFiles} 個のファイルをアップロード中...}}",
+  "@uploadingNFiles": {
+    "description": "Uploading a single or many files",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "uploadNFiles": "{numberOfFiles,plural, =1{1個のファイルをアップロードする} =other{{numberOfFiles} 個のファイルをアップロードする}}",
+  "@uploadNFiles": {
+    "description": "Upload a single or many files",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "useArconnectEmphasized": "ARCONNECTを使う",
+  "@useArconnectEmphasized": {
+    "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
+  },
+  "username": "ユーザー名",
+  "@username": {
+    "description": "Label for the username"
+  },
+  "validationAttachDriveCouldNotBeFound": "指定されたドライブが見つかりませんでした。",
+  "@validationAttachDriveCouldNotBeFound": {
+    "description": "Input validation error: The given drive ID does not exist"
+  },
+  "validationAttachUserLoggedOut": "プライベートドライブを接続するには、サインインする必要があります。",
+  "@validationAttachUserLoggedOut": {
+    "description": "Input validation error: the user cannot attach a drive when not logged in"
+  },
+  "validationDriveNameAlreadyPresent": "この名前のドライブはすでに存在します。",
+  "@validationDriveNameAlreadyPresent": {
+    "description": "Input validation error: The given name is already in use by some exising drive"
+  },
+  "validationEntityNameAlreadyPresent": "この名前のフォルダー/ファイルはすでにここに存在します。",
+  "@validationEntityNameAlreadyPresent": {
+    "description": "Input validation error: The given name is already in use by some exising entity"
+  },
+  "validationInvalid": "このフィールドは無効です。",
+  "@validationInvalid": {
+    "description": "Input validation error: the field has invalid data"
+  },
+  "validationInvalidKey": "無効なドライブキー。",
+  "@validationInvalidKey": {
+    "description": "Input validation error: The given drive key is wrong"
+  },
+  "validationNameUnchanged": "この名前は現在の名前と同じです",
+  "@validationNameUnchanged": {
+    "description": "Input validation error: The given name is exactly the same"
+  },
+  "validationPasswordIncorrect": "このパスワードは正しくありません。",
+  "@validationPasswordIncorrect": {
+    "description": "Input validation error: the given password is wrong"
+  },
+  "validationRequired": "このフィールドは必須です。",
+  "@validationRequired": {
+    "description": "Input validation error: the field is empty, but it's required"
+  },
+  "validationSharedFileIncorrectFileKey": "キーが正しくありません。再試行してください。",
+  "@validationSharedFileIncorrectFileKey": {
+    "description": "The user entered an incorrect file key"
+  },
+  "viewInfo": "情報を見る",
+  "@viewInfo": {
+    "description": "View the activity and details of the entity"
+  },
+  "viewOnly": "表示のみ",
+  "@viewOnly": {
+    "description": "The user has no permission to edit, only to view"
+  },
+  "walletChangedDuringManifestCreation": "指定されたウォレットがマニフェストの作成中に予期せずに変更されました…",
+  "@walletChangedDuringManifestCreation": {
+    "description": "The wallet has been changed while the creation of the manifest was in process"
+  },
+  "walletChangeDetected": "ウォレットの変更を検知しました。ログアウトしてから、再度ログインしてください",
+  "@walletChangeDetected": {
+    "description": "The wallet has changed. The user must log in again"
+  },
+  "walletSwitch": "ウォレット切り替え",
+  "@walletSwitch": {
+    "description": "The wallet has changed. The user must log in again"
+  },
+  "warningEmphasized": "警告",
+  "@warningEmphasized": {
+    "description": "Congestion warning. Emphasized with upper case"
+  },
+  "weDoAFewThingsDifferently": "私たちはいくつかのことを違ったやり方で行います",
+  "@weDoAFewThingsDifferently": {
+    "description": "What ArDrive does differently"
+  },
+  "welcomeBackEmphasized": "おかえりなさい",
+  "@welcomeBackEmphasized": {
+    "description": "Welcoming for an existing user. Emphasized with upper case"
+  },
+  "welcomeBackUserEmphasized": "{username}さん、おかえりなさい",
+  "@welcomeBackUserEmphasized": {
+    "description": "Welcoming to the user. Emphasized with upper case",
+    "placeholders": {
+      "username": {
+        "type": "String",
+        "example": "user"
+      }
+    }
+  },
+  "welcomeTo_body": "プライバシーが保護される安全な分散型、従量課金制の、検閲に強い恒久的なハードドライブへようこそ",
+  "@welcomeTo_body": {
+    "description": "Welcoming message just after the ArDrive logo"
+  },
+  "welcomeTo_description": "プライバシーが保護される安全な分散型、従量課金制の検閲に強い恒久的なハードドライブ",
+  "@welcomeTo_description": {
+    "description": "Brief description of ArDrive as welcoming"
+  },
+  "welcomeTo_main": "ようこそ",
+  "@welcomeTo_main": {
+    "description": "Highly emphasized text giving welcome"
+  },
+  "welcomeToThePermawebEmphasized": "PERMAWEBへようこそ",
+  "@welcomeToThePermawebEmphasized": {
+    "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
+  },
+  "weReSorryEmphasized": "申し訳ありません",
+  "@weReSorryEmphasized": {
+    "description": "Screen not supported page. Emphasized with upper case"
+  },
+  "weWontRemindYou": "OK わかりました！もう通知しません。",
+  "@weWontRemindYou": {
+    "description": "We let the user know that we won't remind them to leave feedback again"
+  },
+  "weWontRemindYouDescription": "気が変わって後日フィードバックを残したい場合は、メニューのリンクから行えます。",
+  "@weWontRemindYouDescription": {
+    "description": "We let the user know where to find the 'Leave Feedback' button"
+  },
+  "whatIsArDrive": "ArDriveとは？",
+  "@whatIsArDrive": {
+    "description": "What is ArDrive? link on shared file page"
+  },
+  "yourChoice": "あなたの選択：ファイルを公開、または最高の暗号化を使用して非公開にする。",
+  "@yourChoice": {
+    "description": "User can choose whether or not to make the content public"
+  },
+  "yourUploadFailed": "アップロードに失敗しました。失敗した試行に対しては請求されていません。",
+  "@yourUploadFailed": {
+    "description": "Upload fail dialog description."
+  }
+}

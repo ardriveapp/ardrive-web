@@ -11,6 +11,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -27,15 +28,23 @@ Future<void> promptToUpload(
   if (isFolderUpload) {
     final ioFolder = await io.pickFolder();
     final ioFiles = await ioFolder.listFiles();
+
     final uploadFiles = ioFiles
         .map((file) => UploadFile(ioFile: file, parentFolderId: folderId))
         .toList();
+
     selectedFiles.addAll(uploadFiles);
   } else {
-    final ioFiles = await showMultipleFilesFilePickerModal(context);
+    // Display multiple options on Mobile
+    // Open file picker on Web
+    final ioFiles = kIsWeb
+        ? await io.pickFiles(fileSource: FileSource.fileSystem)
+        : await showMultipleFilesFilePickerModal(context);
+
     final uploadFiles = ioFiles
         .map((file) => UploadFile(ioFile: file, parentFolderId: folderId))
         .toList();
+
     selectedFiles.addAll(uploadFiles);
   }
 
@@ -78,6 +87,7 @@ class UploadForm extends StatelessWidget {
           } else if (state is UploadPreparationInitialized) {
             context.read<UploadCubit>().checkFilesAboveLimit();
           }
+
           if (state is UploadWalletMismatch) {
             Navigator.pop(context);
             await context.read<ProfileCubit>().logoutProfile();
@@ -251,6 +261,7 @@ class UploadForm extends StatelessWidget {
                         .reduce((value, element) => value += element)
                     : 0;
             final numberOfV2Files = state.uploadPlan.fileV2UploadHandles.length;
+
             return AppDialog(
               title: appLocalizationsOf(context)
                   .uploadNFiles(numberOfFilesInBundles + numberOfV2Files),
@@ -369,6 +380,7 @@ class UploadForm extends StatelessWidget {
                         .reduce((value, element) => value += element)
                     : 0;
             final numberOfV2Files = state.uploadPlan.fileV2UploadHandles.length;
+
             return AppDialog(
               dismissable: false,
               title: appLocalizationsOf(context)

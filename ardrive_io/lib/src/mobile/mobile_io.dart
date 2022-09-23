@@ -74,10 +74,11 @@ class MobileSelectableFolderFileSaver implements FileSaver {
     await _verifyPermissions();
 
     await file_saver.FileSaver.instance.saveAs(
-        file.name,
-        await file.readAsBytes(),
-        mime.extensionFromMime(file.contentType),
-        getMimeTypeFromString(file.contentType));
+      file.name,
+      await file.readAsBytes(),
+      mime.extensionFromMime(file.contentType),
+      getMimeTypeFromString(file.contentType),
+    );
 
     return;
   }
@@ -90,7 +91,7 @@ class MobileSelectableFolderFileSaver implements FileSaver {
     throw FileSystemPermissionDeniedException([Permission.storage]);
   }
 
-/// Request permissions related to storage on `Android` and `iOS`
+  /// Request permissions related to storage on `Android` and `iOS`
   Future<void> _requestPermissions() async {
     await Permission.storage.request();
   }
