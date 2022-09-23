@@ -1400,6 +1400,10 @@
   "@enableBiometricsOnSettings": {
     "description": "Open settings to enable biometric"
   },
+  "loginUsingBiometricCredential": "Login using your biometric credential",
+  "@loginUsingBiometricCredential": {
+    "description": "Login using your biometric credential"
+  },
   "goToDeviceSettings": "Go to Settings",
   "@goToDeviceSettings": {
     "description": "Go to device settings"

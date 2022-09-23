@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:app_settings/app_settings.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 
@@ -37,7 +39,7 @@ class BiometricAuthentication {
     return hasPassword != null;
   }
 
-  Future<bool> authenticate() async {
+  Future<bool> authenticate(BuildContext context) async {
     try {
       final canAuthenticate = await checkDeviceSupport();
 
@@ -47,7 +49,8 @@ class BiometricAuthentication {
 
       final authenticated = await _auth.authenticate(
           // TODO(@thiagocarvalhodev): Validate message and localize
-          localizedReason: 'Please authenticate to log in',
+          localizedReason:
+              appLocalizationsOf(context).loginUsingBiometricCredential,
           options: const AuthenticationOptions(biometricOnly: true));
 
       return authenticated;

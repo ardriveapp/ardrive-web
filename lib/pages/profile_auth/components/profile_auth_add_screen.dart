@@ -247,7 +247,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
 
               if (_isEnabled) {
                 try {
-                  if (await auth.authenticate()) {
+                  if (await auth.authenticate(context)) {
                     final store = await LocalKeyValueStore.getInstance();
 
                     store.putBool('biometricEnabled', true);
