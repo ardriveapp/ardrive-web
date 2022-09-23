@@ -1396,7 +1396,7 @@
   "@enableBiometricLogin": {
     "description": "Enable Biometric Login"
   },
-  "enableBiometricsOnSettings": "Biometric authentication has been disabled. Please enable it in Settings.",
+  "enableBiometricsOnSettings": "This function is currently disabled on your device. To use it, please go to your device Settings and enable biometric authentication.",
   "@enableBiometricsOnSettings": {
     "description": "Open settings to enable biometric"
   },

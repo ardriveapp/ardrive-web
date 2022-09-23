@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:app_settings/app_settings.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:flutter/services.dart';
@@ -34,7 +37,6 @@ class BiometricAuthentication {
     return hasPassword != null;
   }
 
-  @override
   Future<bool> authenticate() async {
     try {
       final canAuthenticate = await checkDeviceSupport();
@@ -57,6 +59,16 @@ class BiometricAuthentication {
       throw BiometricUnknownException();
     }
   }
+}
+
+/// Open the Platform specific settings where biometrics option can be enabled
+Future<void> openSettingsToEnableBiometrics() async {
+  if (Platform.isAndroid) {
+    await AppSettings.openDeviceSettings();
+    return;
+  }
+  await AppSettings.openAppSettings();
+  return;
 }
 
 class BiometricPermissionException implements Exception {}
