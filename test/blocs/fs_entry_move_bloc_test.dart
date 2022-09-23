@@ -289,6 +289,7 @@ void main() {
       wait: const Duration(seconds: 4),
       expect: () => [
         isA<FsEntryMoveLoadSuccess>(),
+        isA<FsEntryMoveLoadInProgress>(),
         isA<FsEntryMoveSuccess>(),
       ],
     );
