@@ -985,6 +985,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.27.5"
+  security_scoped_resource:
+    dependency: transitive
+    description:
+      name: security_scoped_resource
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.0.1"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -1362,5 +1369,5 @@ packages:
     source: hosted
     version: "3.1.1"
 sdks:
-  dart: ">=2.17.0 <3.0.0"
+  dart: ">=2.17.5 <3.0.0"
   flutter: ">=3.0.5"

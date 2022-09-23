@@ -1,12 +1,14 @@
 import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_io/src/io_exception.dart';
-import 'web/stub_web_io.dart' // Stub implementation
-    if (dart.library.html) 'web/web_io.dart';
+import 'package:ardrive_io/src/utils/permissions.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:security_scoped_resource/security_scoped_resource.dart';
+
+import 'web/stub_web_io.dart' // Stub implementation
+    if (dart.library.html) 'web/web_io.dart';
 
 /// `gallery` device's gallery
 /// `fileSystem` device's file system
@@ -88,7 +90,8 @@ class FilePickerProvider implements MultiFileProvider {
     );
 
     return Future.wait(
-        result.files.map((file) => _fileAdapter.fromFilePicker(file)).toList());
+      result.files.map((file) => _fileAdapter.fromFilePicker(file)).toList(),
+    );
   }
 
   Future<FilePickerResult> _pickFile({
@@ -138,7 +141,13 @@ class FilePickerProvider implements MultiFileProvider {
 
     final selectedDirectory = Directory(selectedDirectoryPath);
 
-    return _ioFolderAdapter.fromFileSystemDirectory(selectedDirectory);
+    await SecurityScopedResource.instance
+        .startAccessingSecurityScopedResource(selectedDirectory);
+
+    return secureScopedAction<IOFolder>(
+      _ioFolderAdapter.fromFileSystemDirectory(selectedDirectory),
+      selectedDirectory,
+    );
   }
 }
 
