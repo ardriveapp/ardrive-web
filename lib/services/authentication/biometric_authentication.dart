@@ -49,8 +49,8 @@ class BiometricAuthentication {
       }
 
       final authenticated = await _auth.authenticate(
-          // TODO(@thiagocarvalhodev): Validate message and localize
           localizedReason:
+              // ignore: use_build_context_synchronously
               appLocalizationsOf(context).loginUsingBiometricCredential,
           options: const AuthenticationOptions(biometricOnly: true));
 
