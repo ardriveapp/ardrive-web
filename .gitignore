@@ -52,5 +52,23 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
+# Test results
+/reports/*
+
 # Exceptions to above rules.
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+
+# fastlane specific
+**/fastlane/report.xml
+
+# deliver temporary files
+**/fastlane/Preview.html
+
+# snapshot generated screenshots
+**/fastlane/screenshots
+
+# scan temporary files
+**/fastlane/test_output
+
+# fvm
+/.fvm/flutter_sdk

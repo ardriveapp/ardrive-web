@@ -4,8 +4,14 @@ part of 'file_download_cubit.dart';
 /// that they have attached to their profile.
 class ProfileFileDownloadCubit extends FileDownloadCubit {
   final DriveID driveId;
+
   final FileID fileId;
-  final TxID dataTxId;
+  final String fileName;
+  final int fileSize;
+  final String? dataContentType;
+  final DateTime lastModified;
+
+  final TxID revisionDataTxId;
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
@@ -14,7 +20,11 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   ProfileFileDownloadCubit({
     required this.driveId,
     required this.fileId,
-    required this.dataTxId,
+    required this.fileName,
+    required this.fileSize,
+    required this.dataContentType,
+    required this.lastModified,
+    required this.revisionDataTxId,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required ArweaveService arweave,
@@ -28,19 +38,13 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   Future<void> download() async {
     try {
       final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-      final file = await _driveDao
-          .fileById(driveId: driveId, fileId: fileId)
-          .getSingle();
 
       emit(
-        FileDownloadInProgress(
-          fileName: file.name,
-          totalByteCount: file.size,
-        ),
+        FileDownloadInProgress(fileName: fileName, totalByteCount: fileSize),
       );
       final dataRes = await http.get(
         Uri.parse(
-          '${_arweave.client.api.gatewayUrl.origin}/$dataTxId',
+          '${_arweave.client.api.gatewayUrl.origin}/$revisionDataTxId',
         ),
       );
 
@@ -65,7 +69,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
           }
 
           final fileKey = await _driveDao.getFileKey(fileId, driveKey);
-          final dataTx = await (_arweave.getTransactionDetails(file.dataTxId));
+          final dataTx = await _arweave.getTransactionDetails(revisionDataTxId);
 
           if (dataTx != null) {
             dataBytes = await decryptTransactionData(
@@ -85,9 +89,9 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       emit(
         FileDownloadSuccess(
           bytes: dataBytes,
-          fileName: file.name,
-          mimeType: file.dataContentType ?? lookupMimeType(file.name),
-          lastModified: file.lastModifiedDate,
+          fileName: fileName,
+          mimeType: dataContentType ?? lookupMimeType(fileName),
+          lastModified: lastModified,
         ),
       );
     } catch (err) {
