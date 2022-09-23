@@ -56,11 +56,14 @@ class BiometricAuthentication {
 
       return authenticated;
     } on PlatformException catch (e) {
-      if (e.code == error_codes.notAvailable) {
-        throw BiometricPermissionException();
+      switch (e.code) {
+        case error_codes.notAvailable:
+          throw BiometricPermissionException();
+        case error_codes.lockedOut:
+          throw BiometricLockedException();
+        default:
+          throw BiometricUnknownException();
       }
-
-      throw BiometricUnknownException();
     }
   }
 }
@@ -75,8 +78,12 @@ Future<void> openSettingsToEnableBiometrics() async {
   return;
 }
 
-class BiometricPermissionException implements Exception {}
+class BiometricException implements Exception {}
 
-class BiometricUnknownException implements Exception {}
+class BiometricPermissionException implements BiometricException {}
 
-class BiometricUnsupportedException implements Exception {}
+class BiometricLockedException implements BiometricException {}
+
+class BiometricUnknownException implements BiometricException {}
+
+class BiometricUnsupportedException implements BiometricException {}
