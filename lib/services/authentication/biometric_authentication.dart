@@ -6,6 +6,7 @@ import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:local_auth/error_codes.dart' as error_codes;
 import 'package:local_auth/local_auth.dart';
 
 class BiometricAuthentication {
@@ -55,7 +56,7 @@ class BiometricAuthentication {
 
       return authenticated;
     } on PlatformException catch (e) {
-      if (e.code == 'NotAvailable') {
+      if (e.code == error_codes.notAvailable) {
         throw BiometricPermissionException();
       }
 
