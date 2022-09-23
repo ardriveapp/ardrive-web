@@ -37,7 +37,7 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
               const FlutterSecureStorage(),
             ),
           ),
-        ),
+        )..checkBiometrics(context),
         child: BlocListener<ProfileUnlockCubit, ProfileUnlockState>(
           listener: (context, state) {
             if (state is ProfileUnlockBiometricFailure) {
@@ -121,7 +121,7 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                             if (state is ProfileUnlockWithBiometrics) {
                               context
                                   .read<ProfileUnlockCubit>()
-                                  .unlockWithStoredPassword();
+                                  .unlockWithStoredPassword(context);
                             } else {
                               context.read<ProfileUnlockCubit>().submit();
                             }

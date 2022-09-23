@@ -10,6 +10,7 @@ import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -48,7 +49,6 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
       _profileType = _profile.profileType == ProfileType.arConnect.index
           ? ProfileType.arConnect
           : ProfileType.json;
-      checkBiometrics();
     }();
   }
 
@@ -77,19 +77,21 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     await _login(password);
   }
 
-  Future<void> checkBiometrics() async {
+  Future<void> checkBiometrics(BuildContext context) async {
     emit(ProfileUnlockInitial(username: _profile.username, autoFocus: false));
     final isEnabled = await _biometricAuthentication.isEnabled();
     if (isEnabled) {
-      unlockWithStoredPassword();
+      // ignore: use_build_context_synchronously
+      unlockWithStoredPassword(context);
     }
   }
 
-  Future<void> unlockWithStoredPassword() async {
+  Future<void> unlockWithStoredPassword(BuildContext context) async {
     final KeyValueStore store =
         SecureKeyValueStore(const FlutterSecureStorage());
     try {
-      final authenticated = await _biometricAuthentication.authenticate();
+      final authenticated =
+          await _biometricAuthentication.authenticate(context);
 
       if (authenticated) {
         _login((await store.getString('password'))!);
