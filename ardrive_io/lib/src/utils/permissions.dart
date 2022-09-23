@@ -27,7 +27,7 @@ Future<void> verifyPermissions() async {
 }
 
 /// Runs an action in the security scoped resource.
-/// When action ends the security scoped is also ended.
+/// When action ends the security scoped ended as well.
 ///
 /// Include in `action` all operations needed in the given `directory`.
 ///

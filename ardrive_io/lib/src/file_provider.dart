@@ -5,7 +5,6 @@ import 'package:ardrive_io/src/utils/permissions.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:security_scoped_resource/security_scoped_resource.dart';
 
 import 'web/stub_web_io.dart' // Stub implementation
     if (dart.library.html) 'web/web_io.dart';
@@ -140,9 +139,6 @@ class FilePickerProvider implements MultiFileProvider {
     }
 
     final selectedDirectory = Directory(selectedDirectoryPath);
-
-    await SecurityScopedResource.instance
-        .startAccessingSecurityScopedResource(selectedDirectory);
 
     return secureScopedAction<IOFolder>(
       _ioFolderAdapter.fromFileSystemDirectory(selectedDirectory),
