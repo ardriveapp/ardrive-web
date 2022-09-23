@@ -3,8 +3,8 @@ import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/mime_lookup.dart';
-import 'package:ardrive_io/ardrive_io.dart' show getDirname;
+import 'package:ardrive_io/ardrive_io.dart'
+    show getDirname, lookupMimeTypeWithDefaultType;
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:uuid/uuid.dart';
@@ -49,7 +49,7 @@ class UploadPlanUtils {
         size: fileSize,
         lastModifiedDate: file.ioFile.lastModifiedDate,
         parentFolderId: parentFolderId?.id ?? file.parentFolderId,
-        dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
+        dataContentType: lookupMimeTypeWithDefaultType(fileName),
       );
 
       // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
