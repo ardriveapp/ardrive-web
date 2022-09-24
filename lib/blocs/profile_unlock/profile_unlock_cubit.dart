@@ -104,9 +104,11 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
         );
       }
     } catch (e) {
-      if (e is BiometricPermissionException) {
-        emit(ProfileUnlockBiometricFailure());
+      if (e is BiometricException) {
+        emit(ProfileUnlockBiometricFailure(e));
+        return;
       }
+      emit(ProfileUnlockFailure());
     }
   }
 

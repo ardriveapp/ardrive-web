@@ -45,7 +45,7 @@ class BiometricAuthentication {
       final canAuthenticate = await checkDeviceSupport();
 
       if (!canAuthenticate) {
-        throw BiometricUnsupportedException();
+        throw BiometricUnknownException();
       }
 
       final authenticated = await _auth.authenticate(
@@ -58,9 +58,13 @@ class BiometricAuthentication {
     } on PlatformException catch (e) {
       switch (e.code) {
         case error_codes.notAvailable:
-          throw BiometricPermissionException();
+          throw BiometricNotAvailableException();
         case error_codes.lockedOut:
           throw BiometricLockedException();
+        case error_codes.passcodeNotSet:
+          throw BiometricPasscodeNotSetException();
+        case error_codes.notEnrolled:
+          throw BiometricNotEnrolledException();
         default:
           throw BiometricUnknownException();
       }
@@ -80,10 +84,12 @@ Future<void> openSettingsToEnableBiometrics() async {
 
 class BiometricException implements Exception {}
 
-class BiometricPermissionException implements BiometricException {}
+class BiometricUnknownException implements BiometricException {}
+
+class BiometricNotAvailableException implements BiometricException {}
 
 class BiometricLockedException implements BiometricException {}
 
-class BiometricUnknownException implements BiometricException {}
+class BiometricPasscodeNotSetException implements BiometricException {}
 
-class BiometricUnsupportedException implements BiometricException {}
+class BiometricNotEnrolledException implements BiometricException {}

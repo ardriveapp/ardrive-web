@@ -258,7 +258,15 @@ class _BiometricToggleState extends State<BiometricToggle> {
                     return;
                   }
                 } catch (e) {
-                  showBiometricPermissionDialog(context);
+                  // TODO(@thiagocarvalhodev): check the text for an unknown error
+                  if (e is BiometricException) {
+                    showBiometricExceptionForException(
+                      context,
+                      e,
+                      () =>
+                          context.read<ProfileUnlockCubit>().usePasswordLogin(),
+                    );
+                  }
                 }
               } else {
                 final store = await LocalKeyValueStore.getInstance();

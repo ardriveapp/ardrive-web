@@ -41,9 +41,11 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
         child: BlocListener<ProfileUnlockCubit, ProfileUnlockState>(
           listener: (context, state) {
             if (state is ProfileUnlockBiometricFailure) {
-              showBiometricPermissionDialog(context, cancelAction: () {
-                context.read<ProfileUnlockCubit>().usePasswordLogin();
-              });
+              showBiometricExceptionForException(
+                context,
+                state.exception,
+                () => context.read<ProfileUnlockCubit>().usePasswordLogin(),
+              );
             }
           },
           child: BlocBuilder<ProfileUnlockCubit, ProfileUnlockState>(

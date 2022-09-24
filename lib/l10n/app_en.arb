@@ -1407,5 +1407,25 @@
   "goToDeviceSettings": "Go to Settings",
   "@goToDeviceSettings": {
     "description": "Go to device settings"
+  },
+  "biometricTemporarilyDisabled": "Biometric login temporarily disabled due to too many unsuccessful attempts.",
+  "@biometricTemporarilyDisabled": {
+    "description": "Biometric is locked out"
+  },
+  "deviceNotSupportBiometrics": "This device does not support the use of biometrics.",
+  "@deviceNotSupportBiometrics": {
+    "description": "Biometric is not supported"
+  },  
+  "biometricsDisabledOnYourDevice": "This function is currently disabled on your device. To use it, please go to your device Settings and enable biometric authentication.",
+  "@biometricsDisabledOnYourDevice": {
+    "description": "Biometric is disabled"
+  },
+  "biometricsPasscodeNotSetAndroid": "Your device requires a PIN/pattern/password in order to use biometrics. Please create one in order to proceed.",
+  "@biometricsPasscodeNotSetAndroid": {
+    "description": "Passcode it not set on Android"
+  },
+  "biometricsPasscodeNotSetIOS": "Your device requires a passcode in order to use biometrics. Please create a one in order to proceed.",
+  "@biometricsPasscodeNotSetIOS": {
+    "description": "Passcode it not set on Android"
   }
 }

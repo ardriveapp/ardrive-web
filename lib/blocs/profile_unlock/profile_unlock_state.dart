@@ -25,4 +25,8 @@ class ProfileUnlockWithBiometrics extends ProfileUnlockState {}
 
 class ProfileUnlockFailure extends ProfileUnlockState {}
 
-class ProfileUnlockBiometricFailure extends ProfileUnlockState {}
+class ProfileUnlockBiometricFailure extends ProfileUnlockState {
+  ProfileUnlockBiometricFailure(this.exception);
+
+  final BiometricException exception;
+}
