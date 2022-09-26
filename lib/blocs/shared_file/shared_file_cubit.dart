@@ -3,13 +3,13 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 part 'shared_file_state.dart';
 
@@ -130,11 +130,8 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     emit(SharedFileNotFound());
   }
 
-  Future<void> launchPreview(TxID dataTxId) {
-    return launchUrl(
-      Uri.parse('${_arweave.client.api.gatewayUrl}/$dataTxId'),
-    );
-  }
+  Future<void> launchPreview(TxID dataTxId) =>
+      openUrl(url: '${_arweave.client.api.gatewayUrl}/$dataTxId');
 
   void submit() async {
     form.markAllAsTouched();
