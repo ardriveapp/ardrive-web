@@ -69,7 +69,7 @@ class DriveDetailActionRow extends StatelessWidget {
                     onPressed: () {
                       final filePreviewUrl = state.selectedFilePreviewUrl;
                       if (filePreviewUrl != null) {
-                        launchUrl(filePreviewUrl);
+                        openUrl(url: filePreviewUrl);
                       }
                     },
                     tooltip: appLocalizationsOf(context).preview,

@@ -5,6 +5,7 @@ import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +13,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:reactive_forms/reactive_forms.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'profile_auth_shell.dart';
 
@@ -112,10 +112,8 @@ class ProfileAuthAddScreen extends StatelessWidget {
                               const SizedBox(width: 12),
                               Flexible(
                                 child: GestureDetector(
-                                  onTap: () => launchUrl(
-                                    Uri.parse(
-                                      'https://ardrive.io/tos-and-privacy/',
-                                    ),
+                                  onTap: () => openUrl(
+                                    url: 'https://ardrive.io/tos-and-privacy/',
                                   ),
                                   child: Text.rich(
                                     TextSpan(
