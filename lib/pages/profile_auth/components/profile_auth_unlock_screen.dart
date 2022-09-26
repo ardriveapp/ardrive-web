@@ -45,6 +45,10 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                   .read<ProfileUnlockCubit>()
                   .unlockWithStoredPassword(context);
             } else if (state is ProfileUnlockBiometricFailure) {
+              if (state.exception is BiometricUnknownException) {
+                context.read<ProfileUnlockCubit>().usePasswordLogin();
+                return;
+              }
               showBiometricExceptionDialogForException(
                 context,
                 state.exception,

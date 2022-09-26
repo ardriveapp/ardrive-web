@@ -95,12 +95,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
       final storedPassword = await store.getString('password');
 
       if (storedPassword == null) {
-        emit(
-          ProfileUnlockInitial(
-            username: _profile.username,
-            autoFocus: true,
-          ),
-        );
+        usePasswordLogin();
         return;
       }
 
@@ -111,12 +106,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
       if (authenticated) {
         _login(storedPassword);
       } else {
-        emit(
-          ProfileUnlockInitial(
-            username: _profile.username,
-            autoFocus: true,
-          ),
-        );
+        usePasswordLogin();
       }
     } catch (e) {
       if (e is BiometricException) {
