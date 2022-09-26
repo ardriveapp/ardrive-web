@@ -71,6 +71,26 @@ class BiometricAuthentication {
           if (await isEnabled()) {
             await disable();
           }
+
+          /// If there is available biometrics and yet received a `NotAvailable`,
+          /// it failed to authenticate. It can happen when user use the wrong fingerprint or faceid
+          /// for many times. Yet the error code is not precisely,
+          /// this is how it is handled in iOS 16 iPhone 11.
+          final availables = await _auth.getAvailableBiometrics();
+
+          /// Have enrolled biometrics but yet failed, so it is locked.
+          if (availables.isNotEmpty) {
+            throw BiometricLockedException();
+          }
+
+          final deviceSupports = await _auth.isDeviceSupported();
+
+          /// The device supports but biometrics are not enrolled
+          if (deviceSupports) {
+            throw BiometricNotEnrolledException();
+          }
+
+          /// If there is not any biometrics available, show the correct modal
           throw BiometricNotAvailableException();
         case error_codes.lockedOut:
           throw BiometricLockedException();
