@@ -43,8 +43,11 @@ Future<void> showBiometricNotAvailable({
   );
 }
 
-Future<void> showBiometricExceptionForException(BuildContext context,
-    BiometricException exception, Function()? cancelAction) async {
+Future<void> showBiometricExceptionDialogForException(
+  BuildContext context,
+  BiometricException exception,
+  Function()? cancelAction,
+) async {
   if (exception is BiometricNotAvailableException) {
     showBiometricNotAvailable(
         context: context,

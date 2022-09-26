@@ -49,6 +49,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
       _profileType = _profile.profileType == ProfileType.arConnect.index
           ? ProfileType.arConnect
           : ProfileType.json;
+      checkBiometrics();
     }();
   }
 
@@ -77,12 +78,13 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     await _login(password);
   }
 
-  Future<void> checkBiometrics(BuildContext context) async {
+  Future<void> checkBiometrics() async {
     emit(ProfileUnlockInitial(username: _profile.username, autoFocus: false));
+
     final isEnabled = await _biometricAuthentication.isEnabled();
+
     if (isEnabled) {
-      // ignore: use_build_context_synchronously
-      unlockWithStoredPassword(context);
+      emit(ProfileUnlockWithBiometrics());
     }
   }
 

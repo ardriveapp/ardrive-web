@@ -37,11 +37,15 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
               const FlutterSecureStorage(),
             ),
           ),
-        )..checkBiometrics(context),
+        ),
         child: BlocListener<ProfileUnlockCubit, ProfileUnlockState>(
           listener: (context, state) {
-            if (state is ProfileUnlockBiometricFailure) {
-              showBiometricExceptionForException(
+            if (state is ProfileUnlockWithBiometrics) {
+              context
+                  .read<ProfileUnlockCubit>()
+                  .unlockWithStoredPassword(context);
+            } else if (state is ProfileUnlockBiometricFailure) {
+              showBiometricExceptionDialogForException(
                 context,
                 state.exception,
                 () => context.read<ProfileUnlockCubit>().usePasswordLogin(),
@@ -115,23 +119,6 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                               ),
                             )
                           : const SizedBox(),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            if (state is ProfileUnlockWithBiometrics) {
-                              context
-                                  .read<ProfileUnlockCubit>()
-                                  .unlockWithStoredPassword(context);
-                            } else {
-                              context.read<ProfileUnlockCubit>().submit();
-                            }
-                          },
-                          child: Text(
-                              appLocalizationsOf(context).unlockEmphasized),
-                        ),
-                      ),
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: () =>

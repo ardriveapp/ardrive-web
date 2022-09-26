@@ -68,6 +68,8 @@ class BiometricAuthentication {
         default:
           throw BiometricUnknownException();
       }
+    } on BiometricException {
+      rethrow;
     }
   }
 }

@@ -260,7 +260,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
                 } catch (e) {
                   // TODO(@thiagocarvalhodev): check the text for an unknown error
                   if (e is BiometricException) {
-                    showBiometricExceptionForException(
+                    showBiometricExceptionDialogForException(
                       context,
                       e,
                       () =>
