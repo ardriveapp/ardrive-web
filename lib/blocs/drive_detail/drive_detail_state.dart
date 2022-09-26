@@ -24,7 +24,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   /// The preview URL for the selected file.
   ///
   /// Null if no file is selected.
-  final Uri? selectedFilePreviewUrl;
+  final String? selectedFilePreviewUrl;
 
   final int rowsPerPage;
   final List<int> availableRowsPerPage;
@@ -52,7 +52,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     OrderingMode? contentOrderingMode,
     SelectedItem? maybeSelectedItem,
     bool? showSelectedItemDetails,
-    Uri? selectedFilePreviewUrl,
+    String? selectedFilePreviewUrl,
     int? rowsPerPage,
     List<int>? availableRowsPerPage,
     bool? driveIsEmpty,
