@@ -34,6 +34,11 @@ class BiometricAuthentication {
     return isEnabled ?? false;
   }
 
+  Future<void> disable() async {
+    final localStore = await LocalKeyValueStore.getInstance();
+    localStore.remove('biometricEnabled');
+  }
+
   Future<bool> isActive() async {
     final hasPassword = await _secureStore.getString('password');
 
@@ -59,9 +64,13 @@ class BiometricAuthentication {
 
       return authenticated;
     } on PlatformException catch (e) {
+      debugPrint(e.toString());
       debugPrint(e.code);
       switch (e.code) {
         case error_codes.notAvailable:
+          if (await isEnabled()) {
+            await disable();
+          }
           throw BiometricNotAvailableException();
         case error_codes.lockedOut:
           throw BiometricLockedException();

@@ -53,6 +53,8 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
             }
           },
           child: BlocBuilder<ProfileUnlockCubit, ProfileUnlockState>(
+            buildWhen: (previous, current) =>
+                current is! ProfileUnlockWithBiometrics,
             builder: (context, state) {
               if (state is ProfileUnlockFailure) {
                 return const ProfileAuthFailScreen();

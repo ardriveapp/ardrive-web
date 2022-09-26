@@ -66,7 +66,9 @@ Future<void> showBiometricPasscodeNotSet({
     action: () {
       openSettingsToEnableBiometrics();
     },
-    cancelAction: cancelAction,
+    cancelAction: () {
+      cancelAction?.call();
+    },
     actionTitle: appLocalizationsOf(context).goToDeviceSettings,
     cancelTitle: appLocalizationsOf(context).ok,
   );
@@ -101,9 +103,9 @@ Future<void> showBiometricExceptionDialog(
                 ),
               TextButton(
                 onPressed: () {
-                  cancelAction?.call();
-
                   Navigator.pop(context);
+
+                  cancelAction?.call();
                 },
                 child: Text(cancelTitle),
               )
@@ -120,27 +122,31 @@ Future<void> showBiometricExceptionDialogForException(
 ) async {
   if (exception is BiometricNotAvailableException) {
     showBiometricNotAvailable(
-        context: context,
-        cancelAction: () {
-          cancelAction?.call();
-        });
+      context: context,
+      cancelAction: () {
+        cancelAction?.call();
+      },
+    );
   } else if (exception is BiometricLockedException) {
     showBiometricIsLocked(
-        context: context,
-        cancelAction: () {
-          cancelAction?.call();
-        });
+      context: context,
+      cancelAction: () {
+        cancelAction?.call();
+      },
+    );
   } else if (exception is BiometricNotEnrolledException) {
     showBiometricNotEnrolled(
-        context: context,
-        cancelAction: () {
-          cancelAction?.call();
-        });
+      context: context,
+      cancelAction: () {
+        cancelAction?.call();
+      },
+    );
   } else if (exception is BiometricPasscodeNotSetException) {
     showBiometricPasscodeNotSet(
-        context: context,
-        cancelAction: () {
-          cancelAction?.call();
-        });
+      context: context,
+      cancelAction: () {
+        cancelAction?.call();
+      },
+    );
   }
 }

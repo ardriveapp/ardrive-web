@@ -263,8 +263,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
                     showBiometricExceptionDialogForException(
                       context,
                       e,
-                      () =>
-                          context.read<ProfileUnlockCubit>().usePasswordLogin(),
+                      () => widget.onDisableBiometric?.call(),
                     );
                   }
                 }
