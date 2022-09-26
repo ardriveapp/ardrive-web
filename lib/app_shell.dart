@@ -1,9 +1,9 @@
 import 'package:ardrive/utils/html/html_util.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'blocs/blocs.dart';
 import 'components/components.dart';
@@ -43,11 +43,9 @@ class AppShellState extends State<AppShell> {
                   IconButton(
                     icon: const Icon(Icons.people_alt),
                     tooltip: 'CommunityXYZ',
-                    onPressed: () => launchUrl(
-                      Uri.parse(
-                        'https://community.xyz/#-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ',
-                      ),
-                    ),
+                    onPressed: () => openUrl(
+                        url:
+                            'https://community.xyz/#-8A6RexFkpfWwuyVO98wzSFZh0d6VJuI-buTJvlwOJQ'),
                   ),
                   IconButton(
                     icon: PortalEntry(

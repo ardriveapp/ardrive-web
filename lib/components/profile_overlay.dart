@@ -1,11 +1,11 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/launch_survey_url.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:arweave/utils.dart' as utils;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ProfileOverlay extends StatelessWidget {
   const ProfileOverlay({Key? key}) : super(key: key);
@@ -58,7 +58,8 @@ class ProfileOverlay extends StatelessWidget {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                onPressed: () => launchSurveyURL(),
+                                onPressed: () => openUrl(
+                                    url: Resources.surveyFeedbackFormUrl),
                                 child: Text(
                                   appLocalizationsOf(context).leaveFeedback,
                                 ),
@@ -94,7 +95,8 @@ class ProfileOverlay extends StatelessWidget {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                onPressed: () => launchSurveyURL(),
+                                onPressed: () => openUrl(
+                                    url: Resources.surveyFeedbackFormUrl),
                                 child: Text(
                                   appLocalizationsOf(context).leaveFeedback,
                                 ),
@@ -104,8 +106,8 @@ class ProfileOverlay extends StatelessWidget {
                           trailing: IconButton(
                             icon: const Icon(Icons.login),
                             tooltip: appLocalizationsOf(context).login,
-                            onPressed: () => launchUrl(
-                              Uri(path: '/'),
+                            onPressed: () => openUrl(
+                              url: '/',
                               webOnlyWindowName: '_self',
                             ),
                           ),
