@@ -1427,5 +1427,9 @@
   "biometricsPasscodeNotSetIOS": "Your device requires a passcode in order to use biometrics. Please create a one in order to proceed.",
   "@biometricsPasscodeNotSetIOS": {
     "description": "Passcode it not set on Android"
+  },
+  "biometricsPermanentlyLockedOut": "Biometric login disabled due to too many unsuccessful attempts. Please enter your PIN/passcode to unlock biometric functionality.",
+  "@biometricsPermanentlyLockedOut": {
+    "description": "Biometrics permanently locked out"
   }
 }
