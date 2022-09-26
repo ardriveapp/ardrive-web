@@ -45,7 +45,10 @@ class BiometricAuthentication {
     return hasPassword != null;
   }
 
-  Future<bool> authenticate(BuildContext context) async {
+  Future<bool> authenticate(
+    BuildContext context, {
+    bool biometricOnly = true,
+  }) async {
     try {
       final canAuthenticate = await checkDeviceSupport();
 
@@ -57,8 +60,8 @@ class BiometricAuthentication {
         localizedReason:
             // ignore: use_build_context_synchronously
             appLocalizationsOf(context).loginUsingBiometricCredential,
-        options: const AuthenticationOptions(
-          biometricOnly: true,
+        options: AuthenticationOptions(
+          biometricOnly: biometricOnly,
         ),
       );
 
@@ -84,9 +87,7 @@ class BiometricAuthentication {
 
           /// The device supports but biometrics are not enrolled
           if (deviceSupports) {
-            if (await isEnabled()) {
-              await disable();
-            }
+            await _saveDisableBiometric();
 
             throw BiometricNotEnrolledException();
           }
@@ -98,12 +99,21 @@ class BiometricAuthentication {
         case error_codes.passcodeNotSet:
           throw BiometricPasscodeNotSetException();
         case error_codes.notEnrolled:
+          await _saveDisableBiometric();
           throw BiometricNotEnrolledException();
+        case error_codes.permanentlyLockedOut:
+          throw BiometriPermanentlyLockedOutException();
         default:
           throw BiometricUnknownException();
       }
     } on BiometricException {
       rethrow;
+    }
+  }
+
+  Future<void> _saveDisableBiometric() async {
+    if (await isEnabled()) {
+      await disable();
     }
   }
 }
@@ -129,3 +139,5 @@ class BiometricLockedException implements BiometricException {}
 class BiometricPasscodeNotSetException implements BiometricException {}
 
 class BiometricNotEnrolledException implements BiometricException {}
+
+class BiometriPermanentlyLockedOutException implements BiometricException {}

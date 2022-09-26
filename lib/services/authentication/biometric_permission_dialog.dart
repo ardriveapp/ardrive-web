@@ -3,7 +3,10 @@ import 'dart:io';
 import 'package:ardrive/components/app_dialog.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:local_auth/local_auth.dart';
 
 Future<void> showBiometricIsLocked({
   required BuildContext context,
@@ -42,6 +45,30 @@ Future<void> showBiometricNotAvailable({
     context,
     description: appLocalizationsOf(context).deviceNotSupportBiometrics,
     cancelTitle: appLocalizationsOf(context).ok,
+    cancelAction: cancelAction,
+  );
+}
+
+Future<void> showBiometricPermanentlyLockedOut({
+  required BuildContext context,
+  Function()? cancelAction,
+}) async {
+  return showBiometricExceptionDialog(
+    context,
+    description: appLocalizationsOf(context).biometricsPermanentlyLockedOut,
+    actionTitle: appLocalizationsOf(context).ok,
+    action: () {
+      final biometricsAuth = BiometricAuthentication(
+        LocalAuthentication(),
+        SecureKeyValueStore(
+          const FlutterSecureStorage(),
+        ),
+      );
+
+      /// let the user use password/pin
+      biometricsAuth.authenticate(context, biometricOnly: false);
+    },
+    cancelTitle: appLocalizationsOf(context).cancel,
     cancelAction: cancelAction,
   );
 }
@@ -148,5 +175,11 @@ Future<void> showBiometricExceptionDialogForException(
         cancelAction?.call();
       },
     );
+  } else if (exception is BiometriPermanentlyLockedOutException) {
+    showBiometricPermanentlyLockedOut(
+        context: context,
+        cancelAction: () {
+          cancelAction?.call();
+        });
   }
 }
