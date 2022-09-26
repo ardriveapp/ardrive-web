@@ -136,7 +136,7 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                           onEnableBiometric: () {
                             context
                                 .read<ProfileUnlockCubit>()
-                                .checkBiometrics();
+                                .unlockWithStoredPassword(context);
                           },
                           onDisableBiometric: () {
                             context

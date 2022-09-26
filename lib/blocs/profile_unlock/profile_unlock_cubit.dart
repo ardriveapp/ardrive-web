@@ -92,11 +92,24 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     final KeyValueStore store =
         SecureKeyValueStore(const FlutterSecureStorage());
     try {
+      final storedPassword = await store.getString('password');
+
+      if (storedPassword == null) {
+        emit(
+          ProfileUnlockInitial(
+            username: _profile.username,
+            autoFocus: true,
+          ),
+        );
+        return;
+      }
+
       final authenticated =
+          // ignore: use_build_context_synchronously
           await _biometricAuthentication.authenticate(context);
 
       if (authenticated) {
-        _login((await store.getString('password'))!);
+        _login(storedPassword);
       } else {
         emit(
           ProfileUnlockInitial(

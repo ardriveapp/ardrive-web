@@ -62,6 +62,7 @@ class BiometricAuthentication {
             appLocalizationsOf(context).loginUsingBiometricCredential,
         options: AuthenticationOptions(
           biometricOnly: biometricOnly,
+          useErrorDialogs: false,
         ),
       );
 
@@ -87,7 +88,7 @@ class BiometricAuthentication {
 
           /// The device supports but biometrics are not enrolled
           if (deviceSupports) {
-            await _saveDisableBiometric();
+            await _safeDisableBiometric();
 
             throw BiometricNotEnrolledException();
           }
@@ -99,7 +100,7 @@ class BiometricAuthentication {
         case error_codes.passcodeNotSet:
           throw BiometricPasscodeNotSetException();
         case error_codes.notEnrolled:
-          await _saveDisableBiometric();
+          await _safeDisableBiometric();
           throw BiometricNotEnrolledException();
         case error_codes.permanentlyLockedOut:
           throw BiometriPermanentlyLockedOutException();
@@ -111,7 +112,7 @@ class BiometricAuthentication {
     }
   }
 
-  Future<void> _saveDisableBiometric() async {
+  Future<void> _safeDisableBiometric() async {
     if (await isEnabled()) {
       await disable();
     }
