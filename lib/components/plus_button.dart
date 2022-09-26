@@ -7,7 +7,7 @@ import '../blocs/blocs.dart';
 
 /// Renders a Plus ("+") Button that opens the same menu than the New Button
 ///
-/// **Note** In order for this Widget to be placed positioned absolute to the whole
+/// **Note** In order for this Widget to be positioned absolute to the whole
 /// screen it needs to be (grand)child of a Stack widget.
 class PlusButton extends StatelessWidget {
   const PlusButton({Key? key}) : super(key: key);
