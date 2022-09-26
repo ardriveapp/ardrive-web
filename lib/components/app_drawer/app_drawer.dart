@@ -4,12 +4,12 @@ import 'package:ardrive/components/new_button.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/launch_inferno_rules.dart';
+import 'package:ardrive/utils/inferno_rules_url.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({
@@ -137,7 +137,7 @@ class AppDrawer extends StatelessWidget {
                                 elevation: 0,
                                 tooltip: appLocalizationsOf(context).help,
                                 onPressed: () =>
-                                    launchUrl(Uri.parse(Resources.helpLink)),
+                                    openUrl(url: Resources.helpLink),
                                 child: const Icon(Icons.help_outline),
                               ),
                             ),
@@ -155,8 +155,13 @@ class AppDrawer extends StatelessWidget {
                                 ),
                               ),
                               onPressed: () {
-                                launchInfernoRulesURL(
-                                    appLocalizationsOf(context).localeName);
+                                final localeName =
+                                    appLocalizationsOf(context).localeName;
+                                final infernoUrl =
+                                    getInfernoUrlForCurrentLocalization(
+                                        localeName);
+
+                                openUrl(url: infernoUrl);
                               },
                               child: Tooltip(
                                 message: appLocalizationsOf(context)
@@ -252,7 +257,7 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () => launchUrl(Uri.parse(Resources.arHelpLink)),
+              onPressed: () => openUrl(url: Resources.arHelpLink),
               child: Text(
                 appLocalizationsOf(context).howDoIGetAR,
                 style: const TextStyle(

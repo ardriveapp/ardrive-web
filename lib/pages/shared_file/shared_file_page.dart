@@ -7,11 +7,11 @@ import 'package:ardrive/pages/shared_file/shared_file_side_sheet/shared_file_sid
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// [SharedFilePage] displays details of a shared file and controls for downloading and previewing it
 /// from a parent [SharedFileCubit].
@@ -171,7 +171,7 @@ class SharedFilePage extends StatelessWidget {
 
   Widget _buildReturnToAppLink(BuildContext context) {
     return TextButton(
-      onPressed: () => launchUrl(Uri.parse('https://ardrive.io/')),
+      onPressed: () => openUrl(url: 'https://ardrive.io/'),
       child: Text(appLocalizationsOf(context).whatIsArDrive),
     );
   }

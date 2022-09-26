@@ -69,7 +69,7 @@ class DriveDetailActionRow extends StatelessWidget {
                     onPressed: () {
                       final filePreviewUrl = state.selectedFilePreviewUrl;
                       if (filePreviewUrl != null) {
-                        launchUrl(filePreviewUrl);
+                        openUrl(url: filePreviewUrl);
                       }
                     },
                     tooltip: appLocalizationsOf(context).preview,
@@ -129,36 +129,38 @@ class DriveDetailActionRow extends StatelessWidget {
             }
           ];
 
-          return Row(
-            children: [
-              ...fsActions.intersperseOuter(const SizedBox(width: 8)),
-              if (fsActions.isNotEmpty)
-                const SizedBox(height: 32, child: VerticalDivider()),
-              if (!state.hasWritePermissions)
-                IconButton(
-                  icon: const Icon(Icons.remove_red_eye),
-                  onPressed: () => bloc.toggleSelectedItemDetails(),
-                  tooltip: appLocalizationsOf(context).viewOnly,
-                ),
-              state.currentDrive.isPrivate
-                  ? IconButton(
-                      icon: const Icon(Icons.lock),
+          return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  ...fsActions.intersperseOuter(const SizedBox(width: 8)),
+                  if (fsActions.isNotEmpty)
+                    const SizedBox(height: 32, child: VerticalDivider()),
+                  if (!state.hasWritePermissions)
+                    IconButton(
+                      icon: const Icon(Icons.remove_red_eye),
                       onPressed: () => bloc.toggleSelectedItemDetails(),
-                      tooltip: appLocalizationsOf(context).private,
-                    )
-                  : IconButton(
-                      icon: const Icon(Icons.public),
-                      onPressed: () => bloc.toggleSelectedItemDetails(),
-                      tooltip: appLocalizationsOf(context).public,
+                      tooltip: appLocalizationsOf(context).viewOnly,
                     ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.info),
-                onPressed: () => bloc.toggleSelectedItemDetails(),
-                tooltip: appLocalizationsOf(context).viewInfo,
-              ),
-            ],
-          );
+                  state.currentDrive.isPrivate
+                      ? IconButton(
+                          icon: const Icon(Icons.lock),
+                          onPressed: () => bloc.toggleSelectedItemDetails(),
+                          tooltip: appLocalizationsOf(context).private,
+                        )
+                      : IconButton(
+                          icon: const Icon(Icons.public),
+                          onPressed: () => bloc.toggleSelectedItemDetails(),
+                          tooltip: appLocalizationsOf(context).public,
+                        ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.info),
+                    onPressed: () => bloc.toggleSelectedItemDetails(),
+                    tooltip: appLocalizationsOf(context).viewInfo,
+                  ),
+                ],
+              ));
         }
 
         return const SizedBox();
