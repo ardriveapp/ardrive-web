@@ -14,6 +14,7 @@ Future<void> showBiometricIsLocked({
     description: appLocalizationsOf(context).biometricTemporarilyDisabled,
     actionTitle: appLocalizationsOf(context).goToDeviceSettings,
     cancelTitle: appLocalizationsOf(context).cancel,
+    cancelAction: cancelAction,
   );
 }
 
@@ -29,6 +30,7 @@ Future<void> showBiometricNotEnrolled({
       openSettingsToEnableBiometrics();
     },
     cancelTitle: appLocalizationsOf(context).cancel,
+    cancelAction: cancelAction,
   );
 }
 
@@ -40,7 +42,75 @@ Future<void> showBiometricNotAvailable({
     context,
     description: appLocalizationsOf(context).deviceNotSupportBiometrics,
     cancelTitle: appLocalizationsOf(context).ok,
+    cancelAction: cancelAction,
   );
+}
+
+Future<void> showBiometricPasscodeNotSet({
+  required BuildContext context,
+  Function()? cancelAction,
+}) async {
+  late String description;
+
+  if (Platform.isAndroid) {
+    description = appLocalizationsOf(context).biometricsPasscodeNotSetAndroid;
+  } else if (Platform.isIOS) {
+    description = appLocalizationsOf(context).biometricsPasscodeNotSetIOS;
+  } else {
+    return;
+  }
+
+  return showBiometricExceptionDialog(
+    context,
+    description: description,
+    action: () {
+      openSettingsToEnableBiometrics();
+    },
+    cancelAction: cancelAction,
+    actionTitle: appLocalizationsOf(context).goToDeviceSettings,
+    cancelTitle: appLocalizationsOf(context).ok,
+  );
+}
+
+Future<void> showBiometricExceptionDialog(
+  BuildContext context, {
+  required String description,
+  String? actionTitle,
+  required String cancelTitle,
+  void Function()? action,
+  void Function()? cancelAction,
+}) async {
+  return showDialog(
+      context: context,
+      builder: (context) {
+        return AppDialog(
+          title: appLocalizationsOf(context).enableBiometricLogin,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(description),
+              const SizedBox(
+                height: 24,
+              ),
+              if (action != null && actionTitle != null)
+                ElevatedButton(
+                  onPressed: () {
+                    action.call();
+                  },
+                  child: Text(actionTitle),
+                ),
+              TextButton(
+                onPressed: () {
+                  cancelAction?.call();
+
+                  Navigator.pop(context);
+                },
+                child: Text(cancelTitle),
+              )
+            ],
+          ),
+        );
+      });
 }
 
 Future<void> showBiometricExceptionDialogForException(
@@ -73,70 +143,4 @@ Future<void> showBiometricExceptionDialogForException(
           cancelAction?.call();
         });
   }
-}
-
-Future<void> showBiometricPasscodeNotSet({
-  required BuildContext context,
-  Function()? cancelAction,
-}) async {
-  late String description;
-
-  if (Platform.isAndroid) {
-    description = appLocalizationsOf(context).biometricsPasscodeNotSetAndroid;
-  } else if (Platform.isIOS) {
-    description = appLocalizationsOf(context).biometricsPasscodeNotSetIOS;
-  } else {
-    return;
-  }
-
-  return showBiometricExceptionDialog(
-    context,
-    description: description,
-    action: () {
-      openSettingsToEnableBiometrics();
-    },
-    actionTitle: appLocalizationsOf(context).goToDeviceSettings,
-    cancelTitle: appLocalizationsOf(context).ok,
-  );
-}
-
-Future<void> showBiometricExceptionDialog(
-  BuildContext context, {
-  required String description,
-  String? actionTitle,
-  required String cancelTitle,
-  void Function()? action,
-  void Function()? cancelAction,
-}) async {
-  return showDialog(
-      context: context,
-      builder: (context) {
-        return AppDialog(
-          title: appLocalizationsOf(context).enableBiometricLogin,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(description),
-              const SizedBox(
-                height: 24,
-              ),
-              if (action != null && actionTitle != null)
-                ElevatedButton(
-                  onPressed: () {
-                    openSettingsToEnableBiometrics();
-                  },
-                  child: Text(actionTitle),
-                ),
-              TextButton(
-                onPressed: () {
-                  cancelAction?.call();
-
-                  Navigator.pop(context);
-                },
-                child: Text(cancelTitle),
-              )
-            ],
-          ),
-        );
-      });
 }

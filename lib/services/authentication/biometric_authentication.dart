@@ -49,13 +49,17 @@ class BiometricAuthentication {
       }
 
       final authenticated = await _auth.authenticate(
-          localizedReason:
-              // ignore: use_build_context_synchronously
-              appLocalizationsOf(context).loginUsingBiometricCredential,
-          options: const AuthenticationOptions(biometricOnly: true));
+        localizedReason:
+            // ignore: use_build_context_synchronously
+            appLocalizationsOf(context).loginUsingBiometricCredential,
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+        ),
+      );
 
       return authenticated;
     } on PlatformException catch (e) {
+      debugPrint(e.code);
       switch (e.code) {
         case error_codes.notAvailable:
           throw BiometricNotAvailableException();
