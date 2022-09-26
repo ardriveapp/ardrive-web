@@ -112,7 +112,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           child: _buildDataTable(
                                             state: state,
                                             context: context,
-                                            checkBoxEnabled: checkboxEnabled,
+                                            checkBoxEnabled: state.multiselect,
                                           ),
                                         ),
                                       ],

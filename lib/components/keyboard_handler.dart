@@ -14,7 +14,7 @@ class KeyboardHandler extends StatefulWidget {
 
 class _KeyboardHandlerState extends State<KeyboardHandler> {
   final _focusTable = FocusNode();
-  bool checkboxEnabled = false;
+  bool ctrlMetaPressed = false;
 
   @override
   Widget build(BuildContext context) {
@@ -42,16 +42,16 @@ class _KeyboardHandlerState extends State<KeyboardHandler> {
               // detect if ctrl + v or cmd + v is pressed
               if (ctrlMetaKeyPressed) {
                 if (event is RawKeyDownEvent) {
-                  setState(() => checkboxEnabled = true);
+                  setState(() => ctrlMetaPressed = true);
                 }
               } else {
-                setState(() => checkboxEnabled = false);
+                setState(() => ctrlMetaPressed = false);
               }
 
               if (!mounted) return;
               context.read<KeyboardListenerBloc>().add(
                     KeyboardListenerUpdateCtrlMetaPressed(
-                      isPressed: checkboxEnabled,
+                      isPressed: ctrlMetaPressed,
                     ),
                   );
             },
