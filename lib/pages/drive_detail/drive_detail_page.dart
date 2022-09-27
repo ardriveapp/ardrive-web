@@ -6,7 +6,7 @@ import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
-import 'package:ardrive/components/new_button.dart';
+import 'package:ardrive/components/plus_button.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
@@ -171,38 +171,7 @@ class DriveDetailPage extends StatelessWidget {
                                               state.hasWritePermissions),
                                   ],
                                 ),
-                                if (!kIsWeb)
-                                  BlocBuilder<DrivesCubit, DrivesState>(
-                                    builder: (context, drivesState) =>
-                                        BlocBuilder<ProfileCubit, ProfileState>(
-                                      builder: (context, profileState) =>
-                                          BlocBuilder<DriveDetailCubit,
-                                              DriveDetailState>(
-                                        builder: (context, driveDetailState) =>
-                                            Positioned(
-                                          bottom: 16,
-                                          right: 16,
-                                          child: buildNewButton(
-                                            context,
-                                            drivesState: drivesState,
-                                            profileState: profileState,
-                                            driveDetailState: driveDetailState,
-                                            isPlusButton: true,
-                                            button: const FloatingActionButton
-                                                .extended(
-                                              extendedPadding: EdgeInsets.zero,
-                                              shape: CircleBorder(),
-                                              label: Icon(
-                                                Icons.add,
-                                                size: 40,
-                                              ),
-                                              onPressed: null,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                                const PlusButton(),
                               ],
                             ),
                           ),
