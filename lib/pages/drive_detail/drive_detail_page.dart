@@ -59,13 +59,16 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             return ScreenTypeLayout(
               desktop:
                   BlocListener<KeyboardListenerBloc, KeyboardListenerState>(
-                listener: (context, state) {
-                  if (state is KeyboardListenerCtrlMetaPressed) {
-                    checkboxEnabled = state.isPressed;
-                    context
-                        .read<DriveDetailCubit>()
-                        .setMultiSelect(checkboxEnabled);
-                    setState(() => {});
+                listener: (context, keyListenerState) {
+                  if (keyListenerState is KeyboardListenerCtrlMetaPressed) {
+                    // Only allow multiselect on user drives and only if logged in
+                    if (state.hasWritePermissions) {
+                      checkboxEnabled = keyListenerState.isPressed;
+                      context
+                          .read<DriveDetailCubit>()
+                          .setMultiSelect(checkboxEnabled);
+                      setState(() => {});
+                    }
                   }
                 },
                 child: Stack(
