@@ -3,10 +3,8 @@ import 'dart:io';
 import 'package:ardrive/components/app_dialog.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:local_auth/local_auth.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 Future<void> showBiometricIsLocked({
   required BuildContext context,
@@ -58,12 +56,7 @@ Future<void> showBiometricPermanentlyLockedOut({
     description: appLocalizationsOf(context).biometricsPermanentlyLockedOut,
     actionTitle: appLocalizationsOf(context).ok,
     action: () {
-      final biometricsAuth = BiometricAuthentication(
-        LocalAuthentication(),
-        SecureKeyValueStore(
-          const FlutterSecureStorage(),
-        ),
-      );
+      final biometricsAuth = context.read<BiometricAuthentication>();
 
       /// let the user use password/pin
       biometricsAuth.authenticate(context, biometricOnly: false);

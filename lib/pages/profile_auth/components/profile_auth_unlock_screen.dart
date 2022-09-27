@@ -7,11 +7,8 @@ import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import 'profile_auth_fail_screen.dart';
@@ -31,12 +28,7 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
           profileCubit: context.read<ProfileCubit>(),
           profileDao: context.read<ProfileDao>(),
           arweave: context.read<ArweaveService>(),
-          biometricAuthentication: BiometricAuthentication(
-            LocalAuthentication(),
-            SecureKeyValueStore(
-              const FlutterSecureStorage(),
-            ),
-          ),
+          biometricAuthentication: context.read<BiometricAuthentication>(),
         ),
         child: BlocListener<ProfileUnlockCubit, ProfileUnlockState>(
           listener: (context, state) {

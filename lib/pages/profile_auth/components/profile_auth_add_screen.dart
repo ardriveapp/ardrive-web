@@ -4,14 +4,10 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import 'profile_auth_shell.dart';
@@ -198,14 +194,8 @@ class _BiometricToggleState extends State<BiometricToggle> {
   void initState() {
     super.initState();
     _isBiometricsEnabled();
+    _listenToBiometricChange();
   }
-
-  final auth = BiometricAuthentication(
-    LocalAuthentication(),
-    SecureKeyValueStore(
-      const FlutterSecureStorage(),
-    ),
-  );
 
   bool _isEnabled = false;
   String get biometricText => _isEnabled
@@ -213,13 +203,24 @@ class _BiometricToggleState extends State<BiometricToggle> {
       : appLocalizationsOf(context).biometricLoginDisabled;
 
   Future<bool> _checkBiometricsSupport() async {
+    final auth = context.read<BiometricAuthentication>();
+
     return auth.checkDeviceSupport();
   }
 
   Future<void> _isBiometricsEnabled() async {
-    final store = await LocalKeyValueStore.getInstance();
-    setState(() {
-      _isEnabled = store.getBool('biometricEnabled') ?? false;
+    _isEnabled = await context.read<BiometricAuthentication>().isEnabled();
+
+    setState(() {});
+  }
+
+  void _listenToBiometricChange() {
+    context.read<BiometricAuthentication>().enabledStream.listen((event) {
+      if (event != _isEnabled) {
+        setState(() {
+          _isEnabled = event;
+        });
+      }
     });
   }
 
@@ -229,30 +230,34 @@ class _BiometricToggleState extends State<BiometricToggle> {
         future: _checkBiometricsSupport(),
         builder: (context, snapshot) {
           final hasSupport = snapshot.data;
+
           if (hasSupport == null || !hasSupport) {
             return const SizedBox();
           }
+
           return SwitchListTile(
+            key: ValueKey(_isEnabled),
             title: Text(biometricText),
             value: _isEnabled,
             activeColor: Colors.white,
             activeTrackColor: Colors.black,
             controlAffinity: ListTileControlAffinity.leading,
             onChanged: (value) async {
+              print(value);
               setState(() {
                 _isEnabled = value;
               });
 
               if (_isEnabled) {
+                final auth = context.read<BiometricAuthentication>();
+
                 try {
                   if (await auth.authenticate(context)) {
-                    final store = await LocalKeyValueStore.getInstance();
-
-                    store.putBool('biometricEnabled', true);
-                    widget.onEnableBiometric?.call();
                     setState(() {
                       _isEnabled = true;
                     });
+                    context.read<BiometricAuthentication>().enable();
+                    widget.onEnableBiometric?.call();
                     return;
                   }
                 } catch (e) {
@@ -266,9 +271,8 @@ class _BiometricToggleState extends State<BiometricToggle> {
                   }
                 }
               } else {
-                final store = await LocalKeyValueStore.getInstance();
+                context.read<BiometricAuthentication>().disable();
 
-                store.putBool('biometricEnabled', false);
                 widget.onDisableBiometric?.call();
               }
               setState(() {
