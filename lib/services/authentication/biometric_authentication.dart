@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:app_settings/app_settings.dart';
@@ -18,6 +19,11 @@ class BiometricAuthentication {
   final LocalAuthentication _auth;
   final SecureKeyValueStore _secureStore;
 
+  final StreamController<bool> _enabledStream =
+      StreamController<bool>.broadcast();
+
+  Stream<bool> get enabledStream => _enabledStream.stream;
+
   Future<bool> checkDeviceSupport() async {
     final bool canAuthenticateWithBiometrics = await _auth.canCheckBiometrics;
 
@@ -36,7 +42,14 @@ class BiometricAuthentication {
 
   Future<void> disable() async {
     final localStore = await LocalKeyValueStore.getInstance();
-    localStore.remove('biometricEnabled');
+    localStore.putBool('biometricEnabled', false);
+    _enabledStream.sink.add(false);
+  }
+
+  Future<void> enable() async {
+    final localStore = await LocalKeyValueStore.getInstance();
+    localStore.putBool('biometricEnabled', true);
+    _enabledStream.sink.add(true);
   }
 
   Future<bool> isActive() async {
@@ -70,6 +83,8 @@ class BiometricAuthentication {
     } on PlatformException catch (e) {
       debugPrint(e.toString());
       debugPrint(e.code);
+      disable();
+ 
       switch (e.code) {
         case error_codes.notAvailable:
 
@@ -88,12 +103,10 @@ class BiometricAuthentication {
 
           /// The device supports but biometrics are not enrolled
           if (deviceSupports) {
-            await _safeDisableBiometric();
-
             throw BiometricNotEnrolledException();
           }
 
-          /// This was achieved by testing on a real device. 
+          /// This was achieved by testing on a real device.
           if (await _auth.canCheckBiometrics) {
             throw BiometricPasscodeNotSetException();
           }
@@ -105,7 +118,6 @@ class BiometricAuthentication {
         case error_codes.passcodeNotSet:
           throw BiometricPasscodeNotSetException();
         case error_codes.notEnrolled:
-          await _safeDisableBiometric();
           throw BiometricNotEnrolledException();
         case error_codes.permanentlyLockedOut:
           throw BiometriPermanentlyLockedOutException();
@@ -114,12 +126,6 @@ class BiometricAuthentication {
       }
     } on BiometricException {
       rethrow;
-    }
-  }
-
-  Future<void> _safeDisableBiometric() async {
-    if (await isEnabled()) {
-      await disable();
     }
   }
 }
