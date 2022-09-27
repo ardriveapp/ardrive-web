@@ -88,7 +88,10 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     }
   }
 
-  Future<void> unlockWithStoredPassword(BuildContext context) async {
+  Future<void> unlockWithStoredPassword(
+    BuildContext context, {
+    bool needBiometrics = true,
+  }) async {
     final KeyValueStore store =
         SecureKeyValueStore(const FlutterSecureStorage());
     try {
@@ -99,11 +102,15 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
         return;
       }
 
-      final authenticated =
-          // ignore: use_build_context_synchronously
-          await _biometricAuthentication.authenticate(context);
+      bool authenticated = false;
 
-      if (authenticated) {
+      if (needBiometrics) {
+        authenticated =
+            // ignore: use_build_context_synchronously
+            await _biometricAuthentication.authenticate(context);
+      }
+
+      if (authenticated || !needBiometrics) {
         _login(storedPassword);
       } else {
         usePasswordLogin();

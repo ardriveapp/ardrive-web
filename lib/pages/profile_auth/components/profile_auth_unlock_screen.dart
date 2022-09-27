@@ -138,9 +138,13 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: BiometricToggle(
                           onEnableBiometric: () {
+                            /// Biometrics was enabled
                             context
                                 .read<ProfileUnlockCubit>()
-                                .unlockWithStoredPassword(context);
+                                .unlockWithStoredPassword(
+                                  context,
+                                  needBiometrics: false,
+                                );
                           },
                           onDisableBiometric: () {
                             context
