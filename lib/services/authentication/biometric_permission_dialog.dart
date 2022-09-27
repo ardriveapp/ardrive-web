@@ -83,13 +83,17 @@ Future<void> showBiometricPasscodeNotSet({
   return showBiometricExceptionDialog(
     context,
     description: description,
-    action: () {
-      openSettingsToEnableBiometrics();
-    },
+    action: Platform.isAndroid
+        ? () {
+            openSettingsToEnableBiometrics();
+          }
+        : null,
     cancelAction: () {
       cancelAction?.call();
     },
-    actionTitle: appLocalizationsOf(context).goToDeviceSettings,
+    actionTitle: Platform.isAndroid
+        ? appLocalizationsOf(context).goToDeviceSettings
+        : null,
     cancelTitle: appLocalizationsOf(context).ok,
   );
 }

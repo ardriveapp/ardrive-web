@@ -1424,7 +1424,7 @@
   "@biometricsPasscodeNotSetAndroid": {
     "description": "Passcode it not set on Android"
   },
-  "biometricsPasscodeNotSetIOS": "Your device requires a passcode in order to use biometrics. Please create a one in order to proceed.",
+  "biometricsPasscodeNotSetIOS": "Your device requires a passcode in order to use biometrics. Please create one by going to Settings > Face ID & Passcode in order to proceed.",
   "@biometricsPasscodeNotSetIOS": {
     "description": "Passcode it not set on Android"
   },
