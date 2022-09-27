@@ -93,6 +93,11 @@ class BiometricAuthentication {
             throw BiometricNotEnrolledException();
           }
 
+          /// This was achieved by testing on a real device. 
+          if (await _auth.canCheckBiometrics) {
+            throw BiometricPasscodeNotSetException();
+          }
+
           /// If there is not any biometrics available, show the correct modal
           throw BiometricNotAvailableException();
         case error_codes.lockedOut:
