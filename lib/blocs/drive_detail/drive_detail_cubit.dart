@@ -176,17 +176,21 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   Future<void> unselectItem(SelectedItem selectedItem) async {
     var state = this.state as DriveDetailLoadSuccess;
-
+    final updatedSelectedItems = state.selectedItems
+        .where((element) => element.id != selectedItem.id)
+        .toList();
     state = state.multiselect
-        ? state.copyWith(
-            selectedItems: [
-              ...state.selectedItems
-                ..removeWhere((element) => element.id == selectedItem.id)
-            ],
-          )
+        ? state.copyWith(selectedItems: updatedSelectedItems)
         : state.copyWith(selectedItems: []);
 
     emit(state);
+    // Close multiselect automatically if no file is selected
+    if (state.selectedItems.isEmpty && state.multiselect) {
+      state = state.copyWith(multiselect: false);
+      Future.delayed(
+        const Duration(milliseconds: 10),
+      ).then((value) => emit(state));
+    }
   }
 
   Future<void> launchPreview(TxID dataTxId) =>
