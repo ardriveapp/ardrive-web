@@ -210,15 +210,19 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   void toggleSelectedItemDetails() {
     final state = this.state as DriveDetailLoadSuccess;
-    emit(state.copyWith(
-        showSelectedItemDetails: !state.showSelectedItemDetails));
+    emit(
+      state.copyWith(showSelectedItemDetails: !state.showSelectedItemDetails),
+    );
   }
 
   void setMultiSelect(bool multiSelect) {
     final state = this.state as DriveDetailLoadSuccess;
-    // Do not close selection when something is alreadt selected
-    if (state.multiselect != multiSelect && state.selectedItems.isEmpty) {
-      emit(state.copyWith(multiselect: multiSelect, selectedItems: []));
+
+    // Do not close selection when something is already selected
+    if (state.selectedItems.isNotEmpty) {
+      emit(state.copyWith(multiselect: true));
+    } else {
+      emit(state.copyWith(multiselect: multiSelect));
     }
   }
 
