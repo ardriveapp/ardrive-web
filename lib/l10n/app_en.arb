@@ -1383,5 +1383,13 @@
   "invalidWalletFileDescription": "The file you have chosen is invalid.",
   "@invalidWalletFileDescription": {
     "description": "Invalid wallet file description"
+  },
+  "enableCameraAccess": "Go to settings and tap ArDrive and turn on Camera access.",
+  "@enableCameraAccess": {
+    "description": "enable camera access"
+  },
+  "goToDeviceSettings": "Go to Settings",
+  "@goToDeviceSettings": {
+    "description": "Go to device settings"
   }
 }

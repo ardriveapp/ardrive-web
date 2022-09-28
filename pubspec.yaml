@@ -69,6 +69,7 @@ dependencies:
   path: ^1.8.1
   flutter_svg: ^1.1.3
   sqlite3_flutter_libs: ^0.5.9
+  app_settings: ^4.1.8
   ardrive_io:
     path: ./ardrive_io
 
