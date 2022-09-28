@@ -47,9 +47,9 @@ class CameraProvider implements FileProvider {
     List<String>? allowedExtensions,
     FileSource fileSource = FileSource.camera,
   }) async {
-    final cameraEnabled = await Permission.camera.isGranted;
+    final status = await Permission.camera.request();
 
-    if (!cameraEnabled) {
+    if (status != PermissionStatus.granted) {
       throw FileSystemPermissionDeniedException([Permission.camera]);
     }
 

@@ -49,10 +49,10 @@ Future<T> _showModal<T>(
                       content = await pickFromCamera();
                     } catch (e) {
                       if (e is FileSystemPermissionDeniedException) {
-                        _showCameraPermissionModal(context)
-                            .then((value) => Navigator.pop(context));
+                        await _showCameraPermissionModal(context);
                       }
                     }
+                    Navigator.pop(context);
                   },
                   title: Text(appLocalizationsOf(context).camera),
                   leading: const Icon(Icons.camera),
