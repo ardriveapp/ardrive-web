@@ -92,7 +92,7 @@ Future<void> _showCameraPermissionModal(BuildContext context) async {
       context: context,
       builder: (context) {
         return AppDialog(
-          title: 'Enable camera',
+          title: appLocalizationsOf(context).enableCamera,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

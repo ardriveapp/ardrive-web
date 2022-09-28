@@ -1391,5 +1391,9 @@
   "goToDeviceSettings": "Go to Settings",
   "@goToDeviceSettings": {
     "description": "Go to device settings"
+  },
+  "enableCamera": "Enable camera",
+  "@goToDeviceSettings": {
+    "description": "Enable camera"
   }
 }
