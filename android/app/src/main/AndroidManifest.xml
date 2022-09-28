@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
+        android:largeHeap="true"
         android:name="${applicationName}"
         android:label="ArDrive"
         android:icon="@mipmap/ic_launcher">

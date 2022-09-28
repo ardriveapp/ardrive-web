@@ -900,6 +900,10 @@
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
+  "filesTooLargeExplanationMobile": "ArDrive on mobile currently only supports file uploads smaller than 1024 MiB",
+  "@filesTooLargeExplanationMobile": {
+    "description": "Limit of size to upload"
+  },
   "tooLargeForUpload": "Too large for upload:",
   "@tooLargeForUpload": {
     "description": "Files too large for upload"
