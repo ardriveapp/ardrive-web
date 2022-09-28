@@ -94,7 +94,7 @@ Future<void> showBiometricPasscodeNotSet({
     actionTitle: Platform.isAndroid
         ? appLocalizationsOf(context).goToDeviceSettings
         : null,
-    cancelTitle: appLocalizationsOf(context).ok,
+    cancelTitle: appLocalizationsOf(context).cancel,
   );
 }
 
