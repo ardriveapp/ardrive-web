@@ -112,6 +112,17 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                               .read<ProfileUnlockCubit>()
                                               .submit();
                                         }),
+                                    const SizedBox(height: 16),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        onPressed: () => context
+                                            .read<ProfileUnlockCubit>()
+                                            .submit(),
+                                        child: Text(appLocalizationsOf(context)
+                                            .unlockEmphasized),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
