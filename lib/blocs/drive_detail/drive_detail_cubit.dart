@@ -85,12 +85,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             : null;
         final profile = _profileCubit.state;
 
-        // Set selected item to subfolder if the folder being viewed is not drive root
-        final List<SelectedItem> selectedItems = [];
-        if (folderContents.folder.id != drive.rootFolderId) {
-          selectedItems.add(SelectedFolder(folder: folderContents.folder));
-        }
-
         var availableRowsPerPage = _defaultAvailableRowsPerPage;
 
         availableRowsPerPage = calculateRowsPerPage(
@@ -111,7 +105,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               contentOrderingMode: contentOrderingMode,
               rowsPerPage: availableRowsPerPage.first,
               availableRowsPerPage: availableRowsPerPage,
-              selectedItems: selectedItems,
             ),
           );
         } else {
@@ -124,7 +117,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             contentOrderingMode: contentOrderingMode,
             rowsPerPage: availableRowsPerPage.first,
             availableRowsPerPage: availableRowsPerPage,
-            selectedItems: selectedItems,
             driveIsEmpty: rootFolderNode.isEmpty(),
             multiselect: false,
           ));
