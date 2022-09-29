@@ -17,8 +17,8 @@ import 'enums/conflicting_files_actions.dart';
 
 part 'upload_state.dart';
 
-const privateFileSizeLimit = 104857600;
-const publicFileSizeLimit = 1288490189;
+const privateFileSizeLimit = 104857600 * 25;
+const publicFileSizeLimit = 1288490189 * 2;
 
 final filesNamesToExclude = ['.DS_Store'];
 
@@ -302,10 +302,13 @@ class UploadCubit extends Cubit<UploadState> {
         isArConnect: await _profileCubit.isCurrentProfileArConnect(),
       ),
     );
+    debugPrint('bundle quantity: ${uploadPlan.bundleUploadHandles.length}');
 
     // Upload Bundles
     for (var bundleHandle in uploadPlan.bundleUploadHandles) {
       try {
+        debugPrint('prepare bundle tx');
+
         await bundleHandle.prepareAndSignBundleTransaction(
           arweaveService: _arweave,
           driveDao: _driveDao,
@@ -314,7 +317,10 @@ class UploadCubit extends Cubit<UploadState> {
         );
       } catch (error) {
         addError(error);
+        debugPrint(error.toString());
       }
+
+      debugPrint('starting upload');
 
       await for (final _ in bundleHandle
           .upload(_arweave)
@@ -322,12 +328,24 @@ class UploadCubit extends Cubit<UploadState> {
           .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
-      bundleHandle.dispose();
+
+      debugPrint('bundle upload finished');
+
+      debugPrint('disposing bundle...');
+
+      await bundleHandle.dispose();
+
+      await Future.delayed(Duration(seconds: 1));
+
+      debugPrint('bundle disposed...');
     }
+
+    await IOCacheStorage().freeLocalStorage();
 
     // Upload V2 Files
     for (final uploadHandle in uploadPlan.fileV2UploadHandles.values) {
       try {
+        debugPrint(uploadHandle.size.toString());
         await uploadHandle.prepareAndSignTransactions(
           arweaveService: _arweave,
           wallet: profile.wallet,
@@ -340,12 +358,12 @@ class UploadCubit extends Cubit<UploadState> {
         addError(error);
       }
 
-      await for (final _ in uploadHandle
-          .upload(_arweave)
-          .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) => addError('Fatal upload error.'))) {
-        emit(UploadInProgress(uploadPlan: uploadPlan));
-      }
+      // await for (final _ in uploadHandle
+      //     .upload(_arweave)
+      //     .debounceTime(const Duration(milliseconds: 500))
+      //     .handleError((_) => addError('Fatal upload error.'))) {
+      //   emit(UploadInProgress(uploadPlan: uploadPlan));
+      // }
       uploadHandle.dispose();
     }
     unawaited(_profileCubit.refreshBalance());

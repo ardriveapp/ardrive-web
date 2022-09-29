@@ -1,12 +1,13 @@
 import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_io/src/io_exception.dart';
-import 'web/stub_web_io.dart' // Stub implementation
-    if (dart.library.html) 'web/web_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart' as path_provider;
+
+import 'web/stub_web_io.dart' // Stub implementation
+    if (dart.library.html) 'web/web_io.dart';
 
 /// `gallery` device's gallery
 /// `fileSystem` device's file system
@@ -86,6 +87,10 @@ class FilePickerProvider implements MultiFileProvider {
       allowMultiple: true,
       fileSource: fileSource,
     );
+
+    for (var file in result.files) {
+      print(file.path);
+    }
 
     return Future.wait(
         result.files.map((file) => _fileAdapter.fromFilePicker(file)).toList());
@@ -170,5 +175,67 @@ class FileProviderFactory {
       case FileSource.camera:
         return CameraProvider(IOFileAdapter());
     }
+  }
+}
+
+class IOCacheStorage {
+  Future<String> saveEntityOnCacheDir(IOEntity entity) async {
+    final cacheDir = await _getCacheDir();
+
+    if (entity is IOFile) {
+      debugPrint('saving file on local storage');
+
+      final _file = File('${cacheDir.path}/${entity.name}');
+
+      final readStream = File(entity.path).openRead();
+      final writeStream = _file.openWrite();
+
+      await for (List<int> chunk in readStream) {
+        print(chunk.length);
+        writeStream.write(chunk);
+      }
+
+      await writeStream.close();
+
+      return _file.path;
+    }
+
+    if (entity is IOFolder) {
+      return 'dir';
+    }
+
+    throw EntityPathException();
+  }
+
+  Future<IOFile> getFileFromStorage(String fileName) async {
+    debugPrint('getting file from storage');
+
+    final adapter = IOFileAdapter();
+
+    final cacheDir = await _getCacheDir();
+
+    final _file = File('${cacheDir.path}/$fileName');
+
+    return adapter.fromFile(_file);
+  }
+
+  Future<void> freeLocalStorage() async {
+    debugPrint('getting file from storage');
+
+    final cacheDir = await _getCacheDir();
+
+    cacheDir.deleteSync(recursive: true);
+  }
+
+  Future<Directory> _getCacheDir() async {
+    final dir = await path_provider.getApplicationDocumentsDirectory();
+
+    final cacheDir = Directory('${dir.path}/cache');
+
+    if (!cacheDir.existsSync()) {
+      await cacheDir.create();
+    }
+
+    return cacheDir;
   }
 }

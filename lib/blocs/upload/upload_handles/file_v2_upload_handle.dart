@@ -60,6 +60,7 @@ class FileV2UploadHandle implements UploadHandle {
     final packageInfo = await PackageInfo.fromPlatform();
 
     final fileData = await file.ioFile.readAsBytes();
+
     dataTx = await arweaveService.client.transactions.prepare(
       isPrivate
           ? await createEncryptedTransaction(fileData, fileKey!)

@@ -85,8 +85,8 @@ class BundleUploadHandle implements UploadHandle {
     });
   }
 
-  void dispose() {
-    bundleTx.setData(Uint8List(0));
+  Future<void> dispose() async {
+    await bundleTx.setData(Uint8List(0));
   }
 
   Future<int> computeBundleSize() async {
