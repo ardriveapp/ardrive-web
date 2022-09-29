@@ -85,12 +85,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             : null;
         final profile = _profileCubit.state;
 
-        // Set selected item to subfolder if the folder being viewed is not drive root
-        final List<SelectedItem> selectedItems = [];
-        if (folderContents.folder.id != drive.rootFolderId) {
-          selectedItems.add(SelectedFolder(folder: folderContents.folder));
-        }
-
         var availableRowsPerPage = _defaultAvailableRowsPerPage;
 
         availableRowsPerPage = calculateRowsPerPage(
@@ -111,7 +105,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               contentOrderingMode: contentOrderingMode,
               rowsPerPage: availableRowsPerPage.first,
               availableRowsPerPage: availableRowsPerPage,
-              selectedItems: selectedItems,
             ),
           );
         } else {
@@ -124,7 +117,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             contentOrderingMode: contentOrderingMode,
             rowsPerPage: availableRowsPerPage.first,
             availableRowsPerPage: availableRowsPerPage,
-            selectedItems: selectedItems,
             driveIsEmpty: rootFolderNode.isEmpty(),
             multiselect: false,
           ));
@@ -210,15 +202,19 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   void toggleSelectedItemDetails() {
     final state = this.state as DriveDetailLoadSuccess;
-    emit(state.copyWith(
-        showSelectedItemDetails: !state.showSelectedItemDetails));
+    emit(
+      state.copyWith(showSelectedItemDetails: !state.showSelectedItemDetails),
+    );
   }
 
   void setMultiSelect(bool multiSelect) {
     final state = this.state as DriveDetailLoadSuccess;
-    // Do not close selection when something is alreadt selected
-    if (state.multiselect != multiSelect && state.selectedItems.isEmpty) {
-      emit(state.copyWith(multiselect: multiSelect, selectedItems: []));
+
+    // Do not close selection when something is already selected
+    if (state.selectedItems.isNotEmpty) {
+      emit(state.copyWith(multiselect: true));
+    } else {
+      emit(state.copyWith(multiselect: multiSelect));
     }
   }
 

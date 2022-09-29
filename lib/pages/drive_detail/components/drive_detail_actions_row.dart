@@ -14,7 +14,11 @@ class DriveDetailActionRow extends StatelessWidget {
           final multiSelectEnabled = state.multiselect;
           final maybeSelectedItem =
               state.selectedItems.isNotEmpty ? state.selectedItems.first : null;
-
+          final isViewingSubfolderWithNothingSelected =
+              state.hasWritePermissions &&
+                  maybeSelectedItem == null &&
+                  state.isViewingRootFolder() &&
+                  !state.folderInView.folder.isGhost;
           final fsActions = multiSelectEnabled &&
                   state.maybeSelectedItem() != null
               ? [
@@ -33,40 +37,69 @@ class DriveDetailActionRow extends StatelessWidget {
                   ),
                 ]
               : <Widget>[
-                  if (state.hasWritePermissions &&
-                      maybeSelectedItem == null) ...[
+                  if (isViewingSubfolderWithNothingSelected) ...[
                     IconButton(
-                      icon: const Icon(Icons.edit_outlined),
+                      icon: const Icon(Icons.drive_file_rename_outline),
                       onPressed: () {
-                        promptToRenameDrive(context,
-                            driveId: state.currentDrive.id);
-                      },
-                      tooltip: appLocalizationsOf(context).renameDrive,
-                    ),
-                  ],
-                  if (!state.hasWritePermissions &&
-                      profile is ProfileLoggedIn) ...[
-                    IconButton(
-                      icon: const Icon(Icons.eject_outlined),
-                      onPressed: () {
-                        showDetachDriveDialog(
-                          context: context,
-                          driveID: state.currentDrive.id,
-                          driveName: state.currentDrive.name,
+                        promptToRenameFolder(
+                          context,
+                          driveId: state.currentDrive.id,
+                          folderId: state.folderInView.folder.id,
                         );
                       },
-                      tooltip: appLocalizationsOf(context).detachDrive,
+                      tooltip: appLocalizationsOf(context).rename,
                     ),
-                  ],
-                  if (maybeSelectedItem == null)
                     IconButton(
-                      icon: const Icon(Icons.table_chart),
+                      icon: const Icon(Icons.drive_file_move),
                       onPressed: () {
-                        promptToExportCSVData(
-                            context: context, driveId: state.currentDrive.id);
+                        promptToMove(
+                          context,
+                          driveId: state.currentDrive.id,
+                          selectedItems: [
+                            SelectedFolder(folder: state.folderInView.folder)
+                          ],
+                        );
                       },
-                      tooltip: appLocalizationsOf(context).exportDriveContents,
+                      tooltip: appLocalizationsOf(context).move,
                     ),
+                  ] else ...[
+                    if (state.hasWritePermissions &&
+                        maybeSelectedItem == null) ...[
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: () {
+                          promptToRenameDrive(context,
+                              driveId: state.currentDrive.id);
+                        },
+                        tooltip: appLocalizationsOf(context).renameDrive,
+                      ),
+                    ],
+                    if (!state.hasWritePermissions &&
+                        profile is ProfileLoggedIn) ...[
+                      IconButton(
+                        icon: const Icon(Icons.eject_outlined),
+                        onPressed: () {
+                          showDetachDriveDialog(
+                            context: context,
+                            driveID: state.currentDrive.id,
+                            driveName: state.currentDrive.name,
+                          );
+                        },
+                        tooltip: appLocalizationsOf(context).detachDrive,
+                      ),
+                    ],
+                    if (maybeSelectedItem == null)
+                      IconButton(
+                        icon: const Icon(Icons.table_chart),
+                        onPressed: () {
+                          promptToExportCSVData(
+                              context: context, driveId: state.currentDrive.id);
+                        },
+                        tooltip:
+                            appLocalizationsOf(context).exportDriveContents,
+                      ),
+                  ],
+
                   // A folder/file is selected.
                   if (maybeSelectedItem != null) ...{
                     if (maybeSelectedItem is SelectedFile) ...{
