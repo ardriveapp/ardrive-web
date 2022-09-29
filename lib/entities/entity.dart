@@ -1,9 +1,11 @@
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:platform/platform.dart';
 
 import 'entities.dart';
 
@@ -34,7 +36,8 @@ abstract class Entity {
     final packageInfo = await PackageInfo.fromPlatform();
 
     addEntityTagsToTransaction(tx);
-    tx.addApplicationTags(version: packageInfo.version, unixTime: createdAt);
+    await tx.addApplicationTags(
+        version: packageInfo.version, unixTime: createdAt);
     return tx;
   }
 
@@ -49,7 +52,7 @@ abstract class Entity {
         : await createEncryptedEntityDataItem(this, key);
     final packageInfo = await PackageInfo.fromPlatform();
     addEntityTagsToTransaction(item);
-    item.addApplicationTags(version: packageInfo.version);
+    await item.addApplicationTags(version: packageInfo.version);
 
     return item;
   }
@@ -78,9 +81,13 @@ class EntityTransactionDataNetworkException implements Exception {
 extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the app name, version, and the specified unix time.
   /// https://ardrive.atlassian.net/wiki/spaces/ENGINEERIN/pages/277544961/Data+Model
-  /// TODO: Split App-Name into App-Name and Client
-  void addApplicationTags({required String version, DateTime? unixTime}) {
-    addTag(EntityTag.appName, 'ArDrive-Web');
+  Future<void> addApplicationTags({
+    required String version,
+    DateTime? unixTime,
+  }) async {
+    addTag(EntityTag.appName, 'ArDrive-App');
+    addTag(EntityTag.appPlatform, _platform);
+    addTag(EntityTag.appPlatformVersion, await _platformVersion);
     addTag(EntityTag.appVersion, version);
     addTag(
         EntityTag.unixTime,
@@ -91,5 +98,59 @@ extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the ArFS version currently in use.
   void addArFsTag() {
     addTag(EntityTag.arFs, '0.11');
+  }
+
+  get _platformVersion async {
+    final platform = _platform;
+    final deviceInfoPlugin = DeviceInfoPlugin();
+
+    switch (platform) {
+      case 'Android':
+        final androidDeviceInfo = await deviceInfoPlugin.androidInfo;
+        final androidVersion = androidDeviceInfo.version.release;
+        final sdkVersion = androidDeviceInfo.version.sdkInt;
+
+        // 9 (SDK 28)
+        final versionString = '$androidVersion (SDK $sdkVersion)';
+        return versionString;
+
+      case 'iOS':
+        final iosDeviceInfo = await deviceInfoPlugin.iosInfo;
+        final systemName = iosDeviceInfo.systemName;
+        final iosVersion = iosDeviceInfo.systemVersion;
+
+        // iOS 13
+        final versionString = '$systemName $iosVersion';
+        return versionString;
+
+      default:
+        // web platform
+
+        final webDeviceInfo = await deviceInfoPlugin.webBrowserInfo;
+        final browserName = describeEnum(webDeviceInfo.browserName);
+        final browserVersion = webDeviceInfo.appVersion;
+        final versionString = '$browserName $browserVersion';
+        return versionString;
+    }
+  }
+
+  get _platform {
+    if (kIsWeb) {
+      return 'Web';
+    }
+
+    const platform = LocalPlatform();
+
+    /// A string (linux, macos, windows, android, ios, or fuchsia) representing the operating system.
+    final operatingSystem = platform.operatingSystem;
+
+    switch (operatingSystem) {
+      case 'android':
+        return 'Android';
+      case 'ios':
+        return 'iOS';
+      default:
+        throw Exception('Unsupported platform $operatingSystem!');
+    }
   }
 }
