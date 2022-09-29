@@ -4,11 +4,15 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
+import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/key_value_store.dart';
+import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'profile_add_state.dart';
@@ -19,13 +23,16 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   final ProfileCubit _profileCubit;
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
-  ProfileAddCubit({
-    required ProfileCubit profileCubit,
-    required ProfileDao profileDao,
-    required ArweaveService arweave,
-    required BuildContext context,
-  })  : _profileCubit = profileCubit,
+  final BiometricAuthentication _biometricAuthentication;
+  ProfileAddCubit(
+      {required ProfileCubit profileCubit,
+      required ProfileDao profileDao,
+      required ArweaveService arweave,
+      required BuildContext context,
+      required BiometricAuthentication biometricAuthentication})
+      : _profileCubit = profileCubit,
         _profileDao = profileDao,
+        _biometricAuthentication = biometricAuthentication,
         _arweave = arweave,
         super(ProfileAddPromptWallet());
 
@@ -195,10 +202,20 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
       await _profileDao.addProfile(username, password, _wallet, _profileType);
 
+      if (await _biometricAuthentication.isEnabled()) {
+        _savePasswordOnSecureStore(password);
+      }
+
       await _profileCubit.unlockDefaultProfile(password, _profileType);
     } catch (e) {
       await _profileCubit.logoutProfile();
     }
+  }
+
+  Future<void> _savePasswordOnSecureStore(String password) async {
+    KeyValueStore store = SecureKeyValueStore(const FlutterSecureStorage());
+
+    store.putString('password', password);
   }
 
   ValidatorFunction _mustMatch(String controlName, String matchingControlName) {

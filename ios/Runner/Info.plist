@@ -63,6 +63,10 @@
 	<true/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>The biometry is needed to authenticate on our app</string>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key><true/>

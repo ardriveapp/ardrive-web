@@ -6,12 +6,12 @@ import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 part 'drive_detail_state.dart';
 
@@ -163,17 +163,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       final dataTxId = (await fileWithRevisions.getSingle()).dataTxId;
       state = state.copyWith(
           selectedFilePreviewUrl:
-              Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'));
+              '${_config.defaultArweaveGatewayUrl}/$dataTxId');
     }
 
     emit(state);
   }
 
-  Future<void> launchPreview(TxID dataTxId) {
-    return launchUrl(
-      Uri.parse('${_config.defaultArweaveGatewayUrl}/$dataTxId'),
-    );
-  }
+  Future<void> launchPreview(TxID dataTxId) =>
+      openUrl(url: '${_config.defaultArweaveGatewayUrl}/$dataTxId');
 
   void sortFolder({
     DriveOrder contentOrderBy = DriveOrder.name,

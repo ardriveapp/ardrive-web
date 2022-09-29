@@ -8,8 +8,10 @@ import 'package:ardrive/pst/contract_oracle.dart';
 import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
+import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
+import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +20,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:local_auth/local_auth.dart';
 
 import 'blocs/blocs.dart';
 import 'models/models.dart';
@@ -44,6 +48,7 @@ void main() async {
 
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
+
   refreshHTMLPageAtInterval(const Duration(hours: 12));
   runApp(const App());
 }
@@ -71,6 +76,14 @@ class AppState extends State<App> {
                   ContractOracle(VertoContractReader()),
                   ContractOracle(SmartweaveContractReader()),
                 ]),
+              ),
+            ),
+          ),
+          RepositoryProvider<BiometricAuthentication>(
+            create: (_) => BiometricAuthentication(
+              LocalAuthentication(),
+              SecureKeyValueStore(
+                const FlutterSecureStorage(),
               ),
             ),
           ),
@@ -117,6 +130,7 @@ class AppState extends State<App> {
                 languageCode: 'zh',
                 countryCode: 'HK',
               ), // generic traditional Chinese 'zh_Hant'
+              Locale('ja', ''), // Japanese, no country code
             ],
             builder: (context, child) => ListTileTheme(
               textColor: kOnSurfaceBodyTextColor,
