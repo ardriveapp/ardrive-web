@@ -116,9 +116,11 @@ class FsEntryMoveForm extends StatelessWidget {
               ),
               actions: [
                 TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(appLocalizationsOf(context).cancelEmphasized)),
-                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(appLocalizationsOf(context).cancelEmphasized),
+                ),
+                if (state.conflictingItems.length > 1)
+                  TextButton(
                     onPressed: () {
                       context.read<FsEntryMoveBloc>().add(
                             FsEntryMoveSkipConflicts(
@@ -127,7 +129,8 @@ class FsEntryMoveForm extends StatelessWidget {
                             ),
                           );
                     },
-                    child: Text(appLocalizationsOf(context).skipEmphasized)),
+                    child: Text(appLocalizationsOf(context).skipEmphasized),
+                  ),
               ],
             );
           }
