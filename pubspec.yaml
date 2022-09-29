@@ -72,6 +72,9 @@ dependencies:
   ardrive_io:
     path: ./ardrive_io
   device_info_plus: ^4.0.0
+  local_auth: ^2.1.2
+  flutter_secure_storage: ^6.0.0
+  app_settings: ^4.1.8
 
 dev_dependencies:
   flutter_test:
@@ -91,6 +94,7 @@ flutter:
   assets:
     - assets/config/
     - assets/fonts/
+    - assets/images/
     - assets/images/brand/
     - assets/images/profile/
     - assets/images/inferno/

@@ -15,7 +15,8 @@ platform :ios do
     # Download and install adhoc certificate and profile
     match(
       type: "adhoc",
-      app_identifier: "io.ardrive.app"
+      app_identifier: "io.ardrive.app",
+      force_for_new_devices: true
     )
 
     # Flutter build

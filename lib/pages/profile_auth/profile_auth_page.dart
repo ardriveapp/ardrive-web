@@ -3,6 +3,7 @@ import 'package:ardrive/components/wallet_switch_dialog.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/profile_auth/components/profile_auth_fail_screen.dart';
+import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +49,8 @@ class ProfileAuthPageState extends State<ProfileAuthPage> {
                 profileCubit: context.read<ProfileCubit>(),
                 profileDao: context.read<ProfileDao>(),
                 arweave: context.read<ArweaveService>(),
+                biometricAuthentication:
+                    context.read<BiometricAuthentication>(),
                 context: context,
               ),
               child: BlocBuilder<ProfileAddCubit, ProfileAddState>(

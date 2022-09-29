@@ -4,11 +4,14 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/local_key_value_store.dart';
+import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 part 'profile_state.dart';
 
@@ -169,6 +172,8 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     await deleteTables();
+    SecureKeyValueStore(const FlutterSecureStorage()).remove('password');
+    (await LocalKeyValueStore.getInstance()).remove('biometricEnabled');
 
     emit(ProfileLoggingOut());
 
