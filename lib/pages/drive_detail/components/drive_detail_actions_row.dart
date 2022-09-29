@@ -30,6 +30,9 @@ class DriveDetailActionRow extends StatelessWidget {
                           context,
                           driveId: state.currentDrive.id,
                           selectedItems: state.selectedItems,
+                        ).then(
+                          (_) =>
+                              context.read<DriveDetailCubit>().clearSelection(),
                         );
                       }
                     },

@@ -38,10 +38,16 @@ class FsEntryMoveSuccess extends FsEntryMoveState {
 class FsEntryMoveNameConflict extends FsEntryMoveState {
   final List<SelectedItem> conflictingItems;
   final FolderEntry folderInView;
+
+  final List<SelectedItem> allItems;
+
   const FsEntryMoveNameConflict({
     required this.conflictingItems,
     required this.folderInView,
+    required this.allItems,
   }) : super();
+
+  bool areAllItemsConflicting() => conflictingItems.length == allItems.length;
 
   List<String> conflictingFileNames() => conflictingItems
       .whereType<SelectedFile>()

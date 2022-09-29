@@ -41,7 +41,9 @@ class FsEntryMoveForm extends StatelessWidget {
       listener: (context, state) {
         if (state is FsEntryMoveLoadInProgress) {
           showProgressDialog(
-              context, appLocalizationsOf(context).movingFolderEmphasized);
+            context,
+            appLocalizationsOf(context).movingItemsEmphasized,
+          );
         } else if (state is FsEntryMoveSuccess) {
           Navigator.pop(context);
           Navigator.pop(context);
@@ -119,7 +121,7 @@ class FsEntryMoveForm extends StatelessWidget {
                   onPressed: () => Navigator.pop(context),
                   child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
-                if (state.conflictingItems.length > 1)
+                if (!state.areAllItemsConflicting())
                   TextButton(
                     onPressed: () {
                       context.read<FsEntryMoveBloc>().add(

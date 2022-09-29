@@ -70,6 +70,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
               FsEntryMoveNameConflict(
                 conflictingItems: conflictingItems,
                 folderInView: folderInView,
+                allItems: selectedItems,
               ),
             );
           }

@@ -185,6 +185,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
   }
 
+  Future<void> clearSelection() async {
+    var state = this.state as DriveDetailLoadSuccess;
+
+    state = state.copyWith(multiselect: false, selectedItems: []);
+
+    emit(state);
+  }
+
   Future<void> launchPreview(TxID dataTxId) =>
       openUrl(url: '${_config.defaultArweaveGatewayUrl}/$dataTxId');
 
