@@ -6,6 +6,7 @@ import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
+import 'package:ardrive/components/plus_button.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
@@ -21,6 +22,7 @@ import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:drift/drift.dart' show OrderingMode;
 import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -132,35 +134,44 @@ class DriveDetailPage extends StatelessWidget {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                                 vertical: 16, horizontal: 16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Stack(
                               children: [
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      state.currentDrive.name,
-                                      style:
-                                          Theme.of(context).textTheme.headline5,
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          state.currentDrive.name,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headline5,
+                                        ),
+                                        const SizedBox(
+                                          height: 16,
+                                        ),
+                                        const DriveDetailActionRow()
+                                      ],
                                     ),
-                                    const SizedBox(
-                                      height: 16,
+                                    DriveDetailBreadcrumbRow(
+                                      path: state.folderInView.folder.path,
                                     ),
-                                    const DriveDetailActionRow()
+                                    if (state.folderInView.subfolders
+                                            .isNotEmpty ||
+                                        state
+                                            .folderInView.files.isNotEmpty) ...[
+                                      Expanded(
+                                        child: _buildDataList(context, state),
+                                      ),
+                                    ] else
+                                      DriveDetailFolderEmptyCard(
+                                          promptToAddFiles:
+                                              state.hasWritePermissions),
                                   ],
                                 ),
-                                DriveDetailBreadcrumbRow(
-                                  path: state.folderInView.folder.path,
-                                ),
-                                if (state.folderInView.subfolders.isNotEmpty ||
-                                    state.folderInView.files.isNotEmpty)
-                                  Expanded(
-                                    child: _buildDataList(context, state),
-                                  )
-                                else
-                                  DriveDetailFolderEmptyCard(
-                                      promptToAddFiles:
-                                          state.hasWritePermissions),
+                                const PlusButton(),
                               ],
                             ),
                           ),
@@ -173,7 +184,7 @@ class DriveDetailPage extends StatelessWidget {
                           drivePrivacy: state.currentDrive.privacy,
                           maybeSelectedItem: state.maybeSelectedItem,
                         ),
-                      )
+                      ),
                   ],
                 ),
               );
