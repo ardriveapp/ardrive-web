@@ -7,3 +7,4 @@ export 'file_entry.dart';
 export 'file_revision.dart';
 export 'folder_entry.dart';
 export 'folder_revision.dart';
+export 'selected_item.dart';
