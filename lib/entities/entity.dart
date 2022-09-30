@@ -107,29 +107,26 @@ extension TransactionUtils on TransactionBase {
     switch (platform) {
       case 'Android':
         final androidDeviceInfo = await deviceInfoPlugin.androidInfo;
-        final androidVersion = androidDeviceInfo.version.release;
-        final sdkVersion = androidDeviceInfo.version.sdkInt;
-
-        // 9 (SDK 28)
+        final String? androidVersion = androidDeviceInfo.version.release;
+        final int? sdkVersion = androidDeviceInfo.version.sdkInt;
         final versionString = '$androidVersion (SDK $sdkVersion)';
+
         return versionString;
 
       case 'iOS':
         final iosDeviceInfo = await deviceInfoPlugin.iosInfo;
-        final systemName = iosDeviceInfo.systemName;
-        final iosVersion = iosDeviceInfo.systemVersion;
-
-        // iOS 13
+        final String? systemName = iosDeviceInfo.systemName;
+        final String? iosVersion = iosDeviceInfo.systemVersion;
         final versionString = '$systemName $iosVersion';
+
         return versionString;
 
-      default:
-        // web platform
-
+      default: // case 'Web':
         final webDeviceInfo = await deviceInfoPlugin.webBrowserInfo;
         final browserName = describeEnum(webDeviceInfo.browserName);
         final browserVersion = webDeviceInfo.appVersion;
         final versionString = '$browserName $browserVersion';
+
         return versionString;
     }
   }
@@ -142,7 +139,7 @@ extension TransactionUtils on TransactionBase {
     const platform = LocalPlatform();
 
     /// A string (linux, macos, windows, android, ios, or fuchsia) representing the operating system.
-    final operatingSystem = platform.operatingSystem;
+    final String operatingSystem = platform.operatingSystem;
 
     switch (operatingSystem) {
       case 'android':
