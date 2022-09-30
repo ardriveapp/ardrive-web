@@ -1,5 +1,4 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
@@ -22,7 +21,6 @@ import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:drift/drift.dart' show OrderingMode;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -42,18 +40,38 @@ part 'components/drive_detail_folder_empty_card.dart';
 part 'components/fs_entry_preview_widget.dart';
 part 'components/fs_entry_side_sheet.dart';
 
-class DriveDetailPage extends StatelessWidget {
+class DriveDetailPage extends StatefulWidget {
   const DriveDetailPage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) => SizedBox.expand(
-        child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
-          builder: (context, state) {
-            if (state is DriveDetailLoadInProgress) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (state is DriveDetailLoadSuccess) {
-              return ScreenTypeLayout(
-                desktop: Stack(
+  State<DriveDetailPage> createState() => _DriveDetailPageState();
+}
+
+class _DriveDetailPageState extends State<DriveDetailPage> {
+  bool checkboxEnabled = false;
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.expand(
+      child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
+        builder: (context, state) {
+          if (state is DriveDetailLoadInProgress) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (state is DriveDetailLoadSuccess) {
+            return ScreenTypeLayout(
+              desktop:
+                  BlocListener<KeyboardListenerBloc, KeyboardListenerState>(
+                listener: (context, keyListenerState) {
+                  // Only allow multiselect on user drives and only if logged in
+                  if (keyListenerState is KeyboardListenerCtrlMetaPressed &&
+                      state.hasWritePermissions) {
+                    checkboxEnabled = keyListenerState.isPressed;
+                    context
+                        .read<DriveDetailCubit>()
+                        .setMultiSelect(checkboxEnabled);
+                    setState(() => {});
+                  }
+                },
+                child: Stack(
                   children: [
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,8 +112,11 @@ class DriveDetailPage extends StatelessWidget {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Expanded(
-                                          child:
-                                              _buildDataTable(context, state),
+                                          child: _buildDataTable(
+                                            state: state,
+                                            context: context,
+                                            checkBoxEnabled: state.multiselect,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -113,7 +134,9 @@ class DriveDetailPage extends StatelessWidget {
                           FsEntrySideSheet(
                             driveId: state.currentDrive.id,
                             drivePrivacy: state.currentDrive.privacy,
-                            maybeSelectedItem: state.maybeSelectedItem,
+                            maybeSelectedItem: state.selectedItems.isNotEmpty
+                                ? state.selectedItems.first
+                                : null,
                           ),
                         }
                       ],
@@ -125,73 +148,78 @@ class DriveDetailPage extends StatelessWidget {
                       ),
                   ],
                 ),
-                mobile: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (!state.showSelectedItemDetails)
-                      Expanded(
-                        child: Scrollbar(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 16),
-                            child: Stack(
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          state.currentDrive.name,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headline5,
-                                        ),
-                                        const SizedBox(
-                                          height: 16,
-                                        ),
-                                        const DriveDetailActionRow()
-                                      ],
-                                    ),
-                                    DriveDetailBreadcrumbRow(
-                                      path: state.folderInView.folder.path,
-                                    ),
-                                    if (state.folderInView.subfolders
-                                            .isNotEmpty ||
-                                        state
-                                            .folderInView.files.isNotEmpty) ...[
-                                      Expanded(
-                                        child: _buildDataList(context, state),
+              ),
+              mobile: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!state.showSelectedItemDetails)
+                    Expanded(
+                      child: Scrollbar(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 16,
+                          ),
+                          child: Stack(
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        state.currentDrive.name,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headline5,
                                       ),
-                                    ] else
-                                      DriveDetailFolderEmptyCard(
-                                          promptToAddFiles:
-                                              state.hasWritePermissions),
-                                  ],
-                                ),
-                                const PlusButton(),
-                              ],
-                            ),
+                                      const SizedBox(
+                                        height: 16,
+                                      ),
+                                      const DriveDetailActionRow()
+                                    ],
+                                  ),
+                                  DriveDetailBreadcrumbRow(
+                                    path: state.folderInView.folder.path,
+                                  ),
+                                  if (state
+                                          .folderInView.subfolders.isNotEmpty ||
+                                      state.folderInView.files.isNotEmpty) ...[
+                                    Expanded(
+                                      child: _buildDataList(context, state),
+                                    ),
+                                  ] else
+                                    DriveDetailFolderEmptyCard(
+                                        promptToAddFiles:
+                                            state.hasWritePermissions),
+                                ],
+                              ),
+                              const PlusButton(),
+                            ],
                           ),
                         ),
                       ),
-                    if (state.showSelectedItemDetails)
-                      Expanded(
-                        child: FsEntrySideSheet(
-                          driveId: state.currentDrive.id,
-                          drivePrivacy: state.currentDrive.privacy,
-                          maybeSelectedItem: state.maybeSelectedItem,
-                        ),
+                    ),
+                  if (state.showSelectedItemDetails)
+                    Expanded(
+                      child: FsEntrySideSheet(
+                        driveId: state.currentDrive.id,
+                        drivePrivacy: state.currentDrive.privacy,
+                        maybeSelectedItem: state.selectedItems.isNotEmpty
+                            ? state.selectedItems.first
+                            : null,
                       ),
-                  ],
-                ),
-              );
-            } else {
-              return const SizedBox();
-            }
-          },
-        ),
-      );
+                    ),
+                ],
+              ),
+            );
+          } else {
+            return const SizedBox();
+          }
+        },
+      ),
+    );
+  }
 }
