@@ -7,12 +7,10 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
           (folder) => _buildFolderListTile(
             context: context,
             folder: folder,
-            selected: state.selectedItems.isNotEmpty &&
-                folder.id == state.selectedItems.first.id,
+            selected: folder.id == state.maybeSelectedItem()?.id,
             onPressed: () {
               final bloc = context.read<DriveDetailCubit>();
-              if (state.selectedItems.isNotEmpty &&
-                  folder.id == state.selectedItems.first.id) {
+              if (folder.id == state.maybeSelectedItem()?.id) {
                 bloc.openFolder(path: folder.path);
               } else {
                 bloc.selectItem(SelectedFolder(folder: folder));
@@ -24,11 +22,10 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
           (file) => _buildFileListTile(
             context: context,
             file: file,
-            selected: state.selectedItems.isNotEmpty &&
-                file.id == state.selectedItems.first.id,
+            selected: file.id == state.maybeSelectedItem()?.id,
             onPressed: () async {
               final bloc = context.read<DriveDetailCubit>();
-              if (file.id == state.selectedItems.first.id) {
+              if (file.id == state.maybeSelectedItem()?.id) {
                 bloc.toggleSelectedItemDetails();
               } else {
                 await bloc.selectItem(SelectedFile(file: file));
