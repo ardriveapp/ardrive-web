@@ -1,6 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/app_drawer/drive_list_tile.dart';
-import 'package:ardrive/components/components.dart';
+import 'package:ardrive/components/new_button.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -234,26 +234,12 @@ class AppDrawer extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
                 child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
-                  builder: (context, state) => PopupMenuButton<Function>(
-                    onSelected: (callback) => callback(context),
-                    itemBuilder: (context) => [
-                      if (state is DriveDetailLoadSuccess) ...{
-                        _buildNewFolderItem(context, state, hasMinBalance),
-                        const PopupMenuDivider(key: Key('divider-1')),
-                        _buildUploadFileItem(context, state, hasMinBalance),
-                        _buildUploadFolderItem(context, state, hasMinBalance),
-                        const PopupMenuDivider(key: Key('divider-2')),
-                      },
-                      if (drivesState is DrivesLoadSuccess) ...{
-                        _buildCreateDrive(context, drivesState, hasMinBalance),
-                        _buildAttachDrive(context)
-                      },
-                      if (state is DriveDetailLoadSuccess &&
-                          state.currentDrive.privacy == 'public') ...{
-                        _buildCreateManifestItem(context, state, hasMinBalance)
-                      },
-                    ],
-                    child: _buildNewButton(context),
+                  builder: (context, driveDetailState) => buildNewButton(
+                    context,
+                    drivesState: drivesState,
+                    profileState: profile,
+                    driveDetailState: driveDetailState,
+                    button: _buildNewButton(context),
                   ),
                 ),
               ),
@@ -290,99 +276,20 @@ class AppDrawer extends StatelessWidget {
         child: Align(
           alignment: Alignment.center,
           child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-              child: PopupMenuButton<Function>(
-                  onSelected: (callback) => callback(context),
-                  itemBuilder: (context) => [
-                        if (drivesState is DrivesLoadSuccess) ...{
-                          PopupMenuItem(
-                            value: (context) => attachDrive(context: context),
-                            child: ListTile(
-                              title:
-                                  Text(appLocalizationsOf(context).attachDrive),
-                            ),
-                          ),
-                        }
-                      ],
-                  child: _buildNewButton(context))),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+            child: BlocBuilder<DriveDetailCubit, DriveDetailState>(
+              builder: (context, driveDetailState) => buildNewButton(
+                context,
+                drivesState: drivesState,
+                profileState: profileState,
+                driveDetailState: driveDetailState,
+                button: _buildNewButton(context),
+              ),
+            ),
+          ),
         ),
       );
     }
-  }
-
-  PopupMenuEntry<Function> _buildNewFolderItem(
-      context, DriveDetailLoadSuccess state, bool hasMinBalance) {
-    return _buildMenuItemTile(
-      context: context,
-      isEnabled: state.hasWritePermissions && hasMinBalance,
-      itemTitle: appLocalizationsOf(context).newFolder,
-      message: state.hasWritePermissions && !hasMinBalance
-          ? appLocalizationsOf(context).insufficientFundsForCreateAFolder
-          : null,
-      value: (context) => promptToCreateFolder(
-        context,
-        driveId: state.currentDrive.id,
-        parentFolderId: state.folderInView.folder.id,
-      ),
-    );
-  }
-
-  PopupMenuEntry<Function> _buildUploadFileItem(
-      context, DriveDetailLoadSuccess state, bool hasMinBalance) {
-    return _buildMenuItemTile(
-      context: context,
-      isEnabled: state.hasWritePermissions && hasMinBalance,
-      message: state.hasWritePermissions && !hasMinBalance
-          ? appLocalizationsOf(context).insufficientFundsForUploadFiles
-          : null,
-      itemTitle: appLocalizationsOf(context).uploadFiles,
-      value: (context) => promptToUpload(
-        context,
-        driveId: state.currentDrive.id,
-        parentFolderId: state.folderInView.folder.id,
-        isFolderUpload: false,
-      ),
-    );
-  }
-
-  PopupMenuEntry<Function> _buildUploadFolderItem(
-      context, DriveDetailLoadSuccess state, bool hasMinBalance) {
-    return _buildMenuItemTile(
-      context: context,
-      isEnabled: state.hasWritePermissions && hasMinBalance,
-      itemTitle: appLocalizationsOf(context).uploadFolder,
-      message: state.hasWritePermissions && !hasMinBalance
-          ? appLocalizationsOf(context).insufficientFundsForUploadFolders
-          : null,
-      value: (context) => promptToUpload(
-        context,
-        driveId: state.currentDrive.id,
-        parentFolderId: state.folderInView.folder.id,
-        isFolderUpload: true,
-      ),
-    );
-  }
-
-  PopupMenuEntry<Function> _buildAttachDrive(BuildContext context) {
-    return PopupMenuItem(
-      value: (context) => attachDrive(context: context),
-      child: ListTile(
-        title: Text(appLocalizationsOf(context).attachDrive),
-      ),
-    );
-  }
-
-  PopupMenuEntry<Function> _buildCreateDrive(
-      BuildContext context, DrivesLoadSuccess drivesState, bool hasMinBalance) {
-    return _buildMenuItemTile(
-      context: context,
-      isEnabled: drivesState.canCreateNewDrive && hasMinBalance,
-      itemTitle: appLocalizationsOf(context).newDrive,
-      message: hasMinBalance
-          ? null
-          : appLocalizationsOf(context).insufficientFundsForCreateADrive,
-      value: (context) => promptToCreateDrive(context),
-    );
   }
 
   Widget _buildNewButton(BuildContext context) {
@@ -397,43 +304,6 @@ class AppDrawer extends StatelessWidget {
           style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
-        ),
-      ),
-    );
-  }
-
-  PopupMenuEntry<Function> _buildCreateManifestItem(
-      BuildContext context, DriveDetailLoadSuccess state, bool hasMinBalance) {
-    return _buildMenuItemTile(
-      context: context,
-      isEnabled: !state.driveIsEmpty && hasMinBalance,
-      itemTitle: appLocalizationsOf(context).createManifest,
-      message: !state.driveIsEmpty && !hasMinBalance
-          ? appLocalizationsOf(context).insufficientFundsForCreateAManifest
-          : null,
-      value: (context) =>
-          promptToCreateManifest(context, drive: state.currentDrive),
-    );
-  }
-
-  PopupMenuEntry<Function> _buildMenuItemTile(
-      {required bool isEnabled,
-      Future<void> Function(dynamic)? value,
-      String? message,
-      required String itemTitle,
-      required BuildContext context}) {
-    return PopupMenuItem(
-      value: value,
-      enabled: isEnabled,
-      child: Tooltip(
-        message: message ?? '',
-        child: ListTile(
-          textColor:
-              isEnabled ? ListTileTheme.of(context).textColor : Colors.grey,
-          title: Text(
-            itemTitle,
-          ),
-          enabled: isEnabled,
         ),
       ),
     );

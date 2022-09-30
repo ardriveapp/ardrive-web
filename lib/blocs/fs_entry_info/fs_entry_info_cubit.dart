@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
