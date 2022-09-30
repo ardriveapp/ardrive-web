@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/utils/extensions.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,21 +27,8 @@ class _KeyboardHandlerState extends State<KeyboardHandler> {
             focusNode: _focusTable,
             autofocus: true,
             onKey: (event) async {
-              final userAgent =
-                  (await DeviceInfoPlugin().webBrowserInfo).userAgent;
-              late bool ctrlMetaKeyPressed;
-              if (userAgent != null && isApple(userAgent)) {
-                ctrlMetaKeyPressed =
-                    event.isKeyPressed(LogicalKeyboardKey.metaLeft) ||
-                        event.isKeyPressed(LogicalKeyboardKey.metaRight);
-              } else {
-                ctrlMetaKeyPressed =
-                    event.isKeyPressed(LogicalKeyboardKey.controlLeft) ||
-                        event.isKeyPressed(LogicalKeyboardKey.controlRight);
-              }
-
               // detect if ctrl + v or cmd + v is pressed
-              if (ctrlMetaKeyPressed) {
+              if (await isCtrlOrMetaKeyPressed(event)) {
                 if (event is RawKeyDownEvent) {
                   setState(() => ctrlMetaPressed = true);
                 }
@@ -60,6 +48,24 @@ class _KeyboardHandlerState extends State<KeyboardHandler> {
         },
       ),
     );
+  }
+}
+
+Future<bool> isCtrlOrMetaKeyPressed(RawKeyEvent event) async {
+  try {
+    final userAgent = (await DeviceInfoPlugin().webBrowserInfo).userAgent;
+    late bool ctrlMetaKeyPressed;
+    if (userAgent != null && isApple(userAgent)) {
+      ctrlMetaKeyPressed = event.isKeyPressed(LogicalKeyboardKey.metaLeft) ||
+          event.isKeyPressed(LogicalKeyboardKey.metaRight);
+    } else {
+      ctrlMetaKeyPressed = event.isKeyPressed(LogicalKeyboardKey.controlLeft) ||
+          event.isKeyPressed(LogicalKeyboardKey.controlRight);
+    }
+    return ctrlMetaKeyPressed;
+  } catch (e) {
+    'Unable to compute platform'.logError();
+    return false;
   }
 }
 
