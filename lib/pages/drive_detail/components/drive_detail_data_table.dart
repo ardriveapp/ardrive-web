@@ -66,17 +66,15 @@ class _DriveDataTableState extends State<DriveDataTable> {
                 ? widget.driveDetailState.selectedItems
                     .where((item) => item.id == file.id)
                     .isNotEmpty
-                : widget.driveDetailState.selectedItems.isNotEmpty &&
-                    file.id == widget.driveDetailState.selectedItems.first.id;
+                : file.id == widget.driveDetailState.maybeSelectedItem()?.id;
 
             return DriveTableFile(
               file: file,
               selected: selected,
               onPressed: () async {
                 final bloc = context.read<DriveDetailCubit>();
-                final showDetailsPanel = widget
-                        .driveDetailState.selectedItems.isNotEmpty &&
-                    file.id == widget.driveDetailState.selectedItems.first.id;
+                final showDetailsPanel =
+                    file.id == widget.driveDetailState.maybeSelectedItem()?.id;
 
                 if (showDetailsPanel) {
                   if (!widget.checkBoxEnabled) {
