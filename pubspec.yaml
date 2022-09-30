@@ -71,6 +71,8 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.9
   ardrive_io:
     path: ./ardrive_io
+  bloc_concurrency: ^0.2.0
+  universal_html: ^2.0.8
   device_info_plus: ^4.0.0
   local_auth: ^2.1.2
   flutter_secure_storage: ^6.0.0
@@ -82,7 +84,7 @@ dev_dependencies:
   flutter_driver:
     sdk: flutter
   test: 1.21.1
-  bloc_test: ^9.0.3
+  bloc_test: ^9.1.0
   build_runner: ^2.0.4
   drift_dev: ^1.0.0
   mocktail: 0.3.0

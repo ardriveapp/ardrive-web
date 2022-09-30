@@ -1364,6 +1364,24 @@
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },
+  "moveItems": "Move Items",
+  "@moveItems": {
+    "description": "Move Items dialog title"
+  },
+  "movingItemsEmphasized": "Moving Items",
+  "@movingItemsEmphasized": {
+    "description": "Moving Items dialog title"
+  },
+  "itemMoveNameConflict": "The following item(s) could not be moved because '{destinationFolderName}' contains item(s) with the same name.",
+  "@itemMoveNameConflict": {
+    "description": "Description for dialog to skip conflicting files or cancel",
+    "placeholders": {
+      "destinationFolderName": {
+        "type": "String",
+        "example": "Folder A"
+      }
+    }
+  },
   "camera": "Camera",
   "@camera": {
     "description": "Button label to select a file from camera"
