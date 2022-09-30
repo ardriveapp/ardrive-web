@@ -5,6 +5,7 @@ import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
+import 'package:ardrive/components/plus_button.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
@@ -156,36 +157,46 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       child: Scrollbar(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                              vertical: 16, horizontal: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            vertical: 16,
+                            horizontal: 16,
+                          ),
+                          child: Stack(
                             children: [
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    state.currentDrive.name,
-                                    style:
-                                        Theme.of(context).textTheme.headline5,
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        state.currentDrive.name,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headline5,
+                                      ),
+                                      const SizedBox(
+                                        height: 16,
+                                      ),
+                                      const DriveDetailActionRow()
+                                    ],
                                   ),
-                                  const SizedBox(
-                                    height: 16,
+                                  DriveDetailBreadcrumbRow(
+                                    path: state.folderInView.folder.path,
                                   ),
-                                  const DriveDetailActionRow()
+                                  if (state
+                                          .folderInView.subfolders.isNotEmpty ||
+                                      state.folderInView.files.isNotEmpty) ...[
+                                    Expanded(
+                                      child: _buildDataList(context, state),
+                                    ),
+                                  ] else
+                                    DriveDetailFolderEmptyCard(
+                                        promptToAddFiles:
+                                            state.hasWritePermissions),
                                 ],
                               ),
-                              DriveDetailBreadcrumbRow(
-                                path: state.folderInView.folder.path,
-                              ),
-                              if (state.folderInView.subfolders.isNotEmpty ||
-                                  state.folderInView.files.isNotEmpty)
-                                Expanded(
-                                  child: _buildDataList(context, state),
-                                )
-                              else
-                                DriveDetailFolderEmptyCard(
-                                    promptToAddFiles:
-                                        state.hasWritePermissions),
+                              const PlusButton(),
                             ],
                           ),
                         ),
@@ -200,7 +211,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             ? state.selectedItems.first
                             : null,
                       ),
-                    )
+                    ),
                 ],
               ),
             );

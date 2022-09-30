@@ -1401,5 +1401,53 @@
   "invalidWalletFileDescription": "The file you have chosen is invalid.",
   "@invalidWalletFileDescription": {
     "description": "Invalid wallet file description"
+  },
+  "biometricLoginEnabled": "Biometric Login Enabled",
+  "@biometricLoginEnabled": {
+    "description": "Biometric Login is Enabled."
+  },
+  "biometricLoginDisabled": "Biometric Login Disabled",
+  "@biometricLoginDisabled": {
+    "description": "Biometric Login is Disabled."
+  },
+  "enableBiometricLogin": "Enable Biometric Login",
+  "@enableBiometricLogin": {
+    "description": "Enable Biometric Login"
+  },
+  "enableBiometricsOnSettings": "This function is currently disabled on your device. To use it, please go to your device Settings and enable biometric authentication.",
+  "@enableBiometricsOnSettings": {
+    "description": "Open settings to enable biometric"
+  },
+  "loginUsingBiometricCredential": "Login using your biometric credential",
+  "@loginUsingBiometricCredential": {
+    "description": "Login using your biometric credential"
+  },
+  "goToDeviceSettings": "Go to Settings",
+  "@goToDeviceSettings": {
+    "description": "Go to device settings"
+  },
+  "biometricTemporarilyDisabled": "Biometric login temporarily disabled due to too many unsuccessful attempts.",
+  "@biometricTemporarilyDisabled": {
+    "description": "Biometric is locked out"
+  },
+  "deviceNotSupportBiometrics": "This device does not support the use of biometrics.",
+  "@deviceNotSupportBiometrics": {
+    "description": "Biometric is not supported"
+  },  
+  "biometricsDisabledOnYourDevice": "This function is currently disabled on your device. To use it, please go to your device Settings and enable biometric authentication.",
+  "@biometricsDisabledOnYourDevice": {
+    "description": "Biometric is disabled"
+  },
+  "biometricsPasscodeNotSetAndroid": "Your device requires a PIN/pattern/password in order to use biometrics. Please create one in order to proceed.",
+  "@biometricsPasscodeNotSetAndroid": {
+    "description": "Passcode it not set on Android"
+  },
+  "biometricsPasscodeNotSetIOS": "Your device requires a passcode in order to use biometrics. Please create one by going to Settings > Face ID & Passcode in order to proceed.",
+  "@biometricsPasscodeNotSetIOS": {
+    "description": "Passcode it not set on Android"
+  },
+  "biometricsPermanentlyLockedOut": "Biometric login disabled due to too many unsuccessful attempts. Please enter your PIN/passcode to unlock biometric functionality.",
+  "@biometricsPermanentlyLockedOut": {
+    "description": "Biometrics permanently locked out"
   }
 }
