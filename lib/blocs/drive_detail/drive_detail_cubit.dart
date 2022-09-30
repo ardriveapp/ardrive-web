@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/blocs/drive_detail/selected_item.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
@@ -86,11 +85,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             : null;
         final profile = _profileCubit.state;
 
-        // Set selected item to subfolder if the folder being viewed is not drive root
-
-        final maybeSelectedItem = folderContents.folder.id != drive.rootFolderId
-            ? SelectedFolder(folder: folderContents.folder)
-            : null;
         var availableRowsPerPage = _defaultAvailableRowsPerPage;
 
         availableRowsPerPage = calculateRowsPerPage(
@@ -101,17 +95,18 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             await _driveDao.getFolderTree(driveId, drive.rootFolderId);
 
         if (state != null) {
-          emit(state.copyWith(
-            currentDrive: drive,
-            hasWritePermissions: profile is ProfileLoggedIn &&
-                drive.ownerAddress == profile.walletAddress,
-            folderInView: folderContents,
-            contentOrderBy: contentOrderBy,
-            contentOrderingMode: contentOrderingMode,
-            rowsPerPage: availableRowsPerPage.first,
-            availableRowsPerPage: availableRowsPerPage,
-            maybeSelectedItem: maybeSelectedItem,
-          ));
+          emit(
+            state.copyWith(
+              currentDrive: drive,
+              hasWritePermissions: profile is ProfileLoggedIn &&
+                  drive.ownerAddress == profile.walletAddress,
+              folderInView: folderContents,
+              contentOrderBy: contentOrderBy,
+              contentOrderingMode: contentOrderingMode,
+              rowsPerPage: availableRowsPerPage.first,
+              availableRowsPerPage: availableRowsPerPage,
+            ),
+          );
         } else {
           emit(DriveDetailLoadSuccess(
             currentDrive: drive,
@@ -122,8 +117,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             contentOrderingMode: contentOrderingMode,
             rowsPerPage: availableRowsPerPage.first,
             availableRowsPerPage: availableRowsPerPage,
-            maybeSelectedItem: maybeSelectedItem,
             driveIsEmpty: rootFolderNode.isEmpty(),
+            multiselect: false,
           ));
         }
       },
@@ -154,7 +149,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   Future<void> selectItem(SelectedItem selectedItem) async {
     var state = this.state as DriveDetailLoadSuccess;
 
-    state = state.copyWith(maybeSelectedItem: selectedItem);
+    state = state.multiselect
+        ? state.copyWith(selectedItems: [selectedItem, ...state.selectedItems])
+        : state.copyWith(selectedItems: [selectedItem]);
     if (state.currentDrive.isPublic && selectedItem is SelectedFile) {
       final fileWithRevisions = _driveDao.latestFileRevisionByFileId(
         driveId: driveId,
@@ -165,6 +162,33 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           selectedFilePreviewUrl:
               '${_config.defaultArweaveGatewayUrl}/$dataTxId');
     }
+
+    emit(state);
+  }
+
+  Future<void> unselectItem(SelectedItem selectedItem) async {
+    var state = this.state as DriveDetailLoadSuccess;
+    final updatedSelectedItems = state.selectedItems
+        .where((element) => element.id != selectedItem.id)
+        .toList();
+    state = state.multiselect
+        ? state.copyWith(selectedItems: updatedSelectedItems)
+        : state.copyWith(selectedItems: []);
+
+    emit(state);
+    // Close multiselect automatically if no file is selected
+    if (state.selectedItems.isEmpty && state.multiselect) {
+      state = state.copyWith(multiselect: false);
+      Future.delayed(
+        const Duration(milliseconds: 10),
+      ).then((value) => emit(state));
+    }
+  }
+
+  Future<void> clearSelection() async {
+    var state = this.state as DriveDetailLoadSuccess;
+
+    state = state.copyWith(multiselect: false, selectedItems: []);
 
     emit(state);
   }
@@ -186,8 +210,20 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   void toggleSelectedItemDetails() {
     final state = this.state as DriveDetailLoadSuccess;
-    emit(state.copyWith(
-        showSelectedItemDetails: !state.showSelectedItemDetails));
+    emit(
+      state.copyWith(showSelectedItemDetails: !state.showSelectedItemDetails),
+    );
+  }
+
+  void setMultiSelect(bool multiSelect) {
+    final state = this.state as DriveDetailLoadSuccess;
+
+    // Do not close selection when something is already selected
+    if (state.selectedItems.isNotEmpty) {
+      emit(state.copyWith(multiselect: true));
+    } else {
+      emit(state.copyWith(multiselect: multiSelect));
+    }
   }
 
   @override

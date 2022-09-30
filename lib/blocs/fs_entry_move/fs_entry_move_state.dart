@@ -1,77 +1,64 @@
-part of 'fs_entry_move_cubit.dart';
+part of 'fs_entry_move_bloc.dart';
 
 abstract class FsEntryMoveState extends Equatable {
-  final bool isMovingFolder;
-
-  const FsEntryMoveState({required this.isMovingFolder});
+  const FsEntryMoveState();
 
   @override
-  List<Object> get props => [isMovingFolder];
+  List<Object> get props => [];
 }
 
-class FsEntryMoveFolderLoadInProgress extends FsEntryMoveState {
-  const FsEntryMoveFolderLoadInProgress({required bool isMovingFolder})
-      : super(isMovingFolder: isMovingFolder);
+class FsEntryMoveLoadInProgress extends FsEntryMoveState {
+  const FsEntryMoveLoadInProgress() : super();
 }
 
-class FsEntryMoveFolderLoadSuccess extends FsEntryMoveState {
+class FsEntryMoveLoadSuccess extends FsEntryMoveState {
   final bool viewingRootFolder;
   final FolderWithContents viewingFolder;
 
   /// The id of the folder/file entry being moved.
-  final String movingEntryId;
+  final List<SelectedItem> itemsToMove;
 
-  const FsEntryMoveFolderLoadSuccess({
+  const FsEntryMoveLoadSuccess({
     required this.viewingRootFolder,
     required this.viewingFolder,
-    required this.movingEntryId,
-    required bool isMovingFolder,
-  }) : super(isMovingFolder: isMovingFolder);
-
+    required this.itemsToMove,
+  }) : super();
   @override
-  List<Object> get props =>
-      [viewingRootFolder, viewingFolder, movingEntryId, isMovingFolder];
+  List<Object> get props => [viewingRootFolder, viewingFolder, itemsToMove];
+}
+
+class FsEntryMoveWalletMismatch extends FsEntryMoveState {
+  const FsEntryMoveWalletMismatch() : super();
+}
+
+class FsEntryMoveSuccess extends FsEntryMoveState {
+  const FsEntryMoveSuccess() : super();
 }
 
 class FsEntryMoveNameConflict extends FsEntryMoveState {
-  final String name;
+  final List<SelectedItem> conflictingItems;
+  final FolderEntry folderInView;
+
+  final List<SelectedItem> allItems;
+
   const FsEntryMoveNameConflict({
-    required this.name,
-  }) : super(
-          isMovingFolder: true,
-        );
+    required this.conflictingItems,
+    required this.folderInView,
+    required this.allItems,
+  }) : super();
+
+  bool areAllItemsConflicting() => conflictingItems.length == allItems.length;
+
+  List<String> conflictingFileNames() => conflictingItems
+      .whereType<SelectedFile>()
+      .map((e) => e.item.name)
+      .toList();
+
+  List<String> conflictingFolderNames() => conflictingItems
+      .whereType<SelectedFolder>()
+      .map((e) => e.item.name)
+      .toList();
+
   @override
-  List<Object> get props => [name];
-}
-
-class FolderEntryMoveInProgress extends FsEntryMoveState {
-  const FolderEntryMoveInProgress() : super(isMovingFolder: true);
-}
-
-class FolderEntryMoveSuccess extends FsEntryMoveState {
-  const FolderEntryMoveSuccess() : super(isMovingFolder: true);
-}
-
-class FolderEntryMoveFailure extends FsEntryMoveState {
-  const FolderEntryMoveFailure() : super(isMovingFolder: true);
-}
-
-class FolderEntryMoveWalletMismatch extends FsEntryMoveState {
-  const FolderEntryMoveWalletMismatch() : super(isMovingFolder: true);
-}
-
-class FileEntryMoveInProgress extends FsEntryMoveState {
-  const FileEntryMoveInProgress() : super(isMovingFolder: false);
-}
-
-class FileEntryMoveSuccess extends FsEntryMoveState {
-  const FileEntryMoveSuccess() : super(isMovingFolder: false);
-}
-
-class FileEntryMoveFailure extends FsEntryMoveState {
-  const FileEntryMoveFailure() : super(isMovingFolder: false);
-}
-
-class FileEntryMoveWalletMismatch extends FsEntryMoveState {
-  const FileEntryMoveWalletMismatch() : super(isMovingFolder: false);
+  List<Object> get props => [conflictingItems, folderInView];
 }
