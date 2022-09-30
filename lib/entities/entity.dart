@@ -85,7 +85,7 @@ extension TransactionUtils on TransactionBase {
     required String version,
     DateTime? unixTime,
   }) async {
-    addTag(EntityTag.appName, 'ArDrive-App');
+    addTag(EntityTag.appName, 'ArDrive-Flutter');
     addTag(EntityTag.appPlatform, _platform);
     addTag(EntityTag.appPlatformVersion, await _platformVersion);
     addTag(EntityTag.appVersion, version);
