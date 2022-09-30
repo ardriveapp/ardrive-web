@@ -384,7 +384,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   int get sizeLimit => kIsWeb
       ? (_targetDrive.isPrivate ? privateFileSizeLimit : publicFileSizeLimit)
-      : androidFileSizeLimit;
+      : mobileFileSizeLimit;
 
   void _removeFilesWithFolderNameConflicts() {
     files.removeWhere((file) => conflictingFolders.contains(file.ioFile.name));
