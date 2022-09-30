@@ -115,5 +115,5 @@ Future<void> _showCameraPermissionModal(BuildContext context) async {
             ],
           ),
         );
-      });
+    });
 }
