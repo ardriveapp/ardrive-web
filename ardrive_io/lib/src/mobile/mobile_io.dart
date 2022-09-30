@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_io/src/cache_storage.dart';
 import 'package:ardrive_io/src/io_exception.dart';
 import 'package:file_saver/file_saver.dart' as file_saver;
 import 'package:mime/mime.dart' as mime;
@@ -44,12 +43,6 @@ class MobileIO implements ArDriveIO {
       allowedExtensions: allowedExtensions,
     );
 
-    final cache = IOCacheStorage();
-
-    for (var file in files) {
-      await cache.saveEntityOnCacheDir(file);
-    }
-
     return files;
   }
 
@@ -86,7 +79,7 @@ class MobileSelectableFolderFileSaver implements FileSaver {
       file.name,
       await file.readAsBytes(),
       mime.extensionFromMime(file.contentType),
-      getMimeTypeFromString(file.contentType),
+      file.contentType,
     );
 
     return;
