@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_io/src/cache_storage.dart';
 import 'package:ardrive_io/src/io_exception.dart';
 import 'package:file_saver/file_saver.dart' as file_saver;
 import 'package:mime/mime.dart' as mime;
@@ -38,10 +39,18 @@ class MobileIO implements ArDriveIO {
     final provider =
         _fileProviderFactory.fromSource(fileSource) as MultiFileProvider;
 
-    return provider.pickMultipleFiles(
+    final files = await provider.pickMultipleFiles(
       fileSource: fileSource,
       allowedExtensions: allowedExtensions,
     );
+
+    final cache = IOCacheStorage();
+
+    for (var file in files) {
+      await cache.saveEntityOnCacheDir(file);
+    }
+
+    return files;
   }
 
   @override
