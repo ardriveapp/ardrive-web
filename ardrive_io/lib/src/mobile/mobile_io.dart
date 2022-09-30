@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_io/src/io_exception.dart';
+import 'package:ardrive_io/src/utils/path_utils.dart';
 import 'package:ardrive_io/src/utils/permissions.dart';
 import 'package:file_saver/file_saver.dart' as file_saver;
 import 'package:mime/mime.dart' as mime;
@@ -68,18 +69,19 @@ class MobileIO implements ArDriveIO {
 /// This implementation uses the `file_saver` package.
 ///
 /// Throws an `FileSystemPermissionDeniedException` when user deny access to storage
-@Deprecated("Deprecated due a issue saving files on iOS.")
 class MobileSelectableFolderFileSaver implements FileSaver {
   @override
   Future<void> save(IOFile file) async {
     await requestPermissions();
     await verifyPermissions();
 
+    final ext = mime.extensionFromMime(file.contentType);
+
     await file_saver.FileSaver.instance.saveAs(
-      file.name,
+      p.basenameWithoutExtension(file.name),
       await file.readAsBytes(),
-      mime.extensionFromMime(file.contentType),
-      getMimeTypeFromString(file.contentType),
+      ext,
+      file.contentType,
     );
 
     return;
@@ -116,7 +118,7 @@ class DartIOFileSaver implements FileSaver {
 abstract class FileSaver {
   factory FileSaver() {
     if (Platform.isAndroid || Platform.isIOS) {
-      return DartIOFileSaver();
+      return MobileSelectableFolderFileSaver();
     }
     throw UnsupportedPlatformException(
         'The ${Platform.operatingSystem} platform is not supported');
