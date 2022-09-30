@@ -22,6 +22,8 @@ class MobileIO implements ArDriveIO {
     List<String>? allowedExtensions,
     required FileSource fileSource,
   }) async {
+    await _verifyStoragePermissions();
+
     final provider = _fileProviderFactory.fromSource(fileSource);
 
     return provider.pickFile(
@@ -35,6 +37,8 @@ class MobileIO implements ArDriveIO {
     List<String>? allowedExtensions,
     required FileSource fileSource,
   }) async {
+    await _verifyStoragePermissions();
+
     final provider =
         _fileProviderFactory.fromSource(fileSource) as MultiFileProvider;
 
@@ -46,10 +50,20 @@ class MobileIO implements ArDriveIO {
 
   @override
   Future<IOFolder> pickFolder() async {
+    await _verifyStoragePermissions();
+
     final provider = _fileProviderFactory.fromSource(FileSource.fileSystem)
         as MultiFileProvider;
 
     return provider.getFolder();
+  }
+
+  Future<void> _verifyStoragePermissions() async {
+    final status = await Permission.storage.request();
+
+    if (status != PermissionStatus.granted) {
+      throw FileSystemPermissionDeniedException([Permission.storage]);
+    }
   }
 
   @override

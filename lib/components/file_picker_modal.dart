@@ -73,7 +73,14 @@ Future<T> _showModal<T>(
                 ),
                 ListTile(
                     onTap: () async {
-                      content = await pickFromFileSystem();
+                      final isEnabled =
+                          await verifyStoragePermissionAndShowModalWhenDenied(
+                        context,
+                      );
+
+                      if (isEnabled) {
+                        content = await pickFromFileSystem();
+                      }
 
                       Navigator.pop(context);
                     },
@@ -85,6 +92,51 @@ Future<T> _showModal<T>(
         );
       });
   return content;
+}
+
+Future<bool> verifyStoragePermissionAndShowModalWhenDenied(
+    BuildContext context) async {
+  try {
+    await verifyStoragePermission();
+  } catch (e) {
+    if (e is FileSystemPermissionDeniedException) {
+      await showStoragePermissionModal(context);
+    }
+    return false;
+  }
+
+  return true;
+}
+
+Future<void> showStoragePermissionModal(BuildContext context) async {
+  return showDialog(
+      context: context,
+      builder: (context) {
+        return AppDialog(
+          title: appLocalizationsOf(context).enableCamera,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(appLocalizationsOf(context).enableStorageAccess),
+              const SizedBox(
+                height: 24,
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  AppSettings.openAppSettings();
+                },
+                child: Text(appLocalizationsOf(context).goToDeviceSettings),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text(appLocalizationsOf(context).cancel),
+              )
+            ],
+          ),
+        );
+      });
 }
 
 Future<void> _showCameraPermissionModal(BuildContext context) async {
@@ -115,5 +167,5 @@ Future<void> _showCameraPermissionModal(BuildContext context) async {
             ],
           ),
         );
-    });
+      });
 }

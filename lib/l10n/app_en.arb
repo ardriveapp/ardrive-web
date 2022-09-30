@@ -1457,5 +1457,9 @@
   "biometricsPermanentlyLockedOut": "Biometric login disabled due to too many unsuccessful attempts. Please enter your PIN/passcode to unlock biometric functionality.",
   "@biometricsPermanentlyLockedOut": {
     "description": "Biometrics permanently locked out"
+  },
+  "enableStorageAccess": "Go to settings and tap ArDrive and turn on Storage access.",
+  "@enableStorageAccess": {
+    "description": "enable camera access"
   }
 }
