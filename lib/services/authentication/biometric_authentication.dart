@@ -84,7 +84,7 @@ class BiometricAuthentication {
       debugPrint(e.toString());
       debugPrint(e.code);
       disable();
- 
+
       switch (e.code) {
         case error_codes.notAvailable:
 
