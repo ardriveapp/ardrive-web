@@ -56,6 +56,7 @@ lane :update_pr_and_jira do |options|
     pr_body = pr_body.gsub(/^.*#{release_field}.*$/, release_text)
   end
 
+
   github_api(
     api_bearer: ENV["GITHUB_TOKEN"],
     http_method: "PATCH",
@@ -67,7 +68,6 @@ lane :update_pr_and_jira do |options|
     ticket_id: jira_ticket,
     comment_text: "New #{platform} release! \nBuild number: #{build_number}\nGit sha: #{git_sha}\nURL: #{release_url}"
   )
-
 end
 
 def get_github_pr_description (pr_number)
@@ -87,6 +87,11 @@ def get_github_pr_description (pr_number)
   end
 
   response_body = JSON.parse(response.body)
+  body = response_body["body"]
 
-  return response_body["body"]
+  if body.nil? then
+    return ""
+  else
+    return body
+  end
 end
