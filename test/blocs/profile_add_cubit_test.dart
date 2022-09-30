@@ -1,10 +1,9 @@
 @Tags(['broken'])
 
-import 'dart:convert';
-
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -24,6 +23,7 @@ void main() {
 
     late ProfileCubit profileCubit;
     late ProfileAddCubit profileAddCubit;
+    late BiometricAuthentication biometricAuthentication;
 
     const fakePassword = '123';
 
@@ -32,7 +32,7 @@ void main() {
 
       db = getTestDb();
       profileDao = db.profileDao;
-
+      biometricAuthentication = MockBiometricAuthentication();
       arweave = MockArweaveService();
       profileCubit = MockProfileCubit();
 
@@ -42,6 +42,7 @@ void main() {
         profileCubit: profileCubit,
         profileDao: profileDao,
         arweave: arweave,
+        biometricAuthentication: biometricAuthentication,
         context: MockContext(),
       );
 
@@ -58,7 +59,7 @@ void main() {
       'add profile for new user',
       build: () => profileAddCubit,
       act: (bloc) async {
-        await bloc.pickWallet(json.encode(newUserWallet.toJwk()));
+        await bloc.pickWallet(newUserWallet);
         bloc.form.value = {'username': 'Bobby', 'password': fakePassword};
         await bloc.submit();
       },

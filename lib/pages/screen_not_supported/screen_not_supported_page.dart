@@ -1,7 +1,7 @@
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ScreenNotSupportedPage extends StatelessWidget {
   const ScreenNotSupportedPage({Key? key}) : super(key: key);
@@ -33,9 +33,8 @@ class ScreenNotSupportedPage extends StatelessWidget {
                 Text(appLocalizationsOf(context).tryOnAnotherDevice),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () => launchUrl(
-                    Uri.parse('https://ardrive.io/about/newsletter/'),
-                  ),
+                  onPressed: () =>
+                      openUrl(url: 'https://ardrive.io/about/newsletter/'),
                   child: Text(appLocalizationsOf(context).subscribeEmphasized),
                 ),
               ],

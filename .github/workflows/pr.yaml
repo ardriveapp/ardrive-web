@@ -7,7 +7,6 @@ on:
       - master
 
 env:
-  PR_BODY: ${{ github.event.pull_request.body }}
   PR_TITLE: ${{ github.event.pull_request.title }}
   PR_NUMBER: ${{ github.event.pull_request.number }}
   BUILD_NUMBER: ${{ github.run_number }}

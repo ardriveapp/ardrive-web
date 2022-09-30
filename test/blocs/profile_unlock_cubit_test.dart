@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -18,6 +19,7 @@ void main() {
     late ProfileCubit profileCubit;
     late ProfileUnlockCubit profileUnlockCubit;
     late ArweaveService arweave;
+    late BiometricAuthentication biometricAuthentication;
 
     const rightPassword = 'right-password';
     const wrongPassword = 'wrong-password';
@@ -28,6 +30,7 @@ void main() {
       profileDao = MockProfileDao();
       profileCubit = MockProfileCubit();
       arweave = MockArweaveService();
+      biometricAuthentication = MockBiometricAuthentication();
 
       when(() => profileDao.loadDefaultProfile(rightPassword))
           .thenAnswer((_) => Future.value());
@@ -38,6 +41,7 @@ void main() {
         profileCubit: profileCubit,
         profileDao: profileDao,
         arweave: arweave,
+        biometricAuthentication: biometricAuthentication,
       );
     });
 

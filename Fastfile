@@ -36,7 +36,7 @@ lane :update_pr_and_jira do |options|
   platform = if ios then "iOS" else "Android" end
   pr_number = ENV['PR_NUMBER']
   pr_title = ENV['PR_TITLE']
-  pr_body = ENV['PR_BODY']
+  pr_body = get_github_pr_description(pr_number)
   git_sha = ENV['GIT_SHA']
   build_number = ENV['BUILD_NUMBER']
   jira_ticket = pr_title.split(':').first
@@ -56,7 +56,7 @@ lane :update_pr_and_jira do |options|
     pr_body = pr_body.gsub(/^.*#{release_field}.*$/, release_text)
   end
 
-  # github_pr_description_update(pr_number, pr_body)
+
   github_api(
     api_bearer: ENV["GITHUB_TOKEN"],
     http_method: "PATCH",
@@ -68,29 +68,30 @@ lane :update_pr_and_jira do |options|
     ticket_id: jira_ticket,
     comment_text: "New #{platform} release! \nBuild number: #{build_number}\nGit sha: #{git_sha}\nURL: #{release_url}"
   )
-
 end
 
-def github_pr_description_update (pr_number, description)
+def get_github_pr_description (pr_number)
   require 'net/http'
+  require 'json'
+
   github_token = ENV['GITHUB_TOKEN']
   uri = URI("https://api.github.com/repos/ardriveapp/ardrive-web/pulls/#{pr_number}")
-
   headers = {
     'Accept': 'application/vnd.github+json',
     'Authorization': "Bearer #{github_token}"
   }
 
-  body = {
-    body: description
-  }
-
-  request = Net::HTTP::Patch.new(uri, headers)
-  request.body = body.to_json
-
+  request = Net::HTTP::Get.new(uri, headers)
   response = Net::HTTP.start(uri.hostname, uri.port, :use_ssl => true) do |http|
     http.request(request)
   end
 
-  puts response
+  response_body = JSON.parse(response.body)
+  body = response_body["body"]
+
+  if body.nil? then
+    return ""
+  else
+    return body
+  end
 end
