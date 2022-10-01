@@ -387,7 +387,7 @@ packages:
       path: "."
       ref: fix-extension
       resolved-ref: "712b7c19c106f8436239920e801f20ad9c91e440"
-      url: "git@github.com:thiagocarvalhodev/file_saver.git"
+      url: "https://github.com/thiagocarvalhodev/file_saver"
     source: git
     version: "0.1.1"
   file_selector:
