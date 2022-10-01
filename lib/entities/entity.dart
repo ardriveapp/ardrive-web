@@ -87,7 +87,10 @@ extension TransactionUtils on TransactionBase {
   }) async {
     addTag(EntityTag.appName, 'ArDrive-App');
     addTag(EntityTag.appPlatform, _platform);
-    addTag(EntityTag.appPlatformVersion, await _platformVersion);
+
+    // TODO: PE-2380
+    // addTag(EntityTag.appPlatformVersion, await _platformVersion);
+
     addTag(EntityTag.appVersion, version);
     addTag(
         EntityTag.unixTime,
@@ -100,7 +103,8 @@ extension TransactionUtils on TransactionBase {
     addTag(EntityTag.arFs, '0.11');
   }
 
-  get _platformVersion async {
+  // TODO: PE-2380
+  get platformVersion async {
     final platform = _platform;
     final deviceInfoPlugin = DeviceInfoPlugin();
 
