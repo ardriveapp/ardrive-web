@@ -1,7 +1,6 @@
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -86,8 +85,7 @@ extension TransactionUtils on TransactionBase {
     DateTime? unixTime,
   }) async {
     addTag(EntityTag.appName, 'ArDrive-App');
-    addTag(EntityTag.appPlatform, _platform);
-    addTag(EntityTag.appPlatformVersion, await _platformVersion);
+    addTag(EntityTag.appPlatform, _appPlatform);
     addTag(EntityTag.appVersion, version);
     addTag(
         EntityTag.unixTime,
@@ -100,38 +98,7 @@ extension TransactionUtils on TransactionBase {
     addTag(EntityTag.arFs, '0.11');
   }
 
-  get _platformVersion async {
-    final platform = _platform;
-    final deviceInfoPlugin = DeviceInfoPlugin();
-
-    switch (platform) {
-      case 'Android':
-        final androidDeviceInfo = await deviceInfoPlugin.androidInfo;
-        final String? androidVersion = androidDeviceInfo.version.release;
-        final int? sdkVersion = androidDeviceInfo.version.sdkInt;
-        final versionString = '$androidVersion (SDK $sdkVersion)';
-
-        return versionString;
-
-      case 'iOS':
-        final iosDeviceInfo = await deviceInfoPlugin.iosInfo;
-        final String? systemName = iosDeviceInfo.systemName;
-        final String? iosVersion = iosDeviceInfo.systemVersion;
-        final versionString = '$systemName $iosVersion';
-
-        return versionString;
-
-      default: // case 'Web':
-        final webDeviceInfo = await deviceInfoPlugin.webBrowserInfo;
-        final browserName = describeEnum(webDeviceInfo.browserName);
-        final browserVersion = webDeviceInfo.appVersion;
-        final versionString = '$browserName $browserVersion';
-
-        return versionString;
-    }
-  }
-
-  get _platform {
+  get _appPlatform {
     if (kIsWeb) {
       return 'Web';
     }
@@ -147,7 +114,7 @@ extension TransactionUtils on TransactionBase {
       case 'ios':
         return 'iOS';
       default:
-        throw Exception('Unsupported platform $operatingSystem!');
+        return '';
     }
   }
 }

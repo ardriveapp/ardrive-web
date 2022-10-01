@@ -228,19 +228,22 @@ void main() {
         final dataItem =
             await manifest.asPreparedDataItem(owner: await wallet.getOwner());
 
-        expect(dataItem.tags.length, equals(4));
+        expect(dataItem.tags.length, equals(5));
         expect(decodeBase64ToString(dataItem.tags[0].name), equals('App-Name'));
         expect(decodeBase64ToString(dataItem.tags[0].value),
-            equals('ArDrive-Web'));
+            equals('ArDrive-App'));
+        expect(decodeBase64ToString(dataItem.tags[1].name),
+            equals('App-Platform'));
+        expect(decodeBase64ToString(dataItem.tags[1].value), equals(''));
         expect(
-            decodeBase64ToString(dataItem.tags[1].name), equals('App-Version'));
-        expect(decodeBase64ToString(dataItem.tags[1].value), equals('1.3.3.7'));
+            decodeBase64ToString(dataItem.tags[2].name), equals('App-Version'));
+        expect(decodeBase64ToString(dataItem.tags[2].value), equals('1.3.3.7'));
         expect(
-            decodeBase64ToString(dataItem.tags[2].name), equals('Unix-Time'));
-        expect(decodeBase64ToString(dataItem.tags[2].value).length, equals(10));
-        expect(decodeBase64ToString(dataItem.tags[3].name),
+            decodeBase64ToString(dataItem.tags[3].name), equals('Unix-Time'));
+        expect(decodeBase64ToString(dataItem.tags[3].value).length, equals(10));
+        expect(decodeBase64ToString(dataItem.tags[4].name),
             equals('Content-Type'));
-        expect(decodeBase64ToString(dataItem.tags[3].value),
+        expect(decodeBase64ToString(dataItem.tags[4].value),
             equals('application/x.arweave-manifest+json'));
 
         expect(dataItem.target, equals(''));
