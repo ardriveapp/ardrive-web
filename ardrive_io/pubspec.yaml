@@ -4,8 +4,8 @@ version: 0.0.1
 homepage:
 
 environment:
-  sdk: ">=2.15.1 <3.0.0"
-  flutter: ">=1.17.0"
+  sdk: '>=2.15.1 <3.0.0'
+  flutter: '>=1.17.0'
 
 dependencies:
   flutter:
@@ -18,8 +18,8 @@ dependencies:
   file_selector: ^0.9.0
   image_picker: ^0.8.5+3
   file_saver:
-    git: 
-      url: git@github.com:thiagocarvalhodev/file_saver.git
+    git:
+      url: https://github.com/thiagocarvalhodev/file_saver.git
       ref: fix-extension
 dev_dependencies:
   flutter_test:
