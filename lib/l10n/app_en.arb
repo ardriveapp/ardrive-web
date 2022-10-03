@@ -900,6 +900,10 @@
   "@filesTooLargeExplanationPublic": {
     "description": "Limit of size to upload"
   },
+  "filesTooLargeExplanationMobile": "ArDrive on mobile currently only supports file uploads smaller than 1024 MiB",
+  "@filesTooLargeExplanationMobile": {
+    "description": "Limit of size to upload"
+  },
   "tooLargeForUpload": "Too large for upload:",
   "@tooLargeForUpload": {
     "description": "Files too large for upload"
@@ -1402,6 +1406,10 @@
   "@invalidWalletFileDescription": {
     "description": "Invalid wallet file description"
   },
+  "enableCameraAccess": "Go to settings and tap ArDrive and turn on Camera access.",
+  "@enableCameraAccess": {
+    "description": "enable camera access"
+  },
   "biometricLoginEnabled": "Biometric Login Enabled",
   "@biometricLoginEnabled": {
     "description": "Biometric Login is Enabled."
@@ -1426,6 +1434,10 @@
   "@goToDeviceSettings": {
     "description": "Go to device settings"
   },
+  "enableCamera": "Enable camera",
+  "@goToDeviceSettings": {
+    "description": "Enable camera"
+  },
   "biometricTemporarilyDisabled": "Biometric login temporarily disabled due to too many unsuccessful attempts.",
   "@biometricTemporarilyDisabled": {
     "description": "Biometric is locked out"
@@ -1449,5 +1461,9 @@
   "biometricsPermanentlyLockedOut": "Biometric login disabled due to too many unsuccessful attempts. Please enter your PIN/passcode to unlock biometric functionality.",
   "@biometricsPermanentlyLockedOut": {
     "description": "Biometrics permanently locked out"
+  },
+  "enableStorageAccess": "Go to settings and tap ArDrive and turn on Storage access.",
+  "@enableStorageAccess": {
+    "description": "enable camera access"
   }
 }

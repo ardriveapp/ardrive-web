@@ -6,7 +6,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/mime_lookup.dart';
+import 'package:ardrive_io/src/utils/mime_type_utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';

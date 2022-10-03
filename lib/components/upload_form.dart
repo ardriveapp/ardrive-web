@@ -206,11 +206,14 @@ class UploadForm extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      state.isPrivate
-                          ? appLocalizationsOf(context)
-                              .filesTooLargeExplanationPrivate
+                      kIsWeb
+                          ? (state.isPrivate
+                              ? appLocalizationsOf(context)
+                                  .filesTooLargeExplanationPrivate
+                              : appLocalizationsOf(context)
+                                  .filesTooLargeExplanationPublic)
                           : appLocalizationsOf(context)
-                              .filesTooLargeExplanationPublic,
+                              .filesTooLargeExplanationMobile,
                     ),
                     const SizedBox(height: 16),
                     Text(appLocalizationsOf(context).tooLargeForUpload),

@@ -2022,7 +2022,7 @@ const Map rawHealthyContractData = {
     {
       'nays': 0,
       'note':
-          'Minting additional tokens needed (3% total) for ArDrive Community Distribution Phase 1 \"Aztec\"',
+          'Minting additional tokens needed (3% total) for ArDrive Community Distribution Phase 1 "Aztec"',
       'qty': 251000,
       'recipient': '2ZaUGqVCPxst5s0XO933HbZmksnLixpXkt6Sh2re0hg',
       'start': 562079,

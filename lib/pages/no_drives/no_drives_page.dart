@@ -1,6 +1,5 @@
 import 'package:ardrive/components/plus_button.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
