@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_io/src/utils/permissions.dart';
 import 'package:equatable/equatable.dart';
 
 /// Base class for agnostic platform folders.
@@ -54,6 +53,7 @@ class _FileSystemFolder extends IOFolder {
       _getAllEntitiesFromType<IOFile>(this),
       Directory(path),
     );
+
     return files;
   }
 
@@ -148,6 +148,7 @@ class IOFolderAdapter {
   /// Initialize loading the folder hierachy and return an `_FileSystemFolder` instance
   Future<IOFolder> fromFileSystemDirectory(Directory directory) async {
     final content = directory.listSync();
+
     final selectedDirectoryPath = directory.path;
 
     final folder = _FileSystemFolder._(
