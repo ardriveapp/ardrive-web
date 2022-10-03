@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:security_scoped_resource/security_scoped_resource.dart';
 
@@ -24,6 +25,17 @@ Future<void> verifyPermissions() async {
   }
 
   throw FileSystemPermissionDeniedException(deniedPermissions);
+}
+
+Future<void> verifyStoragePermission() async {
+  if (kIsWeb) {
+    return;
+  }
+
+  final status = await Permission.storage.request();
+  if (status != PermissionStatus.granted) {
+    throw FileSystemPermissionDeniedException([Permission.storage]);
+  }
 }
 
 /// Runs an action in the security scoped resource.

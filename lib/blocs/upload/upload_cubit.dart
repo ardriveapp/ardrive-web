@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/cost_estimate.dart';
+import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -16,9 +17,6 @@ import 'package:rxdart/rxdart.dart';
 import 'enums/conflicting_files_actions.dart';
 
 part 'upload_state.dart';
-
-const privateFileSizeLimit = 104857600;
-const publicFileSizeLimit = 1288490189;
 
 final filesNamesToExclude = ['.DS_Store'];
 
@@ -391,8 +389,9 @@ class UploadCubit extends Cubit<UploadState> {
     );
   }
 
-  num get sizeLimit =>
-      _targetDrive.isPrivate ? privateFileSizeLimit : publicFileSizeLimit;
+  int get sizeLimit => kIsWeb
+      ? (_targetDrive.isPrivate ? privateFileSizeLimit : publicFileSizeLimit)
+      : mobileFileSizeLimit;
 
   void _removeFilesWithFolderNameConflicts() {
     files.removeWhere((file) => conflictingFolders.contains(file.ioFile.name));
