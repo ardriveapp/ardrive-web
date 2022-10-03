@@ -44,8 +44,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
     on<FsEntryMoveEvent>(
       (event, emit) async {
-        print('The move event: $event');
-
         if (await _profileCubit.logoutIfWalletMismatch()) {
           emit(const FsEntryMoveWalletMismatch());
           return;
