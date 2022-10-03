@@ -151,8 +151,10 @@ class _WebFolder extends IOFolder {
 class IOFolderAdapter {
   /// Initialize loading the folder hierachy and return an `_FileSystemFolder` instance
   Future<IOFolder> fromFileSystemDirectory(Directory directory) async {
-    await SecurityScopedResource.instance
-        .startAccessingSecurityScopedResource(directory);
+    if (Platform.isIOS) {
+      await SecurityScopedResource.instance
+          .startAccessingSecurityScopedResource(directory);
+    }
 
     final content = directory.listSync();
 
