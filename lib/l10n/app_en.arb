@@ -1406,6 +1406,10 @@
   "@invalidWalletFileDescription": {
     "description": "Invalid wallet file description"
   },
+  "downloadFinished": "Download finished!",
+  "@downloadFinished": {
+    "description": "Download finished"
+  },
   "enableCameraAccess": "Go to settings and tap ArDrive and turn on Camera access.",
   "@enableCameraAccess": {
     "description": "enable camera access"
