@@ -50,7 +50,7 @@ class _FileSystemFolder extends IOFolder {
   @override
   Future<List<IOFile>> listFiles() async {
     final files = await secureScopedAction(
-      _getAllEntitiesFromType<IOFile>(this),
+      (secureDir) => _getAllEntitiesFromType<IOFile>(this),
       Directory(path),
     );
 
@@ -77,6 +77,7 @@ class _FileSystemFolder extends IOFolder {
   Future<IOEntity> _addFolderNode(FileSystemEntity fsEntity) async {
     if (fsEntity is Directory) {
       final newNode = await IOFolderAdapter().fromFileSystemDirectory(fsEntity);
+
       for (var fs in fsEntity.listSync()) {
         final children = await newNode.listContent();
         children.add(await _addFolderNode(fs));
