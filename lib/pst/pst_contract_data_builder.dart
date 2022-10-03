@@ -22,9 +22,9 @@ class CommunityContractDataBuilder {
     final List rawVotes = _rawData['votes'];
     return rawVotes.map((vote) {
       final VoteStatus status = VoteStatus.values.firstWhere(
-          (element) => element.toString() == 'VoteStatus.' + vote['status']);
+          (element) => element.toString() == 'VoteStatus.${vote['status']}');
       final VoteType type = VoteType.values.firstWhere(
-          (element) => element.toString() == 'VoteType.' + vote['type']);
+          (element) => element.toString() == 'VoteType.${vote['type']}');
       final String note = vote['note'];
       final int yays = vote['yays'];
       final int nays = vote['nays'];

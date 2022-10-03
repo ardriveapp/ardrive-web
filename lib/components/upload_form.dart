@@ -21,7 +21,7 @@ import 'components.dart';
 Future<void> promptToUpload(
   BuildContext context, {
   required String driveId,
-  required String folderId,
+  required String parentFolderId,
   required bool isFolderUpload,
   Platform platform = const LocalPlatform(),
 }) async {
@@ -30,11 +30,13 @@ Future<void> promptToUpload(
   if (isFolderUpload) {
     final ioFolder = await io.pickFolder();
     final ioFiles = await ioFolder.listFiles();
-
-    final uploadFiles = ioFiles
-        .map((file) => UploadFile(ioFile: file, parentFolderId: folderId))
-        .toList();
-
+    final uploadFiles = ioFiles.map((file) {
+      return UploadFile(
+        ioFile: file,
+        parentFolderId: parentFolderId,
+        relativeTo: ioFolder.path.isEmpty ? null : getDirname(ioFolder.path),
+      );
+    }).toList();
     selectedFiles.addAll(uploadFiles);
   } else {
     // Display multiple options on Mobile
@@ -44,7 +46,7 @@ Future<void> promptToUpload(
         : await showMultipleFilesFilePickerModal(context);
 
     final uploadFiles = ioFiles
-        .map((file) => UploadFile(ioFile: file, parentFolderId: folderId))
+        .map((file) => UploadFile(ioFile: file, parentFolderId: parentFolderId))
         .toList();
 
     selectedFiles.addAll(uploadFiles);
@@ -63,7 +65,7 @@ Future<void> promptToUpload(
             platform: platform,
           ),
           driveId: driveId,
-          folderId: folderId,
+          parentFolderId: parentFolderId,
           files: selectedFiles,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
@@ -209,11 +211,14 @@ class UploadForm extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      state.isPrivate
-                          ? appLocalizationsOf(context)
-                              .filesTooLargeExplanationPrivate
+                      kIsWeb
+                          ? (state.isPrivate
+                              ? appLocalizationsOf(context)
+                                  .filesTooLargeExplanationPrivate
+                              : appLocalizationsOf(context)
+                                  .filesTooLargeExplanationPublic)
                           : appLocalizationsOf(context)
-                              .filesTooLargeExplanationPublic,
+                              .filesTooLargeExplanationMobile,
                     ),
                     const SizedBox(height: 16),
                     Text(appLocalizationsOf(context).tooLargeForUpload),

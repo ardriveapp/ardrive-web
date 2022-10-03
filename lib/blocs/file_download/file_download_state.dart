@@ -22,6 +22,32 @@ class FileDownloadInProgress extends FileDownloadState {
   List<Object> get props => [fileName, totalByteCount];
 }
 
+class FileDownloadWithProgress extends FileDownloadState {
+  const FileDownloadWithProgress({
+    required this.fileName,
+    required this.progress,
+    required this.fileSize,
+  });
+
+  final int progress;
+  final int fileSize;
+  final String fileName;
+
+  @override
+  List<Object> get props => [progress, fileName];
+}
+
+class FileDownloadFinishedWithSuccess extends FileDownloadState {
+  const FileDownloadFinishedWithSuccess({
+    required this.fileName,
+  });
+
+  final String fileName;
+
+  @override
+  List<Object> get props => [fileName];
+}
+
 class FileDownloadSuccess extends FileDownloadState {
   const FileDownloadSuccess(
       {required this.fileName,

@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_io/src/io_exception.dart';
 import 'package:file_saver/file_saver.dart' as file_saver;
 import 'package:mime/mime.dart' as mime;
+import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 
 class MobileIO implements ArDriveIO {
@@ -22,6 +22,8 @@ class MobileIO implements ArDriveIO {
     List<String>? allowedExtensions,
     required FileSource fileSource,
   }) async {
+    await _verifyStoragePermissions();
+
     final provider = _fileProviderFactory.fromSource(fileSource);
 
     return provider.pickFile(
@@ -35,21 +37,39 @@ class MobileIO implements ArDriveIO {
     List<String>? allowedExtensions,
     required FileSource fileSource,
   }) async {
+    await _verifyStoragePermissions();
+
     final provider =
         _fileProviderFactory.fromSource(fileSource) as MultiFileProvider;
 
-    return provider.pickMultipleFiles(
+    final files = await provider.pickMultipleFiles(
       fileSource: fileSource,
       allowedExtensions: allowedExtensions,
     );
+
+    return files;
   }
 
   @override
   Future<IOFolder> pickFolder() async {
+    if (Platform.isAndroid) {
+      await requestPermissions();
+    }
+
+    await _verifyStoragePermissions();
+
     final provider = _fileProviderFactory.fromSource(FileSource.fileSystem)
         as MultiFileProvider;
 
     return provider.getFolder();
+  }
+
+  Future<void> _verifyStoragePermissions() async {
+    final status = await Permission.storage.request();
+
+    if (status != PermissionStatus.granted) {
+      throw FileSystemPermissionDeniedException([Permission.storage]);
+    }
   }
 
   @override
@@ -70,30 +90,45 @@ class MobileIO implements ArDriveIO {
 class MobileSelectableFolderFileSaver implements FileSaver {
   @override
   Future<void> save(IOFile file) async {
-    await _requestPermissions();
-    await _verifyPermissions();
+    await requestPermissions();
+    await verifyPermissions();
+
+    final ext = mime.extensionFromMime(file.contentType);
 
     await file_saver.FileSaver.instance.saveAs(
-      file.name,
+      p.basenameWithoutExtension(file.name),
       await file.readAsBytes(),
-      mime.extensionFromMime(file.contentType),
-      getMimeTypeFromString(file.contentType),
+      ext,
+      file.contentType,
     );
 
     return;
   }
+}
 
-  Future<void> _verifyPermissions() async {
-    if (await Permission.storage.isGranted) {
-      return;
+/// Saves a file using the `dart:io` library.
+/// It will save on `getDefaultMobileDownloadDir()`
+class DartIOFileSaver implements FileSaver {
+  @override
+  Future<void> save(IOFile file) async {
+    await requestPermissions();
+    await verifyPermissions();
+
+    String fileName = file.name;
+
+    /// handles files without extension
+    if (p.extension(file.name).isEmpty) {
+      final fileExtension = mime.extensionFromMime(file.contentType);
+
+      fileName += '.$fileExtension';
     }
 
-    throw FileSystemPermissionDeniedException([Permission.storage]);
-  }
+    /// platform_specific_path/Downloads/
+    final defaultDownloadDir = await getDefaultMobileDownloadDir();
 
-  /// Request permissions related to storage on `Android` and `iOS`
-  Future<void> _requestPermissions() async {
-    await Permission.storage.request();
+    final newFile = File(defaultDownloadDir + fileName);
+
+    await newFile.writeAsBytes(await file.readAsBytes());
   }
 }
 

@@ -2,11 +2,13 @@ import 'package:ardrive/blocs/upload/upload_handles/bundle_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/folder_data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/utils/bundles/next_fit_bundle_packer.dart';
+import 'package:flutter/foundation.dart';
 
 import '../upload_handles/file_data_item_upload_handle.dart';
 import '../upload_handles/file_v2_upload_handle.dart';
 
-const bundleSizeLimit = 503316480;
+const bundleSizeLimit = 503316480; // 480MiB
+const mobileBundleSizeLimit = 209715200; // 200MiB
 const maxBundleDataItemCount = 500;
 const maxFilesPerBundle = maxBundleDataItemCount ~/ 2;
 
@@ -44,8 +46,12 @@ class UploadPlan {
     Map<String, FolderDataItemUploadHandle> folderDataItemUploadHandles =
         const {},
   }) async {
+    // Set bundle size limit according the platform
+    // This should be reviewed when we implement stream uploads
+    const int maxBundleSize = kIsWeb ? bundleSizeLimit : mobileBundleSizeLimit;
+
     final bundleItems = await NextFitBundlePacker<UploadHandle>(
-      maxBundleSize: bundleSizeLimit,
+      maxBundleSize: maxBundleSize,
       maxDataItemCount: maxFilesPerBundle,
     ).packItems([
       ...fileDataItemUploadHandles.values,
