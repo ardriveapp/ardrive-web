@@ -5,6 +5,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:platform/platform.dart';
 
 import 'entities.dart';
 
@@ -45,13 +46,19 @@ abstract class Entity {
   /// The `owner` on this [DataItem] will be unset.
   ///
   /// If a key is provided, the data item data is encrypted.
-  Future<DataItem> asDataItem([SecretKey? key]) async {
+  Future<DataItem> asDataItem(
+    SecretKey? key, {
+    Platform platform = const LocalPlatform(),
+  }) async {
     final item = key == null
         ? DataItem.withJsonData(data: this)
         : await createEncryptedEntityDataItem(this, key);
     final packageInfo = await PackageInfo.fromPlatform();
     addEntityTagsToTransaction(item);
-    await item.addApplicationTags(version: packageInfo.version);
+    await item.addApplicationTags(
+      version: packageInfo.version,
+      platform: platform,
+    );
 
     return item;
   }
@@ -83,9 +90,10 @@ extension TransactionUtils on TransactionBase {
   Future<void> addApplicationTags({
     required String version,
     DateTime? unixTime,
+    Platform platform = const LocalPlatform(),
   }) async {
     addTag(EntityTag.appName, 'ArDrive-App');
-    addTag(EntityTag.appPlatform, getPlatform());
+    addTag(EntityTag.appPlatform, getPlatform(platform: platform));
 
     // TODO: PE-2380
     // addTag(EntityTag.appPlatformVersion, await _platformVersion);

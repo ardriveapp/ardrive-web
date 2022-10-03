@@ -2,12 +2,10 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:platform/platform.dart';
 
-getPlatform() {
+getPlatform({Platform platform = const LocalPlatform()}) {
   if (kIsWeb) {
     return 'Web';
   }
-
-  const platform = LocalPlatform();
 
   /// A string (linux, macos, windows, android, ios, or fuchsia) representing the operating system.
   final String operatingSystem = platform.operatingSystem;

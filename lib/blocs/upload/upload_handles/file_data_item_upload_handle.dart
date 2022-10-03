@@ -11,6 +11,7 @@ import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:platform/platform.dart';
 
 // Number of data items returned by this handle
 const fileDataItemEntityCount = 2;
@@ -22,6 +23,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   final SecretKey? driveKey;
   final SecretKey? fileKey;
   final String revisionAction;
+  final Platform _platform;
 
   /// The size of the file before it was encoded/encrypted for upload.
   @override
@@ -51,7 +53,8 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     required this.wallet,
     this.driveKey,
     this.fileKey,
-  });
+    Platform platform = const LocalPlatform(),
+  }) : _platform = platform;
 
   Future<void> writeFileEntityToDatabase({
     required String bundledInTxId,
@@ -87,7 +90,12 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     await dataTx.sign(wallet);
 
     entity.dataTxId = dataTx.id;
-    entityTx = await arweave.prepareEntityDataItem(entity, wallet, fileKey);
+    entityTx = await arweave.prepareEntityDataItem(
+      entity,
+      wallet,
+      fileKey,
+      _platform,
+    );
     await entityTx.sign(wallet);
     entity.txId = entityTx.id;
 
@@ -104,7 +112,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
         entity.dataContentType!,
       ));
     }
-    fakeTags.addAll(await fakeApplicationTags());
+    fakeTags.addAll(await fakeApplicationTags(platform: _platform));
     return estimateDataItemSize(
       fileDataSize: getEntityJSONSize(),
       tags: fakeTags,
@@ -136,7 +144,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
         entity.dataContentType!,
       ));
     }
-    fakeTags.addAll(await fakeApplicationTags());
+    fakeTags.addAll(await fakeApplicationTags(platform: _platform));
     return estimateDataItemSize(
       fileDataSize: size,
       tags: fakeTags,

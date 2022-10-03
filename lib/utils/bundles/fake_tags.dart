@@ -2,6 +2,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:platform/platform.dart';
 
 final fakePrivateTags = [
   Tag(EntityTag.contentType, ContentType.octetStream),
@@ -12,7 +13,7 @@ final fakePrivateTags = [
   ),
 ];
 
-fakeApplicationTags() async {
+fakeApplicationTags({Platform platform = const LocalPlatform()}) async {
   final packageInfo = await PackageInfo.fromPlatform();
   final version = packageInfo.version;
 
@@ -23,7 +24,7 @@ fakeApplicationTags() async {
       EntityTag.unixTime,
       (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
     ),
-    Tag(EntityTag.appPlatform, getPlatform()),
+    Tag(EntityTag.appPlatform, getPlatform(platform: platform)),
 
     // TODO: PE-2380
     // Tag(EntityTag.appPlatformVersion, getPlatformVersion()),
