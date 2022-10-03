@@ -50,8 +50,10 @@ class _FileSystemFolder extends IOFolder {
 
   @override
   Future<List<IOFile>> listFiles() async {
-    await SecurityScopedResource.instance
-        .startAccessingSecurityScopedResource(Directory(path));
+    if (Platform.isIOS) {
+      await SecurityScopedResource.instance
+          .startAccessingSecurityScopedResource(Directory(path));
+    }
     final files = await secureScopedAction(
       (secureDir) => _getAllEntitiesFromType<IOFile>(this),
       Directory(path),
