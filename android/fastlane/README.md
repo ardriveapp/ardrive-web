@@ -37,18 +37,10 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 
 
-### update_pr_description
+### update_pr_and_jira
 
 ```sh
-[bundle exec] fastlane update_pr_description
-```
-
-
-
-### update_jira_ticket
-
-```sh
-[bundle exec] fastlane update_jira_ticket
+[bundle exec] fastlane update_pr_and_jira
 ```
 
 
@@ -70,14 +62,6 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 ```sh
 [bundle exec] fastlane android deploy_apk
-```
-
-
-
-### android get_latest_firebase_release_url
-
-```sh
-[bundle exec] fastlane android get_latest_firebase_release_url
 ```
 
 

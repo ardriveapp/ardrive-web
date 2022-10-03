@@ -1402,6 +1402,10 @@
   "@invalidWalletFileDescription": {
     "description": "Invalid wallet file description"
   },
+  "enableCameraAccess": "Go to settings and tap ArDrive and turn on Camera access.",
+  "@enableCameraAccess": {
+    "description": "enable camera access"
+  },
   "biometricLoginEnabled": "Biometric Login Enabled",
   "@biometricLoginEnabled": {
     "description": "Biometric Login is Enabled."
@@ -1425,6 +1429,10 @@
   "goToDeviceSettings": "Go to Settings",
   "@goToDeviceSettings": {
     "description": "Go to device settings"
+  },
+  "enableCamera": "Enable camera",
+  "@goToDeviceSettings": {
+    "description": "Enable camera"
   },
   "biometricTemporarilyDisabled": "Biometric login temporarily disabled due to too many unsuccessful attempts.",
   "@biometricTemporarilyDisabled": {
