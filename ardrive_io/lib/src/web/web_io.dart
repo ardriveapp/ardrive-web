@@ -5,7 +5,6 @@ import 'dart:html';
 import 'dart:typed_data';
 
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_io/src/io_exception.dart';
 import 'package:file_selector/file_selector.dart' as file_selector;
 
 /// Web implementation to use `ArDriveIO` API

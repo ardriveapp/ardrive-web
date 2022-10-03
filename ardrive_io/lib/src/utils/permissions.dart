@@ -1,4 +1,5 @@
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Request permissions related to storage on `Android` and `iOS`
@@ -24,6 +25,10 @@ Future<void> verifyPermissions() async {
 }
 
 Future<void> verifyStoragePermission() async {
+  if (kIsWeb) {
+    return;
+  }
+
   final status = await Permission.storage.request();
   if (status != PermissionStatus.granted) {
     throw FileSystemPermissionDeniedException([Permission.storage]);
