@@ -1,6 +1,9 @@
+import 'package:app_settings/app_settings.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/material.dart';
+
+import 'app_dialog.dart';
 
 Future<List<IOFile>> showMultipleFilesFilePickerModal(
   BuildContext context,
@@ -42,8 +45,13 @@ Future<T> _showModal<T>(
               children: [
                 ListTile(
                   onTap: () async {
-                    content = await pickFromCamera();
-
+                    try {
+                      content = await pickFromCamera();
+                    } catch (e) {
+                      if (e is FileSystemPermissionDeniedException) {
+                        await _showCameraPermissionModal(context);
+                      }
+                    }
                     Navigator.pop(context);
                   },
                   title: Text(appLocalizationsOf(context).camera),
@@ -77,4 +85,35 @@ Future<T> _showModal<T>(
         );
       });
   return content;
+}
+
+Future<void> _showCameraPermissionModal(BuildContext context) async {
+  return showDialog(
+      context: context,
+      builder: (context) {
+        return AppDialog(
+          title: appLocalizationsOf(context).enableCamera,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(appLocalizationsOf(context).enableCameraAccess),
+              const SizedBox(
+                height: 24,
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  AppSettings.openAppSettings();
+                },
+                child: Text(appLocalizationsOf(context).goToDeviceSettings),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text(appLocalizationsOf(context).cancel),
+              )
+            ],
+          ),
+        );
+    });
 }
