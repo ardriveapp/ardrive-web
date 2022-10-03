@@ -39,11 +39,8 @@ PODS:
     - Flutter
   - file_saver (0.0.1):
     - Flutter
-<<<<<<< HEAD
   - file_selector_ios (0.0.1):
     - Flutter
-=======
->>>>>>> dev
   - Flutter (1.0.0)
   - flutter_secure_storage (3.3.1):
     - Flutter
@@ -51,11 +48,6 @@ PODS:
     - Flutter
   - local_auth_ios (0.0.1):
     - Flutter
-<<<<<<< HEAD
-  - open_file (0.0.1):
-    - Flutter
-=======
->>>>>>> dev
   - package_info_plus (0.4.5):
     - Flutter
   - path_provider_ios (0.0.1):
@@ -91,18 +83,11 @@ DEPENDENCIES:
   - device_info_plus (from `.symlinks/plugins/device_info_plus/ios`)
   - file_picker (from `.symlinks/plugins/file_picker/ios`)
   - file_saver (from `.symlinks/plugins/file_saver/ios`)
-<<<<<<< HEAD
   - file_selector_ios (from `.symlinks/plugins/file_selector_ios/ios`)
-=======
->>>>>>> dev
   - Flutter (from `Flutter`)
   - flutter_secure_storage (from `.symlinks/plugins/flutter_secure_storage/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - local_auth_ios (from `.symlinks/plugins/local_auth_ios/ios`)
-<<<<<<< HEAD
-  - open_file (from `.symlinks/plugins/open_file/ios`)
-=======
->>>>>>> dev
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_ios (from `.symlinks/plugins/path_provider_ios/ios`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
@@ -127,11 +112,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/file_picker/ios"
   file_saver:
     :path: ".symlinks/plugins/file_saver/ios"
-<<<<<<< HEAD
   file_selector_ios:
     :path: ".symlinks/plugins/file_selector_ios/ios"
-=======
->>>>>>> dev
   Flutter:
     :path: Flutter
   flutter_secure_storage:
@@ -140,11 +122,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/image_picker_ios/ios"
   local_auth_ios:
     :path: ".symlinks/plugins/local_auth_ios/ios"
-<<<<<<< HEAD
-  open_file:
-    :path: ".symlinks/plugins/open_file/ios"
-=======
->>>>>>> dev
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_ios:
@@ -165,18 +142,11 @@ SPEC CHECKSUMS:
   DKPhotoGallery: fdfad5125a9fdda9cc57df834d49df790dbb4179
   file_picker: 817ab1d8cd2da9d2da412a417162deee3500fc95
   file_saver: 503e386464dbe118f630e17b4c2e1190fa0cf808
-<<<<<<< HEAD
   file_selector_ios: 6e9b6d7300556c730f224905726f0a2d5d874e51
-=======
->>>>>>> dev
   Flutter: 50d75fe2f02b26cc09d224853bb45737f8b3214a
   flutter_secure_storage: 7953c38a04c3fdbb00571bcd87d8e3b5ceb9daec
   image_picker_ios: b786a5dcf033a8336a657191401bfdf12017dabb
   local_auth_ios: 0d333dde7780f669e66f19d2ff6005f3ea84008d
-<<<<<<< HEAD
-  open_file: 02eb5cb6b21264bd3a696876f5afbfb7ca4f4b7d
-=======
->>>>>>> dev
   package_info_plus: 6c92f08e1f853dc01228d6f553146438dafcd14e
   path_provider_ios: 14f3d2fd28c4fdb42f44e0f751d12861c43cee02
   permission_handler_apple: 44366e37eaf29454a1e7b1b7d736c2cceaeb17ce
