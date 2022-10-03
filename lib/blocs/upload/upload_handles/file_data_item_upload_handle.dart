@@ -104,7 +104,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
         entity.dataContentType!,
       ));
     }
-    fakeTags.addAll(fakeApplicationTags);
+    fakeTags.addAll(await fakeApplicationTags());
     return estimateDataItemSize(
       fileDataSize: getEntityJSONSize(),
       tags: fakeTags,
@@ -136,7 +136,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
         entity.dataContentType!,
       ));
     }
-    fakeTags.addAll(fakeApplicationTags);
+    fakeTags.addAll(await fakeApplicationTags());
     return estimateDataItemSize(
       fileDataSize: size,
       tags: fakeTags,
