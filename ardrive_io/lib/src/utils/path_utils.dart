@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:ardrive_io/src/io_exception.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart' as path_provider;
+import 'package:permission_handler/permission_handler.dart';
 
 /// Returns the folder name to the given path
 ///
@@ -20,4 +24,55 @@ String getDirname(String entityPath) {
   }
 
   return path.dirname(entityPath);
+}
+
+/// Gets the path to the default mobile downloads dir
+///
+/// Before usage it needs `Storage` permission
+/// call:
+///
+/// ``` dart
+/// await requestPermissions();
+/// await verifyPermissions();
+/// ```
+Future<String> getDefaultMobileDownloadDir() async {
+  if (Platform.isAndroid) {
+    return _getDefaultAndroidDir();
+  } else if (Platform.isIOS) {
+    return _getDefaultIOSDir();
+  } else {
+    throw UnsupportedPlatformException(
+      'getDefaultMobileDownloadDir only applies to mobile.',
+    );
+  }
+}
+
+Future<String> _getDefaultIOSDir() async {
+  final iosDirectory = await path_provider.getApplicationDocumentsDirectory();
+  final iosDownloadsDirectory = Directory(iosDirectory.path + '/Downloads/');
+
+  if (!iosDownloadsDirectory.existsSync()) {
+    iosDownloadsDirectory.createSync();
+  }
+
+  return iosDownloadsDirectory.path;
+}
+
+Future<String> _getDefaultAndroidDir() async {
+  final Directory defaultAndroidDownloadDir =
+      Directory('/storage/emulated/0/Download/');
+
+  if (await Permission.manageExternalStorage.isGranted &&
+      await defaultAndroidDownloadDir.exists()) {
+    return defaultAndroidDownloadDir.path;
+  } else {
+    final externalDir = await path_provider.getExternalStorageDirectory();
+
+    if (externalDir != null) {
+      return externalDir.path;
+    } else {
+      final directory = await path_provider.getApplicationDocumentsDirectory();
+      return directory.path;
+    }
+  }
 }

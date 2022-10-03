@@ -45,7 +45,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
         FileDownloadSuccess(
           bytes: dataBytes,
           fileName: file.name!,
-          mimeType: lookupMimeType(file.name!),
+          mimeType: lookupMimeTypeWithDefaultType(file.name!),
           lastModified: file.lastModifiedDate!,
         ),
       );

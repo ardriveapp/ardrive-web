@@ -7,7 +7,7 @@ Future<void> requestPermissions() async {
   await Permission.manageExternalStorage.request();
 }
 
-Future<void> verifyAllPermissions() async {
+Future<void> verifyPermissions() async {
   List<Permission> deniedPermissions = [];
   if (await Permission.storage.isGranted) {
     return;
