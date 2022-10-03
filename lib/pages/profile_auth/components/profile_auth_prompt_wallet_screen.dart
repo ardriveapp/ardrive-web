@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -69,29 +70,37 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
   void _pickWallet(BuildContext context) async {
     final ardriveIO = ArDriveIO();
 
-    final walletFile = await ardriveIO.pickFile(
-      allowedExtensions: null,
-      fileSource: FileSource.fileSystem,
+    final isEnabled = await verifyStoragePermissionAndShowModalWhenDenied(
+      context,
     );
+    if (isEnabled) {
+      final walletFile = await ardriveIO.pickFile(
+        allowedExtensions: null,
+        fileSource: FileSource.fileSystem,
+      );
 
-    int walletSize = await walletFile.length;
-    int maxWalletSizeInBits = 10000;
+      int walletSize = await walletFile.length;
+      int maxWalletSizeInBits = 10000;
 
-    if (walletSize > maxWalletSizeInBits) {
-      _showInvalidWalletFileDialog(context);
-      return;
+      if (walletSize > maxWalletSizeInBits) {
+        // ignore: use_build_context_synchronously
+        _showInvalidWalletFileDialog(context);
+        return;
+      }
+
+      Wallet wallet;
+
+      try {
+        wallet = Wallet.fromJwk(json.decode(await walletFile.readAsString()));
+      } catch (e) {
+        // ignore: use_build_context_synchronously
+        _showInvalidWalletFileDialog(context);
+        return;
+      }
+
+      // ignore: use_build_context_synchronously
+      await context.read<ProfileAddCubit>().pickWallet(wallet);
     }
-
-    Wallet wallet;
-
-    try {
-      wallet = Wallet.fromJwk(json.decode(await walletFile.readAsString()));
-    } catch (e) {
-      _showInvalidWalletFileDialog(context);
-      return;
-    }
-
-    await context.read<ProfileAddCubit>().pickWallet(wallet);
   }
 
   void _pickWalletArconnect(BuildContext context) async {

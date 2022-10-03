@@ -21,10 +21,15 @@ abstract class IOFile implements IOEntity {
 
   static final IOFileAdapter _ioFileAdapter = IOFileAdapter();
 
-  static Future<IOFile> fromData(Uint8List bytes,
-          {required String name, required DateTime lastModifiedDate}) async =>
+  static Future<IOFile> fromData(
+    Uint8List bytes, {
+    required String name,
+    required DateTime lastModifiedDate,
+    String? contentType,
+  }) async =>
       _ioFileAdapter.fromData(
         bytes,
+        contentType: contentType,
         name: name,
         lastModifiedDate: lastModifiedDate,
       );
@@ -123,13 +128,15 @@ class IOFileAdapter {
 
   /// Mounts a `_DataFile` with the given bytes.
   /// The path will always we a empty string since it only abstract the bytes in memory into a `_DataFile`
-  Future<IOFile> fromData(Uint8List bytes,
-      {required String name, required DateTime lastModifiedDate}) async {
-    final contentType = lookupMimeTypeWithDefaultType(name);
-
+  Future<IOFile> fromData(
+    Uint8List bytes, {
+    required String name,
+    required DateTime lastModifiedDate,
+    String? contentType,
+  }) async {
     return _DataFile(
       bytes,
-      contentType: contentType,
+      contentType: contentType ?? lookupMimeTypeWithDefaultType(name),
       path: '',
       lastModifiedDate: lastModifiedDate,
       name: name,

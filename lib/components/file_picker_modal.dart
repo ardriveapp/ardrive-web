@@ -1,6 +1,9 @@
+import 'package:app_settings/app_settings.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/material.dart';
+
+import 'app_dialog.dart';
 
 Future<List<IOFile>> showMultipleFilesFilePickerModal(
   BuildContext context,
@@ -92,13 +95,18 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                       setState(() {
                         _isLoading = true;
                       });
-                      try {
-                        final content = await widget.pickFromCamera();
+                       try {
+                                             final content = await widget.pickFromCamera();
 
                         widget.onClose(content);
-                      } catch (e) {
-                        debugPrint(e.toString());
+
+                    } catch (e) {
+                      if (e is FileSystemPermissionDeniedException) {
+                        await _showCameraPermissionModal(context);
+                         debugPrint(e.toString());
                       }
+                    }
+                     
 
                       setState(() {
                         _isLoading = false;
@@ -118,9 +126,20 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                         _isLoading = true;
                       });
                       try {
-                        final content = await widget.pickFromGallery();
 
-                        widget.onClose(content);
+                                                final isEnabled =
+                          await verifyStoragePermissionAndShowModalWhenDenied(
+                        context,
+                      );
+
+                      if (isEnabled) {
+                       final content = await widget.pickFromFileSystem();
+
+                          widget.onClose(content);
+
+                          debugPrint('adding file');
+                      }
+
                       } catch (e) {
                         debugPrint(e.toString());
                       }
@@ -142,11 +161,19 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                           _isLoading = true;
                         });
                         try {
-                          final content = await widget.pickFromFileSystem();
+                                                final isEnabled =
+                          await verifyStoragePermissionAndShowModalWhenDenied(
+                        context,
+                      );
+
+                      if (isEnabled) {
+                       final content = await widget.pickFromFileSystem();
 
                           widget.onClose(content);
 
                           debugPrint('adding file');
+                      }
+
                         } catch (e) {
                           debugPrint(e.toString());
                         }
@@ -155,13 +182,90 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                           _isLoading = false;
                         });
 
-                        Navigator.pop(context);
-                      },
-                      title: Text(appLocalizationsOf(context).fileSystem),
-                      leading: const Icon(Icons.file_open_sharp))
-                ],
-              ),
+                      Navigator.pop(context);
+                    },
+                    title: Text(appLocalizationsOf(context).fileSystem),
+                    leading: const Icon(Icons.file_open_sharp))
+              ],
             ),
-    );
+          ),
+        );
+      });
+  return content;
+}
+
+Future<bool> verifyStoragePermissionAndShowModalWhenDenied(
+    BuildContext context) async {
+  try {
+    await verifyStoragePermission();
+  } catch (e) {
+    if (e is FileSystemPermissionDeniedException) {
+      await showStoragePermissionModal(context);
+    }
+    return false;
   }
+
+  return true;
+}
+
+Future<void> showStoragePermissionModal(BuildContext context) async {
+  return showDialog(
+      context: context,
+      builder: (context) {
+        return AppDialog(
+          title: appLocalizationsOf(context).enableCamera,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(appLocalizationsOf(context).enableStorageAccess),
+              const SizedBox(
+                height: 24,
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  AppSettings.openAppSettings();
+                },
+                child: Text(appLocalizationsOf(context).goToDeviceSettings),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text(appLocalizationsOf(context).cancel),
+              )
+            ],
+          ),
+        );
+      });
+}
+
+Future<void> _showCameraPermissionModal(BuildContext context) async {
+  return showDialog(
+      context: context,
+      builder: (context) {
+        return AppDialog(
+          title: appLocalizationsOf(context).enableCamera,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(appLocalizationsOf(context).enableCameraAccess),
+              const SizedBox(
+                height: 24,
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  AppSettings.openAppSettings();
+                },
+                child: Text(appLocalizationsOf(context).goToDeviceSettings),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text(appLocalizationsOf(context).cancel),
+              )
+            ],
+          ),
+        );
+      });
 }
