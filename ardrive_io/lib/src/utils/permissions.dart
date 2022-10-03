@@ -22,3 +22,10 @@ Future<void> verifyPermissions() async {
 
   throw FileSystemPermissionDeniedException(deniedPermissions);
 }
+
+Future<void> verifyStoragePermission() async {
+  final status = await Permission.storage.request();
+  if (status != PermissionStatus.granted) {
+    throw FileSystemPermissionDeniedException([Permission.storage]);
+  }
+}
