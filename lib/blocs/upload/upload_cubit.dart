@@ -22,7 +22,7 @@ final filesNamesToExclude = ['.DS_Store'];
 
 class UploadCubit extends Cubit<UploadState> {
   final String driveId;
-  final String folderId;
+  final String parentFolderId;
 
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
@@ -45,7 +45,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   UploadCubit({
     required this.driveId,
-    required this.folderId,
+    required this.parentFolderId,
     required this.files,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
@@ -64,7 +64,7 @@ class UploadCubit extends Cubit<UploadState> {
     files.removeWhere((file) => filesNamesToExclude.contains(file.ioFile.name));
     _targetDrive = await _driveDao.driveById(driveId: driveId).getSingle();
     _targetFolder = await _driveDao
-        .folderById(driveId: driveId, folderId: folderId)
+        .folderById(driveId: driveId, folderId: parentFolderId)
         .getSingle();
     emit(UploadPreparationInitialized());
   }
@@ -175,7 +175,9 @@ class UploadCubit extends Cubit<UploadState> {
   Future<FolderPrepareResult> generateFoldersAndAssignParentsForFiles(
     List<UploadFile> files,
   ) async {
-    final folders = UploadPlanUtils.generateFoldersForFiles(files);
+    final folders = UploadPlanUtils.generateFoldersForFiles(
+      files,
+    );
     final foldersToSkip = [];
     for (var folder in folders.values) {
       //If The folders map contains the immediate ancestor of the current folder
@@ -184,6 +186,7 @@ class UploadCubit extends Cubit<UploadState> {
       folder.parentFolderId = folders.containsKey(folder.parentFolderPath)
           ? folders[folder.parentFolderPath]!.id
           : _targetFolder.id;
+
       final existingFolderId = await _driveDao
           .foldersInFolderWithName(
             driveId: driveId,
@@ -215,11 +218,15 @@ class UploadCubit extends Cubit<UploadState> {
     }
     final filesToUpload = <UploadFile>[];
     for (var file in files) {
-      final fileFolder = getDirname(file.ioFile.path);
+      final fileFolder = getDirname(file.relativeTo != null
+          ? file.ioFile.path.replaceFirst('${file.relativeTo}/', '')
+          : file.ioFile.path);
+      final parentFolderId = folders[fileFolder]?.id ?? _targetFolder.id;
       filesToUpload.add(
         UploadFile(
           ioFile: file.ioFile,
-          parentFolderId: folders[fileFolder]?.id ?? _targetFolder.id,
+          parentFolderId: parentFolderId,
+          relativeTo: file.relativeTo,
         ),
       );
     }

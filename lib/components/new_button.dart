@@ -285,7 +285,7 @@ PopupMenuEntry<Function> _buildUploadFileItem(
     value: (context) => promptToUpload(
       context,
       driveId: state.currentDrive.id,
-      folderId: state.folderInView.folder.id,
+      parentFolderId: state.folderInView.folder.id,
       isFolderUpload: false,
     ),
   );
@@ -306,7 +306,7 @@ PopupMenuEntry<Function> _buildUploadFolderItem(
     value: (context) => promptToUpload(
       context,
       driveId: state.currentDrive.id,
-      folderId: state.folderInView.folder.id,
+      parentFolderId: state.folderInView.folder.id,
       isFolderUpload: true,
     ),
   );

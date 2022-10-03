@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:security_scoped_resource/security_scoped_resource.dart';
 
 /// Request permissions related to storage on `Android` and `iOS`
 Future<void> requestPermissions() async {
@@ -33,4 +36,27 @@ Future<void> verifyStoragePermission() async {
   if (status != PermissionStatus.granted) {
     throw FileSystemPermissionDeniedException([Permission.storage]);
   }
+}
+
+/// Runs an action in the security scoped resource.
+/// When action ends the security scoped ended as well.
+///
+/// Include in `action` all operations needed in the given `directory`.
+///
+/// It only applies to iOS, where we need special permissions to pick folders outside our app directory.
+Future<T> secureScopedAction<T>(
+    Future<T> Function(Directory folder) action, Directory directory) async {
+  if (kIsWeb || !Platform.isIOS) {
+    return action(directory);
+  }
+
+  await SecurityScopedResource.instance
+      .startAccessingSecurityScopedResource(directory);
+
+  T value = await action(directory);
+
+  await SecurityScopedResource.instance
+      .stopAccessingSecurityScopedResource(directory);
+
+  return value;
 }

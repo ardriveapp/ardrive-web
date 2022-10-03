@@ -52,6 +52,10 @@ class MobileIO implements ArDriveIO {
 
   @override
   Future<IOFolder> pickFolder() async {
+    if (Platform.isAndroid) {
+      await requestPermissions();
+    }
+
     await _verifyStoragePermissions();
 
     final provider = _fileProviderFactory.fromSource(FileSource.fileSystem)

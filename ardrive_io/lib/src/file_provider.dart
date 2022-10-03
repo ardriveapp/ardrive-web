@@ -9,9 +9,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'web/stub_web_io.dart' // Stub implementation
     if (dart.library.html) 'web/web_io.dart';
 
-import 'web/stub_web_io.dart' // Stub implementation
-    if (dart.library.html) 'web/web_io.dart';
-
 /// `gallery` device's gallery
 /// `fileSystem` device's file system
 ///
@@ -152,7 +149,10 @@ class FilePickerProvider implements MultiFileProvider {
 
     final selectedDirectory = Directory(selectedDirectoryPath);
 
-    return _ioFolderAdapter.fromFileSystemDirectory(selectedDirectory);
+    return secureScopedAction<IOFolder>(
+      (secureDir) => _ioFolderAdapter.fromFileSystemDirectory(secureDir),
+      selectedDirectory,
+    );
   }
 }
 

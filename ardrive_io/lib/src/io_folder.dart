@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:equatable/equatable.dart';
+import 'package:security_scoped_resource/security_scoped_resource.dart';
 
 /// Base class for agnostic platform folders.
 ///
@@ -49,7 +50,16 @@ class _FileSystemFolder extends IOFolder {
 
   @override
   Future<List<IOFile>> listFiles() async {
-    return _getAllEntitiesFromType<IOFile>(this);
+    if (Platform.isIOS) {
+      await SecurityScopedResource.instance
+          .startAccessingSecurityScopedResource(Directory(path));
+    }
+    final files = await secureScopedAction(
+      (secureDir) => _getAllEntitiesFromType<IOFile>(this),
+      Directory(path),
+    );
+
+    return files;
   }
 
   @override
@@ -72,6 +82,7 @@ class _FileSystemFolder extends IOFolder {
   Future<IOEntity> _addFolderNode(FileSystemEntity fsEntity) async {
     if (fsEntity is Directory) {
       final newNode = await IOFolderAdapter().fromFileSystemDirectory(fsEntity);
+
       for (var fs in fsEntity.listSync()) {
         final children = await newNode.listContent();
         children.add(await _addFolderNode(fs));
@@ -91,10 +102,8 @@ class _FileSystemFolder extends IOFolder {
     final subFolders = content.whereType<IOFolder>();
     final entities = <T>[];
 
-    if (subFolders.isNotEmpty) {
-      for (IOFolder iof in subFolders) {
-        entities.addAll(await _getAllEntitiesFromType(iof));
-      }
+    for (IOFolder iof in subFolders) {
+      entities.addAll(await _getAllEntitiesFromType(iof));
     }
 
     entities.addAll(content.whereType<T>());
@@ -144,14 +153,21 @@ class _WebFolder extends IOFolder {
 class IOFolderAdapter {
   /// Initialize loading the folder hierachy and return an `_FileSystemFolder` instance
   Future<IOFolder> fromFileSystemDirectory(Directory directory) async {
+    if (Platform.isIOS) {
+      await SecurityScopedResource.instance
+          .startAccessingSecurityScopedResource(directory);
+    }
+
     final content = directory.listSync();
+
     final selectedDirectoryPath = directory.path;
 
     final folder = _FileSystemFolder._(
-        name: getBasenameFromPath(selectedDirectoryPath),
-        lastModifiedDate: (await directory.stat()).modified,
-        path: selectedDirectoryPath,
-        folderContent: content);
+      name: getBasenameFromPath(selectedDirectoryPath),
+      lastModifiedDate: (await directory.stat()).modified,
+      path: selectedDirectoryPath,
+      folderContent: content,
+    );
 
     await folder.initFolder();
 

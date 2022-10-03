@@ -56,9 +56,9 @@ PODS:
     - Flutter
   - permission_handler_apple (9.0.4):
     - Flutter
-  - SDWebImage (5.13.4):
-    - SDWebImage/Core (= 5.13.4)
-  - SDWebImage/Core (5.13.4)
+  - SDWebImage (5.13.3):
+    - SDWebImage/Core (= 5.13.3)
+  - SDWebImage/Core (5.13.3)
   - shared_preferences_ios (0.0.1):
     - Flutter
   - sqlite3 (3.39.3):
@@ -156,7 +156,7 @@ SPEC CHECKSUMS:
   package_info_plus: 6c92f08e1f853dc01228d6f553146438dafcd14e
   path_provider_ios: 14f3d2fd28c4fdb42f44e0f751d12861c43cee02
   permission_handler_apple: 44366e37eaf29454a1e7b1b7d736c2cceaeb17ce
-  SDWebImage: e5cc87bf736e60f49592f307bdf9e157189298a3
+  SDWebImage: af5bbffef2cde09f148d826f9733dcde1a9414cd
   shared_preferences_ios: 548a61f8053b9b8a49ac19c1ffbc8b92c50d68ad
   sqlite3: 50117e9e063a9ef2b865f7bdf2f2601e5d368e9a
   sqlite3_flutter_libs: c6ab7f23670a98fef45a137159452004bc552168
@@ -165,4 +165,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 018a9921f0eb851d70d4d0c7dd62951cb20531ae
 
-COCOAPODS: 1.10.2
+COCOAPODS: 1.11.3
