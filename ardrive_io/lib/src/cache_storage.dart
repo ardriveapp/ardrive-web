@@ -13,10 +13,11 @@ class IOCacheStorage {
     final _file = File('${cacheDir.path}/${entity.name}');
 
     final readStream = File(entity.path).openRead();
-    final writeStream = _file.openWrite();
+
+    final writeStream = await _file.open(mode: FileMode.write);
 
     await for (List<int> chunk in readStream) {
-      writeStream.write(chunk);
+      await writeStream.writeFrom(chunk);
     }
 
     await writeStream.close();

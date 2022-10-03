@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/material.dart';
 
 /// Base class for agnostic platform Files.
 ///
@@ -65,14 +66,18 @@ class IOFileAdapter {
 
       final cachePath = await cache.saveEntityOnCacheDir(ioFile);
 
+      debugPrint('Saving on cache: $cachePath');
+
       return _IOFile(
-        file,
+        File(cachePath),
         name: fileName,
         path: cachePath,
         contentType: contentType,
         lastModifiedDate: lastModified,
       );
     } else {
+      debugPrint('Using default path from file picker');
+
       return ioFile;
     }
   }

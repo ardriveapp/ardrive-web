@@ -89,7 +89,10 @@ class FilePickerProvider implements MultiFileProvider {
     );
 
     return Future.wait(result.files
-        .map((file) => _fileAdapter.fromFilePicker(file, getFromCache: true))
+        .map((file) => _fileAdapter.fromFilePicker(
+              file,
+              getFromCache: Platform.isIOS,
+            ))
         .toList());
   }
 

@@ -5,9 +5,24 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Flutter",
+      "name": "Flutter Debug",
       "request": "launch",
       "type": "dart",
+      "args": ["--debug"],
+      "program": "lib/main.dart"
+    },
+    {
+      "name": "Flutter Profile",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--profile"],
+      "program": "lib/main.dart"
+    },
+    {
+      "name": "Flutter Release",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--release"],
       "program": "lib/main.dart"
     }
   ]

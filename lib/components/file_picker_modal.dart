@@ -31,6 +31,7 @@ Future<T> _showModal<T>(
   late T content;
 
   await showModalBottomSheet(
+      isDismissible: false,
       context: context,
       builder: (context) {
         return _FilePickerContent<T>(
@@ -76,7 +77,7 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                   CircularProgressIndicator(),
                   Padding(
                     padding: EdgeInsets.only(top: 16.0),
-                    child: Text('Preparing your file...'),
+                    child: Text('Preparing your file(s)...'),
                   ),
                 ],
               ),
@@ -95,7 +96,9 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                         final content = await widget.pickFromCamera();
 
                         widget.onClose(content);
-                      } catch (e) {}
+                      } catch (e) {
+                        debugPrint(e.toString());
+                      }
 
                       setState(() {
                         _isLoading = false;
@@ -118,7 +121,9 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                         final content = await widget.pickFromGallery();
 
                         widget.onClose(content);
-                      } catch (e) {}
+                      } catch (e) {
+                        debugPrint(e.toString());
+                      }
 
                       setState(() {
                         _isLoading = false;
@@ -140,11 +145,16 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                           final content = await widget.pickFromFileSystem();
 
                           widget.onClose(content);
-                        } catch (e) {}
+
+                          debugPrint('adding file');
+                        } catch (e) {
+                          debugPrint(e.toString());
+                        }
 
                         setState(() {
                           _isLoading = false;
                         });
+
                         Navigator.pop(context);
                       },
                       title: Text(appLocalizationsOf(context).fileSystem),
