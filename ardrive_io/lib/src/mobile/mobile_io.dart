@@ -42,10 +42,12 @@ class MobileIO implements ArDriveIO {
     final provider =
         _fileProviderFactory.fromSource(fileSource) as MultiFileProvider;
 
-    return provider.pickMultipleFiles(
+    final files = await provider.pickMultipleFiles(
       fileSource: fileSource,
       allowedExtensions: allowedExtensions,
     );
+
+    return files;
   }
 
   @override

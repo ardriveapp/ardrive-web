@@ -18,7 +18,11 @@ script_runner:
     linux: /bin/bash
   line_length: 80
   scripts:
-    - setup: flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs
+    - setup: scr setup-io && scr setup-app
+    - setup-app: flutter clean && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs
+    - name: setup-io
+      cwd: ardrive_io
+      cmd: flutter clean && flutter pub get
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
 
