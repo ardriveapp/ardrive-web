@@ -2,7 +2,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:platform/platform.dart';
 
-getPlatform({Platform platform = const LocalPlatform()}) {
+String getPlatform({Platform platform = const LocalPlatform()}) {
   if (kIsWeb) {
     return 'Web';
   }
@@ -21,7 +21,7 @@ getPlatform({Platform platform = const LocalPlatform()}) {
 }
 
 // TODO: PE-2380
-getPlatformVersion() async {
+Future<String> getPlatformVersion() async {
   final platform = getPlatform();
   final deviceInfoPlugin = DeviceInfoPlugin();
 
