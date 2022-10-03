@@ -25,9 +25,6 @@ fakeApplicationTags({Platform platform = const LocalPlatform()}) async {
       (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
     ),
     Tag(EntityTag.appPlatform, getPlatform(platform: platform)),
-
-    // TODO: PE-2380
-    // Tag(EntityTag.appPlatformVersion, getPlatformVersion()),
   ];
 }
 
