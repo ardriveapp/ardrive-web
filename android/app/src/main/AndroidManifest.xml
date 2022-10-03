@@ -2,10 +2,12 @@
     package="io.ardrive.app">
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
-
     <application android:allowBackup="false" 
+        android:largeHeap="true"
         android:name="${applicationName}"
         android:label="ArDrive"
         android:icon="@mipmap/ic_launcher">
@@ -14,6 +16,7 @@
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"
             android:exported="true"
+            requestLegacyExternalStorage="true"
             android:screenOrientation="sensorPortrait"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
