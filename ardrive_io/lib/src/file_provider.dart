@@ -147,8 +147,7 @@ class FilePickerProvider implements MultiFileProvider {
     final selectedDirectory = Directory(selectedDirectoryPath);
 
     return secureScopedAction<IOFolder>(
-      (secureDir) =>
-          _ioFolderAdapter.fromFileSystemDirectory(selectedDirectory),
+      (secureDir) => _ioFolderAdapter.fromFileSystemDirectory(secureDir),
       selectedDirectory,
     );
   }

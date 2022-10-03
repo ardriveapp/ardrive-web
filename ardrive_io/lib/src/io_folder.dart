@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:equatable/equatable.dart';
+import 'package:security_scoped_resource/security_scoped_resource.dart';
 
 /// Base class for agnostic platform folders.
 ///
@@ -49,6 +50,8 @@ class _FileSystemFolder extends IOFolder {
 
   @override
   Future<List<IOFile>> listFiles() async {
+    await SecurityScopedResource.instance
+        .startAccessingSecurityScopedResource(Directory(path));
     final files = await secureScopedAction(
       (secureDir) => _getAllEntitiesFromType<IOFile>(this),
       Directory(path),
@@ -148,6 +151,9 @@ class _WebFolder extends IOFolder {
 class IOFolderAdapter {
   /// Initialize loading the folder hierachy and return an `_FileSystemFolder` instance
   Future<IOFolder> fromFileSystemDirectory(Directory directory) async {
+    await SecurityScopedResource.instance
+        .startAccessingSecurityScopedResource(directory);
+
     final content = directory.listSync();
 
     final selectedDirectoryPath = directory.path;
