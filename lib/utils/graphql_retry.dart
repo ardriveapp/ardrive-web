@@ -22,10 +22,10 @@ class GraphQLRetry {
         maxAttempts: maxAttempts,
         onRetry: (exception) {
           onRetry?.call(exception);
-          """
+          '''
           Retrying Query: ${query.toString()}\n
           On Exception: ${exception.toString()}
-          """
+          '''
               .logError();
         },
       );
@@ -39,11 +39,11 @@ class GraphQLRetry {
         exception = e;
       }
 
-      """
+      '''
       Fatal error while querying: ${query.operationName}\n
       Number of retries exceeded.
       Exception: ${exception.toString()}
-      """
+      '''
           .logError();
       rethrow;
     }
