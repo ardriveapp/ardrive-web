@@ -44,18 +44,19 @@ Future<void> verifyStoragePermission() async {
 /// Include in `action` all operations needed in the given `directory`.
 ///
 /// It only applies to iOS, where we need special permissions to pick folders outside our app directory.
-Future<T> secureScopedAction<T>(Future<T> action, Directory directory) async {
-  if (Platform.isIOS) {
-    await SecurityScopedResource.instance
-        .startAccessingSecurityScopedResource(directory);
+Future<T> secureScopedAction<T>(
+    Future<T> Function(Directory folder) action, Directory directory) async {
+  if (kIsWeb || !Platform.isIOS) {
+    return action(directory);
   }
 
-  T value = await action;
+  await SecurityScopedResource.instance
+      .startAccessingSecurityScopedResource(directory);
 
-  if (Platform.isIOS) {
-    await SecurityScopedResource.instance
-        .stopAccessingSecurityScopedResource(directory);
-  }
+  T value = await action(directory);
+
+  await SecurityScopedResource.instance
+      .stopAccessingSecurityScopedResource(directory);
 
   return value;
 }
