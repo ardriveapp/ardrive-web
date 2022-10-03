@@ -54,9 +54,11 @@ PODS:
     - Flutter
   - permission_handler_apple (9.0.4):
     - Flutter
-  - SDWebImage (5.13.3):
-    - SDWebImage/Core (= 5.13.3)
-  - SDWebImage/Core (5.13.3)
+  - SDWebImage (5.13.4):
+    - SDWebImage/Core (= 5.13.4)
+  - SDWebImage/Core (5.13.4)
+  - security_scoped_resource (0.0.1):
+    - Flutter
   - shared_preferences_ios (0.0.1):
     - Flutter
   - sqlite3 (3.39.3):
@@ -91,6 +93,7 @@ DEPENDENCIES:
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_ios (from `.symlinks/plugins/path_provider_ios/ios`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
+  - security_scoped_resource (from `.symlinks/plugins/security_scoped_resource/ios`)
   - shared_preferences_ios (from `.symlinks/plugins/shared_preferences_ios/ios`)
   - sqlite3_flutter_libs (from `.symlinks/plugins/sqlite3_flutter_libs/ios`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
@@ -128,6 +131,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/path_provider_ios/ios"
   permission_handler_apple:
     :path: ".symlinks/plugins/permission_handler_apple/ios"
+  security_scoped_resource:
+    :path: ".symlinks/plugins/security_scoped_resource/ios"
   shared_preferences_ios:
     :path: ".symlinks/plugins/shared_preferences_ios/ios"
   sqlite3_flutter_libs:
@@ -150,11 +155,8 @@ SPEC CHECKSUMS:
   package_info_plus: 6c92f08e1f853dc01228d6f553146438dafcd14e
   path_provider_ios: 14f3d2fd28c4fdb42f44e0f751d12861c43cee02
   permission_handler_apple: 44366e37eaf29454a1e7b1b7d736c2cceaeb17ce
-<<<<<<< HEAD
-  SDWebImage: 72f86271a6f3139cc7e4a89220946489d4b9a866
-=======
-  SDWebImage: af5bbffef2cde09f148d826f9733dcde1a9414cd
->>>>>>> dev
+  SDWebImage: e5cc87bf736e60f49592f307bdf9e157189298a3
+  security_scoped_resource: ff26d31a9c6de0e45e5e8e0d7f43f3da0a1c6444
   shared_preferences_ios: 548a61f8053b9b8a49ac19c1ffbc8b92c50d68ad
   sqlite3: 50117e9e063a9ef2b865f7bdf2f2601e5d368e9a
   sqlite3_flutter_libs: c6ab7f23670a98fef45a137159452004bc552168
@@ -163,4 +165,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: 018a9921f0eb851d70d4d0c7dd62951cb20531ae
 
-COCOAPODS: 1.11.3
+COCOAPODS: 1.10.2
