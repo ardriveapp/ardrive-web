@@ -9,9 +9,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'web/stub_web_io.dart' // Stub implementation
     if (dart.library.html) 'web/web_io.dart';
 
-import 'web/stub_web_io.dart' // Stub implementation
-    if (dart.library.html) 'web/web_io.dart';
-
 /// `gallery` device's gallery
 /// `fileSystem` device's file system
 ///
@@ -97,9 +94,12 @@ class FilePickerProvider implements MultiFileProvider {
       fileSource: fileSource,
     );
 
-    return Future.wait(
-      result.files.map((file) => _fileAdapter.fromFilePicker(file)).toList(),
-    );
+    return Future.wait(result.files
+        .map((file) => _fileAdapter.fromFilePicker(
+              file,
+              getFromCache: Platform.isIOS,
+            ))
+        .toList());
   }
 
   Future<FilePickerResult> _pickFile({
