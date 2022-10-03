@@ -95,18 +95,16 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                       setState(() {
                         _isLoading = true;
                       });
-                       try {
-                                             final content = await widget.pickFromCamera();
+                      try {
+                        final content = await widget.pickFromCamera();
 
                         widget.onClose(content);
-
-                    } catch (e) {
-                      if (e is FileSystemPermissionDeniedException) {
-                        await _showCameraPermissionModal(context);
-                         debugPrint(e.toString());
+                      } catch (e) {
+                        if (e is FileSystemPermissionDeniedException) {
+                          await _showCameraPermissionModal(context);
+                          debugPrint(e.toString());
+                        }
                       }
-                    }
-                     
 
                       setState(() {
                         _isLoading = false;
@@ -126,20 +124,18 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                         _isLoading = true;
                       });
                       try {
+                        final isEnabled =
+                            await verifyStoragePermissionAndShowModalWhenDenied(
+                          context,
+                        );
 
-                                                final isEnabled =
-                          await verifyStoragePermissionAndShowModalWhenDenied(
-                        context,
-                      );
-
-                      if (isEnabled) {
-                       final content = await widget.pickFromFileSystem();
+                        if (isEnabled) {
+                          final content = await widget.pickFromGallery();
 
                           widget.onClose(content);
 
                           debugPrint('adding file');
-                      }
-
+                        }
                       } catch (e) {
                         debugPrint(e.toString());
                       }
@@ -147,6 +143,7 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                       setState(() {
                         _isLoading = false;
                       });
+
                       Navigator.pop(context);
                     },
                     title: Text(appLocalizationsOf(context).gallery),
@@ -161,19 +158,18 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                           _isLoading = true;
                         });
                         try {
-                                                final isEnabled =
-                          await verifyStoragePermissionAndShowModalWhenDenied(
-                        context,
-                      );
+                          final isEnabled =
+                              await verifyStoragePermissionAndShowModalWhenDenied(
+                            context,
+                          );
 
-                      if (isEnabled) {
-                       final content = await widget.pickFromFileSystem();
+                          if (isEnabled) {
+                            final content = await widget.pickFromFileSystem();
 
-                          widget.onClose(content);
+                            widget.onClose(content);
 
-                          debugPrint('adding file');
-                      }
-
+                            debugPrint('adding file');
+                          }
                         } catch (e) {
                           debugPrint(e.toString());
                         }
@@ -182,16 +178,15 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
                           _isLoading = false;
                         });
 
-                      Navigator.pop(context);
-                    },
-                    title: Text(appLocalizationsOf(context).fileSystem),
-                    leading: const Icon(Icons.file_open_sharp))
-              ],
+                        Navigator.pop(context);
+                      },
+                      title: Text(appLocalizationsOf(context).fileSystem),
+                      leading: const Icon(Icons.file_open_sharp))
+                ],
+              ),
             ),
-          ),
-        );
-      });
-  return content;
+    );
+  }
 }
 
 Future<bool> verifyStoragePermissionAndShowModalWhenDenied(
@@ -213,7 +208,7 @@ Future<void> showStoragePermissionModal(BuildContext context) async {
       context: context,
       builder: (context) {
         return AppDialog(
-          title: appLocalizationsOf(context).enableCamera,
+          title: appLocalizationsOf(context).enableStorageAccessTitle,
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
