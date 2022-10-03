@@ -9,6 +9,7 @@ import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -70,10 +71,12 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
   void _pickWallet(BuildContext context) async {
     final ardriveIO = ArDriveIO();
 
-    final isEnabled = await verifyStoragePermissionAndShowModalWhenDenied(
+    final hasStoragePermission =
+        await verifyStoragePermissionAndShowModalWhenDenied(
       context,
     );
-    if (isEnabled) {
+
+    if (hasStoragePermission) {
       final walletFile = await ardriveIO.pickFile(
         allowedExtensions: null,
         fileSource: FileSource.fileSystem,
