@@ -6,10 +6,6 @@ void whenTabIsUnhidden(Function onShow) {
   return;
 }
 
-void refreshPageAtInterval(Duration duration) {
-  return;
-}
-
 void onWalletSwitch(Function onSwitch) {
   return;
 }

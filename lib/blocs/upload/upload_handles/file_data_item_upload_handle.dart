@@ -68,7 +68,9 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
 
   Future<List<DataItem>> prepareAndSignDataItems() async {
     final packageInfo = await PackageInfo.fromPlatform();
+
     final fileData = await file.ioFile.readAsBytes();
+
     dataTx = isPrivate
         ? await createEncryptedDataItem(fileData, fileKey!)
         : DataItem.withBlobData(data: fileData);

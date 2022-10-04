@@ -1,12 +1,14 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'profile_auth_shell.dart';
 
@@ -52,7 +54,7 @@ class ProfileAuthAddScreen extends StatelessWidget {
                         const SizedBox(height: 16),
                         ReactiveTextField(
                           formControlName: 'username',
-                          autofocus: true,
+                          autofocus: false,
                           autofillHints: const [AutofillHints.username],
                           decoration: InputDecoration(
                             labelText: appLocalizationsOf(context).username,
@@ -106,10 +108,8 @@ class ProfileAuthAddScreen extends StatelessWidget {
                               const SizedBox(width: 12),
                               Flexible(
                                 child: GestureDetector(
-                                  onTap: () => launchUrl(
-                                    Uri.parse(
-                                      'https://ardrive.io/tos-and-privacy/',
-                                    ),
+                                  onTap: () => openUrl(
+                                    url: 'https://ardrive.io/tos-and-privacy/',
                                   ),
                                   child: Text.rich(
                                     TextSpan(
@@ -161,6 +161,10 @@ class ProfileAuthAddScreen extends StatelessWidget {
                                   appLocalizationsOf(context).logOutEmphasized)
                               : Text(appLocalizationsOf(context).changeWallet),
                         ),
+                        const Align(
+                          alignment: Alignment.center,
+                          child: BiometricToggle(),
+                        )
                       ],
                     ),
                   ),
@@ -168,4 +172,114 @@ class ProfileAuthAddScreen extends StatelessWidget {
               )
             : const SizedBox(),
       );
+}
+
+// TODO(@thiagocarvalhodev): Move to a new file
+class BiometricToggle extends StatefulWidget {
+  const BiometricToggle({
+    super.key,
+    this.onDisableBiometric,
+    this.onEnableBiometric,
+  });
+
+  final Function()? onEnableBiometric;
+  final Function()? onDisableBiometric;
+
+  @override
+  State<BiometricToggle> createState() => _BiometricToggleState();
+}
+
+class _BiometricToggleState extends State<BiometricToggle> {
+  @override
+  void initState() {
+    super.initState();
+    _isBiometricsEnabled();
+    _listenToBiometricChange();
+  }
+
+  bool _isEnabled = false;
+  String get biometricText => _isEnabled
+      ? appLocalizationsOf(context).biometricLoginEnabled
+      : appLocalizationsOf(context).biometricLoginDisabled;
+
+  Future<bool> _checkBiometricsSupport() async {
+    final auth = context.read<BiometricAuthentication>();
+
+    return auth.checkDeviceSupport();
+  }
+
+  Future<void> _isBiometricsEnabled() async {
+    _isEnabled = await context.read<BiometricAuthentication>().isEnabled();
+
+    setState(() {});
+  }
+
+  void _listenToBiometricChange() {
+    context.read<BiometricAuthentication>().enabledStream.listen((event) {
+      if (event != _isEnabled) {
+        setState(() {
+          _isEnabled = event;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+        future: _checkBiometricsSupport(),
+        builder: (context, snapshot) {
+          final hasSupport = snapshot.data;
+
+          if (hasSupport == null || !hasSupport) {
+            return const SizedBox();
+          }
+
+          return SwitchListTile(
+            key: ValueKey(_isEnabled),
+            title: Text(biometricText),
+            value: _isEnabled,
+            activeColor: Colors.white,
+            activeTrackColor: Colors.black,
+            controlAffinity: ListTileControlAffinity.leading,
+            onChanged: (value) async {
+              print(value);
+              setState(() {
+                _isEnabled = value;
+              });
+
+              if (_isEnabled) {
+                final auth = context.read<BiometricAuthentication>();
+
+                try {
+                  if (await auth.authenticate(context)) {
+                    setState(() {
+                      _isEnabled = true;
+                    });
+                    context.read<BiometricAuthentication>().enable();
+                    widget.onEnableBiometric?.call();
+                    return;
+                  }
+                } catch (e) {
+                  // TODO(@thiagocarvalhodev): check the text for an unknown error
+                  if (e is BiometricException) {
+                    showBiometricExceptionDialogForException(
+                      context,
+                      e,
+                      () => widget.onDisableBiometric?.call(),
+                    );
+                  }
+                }
+              } else {
+                context.read<BiometricAuthentication>().disable();
+
+                widget.onDisableBiometric?.call();
+              }
+              setState(() {
+                _isEnabled = false;
+              });
+            },
+          );
+        });
+  }
 }

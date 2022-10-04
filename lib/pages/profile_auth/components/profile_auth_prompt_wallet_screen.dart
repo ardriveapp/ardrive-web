@@ -2,14 +2,16 @@ import 'dart:convert';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'profile_auth_shell.dart';
 
@@ -56,11 +58,7 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
             ],
             const SizedBox(height: 16),
             TextButton(
-              onPressed: () => launchUrl(
-                Uri.parse(
-                  'https://tokens.arweave.org',
-                ),
-              ),
+              onPressed: () => openUrl(url: 'https://tokens.arweave.org'),
               child: Text(
                 appLocalizationsOf(context).getAWallet,
                 textAlign: TextAlign.center,
@@ -73,29 +71,39 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
   void _pickWallet(BuildContext context) async {
     final ardriveIO = ArDriveIO();
 
-    final walletFile = await ardriveIO.pickFile(
-      allowedExtensions: null,
-      fileSource: FileSource.fileSystem,
+    final hasStoragePermission =
+        await verifyStoragePermissionAndShowModalWhenDenied(
+      context,
     );
 
-    int walletSize = await walletFile.length;
-    int maxWalletSizeInBits = 10000;
+    if (hasStoragePermission) {
+      final walletFile = await ardriveIO.pickFile(
+        allowedExtensions: null,
+        fileSource: FileSource.fileSystem,
+      );
 
-    if (walletSize > maxWalletSizeInBits) {
-      _showInvalidWalletFileDialog(context);
-      return;
+      int walletSize = await walletFile.length;
+      int maxWalletSizeInBits = 10000;
+
+      if (walletSize > maxWalletSizeInBits) {
+        // ignore: use_build_context_synchronously
+        _showInvalidWalletFileDialog(context);
+        return;
+      }
+
+      Wallet wallet;
+
+      try {
+        wallet = Wallet.fromJwk(json.decode(await walletFile.readAsString()));
+      } catch (e) {
+        // ignore: use_build_context_synchronously
+        _showInvalidWalletFileDialog(context);
+        return;
+      }
+
+      // ignore: use_build_context_synchronously
+      await context.read<ProfileAddCubit>().pickWallet(wallet);
     }
-
-    Wallet wallet;
-
-    try {
-      wallet = Wallet.fromJwk(json.decode(await walletFile.readAsString()));
-    } catch (e) {
-      _showInvalidWalletFileDialog(context);
-      return;
-    }
-
-    await context.read<ProfileAddCubit>().pickWallet(wallet);
   }
 
   void _pickWalletArconnect(BuildContext context) async {

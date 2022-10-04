@@ -74,7 +74,7 @@ TextTheme _buildTextTheme(TextTheme base) => base
       displayColor: kPrimarySwatch,
     )
     .merge(
-      TextTheme(
+      const TextTheme(
         headline5:
             TextStyle(color: kPrimarySwatch, fontWeight: FontWeight.bold),
       ),
@@ -125,7 +125,7 @@ CardTheme _buildCardTheme(CardTheme base) => base.copyWith(elevation: 0);
 
 TabBarTheme _buildTabBarTheme(TabBarTheme base) => base.copyWith(
       labelColor: kOnSurfaceBodyTextColor,
-      indicator: UnderlineTabIndicator(
+      indicator: const UnderlineTabIndicator(
         borderSide: BorderSide(width: 2, color: kPrimarySwatch),
       ),
     );
@@ -156,13 +156,14 @@ TooltipThemeData _buildToolTipTheme(
       ),
     );
 
-CheckboxThemeData _buildCheckboxTheme(CheckboxThemeData base) =>
-    base.copyWith(fillColor: MaterialStateColor.resolveWith(
-      (states) {
-        if (states.contains(MaterialState.error)) {
-          return errorColor;
-        }
+CheckboxThemeData _buildCheckboxTheme(CheckboxThemeData base) => base.copyWith(
+      fillColor: MaterialStateColor.resolveWith(
+        (states) {
+          if (states.contains(MaterialState.error)) {
+            return errorColor;
+          }
 
-        return kPrimarySwatch;
-      },
-    ));
+          return kOnSurfaceBodyTextColor;
+        },
+      ),
+    );
