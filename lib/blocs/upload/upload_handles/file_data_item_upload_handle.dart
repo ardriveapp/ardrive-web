@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
@@ -7,12 +6,10 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/bundles/fake_tags.dart';
-import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
-import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 // Number of data items returned by this handle
@@ -72,15 +69,8 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   Future<List<DataItem>> prepareAndSignDataItems() async {
     final packageInfo = await PackageInfo.fromPlatform();
 
-    late Uint8List fileData;
-    if (File(file.ioFile.path).existsSync()) {
-      fileData = await file.ioFile.readAsBytes();
-    } else {
-      debugPrint('getting file from local storage');
-      final cache = IOCacheStorage();
-      final cachedFile = await cache.getFileFromStorage(file.ioFile.name);
-      fileData = await cachedFile.readAsBytes();
-    }
+    final fileData = await file.ioFile.readAsBytes();
+
     dataTx = isPrivate
         ? await createEncryptedDataItem(fileData, fileKey!)
         : DataItem.withBlobData(data: fileData);
