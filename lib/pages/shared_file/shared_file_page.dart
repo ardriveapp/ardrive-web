@@ -154,7 +154,7 @@ class SharedFilePage extends StatelessWidget {
                   if (state is SharedFileLoadSuccess) ...{
                     ConstrainedBox(
                       constraints: BoxConstraints(
-                        minHeight: 400,
+                        minHeight: 100,
                         maxHeight: pageHeight / 2,
                       ),
                       child: activityPanel(state),
