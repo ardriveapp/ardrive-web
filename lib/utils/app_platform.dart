@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:platform/platform.dart';
 
-String getPlatform({Platform platform = const LocalPlatform()}) {
+String? getPlatform({Platform platform = const LocalPlatform()}) {
   if (kIsWeb) {
     return 'Web';
   }
@@ -15,6 +15,6 @@ String getPlatform({Platform platform = const LocalPlatform()}) {
     case 'ios':
       return 'iOS';
     default:
-      throw Exception('Unsupported platform $operatingSystem!');
+      return null;
   }
 }
