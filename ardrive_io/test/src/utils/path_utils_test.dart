@@ -82,5 +82,34 @@ void main() {
 
       expect(ext, 'bin');
     });
+
+    test('should return the extension from mimetype name with . ', () {
+      final ext = getFileExtension(
+        name: 'test!_·\$%d_%&·_',
+        contentType: 'text/plain',
+      );
+
+      expect(ext, '.conf');
+    });
+
+    test('should return the extension from mimetype name without .', () {
+      final ext = getFileExtension(
+        name: 'test!_·\$%d_%&·_.txt',
+        contentType: 'text/plain',
+        withExtensionDot: false,
+      );
+
+      expect(ext, 'txt');
+    });
+
+    test('should return the extension from mimetype name without .', () {
+      final ext = getFileExtension(
+        name: 'test!_·\$%d_%&·_',
+        contentType: 'text/plain',
+        withExtensionDot: false,
+      );
+
+      expect(ext, 'conf');
+    });
   });
 }
