@@ -93,16 +93,9 @@ class MobileSelectableFolderFileSaver implements FileSaver {
     await requestPermissions();
     await verifyPermissions();
 
-    String ext = getFileExtension(
-      contentType: file.contentType,
-      name: file.name,
-      withExtensionDot: false,
-    );
-
     await file_saver.FileSaver.instance.saveAs(
-      p.basenameWithoutExtension(file.name),
+      file.name,
       await file.readAsBytes(),
-      ext,
       file.contentType,
     );
 
