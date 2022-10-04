@@ -82,6 +82,10 @@ class ArDriveDownloader {
   }
 
   static Future<void> initialize() async {
+    if (kIsWeb) {
+      return;
+    }
+
     // Plugin must be initialized before using
     await FlutterDownloader.initialize(debug: kDebugMode);
 
@@ -93,8 +97,14 @@ class ArDriveDownloader {
   }
 
   Future<void> cancelDownload() async {
+    if (kIsWeb) {
+      return;
+    }
+
     IsolateNameServer.removePortNameMapping('downloader_send_port');
+
     debugPrint('Current task id: $_currentTaskId');
+
     await FlutterDownloader.cancel(taskId: _currentTaskId);
   }
 
