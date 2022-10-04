@@ -55,7 +55,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
           await _downloadFile(fileName, fileSize, drive);
           break;
         case DrivePrivacy.public:
-          if (Platform.isAndroid || Platform.isIOS) {
+          if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
             final stream = downloader.downloadFile(
               '${_arweave.client.api.gatewayUrl.origin}/$revisionDataTxId',
               fileName,
@@ -94,37 +94,44 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         totalByteCount: fileSize,
       ),
     );
+
     final dataRes = await http.get(
       Uri.parse(
         '${_arweave.client.api.gatewayUrl.origin}/$revisionDataTxId',
       ),
     );
-    final profile = _profileCubit.state;
-    SecretKey? driveKey;
 
-    if (profile is ProfileLoggedIn) {
-      driveKey = await _driveDao.getDriveKey(
-        drive.id,
-        profile.cipherKey,
-      );
+    if (drive.isPrivate) {
+      final profile = _profileCubit.state;
+      SecretKey? driveKey;
+
+      if (profile is ProfileLoggedIn) {
+        driveKey = await _driveDao.getDriveKey(
+          drive.id,
+          profile.cipherKey,
+        );
+      } else {
+        driveKey = await _driveDao.getDriveKeyFromMemory(driveId);
+      }
+
+      if (driveKey == null) {
+        throw StateError('Drive Key not found');
+      }
+
+      final fileKey = await _driveDao.getFileKey(fileId, driveKey);
+      final dataTx = await (_arweave.getTransactionDetails(revisionDataTxId));
+
+      if (dataTx != null) {
+        dataBytes = await decryptTransactionData(
+          dataTx,
+          dataRes.bodyBytes,
+          fileKey,
+        );
+      }
     } else {
-      driveKey = await _driveDao.getDriveKeyFromMemory(driveId);
+      dataBytes = dataRes.bodyBytes;
     }
 
-    if (driveKey == null) {
-      throw StateError('Drive Key not found');
-    }
-
-    final fileKey = await _driveDao.getFileKey(fileId, driveKey);
-    final dataTx = await (_arweave.getTransactionDetails(revisionDataTxId));
-
-    if (dataTx != null) {
-      dataBytes = await decryptTransactionData(
-        dataTx,
-        dataRes.bodyBytes,
-        fileKey,
-      );
-    }
     emit(
       FileDownloadSuccess(
         bytes: dataBytes,
