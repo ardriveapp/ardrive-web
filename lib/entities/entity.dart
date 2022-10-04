@@ -92,8 +92,11 @@ extension TransactionUtils on TransactionBase {
     DateTime? unixTime,
     Platform platform = const LocalPlatform(),
   }) async {
+    final platformString = getPlatform(platform: platform);
     addTag(EntityTag.appName, 'ArDrive-App');
-    addTag(EntityTag.appPlatform, getPlatform(platform: platform));
+    if (platformString != null) {
+      addTag(EntityTag.appPlatform, platformString);
+    }
     addTag(EntityTag.appVersion, version);
     addTag(
         EntityTag.unixTime,

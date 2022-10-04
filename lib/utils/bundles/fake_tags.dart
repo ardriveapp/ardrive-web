@@ -16,6 +16,7 @@ final fakePrivateTags = [
 fakeApplicationTags({Platform platform = const LocalPlatform()}) async {
   final packageInfo = await PackageInfo.fromPlatform();
   final version = packageInfo.version;
+  final platformString = getPlatform(platform: platform);
 
   return <Tag>[
     Tag(EntityTag.appName, 'ArDrive-App'),
@@ -24,7 +25,7 @@ fakeApplicationTags({Platform platform = const LocalPlatform()}) async {
       EntityTag.unixTime,
       (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
     ),
-    Tag(EntityTag.appPlatform, getPlatform(platform: platform)),
+    if (platformString != null) Tag(EntityTag.appPlatform, platformString),
   ];
 }
 
