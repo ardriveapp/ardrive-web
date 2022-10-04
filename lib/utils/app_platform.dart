@@ -15,6 +15,6 @@ String getPlatform({Platform platform = const LocalPlatform()}) {
     case 'ios':
       return 'iOS';
     default:
-      throw Exception('Unsupported platform $operatingSystem!');
+      return 'unknown';
   }
 }
