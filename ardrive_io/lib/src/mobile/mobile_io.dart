@@ -94,9 +94,9 @@ class MobileSelectableFolderFileSaver implements FileSaver {
     await verifyPermissions();
 
     await file_saver.FileSaver.instance.saveAs(
-      file.name,
-      await file.readAsBytes(),
-      file.contentType,
+      name: file.name,
+      bytes: await file.readAsBytes(),
+      mimeType: file.contentType,
     );
 
     return;
