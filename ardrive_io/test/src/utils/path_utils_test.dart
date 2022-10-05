@@ -31,4 +31,85 @@ void main() {
           throwsA(const TypeMatcher<EntityPathException>()));
     });
   });
+
+  group('test method getFileExtension', () {
+    test('should return the extension from contentType and return with the .',
+        () {
+      /// .pdf
+      final ext = getFileExtension(
+          name: 'somefile_without_ext', contentType: 'application/pdf');
+      expect(ext, '.pdf');
+    });
+    test('should return the extension from file name when and return with .',
+        () {
+      /// .pdf
+      final ext =
+          getFileExtension(name: 'file.pdf', contentType: 'application/pdf');
+      expect(ext, '.pdf');
+    });
+    test('should return the extension from file name and return with .', () {
+      final ext =
+          getFileExtension(name: 'file.pdf', contentType: 'application/pdf');
+      expect(ext, '.pdf');
+    });
+
+    test('should return the extension from file name without .', () {
+      final ext = getFileExtension(
+        name: 'file.pdf',
+        contentType: 'application/pdf',
+        withExtensionDot: false,
+      );
+
+      expect(ext, 'pdf');
+    });
+
+    test('should return the extension from mimetype name without .', () {
+      final ext = getFileExtension(
+        name: 'file',
+        contentType: 'application/pdf',
+        withExtensionDot: false,
+      );
+
+      expect(ext, 'pdf');
+    });
+
+    test('should return the extension from mimetype name without .', () {
+      final ext = getFileExtension(
+        name: 'file',
+        contentType: 'application/octet-stream',
+        withExtensionDot: false,
+      );
+
+      expect(ext, 'bin');
+    });
+
+    test('should return the extension from mimetype name with . ', () {
+      final ext = getFileExtension(
+        name: 'test!_·\$%d_%&·_',
+        contentType: 'text/plain',
+      );
+
+      expect(ext, '.conf');
+    });
+
+    test('should return the extension from mimetype name without .', () {
+      final ext = getFileExtension(
+        name: 'test!_·\$%d_%&·_.txt',
+        contentType: 'text/plain',
+        withExtensionDot: false,
+      );
+
+      expect(ext, 'txt');
+    });
+
+    test('should return the extension from mimetype name without .', () {
+      final ext = getFileExtension(
+        name: 'test!_·\$%d_%&·_',
+        contentType: 'text/plain',
+        withExtensionDot: false,
+      );
+
+      expect(ext, 'conf');
+    });
+  });
 }
