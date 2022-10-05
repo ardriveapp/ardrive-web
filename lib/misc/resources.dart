@@ -22,15 +22,10 @@ class Images {
 
 class Brand {
   const Brand();
-
-  final logoHorizontalNoSubtitle =
-      'assets/images/brand/logo-horiz-no-subtitle.png';
   final logoHorizontalNoSubtitleDark =
-      'assets/images/brand/logo-horiz-no-subtitle-dark.png';
+      'assets/images/brand/ArDrive-Logo-Wordmark-Light.png';
   final logoHorizontalNoSubtitleLight =
-      'assets/images/brand/logo-horiz-no-subtitle-light.png';
-  final logoVerticalNoSubtitle =
-      'assets/images/brand/logo-vert-no-subtitle.png';
+      'assets/images/brand/ArDrive-Logo-Wordmark-Dark.png';
 }
 
 class Profile {
