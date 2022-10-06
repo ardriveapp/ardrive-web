@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:platform/platform.dart';
 
-String getPlatform({Platform platform = const LocalPlatform()}) {
-  if (kIsWeb) {
+String getPlatform({
+  Platform platform = const LocalPlatform(),
+  isWeb = kIsWeb,
+}) {
+  if (isWeb) {
     return 'Web';
   }
 
