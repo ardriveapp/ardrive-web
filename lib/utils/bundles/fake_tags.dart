@@ -13,8 +13,11 @@ final fakePrivateTags = [
   ),
 ];
 
-fakeApplicationTags({Platform platform = const LocalPlatform()}) async {
-  final packageInfo = await PackageInfo.fromPlatform();
+Future<List<Tag>> fakeApplicationTags({
+  Platform platform = const LocalPlatform(),
+  PackageInfo? pInfo,
+}) async {
+  final packageInfo = pInfo ?? await PackageInfo.fromPlatform();
   final version = packageInfo.version;
 
   return <Tag>[
