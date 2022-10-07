@@ -209,6 +209,7 @@ void main() {
       const arweaveGatewayUrl = 'https://www.fake-arweave-gateway-url.com';
       arweave = ArweaveService(
         Arweave(gatewayUrl: Uri.parse(arweaveGatewayUrl)),
+        platform: 'unknown',
       );
       syncBloc = MockSyncBloc();
 

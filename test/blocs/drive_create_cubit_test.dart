@@ -40,7 +40,9 @@ void main() {
       );
 
       arweave = ArweaveService(
-          Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
+        Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
+        platform: 'unknown',
+      );
       drivesCubit = MockDrivesCubit();
       profileCubit = MockProfileCubit();
 

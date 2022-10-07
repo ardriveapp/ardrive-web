@@ -4,7 +4,6 @@ import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:arweave/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:platform/platform.dart';
 import 'package:test/test.dart';
 
 import '../test_utils/utils.dart';
@@ -230,7 +229,7 @@ void main() {
 
         final dataItem = await manifest.asPreparedDataItem(
           owner: await wallet.getOwner(),
-          platform: FakePlatform(operatingSystem: 'android'),
+          platform: 'Android',
         );
 
         expect(dataItem.tags.length, equals(5));

@@ -28,7 +28,7 @@ void main() {
 
     test('contains the expected tags', () async {
       final tags = await fakeApplicationTags(
-        platform: androidFakePlatform,
+        platform: 'Android',
         pInfo: packageInfo,
       );
 

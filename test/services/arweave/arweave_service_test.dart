@@ -12,6 +12,7 @@ void main(List<String> args) {
     //TODO Create and inject mock artemis client
     final arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(gatewayUrl)),
+      platform: 'unknown',
     );
     test('AllFileEntitiesWithId returns all the file entities for a known Id',
         () async {

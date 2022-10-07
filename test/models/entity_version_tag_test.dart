@@ -23,6 +23,10 @@ void main() {
     encodeStringToBase64(EntityTag.appVersion),
     encodeStringToBase64(version),
   );
+  final appPlatform = Tag(
+    encodeStringToBase64(EntityTag.appPlatform),
+    encodeStringToBase64('unknown'),
+  );
 
   group('Entity Application Tag Test', () {
     setUp(() async {
@@ -45,7 +49,10 @@ void main() {
 
       expect(tx.tags.isEmpty, isTrue);
 
-      tx.addApplicationTags(version: packageInfo.version);
+      tx.addApplicationTags(
+        version: packageInfo.version,
+        platform: 'Android',
+      );
 
       expect(tx.tags.contains(appNameTag), isTrue);
       expect(tx.tags.contains(appVersionTag), isTrue);
@@ -58,7 +65,7 @@ void main() {
 
       tx.addApplicationTags(
         version: packageInfo.version,
-        platform: androidFakePlatform,
+        platform: 'Android',
       );
       expect(
         tx.tags.contains(
@@ -75,7 +82,7 @@ void main() {
 
       tx.addApplicationTags(
         version: packageInfo.version,
-        platform: iOSFakePlatform,
+        platform: 'iOS',
       );
       expect(
         tx.tags.contains(
@@ -92,7 +99,7 @@ void main() {
 
       tx.addApplicationTags(
         version: packageInfo.version,
-        platform: unknownFakePlatform,
+        platform: 'unknown',
       );
       expect(
         tx.tags.contains(
@@ -109,7 +116,7 @@ void main() {
 
       tx.addApplicationTags(
         version: packageInfo.version,
-        platform: unknownFakePlatform,
+        platform: 'Web',
         isWeb: true,
       );
       expect(
@@ -135,7 +142,7 @@ void main() {
         lastModifiedDate: DateTime.now(),
       );
 
-      final tx = await fileEntity.asTransaction();
+      final tx = await fileEntity.asTransaction(platform: 'unknown');
       expect(tx.tags.contains(appNameTag), isTrue);
       expect(tx.tags.contains(appVersionTag), isTrue);
     });
@@ -147,10 +154,11 @@ void main() {
         parentFolderId: rootFolderId,
         name: testEntityName,
       );
-      final tx = await folderEntity.asTransaction();
-      tx.addApplicationTags(version: packageInfo.version);
+      final tx = await folderEntity.asTransaction(platform: 'unknown');
+      tx.addApplicationTags(version: packageInfo.version, platform: 'unknown');
 
       expect(tx.tags.contains(appNameTag), isTrue);
+      expect(tx.tags.contains(appVersionTag), isTrue);
       expect(tx.tags.contains(appVersionTag), isTrue);
     });
 
@@ -161,8 +169,8 @@ void main() {
         rootFolderId: rootFolderId,
         privacy: DrivePrivacy.public,
       );
-      final tx = await driveEntity.asTransaction();
-      tx.addApplicationTags(version: packageInfo.version);
+      final tx = await driveEntity.asTransaction(platform: 'unknown');
+      tx.addApplicationTags(version: packageInfo.version, platform: 'unknown');
 
       expect(tx.tags.contains(appNameTag), isTrue);
       expect(tx.tags.contains(appVersionTag), isTrue);
