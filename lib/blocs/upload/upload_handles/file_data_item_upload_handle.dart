@@ -11,7 +11,6 @@ import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:platform/platform.dart';
 
 // Number of data items returned by this handle
 const fileDataItemEntityCount = 2;
@@ -23,7 +22,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   final SecretKey? driveKey;
   final SecretKey? fileKey;
   final String revisionAction;
-  final Platform _platform;
+  final String _platform;
 
   /// The size of the file before it was encoded/encrypted for upload.
   @override
@@ -53,7 +52,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     required this.wallet,
     this.driveKey,
     this.fileKey,
-    Platform platform = const LocalPlatform(),
+    required String platform,
   }) : _platform = platform;
 
   Future<void> writeFileEntityToDatabase({
@@ -79,7 +78,10 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
         : DataItem.withBlobData(data: fileData);
     dataTx.setOwner(await wallet.getOwner());
 
-    dataTx.addApplicationTags(version: packageInfo.version);
+    dataTx.addApplicationTags(
+      version: packageInfo.version,
+      platform: _platform,
+    );
 
     // Don't include the file's Content-Type tag if it is meant to be private.
     if (!isPrivate) {
@@ -95,8 +97,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     entityTx = await arweave.prepareEntityDataItem(
       entity,
       wallet,
-      fileKey,
-      _platform,
+      key: fileKey,
     );
     await entityTx.sign(wallet);
     entity.txId = entityTx.id;

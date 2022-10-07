@@ -8,7 +8,6 @@ import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:platform/platform.dart';
 
 part 'manifest_data.g.dart';
 
@@ -54,7 +53,7 @@ class ManifestData {
 
   Future<DataItem> asPreparedDataItem({
     required ArweaveAddress owner,
-    Platform platform = const LocalPlatform(),
+    required String platform,
   }) async {
     final manifestDataItem = DataItem.withBlobData(data: jsonData)
       ..setOwner(owner)

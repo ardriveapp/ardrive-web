@@ -10,6 +10,7 @@ import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
@@ -24,6 +25,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:platform/platform.dart';
 
 import 'blocs/blocs.dart';
 import 'models/models.dart';
@@ -50,6 +52,7 @@ void main() async {
 
   arweave = ArweaveService(
     Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
+    platform: getPlatform(platform: const LocalPlatform()),
   );
   if (kIsWeb) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));

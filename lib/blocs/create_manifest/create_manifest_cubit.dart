@@ -28,6 +28,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final PstService _pst;
+  final String _platform;
 
   StreamSubscription? _selectedFolderSubscription;
 
@@ -37,10 +38,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     required ArweaveService arweave,
     required DriveDao driveDao,
     required PstService pst,
+    required String platform,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
         _driveDao = driveDao,
         _pst = pst,
+        _platform = platform,
         super(CreateManifestInitial()) {
     if (drive.isPrivate) {
       // Extra guardrail to prevent private drives from creating manifests
@@ -191,6 +194,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
       final manifestDataItem = await arweaveManifest.asPreparedDataItem(
         owner: await wallet.getOwner(),
+        platform: _platform,
       );
       await manifestDataItem.sign(wallet);
 

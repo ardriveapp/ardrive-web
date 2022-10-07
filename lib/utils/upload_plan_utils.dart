@@ -7,20 +7,19 @@ import 'package:ardrive_io/ardrive_io.dart'
     show getDirname, lookupMimeTypeWithDefaultType;
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:platform/platform.dart';
 import 'package:uuid/uuid.dart';
 
 class UploadPlanUtils {
   UploadPlanUtils({
     required this.arweave,
     required this.driveDao,
-    Platform platform = const LocalPlatform(),
+    required String platform,
   }) : _platform = platform;
 
   final ArweaveService arweave;
   final DriveDao driveDao;
   final _uuid = const Uuid();
-  final Platform _platform;
+  final String _platform;
 
   Future<UploadPlan> filesToUploadPlan({
     required List<UploadFile> files,
@@ -85,6 +84,7 @@ class UploadPlanUtils {
           driveKey: driveKey,
           fileKey: fileKey,
           revisionAction: revisionAction,
+          platform: _platform,
         );
       }
     }

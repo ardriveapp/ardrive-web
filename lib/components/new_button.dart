@@ -5,7 +5,9 @@ import 'package:ardrive/components/drive_create_form.dart';
 import 'package:ardrive/components/folder_create_form.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:flutter/material.dart';
+import 'package:platform/platform.dart';
 
 Widget buildNewButton(
   BuildContext context, {
@@ -287,6 +289,7 @@ PopupMenuEntry<Function> _buildUploadFileItem(
       driveId: state.currentDrive.id,
       parentFolderId: state.folderInView.folder.id,
       isFolderUpload: false,
+      platform: getPlatform(platform: const LocalPlatform()),
     ),
   );
 }
@@ -308,6 +311,7 @@ PopupMenuEntry<Function> _buildUploadFolderItem(
       driveId: state.currentDrive.id,
       parentFolderId: state.folderInView.folder.id,
       isFolderUpload: true,
+      platform: getPlatform(platform: const LocalPlatform()),
     ),
   );
 }
@@ -349,8 +353,11 @@ PopupMenuEntry<Function> _buildCreateManifestItem(
     message: !state.driveIsEmpty && !hasMinBalance
         ? appLocalizationsOf(context).insufficientFundsForCreateAManifest
         : null,
-    value: (context) =>
-        promptToCreateManifest(context, drive: state.currentDrive),
+    value: (context) => promptToCreateManifest(
+      context,
+      drive: state.currentDrive,
+      platform: getPlatform(platform: const LocalPlatform()),
+    ),
   );
 }
 

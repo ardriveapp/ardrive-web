@@ -86,7 +86,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       final driveDataItem = await _arweave.prepareEntityDataItem(
         drive,
         profile.wallet,
-        createRes.driveKey,
+        key: createRes.driveKey,
       );
 
       final rootFolderEntity = FolderEntity(
@@ -98,7 +98,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       final rootFolderDataItem = await _arweave.prepareEntityDataItem(
         rootFolderEntity,
         profile.wallet,
-        createRes.driveKey,
+        key: createRes.driveKey,
       );
 
       await rootFolderDataItem.sign(profile.wallet);

@@ -17,6 +17,7 @@ class FileV2UploadHandle implements UploadHandle {
   final SecretKey? driveKey;
   final SecretKey? fileKey;
   final String revisionAction;
+  final String platform;
 
   /// The size of the file before it was encoded/encrypted for upload.
   @override
@@ -41,6 +42,7 @@ class FileV2UploadHandle implements UploadHandle {
     required this.revisionAction,
     this.driveKey,
     this.fileKey,
+    required this.platform,
   });
 
   Future<void> writeFileEntityToDatabase({required DriveDao driveDao}) async {
@@ -66,7 +68,7 @@ class FileV2UploadHandle implements UploadHandle {
           : Transaction.withBlobData(data: fileData),
       wallet,
     )
-      ..addApplicationTags(version: packageInfo.version);
+      ..addApplicationTags(version: packageInfo.version, platform: platform);
 
     await pstService.addCommunityTipToTx(dataTx);
 
