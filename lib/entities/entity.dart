@@ -24,8 +24,6 @@ abstract class Entity {
   @JsonKey(ignore: true)
   DateTime createdAt = DateTime.now();
 
-  @JsonKey(ignore: true)
-
   /// Returns a [Transaction] with the entity's data along with the appropriate tags.
   ///
   /// If a key is provided, the transaction data is encrypted.
