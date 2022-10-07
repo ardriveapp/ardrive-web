@@ -5,9 +5,7 @@ import 'package:ardrive/components/drive_create_form.dart';
 import 'package:ardrive/components/folder_create_form.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/app_platform.dart';
 import 'package:flutter/material.dart';
-import 'package:platform/platform.dart';
 
 Widget buildNewButton(
   BuildContext context, {
@@ -259,7 +257,12 @@ List<PopupMenuEntry<Function>> _buildItems(
       },
       if (driveDetailState is DriveDetailLoadSuccess &&
           driveDetailState.currentDrive.privacy == 'public') ...{
-        _buildCreateManifestItem(context, driveDetailState, hasMinBalance)
+        _buildCreateManifestItem(
+          context,
+          driveDetailState,
+          hasMinBalance,
+          platform: platform,
+        )
       },
     ];
   } else {
@@ -374,8 +377,9 @@ PopupMenuEntry<Function> _buildCreateDrive(
 PopupMenuEntry<Function> _buildCreateManifestItem(
   BuildContext context,
   DriveDetailLoadSuccess state,
-  bool hasMinBalance,
-) {
+  bool hasMinBalance, {
+  required String platform,
+}) {
   return _buildMenuItemTile(
     context: context,
     isEnabled: !state.driveIsEmpty && hasMinBalance,
@@ -386,7 +390,7 @@ PopupMenuEntry<Function> _buildCreateManifestItem(
     value: (context) => promptToCreateManifest(
       context,
       drive: state.currentDrive,
-      platform: getPlatform(platform: const LocalPlatform()),
+      platform: platform,
     ),
   );
 }
