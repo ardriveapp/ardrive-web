@@ -29,7 +29,7 @@ void main() {
     test('contains the expected tags', () async {
       final tags = await fakeApplicationTags(
         platform: 'Android',
-        pInfo: packageInfo,
+        version: version,
       );
 
       expect(
