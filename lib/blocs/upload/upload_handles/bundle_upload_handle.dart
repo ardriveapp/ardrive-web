@@ -22,15 +22,15 @@ class BundleUploadHandle implements UploadHandle {
     fileEntities = fileDataItemUploadHandles.map((item) => item.entity);
   }
 
-  static Future<BundleUploadHandle> create({
+  static BundleUploadHandle create({
     List<FileDataItemUploadHandle> fileDataItemUploadHandles = const [],
     List<FolderDataItemUploadHandle> folderDataItemUploadHandles = const [],
-  }) async {
+  }) {
     final bundle = BundleUploadHandle._create(
       fileDataItemUploadHandles: fileDataItemUploadHandles,
       folderDataItemUploadHandles: folderDataItemUploadHandles,
     );
-    bundle.size = await bundle.computeBundleSize();
+    bundle.size = bundle.computeBundleSize();
     return bundle;
   }
 
@@ -89,10 +89,10 @@ class BundleUploadHandle implements UploadHandle {
     bundleTx.setData(Uint8List(0));
   }
 
-  Future<int> computeBundleSize() async {
+  int computeBundleSize() {
     final fileSizes = <int>[];
     for (var item in fileDataItemUploadHandles) {
-      fileSizes.add(await item.estimateDataItemSizes());
+      fileSizes.add(item.estimateDataItemSizes());
     }
     for (var item in folderDataItemUploadHandles) {
       fileSizes.add(item.size);

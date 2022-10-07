@@ -6,7 +6,14 @@ import 'package:responsive_builder/responsive_builder.dart';
 /// A page letting the user know that they have no personal or attached drives
 /// with a call to action for them to add new ones.
 class NoDrivesPage extends StatelessWidget {
-  const NoDrivesPage({Key? key}) : super(key: key);
+  final String platform;
+  final String version;
+
+  const NoDrivesPage({
+    Key? key,
+    required this.platform,
+    required this.version,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) => ScreenTypeLayout(
@@ -26,7 +33,10 @@ class NoDrivesPage extends StatelessWidget {
                 style: Theme.of(context).textTheme.headline6,
               ),
             ),
-            const PlusButton(),
+            PlusButton(
+              platform: platform,
+              version: version,
+            ),
           ],
         ),
       );

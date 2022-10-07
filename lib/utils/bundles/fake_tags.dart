@@ -1,6 +1,5 @@
 import 'package:ardrive/entities/entities.dart';
 import 'package:arweave/arweave.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 final fakePrivateTags = [
   Tag(EntityTag.contentType, ContentType.octetStream),
@@ -11,13 +10,10 @@ final fakePrivateTags = [
   ),
 ];
 
-Future<List<Tag>> fakeApplicationTags({
+List<Tag> fakeApplicationTags({
   required String platform,
-  PackageInfo? pInfo,
-}) async {
-  final packageInfo = pInfo ?? await PackageInfo.fromPlatform();
-  final version = packageInfo.version;
-
+  required String version,
+}) {
   return <Tag>[
     Tag(EntityTag.appName, 'ArDrive-App'),
     Tag(EntityTag.appVersion, version),

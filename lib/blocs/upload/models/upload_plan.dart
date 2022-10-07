@@ -58,7 +58,7 @@ class UploadPlan {
       ...folderDataItemUploadHandles.values
     ]);
     for (var uploadHandles in bundleItems) {
-      final bundleToUpload = await BundleUploadHandle.create(
+      final bundleToUpload = BundleUploadHandle.create(
         fileDataItemUploadHandles: List.from(
           uploadHandles.whereType<FileDataItemUploadHandle>(),
         ),

@@ -15,6 +15,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<AppRoutePath> {
+  final String platform;
+  final String version;
+
   bool signingIn = false;
 
   String? driveId;
@@ -50,7 +53,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   @override
   final GlobalKey<NavigatorState> navigatorKey;
 
-  AppRouterDelegate() : navigatorKey = GlobalKey<NavigatorState>();
+  AppRouterDelegate({
+    required this.platform,
+    required this.version,
+  }) : navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) =>
@@ -126,8 +132,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 Widget? shellPage;
                 if (state is DrivesLoadSuccess) {
                   shellPage = !state.hasNoDrives
-                      ? const DriveDetailPage()
-                      : const NoDrivesPage();
+                      ? DriveDetailPage(
+                          platform: platform,
+                          version: version,
+                        )
+                      : NoDrivesPage(
+                          platform: platform,
+                          version: version,
+                        );
                   driveId = state.selectedDriveId;
                 }
 
@@ -188,7 +200,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         }),
                       ),
                     ],
-                    child: AppShell(page: shellPage),
+                    child: AppShell(
+                      page: shellPage,
+                      platform: platform,
+                      version: version,
+                    ),
                   ),
                 );
               },

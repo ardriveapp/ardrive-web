@@ -5,24 +5,27 @@ import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-import 'package:platform/platform.dart';
 
 class DriveFileDropZone extends StatefulWidget {
   final String driveId;
   final String folderId;
+  final String platform;
+  final String version;
 
   const DriveFileDropZone({
     Key? key,
     required this.driveId,
     required this.folderId,
+    required this.platform,
+    required this.version,
   }) : super(key: key);
+
   @override
   DriveFileDropZoneState createState() => DriveFileDropZoneState();
 }
@@ -31,6 +34,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
   late DropzoneViewController controller;
   bool isHovering = false;
   bool isCurrentlyShown = false;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -106,7 +110,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
         ).then((value) => isCurrentlyShown = false);
         return;
       }
-      String platform = getPlatform(platform: LocalPlatform());
+
       await showCongestionDependentModalDialog(
         context,
         () => showDialog(
@@ -116,7 +120,8 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
               uploadPlanUtils: UploadPlanUtils(
                 arweave: context.read<ArweaveService>(),
                 driveDao: context.read<DriveDao>(),
-                platform: platform,
+                platform: widget.platform,
+                version: widget.version,
               ),
               driveId: driveId,
               parentFolderId: parentFolderId,

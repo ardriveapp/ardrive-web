@@ -86,7 +86,7 @@ class CostEstimate {
     required BundleUploadHandle bundle,
     required ArweaveService arweave,
   }) async {
-    return arweave.getPrice(byteSize: await bundle.computeBundleSize());
+    return arweave.getPrice(byteSize: bundle.computeBundleSize());
   }
 
   static Future<BigInt> estimateV2UploadsCost({

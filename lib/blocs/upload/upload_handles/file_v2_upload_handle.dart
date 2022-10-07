@@ -8,7 +8,6 @@ import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 class FileV2UploadHandle implements UploadHandle {
   final FileEntity entity;
@@ -18,6 +17,7 @@ class FileV2UploadHandle implements UploadHandle {
   final SecretKey? fileKey;
   final String revisionAction;
   final String platform;
+  final String version;
 
   /// The size of the file before it was encoded/encrypted for upload.
   @override
@@ -43,6 +43,7 @@ class FileV2UploadHandle implements UploadHandle {
     this.driveKey,
     this.fileKey,
     required this.platform,
+    required this.version,
   });
 
   Future<void> writeFileEntityToDatabase({required DriveDao driveDao}) async {
@@ -59,8 +60,6 @@ class FileV2UploadHandle implements UploadHandle {
     required Wallet wallet,
     required PstService pstService,
   }) async {
-    final packageInfo = await PackageInfo.fromPlatform();
-
     final fileData = await file.ioFile.readAsBytes();
     dataTx = await arweaveService.client.transactions.prepare(
       isPrivate
@@ -68,7 +67,7 @@ class FileV2UploadHandle implements UploadHandle {
           : Transaction.withBlobData(data: fileData),
       wallet,
     )
-      ..addApplicationTags(version: packageInfo.version, platform: platform);
+      ..addApplicationTags(version: version, platform: platform);
 
     await pstService.addCommunityTipToTx(dataTx);
 

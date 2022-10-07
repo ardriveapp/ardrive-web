@@ -25,6 +25,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:platform/platform.dart';
 
 import 'blocs/blocs.dart';
@@ -50,14 +51,22 @@ void main() async {
     const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
   );
 
+  final packageInfo = await PackageInfo.fromPlatform();
+  final String platform = getPlatform(platform: const LocalPlatform());
+  final String version = packageInfo.version;
+
   arweave = ArweaveService(
     Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
-    platform: getPlatform(platform: const LocalPlatform()),
+    platform: platform,
   );
   if (kIsWeb) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
   }
-  runApp(const App());
+
+  runApp(App(
+    platform: platform,
+    version: version,
+  ));
 }
 
 void refreshHTMLPageAtInterval(Duration duration) {
@@ -65,15 +74,29 @@ void refreshHTMLPageAtInterval(Duration duration) {
 }
 
 class App extends StatefulWidget {
-  const App({Key? key}) : super(key: key);
+  final String platform;
+  final String version;
+
+  const App({
+    Key? key,
+    required this.platform,
+    required this.version,
+  }) : super(key: key);
 
   @override
   AppState createState() => AppState();
 }
 
 class AppState extends State<App> {
-  final _routerDelegate = AppRouterDelegate();
+  late AppRouterDelegate _routerDelegate;
   final _routeInformationParser = AppRouteInformationParser();
+
+  AppState() {
+    _routerDelegate = AppRouterDelegate(
+      platform: widget.platform,
+      version: widget.version,
+    );
+  }
 
   @override
   Widget build(BuildContext context) => MultiRepositoryProvider(
