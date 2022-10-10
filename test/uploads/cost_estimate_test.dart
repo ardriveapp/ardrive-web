@@ -235,7 +235,6 @@ void main() {
         });
       }
     });
-    group('for v2 TXs', () {});
   });
 }
 
