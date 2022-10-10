@@ -45,7 +45,7 @@ platform :android do
       return
     end
 
-    isBranchDeploy = options[:type] == 'branch'
+    isProd = options[:type] == 'production'
     build_types = get_build_type(options[:type])
     type = build_types["android_type"]
 
