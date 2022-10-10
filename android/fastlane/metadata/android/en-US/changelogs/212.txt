@@ -1,0 +1,2 @@
+- Updates ArDrive logo
+- Updates App-Name and adds App-Platform transaction tags
