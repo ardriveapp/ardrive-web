@@ -18,13 +18,11 @@ import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart' show TestWidgetsFlutterBinding;
 import 'package:mocktail/mocktail.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:test/test.dart';
 
 import '../test_utils/fake_data.dart';
 import '../test_utils/utils.dart';
 
-const stubPlatformString = 'unknown';
 const stubEntityId = '00000000-0000-0000-0000-000000000000';
 const stubTxId = '0000000000000000000000000000000000000000001';
 
@@ -34,16 +32,16 @@ void main() {
   final pstService = MockPstService();
   final wallet = getTestWallet();
   final cipherKey = SecretKeyData.random(length: 32);
+  const double winstonToArFactor = 1000000000000;
   const double stubByteCountToWinstonFactor = 2;
   const double stubArToUsdFactor = 3;
-  const double stubPstFeeFactor = .05;
+  const double stubPstFeeFactor = .15;
 
   group('CostEstimate class', () {
     final stubCurrentDate = DateTime.now();
 
     late MockArweaveService arweave;
     late Drive stubDrive;
-    late PackageInfo packageInfo;
 
     final stubRootFolderEntry = FolderEntry(
       id: stubEntityId,
@@ -69,15 +67,6 @@ void main() {
         lastUpdated: stubCurrentDate,
       );
 
-      PackageInfo.setMockInitialValues(
-        version: version,
-        packageName: 'ArDrive-Web-Test',
-        appName: appName,
-        buildNumber: '420',
-        buildSignature: 'Test signature',
-      );
-      packageInfo = await PackageInfo.fromPlatform();
-
       when(() => arweave.getPrice(byteSize: any(named: 'byteSize'))).thenAnswer(
         (invocation) => Future.value(
           BigInt.from(
@@ -95,28 +84,22 @@ void main() {
       when(() => pstService.getPSTFee(any())).thenAnswer(
         (invocation) => Future.value(
           Winston(
-            BigInt.from(
-              ((invocation.positionalArguments[0] as BigInt).toInt() *
-                  stubPstFeeFactor),
-            ),
+            (invocation.positionalArguments[0] as BigInt) *
+                BigInt.from(stubPstFeeFactor * 100) ~/
+                BigInt.from(100),
           ),
         ),
       );
     });
 
-    group('for bundles', () {
+    group('constructor', () {
+      final List<String> validPlatforms = ['Web', 'Android', 'iOS', 'unknown'];
+
       late List<IOFile> multipleFilesToUpload;
       late List<IOFile> singleFileToUpload;
       late UploadPlanUtils uploadPlanUtis;
 
       setUp(() async {
-        uploadPlanUtis = UploadPlanUtils(
-          arweave: arweave,
-          driveDao: driveDao,
-          platform: stubPlatformString,
-          version: version,
-        );
-
         multipleFilesToUpload = [
           await IOFile.fromData(
             Uint8List.fromList([1, 2, 3, 4]),
@@ -129,48 +112,63 @@ void main() {
             lastModifiedDate: DateTime(2022),
           )
         ];
-
-        singleFileToUpload = [
-          await IOFile.fromData(
-            Uint8List.fromList([1, 2, 3, 4]),
-            name: 'Single file',
-            lastModifiedDate: DateTime(2022),
-          )
-        ];
       });
 
-      test('estimateCostOfAllBundles', () async {
-        final uploadFiles = multipleFilesToUpload
-            .map(
-              (ioFile) =>
-                  UploadFile(ioFile: ioFile, parentFolderId: stubEntityId),
-            )
-            .toList();
+      for (String stubPlatformString in validPlatforms) {
+        test('returns the expected values for "$stubPlatformString"', () async {
+          uploadPlanUtis = UploadPlanUtils(
+            arweave: arweave,
+            driveDao: driveDao,
+            platform: stubPlatformString,
+            version: version,
+          );
 
-        final uploadPlan = await uploadPlanUtis.filesToUploadPlan(
-          files: uploadFiles,
-          cipherKey: cipherKey,
-          wallet: wallet,
-          conflictingFiles: {},
-          targetDrive: stubDrive,
-          targetFolder: stubRootFolderEntry,
-        );
+          final uploadFiles = multipleFilesToUpload
+              .map(
+                (ioFile) =>
+                    UploadFile(ioFile: ioFile, parentFolderId: stubEntityId),
+              )
+              .toList();
 
-        final estimate = await CostEstimate.create(
-          uploadPlan: uploadPlan,
-          arweaveService: arweave,
-          pstService: pstService,
-          wallet: wallet,
-        );
+          final uploadPlan = await uploadPlanUtis.filesToUploadPlan(
+            files: uploadFiles,
+            cipherKey: cipherKey,
+            wallet: wallet,
+            conflictingFiles: {},
+            targetDrive: stubDrive,
+            targetFolder: stubRootFolderEntry,
+          );
 
-        final BigInt expectedDataSize = await expectedCostForUploadPlan(
-          uploadPlan: uploadPlan,
-          pstService: pstService,
-          arweaveService: arweave,
-        );
+          final estimate = await CostEstimate.create(
+            uploadPlan: uploadPlan,
+            arweaveService: arweave,
+            pstService: pstService,
+            wallet: wallet,
+          );
 
-        expect(estimate.totalCost, expectedDataSize);
-      });
+          final BigInt expectedDataSize = await expectedCostForUploadPlan(
+            uploadPlan: uploadPlan,
+            pstService: pstService,
+            arweaveService: arweave,
+          );
+
+          expect(estimate.totalCost, expectedDataSize);
+          expect(
+            estimate.arUploadCost,
+            winstonToAr(expectedDataSize),
+          );
+          final expectedPstFee = await pstService.getPSTFee(
+            BigInt.from(
+              // the total minus the 15% fee
+              expectedDataSize.toInt() * 0.8695652173913044,
+            ),
+          );
+          expect(
+            estimate.pstFee,
+            expectedPstFee.value,
+          );
+        });
+      }
     });
     group('for v2 TXs', () {});
   });
@@ -186,7 +184,7 @@ Future<BigInt> expectedCostForUploadPlan({
     arweaveService,
   );
 
-  if (uploadPlan.fileV2UploadHandles.length != 0) {
+  if (uploadPlan.fileV2UploadHandles.isNotEmpty) {
     throw Exception('UNIMPLEMENTED!');
   }
   // final v2FilesUploadCost = expectedCostForV2Uploads()
@@ -218,17 +216,10 @@ Future<BigInt> expectedCostForSingleBundle({
   return arweave.getPrice(byteSize: bundleUploadHandle.computeBundleSize());
 }
 
-// int expectedSizeForDataItem(FileDataItemUploadHandle dataItemHandle) {
-//   return expectedSizeForDataTx(dataItemHandle) +
-//       expectedSizeForEntityDataItem(dataItemHandle);
-// }
-
-// int expectedSizeForDataTx(FileDataItemUploadHandle dataItemHandle) {}
-
-int expectedSizeForEntityDataItem(FileDataItemUploadHandle dataItemHandle) {
-  final BigInt dataTxSize;
-  final BigInt entityDataSize;
-
+int expectedSizeForEntityDataItem({
+  required FileDataItemUploadHandle dataItemHandle,
+  required String platform,
+}) {
   List<Tag> expectedTags = [
     Tag(
       EntityTag.contentType,
@@ -237,7 +228,7 @@ int expectedSizeForEntityDataItem(FileDataItemUploadHandle dataItemHandle) {
   ];
   expectedTags.addAll(
     fakeApplicationTags(
-      platform: stubPlatformString,
+      platform: platform,
       version: version,
     ),
   );
