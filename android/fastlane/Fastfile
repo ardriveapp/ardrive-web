@@ -62,7 +62,7 @@ platform :android do
       android_artifact_path: "#{root_path}/build/app/outputs/flutter-apk/app-release.apk"
     )
 
-    if not isBranchDeploy then
+    if isProd then
       upload_to_play_store(
         track: type,
         json_key:ENV['FIREBASE_JSON'], 
