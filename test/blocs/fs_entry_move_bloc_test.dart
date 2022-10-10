@@ -10,6 +10,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:platform/platform.dart';
 import 'package:uuid/uuid.dart';
 
 import '../test_utils/utils.dart';
@@ -274,6 +275,7 @@ void main() {
         driveDao: driveDao,
         profileCubit: profileCubit,
         selectedItems: selectedItems,
+        platform: FakePlatform(operatingSystem: 'android'),
       ),
       act: (FsEntryMoveBloc bloc) async {
         bloc.add(FsEntryMoveUpdateTargetFolder(folderId: nestedFolderId));
