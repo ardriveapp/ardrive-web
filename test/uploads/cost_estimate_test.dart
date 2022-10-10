@@ -9,10 +9,8 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/types/winston.dart';
-import 'package:ardrive/utils/bundles/fake_tags.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -112,10 +110,19 @@ void main() {
             lastModifiedDate: DateTime(2022),
           )
         ];
+        singleFileToUpload = [
+          await IOFile.fromData(
+            Uint8List(503316480),
+            name: 'Single file entity',
+            lastModifiedDate: DateTime(2022),
+          ),
+        ];
       });
 
       for (String stubPlatformString in validPlatforms) {
-        test('returns the expected values for "$stubPlatformString"', () async {
+        test(
+            'returns the expected values for Bundles on platform: "$stubPlatformString"',
+            () async {
           uploadPlanUtis = UploadPlanUtils(
             arweave: arweave,
             driveDao: driveDao,
@@ -150,6 +157,64 @@ void main() {
             uploadPlan: uploadPlan,
             pstService: pstService,
             arweaveService: arweave,
+            platform: stubPlatformString,
+          );
+
+          expect(estimate.totalCost, expectedDataSize);
+          expect(
+            estimate.arUploadCost,
+            winstonToAr(expectedDataSize),
+          );
+          final expectedPstFee = await pstService.getPSTFee(
+            BigInt.from(
+              // the total minus the 15% fee
+              expectedDataSize.toInt() * 0.8695652173913044,
+            ),
+          );
+          expect(
+            estimate.pstFee,
+            expectedPstFee.value,
+          );
+        });
+
+        test(
+            'returns the expected values for v2 on platform: "$stubPlatformString"',
+            () async {
+          uploadPlanUtis = UploadPlanUtils(
+            arweave: arweave,
+            driveDao: driveDao,
+            platform: stubPlatformString,
+            version: version,
+          );
+
+          final uploadFiles = singleFileToUpload
+              .map(
+                (ioFile) =>
+                    UploadFile(ioFile: ioFile, parentFolderId: stubEntityId),
+              )
+              .toList();
+
+          final uploadPlan = await uploadPlanUtis.filesToUploadPlan(
+            files: uploadFiles,
+            cipherKey: cipherKey,
+            wallet: wallet,
+            conflictingFiles: {},
+            targetDrive: stubDrive,
+            targetFolder: stubRootFolderEntry,
+          );
+
+          final estimate = await CostEstimate.create(
+            uploadPlan: uploadPlan,
+            arweaveService: arweave,
+            pstService: pstService,
+            wallet: wallet,
+          );
+
+          final BigInt expectedDataSize = await expectedCostForUploadPlan(
+            uploadPlan: uploadPlan,
+            pstService: pstService,
+            arweaveService: arweave,
+            platform: stubPlatformString,
           );
 
           expect(estimate.totalCost, expectedDataSize);
@@ -178,21 +243,26 @@ Future<BigInt> expectedCostForUploadPlan({
   required UploadPlan uploadPlan,
   required PstService pstService,
   required ArweaveService arweaveService,
+  required String platform,
 }) async {
   final dataItemsCost = await expectedCostForAllBundles(
     uploadPlan.bundleUploadHandles,
     arweaveService,
   );
 
-  if (uploadPlan.fileV2UploadHandles.isNotEmpty) {
-    throw Exception('UNIMPLEMENTED!');
-  }
-  // final v2FilesUploadCost = expectedCostForV2Uploads()
+  final v2FilesUploadCost = await expectedCostForV2Uploads(
+    dataItemHandles: uploadPlan.fileV2UploadHandles.values.toList(),
+    platform: platform,
+    arweave: arweaveService,
+  );
 
   final bundlePstFee = await pstService.getPSTFee(dataItemsCost);
-  // final v2FilesPstFee = await pstService.getPSTFee(v2FilesUploadCost);
+  final v2FilesPstFee = await pstService.getPSTFee(v2FilesUploadCost);
 
-  return dataItemsCost + bundlePstFee.value;
+  return dataItemsCost +
+      bundlePstFee.value +
+      v2FilesUploadCost +
+      v2FilesPstFee.value;
 }
 
 Future<BigInt> expectedCostForAllBundles(
@@ -216,27 +286,27 @@ Future<BigInt> expectedCostForSingleBundle({
   return arweave.getPrice(byteSize: bundleUploadHandle.computeBundleSize());
 }
 
-int expectedSizeForEntityDataItem({
-  required FileDataItemUploadHandle dataItemHandle,
+Future<BigInt> expectedCostForV2Uploads({
+  required List<FileV2UploadHandle> dataItemHandles,
+  required ArweaveService arweave,
   required String platform,
-}) {
-  List<Tag> expectedTags = [
-    Tag(
-      EntityTag.contentType,
-      dataItemHandle.file.ioFile.contentType,
-    ),
-  ];
-  expectedTags.addAll(
-    fakeApplicationTags(
-      platform: platform,
-      version: version,
-    ),
-  );
+}) async {
+  BigInt totalCost = BigInt.zero;
+  for (FileV2UploadHandle handle in dataItemHandles) {
+    totalCost += await expectedSizeForV2Item(
+      v2FileHandle: handle,
+      arweave: arweave,
+    );
+  }
+  return totalCost;
+}
 
-  return estimateDataItemSize(
-      fileDataSize: expectedCostForJSONData(dataItemHandle.entity),
-      tags: expectedTags,
-      nonce: []);
+Future<BigInt> expectedSizeForV2Item({
+  required FileV2UploadHandle v2FileHandle,
+  required ArweaveService arweave,
+}) async {
+  return await arweave.getPrice(byteSize: v2FileHandle.getFileDataSize()) +
+      await arweave.getPrice(byteSize: v2FileHandle.getMetadataJSONSize());
 }
 
 int expectedCostForJSONData(FileEntity entity) {
