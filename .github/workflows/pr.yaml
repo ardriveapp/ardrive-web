@@ -7,15 +7,11 @@ on:
       - master
 
 env:
-  PR_TITLE: ${{ github.event.pull_request.title }}
-  PR_NUMBER: ${{ github.event.pull_request.number }}
   BUILD_NUMBER: ${{ github.run_number }}
   GIT_SHA: ${{ github.sha }}
+  PR_NUMBER: ${{ github.event.pull_request.number }}
+  PR_TITLE: ${{ github.event.pull_request.title }}
   RELEASE_NOTES: ${{ github.event.pull_request.title }} - ${{ github.sha }}
-  FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-  FL_JIRA_SITE: ${{ secrets.FASTLANE_JIRA_SITE }}
-  FL_JIRA_USERNAME: ${{ secrets.FASTLANE_JIRA_USER }}
-  FL_JIRA_PASSWORD: ${{ secrets.FASTLANE_JIRA_API_KEY }}
 
 jobs:
   test:
@@ -38,8 +34,7 @@ jobs:
           flutter pub run build_runner build --delete-conflicting-outputs
 
       - name: Test
-        run: |
-          flutter test
+        run: flutter test
 
   web:
     needs: test
@@ -65,8 +60,7 @@ jobs:
 
       # JS files cache invalidation
       - name: main.dart.js cache invalidation
-        run: |
-          sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
+        run: sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
 
       # Disribute to Firebase
       - uses: FirebaseExtended/action-hosting-deploy@v0
@@ -94,28 +88,29 @@ jobs:
           channel: 'stable'
 
       - name: Set FIREBASE_JSON env var
-        run: |
-          echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
+        run: echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
 
       - name: Save Firebase Service Account json
-        run: |
-          echo -n "$FIREBASE_SERVICE_ACCOUNT_JSON" >> $FIREBASE_JSON
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: echo -n "$FIREBASE_SERVICE_ACCOUNT_JSON" >> $FIREBASE_JSON
 
       - name: Install fastlane and Cocoapods
         working-directory: ./ios
-        run: |
-          bundle install
+        run: bundle install
 
       - name: Build iOS with fastlane
         env:
-          MATCH_PASSWORD: ${{ secrets.FASTLANE_MATCH_PASSWORD }}
           MATCH_GIT_PRIVATE_KEY: ${{ secrets.FASTLANE_SSH_KEY }}
+          MATCH_PASSWORD: ${{ secrets.FASTLANE_MATCH_PASSWORD }}
         working-directory: ./ios
-        run: |
-          bundle exec fastlane deploy_adhoc
+        run: bundle exec fastlane deploy type:branch
 
       - name: Update PR description and Jira
         env:
+          FL_JIRA_PASSWORD: ${{ secrets.FASTLANE_JIRA_API_KEY }}
+          FL_JIRA_SITE: ${{ secrets.FASTLANE_JIRA_SITE }}
+          FL_JIRA_USERNAME: ${{ secrets.FASTLANE_JIRA_USER }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: ./ios
         run: bundle exec fastlane update_release_url
@@ -148,19 +143,35 @@ jobs:
         run: echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
 
       - name: Save Firebase Service Account json
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: echo -n "$FIREBASE_SERVICE_ACCOUNT_JSON" >> $FIREBASE_JSON
+
+      - name: Set ANDROID_SIGNING_STORE_FILE env var
+        run: echo "ANDROID_SIGNING_STORE_FILE=$RUNNER_TEMP/keystore.jks" >> $GITHUB_ENV
+
+      - name: Save Android Keystore file
+        env:
+          ANDROID_SIGNING_STORE: ${{ secrets.ANDROID_SIGNING_STORE }}
+        run: echo -n "$ANDROID_SIGNING_STORE" | base64 --decode >> $ANDROID_SIGNING_STORE_FILE
 
       - name: Install fastlane
         working-directory: ./android
         run: bundle install
 
       - name: Build Android with fastlane
+        env:
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
         working-directory: ./android
-        run: |
-          bundle exec fastlane deploy_apk
+        run: bundle exec fastlane deploy type:branch
 
       - name: Update PR description and Jira
+        env:
+          FL_JIRA_PASSWORD: ${{ secrets.FASTLANE_JIRA_API_KEY }}
+          FL_JIRA_SITE: ${{ secrets.FASTLANE_JIRA_SITE }}
+          FL_JIRA_USERNAME: ${{ secrets.FASTLANE_JIRA_USER }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: ./android
         run: bundle exec fastlane update_release_url
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

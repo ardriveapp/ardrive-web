@@ -50,18 +50,18 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 ## Android
 
-### android build_apk
+### android build
 
 ```sh
-[bundle exec] fastlane android build_apk
+[bundle exec] fastlane android build
 ```
 
 
 
-### android deploy_apk
+### android deploy
 
 ```sh
-[bundle exec] fastlane android deploy_apk
+[bundle exec] fastlane android deploy
 ```
 
 
