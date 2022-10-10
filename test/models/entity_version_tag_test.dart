@@ -159,7 +159,6 @@ void main() {
 
       expect(tx.tags.contains(appNameTag), isTrue);
       expect(tx.tags.contains(appVersionTag), isTrue);
-      expect(tx.tags.contains(appVersionTag), isTrue);
     });
 
     test('Drive Entity contains correct Application Tags', () async {
