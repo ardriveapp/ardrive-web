@@ -15,7 +15,7 @@ platform :android do
     end
 
     isProd = options[:type] == 'production'
-    
+
     flavor = isProd ? 'production' : 'development'
     # Flutter build
     fetch_dependencies
@@ -60,7 +60,7 @@ platform :android do
       service_credentials_file: ENV['FIREBASE_JSON'],
       groups: "Testers",
       android_artifact_type: "APK",
-      android_artifact_path: "#{root_path}/build/app/outputs/flutter-apk/app-release.apk"
+      android_artifact_path: "#{root_path}/build/app/outputs/flutter-apk/app-#{flavor}-release.apk"
     )
 
     if isProd then
