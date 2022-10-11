@@ -81,7 +81,7 @@ platform :android do
         track: type,
         json_key:ENV['FIREBASE_JSON'], 
         version_code: build_number,
-        aab: "#{root_path}/build/app/outputs/bundle/release/app-#{flavor}-release.aab"
+        aab: "#{root_path}/build/app/outputs/bundle/release/app-#{flavor}-release.aab",
         skip_upload_apk: true
       )
     end
