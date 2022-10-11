@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:ardrive_io/src/io_exception.dart';
+import 'package:mime/mime.dart' as mime;
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:permission_handler/permission_handler.dart';
@@ -44,6 +45,40 @@ Future<String> getDefaultMobileDownloadDir() async {
     throw UnsupportedPlatformException(
       'getDefaultMobileDownloadDir only applies to mobile.',
     );
+  }
+}
+
+/// Returns the file extension from the file `name`, when having, in other case the extension
+/// will be provided by the `contentType`.
+///
+/// use `withExtensionDot` when want only the extension without the ` .`
+///
+/// For example: `application/pdf` => `pdf`
+///
+/// By default it will return with the ` .`
+///
+/// For example: `application/pdf` => `.pdf`
+String getFileExtension({
+  required String name,
+  required String contentType,
+  bool withExtensionDot = true,
+}) {
+  String ext = path.extension(name);
+
+  if (ext.isNotEmpty) {
+    if (withExtensionDot) {
+      return ext;
+    }
+
+    return ext.replaceFirst('.', '');
+  } else {
+    ext = mime.extensionFromMime(contentType);
+
+    if (withExtensionDot) {
+      return '.$ext';
+    }
+
+    return ext;
   }
 }
 

@@ -37,31 +37,39 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 
 
+### update_pr_and_jira
+
+```sh
+[bundle exec] fastlane update_pr_and_jira
+```
+
+
+
 ----
 
 
 ## iOS
 
-### ios build_adhoc
+### ios build
 
 ```sh
-[bundle exec] fastlane ios build_adhoc
+[bundle exec] fastlane ios build
 ```
 
 
 
-### ios deploy_adhoc
+### ios deploy
 
 ```sh
-[bundle exec] fastlane ios deploy_adhoc
+[bundle exec] fastlane ios deploy
 ```
 
 
 
-### ios latest
+### ios update_release_url
 
 ```sh
-[bundle exec] fastlane ios latest
+[bundle exec] fastlane ios update_release_url
 ```
 
 

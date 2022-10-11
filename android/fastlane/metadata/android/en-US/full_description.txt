@@ -1,0 +1,61 @@
+ArDrive saves the files that mean the most to you, forever. Photos, videos, and files you upload are stored safely and securely on Arweave, a decentralized and censorship-resistant blockchain network.  They can be public and globally accessible, or completely private with no snooping middlemen.  You can easily share, download and access these files from any device, but the files can not be deleted by you or anyone else. There are no monthly subscription fees to worry about as you only pay for what you upload, which means your files will never disappear if a payment is missed.  Through ArDrive, your data will outlive you, your children, and your grandchildren.
+
+Features:
+
+• Save photos, videos, files, and folders from your phone to the Arweave network permanently.
+
+• No storage limit: Store as much data as you want, forever. 
+
+• Intuitive folder and file management. 
+
+• No subscription fees: Simply pay for storage as needed. 
+
+• Bring your own Arweave wallet and tokens
+
+• Censorship-resistance, where third parties cannot simply remove your data.
+       • Users control and own their own data.
+
+• Easily send files by sharing a link with anyone, even if they don’t have an ArDrive account.
+
+• No sharing limit for files.
+
+• Preview all your saved photos in the app. 
+
+• Perfect record keeping: ArDrive will provide all the flexibility, detail and validation needed for managing and organizing your archives or regulatory compliance over vast periods of time.
+       • Time stamping
+       • File activity history and access to all previous versions
+
+• Private drive encryption with two key system for enhanced security.
+
+• Biometric login for ease and peace of mind. 
+
+• Create Public drives to quickly and easily access or share your files.
+
+• Files stored on a decentralized networked managed by a peer-to-peer network instead of a single central entity.
+
+Terms of Service: https://ardrive.io/tos-and-privacy/
+
+Price Calculator: https://ardrive.io/pricing/ 
+
+Arweave: https://www.arweave.org/
+
+
+Who Needs Permanent Storage?
+
+ArDrive is the perfect solution for anyone who wants to store their data permanently and securely. ArDrive uses the Arweave blockchain to store files, ensuring that they will never be deleted and can be accessed forever. 
+
+• Accurate Historical Archives can be shared for future generations
+
+• Family photos, records, and stories can easily be passed on
+
+• Business needs of data permanence can be met
+
+• Academic research can be shared and built upon in open dialogue 
+
+• Web pages can be archived and shared without any more broken links
+
+• Digital art and content creators can take ownership of their work with NFTs
+
+
+
+Try ArDrive and feel the difference permanence makes!

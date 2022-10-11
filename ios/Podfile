@@ -52,6 +52,10 @@ post_install do |installer|
           ## dart: PermissionGroup.mediaLibrary
           'PERMISSION_MEDIA_LIBRARY=1',
         ]
+
+        config.build_settings['EXPANDED_CODE_SIGN_IDENTITY'] = ""
+        config.build_settings['CODE_SIGNING_REQUIRED'] = "NO"
+        config.build_settings['CODE_SIGNING_ALLOWED'] = "NO"
       end
   end
 end

@@ -1,9 +1,11 @@
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:platform/platform.dart';
 
 import 'entities.dart';
 
@@ -34,7 +36,8 @@ abstract class Entity {
     final packageInfo = await PackageInfo.fromPlatform();
 
     addEntityTagsToTransaction(tx);
-    tx.addApplicationTags(version: packageInfo.version, unixTime: createdAt);
+    await tx.addApplicationTags(
+        version: packageInfo.version, unixTime: createdAt);
     return tx;
   }
 
@@ -43,13 +46,19 @@ abstract class Entity {
   /// The `owner` on this [DataItem] will be unset.
   ///
   /// If a key is provided, the data item data is encrypted.
-  Future<DataItem> asDataItem([SecretKey? key]) async {
+  Future<DataItem> asDataItem(
+    SecretKey? key, {
+    Platform platform = const LocalPlatform(),
+  }) async {
     final item = key == null
         ? DataItem.withJsonData(data: this)
         : await createEncryptedEntityDataItem(this, key);
     final packageInfo = await PackageInfo.fromPlatform();
     addEntityTagsToTransaction(item);
-    item.addApplicationTags(version: packageInfo.version);
+    await item.addApplicationTags(
+      version: packageInfo.version,
+      platform: platform,
+    );
 
     return item;
   }
@@ -78,9 +87,13 @@ class EntityTransactionDataNetworkException implements Exception {
 extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the app name, version, and the specified unix time.
   /// https://ardrive.atlassian.net/wiki/spaces/ENGINEERIN/pages/277544961/Data+Model
-  /// TODO: Split App-Name into App-Name and Client
-  void addApplicationTags({required String version, DateTime? unixTime}) {
-    addTag(EntityTag.appName, 'ArDrive-Web');
+  Future<void> addApplicationTags({
+    required String version,
+    DateTime? unixTime,
+    Platform platform = const LocalPlatform(),
+  }) async {
+    addTag(EntityTag.appName, 'ArDrive-App');
+    addTag(EntityTag.appPlatform, getPlatform(platform: platform));
     addTag(EntityTag.appVersion, version);
     addTag(
         EntityTag.unixTime,

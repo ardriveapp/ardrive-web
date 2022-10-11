@@ -1,20 +1,30 @@
 import "../../Fastfile"
 
-ios_firebase_app_id = "1:305132849030:ios:06ea33a95a2e0d42ffce07"
-
 # Update fastlane
 update_fastlane
 
 default_platform(:ios)
 
+build_number = ENV['BUILD_NUMBER'] ? ENV['BUILD_NUMBER'] : 0
+ios_firebase_app_id = "1:305132849030:ios:06ea33a95a2e0d42ffce07"
+
 platform :ios do
-  lane :build_adhoc do
+  lane :build do |options|
+    if options[:type].nil? then
+      return
+    end
+
+    isProd = options[:type] == 'production'
+    build_types = get_build_type(options[:type])
+    type = build_types["ios_type"]
+    export_method = build_types["ios_export_method"]
+
     # Setup keychain if CI
     setup_ci if is_ci
 
     # Download and install adhoc certificate and profile
     match(
-      type: "adhoc",
+      type: type,
       app_identifier: "io.ardrive.app",
       force_for_new_devices: true
     )
@@ -26,25 +36,29 @@ platform :ios do
     # Pod install
     sh("bundle", "exec", "pod", "install")
 
-    # Set CI build number if CI
-    if is_ci
-      increment_build_number(
-        build_number: ENV['BUILD_NUMBER']
-      )
-    end
+    # Set build number
+    increment_build_number(
+      build_number: build_number
+    )
 
     # Build iOS project and generate an ad-hoc signed ipa
     build_ios_app(
       workspace: "Runner.xcworkspace",
       scheme: "Runner",
-      include_bitcode: true,
-      export_method: "ad-hoc",
+      export_method: export_method,
       clean: true,
+      include_bitcode: false,
     )
   end
 
-  lane :deploy_adhoc do
-    build_adhoc
+  lane :deploy do |options|
+    if options[:type].nil? then
+      return
+    end
+
+    isProd = options[:type] == 'production'
+
+    build(type: options[:type]);
 
     # Distribute to Firebase
     firebase_app_distribution(
@@ -53,6 +67,11 @@ platform :ios do
       service_credentials_file: ENV['FIREBASE_JSON'],
       groups: "Testers"
     )
+
+    # if isProd then
+    #   # Send to App Store
+    #   upload_to_app_store
+    # end
   end
 
   lane :update_release_url do
