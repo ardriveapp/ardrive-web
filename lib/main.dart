@@ -31,10 +31,42 @@ late ConfigService configService;
 late AppConfig config;
 late ArweaveService arweave;
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  String? flavor =
+      await const MethodChannel('flavor').invokeMethod<String>('getFlavor');
+  
+  print('STARTED WITH FLAVOR $flavor');
+  
+  if(flavor == 'development') {
+    _runWithCrashlytics();
+  } else {
+    _runWithoutCrashlytics();
+  }
+}
+
+Future<void> _runWithoutCrashlytics() {
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
+  );
+
+  configService = ConfigService();
+
+  config = await configService.getConfig(
+    localStore: await LocalKeyValueStore.getInstance(),
+  );
+
+  arweave = ArweaveService(
+      Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
+
+  refreshHTMLPageAtInterval(const Duration(hours: 12));
+
+  runApp(const App());
+}
+
+Future<void> _runWithCrashlytics() {
   runZonedGuarded<Future<void>>(
     () async {
-      WidgetsFlutterBinding.ensureInitialized();
-
       SystemChrome.setSystemUIOverlayStyle(
         const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
       );
