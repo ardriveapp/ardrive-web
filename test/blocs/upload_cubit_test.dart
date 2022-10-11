@@ -365,11 +365,10 @@ void main() {
           },
           act: (cubit) async {
             await cubit.startUploadPreparation();
-            await cubit.prepareUploadPlanAndCostEstimates();
+            await cubit.checkFilesAboveLimit();
           },
           expect: () => <dynamic>[
             UploadPreparationInitialized(),
-            const TypeMatcher<UploadPreparationInProgress>(),
             UploadFileTooLarge(
                 hasFilesToUpload: false,
                 tooLargeFileNames: [tTooLargeFiles.first.getIdentifier()],
