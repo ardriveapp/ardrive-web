@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'dart:async';
-
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
@@ -17,7 +15,6 @@ import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
-import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
@@ -44,17 +41,21 @@ void main() async {
 
   String? flavor =
       await const MethodChannel('flavor').invokeMethod<String>('getFlavor');
-  
-  print('STARTED WITH FLAVOR $flavor');
-  
-  if(flavor == 'development') {
-    _runWithCrashlytics();
-  } else {
-    _runWithoutCrashlytics();
+
+  debugPrint('STARTED WITH FLAVOR $flavor');
+
+  if (flavor == 'development') {
+    debugPrint('Starting with crashlytics');
+
+    return _runWithCrashlytics(flavor!);
   }
+
+  debugPrint('Starting without crashlytics');
+
+  _runWithoutCrashlytics();
 }
 
-Future<void> _runWithoutCrashlytics() {
+Future<void> _runWithoutCrashlytics() async {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
   );
@@ -75,9 +76,12 @@ Future<void> _runWithoutCrashlytics() {
   runApp(const App());
 }
 
-Future<void> _runWithCrashlytics() {
+Future<void> _runWithCrashlytics(String flavor) async {
   runZonedGuarded<Future<void>>(
     () async {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
       SystemChrome.setSystemUIOverlayStyle(
         const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
       );
@@ -92,9 +96,8 @@ Future<void> _runWithCrashlytics() {
           Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
       refreshHTMLPageAtInterval(const Duration(hours: 12));
 
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+      FirebaseCrashlytics.instance
+          .log('Starting application with crashlytics for $flavor');
 
       // Pass all uncaught errors from the framework to Crashlytics.
       FlutterError.onError =

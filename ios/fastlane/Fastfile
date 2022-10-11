@@ -44,7 +44,7 @@ platform :ios do
     # Build iOS project and generate an ad-hoc signed ipa
     build_ios_app(
       workspace: "Runner.xcworkspace",
-      scheme: "Runner",
+      scheme: "development",
       export_method: export_method,
       clean: true,
       include_bitcode: false,
