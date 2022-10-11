@@ -1,5 +1,7 @@
 class EntityTag {
   static const appName = 'App-Name';
+  static const appPlatform = 'App-Platform';
+  static const appPlatformVersion = 'App-Platform-Version';
   static const appVersion = 'App-Version';
   static const contentType = 'Content-Type';
   static const unixTime = 'Unix-Time';

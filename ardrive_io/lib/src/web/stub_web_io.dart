@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:ardrive_io/src/file_provider.dart';
 
 class WebIO implements ArDriveIO {
   WebIO({

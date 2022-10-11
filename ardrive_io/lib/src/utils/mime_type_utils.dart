@@ -13,6 +13,7 @@ String? lookupMimeType(String path, {List<int>? headerBytes}) {
   if (pathMatch != null) {
     return applicationGZip;
   }
+
   return mime.lookupMimeType(path, headerBytes: headerBytes);
 }
 

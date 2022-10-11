@@ -8,6 +8,7 @@ import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:platform/platform.dart';
 
 part 'manifest_data.g.dart';
 
@@ -51,10 +52,16 @@ class ManifestData {
   int get size => jsonData.lengthInBytes;
   Uint8List get jsonData => utf8.encode(json.encode(this)) as Uint8List;
 
-  Future<DataItem> asPreparedDataItem({required ArweaveAddress owner}) async {
+  Future<DataItem> asPreparedDataItem({
+    required ArweaveAddress owner,
+    Platform platform = const LocalPlatform(),
+  }) async {
     final manifestDataItem = DataItem.withBlobData(data: jsonData)
       ..setOwner(owner)
-      ..addApplicationTags(version: (await PackageInfo.fromPlatform()).version)
+      ..addApplicationTags(
+        version: (await PackageInfo.fromPlatform()).version,
+        platform: platform,
+      )
       ..addTag(EntityTag.contentType, ContentType.manifest);
 
     return manifestDataItem;

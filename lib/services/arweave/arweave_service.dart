@@ -14,6 +14,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:platform/platform.dart';
 import 'package:retry/retry.dart';
 
 import 'error/gateway_response_handler.dart';
@@ -687,8 +688,9 @@ class ArweaveService {
     Entity entity,
     Wallet wallet, [
     SecretKey? key,
+    Platform platform = const LocalPlatform(),
   ]) async {
-    final item = await entity.asDataItem(key);
+    final item = await entity.asDataItem(key, platform: platform);
     item.setOwner(await wallet.getOwner());
 
     await item.sign(wallet);

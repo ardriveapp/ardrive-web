@@ -12,19 +12,20 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final Drive currentDrive;
   final bool hasWritePermissions;
   final bool driveIsEmpty;
+  final bool multiselect;
 
   final FolderWithContents folderInView;
 
   final DriveOrder contentOrderBy;
   final OrderingMode contentOrderingMode;
 
-  final SelectedItem? maybeSelectedItem;
+  final List<SelectedItem> selectedItems;
   final bool showSelectedItemDetails;
 
   /// The preview URL for the selected file.
   ///
   /// Null if no file is selected.
-  final Uri? selectedFilePreviewUrl;
+  final String? selectedFilePreviewUrl;
 
   final int rowsPerPage;
   final List<int> availableRowsPerPage;
@@ -38,7 +39,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.contentOrderingMode,
     required this.rowsPerPage,
     required this.availableRowsPerPage,
-    this.maybeSelectedItem,
+    required this.multiselect,
+    this.selectedItems = const [],
     this.showSelectedItemDetails = false,
     this.selectedFilePreviewUrl,
     required this.driveIsEmpty,
@@ -50,20 +52,22 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     FolderWithContents? folderInView,
     DriveOrder? contentOrderBy,
     OrderingMode? contentOrderingMode,
-    SelectedItem? maybeSelectedItem,
+    List<SelectedItem>? selectedItems,
     bool? showSelectedItemDetails,
-    Uri? selectedFilePreviewUrl,
+    String? selectedFilePreviewUrl,
     int? rowsPerPage,
     List<int>? availableRowsPerPage,
     bool? driveIsEmpty,
+    bool? multiselect,
   }) =>
       DriveDetailLoadSuccess(
         currentDrive: currentDrive ?? this.currentDrive,
+        multiselect: multiselect ?? this.multiselect,
         hasWritePermissions: hasWritePermissions ?? this.hasWritePermissions,
         folderInView: folderInView ?? this.folderInView,
         contentOrderBy: contentOrderBy ?? this.contentOrderBy,
         contentOrderingMode: contentOrderingMode ?? this.contentOrderingMode,
-        maybeSelectedItem: maybeSelectedItem ?? this.maybeSelectedItem,
+        selectedItems: selectedItems ?? this.selectedItems,
         showSelectedItemDetails:
             showSelectedItemDetails ?? this.showSelectedItemDetails,
         selectedFilePreviewUrl:
@@ -83,11 +87,13 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         selectedFilePreviewUrl,
         rowsPerPage,
         availableRowsPerPage,
-        maybeSelectedItem,
+        selectedItems,
         _equatableBust,
         driveIsEmpty,
+        multiselect,
       ];
-
+  SelectedItem? maybeSelectedItem() =>
+      selectedItems.isNotEmpty ? selectedItems.first : null;
   bool isViewingRootFolder() =>
       folderInView.folder.id != currentDrive.rootFolderId;
 }

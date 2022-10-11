@@ -3,20 +3,24 @@ import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/mime_lookup.dart';
+import 'package:ardrive_io/ardrive_io.dart'
+    show getDirname, lookupMimeTypeWithDefaultType;
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:platform/platform.dart';
 import 'package:uuid/uuid.dart';
 
 class UploadPlanUtils {
   UploadPlanUtils({
     required this.arweave,
     required this.driveDao,
-  });
+    Platform platform = const LocalPlatform(),
+  }) : _platform = platform;
 
   final ArweaveService arweave;
   final DriveDao driveDao;
   final _uuid = const Uuid();
+  final Platform _platform;
 
   Future<UploadPlan> filesToUploadPlan({
     required List<UploadFile> files,
@@ -39,14 +43,16 @@ class UploadPlanUtils {
       // If path is a blob from drag and drop, use file name. Else use the path field from folder upload
       final filePath = '${targetFolder.path}/${file.getIdentifier()}';
 
+      final parentFolderId = foldersByPath[getDirname(file.getIdentifier())];
+
       final fileSize = await file.ioFile.length;
       final fileEntity = FileEntity(
         driveId: targetDrive.id,
         name: fileName,
         size: fileSize,
         lastModifiedDate: file.ioFile.lastModifiedDate,
-        parentFolderId: file.parentFolderId,
-        dataContentType: lookupMimeType(fileName) ?? 'application/octet-stream',
+        parentFolderId: parentFolderId?.id ?? file.parentFolderId,
+        dataContentType: lookupMimeTypeWithDefaultType(fileName),
       );
 
       // If this file conflicts with one that already exists in the target folder reuse the id of the conflicting file.
@@ -69,6 +75,7 @@ class UploadPlanUtils {
           arweave: arweave,
           wallet: wallet,
           revisionAction: revisionAction,
+          platform: _platform,
         );
       } else {
         fileV2UploadHandles[fileEntity.id!] = FileV2UploadHandle(
@@ -104,12 +111,16 @@ class UploadPlanUtils {
   ///Returns a sorted list of folders (root folder first) from a list of files
   ///with paths
   static Map<String, WebFolder> generateFoldersForFiles(
-      List<UploadFile> files) {
+    List<UploadFile> files,
+  ) {
     final foldersByPath = <String, WebFolder>{};
 
     // Generate folders
     for (var file in files) {
-      final path = file.ioFile.path;
+      final relativeTo = file.relativeTo;
+      final path = relativeTo != null
+          ? file.ioFile.path.replaceFirst('$relativeTo/', '')
+          : file.ioFile.path;
       final folderPath = path.split('/');
       folderPath.removeLast();
       for (var i = 0; i < folderPath.length; i++) {

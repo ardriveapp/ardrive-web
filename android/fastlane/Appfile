@@ -1,2 +1,1 @@
-package_name("io.ardrive.app") # The bundle identifier of your app
-
+package_name("io.ardrive.app")

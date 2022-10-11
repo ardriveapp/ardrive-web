@@ -3,13 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:ardrive_io/src/io_exception.dart';
-import 'package:ardrive_io/src/utils/mime_type_utils.dart';
-import 'package:ardrive_io/src/utils/path_utils.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart';
-
-import 'io_entity.dart';
+import 'package:flutter/material.dart';
 
 /// Base class for agnostic platform Files.
 ///
@@ -24,10 +21,15 @@ abstract class IOFile implements IOEntity {
 
   static final IOFileAdapter _ioFileAdapter = IOFileAdapter();
 
-  static Future<IOFile> fromData(Uint8List bytes,
-          {required String name, required DateTime lastModifiedDate}) async =>
+  static Future<IOFile> fromData(
+    Uint8List bytes, {
+    required String name,
+    required DateTime lastModifiedDate,
+    String? contentType,
+  }) async =>
       _ioFileAdapter.fromData(
         bytes,
+        contentType: contentType,
         name: name,
         lastModifiedDate: lastModifiedDate,
       );
@@ -40,7 +42,10 @@ abstract class IOFile implements IOEntity {
 /// - dart:io: `File`
 /// - using an Uint8List to mount a file using its bytes in memory
 class IOFileAdapter {
-  Future<IOFile> fromFilePicker(PlatformFile result) async {
+  Future<IOFile> fromFilePicker(
+    PlatformFile result, {
+    bool getFromCache = false,
+  }) async {
     final resultFilePath = result.path;
 
     if (resultFilePath == null) {
@@ -53,13 +58,33 @@ class IOFileAdapter {
     final fileName = result.name;
     final contentType = lookupMimeTypeWithDefaultType(file.path);
 
-    return _IOFile(
+    final ioFile = _IOFile(
       file,
       name: fileName,
-      path: file.path,
+      path: resultFilePath,
       contentType: contentType,
       lastModifiedDate: lastModified,
     );
+
+    if (getFromCache) {
+      final cache = IOCacheStorage();
+
+      final cachePath = await cache.saveEntityOnCacheDir(ioFile);
+
+      debugPrint('Saving on cache: $cachePath');
+
+      return _IOFile(
+        File(cachePath),
+        name: fileName,
+        path: cachePath,
+        contentType: contentType,
+        lastModifiedDate: lastModified,
+      );
+    } else {
+      debugPrint('Using default path from file picker');
+
+      return ioFile;
+    }
   }
 
   Future<IOFile> fromFile(File file) async {
@@ -103,13 +128,15 @@ class IOFileAdapter {
 
   /// Mounts a `_DataFile` with the given bytes.
   /// The path will always we a empty string since it only abstract the bytes in memory into a `_DataFile`
-  Future<IOFile> fromData(Uint8List bytes,
-      {required String name, required DateTime lastModifiedDate}) async {
-    final contentType = lookupMimeTypeWithDefaultType(name);
-
+  Future<IOFile> fromData(
+    Uint8List bytes, {
+    required String name,
+    required DateTime lastModifiedDate,
+    String? contentType,
+  }) async {
     return _DataFile(
       bytes,
-      contentType: contentType,
+      contentType: contentType ?? lookupMimeTypeWithDefaultType(name),
       path: '',
       lastModifiedDate: lastModifiedDate,
       name: name,

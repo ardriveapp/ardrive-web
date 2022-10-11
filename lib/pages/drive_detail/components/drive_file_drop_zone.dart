@@ -49,7 +49,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
               onDrop: (htmlFile) => _onDrop(
                 htmlFile,
                 driveId: widget.driveId,
-                folderId: widget.folderId,
+                parentFolderId: widget.folderId,
                 context: context,
               ),
               onHover: _onHover,
@@ -66,7 +66,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
     htmlFile, {
     required BuildContext context,
     required String driveId,
-    required String folderId,
+    required String parentFolderId,
   }) async {
     if (!isCurrentlyShown) {
       isCurrentlyShown = true;
@@ -81,7 +81,10 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
             name: await controller.getFilename(htmlFile),
             lastModifiedDate: await controller.getFileLastModified(htmlFile));
 
-        selectedFiles.add(UploadFile(ioFile: ioFile, parentFolderId: folderId));
+        selectedFiles.add(UploadFile(
+          ioFile: ioFile,
+          parentFolderId: parentFolderId,
+        ));
       } catch (e) {
         await showDialog(
           context: context,
@@ -112,7 +115,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
                 driveDao: context.read<DriveDao>(),
               ),
               driveId: driveId,
-              folderId: folderId,
+              parentFolderId: parentFolderId,
               files: selectedFiles,
               arweave: context.read<ArweaveService>(),
               pst: context.read<PstService>(),
