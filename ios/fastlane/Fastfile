@@ -41,10 +41,12 @@ platform :ios do
       build_number: build_number
     )
 
+    flavor = isProd ? 'production' : 'development'
+
     # Build iOS project and generate an ad-hoc signed ipa
     build_ios_app(
       workspace: "Runner.xcworkspace",
-      scheme: "development",
+      scheme: flavor,
       export_method: export_method,
       clean: true,
       include_bitcode: false,
