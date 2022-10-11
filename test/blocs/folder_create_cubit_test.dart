@@ -1,18 +1,20 @@
-@Tags(['broken'])
-
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:test/test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../test_utils/fakes.dart';
 import '../test_utils/utils.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.setMockInitialValues({});
+
   group('FolderCreateCubit:', () {
     late DriveDao driveDao;
     late Database db;

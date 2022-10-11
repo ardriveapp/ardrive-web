@@ -1,5 +1,3 @@
-@Tags(['broken'])
-
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -43,13 +41,13 @@ void main() {
     const ownerAddress = 'owner-address';
     const validRootFolderId = 'valid-root-folder-id';
     const notFoundDriveId = 'not-found-drive-id';
+    db = getTestDb();
 
     setUp(() {
       registerFallbackValue(SyncStateFake());
       registerFallbackValue(ProfileStateFake());
       registerFallbackValue(DrivesStateFake());
 
-      db = getTestDb();
       driveDao = db.driveDao;
 
       arweave = MockArweaveService();
