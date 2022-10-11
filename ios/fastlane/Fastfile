@@ -18,6 +18,7 @@ platform :ios do
     build_types = get_build_type(options[:type])
     type = build_types["ios_type"]
     export_method = build_types["ios_export_method"]
+    flavor = build_types["ios_flavor"]
 
     # Setup keychain if CI
     setup_ci if is_ci
@@ -40,8 +41,6 @@ platform :ios do
     increment_build_number(
       build_number: build_number
     )
-
-    flavor = isProd ? 'production' : 'development'
 
     # Build iOS project and generate an ad-hoc signed ipa
     build_ios_app(
