@@ -14,6 +14,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'components.dart';
 
@@ -22,7 +23,6 @@ Future<void> promptToUpload(
   required String driveId,
   required String parentFolderId,
   required bool isFolderUpload,
-  required String version,
 }) async {
   final selectedFiles = <UploadFile>[];
   final io = ArDriveIO();
@@ -50,6 +50,9 @@ Future<void> promptToUpload(
 
     selectedFiles.addAll(uploadFiles);
   }
+
+  final packageInfo = await PackageInfo.fromPlatform();
+  final String version = packageInfo.version;
 
   // ignore: use_build_context_synchronously
   await showCongestionDependentModalDialog(

@@ -41,11 +41,8 @@ part 'components/fs_entry_preview_widget.dart';
 part 'components/fs_entry_side_sheet.dart';
 
 class DriveDetailPage extends StatefulWidget {
-  final String version;
-
   const DriveDetailPage({
     Key? key,
-    required this.version,
   }) : super(key: key);
 
   @override
@@ -150,7 +147,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       DriveFileDropZone(
                         driveId: state.currentDrive.id,
                         folderId: state.folderInView.folder.id,
-                        version: widget.version,
                       ),
                   ],
                 ),
@@ -202,9 +198,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             state.hasWritePermissions),
                                 ],
                               ),
-                              PlusButton(
-                                version: widget.version,
-                              ),
+                              const PlusButton(),
                             ],
                           ),
                         ),

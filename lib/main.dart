@@ -24,7 +24,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 
 import 'blocs/blocs.dart';
 import 'models/models.dart';
@@ -49,9 +48,6 @@ void main() async {
     const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
   );
 
-  final packageInfo = await PackageInfo.fromPlatform();
-  final String version = packageInfo.version;
-
   arweave = ArweaveService(
     Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
   );
@@ -59,9 +55,7 @@ void main() async {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
   }
 
-  runApp(App(
-    version: version,
-  ));
+  runApp(const App());
 }
 
 void refreshHTMLPageAtInterval(Duration duration) {
@@ -69,12 +63,7 @@ void refreshHTMLPageAtInterval(Duration duration) {
 }
 
 class App extends StatefulWidget {
-  final String version;
-
-  const App({
-    Key? key,
-    required this.version,
-  }) : super(key: key);
+  const App({Key? key}) : super(key: key);
 
   @override
   AppState createState() => AppState();
@@ -85,9 +74,7 @@ class AppState extends State<App> {
   final _routeInformationParser = AppRouteInformationParser();
 
   AppState() {
-    _routerDelegate = AppRouterDelegate(
-      version: widget.version,
-    );
+    _routerDelegate = AppRouterDelegate();
   }
 
   @override

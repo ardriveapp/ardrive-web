@@ -12,12 +12,10 @@ import 'utils/app_localizations_wrapper.dart';
 
 class AppShell extends StatefulWidget {
   final Widget page;
-  final String version;
 
   const AppShell({
     Key? key,
     required this.page,
-    required this.version,
   }) : super(key: key);
 
   @override
@@ -137,9 +135,7 @@ class AppShellState extends State<AppShell> {
             desktop: _buildPage(
               Row(
                 children: [
-                  AppDrawer(
-                    version: widget.version,
-                  ),
+                  const AppDrawer(),
                   Expanded(
                     child: Scaffold(
                       appBar: _buildAppBar(),
@@ -152,9 +148,7 @@ class AppShellState extends State<AppShell> {
             mobile: _buildPage(
               Scaffold(
                 appBar: _buildAppBar(),
-                drawer: AppDrawer(
-                  version: widget.version,
-                ),
+                drawer: const AppDrawer(),
                 body: Row(
                   children: [
                     Expanded(

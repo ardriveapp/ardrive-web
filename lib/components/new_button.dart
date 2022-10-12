@@ -14,7 +14,6 @@ Widget buildNewButton(
   required ProfileState profileState,
   required DriveDetailState driveDetailState,
   bool isPlusButton = false,
-  required String version,
 }) {
   final width = MediaQuery.of(context).size.width;
   final menuItems = _buildItems(
@@ -22,7 +21,6 @@ Widget buildNewButton(
     driveDetailState: driveDetailState,
     profileState: profileState,
     drivesState: drivesState,
-    version: version,
   );
   double menuHeight = 0;
   for (var element in menuItems) {
@@ -39,7 +37,6 @@ Widget buildNewButton(
     onSelected: (callback) => callback(context),
     itemBuilder: (context) => menuItems,
     rotable: isPlusButton,
-    version: version,
     child: button,
   );
 }
@@ -67,7 +64,6 @@ class PopupMenuButtonRotable<T> extends StatefulWidget {
   final double? iconSize;
   final BoxConstraints? constraints;
   final PopupMenuPosition position;
-  final String version;
 
   const PopupMenuButtonRotable({
     bool rotable = false,
@@ -90,7 +86,6 @@ class PopupMenuButtonRotable<T> extends StatefulWidget {
     this.enableFeedback,
     this.constraints,
     this.position = PopupMenuPosition.over,
-    required this.version,
   })  : _rotable = rotable,
         super(key: key);
 
@@ -219,7 +214,6 @@ List<PopupMenuEntry<Function>> _buildItems(
   required DrivesState drivesState,
   required ProfileState profileState,
   required DriveDetailState driveDetailState,
-  required String version,
 }) {
   if (profileState.runtimeType == ProfileLoggedIn) {
     final minimumWalletBalance = BigInt.from(10000000);
@@ -233,13 +227,11 @@ List<PopupMenuEntry<Function>> _buildItems(
           context,
           driveDetailState,
           hasMinBalance,
-          version: version,
         ),
         _buildUploadFolderItem(
           context,
           driveDetailState,
           hasMinBalance,
-          version: version,
         ),
         const PopupMenuDivider(key: Key('divider-2')),
       },
@@ -293,9 +285,8 @@ PopupMenuEntry<Function> _buildNewFolderItem(
 PopupMenuEntry<Function> _buildUploadFileItem(
   context,
   DriveDetailLoadSuccess state,
-  bool hasMinBalance, {
-  required String version,
-}) {
+  bool hasMinBalance,
+) {
   return _buildMenuItemTile(
     context: context,
     isEnabled: state.hasWritePermissions && hasMinBalance,
@@ -308,7 +299,6 @@ PopupMenuEntry<Function> _buildUploadFileItem(
       driveId: state.currentDrive.id,
       parentFolderId: state.folderInView.folder.id,
       isFolderUpload: false,
-      version: version,
     ),
   );
 }
@@ -316,9 +306,8 @@ PopupMenuEntry<Function> _buildUploadFileItem(
 PopupMenuEntry<Function> _buildUploadFolderItem(
   context,
   DriveDetailLoadSuccess state,
-  bool hasMinBalance, {
-  required String version,
-}) {
+  bool hasMinBalance,
+) {
   return _buildMenuItemTile(
     context: context,
     isEnabled: state.hasWritePermissions && hasMinBalance,
@@ -331,7 +320,6 @@ PopupMenuEntry<Function> _buildUploadFolderItem(
       driveId: state.currentDrive.id,
       parentFolderId: state.folderInView.folder.id,
       isFolderUpload: true,
-      version: version,
     ),
   );
 }

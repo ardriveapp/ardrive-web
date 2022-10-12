@@ -11,17 +11,16 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class DriveFileDropZone extends StatefulWidget {
   final String driveId;
   final String folderId;
-  final String version;
 
   const DriveFileDropZone({
     Key? key,
     required this.driveId,
     required this.folderId,
-    required this.version,
   }) : super(key: key);
 
   @override
@@ -109,6 +108,9 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
         return;
       }
 
+      final packageInfo = await PackageInfo.fromPlatform();
+      final version = packageInfo.version;
+
       await showCongestionDependentModalDialog(
         context,
         () => showDialog(
@@ -118,7 +120,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
               uploadPlanUtils: UploadPlanUtils(
                 arweave: context.read<ArweaveService>(),
                 driveDao: context.read<DriveDao>(),
-                version: widget.version,
+                version: version,
               ),
               driveId: driveId,
               parentFolderId: parentFolderId,

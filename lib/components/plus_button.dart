@@ -10,12 +10,7 @@ import '../blocs/blocs.dart';
 /// **Note** In order for this Widget to be positioned absolute to the whole
 /// screen it needs to be (grand)child of a Stack widget.
 class PlusButton extends StatelessWidget {
-  final String version;
-
-  const PlusButton({
-    Key? key,
-    required this.version,
-  }) : super(key: key);
+  const PlusButton({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +38,6 @@ class PlusButton extends StatelessWidget {
                   ),
                   onPressed: null,
                 ),
-                version: version,
               ),
             ),
           ),
