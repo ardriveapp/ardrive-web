@@ -13,13 +13,11 @@ class UploadPlanUtils {
   UploadPlanUtils({
     required this.arweave,
     required this.driveDao,
-    required String version,
-  }) : _version = version;
+  });
 
   final ArweaveService arweave;
   final DriveDao driveDao;
   final _uuid = const Uuid();
-  final String _version;
 
   Future<UploadPlan> filesToUploadPlan({
     required List<UploadFile> files,
@@ -74,7 +72,6 @@ class UploadPlanUtils {
           arweave: arweave,
           wallet: wallet,
           revisionAction: revisionAction,
-          version: _version,
         );
       } else {
         fileV2UploadHandles[fileEntity.id!] = FileV2UploadHandle(
@@ -84,7 +81,6 @@ class UploadPlanUtils {
           driveKey: driveKey,
           fileKey: fileKey,
           revisionAction: revisionAction,
-          version: _version,
         );
       }
     }

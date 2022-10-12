@@ -10,6 +10,7 @@ import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 // Number of data items returned by this handle
 const fileDataItemEntityCount = 2;
@@ -21,7 +22,6 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   final SecretKey? driveKey;
   final SecretKey? fileKey;
   final String revisionAction;
-  final String _version;
 
   /// The size of the file before it was encoded/encrypted for upload.
   @override
@@ -51,8 +51,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     required this.wallet,
     this.driveKey,
     this.fileKey,
-    required String version,
-  }) : _version = version;
+  });
 
   Future<void> writeFileEntityToDatabase({
     required String bundledInTxId,
@@ -75,8 +74,10 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
         : DataItem.withBlobData(data: fileData);
     dataTx.setOwner(await wallet.getOwner());
 
+    final packageInfo = await PackageInfo.fromPlatform();
+    final String version = packageInfo.version;
     dataTx.addApplicationTags(
-      version: _version,
+      version: version,
     );
 
     // Don't include the file's Content-Type tag if it is meant to be private.
@@ -101,7 +102,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     return [entityTx, dataTx];
   }
 
-  int _estimateEntityDataItemSize() {
+  Future<int> _estimateEntityDataItemSize() async {
     final fakeTags = createFakeEntityTags(entity);
     if (isPrivate) {
       fakeTags.addAll(fakePrivateTags);
@@ -111,8 +112,10 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
         entity.dataContentType!,
       ));
     }
+    final packageInfo = await PackageInfo.fromPlatform();
+    final String version = packageInfo.version;
     fakeTags.addAll(fakeApplicationTags(
-      version: _version,
+      version: version,
     ));
     return estimateDataItemSize(
       fileDataSize: getEntityJSONSize(),
@@ -135,7 +138,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     return (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
   }
 
-  int _estimatedataTxSize() {
+  Future<int> _estimatedataTxSize() async {
     final fakeTags = <Tag>[];
     if (isPrivate) {
       fakeTags.addAll(fakePrivateTags);
@@ -145,8 +148,10 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
         entity.dataContentType!,
       ));
     }
+    final packageInfo = await PackageInfo.fromPlatform();
+    final String version = packageInfo.version;
     fakeTags.addAll(fakeApplicationTags(
-      version: _version,
+      version: version,
     ));
     return estimateDataItemSize(
       fileDataSize: size,
@@ -155,8 +160,8 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     );
   }
 
-  int estimateDataItemSizes() {
-    return _estimatedataTxSize() + _estimateEntityDataItemSize();
+  Future<int> estimateDataItemSizes() async {
+    return await _estimatedataTxSize() + await _estimateEntityDataItemSize();
   }
 
   @override

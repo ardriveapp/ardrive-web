@@ -8,6 +8,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class FileV2UploadHandle implements UploadHandle {
   final FileEntity entity;
@@ -16,7 +17,6 @@ class FileV2UploadHandle implements UploadHandle {
   final SecretKey? driveKey;
   final SecretKey? fileKey;
   final String revisionAction;
-  final String version;
 
   /// The size of the file before it was encoded/encrypted for upload.
   @override
@@ -41,7 +41,6 @@ class FileV2UploadHandle implements UploadHandle {
     required this.revisionAction,
     this.driveKey,
     this.fileKey,
-    required this.version,
   });
 
   Future<void> writeFileEntityToDatabase({required DriveDao driveDao}) async {
@@ -59,6 +58,8 @@ class FileV2UploadHandle implements UploadHandle {
     required PstService pstService,
   }) async {
     final fileData = await file.ioFile.readAsBytes();
+    final packageInfo = await PackageInfo.fromPlatform();
+    final String version = packageInfo.version;
     dataTx = await arweaveService.client.transactions.prepare(
       isPrivate
           ? await createEncryptedTransaction(fileData, fileKey!)
