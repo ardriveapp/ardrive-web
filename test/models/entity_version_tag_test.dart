@@ -1,4 +1,5 @@
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -49,9 +50,9 @@ void main() {
 
       expect(tx.tags.isEmpty, isTrue);
 
+      SystemPlatform.setMockPlatform(platform: 'Android');
       tx.addApplicationTags(
         version: packageInfo.version,
-        platform: 'Android',
       );
 
       expect(tx.tags.contains(appNameTag), isTrue);
@@ -63,9 +64,9 @@ void main() {
           await getTestTransaction('test/fixtures/signed_v2_tx.json');
       expect(tx.tags.isEmpty, isTrue);
 
+      SystemPlatform.setMockPlatform(platform: 'Android');
       tx.addApplicationTags(
         version: packageInfo.version,
-        platform: 'Android',
       );
       expect(
         tx.tags.contains(
@@ -80,9 +81,9 @@ void main() {
       tx = await getTestTransaction('test/fixtures/signed_v2_tx.json');
       expect(tx.tags.isEmpty, isTrue);
 
+      SystemPlatform.setMockPlatform(platform: 'iOS');
       tx.addApplicationTags(
         version: packageInfo.version,
-        platform: 'iOS',
       );
       expect(
         tx.tags.contains(
@@ -97,9 +98,9 @@ void main() {
       tx = await getTestTransaction('test/fixtures/signed_v2_tx.json');
       expect(tx.tags.isEmpty, isTrue);
 
+      SystemPlatform.setMockPlatform(platform: 'unknown');
       tx.addApplicationTags(
         version: packageInfo.version,
-        platform: 'unknown',
       );
       expect(
         tx.tags.contains(
@@ -114,9 +115,9 @@ void main() {
       tx = await getTestTransaction('test/fixtures/signed_v2_tx.json');
       expect(tx.tags.isEmpty, isTrue);
 
+      SystemPlatform.setMockPlatform(platform: 'Web');
       tx.addApplicationTags(
         version: packageInfo.version,
-        platform: 'Web',
         isWeb: true,
       );
       expect(
@@ -142,7 +143,8 @@ void main() {
         lastModifiedDate: DateTime.now(),
       );
 
-      final tx = await fileEntity.asTransaction(platform: 'unknown');
+      SystemPlatform.setMockPlatform(platform: 'unknwon');
+      final tx = await fileEntity.asTransaction();
       expect(tx.tags.contains(appNameTag), isTrue);
       expect(tx.tags.contains(appVersionTag), isTrue);
     });
@@ -154,8 +156,9 @@ void main() {
         parentFolderId: rootFolderId,
         name: testEntityName,
       );
-      final tx = await folderEntity.asTransaction(platform: 'unknown');
-      tx.addApplicationTags(version: packageInfo.version, platform: 'unknown');
+      SystemPlatform.setMockPlatform(platform: 'unknown');
+      final tx = await folderEntity.asTransaction();
+      tx.addApplicationTags(version: packageInfo.version);
 
       expect(tx.tags.contains(appNameTag), isTrue);
       expect(tx.tags.contains(appVersionTag), isTrue);
@@ -168,8 +171,9 @@ void main() {
         rootFolderId: rootFolderId,
         privacy: DrivePrivacy.public,
       );
-      final tx = await driveEntity.asTransaction(platform: 'unknown');
-      tx.addApplicationTags(version: packageInfo.version, platform: 'unknown');
+      SystemPlatform.setMockPlatform(platform: 'unknown');
+      final tx = await driveEntity.asTransaction();
+      tx.addApplicationTags(version: packageInfo.version);
 
       expect(tx.tags.contains(appNameTag), isTrue);
       expect(tx.tags.contains(appVersionTag), isTrue);

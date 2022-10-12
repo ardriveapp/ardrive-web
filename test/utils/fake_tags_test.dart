@@ -1,4 +1,5 @@
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/bundles/fake_tags.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:platform/platform.dart';
@@ -27,8 +28,8 @@ void main() {
     });
 
     test('contains the expected tags', () async {
-      final tags = await fakeApplicationTags(
-        platform: 'Android',
+      SystemPlatform.setMockPlatform(platform: 'Android');
+      final tags = fakeApplicationTags(
         version: version,
       );
 

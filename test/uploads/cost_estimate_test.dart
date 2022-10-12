@@ -9,6 +9,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/types/winston.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/utils.dart';
@@ -123,10 +124,10 @@ void main() {
         test(
             'returns the expected values for Bundles on platform: "$stubPlatformString"',
             () async {
+          SystemPlatform.setMockPlatform(platform: stubPlatformString);
           uploadPlanUtis = UploadPlanUtils(
             arweave: arweave,
             driveDao: driveDao,
-            platform: stubPlatformString,
             version: version,
           );
 
@@ -180,10 +181,10 @@ void main() {
         test(
             'returns the expected values for v2 on platform: "$stubPlatformString"',
             () async {
+          SystemPlatform.setMockPlatform(platform: stubPlatformString);
           uploadPlanUtis = UploadPlanUtils(
             arweave: arweave,
             driveDao: driveDao,
-            platform: stubPlatformString,
             version: version,
           );
 

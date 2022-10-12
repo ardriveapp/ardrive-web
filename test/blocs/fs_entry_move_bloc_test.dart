@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
@@ -207,9 +208,9 @@ void main() {
 
       driveDao = db.driveDao;
       const arweaveGatewayUrl = 'https://www.fake-arweave-gateway-url.com';
+      SystemPlatform.setMockPlatform(platform: 'unknown');
       arweave = ArweaveService(
         Arweave(gatewayUrl: Uri.parse(arweaveGatewayUrl)),
-        platform: 'unknown',
       );
       syncBloc = MockSyncBloc();
 
