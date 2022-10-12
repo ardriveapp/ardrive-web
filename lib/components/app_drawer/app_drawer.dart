@@ -12,12 +12,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class AppDrawer extends StatelessWidget {
-  final String platform;
   final String version;
 
   const AppDrawer({
     Key? key,
-    required this.platform,
     required this.version,
   }) : super(key: key);
 
@@ -245,7 +243,6 @@ class AppDrawer extends StatelessWidget {
                     profileState: profile,
                     driveDetailState: driveDetailState,
                     button: _buildNewButton(context),
-                    platform: platform,
                     version: version,
                   ),
                 ),
@@ -291,7 +288,6 @@ class AppDrawer extends StatelessWidget {
                 profileState: profileState,
                 driveDetailState: driveDetailState,
                 button: _buildNewButton(context),
-                platform: platform,
                 version: version,
               ),
             ),

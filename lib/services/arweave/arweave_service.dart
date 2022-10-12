@@ -26,12 +26,10 @@ class ArweaveService {
   final Arweave client;
 
   final ArtemisClient _gql;
-  late String _platform;
 
   ArweaveService(
     this.client, {
     ArtemisClient? artemisClient,
-    required String platform,
   }) : _gql = artemisClient ??
             ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     _graphQLRetry = GraphQLRetry(_gql);
@@ -51,7 +49,6 @@ class ArweaveService {
         }, retryIf: (exception) {
           return exception is! RateLimitError;
         }));
-    _platform = platform;
   }
 
   int bytesToChunks(int bytes) {
@@ -663,7 +660,7 @@ class ArweaveService {
     SecretKey? key,
   ]) async {
     final tx = await client.transactions.prepare(
-      await entity.asTransaction(key: key, platform: _platform),
+      await entity.asTransaction(key: key),
       wallet,
     );
     await tx.sign(wallet);
@@ -677,7 +674,7 @@ class ArweaveService {
     SecretKey? key,
   ]) async {
     final tx = await client.transactions.prepare(
-      await entity.asTransaction(key: key, platform: _platform),
+      await entity.asTransaction(key: key),
       wallet,
     );
 
@@ -693,7 +690,7 @@ class ArweaveService {
     Wallet wallet, {
     SecretKey? key,
   }) async {
-    final item = await entity.asDataItem(key, platform: _platform);
+    final item = await entity.asDataItem(key);
     item.setOwner(await wallet.getOwner());
 
     await item.sign(wallet);
@@ -713,7 +710,6 @@ class ArweaveService {
       Transaction.withDataBundle(bundleBlob: bundle.blob)
         ..addApplicationTags(
           version: packageInfo.version,
-          platform: _platform,
         ),
       wallet,
     );
@@ -729,7 +725,7 @@ class ArweaveService {
 
     final bundleTx = await client.transactions.prepare(
       Transaction.withDataBundle(bundleBlob: bundleBlob)
-        ..addApplicationTags(version: packageInfo.version, platform: _platform),
+        ..addApplicationTags(version: packageInfo.version),
       wallet,
     );
 

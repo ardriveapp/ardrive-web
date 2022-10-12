@@ -53,13 +53,11 @@ class ManifestData {
 
   Future<DataItem> asPreparedDataItem({
     required ArweaveAddress owner,
-    required String platform,
   }) async {
     final manifestDataItem = DataItem.withBlobData(data: jsonData)
       ..setOwner(owner)
       ..addApplicationTags(
         version: (await PackageInfo.fromPlatform()).version,
-        platform: platform,
       )
       ..addTag(EntityTag.contentType, ContentType.manifest);
 

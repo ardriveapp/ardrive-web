@@ -1,4 +1,5 @@
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
@@ -29,7 +30,6 @@ abstract class Entity {
   /// If a key is provided, the transaction data is encrypted.
   Future<Transaction> asTransaction({
     SecretKey? key,
-    required String platform,
   }) async {
     final tx = key == null
         ? Transaction.withJsonData(data: this)
@@ -41,7 +41,6 @@ abstract class Entity {
     tx.addApplicationTags(
       version: packageInfo.version,
       unixTime: createdAt,
-      platform: platform,
     );
     return tx;
   }
@@ -51,10 +50,7 @@ abstract class Entity {
   /// The `owner` on this [DataItem] will be unset.
   ///
   /// If a key is provided, the data item data is encrypted.
-  Future<DataItem> asDataItem(
-    SecretKey? key, {
-    required String platform,
-  }) async {
+  Future<DataItem> asDataItem(SecretKey? key) async {
     final item = key == null
         ? DataItem.withJsonData(data: this)
         : await createEncryptedEntityDataItem(this, key);
@@ -62,7 +58,6 @@ abstract class Entity {
     addEntityTagsToTransaction(item);
     item.addApplicationTags(
       version: packageInfo.version,
-      platform: platform,
     );
 
     return item;
@@ -95,9 +90,9 @@ extension TransactionUtils on TransactionBase {
   void addApplicationTags({
     required String version,
     DateTime? unixTime,
-    required String platform,
     bool isWeb = kIsWeb,
   }) {
+    final String platform = SystemPlatform.platform;
     addTag(EntityTag.appName, 'ArDrive-App');
     addTag(
       EntityTag.appPlatform,

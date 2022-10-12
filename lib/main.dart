@@ -10,7 +10,6 @@ import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
-import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
@@ -26,7 +25,6 @@ import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:platform/platform.dart';
 
 import 'blocs/blocs.dart';
 import 'models/models.dart';
@@ -52,19 +50,16 @@ void main() async {
   );
 
   final packageInfo = await PackageInfo.fromPlatform();
-  final String platform = getPlatform(platform: const LocalPlatform());
   final String version = packageInfo.version;
 
   arweave = ArweaveService(
     Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
-    platform: platform,
   );
   if (kIsWeb) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
   }
 
   runApp(App(
-    platform: platform,
     version: version,
   ));
 }
@@ -74,12 +69,10 @@ void refreshHTMLPageAtInterval(Duration duration) {
 }
 
 class App extends StatefulWidget {
-  final String platform;
   final String version;
 
   const App({
     Key? key,
-    required this.platform,
     required this.version,
   }) : super(key: key);
 
@@ -93,7 +86,6 @@ class AppState extends State<App> {
 
   AppState() {
     _routerDelegate = AppRouterDelegate(
-      platform: widget.platform,
       version: widget.version,
     );
   }

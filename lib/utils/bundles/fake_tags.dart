@@ -1,4 +1,5 @@
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 
 final fakePrivateTags = [
@@ -11,9 +12,9 @@ final fakePrivateTags = [
 ];
 
 List<Tag> fakeApplicationTags({
-  required String platform,
   required String version,
 }) {
+  final String platform = SystemPlatform.platform;
   return <Tag>[
     Tag(EntityTag.appName, 'ArDrive-App'),
     Tag(EntityTag.appVersion, version),

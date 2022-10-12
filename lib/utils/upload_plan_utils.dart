@@ -13,15 +13,12 @@ class UploadPlanUtils {
   UploadPlanUtils({
     required this.arweave,
     required this.driveDao,
-    required String platform,
     required String version,
-  })  : _platform = platform,
-        _version = version;
+  }) : _version = version;
 
   final ArweaveService arweave;
   final DriveDao driveDao;
   final _uuid = const Uuid();
-  final String _platform;
   final String _version;
 
   Future<UploadPlan> filesToUploadPlan({
@@ -77,7 +74,6 @@ class UploadPlanUtils {
           arweave: arweave,
           wallet: wallet,
           revisionAction: revisionAction,
-          platform: _platform,
           version: _version,
         );
       } else {
@@ -88,7 +84,6 @@ class UploadPlanUtils {
           driveKey: driveKey,
           fileKey: fileKey,
           revisionAction: revisionAction,
-          platform: _platform,
           version: _version,
         );
       }

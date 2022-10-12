@@ -21,3 +21,16 @@ String getPlatform({
       return 'unknown';
   }
 }
+
+class SystemPlatform {
+  static String? _mockPlatform;
+
+  static void setMockPlatform({required String platform}) {
+    // TODO: throw if not inside a test (?
+    _mockPlatform = platform;
+  }
+
+  static get platform {
+    return _mockPlatform ?? getPlatform();
+  }
+}

@@ -21,7 +21,6 @@ import 'components.dart';
 Future<void> promptToCreateManifest(
   BuildContext context, {
   required Drive drive,
-  required String platform,
 }) {
   return showDialog(
     context: context,
@@ -32,7 +31,6 @@ Future<void> promptToCreateManifest(
         arweave: context.read<ArweaveService>(),
         driveDao: context.read<DriveDao>(),
         pst: context.read<PstService>(),
-        platform: platform,
       ),
       child: const CreateManifestForm(),
     ),

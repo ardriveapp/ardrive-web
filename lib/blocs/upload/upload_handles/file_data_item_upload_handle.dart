@@ -21,7 +21,6 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   final SecretKey? driveKey;
   final SecretKey? fileKey;
   final String revisionAction;
-  final String _platform;
   final String _version;
 
   /// The size of the file before it was encoded/encrypted for upload.
@@ -52,10 +51,8 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     required this.wallet,
     this.driveKey,
     this.fileKey,
-    required String platform,
     required String version,
-  })  : _platform = platform,
-        _version = version;
+  }) : _version = version;
 
   Future<void> writeFileEntityToDatabase({
     required String bundledInTxId,
@@ -80,7 +77,6 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
 
     dataTx.addApplicationTags(
       version: _version,
-      platform: _platform,
     );
 
     // Don't include the file's Content-Type tag if it is meant to be private.
@@ -116,7 +112,6 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
       ));
     }
     fakeTags.addAll(fakeApplicationTags(
-      platform: _platform,
       version: _version,
     ));
     return estimateDataItemSize(
@@ -151,7 +146,6 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
       ));
     }
     fakeTags.addAll(fakeApplicationTags(
-      platform: _platform,
       version: _version,
     ));
     return estimateDataItemSize(

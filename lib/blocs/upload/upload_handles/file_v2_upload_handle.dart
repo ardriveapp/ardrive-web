@@ -16,7 +16,6 @@ class FileV2UploadHandle implements UploadHandle {
   final SecretKey? driveKey;
   final SecretKey? fileKey;
   final String revisionAction;
-  final String platform;
   final String version;
 
   /// The size of the file before it was encoded/encrypted for upload.
@@ -42,7 +41,6 @@ class FileV2UploadHandle implements UploadHandle {
     required this.revisionAction,
     this.driveKey,
     this.fileKey,
-    required this.platform,
     required this.version,
   });
 
@@ -67,7 +65,7 @@ class FileV2UploadHandle implements UploadHandle {
           : Transaction.withBlobData(data: fileData),
       wallet,
     )
-      ..addApplicationTags(version: version, platform: platform);
+      ..addApplicationTags(version: version);
 
     await pstService.addCommunityTipToTx(dataTx);
 

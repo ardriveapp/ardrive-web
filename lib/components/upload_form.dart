@@ -22,7 +22,6 @@ Future<void> promptToUpload(
   required String driveId,
   required String parentFolderId,
   required bool isFolderUpload,
-  required String platform,
   required String version,
 }) async {
   final selectedFiles = <UploadFile>[];
@@ -62,7 +61,6 @@ Future<void> promptToUpload(
           uploadPlanUtils: UploadPlanUtils(
             arweave: context.read<ArweaveService>(),
             driveDao: context.read<DriveDao>(),
-            platform: platform,
             version: version,
           ),
           driveId: driveId,

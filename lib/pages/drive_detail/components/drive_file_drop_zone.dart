@@ -15,14 +15,12 @@ import 'package:flutter_dropzone/flutter_dropzone.dart';
 class DriveFileDropZone extends StatefulWidget {
   final String driveId;
   final String folderId;
-  final String platform;
   final String version;
 
   const DriveFileDropZone({
     Key? key,
     required this.driveId,
     required this.folderId,
-    required this.platform,
     required this.version,
   }) : super(key: key);
 
@@ -120,7 +118,6 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
               uploadPlanUtils: UploadPlanUtils(
                 arweave: context.read<ArweaveService>(),
                 driveDao: context.read<DriveDao>(),
-                platform: widget.platform,
                 version: widget.version,
               ),
               driveId: driveId,
