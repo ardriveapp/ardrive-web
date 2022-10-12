@@ -19,7 +19,6 @@ import 'package:flutter_test/flutter_test.dart' show TestWidgetsFlutterBinding;
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
-import '../test_utils/fake_data.dart';
 import '../test_utils/utils.dart';
 
 const stubEntityId = '00000000-0000-0000-0000-000000000000';
@@ -128,7 +127,6 @@ void main() {
           uploadPlanUtis = UploadPlanUtils(
             arweave: arweave,
             driveDao: driveDao,
-            version: version,
           );
 
           final uploadFiles = multipleFilesToUpload
@@ -185,7 +183,6 @@ void main() {
           uploadPlanUtis = UploadPlanUtils(
             arweave: arweave,
             driveDao: driveDao,
-            version: version,
           );
 
           final uploadFiles = singleFileToUpload
@@ -282,8 +279,9 @@ Future<BigInt> expectedCostForAllBundles(
 Future<BigInt> expectedCostForSingleBundle({
   required BundleUploadHandle bundleUploadHandle,
   required ArweaveService arweave,
-}) {
-  return arweave.getPrice(byteSize: bundleUploadHandle.computeBundleSize());
+}) async {
+  return arweave.getPrice(
+      byteSize: await bundleUploadHandle.computeBundleSize());
 }
 
 Future<BigInt> expectedCostForV2Uploads({
