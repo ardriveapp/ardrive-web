@@ -18,17 +18,20 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import 'components.dart';
 
-Future<void> promptToCreateManifest(BuildContext context,
-    {required Drive drive}) {
+Future<void> promptToCreateManifest(
+  BuildContext context, {
+  required Drive drive,
+}) {
   return showDialog(
     context: context,
     builder: (_) => BlocProvider(
       create: (context) => CreateManifestCubit(
-          drive: drive,
-          profileCubit: context.read<ProfileCubit>(),
-          arweave: context.read<ArweaveService>(),
-          driveDao: context.read<DriveDao>(),
-          pst: context.read<PstService>()),
+        drive: drive,
+        profileCubit: context.read<ProfileCubit>(),
+        arweave: context.read<ArweaveService>(),
+        driveDao: context.read<DriveDao>(),
+        pst: context.read<PstService>(),
+      ),
       child: const CreateManifestForm(),
     ),
   );

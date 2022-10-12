@@ -1,6 +1,7 @@
 @Tags(['broken'])
 
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -10,6 +11,7 @@ const gatewayUrl = 'https://arweave.net';
 void main(List<String> args) {
   group('Arweave Service Tests', () {
     //TODO Create and inject mock artemis client
+    SystemPlatform.setMockPlatform(platform: 'unknown');
     final arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(gatewayUrl)),
     );

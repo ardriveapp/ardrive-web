@@ -14,7 +14,6 @@ import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:platform/platform.dart';
 import 'package:retry/retry.dart';
 
 import 'error/gateway_response_handler.dart';
@@ -28,8 +27,10 @@ class ArweaveService {
 
   final ArtemisClient _gql;
 
-  ArweaveService(this.client, [ArtemisClient? artemisClient])
-      : _gql = artemisClient ??
+  ArweaveService(
+    this.client, {
+    ArtemisClient? artemisClient,
+  }) : _gql = artemisClient ??
             ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     _graphQLRetry = GraphQLRetry(_gql);
     httpRetry = HttpRetry(
@@ -659,7 +660,7 @@ class ArweaveService {
     SecretKey? key,
   ]) async {
     final tx = await client.transactions.prepare(
-      await entity.asTransaction(key),
+      await entity.asTransaction(key: key),
       wallet,
     );
     await tx.sign(wallet);
@@ -673,7 +674,7 @@ class ArweaveService {
     SecretKey? key,
   ]) async {
     final tx = await client.transactions.prepare(
-      await entity.asTransaction(key),
+      await entity.asTransaction(key: key),
       wallet,
     );
 
@@ -686,11 +687,10 @@ class ArweaveService {
 
   Future<DataItem> prepareEntityDataItem(
     Entity entity,
-    Wallet wallet, [
+    Wallet wallet, {
     SecretKey? key,
-    Platform platform = const LocalPlatform(),
-  ]) async {
-    final item = await entity.asDataItem(key, platform: platform);
+  }) async {
+    final item = await entity.asDataItem(key);
     item.setOwner(await wallet.getOwner());
 
     await item.sign(wallet);
@@ -708,7 +708,9 @@ class ArweaveService {
 
     final bundleTx = await client.transactions.prepare(
       Transaction.withDataBundle(bundleBlob: bundle.blob)
-        ..addApplicationTags(version: packageInfo.version),
+        ..addApplicationTags(
+          version: packageInfo.version,
+        ),
       wallet,
     );
 

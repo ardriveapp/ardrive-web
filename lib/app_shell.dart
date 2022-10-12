@@ -13,7 +13,10 @@ import 'utils/app_localizations_wrapper.dart';
 class AppShell extends StatefulWidget {
   final Widget page;
 
-  const AppShell({Key? key, required this.page}) : super(key: key);
+  const AppShell({
+    Key? key,
+    required this.page,
+  }) : super(key: key);
 
   @override
   AppShellState createState() => AppShellState();
