@@ -3,7 +3,7 @@ import 'package:platform/platform.dart';
 
 String getPlatform({
   Platform platform = const LocalPlatform(),
-  isWeb = kIsWeb,
+  bool isWeb = kIsWeb,
 }) {
   if (isWeb) {
     return 'Web';
