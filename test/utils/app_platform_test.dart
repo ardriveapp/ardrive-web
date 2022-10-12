@@ -33,4 +33,15 @@ void main() {
       expect(platformString, 'unknown');
     });
   });
+
+  group('SystemPlatform class', () {
+    test('will call getPlatform if not mocked', () {
+      expect(SystemPlatform.platform, 'unknown');
+    });
+
+    test('can mock the platform string', () {
+      SystemPlatform.setMockPlatform(platform: 'abcdefg');
+      expect(SystemPlatform.platform, 'abcdefg');
+    });
+  });
 }
