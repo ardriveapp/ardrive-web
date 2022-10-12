@@ -70,12 +70,8 @@ class App extends StatefulWidget {
 }
 
 class AppState extends State<App> {
-  late AppRouterDelegate _routerDelegate;
+  final AppRouterDelegate _routerDelegate = AppRouterDelegate();
   final _routeInformationParser = AppRouteInformationParser();
-
-  AppState() {
-    _routerDelegate = AppRouterDelegate();
-  }
 
   @override
   Widget build(BuildContext context) => MultiRepositoryProvider(
