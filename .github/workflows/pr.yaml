@@ -25,7 +25,7 @@ jobs:
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.0.5'
+          flutter-version: '3.3.4'
           channel: 'stable'
 
       - name: Build app
@@ -48,7 +48,7 @@ jobs:
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.0.5'
+          flutter-version: '3.3.4'
           channel: 'stable'
 
       - name: Build app
@@ -84,7 +84,7 @@ jobs:
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.0.5'
+          flutter-version: '3.3.4'
           channel: 'stable'
 
       - name: Set FIREBASE_JSON env var
@@ -136,7 +136,7 @@ jobs:
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.0.5'
+          flutter-version: '3.3.4'
           channel: 'stable'
 
       - name: Set FIREBASE_JSON env var
