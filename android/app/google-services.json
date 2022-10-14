@@ -22,48 +22,6 @@
       "api_key": [
         {
           "current_key": "AIzaSyA87mVW7WvBginbuihMcTNONWEMbqJBGvo"
-        },
-        {
-          "current_key": "AIzaSyAGtXxznZ_UM6WcIl8waefKT1DRS67ZvXo"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "305132849030-8d4hbj266o0651co9m5povg5rshdh0la.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "305132849030-0opn0r5k7oa3bcilmvrnqocb97328gln.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.drive"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:305132849030:android:bb6b73b61bf2ae64ffce07",
-        "android_client_info": {
-          "package_name": "io.with"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "305132849030-8d4hbj266o0651co9m5povg5rshdh0la.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyA87mVW7WvBginbuihMcTNONWEMbqJBGvo"
-        },
-        {
-          "current_key": "AIzaSyAGtXxznZ_UM6WcIl8waefKT1DRS67ZvXo"
         }
       ],
       "services": {
