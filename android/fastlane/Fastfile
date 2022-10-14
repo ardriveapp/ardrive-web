@@ -67,15 +67,6 @@ platform :android do
       android_artifact_path: "#{root_path}/build/app/outputs/flutter-apk/app-#{flavor}-release.apk"
     )
 
-    firebase_app_distribution(
-      app: android_firebase_app_id,
-      release_notes: ENV['RELEASE_NOTES'],
-      service_credentials_file: ENV['FIREBASE_JSON'],
-      groups: "Testers",
-      android_artifact_type: "APK",
-      android_artifact_path: "#{root_path}/build/app/outputs/flutter-apk/app-#{flavor}-release.apk"
-    )
-
     if isProd then
       upload_to_play_store(
         track: type,
