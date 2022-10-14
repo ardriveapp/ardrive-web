@@ -37,7 +37,7 @@ class ConfigService {
       case 'development':
         return Flavors.development;
       default:
-        return Flavors.development;
+        throw UnsupportedError('$flavor flavor is not supported.');
     }
   }
 }
