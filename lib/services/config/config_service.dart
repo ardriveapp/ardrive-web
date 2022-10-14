@@ -24,4 +24,22 @@ class ConfigService {
 
     return _config!;
   }
+
+  Future<Flavors> getAppFlavor() async {
+    String? flavor =
+        await const MethodChannel('flavor').invokeMethod<String>('getFlavor');
+
+    debugPrint('STARTED WITH FLAVOR $flavor');
+
+    switch (flavor) {
+      case 'production':
+        return Flavors.production;
+      case 'development':
+        return Flavors.development;
+      default:
+        return Flavors.development;
+    }
+  }
 }
+
+enum Flavors { production, development }

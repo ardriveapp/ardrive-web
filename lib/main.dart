@@ -17,6 +17,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -39,15 +40,19 @@ late ArweaveService arweave;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  String? flavor =
-      await const MethodChannel('flavor').invokeMethod<String>('getFlavor');
+  configService = ConfigService();
 
-  debugPrint('STARTED WITH FLAVOR $flavor');
+  config = await configService.getConfig(
+    localStore: await LocalKeyValueStore.getInstance(),
+  );
 
-  if (flavor == 'development') {
-    debugPrint('Starting with crashlytics');
+  if (!kIsWeb) {
+    final flavor = await configService.getAppFlavor();
 
-    return _runWithCrashlytics(flavor!);
+    if (flavor == Flavors.development) {
+      _runWithCrashlytics(flavor.name);
+      return;
+    }
   }
 
   debugPrint('Starting without crashlytics');
@@ -56,14 +61,13 @@ void main() async {
 }
 
 Future<void> _runWithoutCrashlytics() async {
+  await _initialize();
+  runApp(const App());
+}
+
+Future<void> _initialize() async {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
-  );
-
-  configService = ConfigService();
-
-  config = await configService.getConfig(
-    localStore: await LocalKeyValueStore.getInstance(),
   );
 
   ArDriveDownloader.initialize();
@@ -72,8 +76,6 @@ Future<void> _runWithoutCrashlytics() async {
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
 
   refreshHTMLPageAtInterval(const Duration(hours: 12));
-
-  runApp(const App());
 }
 
 Future<void> _runWithCrashlytics(String flavor) async {
@@ -82,19 +84,7 @@ Future<void> _runWithCrashlytics(String flavor) async {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      SystemChrome.setSystemUIOverlayStyle(
-        const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
-      );
-
-      configService = ConfigService();
-
-      config = await configService.getConfig(
-        localStore: await LocalKeyValueStore.getInstance(),
-      );
-
-      arweave = ArweaveService(
-          Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
-      refreshHTMLPageAtInterval(const Duration(hours: 12));
+      await _initialize();
 
       FirebaseCrashlytics.instance
           .log('Starting application with crashlytics for $flavor');
