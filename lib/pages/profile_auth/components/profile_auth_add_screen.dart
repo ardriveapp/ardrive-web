@@ -218,7 +218,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
 
   void _listenToBiometricChange() {
     context.read<BiometricAuthentication>().enabledStream.listen((event) {
-      if (event != _isEnabled) {
+      if (event != _isEnabled && mounted) {
         setState(() {
           _isEnabled = event;
         });
