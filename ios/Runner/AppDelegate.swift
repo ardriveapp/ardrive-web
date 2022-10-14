@@ -13,14 +13,14 @@ import flutter_downloader
     FlutterDownloaderPlugin.setPluginRegistrantCallback(registerPlugins)
     
     let controller = window.rootViewController as! FlutterViewController
-
+    
     let flavorChannel = FlutterMethodChannel(
         name: "flavor",
         binaryMessenger: controller.binaryMessenger)
 
     flavorChannel.setMethodCallHandler({(call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
         // Note: this method is invoked on the UI thread
-        let flavor = Bundle.main.infoDictionary?["App - Flavor"]
+        let flavor = Bundle.main.infoDictionary?["AppFlavor"]
         result(flavor)
     })
 
