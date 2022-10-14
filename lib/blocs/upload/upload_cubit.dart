@@ -325,6 +325,7 @@ class UploadCubit extends Cubit<UploadState> {
           driveDao: _driveDao,
           pstService: _pst,
           wallet: profile.wallet,
+          isArConnect: await _profileCubit.isCurrentProfileArConnect(),
         );
 
         debugPrint('Bundle preparation finished');

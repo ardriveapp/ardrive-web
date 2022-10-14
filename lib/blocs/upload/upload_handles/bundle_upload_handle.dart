@@ -49,9 +49,10 @@ class BundleUploadHandle implements UploadHandle {
     required DriveDao driveDao,
     required PstService pstService,
     required Wallet wallet,
+    bool isArConnect = false,
   }) async {
     final bundle = await DataBundle.fromHandles(
-      parallelize: false,
+      parallelize: !isArConnect,
       handles: List.castFrom<FileDataItemUploadHandle, DataItemHandle>(
               fileDataItemUploadHandles) +
           List.castFrom<FolderDataItemUploadHandle, DataItemHandle>(
