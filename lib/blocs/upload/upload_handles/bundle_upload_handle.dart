@@ -51,6 +51,7 @@ class BundleUploadHandle implements UploadHandle {
     required Wallet wallet,
   }) async {
     final bundle = await DataBundle.fromHandles(
+      parallelize: false,
       handles: List.castFrom<FileDataItemUploadHandle, DataItemHandle>(
               fileDataItemUploadHandles) +
           List.castFrom<FolderDataItemUploadHandle, DataItemHandle>(

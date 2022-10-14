@@ -62,7 +62,7 @@ packages:
     description:
       path: "."
       ref: PE-2410-folder-and-multiple-files-and-cannot-be-uploaded-using-ar-connect
-      resolved-ref: e4733b2cc92a535c806f67d449a3c8f1a855f3fa
+      resolved-ref: "7909434e152366f96a2f62437e22528b8bee0756"
       url: "https://github.com/ardriveapp/arweave-dart"
     source: git
     version: "3.3.0"
