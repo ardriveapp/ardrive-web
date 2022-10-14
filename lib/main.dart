@@ -10,6 +10,7 @@ import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
@@ -40,7 +41,7 @@ late ArweaveService arweave;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  configService = ConfigService();
+  configService = ConfigService(appFlavors: AppFlavors());
 
   config = await configService.getConfig(
     localStore: await LocalKeyValueStore.getInstance(),
@@ -49,7 +50,7 @@ void main() async {
   if (!kIsWeb) {
     final flavor = await configService.getAppFlavor();
 
-    if (flavor == Flavors.development) {
+    if (flavor == Flavor.development) {
       _runWithCrashlytics(flavor.name);
       return;
     }

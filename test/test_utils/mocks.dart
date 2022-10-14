@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/widgets.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockArweave extends Mock implements Arweave {}
+
 
 class MockConfig extends Mock implements AppConfig {}
 
@@ -38,3 +40,5 @@ class MockUploadPlanUtils extends Mock implements UploadPlanUtils {}
 
 class MockBiometricAuthentication extends Mock
     implements BiometricAuthentication {}
+
+class MockAppFlavors extends Mock implements AppFlavors {}
