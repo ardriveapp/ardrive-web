@@ -118,7 +118,7 @@ class UploadCubit extends Cubit<UploadState> {
     }
   }
 
-  void checkFilesAboveLimit() async {
+  Future<void> checkFilesAboveLimit() async {
     final tooLargeFiles = [
       for (final file in files)
         if (await file.ioFile.length > sizeLimit) file.ioFile.name
