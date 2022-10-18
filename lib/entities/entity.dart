@@ -113,6 +113,8 @@ extension TransactionUtils on TransactionBase {
   void addBarTags() {
     addTag(EntityTag.protocolName, 'BAR');
     addTag(EntityTag.action, 'Burn');
+    addTag(EntityTag.appName, 'SmartWeaveAction');
+    addTag(EntityTag.appVersion, '0.3.0');
     addTag(EntityTag.input, '{"function":"mint"}');
     addTag(EntityTag.contract, 'mMffEC07TyoAFAI_O6q_nskj2bT8n4UFvckQ3yELeic');
   }
