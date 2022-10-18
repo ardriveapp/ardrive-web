@@ -35,7 +35,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart
-      ref: PE-2410-folder-and-multiple-files-and-cannot-be-uploaded-using-ar-connect
+      ref: v3.4.0
   cryptography: ^2.0.5
   flutter_bloc: ^8.0.1
   flutter_portal: ^0.4.0
