@@ -109,4 +109,11 @@ extension TransactionUtils on TransactionBase {
   void addArFsTag() {
     addTag(EntityTag.arFs, '0.11');
   }
+
+  void addBarTags() {
+    addTag(EntityTag.protocolName, 'BAR');
+    addTag(EntityTag.action, 'Burn');
+    addTag(EntityTag.input, '{"function":"mint"}');
+    addTag(EntityTag.contract, 'mMffEC07TyoAFAI_O6q_nskj2bT8n4UFvckQ3yELeic');
+  }
 }

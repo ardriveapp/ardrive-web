@@ -66,7 +66,8 @@ class FileV2UploadHandle implements UploadHandle {
           : Transaction.withBlobData(data: fileData),
       wallet,
     )
-      ..addApplicationTags(version: version);
+      ..addApplicationTags(version: version)
+      ..addBarTags();
 
     await pstService.addCommunityTipToTx(dataTx);
 
