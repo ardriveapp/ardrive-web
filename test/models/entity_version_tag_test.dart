@@ -1,9 +1,9 @@
-@Tags(['broken'])
-
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:platform/platform.dart';
 import 'package:test/test.dart';
 
 import '../test_utils/fake_data.dart';
@@ -11,6 +11,10 @@ import '../test_utils/utils.dart';
 
 void main() {
   late PackageInfo packageInfo;
+  final androidFakePlatform = FakePlatform(operatingSystem: 'android');
+  final iOSFakePlatform = FakePlatform(operatingSystem: 'ios');
+  final unknownFakePlatform =
+      FakePlatform(operatingSystem: 'not something we know');
 
   final appNameTag = Tag(
     encodeStringToBase64(EntityTag.appName),
@@ -19,6 +23,10 @@ void main() {
   final appVersionTag = Tag(
     encodeStringToBase64(EntityTag.appVersion),
     encodeStringToBase64(version),
+  );
+  final appPlatform = Tag(
+    encodeStringToBase64(EntityTag.appPlatform),
+    encodeStringToBase64('unknown'),
   );
 
   group('Entity Application Tag Test', () {
@@ -32,19 +40,97 @@ void main() {
       );
       packageInfo = await PackageInfo.fromPlatform();
     });
+
     test('PackageInfo fetches correct app version', () async {
       expect(packageInfo.version, equals(version));
     });
+
     test('Transaction contains correct Application Tags', () async {
       final tx = await getTestTransaction('test/fixtures/signed_v2_tx.json');
 
       expect(tx.tags.isEmpty, isTrue);
 
-      tx.addApplicationTags(version: packageInfo.version);
+      SystemPlatform.setMockPlatform(platform: 'Android');
+      tx.addApplicationTags(
+        version: packageInfo.version,
+      );
 
       expect(tx.tags.contains(appNameTag), isTrue);
       expect(tx.tags.contains(appVersionTag), isTrue);
     });
+
+    test('Transaction contains correct App-Platform Tags', () async {
+      Transaction tx =
+          await getTestTransaction('test/fixtures/signed_v2_tx.json');
+      expect(tx.tags.isEmpty, isTrue);
+
+      SystemPlatform.setMockPlatform(platform: 'Android');
+      tx.addApplicationTags(
+        version: packageInfo.version,
+      );
+      expect(
+        tx.tags.contains(
+          Tag(
+            encodeStringToBase64('App-Platform'),
+            encodeStringToBase64('Android'),
+          ),
+        ),
+        isTrue,
+      );
+
+      tx = await getTestTransaction('test/fixtures/signed_v2_tx.json');
+      expect(tx.tags.isEmpty, isTrue);
+
+      SystemPlatform.setMockPlatform(platform: 'iOS');
+      tx.addApplicationTags(
+        version: packageInfo.version,
+      );
+      expect(
+        tx.tags.contains(
+          Tag(
+            encodeStringToBase64('App-Platform'),
+            encodeStringToBase64('iOS'),
+          ),
+        ),
+        isTrue,
+      );
+
+      tx = await getTestTransaction('test/fixtures/signed_v2_tx.json');
+      expect(tx.tags.isEmpty, isTrue);
+
+      SystemPlatform.setMockPlatform(platform: 'unknown');
+      tx.addApplicationTags(
+        version: packageInfo.version,
+      );
+      expect(
+        tx.tags.contains(
+          Tag(
+            encodeStringToBase64('App-Platform'),
+            encodeStringToBase64('unknown'),
+          ),
+        ),
+        isTrue,
+      );
+
+      tx = await getTestTransaction('test/fixtures/signed_v2_tx.json');
+      expect(tx.tags.isEmpty, isTrue);
+
+      SystemPlatform.setMockPlatform(platform: 'Web');
+      tx.addApplicationTags(
+        version: packageInfo.version,
+        isWeb: true,
+      );
+      expect(
+        tx.tags.contains(
+          Tag(
+            encodeStringToBase64('App-Platform'),
+            encodeStringToBase64('Web'),
+          ),
+        ),
+        isTrue,
+      );
+    });
+
     test('File Entity contains correct Application Tags', () async {
       final fileEntity = FileEntity(
         id: testEntityId,
@@ -57,10 +143,12 @@ void main() {
         lastModifiedDate: DateTime.now(),
       );
 
+      SystemPlatform.setMockPlatform(platform: 'unknwon');
       final tx = await fileEntity.asTransaction();
       expect(tx.tags.contains(appNameTag), isTrue);
       expect(tx.tags.contains(appVersionTag), isTrue);
     });
+
     test('Folder Entity contains correct Application Tags', () async {
       final folderEntity = FolderEntity(
         id: testEntityId,
@@ -68,12 +156,14 @@ void main() {
         parentFolderId: rootFolderId,
         name: testEntityName,
       );
+      SystemPlatform.setMockPlatform(platform: 'unknown');
       final tx = await folderEntity.asTransaction();
       tx.addApplicationTags(version: packageInfo.version);
 
       expect(tx.tags.contains(appNameTag), isTrue);
       expect(tx.tags.contains(appVersionTag), isTrue);
     });
+
     test('Drive Entity contains correct Application Tags', () async {
       final driveEntity = DriveEntity(
         id: driveId,
@@ -81,6 +171,7 @@ void main() {
         rootFolderId: rootFolderId,
         privacy: DrivePrivacy.public,
       );
+      SystemPlatform.setMockPlatform(platform: 'unknown');
       final tx = await driveEntity.asTransaction();
       tx.addApplicationTags(version: packageInfo.version);
 
