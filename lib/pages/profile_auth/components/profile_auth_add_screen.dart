@@ -151,6 +151,11 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 16),
+                        const Align(
+                          alignment: Alignment.center,
+                          child: BiometricToggle(),
+                        ),
+                        const Spacer(),
                         TextButton(
                           onPressed: () =>
                               context.read<ProfileAddCubit>().promptForWallet(),
@@ -161,10 +166,6 @@ class ProfileAuthAddScreen extends StatelessWidget {
                                   appLocalizationsOf(context).logOutEmphasized)
                               : Text(appLocalizationsOf(context).changeWallet),
                         ),
-                        const Align(
-                          alignment: Alignment.center,
-                          child: BiometricToggle(),
-                        )
                       ],
                     ),
                   ),
