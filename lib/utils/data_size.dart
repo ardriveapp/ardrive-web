@@ -7,28 +7,28 @@ abstract class Base2DataSize {
 }
 
 class KiB implements Base2DataSize {
-  KiB(this._size);
+  KiB(this._size) : assert(_size >= 0);
 
-  final double _size;
+  final int _size;
 
   @override
-  int get size => (_size * _aKibInBytes).toInt();
+  int get size => _size * _aKibInBytes;
 }
 
 class MiB implements Base2DataSize {
-  MiB(this._size);
+  MiB(this._size) : assert(_size >= 0);
 
-  final double _size;
+  final int _size;
 
   @override
-  int get size => (_size * _aMibInBytes).toInt();
+  int get size => _size * _aMibInBytes;
 }
 
 class GiB implements Base2DataSize {
-  GiB(this._size);
+  GiB(this._size) : assert(_size >= 0);
 
-  final double _size;
+  final int _size;
 
   @override
-  int get size => (_size * _aGibInBytes).toInt();
+  int get size => _size * _aGibInBytes;
 }
