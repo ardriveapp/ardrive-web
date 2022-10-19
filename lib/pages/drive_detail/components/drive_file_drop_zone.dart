@@ -21,6 +21,7 @@ class DriveFileDropZone extends StatefulWidget {
     required this.driveId,
     required this.folderId,
   }) : super(key: key);
+
   @override
   DriveFileDropZoneState createState() => DriveFileDropZoneState();
 }
@@ -29,6 +30,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
   late DropzoneViewController controller;
   bool isHovering = false;
   bool isCurrentlyShown = false;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -104,6 +106,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
         ).then((value) => isCurrentlyShown = false);
         return;
       }
+
       await showCongestionDependentModalDialog(
         context,
         () => showDialog(

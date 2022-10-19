@@ -223,8 +223,16 @@ List<PopupMenuEntry<Function>> _buildItems(
       if (driveDetailState is DriveDetailLoadSuccess) ...{
         _buildNewFolderItem(context, driveDetailState, hasMinBalance),
         const PopupMenuDivider(key: Key('divider-1')),
-        _buildUploadFileItem(context, driveDetailState, hasMinBalance),
-        _buildUploadFolderItem(context, driveDetailState, hasMinBalance),
+        _buildUploadFileItem(
+          context,
+          driveDetailState,
+          hasMinBalance,
+        ),
+        _buildUploadFolderItem(
+          context,
+          driveDetailState,
+          hasMinBalance,
+        ),
         const PopupMenuDivider(key: Key('divider-2')),
       },
       if (drivesState is DrivesLoadSuccess) ...{
@@ -233,7 +241,11 @@ List<PopupMenuEntry<Function>> _buildItems(
       },
       if (driveDetailState is DriveDetailLoadSuccess &&
           driveDetailState.currentDrive.privacy == 'public') ...{
-        _buildCreateManifestItem(context, driveDetailState, hasMinBalance)
+        _buildCreateManifestItem(
+          context,
+          driveDetailState,
+          hasMinBalance,
+        )
       },
     ];
   } else {
@@ -349,8 +361,10 @@ PopupMenuEntry<Function> _buildCreateManifestItem(
     message: !state.driveIsEmpty && !hasMinBalance
         ? appLocalizationsOf(context).insufficientFundsForCreateAManifest
         : null,
-    value: (context) =>
-        promptToCreateManifest(context, drive: state.currentDrive),
+    value: (context) => promptToCreateManifest(
+      context,
+      drive: state.currentDrive,
+    ),
   );
 }
 

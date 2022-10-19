@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:platform/platform.dart';
 
-String getPlatform({Platform platform = const LocalPlatform()}) {
-  if (kIsWeb) {
+String getPlatform({
+  Platform platform = const LocalPlatform(),
+  bool isWeb = kIsWeb,
+}) {
+  if (isWeb) {
     return 'Web';
   }
 
@@ -16,5 +19,18 @@ String getPlatform({Platform platform = const LocalPlatform()}) {
       return 'iOS';
     default:
       return 'unknown';
+  }
+}
+
+class SystemPlatform {
+  static String? _mockPlatform;
+
+  static void setMockPlatform({required String platform}) {
+    // TODO: throw if not inside a test (?
+    _mockPlatform = platform;
+  }
+
+  static get platform {
+    return _mockPlatform ?? getPlatform();
   }
 }

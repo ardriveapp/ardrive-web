@@ -54,6 +54,7 @@ void main() async {
   if (kIsWeb) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
   }
+
   runApp(const App());
 }
 
@@ -69,7 +70,7 @@ class App extends StatefulWidget {
 }
 
 class AppState extends State<App> {
-  final _routerDelegate = AppRouterDelegate();
+  final AppRouterDelegate _routerDelegate = AppRouterDelegate();
   final _routeInformationParser = AppRouteInformationParser();
 
   @override
