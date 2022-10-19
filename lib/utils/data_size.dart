@@ -7,7 +7,7 @@ abstract class Base2DataSize {
 }
 
 class KiB implements Base2DataSize {
-  KiB(this._size) : assert(_size >= 0);
+  const KiB(this._size) : assert(_size >= 0);
 
   final int _size;
 
@@ -16,7 +16,7 @@ class KiB implements Base2DataSize {
 }
 
 class MiB implements Base2DataSize {
-  MiB(this._size) : assert(_size >= 0);
+  const MiB(this._size) : assert(_size >= 0);
 
   final int _size;
 
@@ -25,7 +25,7 @@ class MiB implements Base2DataSize {
 }
 
 class GiB implements Base2DataSize {
-  GiB(this._size) : assert(_size >= 0);
+  const GiB(this._size) : assert(_size >= 0);
 
   final int _size;
 

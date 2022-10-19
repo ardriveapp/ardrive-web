@@ -32,7 +32,7 @@ Future<void> promptToDownloadProfileFile({
 
   return showDialog(
     context: context,
-    builder: (_) => BlocProvider<FileDownloadCubit>(
+    builder: (_) => BlocProvider<ProfileFileDownloadCubit>(
       create: (_) => ProfileFileDownloadCubit(
         arfsRepository: ARFSRepository(
           context.read<DriveDao>(),
@@ -61,7 +61,7 @@ Future<void> promptToDownloadFileRevision({
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
   return showDialog(
     context: context,
-    builder: (_) => BlocProvider<FileDownloadCubit>(
+    builder: (_) => BlocProvider<ProfileFileDownloadCubit>(
       create: (_) => ProfileFileDownloadCubit(
         arfsRepository: ARFSRepository(
           context.read<DriveDao>(),
@@ -101,7 +101,7 @@ class FileDownloadDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      BlocConsumer<FileDownloadCubit, FileDownloadState>(
+      BlocConsumer<ProfileFileDownloadCubit, FileDownloadState>(
         listener: (context, state) async {
           if (state is FileDownloadSuccess) {
             final ArDriveIO io = ArDriveIO();
@@ -131,6 +131,8 @@ class FileDownloadDialog extends StatelessWidget {
             }
 
             return _fileDownloadFailedDueToFileAbovePrivateLimit(context);
+          } else if (state is FileDownloadWarning) {
+            return _warningToWaitDownloadFinishes(context);
           } else {
             return const SizedBox();
           }
@@ -166,6 +168,34 @@ class FileDownloadDialog extends StatelessWidget {
       actions: [
         ElevatedButton(
           onPressed: () => Navigator.pop(context),
+          child: Text(appLocalizationsOf(context).ok),
+        ),
+      ],
+    );
+  }
+
+  Widget _warningToWaitDownloadFinishes(BuildContext context) {
+    return AppDialog(
+      dismissable: false,
+      title: appLocalizationsOf(context).warningEmphasized,
+      content: SizedBox(
+        width: kMediumDialogWidth,
+        child: Text(appLocalizationsOf(context).waitForDownload),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(appLocalizationsOf(context).cancel),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final profileState = context.read<ProfileCubit>().state;
+
+            final cipherKey =
+                profileState is ProfileLoggedIn ? profileState.cipherKey : null;
+
+            context.read<ProfileFileDownloadCubit>().download(cipherKey);
+          },
           child: Text(appLocalizationsOf(context).ok),
         ),
       ],

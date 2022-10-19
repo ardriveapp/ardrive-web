@@ -17,7 +17,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
   Stream<LinearProgress> get downloadProgress => _downloadProgress.stream;
 
-  final _privateFileLimit = MiB(300);
+  final _privateFileLimit = const MiB(300).size;
+  final _warningDownloadTimeLimit = const MiB(200).size;
 
   final DriveDao _driveDao;
   final ArweaveService _arweave;
@@ -54,6 +55,12 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
             if (isSizeAbovePrivateLimit(_file.size)) {
               emit(const FileDownloadFailure(
                   FileDownloadFailureReason.fileAboveLimit));
+              return;
+            }
+
+            if (state is! FileDownloadWarning &&
+                isSizeAboveUploadTimeWarningLimit(_file.size)) {
+              emit(const FileDownloadWarning());
               return;
             }
           }
@@ -158,8 +165,13 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
   @visibleForTesting
   bool isSizeAbovePrivateLimit(int size) {
-    debugPrint(_privateFileLimit.size.toString());
-    return size > _privateFileLimit.size;
+    debugPrint(_privateFileLimit.toString());
+    return size > _privateFileLimit;
+  }
+
+  @visibleForTesting
+  bool isSizeAboveUploadTimeWarningLimit(int size) {
+    return size > _warningDownloadTimeLimit;
   }
 
   @override

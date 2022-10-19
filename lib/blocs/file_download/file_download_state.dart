@@ -70,6 +70,10 @@ class FileDownloadFailure extends FileDownloadState {
   final FileDownloadFailureReason reason;
 }
 
+class FileDownloadWarning extends FileDownloadState {
+  const FileDownloadWarning();
+}
+
 class FileDownloadAborted extends FileDownloadState {}
 
 enum FileDownloadFailureReason { unknownError, fileAboveLimit }

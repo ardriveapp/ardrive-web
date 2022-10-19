@@ -81,7 +81,7 @@ void main() {
     txId: 'txId',
     unixTime: DateTime.now(),
     id: 'id',
-    size: MiB(2).size,
+    size: const MiB(2).size,
     lastModifiedDate: DateTime.now(),
     parentFolderId: 'parentFolderId',
     contentType: 'text/plain',
@@ -97,7 +97,23 @@ void main() {
     txId: 'txId',
     unixTime: DateTime.now(),
     id: 'id',
-    size: MiB(301).size, // above the current limit
+    size: const MiB(301).size, // above the current limit
+    lastModifiedDate: DateTime.now(),
+    parentFolderId: 'parentFolderId',
+    contentType: 'text/plain',
+  );
+
+  MockARFSFile testFileUnderPrivateLimitAndAboveWarningLimit = MockARFSFile(
+    appName: 'appName',
+    appVersion: 'appVersion',
+    arFS: 'arFS',
+    driveId: 'driveId',
+    entityType: EntityType.file,
+    name: 'name',
+    txId: 'txId',
+    unixTime: DateTime.now(),
+    id: 'id',
+    size: const MiB(201).size, // above the current limit
     lastModifiedDate: DateTime.now(),
     parentFolderId: 'parentFolderId',
     contentType: 'text/plain',
@@ -163,25 +179,30 @@ void main() {
     });
     test('should return false', () {
       expect(
-          profileFileDownloadCubit.isSizeAbovePrivateLimit(MiB(1).size), false);
+          profileFileDownloadCubit.isSizeAbovePrivateLimit(const MiB(1).size),
+          false);
     });
     test('should return false', () {
-      expect(profileFileDownloadCubit.isSizeAbovePrivateLimit(MiB(299).size),
+      expect(
+          profileFileDownloadCubit.isSizeAbovePrivateLimit(const MiB(299).size),
           false);
     });
 
     test('should return true', () {
-      expect(profileFileDownloadCubit.isSizeAbovePrivateLimit(MiB(300).size),
+      expect(
+          profileFileDownloadCubit.isSizeAbovePrivateLimit(const MiB(300).size),
           false);
     });
 
     test('should return true', () {
-      expect(profileFileDownloadCubit.isSizeAbovePrivateLimit(MiB(301).size),
+      expect(
+          profileFileDownloadCubit.isSizeAbovePrivateLimit(const MiB(301).size),
           true);
     });
 
     test('should return true', () {
-      expect(profileFileDownloadCubit.isSizeAbovePrivateLimit(GiB(1.5).size),
+      expect(
+          profileFileDownloadCubit.isSizeAbovePrivateLimit(const GiB(1).size),
           true);
     });
   });
@@ -328,6 +349,34 @@ void main() {
         const FileDownloadFailure(
           FileDownloadFailureReason.fileAboveLimit,
         ),
+      ],
+    );
+
+    /// File is under private limits
+    /// File is above the warning limit
+    blocTest<ProfileFileDownloadCubit, FileDownloadState>(
+      'should emit a FileDownloadWarning',
+      build: () => profileFileDownloadCubit = ProfileFileDownloadCubit(
+        file: testFileUnderPrivateLimitAndAboveWarningLimit,
+        driveDao: mockDriveDao,
+        arweave: mockArweaveService,
+        downloader: mockArDriveDownloader,
+        decrypt: mockDecrypt,
+        downloadService: mockDownloadService,
+        arfsRepository: mockARFSRepository,
+      ),
+      setUp: () {
+        SystemPlatform.setMockPlatform(platform: 'Android');
+
+        /// Using a private drive
+        when(() => mockARFSRepository.getDriveById(any()))
+            .thenAnswer((_) async => mockDrivePrivate);
+      },
+      act: (bloc) {
+        profileFileDownloadCubit.download(SecretKey([]));
+      },
+      expect: () => <FileDownloadState>[
+        const FileDownloadWarning(),
       ],
     );
 
