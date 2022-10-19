@@ -2,9 +2,9 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:platform/platform.dart';
 import 'package:test/test.dart';
 
 import '../test_utils/utils.dart';
@@ -228,9 +228,9 @@ void main() {
             ManifestData.fromFolderNode(folderNode: stubRootFolderNode);
         final wallet = getTestWallet();
 
+        SystemPlatform.setMockPlatform(platform: 'Android');
         final dataItem = await manifest.asPreparedDataItem(
           owner: await wallet.getOwner(),
-          platform: FakePlatform(operatingSystem: 'android'),
         );
 
         expect(dataItem.tags.length, equals(5));

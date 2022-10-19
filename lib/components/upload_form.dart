@@ -14,7 +14,6 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:platform/platform.dart';
 
 import 'components.dart';
 
@@ -23,7 +22,6 @@ Future<void> promptToUpload(
   required String driveId,
   required String parentFolderId,
   required bool isFolderUpload,
-  Platform platform = const LocalPlatform(),
 }) async {
   final selectedFiles = <UploadFile>[];
   final io = ArDriveIO();
@@ -62,7 +60,6 @@ Future<void> promptToUpload(
           uploadPlanUtils: UploadPlanUtils(
             arweave: context.read<ArweaveService>(),
             driveDao: context.read<DriveDao>(),
-            platform: platform,
           ),
           driveId: driveId,
           parentFolderId: parentFolderId,

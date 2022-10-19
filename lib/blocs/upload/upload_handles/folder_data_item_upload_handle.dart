@@ -62,7 +62,7 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
     folderEntityTx = await arweave.prepareEntityDataItem(
       folderEntity,
       wallet,
-      driveKey,
+      key: driveKey,
     );
     await folderEntityTx.sign(wallet);
   }
