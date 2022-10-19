@@ -41,7 +41,9 @@ part 'components/fs_entry_preview_widget.dart';
 part 'components/fs_entry_side_sheet.dart';
 
 class DriveDetailPage extends StatefulWidget {
-  const DriveDetailPage({Key? key}) : super(key: key);
+  const DriveDetailPage({
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<DriveDetailPage> createState() => _DriveDetailPageState();

@@ -6,6 +6,7 @@ import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 class BundleUploadHandle implements UploadHandle {
   final List<FileDataItemUploadHandle> fileDataItemUploadHandles;
@@ -48,22 +49,39 @@ class BundleUploadHandle implements UploadHandle {
     required DriveDao driveDao,
     required PstService pstService,
     required Wallet wallet,
+    bool isArConnect = false,
   }) async {
     final bundle = await DataBundle.fromHandles(
+      parallelize: !isArConnect,
       handles: List.castFrom<FileDataItemUploadHandle, DataItemHandle>(
               fileDataItemUploadHandles) +
           List.castFrom<FolderDataItemUploadHandle, DataItemHandle>(
               folderDataItemUploadHandles),
     );
+
+    debugPrint('Bundle mounted');
+
+    debugPrint('Creating bundle transaction');
+
     // Create bundle tx
     bundleTx = await arweaveService.prepareDataBundleTxFromBlob(
       bundle.blob,
       wallet,
     );
 
+    debugPrint('Bundle transaction created');
+
+    debugPrint('Adding tip');
+
     await pstService.addCommunityTipToTx(bundleTx);
 
+    debugPrint('Tip added');
+
+    debugPrint('Signing bundle');
+
     await bundleTx.sign(wallet);
+
+    debugPrint('Bundle signed');
 
     // Write entities to database
     for (var folder in folderDataItemUploadHandles) {
