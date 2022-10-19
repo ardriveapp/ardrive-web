@@ -669,6 +669,14 @@
   "@fileFailedToDownload": {
     "description": "Error message for failed downloads"
   },
+  "waitForDownload": "Due to the size of your file, this download could take a while. Please keep the app open while the download is in progress.",
+  "@waitForDownload": {
+    "description": "User must to wait this download"
+  },
+  "fileFailedToDownloadFileAboveLimit": "The file you have selected is too large to download from the mobile app",
+  "@fileFailedToDownloadFileAboveLimit": {
+    "description": "Download failure message when a file is too big"
+  },
   "tryAgainDownloadingFile": "This can happen if the file was only uploaded recently. Please try again later.",
   "@tryAgainDownloadingFile": {
     "description": "The data is still being replicated between nodes of the network and it's yet not available"

@@ -30,7 +30,7 @@ class SystemPlatform {
     _mockPlatform = platform;
   }
 
-  static get platform {
+  static String get platform {
     return _mockPlatform ?? getPlatform();
   }
 }

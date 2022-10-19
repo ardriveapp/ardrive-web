@@ -10,72 +10,82 @@ class FileDownloadProgress extends LinearProgress {
 }
 
 class ProfileFileDownloadCubit extends FileDownloadCubit {
-  final DriveID driveId;
+  final ARFSFileEntity _file;
 
-  final FileID fileId;
   final StreamController<LinearProgress> _downloadProgress =
       StreamController<LinearProgress>.broadcast();
+
   Stream<LinearProgress> get downloadProgress => _downloadProgress.stream;
-  final String fileName;
-  final int fileSize;
-  final String? dataContentType;
-  final DateTime lastModified;
 
-  final TxID revisionDataTxId;
+  final _privateFileLimit = MiB(300);
 
-  final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
-  final downloader = ArDriveDownloader();
+  final ArDriveDownloader _downloader;
+  final DownloadService _downloadService;
+  final Decrypt _decrypt;
+  final ARFSRepository _arfsRepository;
 
   ProfileFileDownloadCubit({
-    required this.driveId,
-    required this.fileId,
-    required this.fileName,
-    required this.fileSize,
-    required this.dataContentType,
-    required this.lastModified,
-    required this.revisionDataTxId,
-    required ProfileCubit profileCubit,
+    required ARFSFileEntity file,
     required DriveDao driveDao,
     required ArweaveService arweave,
-  })  : _profileCubit = profileCubit,
-        _driveDao = driveDao,
+    required ArDriveDownloader downloader,
+    required DownloadService downloadService,
+    required Decrypt decrypt,
+    required ARFSRepository arfsRepository,
+  })  : _driveDao = driveDao,
         _arweave = arweave,
-        super(FileDownloadStarting()) {
-    download();
-  }
+        _file = file,
+        _downloader = downloader,
+        _downloadService = downloadService,
+        _arfsRepository = arfsRepository,
+        _decrypt = decrypt,
+        super(FileDownloadStarting());
 
-  Future<void> download() async {
+  Future<void> download(SecretKey? cipherKey) async {
     try {
-      final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+      final drive = await _arfsRepository.getDriveById(_file.driveId);
+      final platform = SystemPlatform.platform;
 
-      switch (drive.privacy) {
+      switch (drive.drivePrivacy) {
         case DrivePrivacy.private:
-          await _downloadFile(fileName, fileSize, drive);
+          if (platform == 'Android' || platform == 'iOS') {
+            if (isSizeAbovePrivateLimit(_file.size)) {
+              emit(const FileDownloadFailure(
+                  FileDownloadFailureReason.fileAboveLimit));
+              return;
+            }
+          }
+
+          await _downloadFile(drive, cipherKey);
           break;
         case DrivePrivacy.public:
-          if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-            final stream = downloader.downloadFile(
-              '${_arweave.client.api.gatewayUrl.origin}/$revisionDataTxId',
-              fileName,
+          if (platform == 'Android' || platform == 'iOS') {
+            final stream = _downloader.downloadFile(
+              '${_arweave.client.api.gatewayUrl.origin}/${_file.txId}',
+              _file.name,
             );
 
             await for (int progress in stream) {
+              if (state is FileDownloadAborted) {
+                return;
+              }
+
               emit(
                 FileDownloadWithProgress(
-                  fileName: fileName,
+                  fileName: _file.name,
                   progress: progress,
-                  fileSize: fileSize,
+                  fileSize: _file.size,
                 ),
               );
               _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
             }
 
-            emit(FileDownloadFinishedWithSuccess(fileName: fileName));
+            emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
             break;
           }
-          await _downloadFile(fileName, fileSize, drive);
+          await _downloadFile(drive, cipherKey);
           return;
 
         default:
@@ -85,74 +95,88 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     }
   }
 
-  Future<void> _downloadFile(String fileName, int fileSize, Drive drive) async {
-    late Uint8List dataBytes;
-
+  Future<void> _downloadFile(
+    ARFSDriveEntity drive,
+    SecretKey? cipherKey,
+  ) async {
     emit(
       FileDownloadInProgress(
-        fileName: fileName,
-        totalByteCount: fileSize,
+        fileName: _file.name,
+        totalByteCount: _file.size,
       ),
     );
 
-    final dataRes = await http.get(
-      Uri.parse(
-        '${_arweave.client.api.gatewayUrl.origin}/$revisionDataTxId',
-      ),
-    );
+    final dataBytes = await _downloadService.download(_file.txId);
 
-    if (drive.isPrivate) {
-      final profile = _profileCubit.state;
+    if (drive.drivePrivacy == DrivePrivacy.private) {
       SecretKey? driveKey;
 
-      if (profile is ProfileLoggedIn) {
+      if (cipherKey != null) {
         driveKey = await _driveDao.getDriveKey(
-          drive.id,
-          profile.cipherKey,
+          drive.driveId,
+          cipherKey,
         );
       } else {
-        driveKey = await _driveDao.getDriveKeyFromMemory(driveId);
+        driveKey = await _driveDao.getDriveKeyFromMemory(_file.driveId);
       }
 
       if (driveKey == null) {
         throw StateError('Drive Key not found');
       }
 
-      final fileKey = await _driveDao.getFileKey(fileId, driveKey);
-      final dataTx = await (_arweave.getTransactionDetails(revisionDataTxId));
+      final fileKey = await _driveDao.getFileKey(_file.id, driveKey);
+      final dataTx = await (_arweave.getTransactionDetails(_file.txId));
 
       if (dataTx != null) {
-        dataBytes = await decryptTransactionData(
+        final decryptedData = await _decrypt.decryptTransactionData(
           dataTx,
-          dataRes.bodyBytes,
+          dataBytes,
           fileKey,
         );
+
+        emit(
+          FileDownloadSuccess(
+            bytes: decryptedData,
+            fileName: _file.name,
+            mimeType: _file.contentType ?? lookupMimeType(_file.name),
+            lastModified: _file.lastModifiedDate,
+          ),
+        );
+        return;
       }
-    } else {
-      dataBytes = dataRes.bodyBytes;
     }
 
     emit(
       FileDownloadSuccess(
         bytes: dataBytes,
-        fileName: fileName,
-        mimeType: dataContentType ?? lookupMimeType(fileName),
-        lastModified: lastModified,
+        fileName: _file.name,
+        mimeType: _file.contentType ?? lookupMimeType(_file.name),
+        lastModified: _file.lastModifiedDate,
       ),
     );
+  }
+
+  @visibleForTesting
+  bool isSizeAbovePrivateLimit(int size) {
+    debugPrint(_privateFileLimit.size.toString());
+    return size > _privateFileLimit.size;
   }
 
   @override
   Future<void> abortDownload() async {
     emit(FileDownloadAborted());
-    await downloader.cancelDownload();
+    await _downloader.cancelDownload();
   }
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(FileDownloadFailure());
+    emit(
+      const FileDownloadFailure(
+        FileDownloadFailureReason.unknownError,
+      ),
+    );
     super.onError(error, stackTrace);
 
-    print('Failed to download personal file: $error $stackTrace');
+    debugPrint('Failed to download personal file: $error $stackTrace');
   }
 }

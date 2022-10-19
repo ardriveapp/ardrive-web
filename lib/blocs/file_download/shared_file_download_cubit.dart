@@ -54,7 +54,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
     }
   }
 
-  FileEntity _validateDownload(FileEntity? file) {
+  entities.FileEntity _validateDownload(entities.FileEntity? file) {
     if (file == null ||
         file.name == null ||
         file.lastModifiedDate == null ||
@@ -73,7 +73,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(FileDownloadFailure());
+    emit(const FileDownloadFailure(FileDownloadFailureReason.unknownError));
     super.onError(error, stackTrace);
 
     print('Failed to download shared file: $error $stackTrace');
