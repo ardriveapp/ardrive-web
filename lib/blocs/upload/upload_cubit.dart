@@ -294,6 +294,8 @@ class UploadCubit extends Cubit<UploadState> {
     required UploadPlan uploadPlan,
     required CostEstimate costEstimate,
   }) async {
+    debugPrint('Starting upload...');
+
     final profile = _profileCubit.state as ProfileLoggedIn;
 
     //Check if the same wallet it being used before starting upload.
@@ -308,18 +310,31 @@ class UploadCubit extends Cubit<UploadState> {
       ),
     );
 
+    debugPrint('Wallet verified');
+
+    debugPrint('Starting bundle preparation....');
+    debugPrint('Number of bundles: ${uploadPlan.bundleUploadHandles.length}');
+
     // Upload Bundles
     for (var bundleHandle in uploadPlan.bundleUploadHandles) {
       try {
+        debugPrint('Starting bundle with ${bundleHandle.size}');
+
         await bundleHandle.prepareAndSignBundleTransaction(
           arweaveService: _arweave,
           driveDao: _driveDao,
           pstService: _pst,
           wallet: profile.wallet,
+          isArConnect: await _profileCubit.isCurrentProfileArConnect(),
         );
+
+        debugPrint('Bundle preparation finished');
       } catch (error) {
+        debugPrint(error.toString());
         addError(error);
       }
+
+      debugPrint('Starting bundle uploads');
 
       await for (final _ in bundleHandle
           .upload(_arweave)
@@ -327,6 +342,9 @@ class UploadCubit extends Cubit<UploadState> {
           .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
+
+      debugPrint('Disposing bundle');
+
       bundleHandle.dispose();
     }
 
