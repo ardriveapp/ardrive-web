@@ -10,12 +10,14 @@ class ProfileAuthShell extends StatelessWidget {
   final Widget content;
   final double? contentWidthFactor;
   final Widget? contentFooter;
+  final bool resizeToAvoidBottomInset;
 
   const ProfileAuthShell({
     Key? key,
     required this.illustration,
     required this.content,
     this.contentWidthFactor,
+    this.resizeToAvoidBottomInset = true,
     this.contentFooter,
   }) : super(key: key);
 
@@ -26,9 +28,12 @@ class ProfileAuthShell extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             Container(
-              constraints: const BoxConstraints(minHeight: 512),
+              constraints: BoxConstraints(
+                minHeight: 512,
+                maxHeight: MediaQuery.of(context).size.height - 64,
+              ),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Image.asset(
                     Resources.images.brand.logoHorizontalNoSubtitleLight,
@@ -36,7 +41,7 @@ class ProfileAuthShell extends StatelessWidget {
                     fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 32),
-                  content,
+                  Flexible(child: content),
                 ],
               ),
             ),
@@ -93,12 +98,10 @@ class ProfileAuthShell extends StatelessWidget {
         ),
       ),
       mobile: Scaffold(
-        resizeToAvoidBottomInset: true,
+        resizeToAvoidBottomInset: resizeToAvoidBottomInset,
         body: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: _buildContent(),
-          ),
+              padding: const EdgeInsets.all(16.0), child: _buildContent()),
         ),
       ),
     );
