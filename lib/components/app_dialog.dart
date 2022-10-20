@@ -29,9 +29,13 @@ class AppDialog extends StatelessWidget {
           return dismissable;
         },
         child: AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
           titlePadding: EdgeInsets.zero,
           title: Container(
-            color: kDarkSurfaceColor,
+            decoration: const BoxDecoration(
+                borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(5), topRight: Radius.circular(5)),
+                color: kDarkSurfaceColor),
             height: 64,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
@@ -53,7 +57,8 @@ class AppDialog extends StatelessWidget {
           ),
           contentPadding: contentPadding,
           content: content,
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+          actionsPadding:
+              const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
           actions: actions,
         ),
       );
