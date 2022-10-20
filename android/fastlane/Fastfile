@@ -68,7 +68,8 @@ platform :android do
         json_key:ENV['FIREBASE_JSON'], 
         version_code: build_number,
         aab: "#{root_path}/build/app/outputs/bundle/release/app-release.aab", 
-        skip_upload_apk: true
+        skip_upload_apk: true,
+        release_status: 'draft'
       )
     end
   end
