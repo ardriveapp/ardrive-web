@@ -193,8 +193,8 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
         final fileEntity = file.asEntity();
 
-        final fileDataItem = await _arweave.prepareEntityDataItem(
-            fileEntity, profile.wallet, fileKey, _platform);
+        final fileDataItem = await _arweave
+            .prepareEntityDataItem(fileEntity, profile.wallet, key: fileKey);
         moveTxDataItems.add(fileDataItem);
 
         await _driveDao.writeToFile(file);
@@ -219,8 +219,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         final folderDataItem = await _arweave.prepareEntityDataItem(
           folderEntity,
           profile.wallet,
-          driveKey,
-          _platform,
+          key: driveKey,
         );
 
         await _driveDao.writeToFolder(folder);

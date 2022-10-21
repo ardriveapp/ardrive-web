@@ -2,7 +2,7 @@
 
 import 'package:uuid/uuid.dart';
 
-const appName = 'ArDrive-Web';
+const appName = 'ArDrive-App';
 const packageName = 'test-package-name';
 const version = 'test=version-1.0';
 const buildNumber = 'test-build-number';

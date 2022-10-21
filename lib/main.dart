@@ -76,7 +76,9 @@ Future<void> _initialize() async {
   arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
 
-  refreshHTMLPageAtInterval(const Duration(hours: 12));
+  if (kIsWeb) {
+    refreshHTMLPageAtInterval(const Duration(hours: 12));
+  }
 }
 
 Future<void> _runWithCrashlytics(String flavor) async {
@@ -116,7 +118,7 @@ class App extends StatefulWidget {
 }
 
 class AppState extends State<App> {
-  final _routerDelegate = AppRouterDelegate();
+  final AppRouterDelegate _routerDelegate = AppRouterDelegate();
   final _routeInformationParser = AppRouteInformationParser();
 
   @override

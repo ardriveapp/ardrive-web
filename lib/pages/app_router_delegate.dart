@@ -188,7 +188,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         }),
                       ),
                     ],
-                    child: AppShell(page: shellPage),
+                    child: AppShell(
+                      page: shellPage,
+                    ),
                   ),
                 );
               },

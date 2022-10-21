@@ -5,7 +5,6 @@ import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:platform/platform.dart';
 
 import 'entities.dart';
 
@@ -29,15 +28,20 @@ abstract class Entity {
   /// Returns a [Transaction] with the entity's data along with the appropriate tags.
   ///
   /// If a key is provided, the transaction data is encrypted.
-  Future<Transaction> asTransaction([SecretKey? key]) async {
+  Future<Transaction> asTransaction({
+    SecretKey? key,
+  }) async {
     final tx = key == null
         ? Transaction.withJsonData(data: this)
         : await createEncryptedEntityTransaction(this, key);
     final packageInfo = await PackageInfo.fromPlatform();
 
     addEntityTagsToTransaction(tx);
-    await tx.addApplicationTags(
-        version: packageInfo.version, unixTime: createdAt);
+
+    tx.addApplicationTags(
+      version: packageInfo.version,
+      unixTime: createdAt,
+    );
     return tx;
   }
 
@@ -46,18 +50,14 @@ abstract class Entity {
   /// The `owner` on this [DataItem] will be unset.
   ///
   /// If a key is provided, the data item data is encrypted.
-  Future<DataItem> asDataItem(
-    SecretKey? key, {
-    Platform platform = const LocalPlatform(),
-  }) async {
+  Future<DataItem> asDataItem(SecretKey? key) async {
     final item = key == null
         ? DataItem.withJsonData(data: this)
         : await createEncryptedEntityDataItem(this, key);
     final packageInfo = await PackageInfo.fromPlatform();
     addEntityTagsToTransaction(item);
-    await item.addApplicationTags(
+    item.addApplicationTags(
       version: packageInfo.version,
-      platform: platform,
     );
 
     return item;
@@ -87,13 +87,17 @@ class EntityTransactionDataNetworkException implements Exception {
 extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the app name, version, and the specified unix time.
   /// https://ardrive.atlassian.net/wiki/spaces/ENGINEERIN/pages/277544961/Data+Model
-  Future<void> addApplicationTags({
+  void addApplicationTags({
     required String version,
     DateTime? unixTime,
-    Platform platform = const LocalPlatform(),
-  }) async {
+    bool isWeb = kIsWeb,
+  }) {
+    final String platform = SystemPlatform.platform;
     addTag(EntityTag.appName, 'ArDrive-App');
-    addTag(EntityTag.appPlatform, getPlatform(platform: platform));
+    addTag(
+      EntityTag.appPlatform,
+      platform,
+    );
     addTag(EntityTag.appVersion, version);
     addTag(
         EntityTag.unixTime,
