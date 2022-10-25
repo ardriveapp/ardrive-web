@@ -151,6 +151,11 @@ class ProfileAuthAddScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 16),
+                        const Align(
+                          alignment: Alignment.center,
+                          child: BiometricToggle(),
+                        ),
+                        const Spacer(),
                         TextButton(
                           onPressed: () =>
                               context.read<ProfileAddCubit>().promptForWallet(),
@@ -161,10 +166,6 @@ class ProfileAuthAddScreen extends StatelessWidget {
                                   appLocalizationsOf(context).logOutEmphasized)
                               : Text(appLocalizationsOf(context).changeWallet),
                         ),
-                        const Align(
-                          alignment: Alignment.center,
-                          child: BiometricToggle(),
-                        )
                       ],
                     ),
                   ),
@@ -180,10 +181,12 @@ class BiometricToggle extends StatefulWidget {
     super.key,
     this.onDisableBiometric,
     this.onEnableBiometric,
+    this.onError,
   });
 
   final Function()? onEnableBiometric;
   final Function()? onDisableBiometric;
+  final Function()? onError;
 
   @override
   State<BiometricToggle> createState() => _BiometricToggleState();
@@ -216,7 +219,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
 
   void _listenToBiometricChange() {
     context.read<BiometricAuthentication>().enabledStream.listen((event) {
-      if (event != _isEnabled) {
+      if (event != _isEnabled && mounted) {
         setState(() {
           _isEnabled = event;
         });
@@ -236,6 +239,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
           }
 
           return SwitchListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
             key: ValueKey(_isEnabled),
             title: Text(biometricText),
             value: _isEnabled,
@@ -243,7 +247,6 @@ class _BiometricToggleState extends State<BiometricToggle> {
             activeTrackColor: Colors.black,
             controlAffinity: ListTileControlAffinity.leading,
             onChanged: (value) async {
-              print(value);
               setState(() {
                 _isEnabled = value;
               });
@@ -261,7 +264,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
                     return;
                   }
                 } catch (e) {
-                  // TODO(@thiagocarvalhodev): check the text for an unknown error
+                  widget.onError?.call();
                   if (e is BiometricException) {
                     showBiometricExceptionDialogForException(
                       context,

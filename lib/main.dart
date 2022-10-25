@@ -10,11 +10,14 @@ import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,6 +29,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 
 import 'blocs/blocs.dart';
+import 'firebase_options.dart';
 import 'models/models.dart';
 import 'pages/pages.dart';
 import 'services/services.dart';
@@ -37,25 +41,69 @@ late ArweaveService arweave;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  configService = ConfigService();
+  configService = ConfigService(appFlavors: AppFlavors());
+
   config = await configService.getConfig(
     localStore: await LocalKeyValueStore.getInstance(),
   );
 
-  ArDriveDownloader.initialize();
+  if (!kIsWeb) {
+    final flavor = await configService.getAppFlavor();
 
+    if (flavor == Flavor.development) {
+      _runWithCrashlytics(flavor.name);
+      return;
+    }
+  }
+
+  debugPrint('Starting without crashlytics');
+
+  _runWithoutCrashlytics();
+}
+
+Future<void> _runWithoutCrashlytics() async {
+  await _initialize();
+  runApp(const App());
+}
+
+Future<void> _initialize() async {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarBrightness: Brightness.light),
   );
 
+  ArDriveDownloader.initialize();
+
   arweave = ArweaveService(
-    Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
-  );
+      Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
+
   if (kIsWeb) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
   }
+}
 
-  runApp(const App());
+Future<void> _runWithCrashlytics(String flavor) async {
+  runZonedGuarded<Future<void>>(
+    () async {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      await _initialize();
+
+      FirebaseCrashlytics.instance
+          .log('Starting application with crashlytics for $flavor');
+
+      // Pass all uncaught errors from the framework to Crashlytics.
+      FlutterError.onError =
+          FirebaseCrashlytics.instance.recordFlutterFatalError;
+
+      runApp(const App());
+    },
+    (error, stack) => FirebaseCrashlytics.instance.recordError(
+      error,
+      stack,
+      fatal: true,
+    ),
+  );
 }
 
 void refreshHTMLPageAtInterval(Duration duration) {

@@ -92,18 +92,24 @@ def get_build_type (type)
   case type
   when 'production'
     return {
+      'ios_flavor' => 'production',
+      'android_flavor' => 'production',
       'ios_type' => 'appstore',
       'ios_export_method' => 'app-store',
       'android_type' => 'production'
     }
   when 'staging'
     return {
+      'ios_flavor' => 'development',
+      'android_flavor' => 'development',
       'ios_type' => 'adhoc',
       'ios_export_method' => 'ad-hoc',
       'android_type' => 'beta'
     }
   when 'branch'
     return {
+      'ios_flavor' => 'development',
+      'android_flavor' => 'development',
       'ios_type' => 'adhoc',
       'ios_export_method' => 'ad-hoc',
       'android_type' => ''
