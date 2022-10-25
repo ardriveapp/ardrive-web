@@ -133,22 +133,80 @@ class ArweaveService {
     }
   }
 
+  Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>>
+      snapshotStreamToDriveHistory(
+    Stream<List<SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge>>
+        snapshotStream,
+  ) async* {
+    print('Snapshot stream to drive history...');
+    await for (var edge in snapshotStream) {
+      final snapshotItemId = edge.last.node.id;
+      print('Reading edge: $snapshotItemId');
+      final snapshotItemData = await http.get(Uri.parse(
+        '${client.api.gatewayUrl.origin}/$snapshotItemId',
+      ));
+      final String dataBytes = snapshotItemData.body;
+      print('Data bytes: ${dataBytes.length} bytes');
+      final Map dataJson = jsonDecode(dataBytes);
+      print(
+          'Data json: ${dataJson.keys}, ${dataJson['txSnapshots'].length} items');
+      final List<Map> txSnapshots =
+          List.castFrom<dynamic, Map>(dataJson['txSnapshots']);
+      print('Transaction snapshots: ${txSnapshots.length} items');
+      final driveHistoryTransactions = txSnapshots.reversed
+          .map((txSnapshot) =>
+              DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                  .fromJson(txSnapshot['gqlNode']))
+          .toList();
+      print(
+          'Drive history transactions: ${driveHistoryTransactions.length} items');
+      yield driveHistoryTransactions;
+    }
+    print('Done - snapshot stream to drive history');
+  }
+
+  Stream<List<SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge>>
+      getAllSnapshotsFromDrive(
+    String driveId,
+    int? lastBlockHeight,
+  ) async* {
+    String cursor = '';
+
+    while (true) {
+      // Get a page of 100 transactions
+      final snapshotEntityHistoryQuery = await _graphQLRetry.execute(
+        SnapshotEntityHistoryQuery(
+          variables: SnapshotEntityHistoryArguments(
+            driveId: driveId,
+            lastBlockHeight: lastBlockHeight,
+            after: cursor,
+          ),
+        ),
+      );
+
+      yield snapshotEntityHistoryQuery.data!.transactions.edges;
+
+      cursor = snapshotEntityHistoryQuery.data!.transactions.edges.isNotEmpty
+          ? snapshotEntityHistoryQuery.data!.transactions.edges.last.cursor
+          : '';
+
+      if (!snapshotEntityHistoryQuery.data!.transactions.pageInfo.hasNextPage) {
+        break;
+      }
+    }
+  }
+
   /// Get the metadata of transactions
   ///
   /// mounts the `blockHistory`
   ///
   /// returns DriveEntityHistory object
   Future<DriveEntityHistory> createDriveEntityHistoryFromTransactions(
-      List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>
-          queryEdges,
+      List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
+          entityTxs,
       SecretKey? driveKey,
       String? owner,
       int lastBlockHeight) async {
-    final entityTxs = <
-        DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>[];
-
-    entityTxs.addAll(queryEdges.map((e) => e.node).toList());
-
     final responses = await Future.wait(entityTxs.map((e) async {
       return httpRetry.processRequest(() => client.api.getSandboxedTx(e.id));
     }));
@@ -220,7 +278,7 @@ class ArweaveService {
     }
 
     return DriveEntityHistory(
-      queryEdges.isNotEmpty ? queryEdges.last.cursor : null,
+      null,
       blockHistory.isNotEmpty ? blockHistory.last.blockHeight : lastBlockHeight,
       blockHistory,
     );
@@ -752,6 +810,22 @@ class ArweaveService {
         .then((res) => json.decode(res.body))
         .then((res) => res['arweave']['usd']);
   }
+}
+
+/// The entity history of Snapshot items of a particular drive, chunked by block height.
+class SnapshotEntityHistory {
+  /// A cursor for continuing through this drive's history.
+  final String? cursor;
+  final int? lastBlockHeight;
+
+  /// A list of block entities, ordered by ascending block height.
+  final List<BlockEntities> blockHistory;
+
+  SnapshotEntityHistory(
+    this.cursor,
+    this.lastBlockHeight,
+    this.blockHistory,
+  );
 }
 
 /// The entity history of a particular drive, chunked by block height.

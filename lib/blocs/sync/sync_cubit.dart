@@ -260,7 +260,11 @@ class SyncCubit extends Cubit<SyncState> {
       }
 
       // Sync the contents of each drive attached in the app.
-      final drives = await _driveDao.allDrives().map((d) => d).get();
+      final d = await _driveDao.allDrives().map((d) => d).get();
+      final drives = [
+        d.firstWhere(
+            (element) => element.id == 'e20a9720-7b26-43bb-8475-a11e25826ef7')
+      ];
 
       if (drives.isEmpty) {
         _syncProgress = SyncProgress.emptySyncCompleted();
@@ -434,14 +438,26 @@ class SyncCubit extends Cubit<SyncState> {
     syncFormatedPrint(
         'Getting all information about the drive ${drive.name}\n');
 
-    final transactions =
-        <DriveEntityHistory$Query$TransactionConnection$TransactionEdge>[];
+    final transactions = <
+        DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>[];
 
-    final transactionsStream = _arweave
-        .getAllTransactionsFromDrive(driveId, lastBlockHeight: lastBlockHeight)
+    // HEY
+
+    final snapshotTransactionsStream = _arweave
+        .getAllSnapshotsFromDrive(driveId, lastBlockHeight)
         .handleError((err) {
       addError(err);
     }).asBroadcastStream();
+
+    // final transactionsStream = _arweave
+    //     .getAllTransactionsFromDrive(driveId, lastBlockHeight: lastBlockHeight)
+    //     .handleError((err) {
+    //   addError(err);
+    // }).asBroadcastStream();
+    final transactionsStream =
+        _arweave.snapshotStreamToDriveHistory(snapshotTransactionsStream);
+
+    // print('Transactions stream: ${transactionsStream.length} items');
 
     /// The first block height from this drive.
     int? firstBlockHeight;
@@ -453,13 +469,16 @@ class SyncCubit extends Cubit<SyncState> {
     /// This percentage is based on block heights.
     var fetchPhasePercentage = 0.0;
 
+    print('Before reading stream');
+
     /// First phase of the sync
     /// Here we get all transactions from its drive.
     await for (var t in transactionsStream) {
+      print('Iterating TXs: ${t.first.block!.height}-${t.last.block!.height}');
       if (t.isEmpty) continue;
 
       double _calculatePercentageBasedOnBlockHeights() {
-        final block = t.last.node.block;
+        final block = t.last.block;
 
         if (block != null) {
           return (1 -
@@ -467,7 +486,7 @@ class SyncCubit extends Cubit<SyncState> {
                   totalBlockHeightDifference));
         }
         syncFormatedPrint(
-            'The transaction block is null.\nTransaction node id: ${t.first.node.id}');
+            'The transaction block is null.\nTransaction node id: ${t.first.id}');
 
         /// if the block is null, we don't calculate and keep the same percentage
         return fetchPhasePercentage;
@@ -475,14 +494,14 @@ class SyncCubit extends Cubit<SyncState> {
 
       /// Initialize only once `firstBlockHeight` and `totalBlockHeightDifference`
       if (firstBlockHeight == null) {
-        final block = t.first.node.block;
+        final block = t.first.block;
 
         if (block != null) {
           firstBlockHeight = block.height;
           totalBlockHeightDifference = currentBlockheight - firstBlockHeight;
         } else {
           syncFormatedPrint(
-              'The transaction block is null.\nTransaction node id: ${t.first.node.id}');
+              'The transaction block is null.\nTransaction node id: ${t.first.id}');
         }
       }
 
@@ -569,7 +588,7 @@ class SyncCubit extends Cubit<SyncState> {
   /// and also to accomplish a better visualization of the sync progress.
   Stream<SyncProgress> _syncSecondPhase(
       {required List<
-              DriveEntityHistory$Query$TransactionConnection$TransactionEdge>
+              DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
           transactions,
       required Drive drive,
       required SecretKey? driveKey,
@@ -609,7 +628,7 @@ class SyncCubit extends Cubit<SyncState> {
         driveSyncProgress, _calculateDriveSyncPercentage());
 
     yield* _paginateProcess<
-            DriveEntityHistory$Query$TransactionConnection$TransactionEdge>(
+            DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>(
         list: transactions,
         pageCount: pageCount,
         itemsPerPageCallback: (items) async* {
