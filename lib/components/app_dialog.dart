@@ -11,6 +11,12 @@ class AppDialog extends StatelessWidget {
   final FutureOr<void> Function()? onWillPopCallback;
 
   final bool dismissable;
+  static const double dialogBorderRadius = 4.0;
+  static const double actionButtonsPadding = 16.0;
+  static const EdgeInsets dialogContentPadding = EdgeInsets.symmetric(
+    vertical: 12.0,
+    horizontal: 18.0,
+  );
 
   const AppDialog({
     required this.title,
@@ -29,12 +35,19 @@ class AppDialog extends StatelessWidget {
           return dismissable;
         },
         child: AlertDialog(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(dialogBorderRadius)),
           titlePadding: EdgeInsets.zero,
           title: Container(
-            color: kDarkSurfaceColor,
+            decoration: const BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(dialogBorderRadius),
+                  topRight: Radius.circular(dialogBorderRadius),
+                ),
+                color: kDarkSurfaceColor),
             height: 64,
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+              padding: dialogContentPadding,
               child: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -53,7 +66,10 @@ class AppDialog extends StatelessWidget {
           ),
           contentPadding: contentPadding,
           content: content,
-          actionsPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+          actionsPadding: const EdgeInsets.symmetric(
+            horizontal: actionButtonsPadding,
+            vertical: actionButtonsPadding,
+          ),
           actions: actions,
         ),
       );

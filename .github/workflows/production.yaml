@@ -30,13 +30,14 @@ jobs:
           flutter-version: '3.3.4'
           channel: 'stable'
 
+      - name: Install script_runner
+        run: flutter pub global activate script_runner
+
       - name: Build app
-        run: |
-          flutter pub get
-          flutter pub run build_runner build --delete-conflicting-outputs
+        run: scr setup
 
       - name: Test
-        run: flutter test
+        run: scr test
 
   web:
     needs: test
@@ -53,10 +54,12 @@ jobs:
           flutter-version: '3.3.4'
           channel: 'stable'
 
+      - name: Install script_runner
+        run: flutter pub global activate script_runner
+
       - name: Build app
         run: |
-          flutter pub get
-          flutter pub run build_runner build --delete-conflicting-outputs
+          scr setup
           flutter config --enable-web
           flutter build web --release
 
