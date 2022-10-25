@@ -455,7 +455,7 @@ class SyncCubit extends Cubit<SyncState> {
     //   addError(err);
     // }).asBroadcastStream();
     final transactionsStream =
-        _arweave.snapshotStreamToDriveHistory(snapshotTransactionsStream);
+        await _arweave.snapshotStreamToDriveHistory(snapshotTransactionsStream);
 
     // print('Transactions stream: ${transactionsStream.length} items');
 
@@ -473,12 +473,11 @@ class SyncCubit extends Cubit<SyncState> {
 
     /// First phase of the sync
     /// Here we get all transactions from its drive.
-    await for (var t in transactionsStream) {
-      print('Iterating TXs: ${t.first.block!.height}-${t.last.block!.height}');
-      if (t.isEmpty) continue;
+    for (var t in transactionsStream.gqlData) {
+      // print('Iterating TXs: ${t.first.block!.height}-${t.last.block!.height}');
 
       double _calculatePercentageBasedOnBlockHeights() {
-        final block = t.last.block;
+        final block = t.block;
 
         if (block != null) {
           return (1 -
@@ -486,7 +485,7 @@ class SyncCubit extends Cubit<SyncState> {
                   totalBlockHeightDifference));
         }
         syncFormatedPrint(
-            'The transaction block is null.\nTransaction node id: ${t.first.id}');
+            'The transaction block is null.\nTransaction node id: ${t.id}');
 
         /// if the block is null, we don't calculate and keep the same percentage
         return fetchPhasePercentage;
@@ -494,18 +493,18 @@ class SyncCubit extends Cubit<SyncState> {
 
       /// Initialize only once `firstBlockHeight` and `totalBlockHeightDifference`
       if (firstBlockHeight == null) {
-        final block = t.first.block;
+        final block = t.block;
 
         if (block != null) {
           firstBlockHeight = block.height;
           totalBlockHeightDifference = currentBlockheight - firstBlockHeight;
         } else {
           syncFormatedPrint(
-              'The transaction block is null.\nTransaction node id: ${t.first.id}');
+              'The transaction block is null.\nTransaction node id: ${t.id}');
         }
       }
 
-      transactions.addAll(t);
+      transactions.add(t);
 
       /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
       if (firstBlockHeight != null) {
@@ -514,8 +513,9 @@ class SyncCubit extends Cubit<SyncState> {
                 _calculatePercentageBasedOnBlockHeights()));
 
         _syncProgress = _syncProgress.copyWith(
-            progress: _totalProgress,
-            entitiesNumber: _syncProgress.entitiesNumber + t.length);
+          progress: _totalProgress,
+          entitiesNumber: _syncProgress.entitiesNumber + 1,
+        );
 
         yield _syncProgress;
 
@@ -556,11 +556,13 @@ class SyncCubit extends Cubit<SyncState> {
             _syncProgress.numberOfDrivesAtGetMetadataPhase + 1);
 
     yield* _syncSecondPhase(
-        transactions: transactions,
-        drive: drive,
-        driveKey: driveKey,
-        currentBlockHeight: currentBlockheight,
-        lastBlockHeight: lastBlockHeight);
+      transactions: transactions,
+      drive: drive,
+      driveKey: driveKey,
+      currentBlockHeight: currentBlockheight,
+      lastBlockHeight: lastBlockHeight,
+      metadataPerTxId: transactionsStream.metadataPerTxId,
+    );
 
     syncFormatedPrint('Drive ${drive.name} ended the 2nd phase succesfully\n');
 
@@ -586,14 +588,16 @@ class SyncCubit extends Cubit<SyncState> {
   ///
   /// It is needed because of close connection issues when made a huge number of requests to get the metadata,
   /// and also to accomplish a better visualization of the sync progress.
-  Stream<SyncProgress> _syncSecondPhase(
-      {required List<
-              DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-          transactions,
-      required Drive drive,
-      required SecretKey? driveKey,
-      required int lastBlockHeight,
-      required int currentBlockHeight}) async* {
+  Stream<SyncProgress> _syncSecondPhase({
+    required List<
+            DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
+        transactions,
+    required Drive drive,
+    required SecretKey? driveKey,
+    required int lastBlockHeight,
+    required int currentBlockHeight,
+    required Map<String, String> metadataPerTxId,
+  }) async* {
     final pageCount =
         200 ~/ (_syncProgress.drivesCount - _syncProgress.drivesSynced);
     var currentDriveEntitiesSynced = 0;
@@ -636,7 +640,12 @@ class SyncCubit extends Cubit<SyncState> {
 
           final entityHistory =
               await _arweave.createDriveEntityHistoryFromTransactions(
-                  items, driveKey, owner, lastBlockHeight);
+            items,
+            driveKey,
+            owner,
+            lastBlockHeight,
+            metadataPerTxId,
+          );
 
           // Create entries for all the new revisions of file and folders in this drive.
           final newEntities = entityHistory.blockHistory

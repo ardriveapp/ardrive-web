@@ -133,36 +133,47 @@ class ArweaveService {
     }
   }
 
-  Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>>
-      snapshotStreamToDriveHistory(
+  Future<SnapshotDataResult> snapshotStreamToDriveHistory(
     Stream<List<SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge>>
         snapshotStream,
-  ) async* {
+  ) async {
+    // TODO: understand how to make this method return a Stream and the metadataToTxId mapping
+
+    final List<
+            DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
+        gqlData = [];
+    final Map<String, String> metadata = {};
+
     print('Snapshot stream to drive history...');
     await for (var edge in snapshotStream) {
       final snapshotItemId = edge.last.node.id;
-      print('Reading edge: $snapshotItemId');
       final snapshotItemData = await http.get(Uri.parse(
         '${client.api.gatewayUrl.origin}/$snapshotItemId',
       ));
       final String dataBytes = snapshotItemData.body;
-      print('Data bytes: ${dataBytes.length} bytes');
       final Map dataJson = jsonDecode(dataBytes);
-      print(
-          'Data json: ${dataJson.keys}, ${dataJson['txSnapshots'].length} items');
       final List<Map> txSnapshots =
           List.castFrom<dynamic, Map>(dataJson['txSnapshots']);
-      print('Transaction snapshots: ${txSnapshots.length} items');
-      final driveHistoryTransactions = txSnapshots.reversed
-          .map((txSnapshot) =>
-              DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-                  .fromJson(txSnapshot['gqlNode']))
-          .toList();
-      print(
-          'Drive history transactions: ${driveHistoryTransactions.length} items');
-      yield driveHistoryTransactions;
+
+      for (final txSnapshot in txSnapshots) {
+        final driveHistory =
+            DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                .fromJson(txSnapshot['gqlNode']);
+        final String jsonMetadata = txSnapshot['jsonMetadata'];
+
+        print('Json metadata in snapshot: $jsonMetadata');
+
+        gqlData.add(driveHistory);
+        metadata[driveHistory.id] = jsonMetadata;
+      }
     }
+
     print('Done - snapshot stream to drive history');
+
+    return SnapshotDataResult(
+      gqlData,
+      metadata,
+    );
   }
 
   Stream<List<SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge>>
@@ -202,13 +213,22 @@ class ArweaveService {
   ///
   /// returns DriveEntityHistory object
   Future<DriveEntityHistory> createDriveEntityHistoryFromTransactions(
-      List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-          entityTxs,
-      SecretKey? driveKey,
-      String? owner,
-      int lastBlockHeight) async {
+    List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
+        entityTxs,
+    SecretKey? driveKey,
+    String? owner,
+    int lastBlockHeight,
+    Map<String, String> metadataPerTxId,
+  ) async {
     final responses = await Future.wait(entityTxs.map((e) async {
-      return httpRetry.processRequest(() => client.api.getSandboxedTx(e.id));
+      final metadataInSnapshot = metadataPerTxId[e.id];
+      if (metadataInSnapshot != null) {
+        print('Found cached data: $metadataInSnapshot');
+        return Uint8List.fromList(utf8.encode(metadataInSnapshot));
+      }
+      final request =
+          await httpRetry.processRequest(() => client.api.getSandboxedTx(e.id));
+      return request.bodyBytes;
     }));
 
     final blockHistory = <BlockEntities>[];
@@ -229,8 +249,7 @@ class ArweaveService {
 
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
-        final entityResponse = responses[i];
-        final rawEntityData = entityResponse.bodyBytes;
+        final rawEntityData = responses[i];
 
         Entity? entity;
         if (entityType == EntityType.drive) {
@@ -855,4 +874,13 @@ class UploadTransactions {
   Transaction dataTx;
 
   UploadTransactions(this.entityTx, this.dataTx);
+}
+
+class SnapshotDataResult {
+  final List<
+          DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
+      gqlData;
+  final Map<String, String> metadataPerTxId;
+
+  SnapshotDataResult(this.gqlData, this.metadataPerTxId);
 }
