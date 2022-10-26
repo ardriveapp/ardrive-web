@@ -1481,5 +1481,13 @@
   "enableStorageAccess": "Go to settings and tap ArDrive and turn on Storage access.",
   "@enableStorageAccess": {
     "description": "enable camera access"
+  },
+  "forgetWalletTitle": "Forget Wallet?",
+  "@forgetWalletTitle": {
+    "description": "Modal title to forget wallet"
+  },
+  "forgetWalletDescription": "Are you sure you want to forget your wallet? You will need to select another wallet to login with another profile.",
+  "@forgetWalletDescription": {
+    "description": "Modal description to forget wallet"
   }
 }

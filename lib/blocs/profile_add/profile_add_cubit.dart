@@ -6,6 +6,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:arweave/arweave.dart';
@@ -202,7 +203,9 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
       await _profileDao.addProfile(username, password, _wallet, _profileType);
 
-      if (await _biometricAuthentication.isEnabled()) {
+      final platform = SystemPlatform.platform;
+
+      if (platform == 'Android' || platform == 'iOS') {
         _savePasswordOnSecureStore(password);
       }
 

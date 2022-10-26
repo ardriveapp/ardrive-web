@@ -19,6 +19,11 @@ class EntityTag {
 
   static const cipher = 'Cipher';
   static const cipherIv = 'Cipher-IV';
+
+  static const protocolName = 'Protocol-Name';
+  static const action = 'Action';
+  static const input = 'Input';
+  static const contract = 'Contract';
 }
 
 class ContentType {
