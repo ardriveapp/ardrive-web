@@ -1,0 +1,3 @@
+- Add support for bAR
+- Add biometric on/off toggle to the Profile section
+- Improve login screen UI
