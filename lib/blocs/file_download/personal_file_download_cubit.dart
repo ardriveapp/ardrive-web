@@ -47,11 +47,10 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   Future<void> download(SecretKey? cipherKey) async {
     try {
       final drive = await _arfsRepository.getDriveById(_file.driveId);
-      final platform = SystemPlatform.platform;
 
       switch (drive.drivePrivacy) {
         case DrivePrivacy.private:
-          if (platform == 'Android' || platform == 'iOS') {
+          if (AppPlatform.isMobile) {
             if (isSizeAbovePrivateLimit(_file.size)) {
               emit(const FileDownloadFailure(
                   FileDownloadFailureReason.fileAboveLimit));
@@ -68,7 +67,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
           await _downloadFile(drive, cipherKey);
           break;
         case DrivePrivacy.public:
-          if (platform == 'Android' || platform == 'iOS') {
+          if (AppPlatform.isMobile) {
             final stream = _downloader.downloadFile(
               '${_arweave.client.api.gatewayUrl.origin}/${_file.txId}',
               _file.name,

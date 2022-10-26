@@ -14,7 +14,7 @@ final fakePrivateTags = [
 List<Tag> fakeApplicationTags({
   required String version,
 }) {
-  final String platform = SystemPlatform.platform;
+  final String platform = AppPlatform.getPlatform().name;
   return <Tag>[
     Tag(EntityTag.appName, 'ArDrive-App'),
     Tag(EntityTag.appVersion, version),

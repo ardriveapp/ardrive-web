@@ -301,7 +301,7 @@ void main() {
         arfsRepository: mockARFSRepository,
       ),
       setUp: () {
-        SystemPlatform.setMockPlatform(platform: 'web');
+        AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
 
         /// Using a private drive
         when(() => mockARFSRepository.getDriveById(any()))
@@ -336,7 +336,7 @@ void main() {
         arfsRepository: mockARFSRepository,
       ),
       setUp: () {
-        SystemPlatform.setMockPlatform(platform: 'Android');
+        AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
 
         /// Using a private drive
         when(() => mockARFSRepository.getDriveById(any()))
@@ -366,7 +366,7 @@ void main() {
         arfsRepository: mockARFSRepository,
       ),
       setUp: () {
-        SystemPlatform.setMockPlatform(platform: 'Android');
+        AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
 
         /// Using a private drive
         when(() => mockARFSRepository.getDriveById(any()))
@@ -392,7 +392,7 @@ void main() {
         arfsRepository: mockARFSRepository,
       ),
       setUp: () {
-        SystemPlatform.setMockPlatform(platform: 'Web');
+        AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
 
         /// Using a public drive
         when(() => mockARFSRepository.getDriveById(any()))
@@ -434,7 +434,7 @@ void main() {
         arfsRepository: mockARFSRepository,
       ),
       setUp: () {
-        SystemPlatform.setMockPlatform(platform: 'Web');
+        AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
 
         /// Using a public drive
         when(() => mockARFSRepository.getDriveById(any()))
@@ -473,7 +473,7 @@ void main() {
         arfsRepository: mockARFSRepository,
       ),
       setUp: () {
-        SystemPlatform.setMockPlatform(platform: 'Web');
+        AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
 
         /// Using a private drive
         when(() => mockARFSRepository.getDriveById(any()))
@@ -505,7 +505,7 @@ void main() {
         arfsRepository: mockARFSRepository,
       ),
       setUp: () {
-        SystemPlatform.setMockPlatform(platform: 'Web');
+        AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
 
         /// Using a private drive
         when(() => mockARFSRepository.getDriveById(any()))
@@ -540,7 +540,7 @@ void main() {
                 arfsRepository: mockARFSRepository,
               ),
           setUp: () {
-            SystemPlatform.setMockPlatform(platform: 'iOS');
+            AppPlatform.setMockPlatform(platform: SystemPlatform.iOS);
 
             /// Using a private drive
             when(() => mockARFSRepository.getDriveById(any()))
@@ -582,7 +582,7 @@ void main() {
                 arfsRepository: mockARFSRepository,
               ),
           setUp: () {
-            SystemPlatform.setMockPlatform(platform: 'Android');
+            AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
 
             /// Using a private drive
             when(() => mockARFSRepository.getDriveById(any()))
@@ -624,7 +624,7 @@ void main() {
                 arfsRepository: mockARFSRepository,
               ),
           setUp: () {
-            SystemPlatform.setMockPlatform(platform: 'web');
+            AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
 
             /// Using a private drive
             when(() => mockARFSRepository.getDriveById(any()))
@@ -648,7 +648,7 @@ void main() {
               arfsRepository: mockARFSRepository,
             ),
         setUp: () {
-          SystemPlatform.setMockPlatform(platform: 'Android');
+          AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
 
           /// Using a private drive
           when(() => mockARFSRepository.getDriveById(any()))
