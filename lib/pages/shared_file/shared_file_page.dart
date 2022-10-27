@@ -120,6 +120,7 @@ class SharedFilePage extends StatelessWidget {
             return Card(
               elevation: 2,
               child: SharedFileSideSheet(
+                fileKey: state.fileKey,
                 revisions: state.fileRevisions,
                 privacy: state.fileKey != null
                     ? DrivePrivacy.private
