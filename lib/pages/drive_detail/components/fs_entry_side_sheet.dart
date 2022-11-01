@@ -155,9 +155,12 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
             DataRow(cells: [
               DataCell(Text(appLocalizationsOf(context).driveID)),
               DataCell(
-                CopyIconButton(
-                  tooltip: appLocalizationsOf(context).copyDriveID,
-                  value: state.entry.id,
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: CopyIconButton(
+                    tooltip: appLocalizationsOf(context).copyDriveID,
+                    value: state.entry.id,
+                  ),
                 ),
               ),
             ]),
@@ -207,9 +210,12 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
             DataRow(cells: [
               DataCell(Text(appLocalizationsOf(context).folderID)),
               DataCell(
-                CopyIconButton(
-                  tooltip: appLocalizationsOf(context).copyFolderID,
-                  value: state.entry.folder.id,
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: CopyIconButton(
+                    tooltip: appLocalizationsOf(context).copyFolderID,
+                    value: state.entry.folder.id,
+                  ),
                 ),
               ),
             ]),
@@ -217,9 +223,12 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
             DataRow(cells: [
               DataCell(Text(appLocalizationsOf(context).fileID)),
               DataCell(
-                CopyIconButton(
-                  tooltip: appLocalizationsOf(context).copyFileID,
-                  value: state.entry.id,
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: CopyIconButton(
+                    tooltip: appLocalizationsOf(context).copyFileID,
+                    value: state.entry.id,
+                  ),
                 ),
               ),
             ]),
@@ -295,9 +304,13 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                       DataRow(cells: [
                         DataCell(Text(appLocalizationsOf(context).driveTxID)),
                         DataCell(
-                          CopyIconButton(
-                            tooltip: appLocalizationsOf(context).copyDriveTxID,
-                            value: revision.metadataTx.id,
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: CopyIconButton(
+                              tooltip:
+                                  appLocalizationsOf(context).copyDriveTxID,
+                              value: revision.metadataTx.id,
+                            ),
                           ),
                         ),
                       ]),
@@ -305,10 +318,13 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                         DataCell(
                             Text(appLocalizationsOf(context).rootFolderTxID)),
                         DataCell(
-                          CopyIconButton(
-                            tooltip:
-                                appLocalizationsOf(context).copyRootFolderTxID,
-                            value: infoState.rootFolderRevision.metadataTxId,
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: CopyIconButton(
+                              tooltip: appLocalizationsOf(context)
+                                  .copyRootFolderTxID,
+                              value: infoState.rootFolderRevision.metadataTxId,
+                            ),
                           ),
                         ),
                       ]),
@@ -317,10 +333,13 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                           DataCell(
                               Text(appLocalizationsOf(context).bundleTxID)),
                           DataCell(
-                            CopyIconButton(
-                              tooltip:
-                                  appLocalizationsOf(context).copyBundleTxID,
-                              value: revision.bundledIn,
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: CopyIconButton(
+                                tooltip:
+                                    appLocalizationsOf(context).copyBundleTxID,
+                                value: revision.bundledIn,
+                              ),
                             ),
                           ),
                         ]),
@@ -329,10 +348,13 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                         DataCell(
                             Text(appLocalizationsOf(context).metadataTxID)),
                         DataCell(
-                          CopyIconButton(
-                            tooltip:
-                                appLocalizationsOf(context).copyMetadataTxID,
-                            value: revision.metadataTx.id,
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: CopyIconButton(
+                              tooltip:
+                                  appLocalizationsOf(context).copyMetadataTxID,
+                              value: revision.metadataTx.id,
+                            ),
                           ),
                         ),
                       ]),
@@ -341,19 +363,25 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                         DataCell(
                             Text(appLocalizationsOf(context).metadataTxID)),
                         DataCell(
-                          CopyIconButton(
-                            tooltip:
-                                appLocalizationsOf(context).copyMetadataTxID,
-                            value: revision.metadataTx.id,
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: CopyIconButton(
+                              tooltip:
+                                  appLocalizationsOf(context).copyMetadataTxID,
+                              value: revision.metadataTx.id,
+                            ),
                           ),
                         ),
                       ]),
                       DataRow(cells: [
                         DataCell(Text(appLocalizationsOf(context).dataTxID)),
                         DataCell(
-                          CopyIconButton(
-                            tooltip: appLocalizationsOf(context).copyDataTxID,
-                            value: revision.dataTx.id,
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: CopyIconButton(
+                              tooltip: appLocalizationsOf(context).copyDataTxID,
+                              value: revision.dataTx.id,
+                            ),
                           ),
                         ),
                       ]),
@@ -362,10 +390,13 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                           DataCell(
                               Text(appLocalizationsOf(context).bundleTxID)),
                           DataCell(
-                            CopyIconButton(
-                              tooltip:
-                                  appLocalizationsOf(context).copyBundleTxID,
-                              value: revision.bundledIn,
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: CopyIconButton(
+                                tooltip:
+                                    appLocalizationsOf(context).copyBundleTxID,
+                                value: revision.bundledIn,
+                              ),
                             ),
                           ),
                         ]),
@@ -560,8 +591,10 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                   );
                 } else {
                   return Center(
-                      child: Text(
-                          appLocalizationsOf(context).itemIsBeingProcesed));
+                    child: Text(
+                      appLocalizationsOf(context).itemIsBeingProcesed,
+                    ),
+                  );
                 }
               } else {
                 return const Center(child: CircularProgressIndicator());
@@ -582,25 +615,4 @@ void downloadOrPreviewRevision({
   } else {
     context.read<DriveDetailCubit>().launchPreview(revision.dataTxId);
   }
-}
-
-class CopyIconButton extends StatelessWidget {
-  final String value;
-  final String tooltip;
-
-  const CopyIconButton({
-    Key? key,
-    required this.value,
-    required this.tooltip,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) => Container(
-        alignment: Alignment.centerRight,
-        child: IconButton(
-          icon: const Icon(Icons.copy, color: Colors.black54),
-          tooltip: tooltip,
-          onPressed: () => Clipboard.setData(ClipboardData(text: value)),
-        ),
-      );
 }
