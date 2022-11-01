@@ -11,6 +11,7 @@ class ProfileAuthShell extends StatelessWidget {
   final double? contentWidthFactor;
   final Widget? contentFooter;
   final bool resizeToAvoidBottomInset;
+  final bool useLogo;
 
   const ProfileAuthShell({
     Key? key,
@@ -19,34 +20,40 @@ class ProfileAuthShell extends StatelessWidget {
     this.contentWidthFactor,
     this.resizeToAvoidBottomInset = true,
     this.contentFooter,
+    this.useLogo = true,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    Widget _buildContent() => Column(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Container(
-              constraints: BoxConstraints(
-                minHeight: 512,
-                maxHeight: MediaQuery.of(context).size.height - 64,
+    Widget _buildContent() => SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                constraints: BoxConstraints(
+                  minHeight: 512,
+                  maxHeight: MediaQuery.of(context).size.height - 64,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (useLogo)
+                      Image.asset(
+                        Resources.images.brand.logoHorizontalNoSubtitleLight,
+                        height: 126,
+                        fit: BoxFit.contain,
+                      ),
+                    if (useLogo) const SizedBox(height: 32),
+                    content,
+                  ],
+                ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Image.asset(
-                    Resources.images.brand.logoHorizontalNoSubtitleLight,
-                    height: 126,
-                    fit: BoxFit.contain,
-                  ),
-                  const SizedBox(height: 32),
-                  Flexible(child: content),
-                ],
-              ),
-            ),
-            if (contentFooter != null) contentFooter!,
-          ],
+              if (contentFooter != null) contentFooter!,
+            ],
+          ),
         );
     Widget _buildIllustration() => Stack(
           fit: StackFit.expand,
@@ -90,6 +97,7 @@ class ProfileAuthShell extends StatelessWidget {
             ),
             Expanded(
               child: FractionallySizedBox(
+                alignment: Alignment.center,
                 widthFactor: contentWidthFactor,
                 child: _buildContent(),
               ),

@@ -26,6 +26,7 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
         ),
         contentWidthFactor: 0.5,
         content: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             ...splitTranslationsWithMultipleStyles<Widget>(
@@ -64,6 +65,7 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
             ),
+            // const Spacer(),
           ],
         ),
       );
