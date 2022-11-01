@@ -70,36 +70,34 @@ class _ProfileOverlayState extends State<ProfileOverlay> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(state.username!),
-                      Wrap(
-                        children: [
-                          SelectableText.rich(
-                            TextSpan(
-                              text: state.walletAddress,
-                              style: Theme.of(context).textTheme.bodyText2,
-                              children: [
-                                WidgetSpan(
-                                  alignment: PlaceholderAlignment.baseline,
-                                  baseline: TextBaseline.alphabetic,
-                                  child: CopyIconButton(
-                                    value: state.walletAddress,
-                                    tooltip: appLocalizationsOf(context).copyWalletAddress,
-                                    size: 12,
-                                    onTap: () {
-                                      showCopyToast();
-                                    },
-                                  ),
-                                ),
-                                WidgetSpan(
-                                  child: AnimatedOpacity(
-                                    opacity: _toastVisible ? 1.0 : 0.0,
-                                    duration: const Duration(milliseconds: 500),
-                                    child: Text(appLocalizationsOf(context).addressCopied),
-                                  ),
-                                )
-                              ],
+                      SelectableText.rich(
+                        TextSpan(
+                          text: state.walletAddress,
+                          style: Theme.of(context).textTheme.bodyText2,
+                          children: [
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.baseline,
+                              baseline: TextBaseline.alphabetic,
+                              child: CopyIconButton(
+                                value: state.walletAddress,
+                                tooltip: appLocalizationsOf(context)
+                                    .copyWalletAddress,
+                                size: 12,
+                                onTap: () {
+                                  showCopyToast();
+                                },
+                              ),
                             ),
-                          ),
-                        ],
+                            WidgetSpan(
+                              child: AnimatedOpacity(
+                                opacity: _toastVisible ? 1.0 : 0.0,
+                                duration: const Duration(milliseconds: 500),
+                                child: Text(
+                                    appLocalizationsOf(context).addressCopied),
+                              ),
+                            )
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
