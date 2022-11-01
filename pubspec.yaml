@@ -75,7 +75,7 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.9
   app_settings: ^4.1.8
   ardrive_io:
-    path: ./ardrive_io
+    path: ./packages/ardrive_io
   firebase_crashlytics: ^2.8.10
   firebase_core: ^1.22.0
   bloc_concurrency: ^0.2.0
@@ -89,7 +89,7 @@ dev_dependencies:
     sdk: flutter
   flutter_driver:
     sdk: flutter
-  test: 1.21.1
+  test: 
   bloc_test: ^9.1.0
   build_runner: ^2.0.4
   drift_dev: ^1.0.0
