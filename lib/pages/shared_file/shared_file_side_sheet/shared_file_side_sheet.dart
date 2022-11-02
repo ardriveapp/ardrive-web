@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:ardrive/blocs/shared_file/shared_file_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -283,9 +285,14 @@ void downloadOrPreviewRevision({
   required FileRevision revision,
   SecretKey? fileKey,
 }) {
+  log(revision.toJsonString());
+
   if (drivePrivacy == DrivePrivacy.private) {
     promptToDownloadSharedFile(
-        context: context, fileId: revision.fileId, fileKey: fileKey);
+      context: context,
+      revision: revision,
+      fileKey: fileKey,
+    );
   } else {
     context.read<SharedFileCubit>().launchPreview(revision.dataTxId);
   }

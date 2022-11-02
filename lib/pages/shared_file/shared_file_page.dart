@@ -90,8 +90,8 @@ class SharedFilePage extends StatelessWidget {
                             icon: const Icon(Icons.file_download),
                             label: Text(appLocalizationsOf(context).download),
                             onPressed: () => promptToDownloadSharedFile(
+                              revision: state.fileRevisions.first,
                               context: context,
-                              fileId: state.fileRevisions.first.fileId,
                               fileKey: state.fileKey,
                             ),
                           ),
