@@ -1485,8 +1485,7 @@
   "addressCopied": "Address Copied!",
   "@addressCopied": {
     "description": "Toast message when you copy wallet address"
-  }
-  ,
+  },
   "copyWalletAddress": "Copy Wallet Address",
   "@addressCopied": {
     "description": "Tooltip on copy wallet address button"
