@@ -25,9 +25,7 @@ class CopyIconButton extends StatelessWidget {
       tooltip: tooltip,
       onPressed: () {
         Clipboard.setData(ClipboardData(text: value));
-        if (onTap != null) {
-          onTap!();
-        }
+        onTap?.call();
       },
     );
   }
