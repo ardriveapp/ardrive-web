@@ -81,14 +81,14 @@ Future<void> promptToDownloadFileRevision({
 
 Future<void> promptToDownloadSharedFile({
   required BuildContext context,
-  required String fileId,
   SecretKey? fileKey,
+  required FileRevision revision,
 }) =>
     showDialog(
       context: context,
       builder: (_) => BlocProvider<FileDownloadCubit>(
         create: (_) => SharedFileDownloadCubit(
-          fileId: fileId,
+          revision: revision,
           fileKey: fileKey,
           arweave: context.read<ArweaveService>(),
         ),
