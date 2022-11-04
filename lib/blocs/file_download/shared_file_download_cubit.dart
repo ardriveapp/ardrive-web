@@ -3,14 +3,13 @@ part of 'file_download_cubit.dart';
 /// [SharedFileDownloadCubit] includes logic to allow a user to download files that
 /// are shared with them without a login.
 class SharedFileDownloadCubit extends FileDownloadCubit {
-  final String fileId;
   final SecretKey? fileKey;
-
+  final FileRevision revision;
   final ArweaveService _arweave;
 
   SharedFileDownloadCubit({
-    required this.fileId,
     this.fileKey,
+    required this.revision,
     required ArweaveService arweave,
   })  : _arweave = arweave,
         super(FileDownloadStarting()) {
@@ -19,51 +18,50 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   Future<void> download() async {
     try {
-      final file = _validateDownload(
-          (await _arweave.getLatestFileEntityWithId(fileId, fileKey)));
-
-      /// We can use the ! operator because we already validated on `_validateDownload`
-
-      emit(FileDownloadInProgress(
-          fileName: file.name!, totalByteCount: file.size!));
-      //Reinitialize here in case connection is closed with abort
-
-      final dataRes = await http.get(Uri.parse(
-          '${_arweave.client.api.gatewayUrl.origin}/${file.dataTxId}'));
-
-      Uint8List dataBytes;
-
-      if (fileKey == null) {
-        dataBytes = dataRes.bodyBytes;
-      } else {
-        final dataTx = (await _arweave.getTransactionDetails(file.dataTxId!))!;
-        dataBytes =
-            await decryptTransactionData(dataTx, dataRes.bodyBytes, fileKey!);
-      }
-
-      emit(
-        FileDownloadSuccess(
-          bytes: dataBytes,
-          fileName: file.name!,
-          mimeType: lookupMimeTypeWithDefaultType(file.name!),
-          lastModified: file.lastModifiedDate!,
-        ),
-      );
+      _downloadFile(revision);
     } catch (err) {
       addError(err);
     }
   }
 
-  FileEntity _validateDownload(FileEntity? file) {
-    if (file == null ||
-        file.name == null ||
-        file.lastModifiedDate == null ||
-        file.dataTxId == null ||
-        file.size == null) {
-      throw Exception('Malformed FileEntity to download');
+  Future<void> _downloadFile(FileRevision revision) async {
+    late Uint8List dataBytes;
+
+    emit(
+      FileDownloadInProgress(
+        fileName: revision.name,
+        totalByteCount: revision.size,
+      ),
+    );
+
+    final dataRes = await http.get(
+      Uri.parse(
+        '${_arweave.client.api.gatewayUrl.origin}/${revision.dataTxId}',
+      ),
+    );
+
+    if (fileKey != null) {
+      final dataTx = await (_arweave.getTransactionDetails(revision.dataTxId));
+
+      if (dataTx != null) {
+        dataBytes = await decryptTransactionData(
+          dataTx,
+          dataRes.bodyBytes,
+          fileKey!,
+        );
+      }
+    } else {
+      dataBytes = dataRes.bodyBytes;
     }
 
-    return file;
+    emit(
+      FileDownloadSuccess(
+        bytes: dataBytes,
+        fileName: revision.name,
+        mimeType: revision.dataContentType ?? lookupMimeType(revision.name),
+        lastModified: revision.lastModifiedDate,
+      ),
+    );
   }
 
   @override
@@ -76,6 +74,6 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
     emit(FileDownloadFailure());
     super.onError(error, stackTrace);
 
-    print('Failed to download shared file: $error $stackTrace');
+    log('Failed to download shared file: $error $stackTrace');
   }
 }
