@@ -20,6 +20,13 @@ class ArDriveColors {
   static final Color themeAccentBrand = red.shade500;
 
   /// Warning
+  static final Color themeWarningFb = yellow.shade400;
+  static final Color themeWarningEmphasis = yellow.shade500;
+  static final Color themeWarningMuted = yellow.shade600;
+  static final Color themeWarningSubtle = yellow.shade800;
+  static const Color themeWarningOnWarning = black;
+
+  /// Error
   static final Color themeErrorFb = red.shade400;
   static final Color themeErrorMuted = red.shade600;
   static final Color themeErrorSubtle = red.shade800;
