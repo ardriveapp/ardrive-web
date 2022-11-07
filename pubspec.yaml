@@ -75,8 +75,8 @@ dependencies:
   app_settings: ^4.1.8
   ardrive_io:
     path: ./ardrive_io
-  firebase_crashlytics: ^2.8.10
-  firebase_core: ^1.22.0
+  firebase_crashlytics: ^3.0.4
+  firebase_core: ^2.1.1
   bloc_concurrency: ^0.2.0
   universal_html: ^2.0.8
   device_info_plus: ^4.0.0
