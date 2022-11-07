@@ -46,7 +46,7 @@ packages:
   ardrive_io:
     dependency: "direct main"
     description:
-      path: ardrive_io
+      path: "packages/ardrive_io"
       relative: true
     source: path
     version: "0.0.1"
