@@ -30,10 +30,9 @@ download:
     - file: lib/l10n/app_zh.arb
       locale_code: zh
   params:
-    export_empty_as: empty # Optional, default: empty. How you would like empty translations to be exported. Allowed values are `empty` to keep empty, `main` to replace with the main language value, or `skip` to omit.
+    export_empty_as: skip # Optional, default: empty. How you would like empty translations to be exported. Allowed values are `empty` to keep empty, `main` to replace with the main language value, or `skip` to omit.
     exclude_tags: # Optional. List of tags to be excluded from the download. If not set, all string keys will be considered for download.
       - removed
     include_tags: # Optional. List of tags to be downloaded. If not set, all string keys will be considered for download.
       - new
-    java_properties_encoding: utf_8 # Optional, default: latin_1. (Only for Java .properties files download) Character encoding. Available values : `utf_8`, `latin_1`
 
