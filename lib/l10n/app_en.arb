@@ -1457,7 +1457,7 @@
   "deviceNotSupportBiometrics": "This device does not support the use of biometrics.",
   "@deviceNotSupportBiometrics": {
     "description": "Biometric is not supported"
-  },  
+  },
   "biometricsDisabledOnYourDevice": "This function is currently disabled on your device. To use it, please go to your device Settings and enable biometric authentication.",
   "@biometricsDisabledOnYourDevice": {
     "description": "Biometric is disabled"
@@ -1489,5 +1489,13 @@
   "forgetWalletDescription": "Are you sure you want to forget your wallet? You will need to select another wallet to login with another profile.",
   "@forgetWalletDescription": {
     "description": "Modal description to forget wallet"
+  },
+  "addressCopied": "Address Copied!",
+  "@addressCopied": {
+    "description": "Toast message when you copy wallet address"
+  },
+  "copyWalletAddress": "Copy Wallet Address",
+  "@addressCopied": {
+    "description": "Tooltip on copy wallet address button"
   }
 }
