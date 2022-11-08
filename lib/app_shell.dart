@@ -51,9 +51,15 @@ class AppShellState extends State<AppShell> {
                       ),
                       child: PortalEntry(
                         visible: _showProfileOverlay,
-                        portal: const Padding(
-                          padding: EdgeInsets.only(top: 56),
-                          child: ProfileOverlay(),
+                        portal: Padding(
+                          padding: const EdgeInsets.only(top: 56, left: 24),
+                          child: ProfileOverlay(
+                            onCloseProfileOverlay: () {
+                              setState(() {
+                                _showProfileOverlay = false;
+                              });
+                            },
+                          ),
                         ),
                         portalAnchor: Alignment.topRight,
                         childAnchor: Alignment.topRight,

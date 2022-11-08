@@ -34,6 +34,7 @@ class ProfileAuthOnboardingState extends State<ProfileAuthOnboarding> {
             textAlign: TextAlign.center,
             child: Builder(
               builder: (context) => Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     appLocalizationsOf(context).welcomeToThePermawebEmphasized,

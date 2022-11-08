@@ -1,0 +1,4 @@
+- Upgrades Flutter to 3.3.5
+- Adds a button to copy the wallet address in the profile modal
+- Fixes an issue downloading private shared files
+- Fixes an issue downloading previous revisions of shared files

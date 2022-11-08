@@ -8,7 +8,7 @@
       "name": "Flutter Debug",
       "request": "launch",
       "type": "dart",
-      "args": ["--debug"],
+      "args": ["--debug", "--flavor", "development"],
       "program": "lib/main.dart"
     },
     {
