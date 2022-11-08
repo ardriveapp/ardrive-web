@@ -11,7 +11,6 @@ import 'package:mocktail/mocktail.dart';
 
 class MockArweave extends Mock implements Arweave {}
 
-
 class MockConfig extends Mock implements AppConfig {}
 
 class MockContext extends Mock implements BuildContext {}

@@ -309,16 +309,40 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildSyncButton() => BlocBuilder<SyncCubit, SyncState>(
-        builder: (context, syncState) => IconButton(
-          icon: const Icon(Icons.refresh),
-          onPressed: () {
-            print('Starting Sync Manually');
-            context.read<SyncCubit>().startSync();
+  Widget _buildSyncButton() {
+    return BlocBuilder<SyncCubit, SyncState>(
+      builder: (context, syncState) {
+        return PopupMenuButton(
+          itemBuilder: (context) {
+            return [
+              PopupMenuItem(
+                value: 1,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () {
+                    context.read<SyncCubit>().startSync(syncDeep: false);
+                  },
+                  label: Text(appLocalizationsOf(context).sync),
+                ),
+              ),
+              PopupMenuItem(
+                value: 1,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () {
+                    context.read<SyncCubit>().startSync(syncDeep: true);
+                  },
+                  label: Text('Deep Sync'),
+                ),
+              ),
+            ];
           },
-          tooltip: appLocalizationsOf(context).sync,
-        ),
-      );
+          icon: const Icon(Icons.refresh),
+          position: PopupMenuPosition.under,
+        );
+      },
+    );
+  }
 }
 
 class AppVersionWidget extends StatelessWidget {
