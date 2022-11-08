@@ -20,9 +20,14 @@ import '../../utils/html/html_util.dart';
 
 part 'sync_progress.dart';
 part 'sync_state.dart';
+part 'utils/add_drive_entity_revisions.dart';
+part 'utils/add_file_entity_revisions.dart';
+part 'utils/add_folder_entity_revisions.dart';
+part 'utils/calculations.dart';
 part 'utils/create_ghosts.dart';
 part 'utils/generate_paths.dart';
 part 'utils/log_sync.dart';
+part 'utils/parse_drive_transactions.dart';
 part 'utils/update_transaction_statuses.dart';
 
 const kRequiredTxConfirmationCount = 15;
@@ -397,8 +402,10 @@ class SyncCubit extends Cubit<SyncState> {
       /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
       if (firstBlockHeight != null) {
         _totalProgress += _calculateProgressInFetchPhasePercentage(
-            _calculatePercentageProgress(fetchPhasePercentage,
-                calculatePercentageBasedOnBlockHeights()));
+          _syncProgress,
+          _calculatePercentageProgress(
+              fetchPhasePercentage, calculatePercentageBasedOnBlockHeights()),
+        );
 
         _syncProgress = _syncProgress.copyWith(
             progress: _totalProgress,
@@ -427,8 +434,10 @@ class SyncCubit extends Cubit<SyncState> {
     /// Fill the remaining percentage.
     /// It is needed because the phase one isn't accurate and possibly will not
     /// match 100% every time
-    _totalProgress +=
-        _calculateProgressInFetchPhasePercentage((1 - fetchPhasePercentage));
+    _totalProgress += _calculateProgressInFetchPhasePercentage(
+      _syncProgress,
+      (1 - fetchPhasePercentage),
+    );
 
     logSync('Total progress after fetch phase: $_totalProgress');
 
@@ -442,12 +451,18 @@ class SyncCubit extends Cubit<SyncState> {
         numberOfDrivesAtGetMetadataPhase:
             _syncProgress.numberOfDrivesAtGetMetadataPhase + 1);
 
-    yield* _syncSecondPhase(
-        transactions: transactions,
-        drive: drive,
-        driveKey: driveKey,
-        currentBlockHeight: currentBlockHeight,
-        lastBlockHeight: lastBlockHeight);
+    yield* _parseDriveTransactionsIntoDatabaseEntities(
+      driveDao: _driveDao,
+      arweaveService: _arweave,
+      database: _db,
+      syncProgress: _syncProgress,
+      totalProgress: _totalProgress,
+      transactions: transactions,
+      drive: drive,
+      driveKey: driveKey,
+      currentBlockHeight: currentBlockHeight,
+      lastBlockHeight: lastBlockHeight,
+    );
 
     logSync('Drive ${drive.name} ended the 2nd phase successfully\n');
 
@@ -467,190 +482,6 @@ class SyncCubit extends Cubit<SyncState> {
             _syncProgress.numberOfDrivesAtGetMetadataPhase - 1);
   }
 
-  /// Sync Second Phase
-  ///
-  /// Paginate the process in pages of `pageCount`
-  ///
-  /// It is needed because of close connection issues when made a huge number of requests to get the metadata,
-  /// and also to accomplish a better visualization of the sync progress.
-  Stream<SyncProgress> _syncSecondPhase({
-    required List<
-            DriveEntityHistory$Query$TransactionConnection$TransactionEdge>
-        transactions,
-    required Drive drive,
-    required SecretKey? driveKey,
-    required int lastBlockHeight,
-    required int currentBlockHeight,
-  }) async* {
-    final pageCount =
-        200 ~/ (_syncProgress.drivesCount - _syncProgress.drivesSynced);
-    var currentDriveEntitiesSynced = 0;
-    var driveSyncProgress = 0.0;
-    logSync(
-        'number of drives at get metadata phase : ${_syncProgress.numberOfDrivesAtGetMetadataPhase}');
-
-    if (transactions.isEmpty) {
-      await _driveDao.writeToDrive(DrivesCompanion(
-        id: Value(drive.id),
-        lastBlockHeight: Value(currentBlockHeight),
-        syncCursor: const Value(null),
-      ));
-
-      /// If there's nothing to sync, we assume that all were synced
-      _totalProgress += _calculateProgressInGetPhasePercentage(1); // 100%
-      _syncProgress = _syncProgress.copyWith(progress: _totalProgress);
-      yield _syncProgress;
-      return;
-    }
-    final currentDriveEntitiesCounter = transactions.length;
-
-    logSync(
-        'The total number of entities of the drive ${drive.name} to be synced is: $currentDriveEntitiesCounter\n');
-
-    final owner = await arweave.getOwnerForDriveEntityWithId(drive.id);
-
-    double calculateDriveSyncPercentage() =>
-        currentDriveEntitiesSynced / currentDriveEntitiesCounter;
-
-    double calculateDrivePercentProgress() => _calculatePercentageProgress(
-        driveSyncProgress, calculateDriveSyncPercentage());
-
-    yield* _paginateProcess<
-            DriveEntityHistory$Query$TransactionConnection$TransactionEdge>(
-        list: transactions,
-        pageCount: pageCount,
-        itemsPerPageCallback: (items) async* {
-          logSync('Getting metadata from drive ${drive.name}');
-
-          final entityHistory =
-              await _arweave.createDriveEntityHistoryFromTransactions(
-                  items, driveKey, owner, lastBlockHeight);
-
-          // Create entries for all the new revisions of file and folders in this drive.
-          final newEntities = entityHistory.blockHistory
-              .map((b) => b.entities)
-              .expand((entities) => entities);
-
-          currentDriveEntitiesSynced += items.length - newEntities.length;
-
-          _totalProgress += _calculateProgressInGetPhasePercentage(
-              calculateDrivePercentProgress());
-
-          _syncProgress = _syncProgress.copyWith(
-              progress: _totalProgress,
-              entitiesSynced:
-                  _syncProgress.entitiesSynced + currentDriveEntitiesSynced);
-
-          yield _syncProgress;
-
-          driveSyncProgress += _calculatePercentageProgress(
-              driveSyncProgress, calculateDriveSyncPercentage());
-
-          // Handle the last page of newEntities, i.e; There's nothing more to sync
-          if (newEntities.length < pageCount) {
-            // Reset the sync cursor after every sync to pick up files from other instances of the app.
-            // (Different tab, different window, mobile, desktop etc)
-            await _driveDao.writeToDrive(DrivesCompanion(
-              id: Value(drive.id),
-              lastBlockHeight: Value(currentBlockHeight),
-              syncCursor: const Value(null),
-            ));
-          }
-
-          await _db.transaction(() async {
-            final latestDriveRevision = await _addNewDriveEntityRevisions(
-                newEntities.whereType<DriveEntity>());
-            final latestFolderRevisions = await _addNewFolderEntityRevisions(
-                drive.id, newEntities.whereType<FolderEntity>());
-            final latestFileRevisions = await _addNewFileEntityRevisions(
-                drive.id, newEntities.whereType<FileEntity>());
-
-            // Check and handle cases where there's no more revisions
-            final updatedDrive = latestDriveRevision != null
-                ? await _computeRefreshedDriveFromRevision(latestDriveRevision)
-                : null;
-
-            final updatedFoldersById =
-                await _computeRefreshedFolderEntriesFromRevisions(
-                    drive.id, latestFolderRevisions);
-            final updatedFilesById =
-                await _computeRefreshedFileEntriesFromRevisions(
-                    drive.id, latestFileRevisions);
-
-            currentDriveEntitiesSynced += newEntities.length;
-
-            currentDriveEntitiesSynced -=
-                updatedFoldersById.length + updatedFilesById.length;
-
-            _totalProgress += _calculateProgressInGetPhasePercentage(
-                calculateDrivePercentProgress());
-
-            _syncProgress = _syncProgress.copyWith(
-                progress: _totalProgress,
-                entitiesSynced:
-                    _syncProgress.entitiesSynced + currentDriveEntitiesSynced);
-
-            driveSyncProgress += _calculatePercentageProgress(
-                driveSyncProgress, calculateDriveSyncPercentage());
-
-            // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
-            if (updatedDrive != null) {
-              await (_db.update(_db.drives)..whereSamePrimaryKey(updatedDrive))
-                  .write(updatedDrive);
-            }
-
-            // Update the folder and file entries before generating their new paths.
-            await _db.batch((b) {
-              b.insertAllOnConflictUpdate(
-                  _db.folderEntries, updatedFoldersById.values.toList());
-              b.insertAllOnConflictUpdate(
-                  _db.fileEntries, updatedFilesById.values.toList());
-            });
-
-            await generateFsEntryPaths(
-                drive.id, updatedFoldersById, updatedFilesById);
-
-            currentDriveEntitiesSynced +=
-                updatedFoldersById.length + updatedFilesById.length;
-
-            _totalProgress += _calculateProgressInGetPhasePercentage(
-                calculateDrivePercentProgress());
-
-            _syncProgress = _syncProgress.copyWith(
-              progress: _totalProgress,
-              entitiesSynced:
-                  _syncProgress.entitiesSynced + currentDriveEntitiesSynced,
-            );
-
-            driveSyncProgress += _calculatePercentageProgress(
-                driveSyncProgress, calculateDriveSyncPercentage());
-          });
-
-          yield _syncProgress;
-        });
-
-    logSync('''
-        ${'- - ' * 10}
-        Drive: ${drive.name} sync finishes.\n
-        The progress was:                     ${driveSyncProgress * 100}
-        Total progress until now:             ${(_totalProgress * 100).roundToDouble()}
-        The number of entities to be synced:  $currentDriveEntitiesCounter
-        The Total number of synced entities:  $currentDriveEntitiesSynced
-        ''');
-  }
-
-  /// Divided by 2 because we have 2 phases
-  double _calculateProgressInGetPhasePercentage(double currentDriveProgress) =>
-      (currentDriveProgress / _syncProgress.drivesCount) * 0.9; // 90%
-
-  double _calculateProgressInFetchPhasePercentage(
-          double currentDriveProgress) =>
-      (currentDriveProgress / _syncProgress.drivesCount) * 0.1; // 10%
-
-  double _calculatePercentageProgress(
-          double currentPercentage, double newPercentage) =>
-      newPercentage - currentPercentage;
-
   Future<void> generateFsEntryPaths(
     String driveId,
     Map<String, FolderEntriesCompanion> foldersByIdMap,
@@ -662,257 +493,6 @@ class SyncCubit extends Cubit<SyncState> {
       foldersByIdMap: foldersByIdMap,
       filesByIdMap: filesByIdMap,
     );
-  }
-
-  Stream<SyncProgress> _paginateProcess<T>({
-    required List<T> list,
-    required Stream<SyncProgress> Function(List<T> items) itemsPerPageCallback,
-    required int pageCount,
-  }) async* {
-    if (list.isEmpty) {
-      return;
-    }
-
-    final length = list.length;
-
-    for (var i = 0; i < length / pageCount; i++) {
-      final currentPage = <T>[];
-
-      /// Mounts the list to be iterated
-      for (var j = i * pageCount; j < ((i + 1) * pageCount); j++) {
-        if (j >= length) {
-          break;
-        }
-
-        currentPage.add(list[j]);
-      }
-
-      yield* itemsPerPageCallback(currentPage);
-    }
-  }
-
-  /// Computes the new drive revisions from the provided entities, inserts them into the database,
-  /// and returns the latest revision.
-  Future<DriveRevisionsCompanion?> _addNewDriveEntityRevisions(
-    Iterable<DriveEntity> newEntities,
-  ) async {
-    DriveRevisionsCompanion? latestRevision;
-
-    final newRevisions = <DriveRevisionsCompanion>[];
-    for (final entity in newEntities) {
-      latestRevision ??= await _driveDao
-          .latestDriveRevisionByDriveId(driveId: entity.id!)
-          .getSingleOrNull()
-          .then((r) => r?.toCompanion(true));
-
-      final revisionPerformedAction =
-          entity.getPerformedRevisionAction(latestRevision);
-      if (revisionPerformedAction == null) {
-        continue;
-      }
-      final revision =
-          entity.toRevisionCompanion(performedAction: revisionPerformedAction);
-
-      if (revision.action.value.isEmpty) {
-        continue;
-      }
-
-      newRevisions.add(revision);
-      latestRevision = revision;
-    }
-
-    await _db.batch((b) {
-      b.insertAllOnConflictUpdate(_db.driveRevisions, newRevisions);
-      b.insertAllOnConflictUpdate(
-          _db.networkTransactions,
-          newRevisions
-              .map(
-                (rev) => NetworkTransactionsCompanion.insert(
-                  transactionDateCreated: rev.dateCreated,
-                  id: rev.metadataTxId.value,
-                  status: const Value(TransactionStatus.confirmed),
-                ),
-              )
-              .toList());
-    });
-
-    return latestRevision;
-  }
-
-  /// Computes the new folder revisions from the provided entities, inserts them into the database,
-  /// and returns only the latest revisions.
-  Future<List<FolderRevisionsCompanion>> _addNewFolderEntityRevisions(
-      String driveId, Iterable<FolderEntity> newEntities) async {
-    // The latest folder revisions, keyed by their entity ids.
-    final latestRevisions = <String, FolderRevisionsCompanion>{};
-
-    final newRevisions = <FolderRevisionsCompanion>[];
-    for (final entity in newEntities) {
-      if (!latestRevisions.containsKey(entity.id)) {
-        final revisions = (await _driveDao
-            .latestFolderRevisionByFolderId(
-                driveId: driveId, folderId: entity.id!)
-            .getSingleOrNull());
-        if (revisions != null) {
-          latestRevisions[entity.id!] = revisions.toCompanion(true);
-        }
-      }
-
-      final revisionPerformedAction =
-          entity.getPerformedRevisionAction(latestRevisions[entity.id]);
-      if (revisionPerformedAction == null) {
-        continue;
-      }
-      final revision =
-          entity.toRevisionCompanion(performedAction: revisionPerformedAction);
-
-      if (revision.action.value.isEmpty) {
-        continue;
-      }
-
-      newRevisions.add(revision);
-      latestRevisions[entity.id!] = revision;
-    }
-
-    await _db.batch((b) {
-      b.insertAllOnConflictUpdate(_db.folderRevisions, newRevisions);
-      b.insertAllOnConflictUpdate(
-          _db.networkTransactions,
-          newRevisions
-              .map(
-                (rev) => NetworkTransactionsCompanion.insert(
-                  transactionDateCreated: rev.dateCreated,
-                  id: rev.metadataTxId.value,
-                  status: const Value(TransactionStatus.confirmed),
-                ),
-              )
-              .toList());
-    });
-
-    return latestRevisions.values.toList();
-  }
-
-  /// Computes the new file revisions from the provided entities, inserts them into the database,
-  /// and returns only the latest revisions.
-  Future<List<FileRevisionsCompanion>> _addNewFileEntityRevisions(
-      String driveId, Iterable<FileEntity> newEntities) async {
-    // The latest file revisions, keyed by their entity ids.
-    final latestRevisions = <String, FileRevisionsCompanion>{};
-
-    final newRevisions = <FileRevisionsCompanion>[];
-    for (final entity in newEntities) {
-      if (!latestRevisions.containsKey(entity.id) &&
-          entity.parentFolderId != null) {
-        final revisions = await _driveDao
-            .latestFileRevisionByFileId(driveId: driveId, fileId: entity.id!)
-            .getSingleOrNull();
-        if (revisions != null) {
-          latestRevisions[entity.id!] = revisions.toCompanion(true);
-        }
-      }
-
-      final revisionPerformedAction =
-          entity.getPerformedRevisionAction(latestRevisions[entity.id]);
-      if (revisionPerformedAction == null) {
-        continue;
-      }
-      // If Parent-Folder-Id is missing for a file, put it in the root folder
-
-      entity.parentFolderId = entity.parentFolderId ?? rootPath;
-      final revision =
-          entity.toRevisionCompanion(performedAction: revisionPerformedAction);
-
-      if (revision.action.value.isEmpty) {
-        continue;
-      }
-
-      newRevisions.add(revision);
-      latestRevisions[entity.id!] = revision;
-    }
-
-    await _db.batch((b) {
-      b.insertAllOnConflictUpdate(_db.fileRevisions, newRevisions);
-      b.insertAllOnConflictUpdate(
-          _db.networkTransactions,
-          newRevisions
-              .expand(
-                (rev) => [
-                  NetworkTransactionsCompanion.insert(
-                    transactionDateCreated: rev.dateCreated,
-                    id: rev.metadataTxId.value,
-                    status: const Value(TransactionStatus.confirmed),
-                  ),
-                  // We cannot be sure that the data tx of files have been mined
-                  // so we'll mark it as pending initially.
-                  NetworkTransactionsCompanion.insert(
-                    transactionDateCreated: rev.dateCreated,
-                    id: rev.dataTxId.value,
-                    status: const Value(TransactionStatus.pending),
-                  ),
-                ],
-              )
-              .toList());
-    });
-
-    return latestRevisions.values.toList();
-  }
-
-  /// Computes the refreshed drive entries from the provided revisions and returns them as a map keyed by their ids.
-  Future<DrivesCompanion> _computeRefreshedDriveFromRevision(
-      DriveRevisionsCompanion latestRevision) async {
-    final oldestRevision = await _driveDao
-        .oldestDriveRevisionByDriveId(driveId: latestRevision.driveId.value)
-        .getSingleOrNull();
-
-    return latestRevision.toEntryCompanion().copyWith(
-        dateCreated: Value(oldestRevision?.dateCreated ??
-            latestRevision.dateCreated as DateTime));
-  }
-
-  /// Computes the refreshed folder entries from the provided revisions and returns them as a map keyed by their ids.
-  Future<Map<String, FolderEntriesCompanion>>
-      _computeRefreshedFolderEntriesFromRevisions(String driveId,
-          List<FolderRevisionsCompanion> revisionsByFolderId) async {
-    final updatedFoldersById = {
-      for (final revision in revisionsByFolderId)
-        revision.folderId.value: revision.toEntryCompanion(),
-    };
-
-    for (final folderId in updatedFoldersById.keys) {
-      final oldestRevision = await _driveDao
-          .oldestFolderRevisionByFolderId(driveId: driveId, folderId: folderId)
-          .getSingleOrNull();
-
-      updatedFoldersById[folderId] = updatedFoldersById[folderId]!.copyWith(
-          dateCreated: Value(oldestRevision?.dateCreated ??
-              updatedFoldersById[folderId]!.dateCreated as DateTime));
-    }
-
-    return updatedFoldersById;
-  }
-
-  /// Computes the refreshed file entries from the provided revisions and returns them as a map keyed by their ids.
-  Future<Map<String, FileEntriesCompanion>>
-      _computeRefreshedFileEntriesFromRevisions(
-    String driveId,
-    List<FileRevisionsCompanion> revisionsByFileId,
-  ) async {
-    final updatedFilesById = {
-      for (final revision in revisionsByFileId)
-        revision.fileId.value: revision.toEntryCompanion(),
-    };
-
-    for (final fileId in updatedFilesById.keys) {
-      final oldestRevision = await _driveDao
-          .oldestFileRevisionByFileId(driveId: driveId, fileId: fileId)
-          .getSingleOrNull();
-
-      updatedFilesById[fileId] = updatedFilesById[fileId]!.copyWith(
-          dateCreated: Value(oldestRevision?.dateCreated ??
-              updatedFilesById[fileId]!.dateCreated as DateTime));
-    }
-
-    return updatedFilesById;
   }
 
   @override
