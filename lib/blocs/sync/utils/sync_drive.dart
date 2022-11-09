@@ -1,21 +1,21 @@
 part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 
-Stream<SyncProgress> _syncDrive(
+Stream<double> _syncDrive(
   String driveId, {
   required DriveDao driveDao,
   required ProfileState profileState,
   required ArweaveService arweaveService,
   required Database database,
   required SyncProgress syncProgress,
-  required double totalProgress,
   required Function addError,
   required int currentBlockHeight,
   required int lastBlockHeight,
+  required int transactionParseBatchSize,
 }) async* {
   /// Variables to count the current drive's progress information
   final drive = await driveDao.driveById(driveId: driveId).getSingle();
-
   final startSyncDT = DateTime.now();
+  var totalProgress = syncProgress.progress;
 
   logSync('Starting Drive ${drive.name} sync.');
 
@@ -92,25 +92,13 @@ Stream<SyncProgress> _syncDrive(
 
     /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
     if (firstBlockHeight != null) {
-      totalProgress += _calculateProgressInFetchPhasePercentage(
-        syncProgress,
-        _calculatePercentageProgress(
-            fetchPhasePercentage, calculatePercentageBasedOnBlockHeights()),
-      );
-
-      syncProgress = syncProgress.copyWith(
-          progress: totalProgress,
-          entitiesNumber: syncProgress.entitiesNumber + t.length);
-
-      yield syncProgress;
-
       if (totalBlockHeightDifference > 0) {
-        fetchPhasePercentage += _calculatePercentageProgress(
-            fetchPhasePercentage, calculatePercentageBasedOnBlockHeights());
+        fetchPhasePercentage = calculatePercentageBasedOnBlockHeights();
       } else {
         // If the difference is zero means that the first phase was concluded.
         fetchPhasePercentage = 1;
       }
+      yield calculatePercentageBasedOnBlockHeights() * 0.1;
     }
   }
 
@@ -122,37 +110,22 @@ Stream<SyncProgress> _syncDrive(
 
   logSync('Percentage based on blocks: $fetchPhasePercentage\n');
 
-  /// Fill the remaining percentage.
-  /// It is needed because the phase one isn't accurate and possibly will not
-  /// match 100% every time
-  totalProgress += _calculateProgressInFetchPhasePercentage(
-    syncProgress,
-    (1 - fetchPhasePercentage),
-  );
-
   logSync('Total progress after fetch phase: $totalProgress');
 
-  syncProgress = syncProgress.copyWith(progress: totalProgress);
-
-  yield syncProgress;
-
   logSync('Drive ${drive.name} is going to the 2nd phase\n');
-
-  syncProgress = syncProgress.copyWith(
-      numberOfDrivesAtGetMetadataPhase:
-          syncProgress.numberOfDrivesAtGetMetadataPhase + 1);
 
   yield* _parseDriveTransactionsIntoDatabaseEntities(
     driveDao: driveDao,
     arweaveService: arweaveService,
     database: database,
-    syncProgress: syncProgress,
-    totalProgress: totalProgress,
     transactions: transactions,
     drive: drive,
     driveKey: driveKey,
     currentBlockHeight: currentBlockHeight,
     lastBlockHeight: lastBlockHeight,
+    batchSize: transactionParseBatchSize,
+  ).map(
+    (parseProgress) => parseProgress * 0.9,
   );
 
   logSync('Drive ${drive.name} ended the 2nd phase successfully\n');
@@ -167,9 +140,4 @@ Stream<SyncProgress> _syncDrive(
 
   logSync(
       'The fetch phase took: ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of the entire drive process.\n');
-
-  syncProgress = syncProgress.copyWith(
-    numberOfDrivesAtGetMetadataPhase:
-        syncProgress.numberOfDrivesAtGetMetadataPhase - 1,
-  );
 }

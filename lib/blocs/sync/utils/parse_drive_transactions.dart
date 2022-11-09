@@ -6,7 +6,7 @@ part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 ///
 /// It is needed because of close connection issues when made a huge number of requests to get the metadata,
 /// and also to accomplish a better visualization of the sync progress.
-Stream<SyncProgress> _parseDriveTransactionsIntoDatabaseEntities({
+Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   required DriveDao driveDao,
   required Database database,
   required ArweaveService arweaveService,
@@ -16,50 +16,42 @@ Stream<SyncProgress> _parseDriveTransactionsIntoDatabaseEntities({
   required SecretKey? driveKey,
   required int lastBlockHeight,
   required int currentBlockHeight,
-  required SyncProgress syncProgress,
-  required double totalProgress,
+  required int batchSize,
 }) async* {
-  final pageCount =
-      200 ~/ (syncProgress.drivesCount - syncProgress.drivesSynced);
-  var currentDriveEntitiesSynced = 0;
+  final numberOfDriveEntitiesToParse = transactions.length;
+  var numberOfDriveEntitiesParsed = 0;
+
+  double driveEntityParseProgress() =>
+      numberOfDriveEntitiesParsed / numberOfDriveEntitiesToParse;
+
   var driveSyncProgress = 0.0;
-  logSync(
-      'number of drives at get metadata phase : ${syncProgress.numberOfDrivesAtGetMetadataPhase}');
 
   if (transactions.isEmpty) {
-    await driveDao.writeToDrive(DrivesCompanion(
-      id: Value(drive.id),
-      lastBlockHeight: Value(currentBlockHeight),
-      syncCursor: const Value(null),
-    ));
+    await driveDao.writeToDrive(
+      DrivesCompanion(
+        id: Value(drive.id),
+        lastBlockHeight: Value(currentBlockHeight),
+        syncCursor: const Value(null),
+      ),
+    );
 
     /// If there's nothing to sync, we assume that all were synced
-    totalProgress += _calculateProgressInGetPhasePercentage(
-      syncProgress,
-      1,
-    ); // 100%
-    syncProgress = syncProgress.copyWith(progress: totalProgress);
-    yield syncProgress;
+
+    yield 1;
     return;
   }
-  final currentDriveEntitiesCounter = transactions.length;
 
   logSync(
-      'The total number of entities of the drive ${drive.name} to be synced is: $currentDriveEntitiesCounter\n');
+    'The total number of entities of the drive ${drive.name} to be synced is: $numberOfDriveEntitiesToParse\n',
+  );
 
   final owner = await arweave.getOwnerForDriveEntityWithId(drive.id);
 
-  double calculateDriveSyncPercentage() =>
-      currentDriveEntitiesSynced / currentDriveEntitiesCounter;
-
-  double calculateDrivePercentProgress() => _calculatePercentageProgress(
-      driveSyncProgress, calculateDriveSyncPercentage());
-
-  yield* _paginateProcess<
+  yield* _batchProcess<
           DriveEntityHistory$Query$TransactionConnection$TransactionEdge>(
       list: transactions,
-      pageCount: pageCount,
-      itemsPerPageCallback: (items) async* {
+      batchSize: batchSize,
+      endOfBatchCallback: (items) async* {
         logSync('Getting metadata from drive ${drive.name}');
 
         final entityHistory =
@@ -71,25 +63,12 @@ Stream<SyncProgress> _parseDriveTransactionsIntoDatabaseEntities({
             .map((b) => b.entities)
             .expand((entities) => entities);
 
-        currentDriveEntitiesSynced += items.length - newEntities.length;
+        numberOfDriveEntitiesParsed += items.length - newEntities.length;
 
-        totalProgress += _calculateProgressInGetPhasePercentage(
-          syncProgress,
-          calculateDrivePercentProgress(),
-        );
-
-        syncProgress = syncProgress.copyWith(
-            progress: totalProgress,
-            entitiesSynced:
-                syncProgress.entitiesSynced + currentDriveEntitiesSynced);
-
-        yield syncProgress;
-
-        driveSyncProgress += _calculatePercentageProgress(
-            driveSyncProgress, calculateDriveSyncPercentage());
+        yield driveEntityParseProgress();
 
         // Handle the last page of newEntities, i.e; There's nothing more to sync
-        if (newEntities.length < pageCount) {
+        if (newEntities.length < batchSize) {
           // Reset the sync cursor after every sync to pick up files from other instances of the app.
           // (Different tab, different window, mobile, desktop etc)
           await driveDao.writeToDrive(DrivesCompanion(
@@ -139,24 +118,10 @@ Stream<SyncProgress> _parseDriveTransactionsIntoDatabaseEntities({
             revisionsByFileId: latestFileRevisions,
           );
 
-          currentDriveEntitiesSynced += newEntities.length;
+          numberOfDriveEntitiesParsed += newEntities.length;
 
-          currentDriveEntitiesSynced -=
+          numberOfDriveEntitiesParsed -=
               updatedFoldersById.length + updatedFilesById.length;
-
-          totalProgress += _calculateProgressInGetPhasePercentage(
-            syncProgress,
-            calculateDrivePercentProgress(),
-          );
-
-          syncProgress = syncProgress.copyWith(
-            progress: totalProgress,
-            entitiesSynced:
-                syncProgress.entitiesSynced + currentDriveEntitiesSynced,
-          );
-
-          driveSyncProgress += _calculatePercentageProgress(
-              driveSyncProgress, calculateDriveSyncPercentage());
 
           // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
           if (updatedDrive != null) {
@@ -180,41 +145,25 @@ Stream<SyncProgress> _parseDriveTransactionsIntoDatabaseEntities({
             filesByIdMap: updatedFilesById,
           );
 
-          currentDriveEntitiesSynced +=
+          numberOfDriveEntitiesParsed +=
               updatedFoldersById.length + updatedFilesById.length;
-
-          totalProgress += _calculateProgressInGetPhasePercentage(
-            syncProgress,
-            calculateDrivePercentProgress(),
-          );
-
-          syncProgress = syncProgress.copyWith(
-            progress: totalProgress,
-            entitiesSynced:
-                syncProgress.entitiesSynced + currentDriveEntitiesSynced,
-          );
-
-          driveSyncProgress += _calculatePercentageProgress(
-              driveSyncProgress, calculateDriveSyncPercentage());
         });
-
-        yield syncProgress;
+        yield driveEntityParseProgress();
       });
 
   logSync('''
         ${'- - ' * 10}
-        Drive: ${drive.name} sync finishes.\n
+        Drive: ${drive.name} sync finished.\n
         The progress was:                     ${driveSyncProgress * 100}
-        Total progress until now:             ${(totalProgress * 100).roundToDouble()}
-        The number of entities to be synced:  $currentDriveEntitiesCounter
-        The Total number of synced entities:  $currentDriveEntitiesSynced
+        The number of entities to be synced:  $numberOfDriveEntitiesToParse
+        The Total number of synced entities:  $numberOfDriveEntitiesParsed
         ''');
 }
 
-Stream<SyncProgress> _paginateProcess<T>({
+Stream<double> _batchProcess<T>({
   required List<T> list,
-  required Stream<SyncProgress> Function(List<T> items) itemsPerPageCallback,
-  required int pageCount,
+  required Stream<double> Function(List<T> items) endOfBatchCallback,
+  required int batchSize,
 }) async* {
   if (list.isEmpty) {
     return;
@@ -222,18 +171,18 @@ Stream<SyncProgress> _paginateProcess<T>({
 
   final length = list.length;
 
-  for (var i = 0; i < length / pageCount; i++) {
-    final currentPage = <T>[];
+  for (var i = 0; i < length / batchSize; i++) {
+    final currentBatch = <T>[];
 
     /// Mounts the list to be iterated
-    for (var j = i * pageCount; j < ((i + 1) * pageCount); j++) {
+    for (var j = i * batchSize; j < ((i + 1) * batchSize); j++) {
       if (j >= length) {
         break;
       }
 
-      currentPage.add(list[j]);
+      currentBatch.add(list[j]);
     }
 
-    yield* itemsPerPageCallback(currentPage);
+    yield* endOfBatchCallback(currentBatch);
   }
 }

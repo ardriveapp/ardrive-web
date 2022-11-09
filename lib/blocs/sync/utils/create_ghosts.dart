@@ -11,7 +11,9 @@ Future<void> createGhosts({
   for (final ghostFolder in ghostFolders.values) {
     final folder = await driveDao
         .folderById(
-            driveId: ghostFolder.driveId, folderId: ghostFolder.folderId)
+          driveId: ghostFolder.driveId,
+          folderId: ghostFolder.folderId,
+        )
         .getSingleOrNull();
 
     final folderExists = folder != null;
@@ -45,13 +47,17 @@ Future<void> createGhosts({
     );
     await driveDao.into(driveDao.folderEntries).insert(folderEntry);
     ghostFoldersByDrive.putIfAbsent(
-        drive.id, () => {folderEntry.id: folderEntry.toCompanion(false)});
+      drive.id,
+      () => {folderEntry.id: folderEntry.toCompanion(false)},
+    );
   }
-  await Future.wait([
-    ...ghostFoldersByDrive.entries.map((entry) => _generateFsEntryPaths(
-        driveDao: driveDao,
-        driveId: entry.key,
-        foldersByIdMap: entry.value,
-        filesByIdMap: {})),
-  ]);
+  await Future.wait(
+    [
+      ...ghostFoldersByDrive.entries.map((entry) => _generateFsEntryPaths(
+          driveDao: driveDao,
+          driveId: entry.key,
+          foldersByIdMap: entry.value,
+          filesByIdMap: {})),
+    ],
+  );
 }

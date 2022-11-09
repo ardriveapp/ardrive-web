@@ -23,7 +23,6 @@ part 'sync_state.dart';
 part 'utils/add_drive_entity_revisions.dart';
 part 'utils/add_file_entity_revisions.dart';
 part 'utils/add_folder_entity_revisions.dart';
-part 'utils/calculations.dart';
 part 'utils/create_ghosts.dart';
 part 'utils/generate_paths.dart';
 part 'utils/log_sync.dart';
@@ -153,8 +152,6 @@ class SyncCubit extends Cubit<SyncState> {
 
   var ghostFolders = <FolderID, GhostFolder>{};
 
-  late double _totalProgress;
-
   Future<void> startSync({bool syncDeep = false}) async {
     logSync('Starting Sync');
     logSync('SyncCubit is currently active? ${!isClosed}');
@@ -165,8 +162,6 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     _syncProgress = SyncProgress.initial();
-
-    _totalProgress = 0;
 
     try {
       final profile = _profileCubit.state;
@@ -210,7 +205,9 @@ class SyncCubit extends Cubit<SyncState> {
         // It also adds the encryption keys onto the drive models which isn't touched by the
         // later system.
         final userDriveEntities = await _arweave.getUniqueUserDriveEntities(
-            profile.wallet, profile.password);
+          profile.wallet,
+          profile.password,
+        );
 
         await _driveDao.updateUserDrives(userDriveEntities, profile.cipherKey);
       }
@@ -238,7 +235,6 @@ class SyncCubit extends Cubit<SyncState> {
 
       _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
       logSync('Current block height number $currentBlockHeight');
-
       final driveSyncProcesses = drives.map((drive) => _syncDrive(
             drive.id,
             driveDao: _driveDao,
@@ -246,12 +242,13 @@ class SyncCubit extends Cubit<SyncState> {
             database: _db,
             profileState: profile,
             syncProgress: _syncProgress,
-            totalProgress: _totalProgress,
             addError: addError,
             lastBlockHeight: syncDeep
                 ? 0
                 : calculateSyncLastBlockHeight(drive.lastBlockHeight!),
             currentBlockHeight: currentBlockHeight,
+            transactionParseBatchSize:
+                200 ~/ (_syncProgress.drivesCount - _syncProgress.drivesSynced),
           ).handleError((error, stackTrace) {
             logSync('''
                     Error syncing drive with id ${drive.id}. \n
@@ -264,14 +261,30 @@ class SyncCubit extends Cubit<SyncState> {
             addError(error!);
           }));
 
-      await Future.wait(driveSyncProcesses.map((driveSyncProgress) async {
-        await for (var syncProgress in driveSyncProgress) {
-          syncProgressController.add(syncProgress);
-        }
-        _syncProgress = _syncProgress.copyWith(
-            drivesSynced: _syncProgress.drivesSynced + 1);
-        syncProgressController.add(_syncProgress);
-      }));
+      double totalProgress = 0;
+      await Future.wait(
+        driveSyncProcesses.map(
+          (driveSyncProgress) async {
+            double currentDriveProgress = 0;
+            await for (var driveProgress in driveSyncProgress) {
+              currentDriveProgress =
+                  (totalProgress + driveProgress) / drives.length;
+              if (currentDriveProgress > _syncProgress.progress) {
+                _syncProgress = _syncProgress.copyWith(
+                  progress: currentDriveProgress,
+                );
+              }
+              syncProgressController.add(_syncProgress);
+            }
+            totalProgress += 1;
+            _syncProgress = _syncProgress.copyWith(
+              drivesSynced: _syncProgress.drivesSynced + 1,
+              progress: totalProgress / drives.length,
+            );
+            syncProgressController.add(_syncProgress);
+          },
+        ),
+      );
 
       logSync('Creating ghosts...');
 

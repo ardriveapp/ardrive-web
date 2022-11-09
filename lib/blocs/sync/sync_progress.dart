@@ -5,33 +5,38 @@ abstract class LinearProgress {
 }
 
 class SyncProgress extends LinearProgress {
-  SyncProgress(
-      {required this.entitiesNumber,
-      required this.progress,
-      required this.entitiesSynced,
-      required this.drivesCount,
-      required this.drivesSynced,
-      required this.numberOfDrivesAtGetMetadataPhase});
+  SyncProgress({
+    required this.numberOfEntities,
+    required this.progress,
+    required this.entitiesSynced,
+    required this.drivesCount,
+    required this.drivesSynced,
+    required this.numberOfDrivesAtGetMetadataPhase,
+  });
 
-  factory SyncProgress.initial() => SyncProgress(
-        entitiesNumber: 0,
-        progress: 0,
-        entitiesSynced: 0,
-        drivesCount: 0,
-        drivesSynced: 0,
-        numberOfDrivesAtGetMetadataPhase: 0,
-      );
+  factory SyncProgress.initial() {
+    return SyncProgress(
+      numberOfEntities: 0,
+      progress: 0,
+      entitiesSynced: 0,
+      drivesCount: 0,
+      drivesSynced: 0,
+      numberOfDrivesAtGetMetadataPhase: 0,
+    );
+  }
 
-  factory SyncProgress.emptySyncCompleted() => SyncProgress(
-        entitiesNumber: 0,
-        progress: 1,
-        entitiesSynced: 0,
-        drivesCount: 0,
-        drivesSynced: 0,
-        numberOfDrivesAtGetMetadataPhase: 0,
-      );
+  factory SyncProgress.emptySyncCompleted() {
+    return SyncProgress(
+      numberOfEntities: 0,
+      progress: 1,
+      entitiesSynced: 0,
+      drivesCount: 0,
+      drivesSynced: 0,
+      numberOfDrivesAtGetMetadataPhase: 0,
+    );
+  }
 
-  final int entitiesNumber;
+  final int numberOfEntities;
   final int entitiesSynced;
   @override
   final double progress;
@@ -39,20 +44,22 @@ class SyncProgress extends LinearProgress {
   final int drivesCount;
   final int numberOfDrivesAtGetMetadataPhase;
 
-  SyncProgress copyWith(
-          {int? entitiesNumber,
-          int? entitiesSynced,
-          double? progress,
-          int? drivesSynced,
-          int? drivesCount,
-          int? numberOfDrivesAtGetMetadataPhase}) =>
-      SyncProgress(
-        entitiesNumber: entitiesNumber ?? this.entitiesNumber,
-        progress: progress ?? this.progress,
-        entitiesSynced: entitiesSynced ?? this.entitiesSynced,
-        drivesCount: drivesCount ?? this.drivesCount,
-        drivesSynced: drivesSynced ?? this.drivesSynced,
-        numberOfDrivesAtGetMetadataPhase: numberOfDrivesAtGetMetadataPhase ??
-            this.numberOfDrivesAtGetMetadataPhase,
-      );
+  SyncProgress copyWith({
+    int? numberOfEntities,
+    int? entitiesSynced,
+    double? progress,
+    int? drivesSynced,
+    int? drivesCount,
+    int? numberOfDrivesAtGetMetadataPhase,
+  }) {
+    return SyncProgress(
+      numberOfEntities: numberOfEntities ?? this.numberOfEntities,
+      progress: progress ?? this.progress,
+      entitiesSynced: entitiesSynced ?? this.entitiesSynced,
+      drivesCount: drivesCount ?? this.drivesCount,
+      drivesSynced: drivesSynced ?? this.drivesSynced,
+      numberOfDrivesAtGetMetadataPhase: numberOfDrivesAtGetMetadataPhase ??
+          this.numberOfDrivesAtGetMetadataPhase,
+    );
+  }
 }
