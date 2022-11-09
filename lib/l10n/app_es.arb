@@ -1,519 +1,48 @@
 {
   "@@locale": "es",
-  "welcomeTo_body": "BIENVENIDO/A A Tu disco duro privado y seguro, decentralizado, sin suscripciones, resistente a la censura y permanente",
-  "@welcomeTo_body": {
-    "description": "Welcoming message just after the ArDrive logo"
-  },
-  "welcomeTo_main": "BIENVENIDO/A A",
-  "@welcomeTo_main": {
-    "description": "Highly emphasized text giving welcome"
-  },
-  "welcomeTo_description": "Tu disco duro privado y seguro, decentralizado, sin suscripciones, resistente a la censura y permanente",
-  "@welcomeTo_description": {
-    "description": "Brief description of ArDrive as welcoming"
-  },
-  "selectWalletEmphasized": "SELECCIONAR MONEDERO",
-  "@selectWalletEmphasized": {
-    "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
-  },
-  "useArconnectEmphasized": "USAR ARCONNECT",
-  "@useArconnectEmphasized": {
-    "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
-  },
-  "getAWallet": "¿No tienes un monedero? ¡Obtén uno aquí!",
-  "@getAWallet": {
-    "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
-  },
-  "welcomeToThePermawebEmphasized": "BIENVENIDO/A A LA PERMAWEB",
-  "@welcomeToThePermawebEmphasized": {
-    "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
-  },
-  "ardriveIsntJustAnotherCloudSyncApp": "ArDrive no es sólo otra aplicación de almacenamiento en la nube. Es el comienzo de un disco duro permanente.",
-  "@ardriveIsntJustAnotherCloudSyncApp": {
-    "description": "Description about the permanence and uniqueness of ArDrive"
-  },
-  "anyFilesWillOutliveYou": "¡Los archivos que cargues aquí existirán para siempre!",
-  "@anyFilesWillOutliveYou": {
-    "description": "Files on the Weave will exist there forever"
-  },
-  "weDoAFewThingsDifferently": "Eso también significa que hacemos algunas cosas diferente.",
-  "@weDoAFewThingsDifferently": {
-    "description": "What ArDrive does differently"
-  },
-  "payPerFileEmphasized": "PAGA SOLO POR LO QUE SUBAS",
-  "@payPerFileEmphasized": {
-    "description": "Payment philosophy. Emphasized with upper case"
-  },
-  "noSubscriptions": "¡No necesitas suscripciones!",
-  "@noSubscriptions": {
-    "description": "Payment philosophy"
-  },
-  "monthlyCharges": "En vez de pagar mensualmente por almacenamiento que no usas, paga una única vez y almacena tus archivos por siempre en ArDrive.",
-  "@monthlyCharges": {
-    "description": "Payment philosophy"
-  },
-  "secondsFromForeverEmphasized": "A SEGUNDOS DE LA ETERNIDAD",
-  "@secondsFromForeverEmphasized": {
-    "description": "Shows how close you are from permanence. Emphasized with upper case"
-  },
-  "decentralizedPermanent": "El almacenamiento de datos no sucede en un instante.",
-  "@decentralizedPermanent": {
-    "description": "Permanence requires patience"
-  },
-  "greenCheckMark": "Cuando el punto verde aparece al lado de tu archivo, es cuando ha sido cargado a la PermaWeb.",
-  "@greenCheckMark": {
-    "description": "Describes the indicator of the status of uploaded files"
-  },
-  "totalPrivacyControlEmphasized": "CONTROL TOTAL DE TU PRIVACIDAD",
-  "@totalPrivacyControlEmphasized": {
-    "description": "Title for talking about privacy. Emphasized with upper case"
-  },
-  "yourChoice": "Es tu elección: haz tus archivos públicos o privados usando el mejor cifrado.",
-  "@yourChoice": {
-    "description": "User can choose whether or not to make the content public"
-  },
-  "noOneWillSee": "Nadie verá lo que no quieres que vean.",
-  "@noOneWillSee": {
-    "description": "Indicates that private content won't reach to the wrong hands"
-  },
-  "neverDeletedEmphasized": "NUNCA SE BORRARÁ",
-  "@neverDeletedEmphasized": {
-    "description": "Uploaded items cannot be deleted. Emphasized with upper case"
-  },
-  "noDeleteButton": "Recuerda: ¡No hay botón de borrar (ni para tí ni para nosotros)!",
-  "@noDeleteButton": {
-    "description": "Uploaded items cannot be deleted"
-  },
-  "onceUploadedCantBeRemoved": "Una vez cargada, tu información no se podrá borrar.",
-  "@onceUploadedCantBeRemoved": {
-    "description": "Uploaded items cannot be deleted"
-  },
-  "thinkTwiceBeforeUploading": "Piénsalo dos veces antes de cargar toda tu poesía de adolescente...",
-  "@thinkTwiceBeforeUploading": {
-    "description": "Uploaded items cannot be deleted"
-  },
-  "pleaseRemainOnThisTab": "Cargando... Por favor, permanece en esta pestaña.",
-  "@pleaseRemainOnThisTab": {
-    "description": "Circular progress indicator"
-  },
-  "loginFailed": "No se pudo iniciar sesión",
-  "@loginFailed": {
-    "description": "Text for when the user tried to login with wrong credentials"
-  },
-  "sorryLoginFailed": "Lo sentimos, no se ha podido iniciar sesion. Por favor, inténtalo nuevamente.",
-  "@sorryLoginFailed": {
-    "description": "Text for when the user tried to login with wrong credentials"
-  },
-  "logIn": "Iniciar sesión",
-  "@logIn": {
-    "description": "The action of logging in. Imperative form"
-  },
-  "welcomeBackEmphasized": "BIENVENIDO/A DE NUEVO",
-  "@welcomeBackEmphasized": {
-    "description": "Welcoming for an existing user. Emphasized with upper case"
-  },
-  "letsGetStartedEmphasized": "COMENCEMOS",
-  "@letsGetStartedEmphasized": {
-    "description": "Let's start setting up the account. Emphasized with upper case"
-  },
-  "pleaseProvideSamePassword": "Por favor ingresa la misma contraseña que utilizaste anteriormente.",
-  "@pleaseProvideSamePassword": {
-    "description": "Asks for the wallet password"
-  },
-  "passwordCanNeverBeChanged": "No puedes modificiar ni recuperar tu contraseña. ¡Asegurate de mantenerla segura!",
-  "@passwordCanNeverBeChanged": {
-    "description": "Explains that the password cannot be changed as it is the one of the wallet"
-  },
-  "password": "Contraseña",
-  "@password": {
-    "description": "Label for the 'password' input"
-  },
-  "confirmPassword": "Confirmar contraseña",
-  "@confirmPassword": {
-    "description": "Label for repeating the password again"
-  },
-  "username": "Nombre de usuario",
-  "@username": {
-    "description": "Label for the username"
-  },
-  "passwordMismatch": "Las contraseñas no coinciden.",
-  "@passwordMismatch": {
-    "description": "Error message for when the confirmation password don't match the actual pass"
-  },
-  "aggreeToTerms_body": "Acepto los términos de servicio y la política de privacidad de ArDrive.",
-  "@aggreeToTerms_body": {
-    "description": "Checkbox for agreeing the terms of of service and privacy policy"
-  },
-  "aggreeToTerms_main": "Acepto ",
-  "@aggreeToTerms_main": {
-    "description": "Checkbox for agreeing the terms of of service and privacy policy"
-  },
-  "aggreeToTerms_link": "los términos de servicio y la política de privacidad de ArDrive",
-  "@aggreeToTerms_link": {
-    "description": "Segment of text representing a link to the legal documents"
+  "addnewManifestEmphasized": "AÑADIR NUEVO MANIFIESTO",
+  "@addnewManifestEmphasized": {
+    "description": "There is a non-manifest entity with the same name"
   },
   "addProfileEmphasized": "AÑADIR PERFIL",
   "@addProfileEmphasized": {
     "description": "Add a wallet. Emphasized with upper case"
   },
-  "logOut": "Cerrar sesión",
-  "@logOut": {
-    "description": "The action of logging out"
-  },
-  "logOutEmphasized": "CERRAR SESIÓN",
-  "@logOutEmphasized": {
-    "description": "The action of logging out. Emphasized with upper case"
-  },
-  "changeWallet": "Cambiar monedero",
-  "@changeWallet": {
-    "description": "To use a different wallet"
-  },
-  "welcomeBackUserEmphasized": "BIENVENIDO/A DE NUEVO, {username}",
-  "@welcomeBackUserEmphasized": {
-    "description": "Welcoming to the user. Emphasized with upper case",
-    "placeholders": {
-      "username": {
-        "type": "String",
-        "example": "user"
-      }
-    }
-  },
-  "unlockEmphasized": "DESBLOQUEAR",
-  "@unlockEmphasized": {
-    "description": "Unlock the wallet with its password. EMphasized with upper case"
-  },
-  "forgetWallet": "Olvidar monedero y cambiar de perfil",
-  "@forgetWallet": {
-    "description": "Use a different wallet by forgetting the current one"
-  },
-  "newString": "Nuevo",
-  "@newString": {
-    "description": "New entity (folder, file, drive, manifest, attached drive)"
-  },
-  "newStringEmphasized": "NUEVO",
-  "@newStringEmphasized": {
-    "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
-  },
-  "noDrives": "No tienes ningúna unidad de almacenamiento.\n¡Haz clic en el botón \"NUEVO\" para crear o vincular una!",
-  "@noDrives": {
-    "description": "Text for when the wallet has no on-chain drives to display"
-  },
-  "rowsPerPage": "Filas por página",
-  "@rowsPerPage": {
-    "description": "How many rows per page to use"
-  },
-  "goToFirst": "Ir al comienzo",
-  "@goToFirst": {
-    "description": "Action of going to the first page"
-  },
-  "previous": "Anterior",
-  "@previous": {
-    "description": "Action of going to the previous page"
-  },
-  "next": "Siguiente",
-  "@next": {
-    "description": "Action of going to the next page"
-  },
-  "nextEmphasized": "SIGUIENTE",
-  "@nextEmphasized": {
-    "description": "Next step"
-  },
-  "goToLast": "Ir al final",
-  "@goToLast": {
-    "description": "Action of going to the latest page"
-  },
-  "exportDriveContents": "Exportar el contenido de la unidad",
-  "@exportDriveContents": {
-    "description": "Export the data of a drive into a CSV file"
-  },
-  "download": "Descargar",
-  "@download": {
-    "description": "Action of downloading a file"
-  },
-  "preview": "Vista previa",
-  "@preview": {
-    "description": "Action of previewing a file"
-  },
-  "move": "Mover",
-  "@move": {
-    "description": "Action of moving certain file or folder"
-  },
-  "viewOnly": "Sólo lectura",
-  "@viewOnly": {
-    "description": "The user has no permission to edit, only to view"
-  },
-  "privacy": "Privacidad",
-  "@privacy": {
-    "description": "The privacy attribute of entities (e.g.: private drive, public folder)"
-  },
-  "private": "Privado",
-  "@private": {
-    "description": "A private entity"
-  },
-  "public": "Público",
-  "@public": {
-    "description": "A public entity"
-  },
-  "viewInfo": "Más información",
-  "@viewInfo": {
-    "description": "View the activity and details of the entity"
-  },
-  "driveRoot": "Carpeta raíz",
-  "@driveRoot": {
-    "description": "The folder entity that is at the top of the folder hierarchy"
-  },
-  "lastModifiedDate": "Última modificación {date}",
-  "@lastModifiedDate": {
-    "description": "Last modified date of the file in the local disk",
-    "placeholders": {
-      "date": {
-        "type": "String"
-      }
-    }
-  },
-  "pending": "Pendiente",
-  "@pending": {
-    "description": "Status tooltip for transactions which are waiting to be minted"
-  },
-  "confirmed": "Confirmado",
-  "@confirmed": {
-    "description": "Status tooltip for transactions that are confirmed by the network"
-  },
-  "failed": "Fallido",
-  "@failed": {
-    "description": "Status tooltip for failed transactions"
-  },
-  "name": "Nombre",
-  "@name": {
-    "description": "Name of certain entity"
-  },
-  "fileSize": "Tamaño del archivo",
-  "@fileSize": {
-    "description": "The size of a file"
-  },
-  "size": "Tamaño",
-  "@size": {
-    "description": "The size of a file, folder or drive"
-  },
-  "lastUpdated": "Última actualización",
-  "@lastUpdated": {
-    "description": "The timestamp of the transaction"
-  },
   "addSomeFiles": "No hay nada aquí. Cliquea en \"NUEVO\" para añadir archivos.",
   "@addSomeFiles": {
     "description": "Empty folder"
   },
-  "noFiles": "No hay nada aquí.",
-  "@noFiles": {
-    "description": "Empty folder"
+  "aggreeToTerms_body": "Acepto los términos de servicio y la política de privacidad de ArDrive.",
+  "@aggreeToTerms_body": {
+    "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "error": "Error",
-  "@error": {
-    "description": "Indicates that something went wrong"
+  "aggreeToTerms_link": "los términos de servicio y la política de privacidad de ArDrive",
+  "@aggreeToTerms_link": {
+    "description": "Segment of text representing a link to the legal documents"
   },
-  "errorDragAndDropFolder": "Actualmente no es posible arrastrar y soltar carpetas",
-  "@errorDragAndDropFolder": {
-    "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
+  "aggreeToTerms_main": "Acepto ",
+  "@aggreeToTerms_main": {
+    "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "ok": "Bien",
-  "@ok": {
-    "description": "OK button"
+  "aManifestIsASpecialKindOfFile": "Un manifiesto es un tipo especial de archivo que relaciona transacciones Arweave con rutas perzonalizadas.",
+  "@aManifestIsASpecialKindOfFile": {
+    "description": "Simple explanation of what a manifest is"
   },
-  "okEmphasized": "BIEN",
-  "@okEmphasized": {
-    "description": "OK button. Emphasized in upper case"
+  "anyFilesWillOutliveYou": "¡Los archivos que cargues aquí existirán para siempre!",
+  "@anyFilesWillOutliveYou": {
+    "description": "Files on the Weave will exist there forever"
   },
-  "uploadDragAndDrop": "Cargar archivo",
-  "@uploadDragAndDrop": {
-    "description": "The action of uploading a file"
+  "anyoneCanAccessThisDrivePrivate": "Cualquiera puede acceder a esta unidad privada usando este enlace.",
+  "@anyoneCanAccessThisDrivePrivate": {
+    "description": "Warning for the user that is about to share a drive"
   },
-  "itemPreviewEmphasized": "VISTA PREVIA",
-  "@itemPreviewEmphasized": {
-    "description": "Item preview"
+  "anyoneCanAccessThisDrivePublic": "Cualquiera puede acceder a esta unidad pública usando este enlace.",
+  "@anyoneCanAccessThisDrivePublic": {
+    "description": "Warning for the user that is about to share a drive"
   },
-  "itemDetailsEmphasized": "DETALLES",
-  "@itemDetailsEmphasized": {
-    "description": "Item details such as dates, transaction IDs and entity IDs. Emphasized with upper case"
-  },
-  "itemActivityEmphasized": "ACTIVIDAD",
-  "@itemActivityEmphasized": {
-    "description": "The journal of the entity (created, renamed, moved, revision uploaded). Emphasized with upper case"
-  },
-  "itemContains": "Contiene",
-  "@itemContains": {
-    "description": "Used like so: 'Contains 15 folders, 10 files'"
-  },
-  "driveID": "ID de la unidad",
-  "@driveID": {
-    "description": "The Drive-ID tag"
-  },
-  "copyDriveID": "Copiar la ID de la unidad",
-  "@copyDriveID": {
-    "description": "Tooltip of the copy icon for the Drive ID"
-  },
-  "folderID": "ID de la carpeta",
-  "@folderID": {
-    "description": "The Entity-ID tag of folders"
-  },
-  "copyFolderID": "Copiar la ID de la carpeta",
-  "@copyFolderID": {
-    "description": "Tooltip of the copy icon for the Folder ID"
-  },
-  "fileID": "ID del archivo",
-  "@fileID": {
-    "description": "The Entity-ID tag of files"
-  },
-  "copyFileID": "Copiar la ID del archivo",
-  "@copyFileID": {
-    "description": "Tooltip of the copy icon for the File ID"
-  },
-  "lastModified": "Última modificación",
-  "@lastModified": {
-    "description": "Last modified date of the file in the local disk"
-  },
-  "dateCreated": "Fecha de creación",
-  "@dateCreated": {
-    "description": "Creation time of the entity revision"
-  },
-  "driveTxID": "Tx ID de la unidad",
-  "@driveTxID": {
-    "description": "The transaction ID of the drive"
-  },
-  "copyDriveTxID": "Copiar la ID de la transacción de la unidad",
-  "@copyDriveTxID": {
-    "description": "Copy transaction ID of Drive tooltip"
-  },
-  "rootFolderTxID": "Tx ID de la carpeta raíz",
-  "@rootFolderTxID": {
-    "description": "The transaction ID of the Root Folder entity"
-  },
-  "copyRootFolderTxID": "Copiar la ID de la transacción de la carpeta raíz",
-  "@copyRootFolderTxID": {
-    "description": "Copy transaction ID of Root Folder tooltip"
-  },
-  "bundleTxID": "Tx ID del empaquetado",
-  "@bundleTxID": {
-    "description": "The bundle transaction ID of the bundled item"
-  },
-  "copyBundleTxID": "Copiar la ID de la transacción del empaquetado",
-  "@copyBundleTxID": {
-    "description": "Copy transaction ID of the Bundle transaction"
-  },
-  "metadataTxID": "Tx ID de la metadata",
-  "@metadataTxID": {
-    "description": "The transaction ID of the entity Metadata transaction"
-  },
-  "copyMetadataTxID": "Copiar la ID de la transacción de la metadata",
-  "@copyMetadataTxID": {
-    "description": "Copy the transaction ID of the Metadata transaction"
-  },
-  "dataTxID": "Tx ID de los datos",
-  "@dataTxID": {
-    "description": "The transaction ID of the entity Data transaction"
-  },
-  "copyDataTxID": "Copiar la ID de la transacción de los datos",
-  "@copyDataTxID": {
-    "description": "Copy the transaction ID of the Data transaction"
-  },
-  "itemIsBeingProcesed": "El elemento está siendo procesado...",
-  "@itemIsBeingProcesed": {
-    "description": "The entity is being processed, no details to display yet"
-  },
-  "driveWasCreatedWithName": "La unidad fue creada con el nombre: \"{driveName}\".",
-  "@driveWasCreatedWithName": {
-    "description": "Drive activity (journal) entry: created",
-    "placeholders": {
-      "driveName": {
-        "type": "String",
-        "example": "drive name"
-      }
-    }
-  },
-  "driveWasRenamed": "La unidad fue renombrada como: \"{driveName}\".",
-  "@driveWasRenamed": {
-    "description": "Drive activity (journal) entry: renamed",
-    "placeholders": {
-      "driveName": {
-        "type": "String",
-        "example": "drive name"
-      }
-    }
-  },
-  "driveWasModified": "La unidad fue modificada.",
-  "@driveWasModified": {
-    "description": "Drive activity (journal) entry: modified"
-  },
-  "folderWasCreatedWithName": "La carpeta fue creada con el nombre: \"{folderName}\".",
-  "@folderWasCreatedWithName": {
-    "description": "Folder activity (journal) entry: created",
-    "placeholders": {
-      "folderName": {
-        "type": "String",
-        "example": "folder name"
-      }
-    }
-  },
-  "folderWasRenamed": "La carpeta fue renombrada como: \"{folderName}\".",
-  "@folderWasRenamed": {
-    "description": "Folder activity (journal): renamed",
-    "placeholders": {
-      "folderName": {
-        "type": "String",
-        "example": "folder name"
-      }
-    }
-  },
-  "folderWasModified": "La carpeta fue modificada.",
-  "@folderWasModified": {
-    "description": "Folder activity (journal): modified"
-  },
-  "folderWasMoved": "La carpeta fue movida.",
-  "@folderWasMoved": {
-    "description": "Folder activity (journal): moved"
-  },
-  "fileWasCreatedWithName": "El archivo fue creado con el nombre: \"{fileName}\".",
-  "@fileWasCreatedWithName": {
-    "description": "File activity (journal): created",
-    "placeholders": {
-      "fileName": {
-        "type": "String",
-        "example": "file name"
-      }
-    }
-  },
-  "fileWasRenamed": "El archivo fue renombrado a: \"{fileName}\".",
-  "@fileWasRenamed": {
-    "description": "File activity (journal): renamed",
-    "placeholders": {
-      "fileName": {
-        "type": "String",
-        "example": "file name"
-      }
-    }
-  },
-  "fileWasModified": "El archivo fue modificado.",
-  "@fileWasModified": {
-    "description": "File activity (journal): modified"
-  },
-  "fileWasMoved": "El archivo fue movido.",
-  "@fileWasMoved": {
-    "description": "File activity (journal): moved"
-  },
-  "fileHadANewRevision": "Una nueva revisión del archivo fue cargada.",
-  "@fileHadANewRevision": {
-    "description": "File activity (journal): new revision"
-  },
-  "personalDrivesEmphasized": "UNIDADES PERSONALES",
-  "@personalDrives": {
-    "description": "Sub-header for the personal drives list. Emphasized with upper case"
-  },
-  "sharedDrivesEmphasized": "UNIDADES COMPARTIDOS",
-  "@sharedDrives": {
-    "description": "Sub-header for the shared drives list. Emphasized with upper case"
-  },
-  "help": "Ayuda",
-  "@help": {
-    "description": "Link to a form for collecting feedback from the user"
+  "anyoneCanAccessThisFile": "Cualquiera puede acceder al archivo usando este enlace.",
+  "@anyoneCanAccessThisFile": {
+    "description": "Warning for the user that is about to share a file"
   },
   "appVersion": "Versión {version}.",
   "@appVersion": {
@@ -525,21 +54,17 @@
       }
     }
   },
-  "newFolder": "Nueva carpeta",
-  "@newFolder": {
-    "description": "Create a new folder entity"
+  "arConnectRemainOnThisTab": "PRECAUCIÓN: Tu monedero WEB3 está firmando las transacciones. Por favor mantente en esta pestaña hasta completar el proceso.",
+  "@arConnectRemainOnThisTab": {
+    "description": "Warning for the user to do not leave the tab"
   },
-  "uploadFiles": "Cargar archivo(s)",
-  "@uploadFiles": {
-    "description": "Upload files to the Weave"
+  "ardriveIsntJustAnotherCloudSyncApp": "ArDrive no es sólo otra aplicación de almacenamiento en la nube. Es el comienzo de un disco duro permanente.",
+  "@ardriveIsntJustAnotherCloudSyncApp": {
+    "description": "Description about the permanence and uniqueness of ArDrive"
   },
-  "uploadFolder": "Cargar carpeta",
-  "@uploadFolder": {
-    "description": "Upload a folder and every subfolder alongside files inside them"
-  },
-  "newDrive": "Nueva unidad",
-  "@newDrive": {
-    "description": "Create a new drive entity"
+  "ardriveIsOptimizedForLargeScreens": "ArDrive está optimizado unicamente para pantallas grandes.",
+  "@ardriveIsOptimizedForLargeScreens": {
+    "description": "Screen not supported page"
   },
   "attachDrive": "Vincular unidad",
   "@attachDrive": {
@@ -549,175 +74,21 @@
   "@attachDriveEmphasized": {
     "description": "Attach a shared drive. Emphasized with upper case"
   },
-  "howDoIGetAR": "¿Cómo consigo AR?",
-  "@howDoIGetAR": {
-    "description": "Link to a help page explaining how to get Arweave tokens"
-  },
-  "sync": "Sincronizar",
-  "@sync": {
-    "description": "Sync button tooltip"
-  },
-  "driveIssuesDetected": "Hemos detectado inconvenientes con esta unidad. Navégala para solucionarlos.",
-  "@driveIssuesDetected": {
-    "description": "Orphan folders detected, the user must navigate through the contents to reach them"
-  },
-  "downloadingCSV": "Descargando CSV...",
-  "@downloadingCSV": {
-    "description": "The CSV file is being downloaded"
-  },
-  "cancel": "Cancelar",
-  "@cancel": {
-    "description": "Cancel button"
-  },
-  "exportingData": "Exportando informacón. Por favor, espera.",
-  "@exportingData": {
-    "description": "The drive data is being procesed"
-  },
-  "fileDownloadFailed": "La descarga del archivo ha fallado",
-  "@fileDownloadFailed": {
-    "description": "Could not export the CSV data"
+  "attachEmphasized": "VINCULAR",
+  "@attachEmphasized": {
+    "description": "The action of attaching a drive. Emphasized with upper case"
   },
   "attachingDriveEmphasized": "VINCULANDO UNIDAD...",
   "@attachingDriveEmphasized": {
     "description": "Drive attach form. Emphasized with upper case"
   },
-  "cancelEmphasized": "CANCELAR",
-  "@cancelEmphasized": {
-    "description": "Cancel button. Emphatized with upper case"
+  "back": "Volver",
+  "@back": {
+    "description": "Go back"
   },
-  "attachEmphasized": "VINCULAR",
-  "@attachEmphasized": {
-    "description": "The action of attaching a drive. Emphasized with upper case"
-  },
-  "creatingDriveEmphasized": "CREANDO UNIDAD...",
-  "@creatingDriveEmphasized": {
-    "description": "The drive is being created. Emphasized with upper case"
-  },
-  "createDriveEmphasized": "CREAR UNIDAD",
-  "@createDriveEmphasized": {
-    "description": "Action of creating a new drive. Emphasized with upper case"
-  },
-  "insufficientARToCreateDrive": "Balance insuficiente para crear la unidad.",
-  "@insufficientARToCreateDrive": {
-    "description": "Not enough balance"
-  },
-  "create": "Crear",
-  "@create": {
-    "description": "Create an drive"
-  },
-  "createEmphasized": "CREAR",
-  "@createEmphasized": {
-    "description": "Create a drive. Emphasized with upper case"
-  },
-  "renamingDriveEmphasized": "RENOMBRANDO UNIDAD...",
-  "@renamingDriveEmphasized": {
-    "description": "The drive is being renamed. Emphasized with upper case"
-  },
-  "renameDrive": "Renombrar unidad",
-  "@renameDrive": {
-    "description": "The action of renaming a drive"
-  },
-  "renameDriveEmphasized": "RENOMBRAR UNIDAD",
-  "@renameDriveEmphasized": {
-    "description": "The action of renaming a drive. Emphasized with upper case"
-  },
-  "driveName": "Nombre la unidad",
-  "@driveName": {
-    "description": "The name of certain drive"
-  },
-  "shareDrive": "Compartir unidad",
-  "@shareDrive": {
-    "description": "The action of sharing a drive link"
-  },
-  "shareDriveWithOthers": "Compartir la unidad con otros",
-  "@shareDriveWithOthers": {
-    "description": "The action of sharing a drive link"
-  },
-  "copyLink": "Copiar el enlace",
-  "@copyLink": {
-    "description": "Copy the link for sharing an entity"
-  },
-  "anyoneCanAccessThisDrivePublic": "Cualquiera puede acceder a esta unidad pública usando este enlace.",
-  "@anyoneCanAccessThisDrivePublic": {
-    "description": "Warning for the user that is about to share a drive"
-  },
-  "anyoneCanAccessThisDrivePrivate": "Cualquiera puede acceder a esta unidad privada usando este enlace.",
-  "@anyoneCanAccessThisDrivePrivate": {
-    "description": "Warning for the user that is about to share a drive"
-  },
-  "doneEmphasized": "HECHO",
-  "@doneEmphaseized": {
-    "description": "Done, no more to do here. Emphasized with upper case"
-  },
-  "downloadingFile": "Descargando archivo...",
-  "@downloadingFile": {
-    "description": "File is being downloaded"
-  },
-  "fileFailedToDownload": "La descarga del archivo ha fallado",
-  "@fileFailedToDownload": {
-    "description": "Error message for failed downloads"
-  },
-  "tryAgainDownloadingFile": "Ésto puede suceder si el archivo fue cargado recientemente. Por favor, inténtalo nuevamente luego.",
-  "@tryAgainDownloadingFile": {
-    "description": "The data is still being replicated between nodes of the network and it's yet not available"
-  },
-  "shareFile": "Compartir archivo",
-  "@shareFile": {
-    "description": "The action of sharing a file link"
-  },
-  "shareFileWithOthers": "Compartir el archivo con otros",
-  "@shareFileWithOthers": {
-    "description": "To share a file link"
-  },
-  "anyoneCanAccessThisFile": "Cualquiera puede acceder al archivo usando este enlace.",
-  "@anyoneCanAccessThisFile": {
-    "description": "Warning for the user that is about to share a file"
-  },
-  "creatingFolderEmphasized": "CREANDO CARPETA...",
-  "@creatingFolderEmphasized": {
-    "description": "Folder is being created. Emphasized with upper case"
-  },
-  "createFolderEmphasized": "CREAR CARPETA",
-  "@createFolderEmphasized": {
-    "description": "The action of creating a folder. Emphasized with upper case"
-  },
-  "folderName": "Nombre de la carpeta",
-  "@folderName": {
-    "description": "The name of certain folder"
-  },
-  "movingFolderEmphasized": "MOVIENDO CARPETA...",
-  "@movingFolderEmphasized": {
-    "description": "The action of moving a folder. Emphasized with upper case"
-  },
-  "movingFileEmphasized": "MOVIENDO ARCHIVO...",
-  "@movingFileEmphasized": {
-    "description": "The action of moving a file. Emphasized with upper case"
-  },
-  "nameConflict": "Hay un conflicto",
-  "@nameConflict": {
-    "description": "A conflict of names between two entities"
-  },
-  "entityAlreadyExists": "¡La entidad con el nombre: \"{entityName}\" ya existe en el destino! Por favor renombra el archivo o carpeta que estás moviendo e inténtalo nuevamente.",
-  "@entityAlreadyExists": {
-    "description": "Message warning the user that the given entity name already exists. Then requests that the user to choose a new name for the entity.",
-    "placeholders": {
-      "entityName": {
-        "type": "String",
-        "example": "entity name"
-      }
-    }
-  },
-  "moveHereEmphasized": "MOVER AQUÍ",
-  "@moveHereEmphasized": {
-    "description": "Move the entity to the current folder. Emphasized with upper case"
-  },
-  "moveFolderEmphasized": "MOVER CARPETA",
-  "@moveFolderEmphasized": {
-    "description": "The action of moving a folder. Emphasized with upper case"
-  },
-  "moveFileEmphasized": "MOVER ARCHIVO",
-  "@moveFileEmphasized": {
-    "description": "The action of moving a file. EMphasized with upper case"
+  "backEmphasized": "ANTERIOR",
+  "@backEmphasized": {
+    "description": "Go back. Emphasized with upper case"
   },
   "backToFolder": "Volver a la carpeta: \"{entityName}\"",
   "@backToFolder": {
@@ -729,198 +100,137 @@
       }
     }
   },
-  "renamingFolderEmphasized": "RENOMBRANDO CARPETA...",
-  "@renamingFolderEmphasized": {
-    "description": "Folder is being renamed. Emphasized with upper case"
+  "biometricLoginDisabled": "Inicio de sesión biométrico desactivado",
+  "@biometricLoginDisabled": {
+    "description": "Biometric Login is Disabled."
   },
-  "renamingFileEmphasized": "RENOMBRANDO ARCHIVO...",
-  "@renamingFileEmphasized": {
-    "description": "File is being renamed. Emphasized with upper case"
+  "biometricLoginEnabled": " Inicio de sesión biométrico activado",
+  "@biometricLoginEnabled": {
+    "description": "Biometric Login is Enabled."
   },
-  "renameFolderEmphasized": "RENOMBRAR CARPETA",
-  "@renameFolderEmphasized": {
-    "description": "The action of renaming a folder. Emphasized with upper case"
+  "biometricsDisabledOnYourDevice": "Esta función está actualmente desactivada en tu dispositivo. Para utilizarla, ve a Ajustes de tu dispositivo y activa la validación biométrica.",
+  "@biometricsDisabledOnYourDevice": {
+    "description": "Biometric is disabled"
   },
-  "renameFileEmphasized": "RENOMBRAR ARCHIVO",
-  "@renameFileEmphasized": {
-    "description": "The action of renaming a file. Emphasized with upper case"
+  "biometricsPasscodeNotSetAndroid": "Tu dispositivo requiere un PIN/patrón/contraseña para poder utilizar la biometría. Crea uno para poder continuar.",
+  "@biometricsPasscodeNotSetAndroid": {
+    "description": "Passcode it not set on Android"
   },
-  "rename": "Renombrar",
-  "@rename": {
-    "description": "The action of renaming; imperative form"
+  "biometricsPasscodeNotSetIOS": "Tu dispositivo requiere un código de acceso para poder utilizar la biometría. Crea uno yendo a Ajustes > Face ID y código de acceso para continuar.",
+  "@biometricsPasscodeNotSetIOS": {
+    "description": "Passcode it not set on Android"
   },
-  "renameEmphasized": "RENOMBRAR",
-  "@renameEmphasized": {
-    "description": "The action of renaming; imperative form. Emphasized with upper case"
+  "biometricsPermanentlyLockedOut": "Inicio de sesión biométrico desactivado debido a demasiados intentos fallidos. Introduce tu PIN/código de acceso para desbloquear la funcionalidad biométrica.",
+  "@biometricsPermanentlyLockedOut": {
+    "description": "Biometrics permanently locked out"
   },
-  "fileName": "Nombre del archivo",
-  "@fileName": {
-    "description": "The name of certain file"
+  "biometricTemporarilyDisabled": "El inicio de sesión biométrico está temporalmente desactivado debido a demasiados intentos fallidos.",
+  "@biometricTemporarilyDisabled": {
+    "description": "Biometric is locked out"
   },
-  "recreateFolderEmphasized": "RECREAR CARPETA",
-  "@recreateFolderEmphasized": {
-    "description": "Recreate a folder that failed to be minted"
+  "bundleTxID": "Tx ID del empaquetado",
+  "@bundleTxID": {
+    "description": "The bundle transaction ID of the bundled item"
   },
-  "recreatingFolderEmphasized": "RECREANDO CARPETA...",
-  "@recreatingFolderEmphasized": {
-    "description": "Folder is being recreated. Emphasized with upper case"
+  "bundlingAndSigningUpload": "Empaquetando y firmando las transacciones",
+  "@bundlingAndSigningUpload": {
+    "description": "The app is bundling together and signing the transactions"
   },
-  "fix": "Reparar",
-  "@fix": {
-    "description": "Fix an orphan item"
+  "camera": "Cámara",
+  "@camera": {
+    "description": "Button label to select a file from camera"
   },
-  "fixEmphasized": "REPARAR",
-  "@fixEmphasized": {
-    "description": "Fix an orphan item. Emphasized with upper case"
+  "cancel": "Cancelar",
+  "@cancel": {
+    "description": "Cancel button"
   },
-  "targetFolderEmphasized": "CARPETA DE DESTINO",
-  "@targetFolderEmphasized": {
-    "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
+  "cancelEmphasized": "CANCELAR",
+  "@cancelEmphasized": {
+    "description": "Cancel button. Emphasized with upper case"
   },
-  "back": "Volver",
-  "@back": {
-    "description": "Go back"
-  },
-  "backEmphasized": "ANTERIOR",
-  "@backEmphasized": {
-    "description": "Go back. Emphasized with upper case"
-  },
-  "logout": "Cerrar sesión",
-  "@logout": {
-    "description": "The logout process"
-  },
-  "notLoggedIn": "No has ingresado",
-  "@notLoggedIn": {
-    "description": "User has not logged in"
-  },
-  "logInToExperienceFeatures": "¡Inicia sesión para acceder a todas las características de ArDrive!",
-  "@logInToExperienceFeatures": {
-    "description": "User must login to use the features of ArDrive"
-  },
-  "login": "Iniciar sesión",
-  "@login": {
-    "description": "The login process"
-  },
-  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{Se encontró un archivo duplicado} =other{Se encontraron archivos duplicados}}",
-  "@duplicateFiles": {
-    "description": "Count of conflicting items",
-    "placeholders": {
-      "numberOfDuplicateFiles": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "0"
-      }
-    }
-  },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{Ya existe un archivo con el mismo nombre en este lugar. ¿Quieres continuar y cargarlo como una nueva revisión?} =other{Hay {numberOfFiles} archivos con el mismo nombre en ese lugar. ¿Quieres continuar y cargarlo como una nueva revisión?}}",
-  "@filesWithTheSameNameAlreadyExists": {
-    "description": "Asks the user what to do with the items conflicting names",
-    "placeholders": {
-      "numberOfFiles": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "0"
-      }
-    }
-  },
-  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{Se encontró una carpeta duplicada} =other{Se encontraron carpetas duplicadas}}",
-  "@duplicateFolders": {
-    "description": "Folder name conflict dialog title",
-    "placeholders": {
-      "numberOfDuplicateFolders": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "0"
-      }
-    }
-  },
-  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{Ya existe una carpeta con el mismo nombre en este lugar. Por favor, renómbrala e inténtalo nuevamente.}  =other{Ya existen {numberOfFolders} carpetas con el mismo nombre en este lugar. Por favor, renómbralas e inténtalo nuevamente.}}",
-  "@foldersWithTheSameNameAlreadyExists": {
-    "description": "Asks the user what to do with folder name conflicts",
-    "placeholders": {
-      "numberOfFolders": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "0"
-      }
-    }
-  },
-  "conflictingFiles": "Archivos con conflictos:",
-  "@conflictingFiles": {
-    "description": "Files being in conflict with already existing items"
-  },
-  "upload": "Cargar",
-  "@upload": {
-    "description": "The action of uploading certain item"
-  },
-  "uploadEmphasized": "CARGAR",
-  "@uploadEmphasized": {
-    "description": "The action of uploading certain item"
-  },
-  "continueEmphasized": "CONTINUAR",
-  "@continueEmphasized": {
-    "description": "To go ahead. Emphasized with upper case"
-  },
-  "filesTooLarge": "{numberOfFiles,plural, =1{El archivo es demasiado grande} =other{{numberOfFiles} archivos son demasiado grande}}",
-  "@filesTooLarge": {
-    "description": "A single or many files are too large to upload",
-    "placeholders": {
-      "numberOfFiles": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "0"
-      }
-    }
-  },
-  "filesTooLargeExplanationPrivate": "Actualmente, las unidades privadas en ArDrive Web soportan archivos de hasta 100 MiB",
-  "@filesTooLargeExplanationPrivate": {
-    "description": "Limit of size to upload"
-  },
-  "filesTooLargeExplanationPublic": "Actualmente, las unidades públicas en ArDrive WEB soportan archivos de hasta 1.20 GiB",
-  "@filesTooLargeExplanationPublic": {
-    "description": "Limit of size to upload"
-  },
-  "tooLargeForUpload": "Archivos demasiado grandes para cargar:",
-  "@tooLargeForUpload": {
-    "description": "Files too large for upload"
-  },
-  "preparingUpload": "Preparando la carga...",
-  "@preparingUpload": {
-    "description": "The upload is being processed"
-  },
-  "arConnectRemainOnThisTab": "PRECAUCIÓN: Tu monedero WEB3 está firmando las transacciones. Por favor mantente en esta pestaña hasta completar el proceso.",
-  "@arConnectRemainOnThisTab": {
-    "description": "Warning for te user to do not leave the tab"
-  },
-  "thisMayTakeAWhile": "Ésto puede tomar un momento...",
-  "@thisMayTakeAWhile": {
-    "description": "Uploading may take a while"
+  "changeWallet": "Cambiar monedero",
+  "@changeWallet": {
+    "description": "To use a different wallet"
   },
   "closeEmphasized": "CERRAR",
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
-  "uploadNFiles": "{numberOfFiles,plural, =1{Cargar 1 archivo} =other{Cargar {numberOfFiles} archivos}}",
-  "@uploadNFiles": {
-    "description": "Upload a single or many files",
-    "placeholders": {
-      "numberOfFiles": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "0"
-      }
-    }
+  "confirmed": "Confirmado",
+  "@confirmed": {
+    "description": "Status tooltip for transactions that are confirmed by the network"
   },
-  "uploadingNFiles": "{numberOfFiles,plural, =1{Cargando 1 archivo...} =other{Cargando {numberOfFiles} archivos...}}",
-  "@uploadingNFiles": {
-    "description": "Uploading a single or many files",
-    "placeholders": {
-      "numberOfFiles": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "0"
-      }
-    }
+  "confirmEmphasized": "CONFIRMAR",
+  "@confirmEmphasized": {
+    "description": "Confirm the prompted question"
+  },
+  "confirmPassword": "Confirmar contraseña",
+  "@confirmPassword": {
+    "description": "Label for repeating the password again"
+  },
+  "conflictingFiles": "Archivos con conflictos:",
+  "@conflictingFiles": {
+    "description": "Files conflict with already existing items"
+  },
+  "conflictingManifestFound": "El manifiesto ya existe",
+  "@conflictingManifestFound": {
+    "description": "There is an on-chain entity with the same name"
+  },
+  "conflictingManifestFoundChooseNewName": "Ya hay un manifiesto con ese nombre aquí. ¿Quieres continuar y cargar este manifiesto como una nueva revisión?",
+  "@conflictingManifestFoundChooseNewName": {
+    "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
+  },
+  "conflictingNameFound": "Se encontró un conflicto de nombres",
+  "@conflictingNameFound": {
+    "description": "There is a non-manifest entity with the same name"
+  },
+  "conflictingNameFoundChooseNewName": "Una entidad con ese nombre ya existe en este lugar. Por favor, elige un nombre diferente.",
+  "@conflictingNameFoundChooseNewName": {
+    "description": "The given name is conflicting with some entity, the user must type a non-conflicting name"
+  },
+  "congestionWarning": "Actualmente Arweave está experimentando mucho trafico. Posiblemente tu carga no sea exitosa en este momento.",
+  "@congestionWarning": {
+    "description": "Congestion warning"
+  },
+  "continueEmphasized": "CONTINUAR",
+  "@continueEmphasized": {
+    "description": "To go ahead. Emphasized with upper case"
+  },
+  "copyBundleTxID": "Copiar la ID de la transacción del empaquetado",
+  "@copyBundleTxID": {
+    "description": "Copy transaction ID of the Bundle transaction"
+  },
+  "copyDataTxID": "Copiar la ID de la transacción de los datos",
+  "@copyDataTxID": {
+    "description": "Copy the transaction ID of the Data transaction"
+  },
+  "copyDriveID": "Copiar la ID de la unidad",
+  "@copyDriveID": {
+    "description": "Tooltip of the copy icon for the Drive ID"
+  },
+  "copyDriveTxID": "Copiar la ID de la transacción de la unidad",
+  "@copyDriveTxID": {
+    "description": "Copy transaction ID of Drive tooltip"
+  },
+  "copyFileID": "Copiar la ID del archivo",
+  "@copyFileID": {
+    "description": "Tooltip of the copy icon for the File ID"
+  },
+  "copyFolderID": "Copiar la ID de la carpeta",
+  "@copyFolderID": {
+    "description": "Tooltip of the copy icon for the Folder ID"
+  },
+  "copyLink": "Copiar el enlace",
+  "@copyLink": {
+    "description": "Copy the link for sharing an entity"
+  },
+  "copyMetadataTxID": "Copiar la ID de la transacción de la metadata",
+  "@copyMetadataTxID": {
+    "description": "Copy the transaction ID of the Metadata transaction"
+  },
+  "copyRootFolderTxID": "Copiar la ID de la transacción de la carpeta raíz",
+  "@copyRootFolderTxID": {
+    "description": "Copy transaction ID of Root Folder tooltip"
   },
   "cost": "Costo: {arPrice} AR",
   "@cost": {
@@ -932,96 +242,138 @@
       }
     }
   },
-  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{Este archivo será cargado públicamente.} =other{Estos archivos serán cargados públicamente.}}",
-  "@filesWillBeUploadedPublicly": {
-    "description": "Warning for files that will be public after uploaded",
+  "create": "Crear",
+  "@create": {
+    "description": "Create an drive"
+  },
+  "createDriveEmphasized": "CREAR UNIDAD",
+  "@createDriveEmphasized": {
+    "description": "Action of creating a new drive. Emphasized with upper case"
+  },
+  "createEmphasized": "CREAR",
+  "@createEmphasized": {
+    "description": "Create a drive. Emphasized with upper case"
+  },
+  "createFolderEmphasized": "CREAR CARPETA",
+  "@createFolderEmphasized": {
+    "description": "The action of creating a folder. Emphasized with upper case"
+  },
+  "createHereEmphasized": "CREAR AQUÍ",
+  "@createHereEmphasized": {
+    "description": "Create the manifest in the current selected folder"
+  },
+  "createManifest": "Crear manifiesto",
+  "@createManifest": {
+    "description": "To create a manifest"
+  },
+  "createManifestEmphasized": "CREAR MANIFIESTO",
+  "@createManifestEmphasized": {
+    "description": "To create a manifest"
+  },
+  "creatingDriveEmphasized": "CREANDO UNIDAD...",
+  "@creatingDriveEmphasized": {
+    "description": "The drive is being created. Emphasized with upper case"
+  },
+  "creatingFolderEmphasized": "CREANDO CARPETA...",
+  "@creatingFolderEmphasized": {
+    "description": "Folder is being created. Emphasized with upper case"
+  },
+  "dataTxID": "Tx ID de los datos",
+  "@dataTxID": {
+    "description": "The transaction ID of the entity Data transaction"
+  },
+  "dateCreated": "Fecha de creación",
+  "@dateCreated": {
+    "description": "Creation time of the entity revision"
+  },
+  "decentralizedPermanent": "El almacenamiento de datos no sucede en un instante.",
+  "@decentralizedPermanent": {
+    "description": "Permanence requires patience"
+  },
+  "detachDrive": "¿Desvincular unidad?",
+  "@detachDrive": {
+    "description": "Detach Drive Title"
+  },
+  "detachDriveQuestion": "¿Confirmas que quieres desvincular '{driveName}'?",
+  "@detachDriveQuestion": {
+    "description": "Ask for user confirmation to detach drive",
     "placeholders": {
-      "numberOfFiles": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "2"
+      "driveName": {
+        "type": "String",
+        "example": "Shared Drive A"
       }
     }
   },
-  "insufficientARForUpload": "AR insufficiente para la carga.",
-  "@insufficientARForUpload": {
-    "description": "The wallet has no enough balance"
+  "detachEmphasized": "DESVINCULAR",
+  "@detachEmphasized": {
+    "description": "Example: To DETACH a drive. Emphasized in upper case"
   },
-  "bundlingAndSigningUpload": "Empaquetando y firmando las transacciones",
-  "@bundlingAndSigningUpload": {
-    "description": "The app is bundling together and signing the transactions"
+  "deviceNotSupportBiometrics": "Este dispositivo no admite el uso de la biometría.",
+  "@deviceNotSupportBiometrics": {
+    "description": "Biometric is not supported"
   },
-  "signingUpload": "Firmando las transacciones",
-  "@signingUpload": {
-    "description": "The app is signing the transations"
+  "displayedPaginatedData": "{from} - {to} de {total}",
+  "@displayedPaginatedData": {
+    "description": "Indicates the user what items of a list are being displayed. Example: 1 - 25 of 100",
+    "placeholders": {
+      "from": {
+        "type": "int",
+        "example": "1",
+        "format": "decimalPattern"
+      },
+      "to": {
+        "type": "int",
+        "example": "25",
+        "format": "decimalPattern"
+      },
+      "total": {
+        "type": "int",
+        "example": "100",
+        "format": "decimalPattern"
+      }
+    }
   },
-  "walletSwitch": "Cambio de monedero",
-  "@walletSwitch": {
-    "description": "The wallet has changed. The user must log in again"
+  "doneEmphaseized": "HECHO",
+  "@doneEmphaseized": {
+    "description": "Done, no more to do here. Emphasized with upper case"
   },
-  "walletChangeDetected": "Se detectó un cambio de monedero. Por favor, vuelve a ingresar nuevamente",
-  "@walletChangeDetected": {
-    "description": "The wallet has changed. The user must log in again"
+  "doneEmphasized": "HECHO",
+  "@doneEmphasized": {},
+  "download": "Descargar",
+  "@download": {
+    "description": "Action of downloading a file"
   },
-  "weReSorryEmphasized": "¡LO SENTIMOS!",
-  "@weReSorryEmphasized": {
-    "description": "Screen not supported page. Emphasized with upper case"
+  "downloadFinished": "¡Descarga terminada!",
+  "@downloadFinished": {
+    "description": "Download finished"
   },
-  "ardriveIsOptimizedForLargeScreens": "ArDrive está optimizado unicamente para pantallas grandes.",
-  "@ardriveIsOptimizedForLargeScreens": {
-    "description": "Screen not supported page"
+  "downloadingCSV": "Descargando CSV...",
+  "@downloadingCSV": {
+    "description": "The CSV file is being downloaded"
   },
-  "tryOnAnotherDevice": "Por favor inténtalo en otro dispositivo y mantente actualizado sobre la próxima aplicación móvil suscribiéndote a nuestro boletín informativo.",
-  "@tryOnAnotherDevice": {
-    "description": "Screen not supported page"
+  "downloadingFile": "Descargando archivo...",
+  "@downloadingFile": {
+    "description": "File is being downloaded"
   },
-  "subscribeEmphasized": "SUSCRIBIRSE",
-  "@subscribeEmphasized": {
-    "description": "Screen not supported page. Emphasized with upper case"
+  "driveID": "ID de la unidad",
+  "@driveID": {
+    "description": "The Drive-ID tag"
   },
-  "specifiedFileDoesNotExist": "El archivo especificado no existe.",
-  "@specifiedFileDoesNotExist": {
-    "description": "The shared file the user is trying to access does not exist"
+  "driveIssuesDetected": "Hemos detectado inconvenientes con esta unidad. Navégala para solucionarlos.",
+  "@driveIssuesDetected": {
+    "description": "Orphan folders detected, the user must navigate through the contents to reach them"
   },
-  "failedToSyncDrive": "No se pudo sincronizar el contenido de la unidad.",
-  "@failedToSyncDrive": {
-    "description": "The app wasn't able to sync the drive"
+  "driveKey": "Clave de la unidad",
+  "@driveKey": {
+    "description": "Drive Key form field label"
   },
-  "tryAgainEmphasized": "INTENTAR NUEVAMENTE",
-  "@tryAgainEmphasized": {
-    "description": "Try it again. Emphasized with upper case"
+  "driveName": "Nombre la unidad",
+  "@driveName": {
+    "description": "The name of certain drive"
   },
-  "warningEmphasized": "ADVERTENCIA",
-  "@warningEmphasized": {
-    "description": "Congestion warning. Emphasized with upper case"
-  },
-  "congestionWarning": "Actualmente Arweave está experimentando mucho trafico. Posiblemente tu carga no sea exitosa en este momento.",
-  "@congestionWarning": {
-    "description": "Congestion warning"
-  },
-  "tryLaterCongestionEmphasized": "INTENTAR MÁS TARDE",
-  "@tryLaterCongestionEmphasized": {
-    "description": "Try to upload later. Emphasized with upper case"
-  },
-  "proceedCongestionEmphasized": "PROCEDER",
-  "@proceedCongestionEmphasized": {
-    "description": "Proceed being aware of the network congestion. Empasized with upper case"
-  },
-  "profile": "Perfil",
-  "@profile": {
-    "description": "The user profile: user name, wallet address and wallet balance"
-  },
-  "syncingPleaseRemainOnThisTab": "Sincronizando... Por favor, permanece en esta pestaña.",
-  "@syncingPleaseRemainOnThisTab": {
-    "description": "Syncing drives"
-  },
-  "syncingOnlyOneDrive": "Sincronizando la unidad...",
-  "@syncingOnlyOneDrive": {
-    "description": "Show the message when the user has only one drive"
-  },
-  "syncingPleaseWait": "Sincronizando... Por favor espera.",
-  "@syncingPleaseWait": {
-    "description": "Syncing drives"
+  "driveRoot": "Carpeta raíz",
+  "@driveRoot": {
+    "description": "The folder entity that is at the top of the folder hierarchy"
   },
   "driveSyncedOfDrivesCount": "{drivesSynced} de {drivesCount} unidades sincronizadas",
   "@driveSyncedOfDrivesCount": {
@@ -1029,25 +381,115 @@
     "placeholders": {
       "drivesSynced": {
         "type": "int",
-        "format": "decimalPattern",
-        "example": "1"
+        "example": "1",
+        "format": "decimalPattern"
       },
       "drivesCount": {
         "type": "int",
-        "format": "decimalPattern",
-        "example": "1"
+        "example": "1",
+        "format": "decimalPattern"
       }
     }
   },
-  "syncProgressPercentage": "{percentage}% completado",
-  "@syncProgressPercentage": {
-    "description": "The sync progress percentage",
+  "driveTxID": "Tx ID de la unidad",
+  "@driveTxID": {
+    "description": "The transaction ID of the drive"
+  },
+  "driveWasCreatedWithName": "La unidad fue creada con el nombre: \"{driveName}\".",
+  "@driveWasCreatedWithName": {
+    "description": "Drive activity (journal) entry: created",
     "placeholders": {
-      "percentage": {
+      "driveName": {
         "type": "String",
-        "example": "45.5"
+        "example": "drive name"
       }
     }
+  },
+  "driveWasModified": "La unidad fue modificada.",
+  "@driveWasModified": {
+    "description": "Drive activity (journal) entry: modified"
+  },
+  "driveWasRenamed": "La unidad fue renombrada como: \"{driveName}\".",
+  "@driveWasRenamed": {
+    "description": "Drive activity (journal) entry: renamed",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "drive name"
+      }
+    }
+  },
+  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{Se encontró un archivo duplicado} =other{Se encontraron archivos duplicados}}",
+  "@duplicateFiles": {
+    "description": "Count of conflicting items",
+    "placeholders": {
+      "numberOfDuplicateFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{Se encontró una carpeta duplicada} =other{Se encontraron carpetas duplicadas}}",
+  "@duplicateFolders": {
+    "description": "Folder name conflict dialog title",
+    "placeholders": {
+      "numberOfDuplicateFolders": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "enableBiometricLogin": "Activar inicio de sesión biométrico",
+  "@enableBiometricLogin": {
+    "description": "Enable Biometric Login"
+  },
+  "enableBiometricsOnSettings": "Esta función está actualmente desactivada en tu dispositivo. Para utilizarla, ve a qAjustes de tu dispositivo y activa la validación biométrica.",
+  "@enableBiometricsOnSettings": {
+    "description": "Open settings to enable biometric"
+  },
+  "enableCamera": "Activar cámara",
+  "@enableCamera": {
+    "description": "Enable camera"
+  },
+  "enableCameraAccess": "Ve a Ajustes, pulsa ArDrive y activa el acceso a Cámara.",
+  "@enableCameraAccess": {
+    "description": "enable camera access"
+  },
+  "enableStorageAccess": "Ve a Ajustes, pulsa ArDrive y activa el Acceso al almacenamiento.",
+  "@enableStorageAccess": {
+    "description": "enable camera access"
+  },
+  "enableStorageAccessTitle": "Activar acceso al almacenamiento",
+  "@enableStorageAccessTitle": {
+    "description": "enable camera access"
+  },
+  "enterFileKey": "Introduce la clave del archivo",
+  "@enterFileKey": {
+    "description": "File Key form field label"
+  },
+  "entityAlreadyExists": "¡La entidad con el nombre: \"{entityName}\" ya existe en el destino! Por favor renombra el archivo o carpeta que estás moviendo e inténtalo nuevamente.",
+  "@entityAlreadyExists": {
+    "description": "Message warning the user that the given entity name already exists. Then requests that the user to choose a new name for the entity.",
+    "placeholders": {
+      "entityName": {
+        "type": "String",
+        "example": "entity name"
+      }
+    }
+  },
+  "error": "Error",
+  "@error": {
+    "description": "Indicates that something went wrong"
+  },
+  "errorDragAndDropFolder": "Actualmente no es posible arrastrar y soltar carpetas",
+  "@errorDragAndDropFolder": {
+    "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
+  },
+  "exportDriveContents": "Exportar el contenido de la unidad",
+  "@exportDriveContents": {
+    "description": "Export the data of a drive into a CSV file"
   },
   "exportFromCSV": "Exportación de {driveId} {timestamp}.csv",
   "@exportFromCSV": {
@@ -1063,27 +505,153 @@
       }
     }
   },
-  "folderCount": "{folderCount,plural, =0{Ninguna carpeta} =1{1 carpeta} other{{folderCount} carpetas}",
-  "@folderCount": {
-    "description": "Plurals for the folder count. First character capitalized",
-    "placeholders": {
-      "folderCount": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "2"
-      }
-    }
+  "exportingData": "Exportando informacón. Por favor, espera.",
+  "@exportingData": {
+    "description": "The drive data is being processed"
   },
-  "fileCount": "{fileCount,plural, =0{ningún archivo} =1{1 archivo} other{{fileCount} archivos}}",
+  "failed": "Fallido",
+  "@failed": {
+    "description": "Status tooltip for failed transactions"
+  },
+  "failedToCreateManifestEmphasized": "LA CREACIÓN DEL MANIFIESTO HA FALLADO",
+  "@failedToCreateManifestEmphasized": {
+    "description": "The manifest could not be created"
+  },
+  "failedToSyncDrive": "No se pudo sincronizar el contenido de la unidad.",
+  "@failedToSyncDrive": {
+    "description": "The app wasn't able to sync the drive"
+  },
+  "feedbackContent": "¿Te interesaría dejar comentarios sobre tu experiencia en la aplicación?",
+  "@feedbackContent": {
+    "description": "Asks for feedback"
+  },
+  "feedbackTitle": "¡Gracias por usar ArDrive!",
+  "@feedbackTitle": {
+    "description": "We thank the user"
+  },
+  "fileCount": "{fileCount, plural, zero{ningún archivo} one{1 archivo} other{{fileCount} archivos}}",
   "@fileCount": {
     "description": "Plurals for the file count. First character in lower case",
     "placeholders": {
       "fileCount": {
         "type": "int",
-        "format": "decimalPattern",
-        "example": "2"
+        "example": "2",
+        "format": "decimalPattern"
       }
     }
+  },
+  "fileDownloadFailed": "La descarga del archivo ha fallado",
+  "@fileDownloadFailed": {
+    "description": "Could not export the CSV data"
+  },
+  "fileFailedToDownload": "La descarga del archivo ha fallado",
+  "@fileFailedToDownload": {
+    "description": "Error message for failed downloads"
+  },
+  "fileHadANewRevision": "Una nueva revisión del archivo fue cargada.",
+  "@fileHadANewRevision": {
+    "description": "File activity (journal): new revision"
+  },
+  "fileID": "ID del archivo",
+  "@fileID": {
+    "description": "The Entity-ID tag of files"
+  },
+  "fileName": "Nombre del archivo",
+  "@fileName": {
+    "description": "The name of certain file"
+  },
+  "fileSize": "Tamaño del archivo",
+  "@fileSize": {
+    "description": "The size of a file"
+  },
+  "filesTooLarge": "{numberOfFiles,plural, =1{El archivo es demasiado grande} =other{{numberOfFiles} archivos son demasiado grande}}",
+  "@filesTooLarge": {
+    "description": "A single or many files are too large to upload",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "filesTooLargeExplanationMobile": "Actualmente, ArDrive en el móvil solo admite la carga de archivos de menos de 1024 MiB",
+  "@filesTooLargeExplanationMobile": {
+    "description": "Limit of size to upload"
+  },
+  "filesTooLargeExplanationPrivate": "Actualmente, las unidades privadas en ArDrive Web soportan archivos de hasta 100 MiB",
+  "@filesTooLargeExplanationPrivate": {
+    "description": "Limit of size to upload"
+  },
+  "filesTooLargeExplanationPublic": "Actualmente, las unidades públicas en ArDrive WEB soportan archivos de hasta 1.25 GiB",
+  "@filesTooLargeExplanationPublic": {
+    "description": "Limit of size to upload"
+  },
+  "filesWillBePermanentlyPublicWarning": "Todos los archivos cargados aquí serán públicos por siempre para cualquiera en el internet. Asegúrate de que quieres que esta información sea pública.",
+  "@filesWillBePermanentlyPublicWarning": {
+    "description": "Make the user aware that it is uploading permanent data publicly"
+  },
+  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{Este archivo será cargado públicamente.} =other{Estos archivos serán cargados públicamente.}}",
+  "@filesWillBeUploadedPublicly": {
+    "description": "Warning for files that will be public after uploaded",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "2",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{Ya existe un archivo con el mismo nombre en este lugar. ¿Quieres continuar y cargarlo como una nueva revisión?} =other{Hay {numberOfFiles} archivos con el mismo nombre en ese lugar. ¿Quieres continuar y cargarlo como una nueva revisión?}}",
+  "@filesWithTheSameNameAlreadyExists": {
+    "description": "Asks the user what to do with the items conflicting names",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "fileSystem": "Archivos",
+  "@fileSystem": {
+    "description": "Button label to select a file from file system"
+  },
+  "fileWasCreatedWithName": "El archivo fue creado con el nombre: \"{fileName}\".",
+  "@fileWasCreatedWithName": {
+    "description": "File activity (journal): created",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "file name"
+      }
+    }
+  },
+  "fileWasModified": "El archivo fue modificado.",
+  "@fileWasModified": {
+    "description": "File activity (journal): modified"
+  },
+  "fileWasMoved": "El archivo fue movido.",
+  "@fileWasMoved": {
+    "description": "File activity (journal): moved"
+  },
+  "fileWasRenamed": "El archivo fue renombrado a: \"{fileName}\".",
+  "@fileWasRenamed": {
+    "description": "File activity (journal): renamed",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "file name"
+      }
+    }
+  },
+  "fix": "Reparar",
+  "@fix": {
+    "description": "Fix an orphan item"
+  },
+  "fixEmphasized": "REPARAR",
+  "@fixEmphasized": {
+    "description": "Fix an orphan item. Emphasized with upper case"
   },
   "folderAndFileCountComposite": "{folderCountString}, {fileCountString}",
   "@folderAndFileCountComposite": {
@@ -1099,33 +667,123 @@
       }
     }
   },
-  "uploadingManifestEmphasized": "CARGANDO MANIFIESTO...",
-  "@uploadingManifestEmphasized": {
-    "description": "The manifest is being uploaded"
+  "folderCount": "{folderCount, plural, zero{Ninguna carpeta} one{1 carpeta} other{{folderCount} carpetas}}",
+  "@folderCount": {
+    "description": "Plurals for the folder count. First character in lower case",
+    "placeholders": {
+      "folderCount": {
+        "type": "int",
+        "example": "2",
+        "format": "decimalPattern"
+      }
+    }
   },
-  "preparingManifestEmphasized": "PREPARANDO MANIFIESTO...",
-  "@preparingManifestEmphasized": {
-    "description": "The manifest is being prepared for the upload"
+  "folderID": "ID de la carpeta",
+  "@folderID": {
+    "description": "The Entity-ID tag of folders"
   },
-  "manifestName": "Nombre del manifiesto",
-  "@manifestName": {
-    "description": "The name of the manifest"
+  "folderName": "Nombre de la carpeta",
+  "@folderName": {
+    "description": "The name of certain folder"
   },
-  "failedToCreateManifestEmphasized": "LA CREACIÓN DEL MANIFIESTO HA FALLADO",
-  "@failedToCreateManifestEmphasized": {
-    "description": "The manifest could not be created"
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{Ya existe una carpeta con el mismo nombre en este lugar. Por favor, renómbrala e inténtalo nuevamente.}  =other{Ya existen {numberOfFolders} carpetas con el mismo nombre en este lugar. Por favor, renómbralas e inténtalo nuevamente.}}",
+  "@foldersWithTheSameNameAlreadyExists": {
+    "description": "Asks the user what to do with folder name conflicts",
+    "placeholders": {
+      "numberOfFolders": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
   },
-  "walletChangedDuringManifestCreation": "El monedero que estabas usando cambió mientras se creaba el manifiesto...",
-  "@walletChangedDuringManifestCreation": {
-    "description": "The wallet has been changed while the creation of the manifest was in process"
+  "folderWasCreatedWithName": "La carpeta fue creada con el nombre: \"{folderName}\".",
+  "@folderWasCreatedWithName": {
+    "description": "Folder activity (journal) entry: created",
+    "placeholders": {
+      "folderName": {
+        "type": "String",
+        "example": "folder name"
+      }
+    }
   },
-  "manifestTransactionUnexpectedlyFailed": "La transacción del manifiesto ha fallado inesperadamente mientras se cargaba a la red de Arweave...",
-  "@manifestTransactionUnexpectedlyFailed": {
-    "description": "The manifest transaction did not succeed being uploaded"
+  "folderWasModified": "La carpeta fue modificada.",
+  "@folderWasModified": {
+    "description": "Folder activity (journal): modified"
+  },
+  "folderWasMoved": "La carpeta fue movida.",
+  "@folderWasMoved": {
+    "description": "Folder activity (journal): moved"
+  },
+  "folderWasRenamed": "La carpeta fue renombrada como: \"{folderName}\".",
+  "@folderWasRenamed": {
+    "description": "Folder activity (journal): renamed",
+    "placeholders": {
+      "folderName": {
+        "type": "String",
+        "example": "folder name"
+      }
+    }
+  },
+  "forgetWallet": "Olvidar monedero y cambiar de perfil",
+  "@forgetWallet": {
+    "description": "Use a different wallet by forgetting the current one"
+  },
+  "gallery": "Galería",
+  "@gallery": {
+    "description": "Button label to select a file from gallery"
+  },
+  "getAWallet": "¿No tienes un monedero? ¡Obtén uno aquí!",
+  "@getAWallet": {
+    "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
+  },
+  "gotIt": "¡Entendido!",
+  "@gotIt": {
+    "description": "Example similar phrases: I've got it, I understood, OK"
+  },
+  "goToDeviceSettings": "Ir a Ajustes",
+  "@goToDeviceSettings": {
+    "description": "Go to device settings"
+  },
+  "goToFirst": "Ir al comienzo",
+  "@goToFirst": {
+    "description": "Action of going to the first page"
+  },
+  "goToLast": "Ir al final",
+  "@goToLast": {
+    "description": "Action of going to the latest page"
+  },
+  "greenCheckMark": "Cuando el punto verde aparece al lado de tu archivo, es cuando ha sido cargado a la PermaWeb.",
+  "@greenCheckMark": {
+    "description": "Describes the indicator of the status of uploaded files"
+  },
+  "help": "Ayuda",
+  "@help": {
+    "description": "Link to a form for collecting feedback from the user"
+  },
+  "howDoIGetAR": "¿Cómo consigo AR?",
+  "@howDoIGetAR": {
+    "description": "Link to a help page explaining how to get Arweave tokens"
+  },
+  "infernoIsInFullSwing": "¡El programa de recompensas Inferno está en pleno apogeo! ¡Haz clic aquí para ver las reglas de participación!",
+  "@infernoIsInFullSwing": {
+    "description": "Text inviting the users to go read the Inferno rules"
+  },
+  "insufficientARForUpload": "AR insufficiente para la carga.",
+  "@insufficientARForUpload": {
+    "description": "The wallet does not have enough balance"
+  },
+  "insufficientARToCreateDrive": "Balance insuficiente para crear la unidad.",
+  "@insufficientARToCreateDrive": {
+    "description": "Not enough balance"
+  },
+  "insufficientARWarning": "Balance insuficiente",
+  "@insufficientARWarning": {
+    "description": "Warns the user that the wallet balance is less than minimum AR required to make a transaction"
   },
   "insufficientBalanceForManifest": "El balance de {walletBalance} AR es insuficiente para esta transacción de manifiesto que cuesta: {totalCost} AR...",
   "@insufficientBalanceForManifest": {
-    "description": "The ammount of AR the wallet has is not enough to upload the manifest transaction",
+    "description": "The amount of AR the wallet has is not enough to upload the manifest transaction",
     "placeholders": {
       "walletBalance": {
         "type": "String",
@@ -1157,191 +815,661 @@
   "@insufficientFundsForUploadFolders": {
     "description": "Show that needs funds to upload folders"
   },
-  "conflictingNameFound": "Se encontró un conflicto de nombres",
-  "@conflictingNameFound": {
-    "description": "There is a non-manifest entity with the same name"
+  "invalidWalletFile": "Archivo de cartera no válido",
+  "@invalidWalletFile": {
+    "description": "Wallet file is not a json or a text"
   },
-  "conflictingNameFoundChooseNewName": "Una entidad con ese nombre ya existe en este lugar. Por favor, elige un nombre diferente.",
-  "@conflictingNameFoundChooseNewName": {
-    "description": "The given name is conflicting with some entity, the user must type a non-conflicting name"
+  "invalidWalletFileDescription": "El archivo que has seleccionado no es válido",
+  "@invalidWalletFileDescription": {
+    "description": "Invalid wallet file description"
   },
-  "conflictingManifestFound": "El manifiesto ya existe",
-  "@conflictingManifestFound": {
-    "description": "There is an on-chain entity with the same name"
+  "itemActivityEmphasized": "ACTIVIDAD",
+  "@itemActivityEmphasized": {
+    "description": "The journal of the entity (created, renamed, moved, revision uploaded). Emphasized with upper case"
   },
-  "conflictingManifestFoundChooseNewName": "Ya hay un manifiesto con ese nombre aquí. ¿Quieres continuar y cargar este manifiesto como una nueva revisión?",
-  "@conflictingManifestFoundChooseNewName": {
-    "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
+  "itemContains": "Contiene",
+  "@itemContains": {
+    "description": "Used like so: 'Contains 15 folders, 10 files'"
   },
-  "addnewManifestEmphasized": "AÑADIR NUEVO MANIFIESTO",
-  "@addnewManifestEmphasized": {
-    "description": "There is a non-manifest entity with the same name"
+  "itemDetailsEmphasized": "DETALLES",
+  "@itemDetailsEmphasized": {
+    "description": "Item details such as dates, transaction IDs and entity IDs. Emphasized with upper case"
   },
-  "aManifestIsASpecialKindOfFile": "Un manifiesto es un tipo especial de archivo que relaciona transacciones Arweave con rutas perzonalizadas.",
-  "@aManifestIsASpecialKindOfFile": {
-    "description": "Simple explanation of what a manifest is"
+  "itemIsBeingProcesed": "El elemento está siendo procesado...",
+  "@itemIsBeingProcesed": {
+    "description": "The entity is being processed, no details to display yet"
+  },
+  "itemMoveNameConflict": "El/los siguiente(s) elemento(s) no ha/han podido moverse porque la {destinationFolderName} contiene elemento(s) con el mismo nombre.",
+  "@itemMoveNameConflict": {
+    "description": "Description for dialog to skip conflicting files or cancel",
+    "placeholders": {
+      "destinationFolderName": {
+        "type": "String",
+        "example": "Folder A"
+      }
+    }
+  },
+  "itemPreviewEmphasized": "VISTA PREVIA",
+  "@itemPreviewEmphasized": {
+    "description": "Item preview"
+  },
+  "lastModified": "Última modificación",
+  "@lastModified": {
+    "description": "Last modified date of the file in the local disk"
+  },
+  "lastModifiedDate": "Última modificación {date}",
+  "@lastModifiedDate": {
+    "description": "Last modified date of the file in the local disk",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "lastUpdated": "Última actualización",
+  "@lastUpdated": {
+    "description": "The timestamp of the transaction"
   },
   "learnMore": "Conocer más",
   "@learnMore": {
     "description": "Link to a document explaining manifests in detail"
   },
-  "createManifestEmphasized": "CREAR MANIFIESTO",
-  "@createManifestEmphasized": {
-    "description": "To create a manifest"
-  },
-  "createManifest": "Crear manifiesto",
-  "@createManifest": {
-    "description": "To create a manifest"
-  },
-  "filesWillBePermanentlyPublicWarning": "Todos los archivos cargados aquí serán públicos por siempre para cualquiera en el internet. Asegúrate de que quieres que esta información sea pública.",
-  "@filesWillBePermanentlyPublicWarning": {
-    "description": "Make the user aware that it is uploading permanent data publicly"
-  },
-  "createHereEmphasized": "CREAR AQUÍ",
-  "@createHereEmphasized": {
-    "description": "Create the manifest in the current selected folder"
-  },
-  "confirmEmphasized": "CONFIRMAR",
-  "@confirmEmphasized": {
-    "description": "Confirm the prompted question"
-  },
-  "skipEmphasized": "OMITIR",
-  "@skipEmphasized": {
-    "description": "Example: to SKIP a conflict"
-  },
-  "replaceEmphasized": "REEMPLAZAR",
-  "@replaceEmphasized": {
-    "description": "Example: to REPLACE an entity"
-  },
-  "validationRequired": "Este campo es requerido.",
-  "@validationRequired": {
-    "description": "Input validation error: the field is empty, but it's required"
-  },
-  "validationInvalid": "Información inválida.",
-  "@validationInvalid": {
-    "description": "Input validation error: the field has invalid data"
-  },
-  "validationPasswordIncorrect": "Contraseña incorrecta.",
-  "@validationPasswordIncorrect": {
-    "description": "Input validation error: the given password is wrong"
-  },
-  "validationAttachDriveCouldNotBeFound": "No se encontró la unidad especificada.",
-  "@validationAttachDriveCouldNotBeFound": {
-    "description": "Input validation error: The given drive ID does not exist"
-  },
-  "validationInvalidKey": "Clave de la unidad inválida.",
-  "@validationInvalidKey": {
-    "description": "Input validation error: The given drive key is wrong"
-  },
-  "validationAttachUserLoggedOut": "Debes iniciar sesión para vincular unidades privadas.",
-  "@validationAttachUserLoggedOut": {
-    "description": "Input validation error: the user cannot attach a drive when not logged in"
-  },
-  "validationEntityNameAlreadyPresent": "Ya existe una carpeta o archivo con el mismo nombre.",
-  "@validationEntityNameAlreadyPresent": {
-    "description": "Input validation error: The given name is already in use by some exising entity"
-  },
-  "validationDriveNameAlreadyPresent": "Una unidad con el mismo nombre ya existe aquí.",
-  "@validationDriveNameAlreadyPresent": {
-    "description": "Input validation error: The given name is already in use by some exising drive"
-  },
-  "validationNameUnchanged": "Este nombre es idéntico al nombre original",
-  "@validationNameUnchanged": {
-    "description": "Input validation error: The given name is exactly the same"
-  },
-  "insufficientARWarning": "Balance insuficiente",
-  "@insufficientARWarning": {
-    "description": "Warns the user that the wallet balance is less than minimum AR required to make a transaction"
-  },
-  "displayedPaginatedData": "{from} - {to} de {total}",
-  "@displayedPaginatedData": {
-    "description": "Indicates the user what items of a list are being displayed. Example: 1 - 25 of 100",
-    "placeholders": {
-      "from": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "1"
-      },
-      "to": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "25"
-      },
-      "total": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "100"
-      }
-    }
-  },
-  "detachEmphasized": "DESVINCULAR",
-  "@detachEmphasized": {
-    "description": "Example: To DETACH a drive. Emphasized in upper case"
-  },
-  "detachDrive": "¿Desvincular unidad?",
-  "@detachDrive": {
-    "description": "Detach Drive Title"
-  },
-  "detachDriveQuestion": "¿Confirmas que quieres desvincular '{driveName}'?",
-  "@detachDriveQuestion": {
-    "description": "Ask for user confirmation to detach drive",
-    "placeholders": {
-      "driveName": {
-        "type": "String",
-        "example": "Shared Drive A"
-      }
-    }
-  },
-  "feedbackTitle": "¡Gracias por usar ArDrive!",
-  "@feedbackTitle": {
-    "description": "We thank the user"
-  },
-  "feedbackContent": "¿Te interesaría dejar comentarios sobre tu experiencia en la aplicación?",
-  "@feedbackContent": {
-    "description": "Asks for feedback"
-  },
   "leaveFeedback": "Dejar comentarios",
   "@leaveFeedback": {
     "description": "The action of leaving feedback"
+  },
+  "letsGetStartedEmphasized": "COMENCEMOS",
+  "@letsGetStartedEmphasized": {
+    "description": "Let's start setting up the account. Emphasized with upper case"
+  },
+  "login": "Iniciar sesión",
+  "@login": {
+    "description": "The login process"
+  },
+  "logIn": "Iniciar sesión",
+  "@logIn": {
+    "description": "The action of logging in. Imperative form"
+  },
+  "loginFailed": "No se pudo iniciar sesión",
+  "@loginFailed": {
+    "description": "Text for when the user tried to login with wrong credentials"
+  },
+  "logInToExperienceFeatures": "¡Inicia sesión para acceder a todas las características de ArDrive!",
+  "@logInToExperienceFeatures": {
+    "description": "User must login to use the features of ArDrive"
+  },
+  "loginUsingBiometricCredential": "Inicia sesión con tu credencial biométrica",
+  "@loginUsingBiometricCredential": {
+    "description": "Login using your biometric credential"
+  },
+  "logout": "Cerrar sesión",
+  "@logout": {
+    "description": "The logout process"
+  },
+  "logOut": "Cerrar sesión",
+  "@logOut": {
+    "description": "The action of logging out"
+  },
+  "logOutEmphasized": "CERRAR SESIÓN",
+  "@logOutEmphasized": {
+    "description": "The action of logging out. Emphasized with upper case"
+  },
+  "manifestName": "Nombre del manifiesto",
+  "@manifestName": {
+    "description": "The name of the manifest"
+  },
+  "manifestTransactionUnexpectedlyFailed": "La transacción del manifiesto ha fallado inesperadamente mientras se cargaba a la red de Arweave...",
+  "@manifestTransactionUnexpectedlyFailed": {
+    "description": "The manifest transaction did not succeed being uploaded"
+  },
+  "metadataTxID": "Tx ID de la metadata",
+  "@metadataTxID": {
+    "description": "The transaction ID of the entity Metadata transaction"
+  },
+  "monthlyCharges": "En vez de pagar mensualmente por almacenamiento que no usas, paga una única vez y almacena tus archivos por siempre en ArDrive.",
+  "@monthlyCharges": {
+    "description": "Payment philosophy"
+  },
+  "move": "Mover",
+  "@move": {
+    "description": "Action of moving certain file or folder"
+  },
+  "moveFileEmphasized": "MOVER ARCHIVO",
+  "@moveFileEmphasized": {
+    "description": "The action of moving a file. Emphasized with upper case"
+  },
+  "moveFolderEmphasized": "MOVER CARPETA",
+  "@moveFolderEmphasized": {
+    "description": "The action of moving a folder. Emphasized with upper case"
+  },
+  "moveHereEmphasized": "MOVER AQUÍ",
+  "@moveHereEmphasized": {
+    "description": "Move the entity to the current folder. Emphasized with upper case"
+  },
+  "moveItems": "Mover elementos",
+  "@moveItems": {
+    "description": "Move Items dialog title"
+  },
+  "movingFileEmphasized": "MOVIENDO ARCHIVO...",
+  "@movingFileEmphasized": {
+    "description": "The action of moving a file. Emphasized with upper case"
+  },
+  "movingFolderEmphasized": "MOVIENDO CARPETA...",
+  "@movingFolderEmphasized": {
+    "description": "The action of moving a folder. Emphasized with upper case"
+  },
+  "movingItemsEmphasized": "Moviendo elementos",
+  "@movingItemsEmphasized": {
+    "description": "Moving Items dialog title"
+  },
+  "name": "Nombre",
+  "@name": {
+    "description": "Name of certain entity"
+  },
+  "nameConflict": "Hay un conflicto",
+  "@nameConflict": {
+    "description": "A conflict of names between two entities"
+  },
+  "neverDeletedEmphasized": "NUNCA SE BORRARÁ",
+  "@neverDeletedEmphasized": {
+    "description": "Uploaded items cannot be deleted. Emphasized with upper case"
+  },
+  "newDrive": "Nueva unidad",
+  "@newDrive": {
+    "description": "Create a new drive entity"
+  },
+  "newFolder": "Nueva carpeta",
+  "@newFolder": {
+    "description": "Create a new folder entity"
+  },
+  "newString": "Nuevo",
+  "@newString": {
+    "description": "New entity (folder, file, drive, manifest, attached drive)"
+  },
+  "newStringEmphasized": "NUEVO",
+  "@newStringEmphasized": {
+    "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
+  },
+  "next": "Siguiente",
+  "@next": {
+    "description": "Action of going to the next page"
+  },
+  "nextEmphasized": "SIGUIENTE",
+  "@nextEmphasized": {
+    "description": "Next step"
+  },
+  "noDeleteButton": "Recuerda: ¡No hay botón de borrar (ni para tí ni para nosotros)!",
+  "@noDeleteButton": {
+    "description": "Uploaded items cannot be deleted"
+  },
+  "noDrives": "No tienes ningúna unidad de almacenamiento.\n¡Haz clic en el botón \"NUEVO\" para crear o vincular una!",
+  "@noDrives": {
+    "description": "Text for when the wallet has no on-chain drives to display"
+  },
+  "noFiles": "No hay nada aquí.",
+  "@noFiles": {
+    "description": "Empty folder"
+  },
+  "noOneWillSee": "Nadie verá lo que no quieres que vean.",
+  "@noOneWillSee": {
+    "description": "Indicates that private content won't reach to the wrong hands"
+  },
+  "noSubscriptions": "¡No necesitas suscripciones!",
+  "@noSubscriptions": {
+    "description": "Payment philosophy"
   },
   "noThanks": "¡No, gracias! No me lo recuerdes otra vez",
   "@noThanks": {
     "description": "Don't leave feedback, and don't ask again for it"
   },
-  "weWontRemindYou": "¡Bien! No te lo recordaremos otra vez.",
-  "@weWontRemindYou": {
-    "description": "We know the user don't want to leave feedback ATM"
+  "notLoggedIn": "No has ingresado",
+  "@notLoggedIn": {
+    "description": "User has not logged in"
   },
-  "weWontRemindYouDescription": "Si cambias de opinión y quieres dejar comentarios en otro momento, puedes hacerlo desde el enlace en tu menú.",
-  "@weWontRemindYouDescription": {
-    "description": "We let the user know where to find the 'Leave Feedback' button"
+  "ok": "Bien",
+  "@ok": {
+    "description": "OK button"
   },
-  "gotIt": "¡Entendido!",
-  "@gotIt": {
-    "description": "Example similar phrases: I've got it, I understood, OK"
+  "okEmphasized": "BIEN",
+  "@okEmphasized": {
+    "description": "OK button. Emphasized in upper case"
   },
-  "validationSharedFileIncorrectFileKey": "Clave incorrecta. Por favor, inténtalo nuevamente.",
-  "@validationSharedFileIncorrectFileKey": {
-    "description": "The user entered an incorrect file key"
+  "onceUploadedCantBeRemoved": "Una vez cargada, tu información no se podrá borrar.",
+  "@onceUploadedCantBeRemoved": {
+    "description": "Uploaded items cannot be deleted"
   },
+  "password": "Contraseña",
+  "@password": {
+    "description": "Label for the 'password' input"
+  },
+  "passwordCanNeverBeChanged": "No puedes modificiar ni recuperar tu contraseña. ¡Asegurate de mantenerla segura!",
+  "@passwordCanNeverBeChanged": {
+    "description": "Explains that the password cannot be changed as it is the one of the wallet"
+  },
+  "passwordMismatch": "Las contraseñas no coinciden.",
+  "@passwordMismatch": {
+    "description": "Error message for when the confirmation password doesn't match the actual pass"
+  },
+  "payPerFileEmphasized": "PAGA SOLO POR LO QUE SUBAS",
+  "@payPerFileEmphasized": {
+    "description": "Payment philosophy. Emphasized with upper case"
+  },
+  "pending": "Pendiente",
+  "@pending": {
+    "description": "Status tooltip for transactions which are waiting to be minted"
+  },
+  "personalDrivesEmphasized": "UNIDADES PERSONALES",
+  "@personalDrivesEmphasized": {},
+  "pleaseProvideSamePassword": "Por favor ingresa la misma contraseña que utilizaste anteriormente.",
+  "@pleaseProvideSamePassword": {
+    "description": "Asks for the wallet password"
+  },
+  "pleaseRemainOnThisTab": "Cargando... Por favor, permanece en esta pestaña.",
+  "@pleaseRemainOnThisTab": {
+    "description": "Circular progress indicator"
+  },
+  "preparingManifestEmphasized": "PREPARANDO MANIFIESTO...",
+  "@preparingManifestEmphasized": {
+    "description": "The manifest is being prepared for the upload"
+  },
+  "preparingUpload": "Preparando la carga...",
+  "@preparingUpload": {
+    "description": "The upload is being processed"
+  },
+  "preview": "Vista previa",
+  "@preview": {
+    "description": "Action of previewing a file"
+  },
+  "previous": "Anterior",
+  "@previous": {
+    "description": "Action of going to the previous page"
+  },
+  "privacy": "Privacidad",
+  "@privacy": {
+    "description": "The privacy attribute of entities (e.g.: private drive, public folder)"
+  },
+  "private": "Privado",
+  "@private": {
+    "description": "A private entity"
+  },
+  "proceedCongestionEmphasized": "PROCEDER",
+  "@proceedCongestionEmphasized": {
+    "description": "Proceed being aware of the network congestion. Emphasized with upper case"
+  },
+  "profile": "Perfil",
+  "@profile": {
+    "description": "The user profile: user name, wallet address and wallet balance"
+  },
+  "public": "Público",
+  "@public": {
+    "description": "A public entity"
+  },
+  "recreateFolderEmphasized": "RECREAR CARPETA",
+  "@recreateFolderEmphasized": {
+    "description": "Recreate a folder that failed to be minted"
+  },
+  "recreatingFolderEmphasized": "RECREANDO CARPETA...",
+  "@recreatingFolderEmphasized": {
+    "description": "Folder is being recreated. Emphasized with upper case"
+  },
+  "rename": "Renombrar",
+  "@rename": {
+    "description": "The action of renaming; imperative form"
+  },
+  "renameDrive": "Renombrar unidad",
+  "@renameDrive": {
+    "description": "The action of renaming a drive"
+  },
+  "renameDriveEmphasized": "RENOMBRAR UNIDAD",
+  "@renameDriveEmphasized": {
+    "description": "The action of renaming a drive. Emphasized with upper case"
+  },
+  "renameEmphasized": "RENOMBRAR",
+  "@renameEmphasized": {
+    "description": "The action of renaming; imperative form. Emphasized with upper case"
+  },
+  "renameFileEmphasized": "RENOMBRAR ARCHIVO",
+  "@renameFileEmphasized": {
+    "description": "The action of renaming a file. Emphasized with upper case"
+  },
+  "renameFolderEmphasized": "RENOMBRAR CARPETA",
+  "@renameFolderEmphasized": {
+    "description": "The action of renaming a folder. Emphasized with upper case"
+  },
+  "renamingDriveEmphasized": "RENOMBRANDO UNIDAD...",
+  "@renamingDriveEmphasized": {
+    "description": "The drive is being renamed. Emphasized with upper case"
+  },
+  "renamingFileEmphasized": "RENOMBRANDO ARCHIVO...",
+  "@renamingFileEmphasized": {
+    "description": "File is being renamed. Emphasized with upper case"
+  },
+  "renamingFolderEmphasized": "RENOMBRANDO CARPETA...",
+  "@renamingFolderEmphasized": {
+    "description": "Folder is being renamed. Emphasized with upper case"
+  },
+  "replaceEmphasized": "REEMPLAZAR",
+  "@replaceEmphasized": {
+    "description": "Example: to REPLACE an entity"
+  },
+  "rootFolderTxID": "Tx ID de la carpeta raíz",
+  "@rootFolderTxID": {
+    "description": "The transaction ID of the Root Folder entity"
+  },
+  "rowsPerPage": "Filas por página",
+  "@rowsPerPage": {
+    "description": "How many rows per page to use"
+  },
+  "secondsFromForeverEmphasized": "A SEGUNDOS DE LA ETERNIDAD",
+  "@secondsFromForeverEmphasized": {
+    "description": "Shows how close you are from permanence. Emphasized with upper case"
+  },
+  "selectWalletEmphasized": "SELECCIONAR MONEDERO",
+  "@selectWalletEmphasized": {
+    "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
+  },
+  "sharedDrivesEmphasized": "UNIDADES COMPARTIDAS",
+  "@sharedDrivesEmphasized": {},
   "sharedFileIsEncrypted": "El archivo está cifrado.",
   "@sharedFileIsEncrypted": {
     "description": "Description that says the file is encrypted on shared file page"
   },
-  "enterFileKey": "Introduce la clave del archivo",
-  "@enterFileKey": {
-    "description": "File Key form field label"
+  "shareDrive": "Compartir unidad",
+  "@shareDrive": {
+    "description": "The action of sharing a drive link"
   },
-  "whatIsArDrive": "¿Qué es ArDrive?",
-  "@whatIsArDrive": {
-    "description": "What is ArDrive? link on shared file page"
+  "shareDriveWithOthers": "Compartir la unidad con otros",
+  "@shareDriveWithOthers": {
+    "description": "The action of sharing a drive link"
+  },
+  "shareFailedFile": "El archivo que intentas compartir no es válido y no se puede compartir.",
+  "@shareFailedFile": {
+    "description": "Failed file share dialog text"
+  },
+  "shareFile": "Compartir archivo",
+  "@shareFile": {
+    "description": "The action of sharing a file link"
+  },
+  "shareFileWithOthers": "Compartir el archivo con otros",
+  "@shareFileWithOthers": {
+    "description": "To share a file link"
+  },
+  "sharePendingFile": "El archivo que intentas compartir sigue pendiente y no puede ser compartido en este momento.",
+  "@sharePendingFile": {
+    "description": "Pending file share dialog text"
+  },
+  "signingUpload": "Firmando las transacciones",
+  "@signingUpload": {
+    "description": "The app is signing the transactions"
+  },
+  "size": "Tamaño",
+  "@size": {
+    "description": "The size of a file, folder or drive"
+  },
+  "skipEmphasized": "OMITIR",
+  "@skipEmphasized": {
+    "description": "Example: to SKIP a conflict"
+  },
+  "sorryLoginFailed": "Lo sentimos, no se ha podido iniciar sesion. Por favor, inténtalo nuevamente.",
+  "@sorryLoginFailed": {
+    "description": "Text for when the user tried to login with wrong credentials"
+  },
+  "specifiedFileDoesNotExist": "El archivo especificado no existe.",
+  "@specifiedFileDoesNotExist": {
+    "description": "The shared file the user is trying to access does not exist"
+  },
+  "subscribeEmphasized": "SUSCRIBIRSE",
+  "@subscribeEmphasized": {
+    "description": "Screen not supported page. Emphasized with upper case"
+  },
+  "sync": "Sincronizar",
+  "@sync": {
+    "description": "Sync button tooltip"
+  },
+  "syncingOnlyOneDrive": "Sincronizando la unidad...",
+  "@syncingOnlyOneDrive": {
+    "description": "Show the message when the user has only one drive"
+  },
+  "syncingPleaseRemainOnThisTab": "Sincronizando... Por favor, permanece en esta pestaña.",
+  "@syncingPleaseRemainOnThisTab": {
+    "description": "Syncing drives"
+  },
+  "syncingPleaseWait": "Sincronizando... Por favor espera.",
+  "@syncingPleaseWait": {
+    "description": "Syncing drives"
+  },
+  "syncProgressPercentage": "{percentage}% completado",
+  "@syncProgressPercentage": {
+    "description": "The sync progress percentage",
+    "placeholders": {
+      "percentage": {
+        "type": "String",
+        "example": "45.5"
+      }
+    }
+  },
+  "targetFolderEmphasized": "CARPETA DE DESTINO",
+  "@targetFolderEmphasized": {
+    "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
+  },
+  "thinkTwiceBeforeUploading": "Piénsalo dos veces antes de cargar toda tu poesía de adolescente...",
+  "@thinkTwiceBeforeUploading": {
+    "description": "Uploaded items cannot be deleted"
+  },
+  "thisMayTakeAWhile": "Ésto puede tomar un momento...",
+  "@thisMayTakeAWhile": {
+    "description": "Uploading may take a while"
+  },
+  "tooLargeForUpload": "Archivos demasiado grandes para cargar:",
+  "@tooLargeForUpload": {
+    "description": "Files too large for upload"
+  },
+  "totalPrivacyControlEmphasized": "CONTROL TOTAL DE TU PRIVACIDAD",
+  "@totalPrivacyControlEmphasized": {
+    "description": "Title for talking about privacy. Emphasized with upper case"
+  },
+  "tryAgainDownloadingFile": "Ésto puede suceder si el archivo fue cargado recientemente. Por favor, inténtalo nuevamente luego.",
+  "@tryAgainDownloadingFile": {
+    "description": "The data is still being replicated between nodes of the network and it's yet not available"
+  },
+  "tryAgainEmphasized": "INTENTAR NUEVAMENTE",
+  "@tryAgainEmphasized": {
+    "description": "Try it again. Emphasized with upper case"
+  },
+  "tryLaterCongestionEmphasized": "INTENTAR MÁS TARDE",
+  "@tryLaterCongestionEmphasized": {
+    "description": "Try to upload later. Emphasized with upper case"
+  },
+  "tryOnAnotherDevice": "Por favor inténtalo en otro dispositivo y mantente actualizado sobre la próxima aplicación móvil suscribiéndote a nuestro boletín informativo.",
+  "@tryOnAnotherDevice": {
+    "description": "Screen not supported page"
   },
   "unlock": "Desbloquear",
   "@unlock": {
     "description": "Unlock a file or drive."
   },
-  "infernoIsInFullSwing": "¡El programa de recompensas de Inferno está en plena marcha! ¡Cliquea aquí para abrir las reglas de participación!",
-  "@infernoIsInFullSwing": {
-    "description": "Text inviting the users to go read the Inferno rules"
+  "unlockEmphasized": "DESBLOQUEAR",
+  "@unlockEmphasized": {
+    "description": "Unlock the wallet with its password. Emphasized with upper case"
+  },
+  "upload": "Cargar",
+  "@upload": {
+    "description": "The action of uploading certain item"
+  },
+  "uploadDragAndDrop": "Cargar archivo",
+  "@uploadDragAndDrop": {
+    "description": "The action of uploading a file"
+  },
+  "uploadEmphasized": "CARGAR",
+  "@uploadEmphasized": {
+    "description": "The action of uploading certain item"
+  },
+  "uploadFailed": "Fallo al cargar",
+  "@uploadFailed": {
+    "description": "Upload Failed dialog title"
+  },
+  "uploadFiles": "Cargar archivo(s)",
+  "@uploadFiles": {
+    "description": "Upload files to the Weave"
+  },
+  "uploadFolder": "Cargar carpeta",
+  "@uploadFolder": {
+    "description": "Upload a folder and every subfolder alongside files inside them"
+  },
+  "uploadingManifestEmphasized": "CARGANDO MANIFIESTO...",
+  "@uploadingManifestEmphasized": {
+    "description": "The manifest is being uploaded"
+  },
+  "uploadingNFiles": "{numberOfFiles,plural, =1{Cargando 1 archivo...} =other{Cargando {numberOfFiles} archivos...}}",
+  "@uploadingNFiles": {
+    "description": "Uploading a single or many files",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "uploadNFiles": "{numberOfFiles,plural, =1{Cargar 1 archivo} =other{Cargar {numberOfFiles} archivos}}",
+  "@uploadNFiles": {
+    "description": "Upload a single or many files",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "0",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "useArconnectEmphasized": "USAR ARCONNECT",
+  "@useArconnectEmphasized": {
+    "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
+  },
+  "username": "Nombre de usuario",
+  "@username": {
+    "description": "Label for the username"
+  },
+  "validationAttachDriveCouldNotBeFound": "No se encontró la unidad especificada.",
+  "@validationAttachDriveCouldNotBeFound": {
+    "description": "Input validation error: The given drive ID does not exist"
+  },
+  "validationAttachUserLoggedOut": "Debes iniciar sesión para vincular unidades privadas.",
+  "@validationAttachUserLoggedOut": {
+    "description": "Input validation error: the user cannot attach a drive when not logged in"
+  },
+  "validationDriveNameAlreadyPresent": "Una unidad con el mismo nombre ya existe aquí.",
+  "@validationDriveNameAlreadyPresent": {
+    "description": "Input validation error: The given name is already in use by some exising drive"
+  },
+  "validationEntityNameAlreadyPresent": "Ya existe una carpeta o archivo con el mismo nombre.",
+  "@validationEntityNameAlreadyPresent": {
+    "description": "Input validation error: The given name is already in use by some exising entity"
+  },
+  "validationInvalid": "Información inválida.",
+  "@validationInvalid": {
+    "description": "Input validation error: the field has invalid data"
+  },
+  "validationInvalidKey": "Clave de la unidad inválida.",
+  "@validationInvalidKey": {
+    "description": "Input validation error: The given drive key is wrong"
+  },
+  "validationNameUnchanged": "Este nombre es idéntico al nombre original",
+  "@validationNameUnchanged": {
+    "description": "Input validation error: The given name is exactly the same"
+  },
+  "validationPasswordIncorrect": "Contraseña incorrecta.",
+  "@validationPasswordIncorrect": {
+    "description": "Input validation error: the given password is wrong"
+  },
+  "validationRequired": "Este campo es requerido.",
+  "@validationRequired": {
+    "description": "Input validation error: the field is empty, but it's required"
+  },
+  "validationSharedFileIncorrectFileKey": "Clave incorrecta. Por favor, inténtalo nuevamente.",
+  "@validationSharedFileIncorrectFileKey": {
+    "description": "The user entered an incorrect file key"
+  },
+  "viewInfo": "Más información",
+  "@viewInfo": {
+    "description": "View the activity and details of the entity"
+  },
+  "viewOnly": "Sólo lectura",
+  "@viewOnly": {
+    "description": "The user has no permission to edit, only to view"
+  },
+  "walletChangedDuringManifestCreation": "El monedero que estabas usando cambió mientras se creaba el manifiesto...",
+  "@walletChangedDuringManifestCreation": {
+    "description": "The wallet has been changed while the creation of the manifest was in process"
+  },
+  "walletChangeDetected": "Se detectó un cambio de monedero. Por favor, vuelve a ingresar nuevamente",
+  "@walletChangeDetected": {
+    "description": "The wallet has changed. The user must log in again"
+  },
+  "walletSwitch": "Cambio de monedero",
+  "@walletSwitch": {
+    "description": "The wallet has changed. The user must log in again"
+  },
+  "warningEmphasized": "ADVERTENCIA",
+  "@warningEmphasized": {
+    "description": "Congestion warning. Emphasized with upper case"
+  },
+  "weDoAFewThingsDifferently": "Eso también significa que hacemos algunas cosas diferente.",
+  "@weDoAFewThingsDifferently": {
+    "description": "What ArDrive does differently"
+  },
+  "welcomeBackEmphasized": "BIENVENIDO/A DE NUEVO",
+  "@welcomeBackEmphasized": {
+    "description": "Welcoming for an existing user. Emphasized with upper case"
+  },
+  "welcomeBackUserEmphasized": "BIENVENIDO/A DE NUEVO, {username}",
+  "@welcomeBackUserEmphasized": {
+    "description": "Welcoming to the user. Emphasized with upper case",
+    "placeholders": {
+      "username": {
+        "type": "String",
+        "example": "user"
+      }
+    }
+  },
+  "welcomeTo_body": "BIENVENIDO/A A Tu disco duro privado y seguro, decentralizado, sin suscripciones, resistente a la censura y permanente",
+  "@welcomeTo_body": {
+    "description": "Welcoming message just after the ArDrive logo"
+  },
+  "welcomeTo_description": "Tu disco duro privado y seguro, decentralizado, sin suscripciones, resistente a la censura y permanente",
+  "@welcomeTo_description": {
+    "description": "Brief description of ArDrive as welcoming"
+  },
+  "welcomeTo_main": "BIENVENIDO/A A",
+  "@welcomeTo_main": {
+    "description": "Highly emphasized text giving welcome"
+  },
+  "welcomeToThePermawebEmphasized": "BIENVENIDO/A A LA PERMAWEB",
+  "@welcomeToThePermawebEmphasized": {
+    "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
+  },
+  "weReSorryEmphasized": "¡LO SENTIMOS!",
+  "@weReSorryEmphasized": {
+    "description": "Screen not supported page. Emphasized with upper case"
+  },
+  "weWontRemindYou": "¡Bien! No te lo recordaremos otra vez.",
+  "@weWontRemindYou": {
+    "description": "We let the user know that we won't remind them to leave feedback again"
+  },
+  "weWontRemindYouDescription": "Si cambias de opinión y quieres dejar comentarios en otro momento, puedes hacerlo desde el enlace en tu menú.",
+  "@weWontRemindYouDescription": {
+    "description": "We let the user know where to find the 'Leave Feedback' button"
+  },
+  "whatIsArDrive": "¿Qué es ArDrive?",
+  "@whatIsArDrive": {
+    "description": "What is ArDrive? link on shared file page"
+  },
+  "yourChoice": "Es tu elección: haz tus archivos públicos o privados usando el mejor cifrado.",
+  "@yourChoice": {
+    "description": "User can choose whether or not to make the content public"
+  },
+  "yourUploadFailed": "Falló la carga. No se le ha cobrado por el intento fallido.",
+  "@yourUploadFailed": {
+    "description": "Upload fail dialog description."
   }
 }
