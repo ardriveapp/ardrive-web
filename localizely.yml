@@ -1,7 +1,7 @@
 config_version: 1.0 # Only 1.0 available
 project_id: 062e9d52-7961-4b8c-9079-a85bca6ed73a # Your project ID from: https://app.localizely.com/projects
 file_type: flutter_arb
-branch: main # Optional. Your branch in Localizely project to sync files with.
+branch: Version_1.0 # Optional. Your branch in Localizely project to sync files with.
 
 upload:
   files: # List of files for upload to Localizely. Usually it is just one file used for the main locale
