@@ -18,6 +18,7 @@ class ArDriveColors {
 
   /// Accent
   static final Color themeAccentBrand = red.shade500;
+  static final Color themeAccentMuted = grey.withOpacity(0.95);
 
   /// Warning
   static final Color themeWarningFb = yellow.shade400;
