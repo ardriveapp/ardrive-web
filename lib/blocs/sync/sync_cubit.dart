@@ -28,6 +28,7 @@ part 'utils/create_ghosts.dart';
 part 'utils/generate_paths.dart';
 part 'utils/log_sync.dart';
 part 'utils/parse_drive_transactions.dart';
+part 'utils/sync_drive.dart';
 part 'utils/update_transaction_statuses.dart';
 
 const kRequiredTxConfirmationCount = 15;
@@ -104,8 +105,12 @@ class SyncCubit extends Cubit<SyncState> {
         DateTime.now().difference(_lastSync!).inMinutes >= kSyncTimerDuration;
 
     if (!isTimerDurationReadyToSync) {
-      logSync(
-          'Not possible restart sync when window get focused due to: is current active? ${!isClosed} or the last sync was ${DateTime.now().difference(_lastSync!).inMinutes} minutes ago. It should be $kSyncTimerDuration');
+      logSync('''
+              Can't restart sync when window is focused \n
+              Is current active? ${!isClosed} \n
+              last sync was ${DateTime.now().difference(_lastSync!).inMinutes} minutes ago. \n
+              It should be $kSyncTimerDuration
+              ''');
       return;
     }
 
@@ -223,8 +228,9 @@ class SyncCubit extends Cubit<SyncState> {
         return;
       }
 
-      final currentBlockHeight = await retry(
-          () async => await getCurrentBlockHeight(), onRetry: (exception) {
+      final currentBlockHeight =
+          await retry(() async => await _arweave.getCurrentBlockHeight(),
+              onRetry: (exception) {
         logSync(
           'Retrying for get the current block height on exception ${exception.toString()}',
         );
@@ -235,15 +241,26 @@ class SyncCubit extends Cubit<SyncState> {
 
       final driveSyncProcesses = drives.map((drive) => _syncDrive(
             drive.id,
+            driveDao: _driveDao,
+            arweaveService: _arweave,
+            database: _db,
+            profileState: profile,
+            syncProgress: _syncProgress,
+            totalProgress: _totalProgress,
+            addError: addError,
             lastBlockHeight: syncDeep
                 ? 0
-                : calculateSyncLastBlockHeight(
-                    drive.lastBlockHeight!,
-                  ),
+                : calculateSyncLastBlockHeight(drive.lastBlockHeight!),
             currentBlockHeight: currentBlockHeight,
           ).handleError((error, stackTrace) {
-            logSync(
-                'Error syncing drive with id ${drive.id}. Skipping sync on this drive.\nException: ${error.toString()}\nStackTrace: ${stackTrace.toString()}');
+            logSync('''
+                    Error syncing drive with id ${drive.id}. \n
+                    Skipping sync on this drive.\n
+                    Exception: \n
+                    ${error.toString()} \n
+                    StackTrace: \n
+                    ${stackTrace.toString()}
+                    ''');
             addError(error!);
           }));
 
@@ -304,184 +321,8 @@ class SyncCubit extends Cubit<SyncState> {
     }
   }
 
-  Future<int> getCurrentBlockHeight() async {
-    final currentBlockHeight = await arweave.getCurrentBlockHeight();
-
-    if (currentBlockHeight < 0) {
-      throw Exception(
-          'The current block height $currentBlockHeight is negative. It should be equal or greater than 0.');
-    }
-    return currentBlockHeight;
-  }
-
-  Stream<SyncProgress> _syncDrive(
-    String driveId, {
-    required int currentBlockHeight,
-    required int lastBlockHeight,
-  }) async* {
-    /// Variables to count the current drive's progress information
-    final drive = await _driveDao.driveById(driveId: driveId).getSingle();
-
-    final startSyncDT = DateTime.now();
-
-    logSync('Starting Drive ${drive.name} sync.');
-
-    SecretKey? driveKey;
-
-    if (drive.isPrivate) {
-      final profile = _profileCubit.state;
-
-      // Only sync private drives when the user is logged in.
-      if (profile is ProfileLoggedIn) {
-        driveKey = await _driveDao.getDriveKey(drive.id, profile.cipherKey);
-      } else {
-        driveKey = await _driveDao.getDriveKeyFromMemory(drive.id);
-        if (driveKey == null) {
-          throw StateError('Drive key not found');
-        }
-      }
-    }
-    final fetchPhaseStartDT = DateTime.now();
-
-    logSync('Getting all information about the drive ${drive.name}\n');
-
-    final transactions =
-        <DriveEntityHistory$Query$TransactionConnection$TransactionEdge>[];
-
-    final transactionsStream = _arweave
-        .getAllTransactionsFromDrive(driveId, lastBlockHeight: lastBlockHeight)
-        .handleError((err) {
-      addError(err);
-    }).asBroadcastStream();
-
-    /// The first block height from this drive.
-    int? firstBlockHeight;
-
-    /// In order to measure the sync progress by the block height, we use the difference
-    /// between the first block and the `currentBlockHeight`
-    late int totalBlockHeightDifference;
-
-    /// This percentage is based on block heights.
-    var fetchPhasePercentage = 0.0;
-
-    /// First phase of the sync
-    /// Here we get all transactions from its drive.
-    await for (var t in transactionsStream) {
-      if (t.isEmpty) continue;
-
-      double calculatePercentageBasedOnBlockHeights() {
-        final block = t.last.node.block;
-
-        if (block != null) {
-          return (1 -
-              ((currentBlockHeight - block.height) /
-                  totalBlockHeightDifference));
-        }
-        logSync(
-            'The transaction block is null.\nTransaction node id: ${t.first.node.id}');
-
-        /// if the block is null, we don't calculate and keep the same percentage
-        return fetchPhasePercentage;
-      }
-
-      /// Initialize only once `firstBlockHeight` and `totalBlockHeightDifference`
-      if (firstBlockHeight == null) {
-        final block = t.first.node.block;
-
-        if (block != null) {
-          firstBlockHeight = block.height;
-          totalBlockHeightDifference = currentBlockHeight - firstBlockHeight;
-        } else {
-          logSync(
-              'The transaction block is null.\nTransaction node id: ${t.first.node.id}');
-        }
-      }
-
-      transactions.addAll(t);
-
-      /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
-      if (firstBlockHeight != null) {
-        _totalProgress += _calculateProgressInFetchPhasePercentage(
-          _syncProgress,
-          _calculatePercentageProgress(
-              fetchPhasePercentage, calculatePercentageBasedOnBlockHeights()),
-        );
-
-        _syncProgress = _syncProgress.copyWith(
-            progress: _totalProgress,
-            entitiesNumber: _syncProgress.entitiesNumber + t.length);
-
-        yield _syncProgress;
-
-        if (totalBlockHeightDifference > 0) {
-          fetchPhasePercentage += _calculatePercentageProgress(
-              fetchPhasePercentage, calculatePercentageBasedOnBlockHeights());
-        } else {
-          // If the difference is zero means that the first phase was concluded.
-          fetchPhasePercentage = 1;
-        }
-      }
-    }
-
-    final fetchPhaseTotalTime =
-        DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
-
-    logSync(
-        'It took $fetchPhaseTotalTime milliseconds to get all ${drive.name}\'s transactions.\n');
-
-    logSync('Percentage based on blocks: $fetchPhasePercentage\n');
-
-    /// Fill the remaining percentage.
-    /// It is needed because the phase one isn't accurate and possibly will not
-    /// match 100% every time
-    _totalProgress += _calculateProgressInFetchPhasePercentage(
-      _syncProgress,
-      (1 - fetchPhasePercentage),
-    );
-
-    logSync('Total progress after fetch phase: $_totalProgress');
-
-    _syncProgress = _syncProgress.copyWith(progress: _totalProgress);
-
-    yield _syncProgress;
-
-    logSync('Drive ${drive.name} is going to the 2nd phase\n');
-
-    _syncProgress = _syncProgress.copyWith(
-        numberOfDrivesAtGetMetadataPhase:
-            _syncProgress.numberOfDrivesAtGetMetadataPhase + 1);
-
-    yield* _parseDriveTransactionsIntoDatabaseEntities(
-      driveDao: _driveDao,
-      arweaveService: _arweave,
-      database: _db,
-      syncProgress: _syncProgress,
-      totalProgress: _totalProgress,
-      transactions: transactions,
-      drive: drive,
-      driveKey: driveKey,
-      currentBlockHeight: currentBlockHeight,
-      lastBlockHeight: lastBlockHeight,
-    );
-
-    logSync('Drive ${drive.name} ended the 2nd phase successfully\n');
-
-    final syncDriveTotalTime =
-        DateTime.now().difference(startSyncDT).inMilliseconds;
-
-    logSync(
-        'It took $syncDriveTotalTime in milliseconds to sync the ${drive.name}.\n');
-
-    final averageBetweenFetchAndGet = fetchPhaseTotalTime / syncDriveTotalTime;
-
-    logSync(
-        'The fetch phase took: ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of the entire drive process.\n');
-
-    _syncProgress = _syncProgress.copyWith(
-        numberOfDrivesAtGetMetadataPhase:
-            _syncProgress.numberOfDrivesAtGetMetadataPhase - 1);
-  }
-
+  // Exposing this for use by create folder functions since they need to update
+  // folder tree
   Future<void> generateFsEntryPaths(
     String driveId,
     Map<String, FolderEntriesCompanion> foldersByIdMap,

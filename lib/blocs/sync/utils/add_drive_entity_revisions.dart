@@ -35,16 +35,17 @@ Future<DriveRevisionsCompanion?> _addNewDriveEntityRevisions({
   await database.batch((b) {
     b.insertAllOnConflictUpdate(database.driveRevisions, newRevisions);
     b.insertAllOnConflictUpdate(
-        database.networkTransactions,
-        newRevisions
-            .map(
-              (rev) => NetworkTransactionsCompanion.insert(
-                transactionDateCreated: rev.dateCreated,
-                id: rev.metadataTxId.value,
-                status: const Value(TransactionStatus.confirmed),
-              ),
-            )
-            .toList());
+      database.networkTransactions,
+      newRevisions
+          .map(
+            (rev) => NetworkTransactionsCompanion.insert(
+              transactionDateCreated: rev.dateCreated,
+              id: rev.metadataTxId.value,
+              status: const Value(TransactionStatus.confirmed),
+            ),
+          )
+          .toList(),
+    );
   });
 
   return latestRevision;
@@ -60,6 +61,8 @@ Future<DrivesCompanion> _computeRefreshedDriveFromRevision({
       .getSingleOrNull();
 
   return latestRevision.toEntryCompanion().copyWith(
-      dateCreated: Value(oldestRevision?.dateCreated ??
-          latestRevision.dateCreated as DateTime));
+        dateCreated: Value(
+          oldestRevision?.dateCreated ?? latestRevision.dateCreated as DateTime,
+        ),
+      );
 }
