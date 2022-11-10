@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/app_drawer/drive_list_tile.dart';
 import 'package:ardrive/components/new_button.dart';
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/models/enums.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/inferno_rules_url.dart';
@@ -313,31 +314,38 @@ class AppDrawer extends StatelessWidget {
     return BlocBuilder<SyncCubit, SyncState>(
       builder: (context, syncState) {
         return PopupMenuButton(
+          color: kDarkSurfaceColor,
+          tooltip: appLocalizationsOf(context).resync,
+          onSelected: ((value) {
+            context
+                .read<SyncCubit>()
+                .startSync(syncDeep: value == SyncType.deep);
+          }),
           itemBuilder: (context) {
             return [
-              PopupMenuItem(
-                value: 1,
-                child: TextButton.icon(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () {
-                    context.read<SyncCubit>().startSync(syncDeep: false);
-                  },
-                  label: Text(appLocalizationsOf(context).sync),
+              PopupMenuItem<SyncType>(
+                value: SyncType.normal,
+                child: Tooltip(
+                  message: appLocalizationsOf(context).resyncTooltip,
+                  child: ListTile(
+                    leading: const Icon(Icons.sync),
+                    title: Text(appLocalizationsOf(context).resync),
+                  ),
                 ),
               ),
-              PopupMenuItem(
-                value: 1,
-                child: TextButton.icon(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: () {
-                    context.read<SyncCubit>().startSync(syncDeep: true);
-                  },
-                  label: Text('Deep Sync'),
+              PopupMenuItem<SyncType>(
+                value: SyncType.deep,
+                child: Tooltip(
+                  message: appLocalizationsOf(context).deepResyncTooltip,
+                  child: ListTile(
+                    leading: const Icon(Icons.cloud_sync),
+                    title: Text(appLocalizationsOf(context).deepResync),
+                  ),
                 ),
               ),
             ];
           },
-          icon: const Icon(Icons.refresh),
+          icon: const Icon(Icons.sync),
           position: PopupMenuPosition.under,
         );
       },
