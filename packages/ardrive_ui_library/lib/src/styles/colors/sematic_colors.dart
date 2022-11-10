@@ -2,61 +2,177 @@ import 'package:ardrive_ui_library/src/styles/colors/global_colors.dart';
 import 'package:flutter/material.dart';
 
 class ArDriveColors {
+  ArDriveColors({
+    Color? themeFgDefault,
+    Color? themeFgMuted,
+    Color? themeFgSubtle,
+    Color? themeFgOnAccent,
+    Color? themeFgOnDisabled,
+    Color? themeFgDisabled,
+    Color? themeBgSurface,
+    Color? themeGbmuted,
+    Color? themeBgSubtle,
+    Color? themeBgCanvas,
+    Color? themeAccentBrand,
+    Color? themeAccentMuted,
+    Color? themeWarningFg,
+    Color? themeWarningEmphasis,
+    Color? themeWarningMuted,
+    Color? themeWarningSubtle,
+    Color? themeWarningOnWarning,
+    Color? themeErrorFg,
+    Color? themeErrorMuted,
+    Color? themeErrorSubtle,
+    Color? themeErrorOnError,
+    Color? themeInfoFb,
+    Color? themeInfoEmphasis,
+    Color? themeInfoMuted,
+    Color? themeInfoSubtle,
+    Color? themeInfoOnInfo,
+    Color? themeSuccessFb,
+    Color? themeSuccessEmphasis,
+    Color? themeSuccessMuted,
+    Color? themeSuccessSubtle,
+    Color? themeSuccessOnSuccess,
+    Color? themeInputBackground,
+    Color? themeInputText,
+    Color? themeInputPlaceholder,
+    Color? themeInputBorderDisabled,
+    Color? themeInputFbDisabled,
+    Color? themeBorderDefault,
+    Color? themeOverlayBackground,
+    Color? themeAccentDefault,
+    Color? themeAccentDisabled,
+    Color? themeAccentSubtle,
+  }) {
+    this.themeFgDefault = themeFgDefault ?? white;
+    this.themeFgMuted = themeFgMuted ?? grey.shade100;
+    this.themeFgSubtle = themeFgSubtle ?? grey.shade500;
+    this.themeFgOnAccent = themeFgOnAccent ?? white;
+    this.themeFgOnDisabled = themeFgOnDisabled ?? grey.shade300;
+    this.themeFgDisabled = themeFgDisabled ?? grey.shade600;
+    this.themeBgSurface = themeBgSurface ?? grey.shade900;
+    this.themeGbmuted = themeGbmuted ?? grey.shade600;
+    this.themeBgSubtle = themeBgSubtle ?? grey.shade900;
+    this.themeBgCanvas = themeBgCanvas ?? black;
+    this.themeAccentBrand = themeAccentBrand ?? red.shade500;
+    this.themeAccentMuted = themeAccentMuted ?? grey.withOpacity(0.95);
+    this.themeWarningFg = themeWarningFg ?? yellow.shade400;
+    this.themeWarningEmphasis = themeWarningEmphasis ?? yellow.shade500;
+    this.themeWarningMuted = themeWarningMuted ?? yellow.shade600;
+    this.themeWarningSubtle = themeWarningSubtle ?? yellow.shade800;
+    this.themeWarningOnWarning = themeWarningOnWarning ?? black;
+    this.themeErrorFg = themeErrorFg ?? red.shade400;
+    this.themeErrorMuted = themeErrorMuted ?? red.shade600;
+    this.themeErrorSubtle = themeErrorSubtle ?? red.shade800;
+    this.themeErrorOnError = themeErrorOnError ?? white;
+    this.themeInfoFb = themeInfoFb ?? blue.shade600;
+    this.themeInfoEmphasis = themeInfoEmphasis ?? blue.shade500;
+    this.themeInfoMuted = themeInfoMuted ?? blue.shade300;
+    this.themeInfoSubtle = themeInfoSubtle ?? blue.shade100;
+    this.themeInfoOnInfo = themeInfoOnInfo ?? white;
+    this.themeSuccessFb = themeSuccessFb ?? green.shade400;
+    this.themeSuccessEmphasis = themeSuccessEmphasis ?? green.shade500;
+    this.themeSuccessMuted = themeSuccessMuted ?? green.shade600;
+    this.themeSuccessSubtle = themeSuccessSubtle ?? green.shade800;
+    this.themeSuccessOnSuccess = themeSuccessOnSuccess ?? white;
+    this.themeInputBackground = themeInputBackground ?? white;
+    this.themeInputText = themeInputText ?? grey.shade800;
+    this.themeInputPlaceholder = themeInputPlaceholder ?? grey.shade500;
+    this.themeInputBorderDisabled = themeInputBorderDisabled ?? grey.shade200;
+    this.themeInputFbDisabled = themeInputFbDisabled ?? grey.shade300;
+    this.themeBorderDefault = themeBorderDefault ?? this.themeBgSubtle;
+    this.themeOverlayBackground = themeOverlayBackground ?? black;
+    this.themeAccentDefault = blue;
+    this.themeAccentDisabled = grey.shade600;
+    this.themeAccentSubtle = themeAccentSubtle ?? blue.withOpacity(0.95);
+  }
+
+  factory ArDriveColors.light() => ArDriveColors(
+        themeFgDefault: black,
+        themeFgMuted: grey.shade700,
+        themeFgSubtle: grey.shade500,
+        themeFgOnAccent: white,
+        themeFgOnDisabled: grey.shade600,
+        themeFgDisabled: grey.shade400,
+        themeBgSurface: white,
+        themeGbmuted: grey.shade300,
+        themeBgSubtle: grey.shade200,
+        themeBgCanvas: grey.shade50,
+        themeWarningFg: yellow.shade600,
+        themeWarningEmphasis: yellow.shade500,
+        themeWarningMuted: yellow.shade300,
+        themeWarningSubtle: yellow.shade100,
+        themeWarningOnWarning: black,
+        themeErrorFg: red.shade600,
+        themeErrorMuted: red.shade400,
+        themeErrorSubtle: red.shade100,
+        themeErrorOnError: white,
+        themeOverlayBackground: black,
+        themeAccentDefault: grey.shade400,
+        themeAccentSubtle: blue.shade50,
+      );
+
+  factory ArDriveColors.dark() => ArDriveColors();
+
   /// Foreground
-  static const Color themeFgDefault = white;
-  static final Color themeFgMuted = grey.shade100;
-  static final Color themeFgSubtle = grey.shade500;
-  static const Color themeFgOnAccent = white;
-  static final Color themeFgOnDisabled = grey.shade300;
-  static final Color themeFgDisabled = grey.shade600;
+  late Color themeFgDefault;
+  late Color themeFgMuted;
+  late Color themeFgSubtle;
+  late Color themeFgOnAccent;
+  late Color themeFgOnDisabled;
+  late Color themeFgDisabled;
 
   /// Background
-  static final Color themeBgSurface = grey.shade900;
-  static final Color themeGbmuted = grey.shade600;
-  static final Color themeBgSubtle = grey.shade900;
-  static const Color themeBgCanvas = black;
+  late Color themeBgSurface;
+  late Color themeGbmuted;
+  late Color themeBgSubtle;
+  late Color themeBgCanvas;
 
   /// Accent
-  static final Color themeAccentBrand = red.shade500;
-  static final Color themeAccentMuted = grey.withOpacity(0.95);
+  late Color themeAccentBrand;
+  late Color themeAccentDefault;
+  late Color themeAccentDisabled;
+  late Color themeAccentMuted;
+  late Color themeAccentSubtle;
 
   /// Warning
-  static final Color themeWarningFb = yellow.shade400;
-  static final Color themeWarningEmphasis = yellow.shade500;
-  static final Color themeWarningMuted = yellow.shade600;
-  static final Color themeWarningSubtle = yellow.shade800;
-  static const Color themeWarningOnWarning = black;
+  late Color themeWarningFg;
+  late Color themeWarningEmphasis;
+  late Color themeWarningMuted;
+  late Color themeWarningSubtle;
+  late Color themeWarningOnWarning;
 
   /// Error
-  static final Color themeErrorFb = red.shade400;
-  static final Color themeErrorMuted = red.shade600;
-  static final Color themeErrorSubtle = red.shade800;
-  static const Color themeErrorOnError = white;
+  late Color themeErrorFg;
+  late Color themeErrorMuted;
+  late Color themeErrorSubtle;
+  late Color themeErrorOnError;
 
   /// Info
-  static final Color themeInfoFb = blue.shade600;
-  static final Color themeInfoEmphasis = blue.shade500;
-  static final Color themeInfoMuted = blue.shade300;
-  static final Color themeInfoSubtle = blue.shade100;
-  static const Color themeInfoOnInfo = white;
+  late Color themeInfoFb;
+  late Color themeInfoEmphasis;
+  late Color themeInfoMuted;
+  late Color themeInfoSubtle;
+  late Color themeInfoOnInfo;
 
   /// Success
-  static final Color themeSuccessFb = green.shade400;
-  static final Color themeSuccessEmphasis = green.shade500;
-  static final Color themeSuccessMuted = green.shade600;
-  static final Color themeSuccessSubtle = green.shade800;
-  static const Color themeSuccessOnSuccess = white;
+  late Color themeSuccessFb;
+  late Color themeSuccessEmphasis;
+  late Color themeSuccessMuted;
+  late Color themeSuccessSubtle;
+  late Color themeSuccessOnSuccess;
 
   /// Input
-  static const Color themeInputBackground = white;
-  static final Color themeInputText = grey.shade800;
-  static final Color themeInputPlaceholder = grey.shade500;
-  static final Color themeInputBorderDisabled = grey.shade200;
-  static final Color themeInputFbDisabled = grey.shade300;
+  late Color themeInputBackground;
+  late Color themeInputText;
+  late Color themeInputPlaceholder;
+  late Color themeInputBorderDisabled;
+  late Color themeInputFbDisabled;
 
   /// Border
-  static final Color themeBorderDefault = themeBgSubtle;
+  late Color themeBorderDefault;
 
   /// Overlay
-  static const Color themeOverlayBackground = black;
+  late Color themeOverlayBackground;
 }
