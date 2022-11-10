@@ -198,7 +198,8 @@ class FileDownloadDialog extends StatelessWidget {
             final cipherKey =
                 profileState is ProfileLoggedIn ? profileState.cipherKey : null;
 
-            context.read<ProfileFileDownloadCubit>().download(cipherKey);
+            (context.read<FileDownloadCubit>() as ProfileFileDownloadCubit)
+                .download(cipherKey);
           },
           child: Text(appLocalizationsOf(context).ok),
         ),
