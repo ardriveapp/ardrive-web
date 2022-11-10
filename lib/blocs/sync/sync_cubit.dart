@@ -241,7 +241,6 @@ class SyncCubit extends Cubit<SyncState> {
             arweaveService: _arweave,
             database: _db,
             profileState: profile,
-            syncProgress: _syncProgress,
             addError: addError,
             lastBlockHeight: syncDeep
                 ? 0

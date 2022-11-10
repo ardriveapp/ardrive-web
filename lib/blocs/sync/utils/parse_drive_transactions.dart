@@ -1,11 +1,7 @@
 part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 
-/// Sync Second Phase
-///
-/// Paginate the process in pages of `pageCount`
-///
-/// It is needed because of close connection issues when made a huge number of requests to get the metadata,
-/// and also to accomplish a better visualization of the sync progress.
+/// Process the transactions from the first phase into database entities.
+/// This is done in batches to improve performance and provide more granular progress
 Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   required DriveDao driveDao,
   required Database database,
@@ -24,8 +20,6 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   double driveEntityParseProgress() =>
       numberOfDriveEntitiesParsed / numberOfDriveEntitiesToParse;
 
-  var driveSyncProgress = 0.0;
-
   if (transactions.isEmpty) {
     await driveDao.writeToDrive(
       DrivesCompanion(
@@ -42,7 +36,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   }
 
   logSync(
-    'The total number of entities of the drive ${drive.name} to be synced is: $numberOfDriveEntitiesToParse\n',
+    'no. of entities in drive - ${drive.name} to be parsed are: $numberOfDriveEntitiesToParse\n',
   );
 
   final owner = await arweave.getOwnerForDriveEntityWithId(drive.id);
@@ -153,10 +147,9 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
 
   logSync('''
         ${'- - ' * 10}
-        Drive: ${drive.name} sync finished.\n
-        The progress was:                     ${driveSyncProgress * 100}
-        The number of entities to be synced:  $numberOfDriveEntitiesToParse
-        The Total number of synced entities:  $numberOfDriveEntitiesParsed
+        drive: ${drive.name} sync completed.\n
+        no. of transactions to be parsed into entities:  $numberOfDriveEntitiesToParse
+        no. of parsed entities:  $numberOfDriveEntitiesParsed
         ''');
 }
 

@@ -1,12 +1,14 @@
 part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 
+const fetchPhaseWeight = 0.1;
+const parsePhaseWeight = 0.9;
+
 Stream<double> _syncDrive(
   String driveId, {
   required DriveDao driveDao,
   required ProfileState profileState,
   required ArweaveService arweaveService,
   required Database database,
-  required SyncProgress syncProgress,
   required Function addError,
   required int currentBlockHeight,
   required int lastBlockHeight,
@@ -15,9 +17,8 @@ Stream<double> _syncDrive(
   /// Variables to count the current drive's progress information
   final drive = await driveDao.driveById(driveId: driveId).getSingle();
   final startSyncDT = DateTime.now();
-  var totalProgress = syncProgress.progress;
 
-  logSync('Starting Drive ${drive.name} sync.');
+  logSync('Syncing drive - ${drive.name}');
 
   SecretKey? driveKey;
 
@@ -34,7 +35,7 @@ Stream<double> _syncDrive(
   }
   final fetchPhaseStartDT = DateTime.now();
 
-  logSync('Getting all information about the drive ${drive.name}\n');
+  logSync('Fetching all transactions for drive ${drive.name}\n');
 
   final transactions =
       <DriveEntityHistory$Query$TransactionConnection$TransactionEdge>[];
@@ -68,7 +69,8 @@ Stream<double> _syncDrive(
             ((currentBlockHeight - block.height) / totalBlockHeightDifference));
       }
       logSync(
-          'The transaction block is null.\nTransaction node id: ${t.first.node.id}');
+        'The transaction block is null. \nTransaction node id: ${t.first.node.id}',
+      );
 
       /// if the block is null, we don't calculate and keep the same percentage
       return fetchPhasePercentage;
@@ -83,7 +85,7 @@ Stream<double> _syncDrive(
         totalBlockHeightDifference = currentBlockHeight - firstBlockHeight;
       } else {
         logSync(
-          'The transaction block is null.\nTransaction node id: ${t.first.node.id}',
+          'The transaction block is null. \nTransaction node id: ${t.first.node.id}',
         );
       }
     }
@@ -98,7 +100,7 @@ Stream<double> _syncDrive(
         // If the difference is zero means that the first phase was concluded.
         fetchPhasePercentage = 1;
       }
-      yield calculatePercentageBasedOnBlockHeights() * 0.1;
+      yield calculatePercentageBasedOnBlockHeights() * fetchPhaseWeight;
     }
   }
 
@@ -106,13 +108,12 @@ Stream<double> _syncDrive(
       DateTime.now().difference(fetchPhaseStartDT).inMilliseconds;
 
   logSync(
-      'It took $fetchPhaseTotalTime milliseconds to get all ${drive.name}\'s transactions.\n');
-
-  logSync('Percentage based on blocks: $fetchPhasePercentage\n');
-
-  logSync('Total progress after fetch phase: $totalProgress');
-
-  logSync('Drive ${drive.name} is going to the 2nd phase\n');
+    '''
+      Duration of fetch phase for ${drive.name} : $fetchPhaseTotalTime ms \n
+      Progress by block height: $fetchPhasePercentage% \n
+      Starting parse phase \n
+    ''',
+  );
 
   yield* _parseDriveTransactionsIntoDatabaseEntities(
     driveDao: driveDao,
@@ -128,16 +129,18 @@ Stream<double> _syncDrive(
     (parseProgress) => parseProgress * 0.9,
   );
 
-  logSync('Drive ${drive.name} ended the 2nd phase successfully\n');
-
   final syncDriveTotalTime =
       DateTime.now().difference(startSyncDT).inMilliseconds;
-
-  logSync(
-      'It took $syncDriveTotalTime in milliseconds to sync the ${drive.name}.\n');
 
   final averageBetweenFetchAndGet = fetchPhaseTotalTime / syncDriveTotalTime;
 
   logSync(
-      'The fetch phase took: ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of the entire drive process.\n');
+    '''
+      Drive ${drive.name} completed parse phase\n
+      Progress by block height: $fetchPhasePercentage% \n
+      Starting parse phase \n
+      Sync duration : $syncDriveTotalTime ms}.\n
+      Parsing used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process.\n
+    ''',
+  );
 }
