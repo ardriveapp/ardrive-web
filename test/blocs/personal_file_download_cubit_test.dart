@@ -683,7 +683,7 @@ void main() {
               FileDownloadAborted(),
             ],
         verify: (bloc) {
-          verify(() => mockArDriveDownloader.cancelDownload());
+          verifyNever(() => mockArDriveDownloader.cancelDownload());
 
           /// public files on mobile should not call these functions
           verifyNever(() => mockDownloadService.download(any()));
