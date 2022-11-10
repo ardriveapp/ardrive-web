@@ -14,7 +14,7 @@ class StoryBook extends StatelessWidget {
           themes: [
             WidgetbookTheme(
               name: 'Dark',
-              data: darkTheme(),
+              data: darkMaterialTheme(),
             ),
             WidgetbookTheme(
               name: 'Light',

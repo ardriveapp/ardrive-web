@@ -1,10 +1,14 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
-import 'package:ardrive_ui_library/src/styles/colors/global_colors.dart';
 import 'package:flutter/material.dart';
 
 class ArDriveApp extends StatefulWidget {
-  const ArDriveApp({super.key, required this.builder});
+  const ArDriveApp({
+    super.key,
+    required this.builder,
+    this.themeData,
+  });
   final Widget Function(BuildContext context) builder;
+  final ArDriveThemeData? themeData;
 
   @override
   State<ArDriveApp> createState() => _ArDriveAppState();
@@ -14,6 +18,7 @@ class _ArDriveAppState extends State<ArDriveApp> {
   @override
   Widget build(BuildContext context) {
     return ArDriveTheme(
+      themeData: widget.themeData,
       child: Builder(builder: (context) {
         return widget.builder(context);
       }),
@@ -28,11 +33,23 @@ class ArDriveThemeData {
     ArDriveToggleTheme? toggleTheme,
     ThemeData? materialThemeData,
     String? name,
+    ArDriveColors? colors,
   }) {
-    this.backgroundColor = backgroundColor ?? ArDriveColors.themeBgSubtle;
-    this.primaryColor = primaryColor ?? ArDriveColors.themeAccentBrand;
-    this.toggleTheme = toggleTheme ?? ArDriveToggleTheme();
-    this.materialThemeData = materialThemeData ?? darkTheme();
+    this.colors = colors ?? ArDriveColors();
+
+    this.toggleTheme = toggleTheme ??
+        ArDriveToggleTheme(
+          backgroundOffDisabled: this.colors.themeFgDisabled,
+          backgroundOffColor: this.colors.themeFgDefault,
+          backgroundOnColor: this.colors.themeFgDefault,
+          indicatorColorDisabled: this.colors.themeFgOnDisabled,
+          indicatorColorOff: this.colors.themeAccentDefault,
+          indicatorColorOn: this.colors.themeAccentSubtle,
+        );
+
+    this.backgroundColor = backgroundColor ?? this.colors.themeBgSubtle;
+    this.primaryColor = primaryColor ?? this.colors.themeAccentBrand;
+    this.materialThemeData = materialThemeData ?? darkMaterialTheme();
     this.name = name ?? 'default';
   }
 
@@ -41,38 +58,37 @@ class ArDriveThemeData {
   late ArDriveToggleTheme toggleTheme;
   late ThemeData materialThemeData;
   late String name;
+  late ArDriveColors colors;
 }
 
 ThemeData lightMaterialTheme() {
   final ThemeData theme = ThemeData.light();
+  ArDriveColors colors = ArDriveColors.light();
 
   return ThemeData(
     fontFamily: 'Wavehaus',
-    primaryColor: ArDriveColors.themeAccentBrand,
-    primaryColorLight: ArDriveColors.themeAccentBrand,
+    primaryColor: colors.themeAccentBrand,
+    primaryColorLight: colors.themeAccentBrand,
     colorScheme: theme.colorScheme.copyWith(
-      background: ArDriveColors.themeBgSurface,
-      primary: ArDriveColors.themeAccentBrand,
-      secondary: ArDriveColors.themeAccentBrand,
+      background: colors.themeBgSurface,
+      primary: colors.themeAccentBrand,
+      secondary: colors.themeAccentBrand,
+      surface: colors.themeBgSurface,
+      onSurface: colors.themeBgSurface,
+    ),
+    textTheme: theme.textTheme.apply(
+      fontFamily: 'Wavehaus',
+      bodyColor: colors.themeFgDefault,
     ),
   );
 }
 
 ArDriveThemeData lightTheme() {
-  final toggleThemeLight = ArDriveToggleTheme(
-    backgroundOffColor: blue.shade50,
-    backgroundOnColor: black,
-    backgroundOffDisabled: ArDriveColors.themeFgOnDisabled,
-    indicatorColorDisabled: ArDriveColors.themeFgDisabled,
-    indicatorColorOff: blue,
-    indicatorColorOn: blue.shade50,
-  );
+  ArDriveColors colors = ArDriveColors.light();
 
   return ArDriveThemeData(
-    primaryColor: ArDriveColors.themeAccentBrand,
+    colors: colors,
     materialThemeData: lightMaterialTheme(),
-    backgroundColor: ArDriveColors.themeBgSurface,
-    toggleTheme: toggleThemeLight,
     name: 'light',
   );
 }
@@ -84,6 +100,7 @@ class ArDriveTheme extends InheritedWidget {
     required super.child,
     super.key,
   }) {
+    print(themeData?.name);
     this.themeData = themeData ?? ArDriveThemeData();
   }
 
@@ -105,42 +122,40 @@ class ArDriveTheme extends InheritedWidget {
 
 class ArDriveToggleTheme {
   ArDriveToggleTheme({
-    Color? indicatorColorOn,
-    Color? indicatorColorOff,
-    Color? indicatorColorDisabled,
-    Color? backgroundOnColor,
-    Color? backgroundOffColor,
-    Color? backgroundOffDisabled,
-  }) {
-    this.indicatorColorOn = indicatorColorOn ?? black;
-    this.indicatorColorOff = indicatorColorOff ?? blue.shade500;
-    this.indicatorColorDisabled =
-        indicatorColorDisabled ?? ArDriveColors.themeFgDisabled;
-    this.backgroundOffColor = backgroundOffColor ?? black;
-    this.backgroundOnColor = backgroundOnColor ?? ArDriveColors.themeFgDefault;
-    this.backgroundOffDisabled = backgroundOffDisabled ?? grey.shade400;
-  }
+    required this.indicatorColorOn,
+    required this.indicatorColorOff,
+    required this.indicatorColorDisabled,
+    required this.backgroundOnColor,
+    required this.backgroundOffColor,
+    required this.backgroundOffDisabled,
+  });
 
-  late Color indicatorColorOn;
-  late Color indicatorColorOff;
-  late Color indicatorColorDisabled;
-
-  late Color backgroundOnColor;
-  late Color backgroundOffColor;
-  late Color backgroundOffDisabled;
+  final Color indicatorColorOn;
+  final Color indicatorColorOff;
+  final Color indicatorColorDisabled;
+  final Color backgroundOnColor;
+  final Color backgroundOffColor;
+  final Color backgroundOffDisabled;
 }
 
-ThemeData darkTheme() {
+ThemeData darkMaterialTheme() {
   final ThemeData theme = ThemeData.dark();
+  ArDriveColors colors = ArDriveColors.dark();
 
   return ThemeData(
-    primaryColor: ArDriveColors.themeAccentBrand,
-    primaryColorLight: ArDriveColors.themeAccentBrand,
     fontFamily: 'Wavehaus',
+    primaryColor: colors.themeAccentBrand,
+    primaryColorLight: colors.themeAccentBrand,
     colorScheme: theme.colorScheme.copyWith(
-      background: ArDriveColors.themeBgSurface,
-      primary: ArDriveColors.themeAccentBrand,
-      secondary: ArDriveColors.themeAccentBrand,
+      background: colors.themeBgSurface,
+      primary: colors.themeAccentBrand,
+      secondary: colors.themeAccentBrand,
+      surface: colors.themeBgSurface,
+      onSurface: colors.themeBgSurface,
+    ),
+    textTheme: theme.textTheme.apply(
+      fontFamily: 'Wavehaus',
+      bodyColor: colors.themeFgDefault,
     ),
   );
 }
