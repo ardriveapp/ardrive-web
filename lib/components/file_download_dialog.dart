@@ -29,22 +29,22 @@ Future<void> promptToDownloadProfileFile({
   final profileState = context.read<ProfileCubit>().state;
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
-
+  final cubit = ProfileFileDownloadCubit(
+    arfsRepository: ARFSRepository(
+      context.read<DriveDao>(),
+      ARFSFactory(),
+    ),
+    decrypt: Decrypt(),
+    downloadService: DownloadService(arweave),
+    downloader: ArDriveDownloader(),
+    file: arfsFile,
+    driveDao: context.read<DriveDao>(),
+    arweave: context.read<ArweaveService>(),
+  )..download(cipherKey);
   return showDialog(
     context: context,
-    builder: (_) => BlocProvider<ProfileFileDownloadCubit>(
-      create: (_) => ProfileFileDownloadCubit(
-        arfsRepository: ARFSRepository(
-          context.read<DriveDao>(),
-          ARFSFactory(),
-        ),
-        decrypt: Decrypt(),
-        downloadService: DownloadService(arweave),
-        downloader: ArDriveDownloader(),
-        file: arfsFile,
-        driveDao: context.read<DriveDao>(),
-        arweave: context.read<ArweaveService>(),
-      )..download(cipherKey),
+    builder: (_) => BlocProvider<FileDownloadCubit>.value(
+      value: cubit,
       child: const FileDownloadDialog(),
     ),
   );
@@ -59,21 +59,23 @@ Future<void> promptToDownloadFileRevision({
   final profileState = context.read<ProfileCubit>().state;
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
+  final cubit = ProfileFileDownloadCubit(
+    arfsRepository: ARFSRepository(
+      context.read<DriveDao>(),
+      ARFSFactory(),
+    ),
+    decrypt: Decrypt(),
+    downloadService: DownloadService(arweave),
+    downloader: ArDriveDownloader(),
+    file: arfsFile,
+    driveDao: context.read<DriveDao>(),
+    arweave: context.read<ArweaveService>(),
+  )..download(cipherKey);
+
   return showDialog(
     context: context,
-    builder: (_) => BlocProvider<ProfileFileDownloadCubit>(
-      create: (_) => ProfileFileDownloadCubit(
-        arfsRepository: ARFSRepository(
-          context.read<DriveDao>(),
-          ARFSFactory(),
-        ),
-        decrypt: Decrypt(),
-        downloadService: DownloadService(arweave),
-        downloader: ArDriveDownloader(),
-        file: arfsFile,
-        driveDao: context.read<DriveDao>(),
-        arweave: context.read<ArweaveService>(),
-      )..download(cipherKey),
+    builder: (_) => BlocProvider<FileDownloadCubit>.value(
+      value: cubit,
       child: const FileDownloadDialog(),
     ),
   );
@@ -83,25 +85,27 @@ Future<void> promptToDownloadSharedFile({
   required BuildContext context,
   SecretKey? fileKey,
   required FileRevision revision,
-}) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider<FileDownloadCubit>(
-        create: (_) => SharedFileDownloadCubit(
-          revision: revision,
-          fileKey: fileKey,
-          arweave: context.read<ArweaveService>(),
-        ),
-        child: const FileDownloadDialog(),
-      ),
-    );
+}) {
+  final cubit = SharedFileDownloadCubit(
+    revision: revision,
+    fileKey: fileKey,
+    arweave: context.read<ArweaveService>(),
+  );
+  return showDialog(
+    context: context,
+    builder: (_) => BlocProvider<FileDownloadCubit>.value(
+      value: cubit,
+      child: const FileDownloadDialog(),
+    ),
+  );
+}
 
 class FileDownloadDialog extends StatelessWidget {
   const FileDownloadDialog({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) =>
-      BlocConsumer<ProfileFileDownloadCubit, FileDownloadState>(
+      BlocConsumer<FileDownloadCubit, FileDownloadState>(
         listener: (context, state) async {
           if (state is FileDownloadSuccess) {
             final ArDriveIO io = ArDriveIO();
