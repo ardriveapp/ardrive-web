@@ -1,5 +1,4 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
-import 'package:ardrive_ui_library/src/styles/colors/global_colors.dart';
 import 'package:flutter/material.dart';
 
 enum ToggleState { on, off, disabled }
@@ -19,7 +18,7 @@ class ArDriveToggle extends StatefulWidget {
 class _ArDriveToggleState extends State<ArDriveToggle> {
   late ToggleState _state;
 
-  final animationDuration = Duration(milliseconds: 400);
+  final animationDuration = const Duration(milliseconds: 400);
 
   @override
   void initState() {
@@ -78,31 +77,34 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
   }
 
   Color colorBackground() {
+    final theme = ArDriveTheme.of(context).themeData.toggleTheme;
     switch (_state) {
       case ToggleState.on:
-        return ArDriveColors.themeFgDefault;
+        return theme.backgroundOnColor;
       case ToggleState.off:
-        return black;
+        return theme.backgroundOffColor;
 
       case ToggleState.disabled:
-        return grey.shade400;
+        return theme.backgroundOffDisabled;
     }
   }
 
   Color colorIndicator() {
+    final theme = ArDriveTheme.of(context).themeData.toggleTheme;
+
     switch (_state) {
       case ToggleState.on:
-        return black;
+        return theme.indicatorColorOn;
       case ToggleState.off:
-        return blue.shade500;
+        return theme.indicatorColorOff;
       case ToggleState.disabled:
-        return ArDriveColors.themeFgDisabled;
+        return theme.indicatorColorDisabled;
     }
   }
 }
 
 class _ToggleCircle extends StatefulWidget {
-  _ToggleCircle({
+  const _ToggleCircle({
     Key? key,
     required this.color,
     required this.state,
@@ -116,20 +118,16 @@ class _ToggleCircle extends StatefulWidget {
 }
 
 class _ToggleCircleState extends State<_ToggleCircle> {
-  final animationDuration = Duration(milliseconds: 300);
+  final animationDuration = const Duration(milliseconds: 300);
   bool isAnimating = false;
-  late ToggleState _state;
 
   @override
   void initState() {
-    _state = widget.state;
     super.initState();
   }
 
   @override
   void didUpdateWidget(covariant _ToggleCircle oldWidget) {
-    _state = widget.state;
-    print(_state);
     setState(() {
       isAnimating = true;
     });
@@ -156,13 +154,13 @@ class _ToggleCircleState extends State<_ToggleCircle> {
           color: widget.color,
           borderRadius: isAnimating
               ? widget.state == ToggleState.on
-                  ? BorderRadius.only(
+                  ? const BorderRadius.only(
                       topLeft: Radius.circular(80),
                       bottomLeft: Radius.circular(80),
                       topRight: Radius.circular(90),
                       bottomRight: Radius.circular(90),
                     )
-                  : BorderRadius.only(
+                  : const BorderRadius.only(
                       topLeft: Radius.circular(90),
                       bottomLeft: Radius.circular(90),
                       topRight: Radius.circular(80),
