@@ -176,7 +176,11 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   @override
   Future<void> abortDownload() async {
     emit(FileDownloadAborted());
-    await _downloader.cancelDownload();
+    final drive = await _arfsRepository.getDriveById(_file.driveId);
+
+    if (drive.drivePrivacy == DrivePrivacy.private) {
+      await _downloader.cancelDownload();
+    }
   }
 
   @override
