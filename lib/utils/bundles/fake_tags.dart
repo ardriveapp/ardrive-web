@@ -1,4 +1,5 @@
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 
 final fakePrivateTags = [
@@ -10,12 +11,20 @@ final fakePrivateTags = [
   ),
 ];
 
-final fakeApplicationTags = [
-  Tag(EntityTag.appName, 'ArDrive-Web'),
-  Tag(EntityTag.appVersion, '0.0.0'),
-  Tag(EntityTag.unixTime,
-      (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString())
-];
+List<Tag> fakeApplicationTags({
+  required String version,
+}) {
+  final String platform = SystemPlatform.platform;
+  return <Tag>[
+    Tag(EntityTag.appName, 'ArDrive-App'),
+    Tag(EntityTag.appVersion, version),
+    Tag(
+      EntityTag.unixTime,
+      (DateTime.now().millisecondsSinceEpoch ~/ 1000).toString(),
+    ),
+    Tag(EntityTag.appPlatform, platform),
+  ];
+}
 
 List<Tag> createFakeEntityTags(FileEntity entity) => <Tag>[
       Tag(EntityTag.arFs, '0.11'),

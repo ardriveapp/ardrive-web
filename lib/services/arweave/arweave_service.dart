@@ -27,8 +27,10 @@ class ArweaveService {
 
   final ArtemisClient _gql;
 
-  ArweaveService(this.client, [ArtemisClient? artemisClient])
-      : _gql = artemisClient ??
+  ArweaveService(
+    this.client, {
+    ArtemisClient? artemisClient,
+  }) : _gql = artemisClient ??
             ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
     _graphQLRetry = GraphQLRetry(_gql);
     httpRetry = HttpRetry(
@@ -658,7 +660,7 @@ class ArweaveService {
     SecretKey? key,
   ]) async {
     final tx = await client.transactions.prepare(
-      await entity.asTransaction(key),
+      await entity.asTransaction(key: key),
       wallet,
     );
     await tx.sign(wallet);
@@ -672,7 +674,7 @@ class ArweaveService {
     SecretKey? key,
   ]) async {
     final tx = await client.transactions.prepare(
-      await entity.asTransaction(key),
+      await entity.asTransaction(key: key),
       wallet,
     );
 
@@ -685,9 +687,9 @@ class ArweaveService {
 
   Future<DataItem> prepareEntityDataItem(
     Entity entity,
-    Wallet wallet, [
+    Wallet wallet, {
     SecretKey? key,
-  ]) async {
+  }) async {
     final item = await entity.asDataItem(key);
     item.setOwner(await wallet.getOwner());
 
@@ -706,7 +708,9 @@ class ArweaveService {
 
     final bundleTx = await client.transactions.prepare(
       Transaction.withDataBundle(bundleBlob: bundle.blob)
-        ..addApplicationTags(version: packageInfo.version),
+        ..addApplicationTags(
+          version: packageInfo.version,
+        ),
       wallet,
     );
 
@@ -721,7 +725,8 @@ class ArweaveService {
 
     final bundleTx = await client.transactions.prepare(
       Transaction.withDataBundle(bundleBlob: bundleBlob)
-        ..addApplicationTags(version: packageInfo.version),
+        ..addApplicationTags(version: packageInfo.version)
+        ..addBarTags(),
       wallet,
     );
 

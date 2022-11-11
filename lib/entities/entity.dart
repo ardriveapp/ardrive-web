@@ -1,4 +1,5 @@
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
@@ -27,14 +28,20 @@ abstract class Entity {
   /// Returns a [Transaction] with the entity's data along with the appropriate tags.
   ///
   /// If a key is provided, the transaction data is encrypted.
-  Future<Transaction> asTransaction([SecretKey? key]) async {
+  Future<Transaction> asTransaction({
+    SecretKey? key,
+  }) async {
     final tx = key == null
         ? Transaction.withJsonData(data: this)
         : await createEncryptedEntityTransaction(this, key);
     final packageInfo = await PackageInfo.fromPlatform();
 
     addEntityTagsToTransaction(tx);
-    tx.addApplicationTags(version: packageInfo.version, unixTime: createdAt);
+
+    tx.addApplicationTags(
+      version: packageInfo.version,
+      unixTime: createdAt,
+    );
     return tx;
   }
 
@@ -43,13 +50,15 @@ abstract class Entity {
   /// The `owner` on this [DataItem] will be unset.
   ///
   /// If a key is provided, the data item data is encrypted.
-  Future<DataItem> asDataItem([SecretKey? key]) async {
+  Future<DataItem> asDataItem(SecretKey? key) async {
     final item = key == null
         ? DataItem.withJsonData(data: this)
         : await createEncryptedEntityDataItem(this, key);
     final packageInfo = await PackageInfo.fromPlatform();
     addEntityTagsToTransaction(item);
-    item.addApplicationTags(version: packageInfo.version);
+    item.addApplicationTags(
+      version: packageInfo.version,
+    );
 
     return item;
   }
@@ -78,9 +87,17 @@ class EntityTransactionDataNetworkException implements Exception {
 extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the app name, version, and the specified unix time.
   /// https://ardrive.atlassian.net/wiki/spaces/ENGINEERIN/pages/277544961/Data+Model
-  /// TODO: Split App-Name into App-Name and Client
-  void addApplicationTags({required String version, DateTime? unixTime}) {
-    addTag(EntityTag.appName, 'ArDrive-Web');
+  void addApplicationTags({
+    required String version,
+    DateTime? unixTime,
+    bool isWeb = kIsWeb,
+  }) {
+    final String platform = SystemPlatform.platform;
+    addTag(EntityTag.appName, 'ArDrive-App');
+    addTag(
+      EntityTag.appPlatform,
+      platform,
+    );
     addTag(EntityTag.appVersion, version);
     addTag(
         EntityTag.unixTime,
@@ -91,5 +108,14 @@ extension TransactionUtils on TransactionBase {
   /// Tags this transaction with the ArFS version currently in use.
   void addArFsTag() {
     addTag(EntityTag.arFs, '0.11');
+  }
+
+  void addBarTags() {
+    addTag(EntityTag.protocolName, 'BAR');
+    addTag(EntityTag.action, 'Burn');
+    addTag(EntityTag.appName, 'SmartWeaveAction');
+    addTag(EntityTag.appVersion, '0.3.0');
+    addTag(EntityTag.input, '{"function":"mint"}');
+    addTag(EntityTag.contract, 'VFr3Bk-uM-motpNNkkFg4lNW1BMmSfzqsVO551Ho4hA');
   }
 }

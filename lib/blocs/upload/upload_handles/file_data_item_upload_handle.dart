@@ -67,8 +67,6 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   }
 
   Future<List<DataItem>> prepareAndSignDataItems() async {
-    final packageInfo = await PackageInfo.fromPlatform();
-
     final fileData = await file.ioFile.readAsBytes();
 
     dataTx = isPrivate
@@ -76,7 +74,11 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
         : DataItem.withBlobData(data: fileData);
     dataTx.setOwner(await wallet.getOwner());
 
-    dataTx.addApplicationTags(version: packageInfo.version);
+    final packageInfo = await PackageInfo.fromPlatform();
+    final String version = packageInfo.version;
+    dataTx.addApplicationTags(
+      version: version,
+    );
 
     // Don't include the file's Content-Type tag if it is meant to be private.
     if (!isPrivate) {
@@ -89,7 +91,11 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     await dataTx.sign(wallet);
 
     entity.dataTxId = dataTx.id;
-    entityTx = await arweave.prepareEntityDataItem(entity, wallet, fileKey);
+    entityTx = await arweave.prepareEntityDataItem(
+      entity,
+      wallet,
+      key: fileKey,
+    );
     await entityTx.sign(wallet);
     entity.txId = entityTx.id;
 
@@ -106,7 +112,11 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
         entity.dataContentType!,
       ));
     }
-    fakeTags.addAll(fakeApplicationTags);
+    final packageInfo = await PackageInfo.fromPlatform();
+    final String version = packageInfo.version;
+    fakeTags.addAll(fakeApplicationTags(
+      version: version,
+    ));
     return estimateDataItemSize(
       fileDataSize: getEntityJSONSize(),
       tags: fakeTags,
@@ -138,7 +148,11 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
         entity.dataContentType!,
       ));
     }
-    fakeTags.addAll(fakeApplicationTags);
+    final packageInfo = await PackageInfo.fromPlatform();
+    final String version = packageInfo.version;
+    fakeTags.addAll(fakeApplicationTags(
+      version: version,
+    ));
     return estimateDataItemSize(
       fileDataSize: size,
       tags: fakeTags,

@@ -1,22 +1,28 @@
+import 'dart:developer';
+
 import 'package:ardrive/blocs/shared_file/shared_file_cubit.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/components/copy_icon_button.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SharedFileSideSheet extends StatefulWidget {
   final List<FileRevision> revisions;
   final Privacy privacy;
+  final SecretKey? fileKey;
+
   const SharedFileSideSheet({
     Key? key,
     required this.revisions,
     required this.privacy,
+    this.fileKey,
   }) : super(key: key);
 
   @override
@@ -71,12 +77,13 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
         rows: [
           DataRow(cells: [
             DataCell(Text(appLocalizationsOf(context).fileID)),
-            DataCell(
-              CopyIconButton(
+            DataCell(Align(
+              alignment: Alignment.centerRight,
+              child: CopyIconButton(
                 tooltip: appLocalizationsOf(context).copyFileID,
                 value: revisions.first.fileId,
               ),
-            ),
+            )),
           ]),
           DataRow(cells: [
             DataCell(Text(appLocalizationsOf(context).fileSize)),
@@ -137,31 +144,34 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
           ...{
             DataRow(cells: [
               DataCell(Text(appLocalizationsOf(context).metadataTxID)),
-              DataCell(
-                CopyIconButton(
+              DataCell(Align(
+                alignment: Alignment.centerRight,
+                child: CopyIconButton(
                   tooltip: appLocalizationsOf(context).copyMetadataTxID,
                   value: revisions.first.metadataTxId,
                 ),
-              ),
+              )),
             ]),
             DataRow(cells: [
               DataCell(Text(appLocalizationsOf(context).dataTxID)),
-              DataCell(
-                CopyIconButton(
+              DataCell(Align(
+                alignment: Alignment.centerRight,
+                child: CopyIconButton(
                   tooltip: appLocalizationsOf(context).copyDataTxID,
                   value: revisions.first.dataTxId,
                 ),
-              ),
+              )),
             ]),
             if (revisions.first.bundledIn != null)
               DataRow(cells: [
                 DataCell(Text(appLocalizationsOf(context).bundleTxID)),
-                DataCell(
-                  CopyIconButton(
+                DataCell(Align(
+                  alignment: Alignment.centerRight,
+                  child: CopyIconButton(
                     tooltip: appLocalizationsOf(context).copyBundleTxID,
                     value: revisions.first.bundledIn!,
                   ),
-                ),
+                )),
               ]),
           },
         ],
@@ -187,6 +197,7 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
                         downloadOrPreviewRevision(
                           drivePrivacy: widget.privacy,
                           context: context,
+                          fileKey: widget.fileKey,
                           revision: revision,
                         );
                       },
@@ -276,34 +287,17 @@ void downloadOrPreviewRevision({
   required String drivePrivacy,
   required BuildContext context,
   required FileRevision revision,
+  SecretKey? fileKey,
 }) {
+  log(revision.toJsonString());
+
   if (drivePrivacy == DrivePrivacy.private) {
     promptToDownloadSharedFile(
       context: context,
-      fileId: revision.fileId,
+      revision: revision,
+      fileKey: fileKey,
     );
   } else {
     context.read<SharedFileCubit>().launchPreview(revision.dataTxId);
   }
-}
-
-class CopyIconButton extends StatelessWidget {
-  final String value;
-  final String tooltip;
-
-  const CopyIconButton({
-    Key? key,
-    required this.value,
-    required this.tooltip,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) => Container(
-        alignment: Alignment.centerRight,
-        child: IconButton(
-          icon: const Icon(Icons.copy, color: Colors.black54),
-          tooltip: tooltip,
-          onPressed: () => Clipboard.setData(ClipboardData(text: value)),
-        ),
-      );
 }

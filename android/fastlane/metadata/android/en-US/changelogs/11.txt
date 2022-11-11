@@ -1,0 +1,2 @@
+- Center login form on login page
+- Update help and feedback survey links

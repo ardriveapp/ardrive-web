@@ -51,10 +51,14 @@ class ManifestData {
   int get size => jsonData.lengthInBytes;
   Uint8List get jsonData => utf8.encode(json.encode(this)) as Uint8List;
 
-  Future<DataItem> asPreparedDataItem({required ArweaveAddress owner}) async {
+  Future<DataItem> asPreparedDataItem({
+    required ArweaveAddress owner,
+  }) async {
     final manifestDataItem = DataItem.withBlobData(data: jsonData)
       ..setOwner(owner)
-      ..addApplicationTags(version: (await PackageInfo.fromPlatform()).version)
+      ..addApplicationTags(
+        version: (await PackageInfo.fromPlatform()).version,
+      )
       ..addTag(EntityTag.contentType, ContentType.manifest);
 
     return manifestDataItem;

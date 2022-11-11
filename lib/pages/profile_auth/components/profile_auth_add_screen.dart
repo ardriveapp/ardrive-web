@@ -20,138 +20,170 @@ class ProfileAuthAddScreen extends StatelessWidget {
       BlocBuilder<ProfileAddCubit, ProfileAddState>(
         builder: (context, state) => state is ProfileAddPromptDetails
             ? ProfileAuthShell(
+                useLogo: false,
                 illustration: Image.asset(
                   Resources.images.profile.profileAdd,
                   fit: BoxFit.contain,
                 ),
                 contentWidthFactor: 0.5,
-                content: AutofillGroup(
-                  child: ReactiveForm(
-                    formGroup: context.watch<ProfileAddCubit>().form,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          state.isExistingUser
-                              ? appLocalizationsOf(context)
-                                  .welcomeBackEmphasized
-                              : appLocalizationsOf(context)
-                                  .letsGetStartedEmphasized,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.headline5,
-                        ),
-                        const SizedBox(height: 32),
-                        if (state.isExistingUser)
-                          Text(
-                              appLocalizationsOf(context)
-                                  .pleaseProvideSamePassword,
-                              textAlign: TextAlign.center)
-                        else
-                          Text(
-                              appLocalizationsOf(context)
-                                  .passwordCanNeverBeChanged,
-                              textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
-                        ReactiveTextField(
-                          formControlName: 'username',
-                          autofocus: false,
-                          autofillHints: const [AutofillHints.username],
-                          decoration: InputDecoration(
-                            labelText: appLocalizationsOf(context).username,
-                            prefixIcon: const Icon(Icons.person),
-                          ),
-                          onSubmitted: (_) =>
-                              context.read<ProfileAddCubit>().submit(),
-                          validationMessages:
-                              kValidationMessages(appLocalizationsOf(context)),
-                        ),
-                        const SizedBox(height: 16),
-                        ReactiveTextField(
-                          formControlName: 'password',
-                          obscureText: true,
-                          decoration: InputDecoration(
-                            labelText: appLocalizationsOf(context).password,
-                            prefixIcon: const Icon(Icons.lock),
-                          ),
-                          autofillHints: const [AutofillHints.password],
-                          onSubmitted: (_) =>
-                              context.read<ProfileAddCubit>().submit(),
-                          validationMessages:
-                              kValidationMessages(appLocalizationsOf(context)),
-                        ),
-                        if (!state.isExistingUser) ...[
-                          const SizedBox(height: 16),
-                          ReactiveTextField(
-                            formControlName: 'passwordConfirmation',
-                            obscureText: true,
-                            decoration: InputDecoration(
-                              labelText:
-                                  appLocalizationsOf(context).confirmPassword,
-                              prefixIcon: const Icon(Icons.lock),
-                            ),
-                            onSubmitted: (_) =>
-                                context.read<ProfileAddCubit>().submit(),
-                            validationMessages: {
-                              ...kValidationMessages(
-                                  appLocalizationsOf(context)),
-                              'mustMatch': (_) =>
-                                  appLocalizationsOf(context).passwordMismatch,
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ReactiveCheckbox(
-                                formControlName: 'agreementConsent',
-                              ),
-                              const SizedBox(width: 12),
-                              Flexible(
-                                child: GestureDetector(
-                                  onTap: () => openUrl(
-                                    url: 'https://ardrive.io/tos-and-privacy/',
+                content: Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: AutofillGroup(
+                          child: ReactiveForm(
+                            formGroup: context.watch<ProfileAddCubit>().form,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.max,
+                              children: [
+                                Image.asset(
+                                  Resources.images.brand
+                                      .logoHorizontalNoSubtitleLight,
+                                  height: 126,
+                                  fit: BoxFit.contain,
+                                ),
+                                const SizedBox(height: 32),
+                                Text(
+                                  state.isExistingUser
+                                      ? appLocalizationsOf(context)
+                                          .welcomeBackEmphasized
+                                      : appLocalizationsOf(context)
+                                          .letsGetStartedEmphasized,
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context).textTheme.headline5,
+                                ),
+                                const SizedBox(height: 32),
+                                if (state.isExistingUser)
+                                  Text(
+                                      appLocalizationsOf(context)
+                                          .pleaseProvideSamePassword,
+                                      textAlign: TextAlign.center)
+                                else
+                                  Text(
+                                      appLocalizationsOf(context)
+                                          .passwordCanNeverBeChanged,
+                                      textAlign: TextAlign.center),
+                                const SizedBox(height: 16),
+                                ReactiveTextField(
+                                  formControlName: 'username',
+                                  autofocus: false,
+                                  autofillHints: const [AutofillHints.username],
+                                  decoration: InputDecoration(
+                                    labelText:
+                                        appLocalizationsOf(context).username,
+                                    prefixIcon: const Icon(Icons.person),
                                   ),
-                                  child: Text.rich(
-                                    TextSpan(
-                                      children:
-                                          splitTranslationsWithMultipleStyles<
-                                              InlineSpan>(
-                                        originalText:
-                                            appLocalizationsOf(context)
-                                                .aggreeToTerms_body,
-                                        defaultMapper: (text) =>
-                                            TextSpan(text: text),
-                                        parts: {
-                                          appLocalizationsOf(context)
-                                                  .aggreeToTerms_link:
-                                              (text) => TextSpan(
-                                                    text: text,
-                                                    style: const TextStyle(
-                                                      decoration: TextDecoration
-                                                          .underline,
-                                                    ),
-                                                  ),
-                                        },
-                                      ),
+                                  onSubmitted: (_) =>
+                                      context.read<ProfileAddCubit>().submit(),
+                                  validationMessages: kValidationMessages(
+                                      appLocalizationsOf(context)),
+                                ),
+                                const SizedBox(height: 16),
+                                ReactiveTextField(
+                                  formControlName: 'password',
+                                  obscureText: true,
+                                  decoration: InputDecoration(
+                                    labelText:
+                                        appLocalizationsOf(context).password,
+                                    prefixIcon: const Icon(Icons.lock),
+                                  ),
+                                  autofillHints: const [AutofillHints.password],
+                                  onSubmitted: (_) =>
+                                      context.read<ProfileAddCubit>().submit(),
+                                  validationMessages: kValidationMessages(
+                                      appLocalizationsOf(context)),
+                                ),
+                                if (!state.isExistingUser) ...[
+                                  const SizedBox(height: 16),
+                                  ReactiveTextField(
+                                    formControlName: 'passwordConfirmation',
+                                    obscureText: true,
+                                    decoration: InputDecoration(
+                                      labelText: appLocalizationsOf(context)
+                                          .confirmPassword,
+                                      prefixIcon: const Icon(Icons.lock),
                                     ),
+                                    onSubmitted: (_) => context
+                                        .read<ProfileAddCubit>()
+                                        .submit(),
+                                    validationMessages: {
+                                      ...kValidationMessages(
+                                          appLocalizationsOf(context)),
+                                      'mustMatch': (_) =>
+                                          appLocalizationsOf(context)
+                                              .passwordMismatch,
+                                    },
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      ReactiveCheckbox(
+                                        formControlName: 'agreementConsent',
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Flexible(
+                                        child: GestureDetector(
+                                          onTap: () => openUrl(
+                                            url:
+                                                'https://ardrive.io/tos-and-privacy/',
+                                          ),
+                                          child: Text.rich(
+                                            TextSpan(
+                                              children:
+                                                  splitTranslationsWithMultipleStyles<
+                                                      InlineSpan>(
+                                                originalText:
+                                                    appLocalizationsOf(context)
+                                                        .aggreeToTerms_body,
+                                                defaultMapper: (text) =>
+                                                    TextSpan(text: text),
+                                                parts: {
+                                                  appLocalizationsOf(context)
+                                                          .aggreeToTerms_link:
+                                                      (text) => TextSpan(
+                                                            text: text,
+                                                            style:
+                                                                const TextStyle(
+                                                              decoration:
+                                                                  TextDecoration
+                                                                      .underline,
+                                                            ),
+                                                          ),
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                                const SizedBox(height: 32),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: () => context
+                                        .read<ProfileAddCubit>()
+                                        .submit(),
+                                    child: Text(appLocalizationsOf(context)
+                                        .addProfileEmphasized),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 32),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: () =>
-                                context.read<ProfileAddCubit>().submit(),
-                            child: Text(appLocalizationsOf(context)
-                                .addProfileEmphasized),
+                                const SizedBox(height: 16),
+                                const Align(
+                                  alignment: Alignment.center,
+                                  child: BiometricToggle(),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        TextButton(
+                      ),
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: TextButton(
                           onPressed: () =>
                               context.read<ProfileAddCubit>().promptForWallet(),
                           child: context
@@ -161,12 +193,8 @@ class ProfileAuthAddScreen extends StatelessWidget {
                                   appLocalizationsOf(context).logOutEmphasized)
                               : Text(appLocalizationsOf(context).changeWallet),
                         ),
-                        const Align(
-                          alignment: Alignment.center,
-                          child: BiometricToggle(),
-                        )
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               )
@@ -180,10 +208,12 @@ class BiometricToggle extends StatefulWidget {
     super.key,
     this.onDisableBiometric,
     this.onEnableBiometric,
+    this.onError,
   });
 
   final Function()? onEnableBiometric;
   final Function()? onDisableBiometric;
+  final Function()? onError;
 
   @override
   State<BiometricToggle> createState() => _BiometricToggleState();
@@ -216,7 +246,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
 
   void _listenToBiometricChange() {
     context.read<BiometricAuthentication>().enabledStream.listen((event) {
-      if (event != _isEnabled) {
+      if (event != _isEnabled && mounted) {
         setState(() {
           _isEnabled = event;
         });
@@ -236,6 +266,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
           }
 
           return SwitchListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
             key: ValueKey(_isEnabled),
             title: Text(biometricText),
             value: _isEnabled,
@@ -243,7 +274,6 @@ class _BiometricToggleState extends State<BiometricToggle> {
             activeTrackColor: Colors.black,
             controlAffinity: ListTileControlAffinity.leading,
             onChanged: (value) async {
-              print(value);
               setState(() {
                 _isEnabled = value;
               });
@@ -261,7 +291,7 @@ class _BiometricToggleState extends State<BiometricToggle> {
                     return;
                   }
                 } catch (e) {
-                  // TODO(@thiagocarvalhodev): check the text for an unknown error
+                  widget.onError?.call();
                   if (e is BiometricException) {
                     showBiometricExceptionDialogForException(
                       context,

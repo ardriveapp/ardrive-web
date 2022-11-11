@@ -11,8 +11,12 @@ on:
         required: true
         default: 'warning'
 
+env:
+  BUILD_NUMBER: ${{ github.run_number }}
+  RELEASE_NOTES: 'Production'
+
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
     steps:
       # Checkout
@@ -23,20 +27,45 @@ jobs:
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.0.5'
+          flutter-version: '3.3.5'
           channel: 'stable'
+
+      - name: Install script_runner
+        run: flutter pub global activate script_runner
+
+      - name: Build app
+        run: scr setup
+
+      - name: Test
+        run: scr test
+
+  web:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      # Install Flutter
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.3.5'
+          channel: 'stable'
+
+      - name: Install script_runner
+        run: flutter pub global activate script_runner
 
       - name: Build app
         run: |
-          flutter pub get
-          flutter pub run build_runner build --delete-conflicting-outputs
+          scr setup
           flutter config --enable-web
           flutter build web --release
 
       # JS files cache invalidation
       - name: main.dart.js cache invalidation
-        run: |
-          sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
+        run: sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
 
       # Disribute to Firebase
       - uses: FirebaseExtended/action-hosting-deploy@v0
@@ -44,3 +73,92 @@ jobs:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
           channelId: live
+
+  ios:
+    needs: test
+    runs-on: macos-latest
+    steps:
+      # Checkout
+      - uses: actions/checkout@v3
+
+      # Install Ruby
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+
+      # Install Flutter
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.3.5'
+          channel: 'stable'
+
+      - name: Set FIREBASE_JSON env var
+        run: echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
+
+      - name: Save Firebase Service Account json
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: echo -n "$FIREBASE_SERVICE_ACCOUNT_JSON" >> $FIREBASE_JSON
+
+      - name: Install fastlane and Cocoapods
+        working-directory: ./ios
+        run: bundle install
+
+      - name: Build iOS with fastlane
+        env:
+          MATCH_GIT_PRIVATE_KEY: ${{ secrets.FASTLANE_SSH_KEY }}
+          MATCH_PASSWORD: ${{ secrets.FASTLANE_MATCH_PASSWORD }}
+        working-directory: ./ios
+        run: bundle exec fastlane deploy type:staging
+
+  android:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout
+      - uses: actions/checkout@v3
+
+      # Install Ruby
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+
+      # Install JDK
+      - uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+
+      # Install Flutter
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.3.5'
+          channel: 'stable'
+
+      - name: Set FIREBASE_JSON env var
+        run: echo "FIREBASE_JSON=$RUNNER_TEMP/firebase.json" >> $GITHUB_ENV
+
+      - name: Save Firebase Service Account json
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: echo -n "$FIREBASE_SERVICE_ACCOUNT_JSON" >> $FIREBASE_JSON
+
+      - name: Set ANDROID_SIGNING_STORE_FILE env var
+        run: echo "ANDROID_SIGNING_STORE_FILE=$RUNNER_TEMP/keystore.jks" >> $GITHUB_ENV
+
+      - name: Save Android Keystore file
+        env:
+          ANDROID_SIGNING_STORE: ${{ secrets.ANDROID_SIGNING_STORE }}
+        run: echo -n "$ANDROID_SIGNING_STORE" | base64 --decode >> $ANDROID_SIGNING_STORE_FILE
+
+      - name: Install fastlane
+        working-directory: ./android
+        run: bundle install
+
+      - name: Build Android with fastlane
+        env:
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+        working-directory: ./android
+        run: bundle exec fastlane deploy type:production

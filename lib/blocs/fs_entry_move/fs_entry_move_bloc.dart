@@ -7,6 +7,7 @@ import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:platform/platform.dart';
 
 part 'fs_entry_move_event.dart';
 part 'fs_entry_move_state.dart';
@@ -19,6 +20,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
+  final Platform _platform;
 
   FsEntryMoveBloc({
     required this.driveId,
@@ -27,10 +29,12 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
+    Platform platform = const LocalPlatform(),
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
+        _platform = platform,
         super(const FsEntryMoveLoadInProgress()) {
     if (selectedItems.isEmpty) {
       addError(Exception('selectedItems cannot be empty'));
@@ -189,11 +193,8 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
         final fileEntity = file.asEntity();
 
-        final fileDataItem = await _arweave.prepareEntityDataItem(
-          fileEntity,
-          profile.wallet,
-          fileKey,
-        );
+        final fileDataItem = await _arweave
+            .prepareEntityDataItem(fileEntity, profile.wallet, key: fileKey);
         moveTxDataItems.add(fileDataItem);
 
         await _driveDao.writeToFile(file);
@@ -218,7 +219,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         final folderDataItem = await _arweave.prepareEntityDataItem(
           folderEntity,
           profile.wallet,
-          driveKey,
+          key: driveKey,
         );
 
         await _driveDao.writeToFolder(folder);
