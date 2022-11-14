@@ -99,7 +99,7 @@ class StoryBook extends StatelessWidget {
                     return Center(
                         child: ArDriveTheme(
                       themeData: lightTheme(),
-                      child: const ArDriveToggle(
+                      child: ArDriveToggle(
                         initialState: ToggleState.disabled,
                       ),
                     ));
@@ -117,9 +117,9 @@ class StoryBook extends StatelessWidget {
                         builder: (context) {
                           return ArDriveTheme(
                               themeData: lightTheme(),
-                              child: Center(
+                              child: const Center(
                                   child: Padding(
-                                padding: const EdgeInsets.all(8.0),
+                                padding: EdgeInsets.all(8.0),
                                 child: ArDriveTextField(),
                               )));
                         }),
@@ -128,9 +128,9 @@ class StoryBook extends StatelessWidget {
                         builder: (context) {
                           return ArDriveTheme(
                               themeData: lightTheme(),
-                              child: Center(
+                              child: const Center(
                                   child: Padding(
-                                padding: const EdgeInsets.all(8.0),
+                                padding: EdgeInsets.all(8.0),
                                 child: ArDriveTextField(),
                               )));
                         })
@@ -143,9 +143,9 @@ class StoryBook extends StatelessWidget {
                         builder: (context) {
                           return ArDriveTheme(
                               themeData: lightTheme(),
-                              child: Center(
+                              child: const Center(
                                   child: Padding(
-                                padding: const EdgeInsets.all(8.0),
+                                padding: EdgeInsets.all(8.0),
                                 child: ArDriveTextField(
                                   hintText: 'Enabled',
                                 ),
@@ -156,9 +156,9 @@ class StoryBook extends StatelessWidget {
                         builder: (context) {
                           return ArDriveTheme(
                               themeData: lightTheme(),
-                              child: Center(
+                              child: const Center(
                                   child: Padding(
-                                padding: const EdgeInsets.all(8.0),
+                                padding: EdgeInsets.all(8.0),
                                 child: ArDriveTextField(
                                   isEnabled: false,
                                   hintText: 'Disabled',
@@ -175,7 +175,8 @@ class StoryBook extends StatelessWidget {
                                 padding: const EdgeInsets.all(8.0),
                                 child: ArDriveTextField(
                                   hintText: 'Error',
-                                  validator: (s) => s,
+                                  validator: (s) => false,
+                                  errorMessage: 'Error message',
                                 ),
                               )));
                         }),
@@ -189,7 +190,8 @@ class StoryBook extends StatelessWidget {
                                 padding: const EdgeInsets.all(8.0),
                                 child: ArDriveTextField(
                                   hintText: 'Success',
-                                  validator: (s) => null,
+                                  validator: (s) => true,
+                                  successMessage: 'Success Message',
                                 ),
                               )));
                         })

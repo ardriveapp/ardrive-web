@@ -11,7 +11,7 @@ class MainActivity: FlutterFragmentActivity() {
   override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
     GeneratedPluginRegistrant.registerWith(flutterEngine);
 
-    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "flavor").setMethodCallHandler {
+    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "channel").setMethodCallHandler {
       call, result -> result.success(BuildConfig.FLAVOR)
     }
   }
