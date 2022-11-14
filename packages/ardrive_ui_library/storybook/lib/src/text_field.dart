@@ -43,7 +43,9 @@ WidgetbookCategory textField() {
                         child: Padding(
                       padding: EdgeInsets.all(8.0),
                       child: ArDriveTextField(
+                        label: 'Enabled',
                         hintText: 'Enabled',
+                        isFieldRequired: true,
                       ),
                     )));
               }),
@@ -91,7 +93,66 @@ WidgetbookCategory textField() {
                       ),
                     )));
               })
-        ])
+        ]),
+      ]),
+      WidgetbookFolder(name: 'Dark', widgets: [
+        WidgetbookComponent(name: 'TextField', useCases: [
+          WidgetbookUseCase(
+              name: 'Enabled',
+              builder: (context) {
+                return ArDriveTheme(
+                    child: const Center(
+                        child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: ArDriveTextField(
+                    label: 'Enabled',
+                    hintText: 'Enabled',
+                    isFieldRequired: true,
+                  ),
+                )));
+              }),
+          WidgetbookUseCase(
+              name: 'Disabled',
+              builder: (context) {
+                return ArDriveTheme(
+                    child: const Center(
+                        child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: ArDriveTextField(
+                    isEnabled: false,
+                    hintText: 'Disabled',
+                  ),
+                )));
+              }),
+          WidgetbookUseCase(
+              name: 'Error',
+              builder: (context) {
+                return ArDriveTheme(
+                    child: Center(
+                        child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ArDriveTextField(
+                    hintText: 'Error',
+                    validator: (s) => false,
+                    errorMessage: 'Error message',
+                  ),
+                )));
+              }),
+          WidgetbookUseCase(
+              name: 'Success',
+              builder: (context) {
+                return ArDriveTheme(
+                    child: Center(
+                        child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ArDriveTextField(
+                    hintText: 'Success',
+                    validator: (s) => true,
+                    successMessage: 'Success MessageEMESSAGEMESSAGEMESSAGE',
+                  ),
+                )));
+              })
+        ]),
       ])
     ],
   );
