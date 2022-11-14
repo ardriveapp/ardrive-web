@@ -440,6 +440,7 @@ class Headline {
       fontSize: fontSizeXL,
       fontWeight: FontWeight.w700,
       height: lineHeightsHeadlinesXl,
+      letterSpacing: letterSpacingHeadlines,
     );
   }
 
@@ -450,6 +451,7 @@ class Headline {
       package: _package,
       fontSize: fontSizeXL,
       fontWeight: FontWeight.w800,
+      letterSpacing: letterSpacingHeadlines,
       height: lineHeightsHeadlinesXl,
     );
   }
@@ -467,6 +469,8 @@ const double lineHeightsHeadlinesFefault = 1.1;
 const double lineHeightsHeadlinesSm = 1.3;
 const double lineHeightsBodyRelaxed = 1.75;
 const double lineHeightsBodyDefault = 1.5;
+
+const double letterSpacingHeadlines = -1;
 
 /// Font Sizes
 const double fontSizeBase = 16;
