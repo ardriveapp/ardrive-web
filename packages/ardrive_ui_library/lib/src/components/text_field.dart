@@ -1,6 +1,7 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ArDriveTextField extends StatefulWidget {
   const ArDriveTextField({
@@ -14,6 +15,16 @@ class ArDriveTextField extends StatefulWidget {
     this.autovalidateMode,
     this.errorMessage,
     this.successMessage,
+    this.autocorrect = true,
+    this.autofocus = false,
+    this.controller,
+    this.initialValue,
+    this.inputFormatters,
+    this.keyboardType,
+    this.onTap,
+    this.onFieldSubmitted,
+    this.focusNode,
+    this.maxLength,
   });
 
   final bool isEnabled;
@@ -25,6 +36,16 @@ class ArDriveTextField extends StatefulWidget {
   final AutovalidateMode? autovalidateMode;
   final String? errorMessage;
   final String? successMessage;
+  final bool autocorrect;
+  final bool autofocus;
+  final String? initialValue;
+  final TextEditingController? controller;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final Function()? onTap;
+  final Function(String)? onFieldSubmitted;
+  final int? maxLength;
+  final FocusNode? focusNode;
 
   @override
   State<ArDriveTextField> createState() => _ArDriveTextFieldState();
@@ -47,6 +68,16 @@ class _ArDriveTextFieldState extends State<ArDriveTextField> {
       mainAxisSize: MainAxisSize.min,
       children: [
         TextFormField(
+          controller: widget.controller,
+          autocorrect: widget.autocorrect,
+          autofocus: widget.autofocus,
+          initialValue: widget.initialValue,
+          keyboardType: widget.keyboardType,
+          inputFormatters: widget.inputFormatters,
+          onTap: widget.onTap,
+          onFieldSubmitted: widget.onFieldSubmitted,
+          maxLength: widget.maxLength,
+          focusNode: widget.focusNode,
           key: widget.key,
           obscureText: widget.obscureText,
           style: ArDriveTypography.body.inputLargeRegular(
