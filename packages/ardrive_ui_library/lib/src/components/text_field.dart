@@ -1,5 +1,7 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ArDriveTextField extends StatefulWidget {
   const ArDriveTextField({
@@ -10,111 +12,171 @@ class ArDriveTextField extends StatefulWidget {
     this.onChanged,
     this.obscureText = false,
     this.autofillHints,
+    this.autovalidateMode,
+    this.errorMessage,
+    this.successMessage,
+    this.autocorrect = true,
+    this.autofocus = false,
+    this.controller,
+    this.initialValue,
+    this.inputFormatters,
+    this.keyboardType,
+    this.onTap,
+    this.onFieldSubmitted,
+    this.focusNode,
+    this.maxLength,
+    this.label,
+    this.isFieldRequired = false,
   });
 
   final bool isEnabled;
-  final String? Function(String?)? validator;
+  final bool Function(String?)? validator;
   final Function(String)? onChanged;
   final String? hintText;
   final bool obscureText;
   final List<String>? autofillHints;
+  final AutovalidateMode? autovalidateMode;
+  final String? errorMessage;
+  final String? successMessage;
+  final bool autocorrect;
+  final bool autofocus;
+  final String? initialValue;
+  final TextEditingController? controller;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final Function()? onTap;
+  final Function(String)? onFieldSubmitted;
+  final int? maxLength;
+  final FocusNode? focusNode;
+  final String? label;
+  final bool isFieldRequired;
 
   @override
-  State<ArDriveTextField> createState() => _ArDriveTextFieldState();
+  State<ArDriveTextField> createState() => ArDriveTextFieldState();
 }
 
-enum ArDriveTextFieldState { unfocused, focused, disabled, error, success }
+enum TextFieldState { unfocused, focused, disabled, error, success }
 
-class _ArDriveTextFieldState extends State<ArDriveTextField> {
-  late ArDriveTextFieldState _state;
+@visibleForTesting
+class ArDriveTextFieldState extends State<ArDriveTextField> {
+  @visibleForTesting
+  late TextFieldState textFieldState;
 
   @override
   void initState() {
-    _state = ArDriveTextFieldState.unfocused;
+    textFieldState = TextFieldState.unfocused;
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return Align(
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.label != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: _textFieldLabel(widget.label!),
+              ),
+            ),
+          TextFormField(
+            controller: widget.controller,
+            autocorrect: widget.autocorrect,
+            autofocus: widget.autofocus,
+            initialValue: widget.initialValue,
+            keyboardType: widget.keyboardType,
+            inputFormatters: widget.inputFormatters,
+            onTap: widget.onTap,
+            onFieldSubmitted: widget.onFieldSubmitted,
+            maxLength: widget.maxLength,
+            focusNode: widget.focusNode,
+            key: widget.key,
+            obscureText: widget.obscureText,
+            style: ArDriveTypography.body.inputLargeRegular(
+              color: ArDriveTheme.of(context).themeData.colors.themeInputText,
+            ),
+            autovalidateMode: AutovalidateMode.always,
+            onChanged: (text) {
+              setState(
+                () {
+                  final textIsValid = widget.validator?.call(text);
+
+                  if (text.isEmpty) {
+                    textFieldState = TextFieldState.focused;
+                  } else if (textIsValid != null && !textIsValid) {
+                    textFieldState = TextFieldState.error;
+                  } else if (textIsValid != null && textIsValid) {
+                    textFieldState = TextFieldState.success;
+                  }
+
+                  widget.onChanged?.call(text);
+                },
+              );
+            },
+            autofillHints: widget.autofillHints,
+            enabled: widget.isEnabled,
+            decoration: InputDecoration(
+              errorStyle: const TextStyle(height: 0),
+              hintText: widget.hintText,
+              hintStyle: ArDriveTypography.body
+                  .inputLargeRegular(color: _hintTextColor()),
+              enabledBorder: _getEnabledBorder(),
+              focusedBorder: _getFocusedBoder(),
+              disabledBorder: _getDisabledBorder(),
+              filled: true,
+              fillColor: ArDriveTheme.of(context)
+                  .themeData
+                  .colors
+                  .themeInputBackground,
+            ),
+          ),
+          if (widget.errorMessage != null) _errorMessage(widget.errorMessage!),
+          if (widget.successMessage != null)
+            _successMessage(widget.successMessage!),
+        ],
+      ),
+    );
+  }
+
+  Widget _errorMessage(String message) {
+    return AnimatedTextFieldLabel(
+      text: message,
+      showing: textFieldState == TextFieldState.error,
+      color: ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+    );
+  }
+
+  Widget _textFieldLabel(String message) {
+    return Row(
       children: [
-        TextFormField(
-          style: ArDriveTypography.body.inputLargeRegular(
-            color: ArDriveTheme.of(context).themeData.colors.themeInputText,
-          ),
-          autovalidateMode: AutovalidateMode.always,
-          // validator: (s) {
-          //   return widget.validator?.call(s);
-          // },
-          onChanged: (text) {
-            // if (widget.onChanged != null) {
-            //   widget.onChanged(text);
-            // }
-            setState(() {
-              final validationMessage = widget.validator?.call(text);
-              print(validationMessage);
-              if (validationMessage != null) {
-                _state = ArDriveTextFieldState.error;
-              } else if (text.isEmpty) {
-                _state = ArDriveTextFieldState.focused;
-              } else if (widget.validator != null) {
-                _state = ArDriveTextFieldState.success;
-              }
-              widget.onChanged?.call(text);
-            });
-          },
-          autofillHints: widget.autofillHints,
-          enabled: widget.isEnabled,
-          decoration: InputDecoration(
-            errorStyle: const TextStyle(height: 0),
-            hintText: widget.hintText,
-            hintStyle: ArDriveTypography.body
-                .inputLargeRegular(color: _hintTextColor()),
-            enabledBorder: _getEnabledBorder(),
-            focusedBorder: _getFocusedBoder(),
-            disabledBorder: _getDisabledBorder(),
-            filled: true,
-            fillColor:
-                ArDriveTheme.of(context).themeData.colors.themeInputBackground,
-          ),
+        TextFieldLabel(
+          text: message,
+          bold: true,
+          color: widget.isFieldRequired
+              ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
+              : ArDriveTheme.of(context).themeData.colors.themeAccentDefault,
         ),
-        _errorMessage(),
-        _successMessage(),
+        if (widget.isFieldRequired)
+          Text(
+            '*',
+            style: ArDriveTypography.body.bodyRegular(
+              color:
+                  ArDriveTheme.of(context).themeData.colors.themeAccentDefault,
+            ),
+          )
       ],
     );
   }
 
-  Widget _errorMessage() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        height: _state == ArDriveTextFieldState.error ? 35 : 0,
-        child: Text(
-          'Error message',
-          style: ArDriveTypography.body.bodyRegular(
-            color: ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _successMessage() {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        height: _state == ArDriveTextFieldState.success ? 35 : 0,
-        child: Text(
-          'Success message',
-          style: ArDriveTypography.body.bodyRegular(
-            color:
-                ArDriveTheme.of(context).themeData.colors.themeSuccessDefault,
-          ),
-        ),
-      ),
+  Widget _successMessage(String message) {
+    return AnimatedTextFieldLabel(
+      text: message,
+      showing: textFieldState == TextFieldState.success,
+      color: ArDriveTheme.of(context).themeData.colors.themeSuccessDefault,
     );
   }
 
@@ -126,9 +188,9 @@ class _ArDriveTextFieldState extends State<ArDriveTextField> {
   }
 
   InputBorder _getEnabledBorder() {
-    if (_state == ArDriveTextFieldState.success) {
+    if (textFieldState == TextFieldState.success) {
       return _getSuccessBorder();
-    } else if (_state == ArDriveTextFieldState.error) {
+    } else if (textFieldState == TextFieldState.error) {
       return _getErrorBorder();
     }
     return _getBorder(
@@ -137,9 +199,9 @@ class _ArDriveTextFieldState extends State<ArDriveTextField> {
   }
 
   InputBorder _getFocusedBoder() {
-    if (_state == ArDriveTextFieldState.success) {
+    if (textFieldState == TextFieldState.success) {
       return _getSuccessBorder();
-    } else if (_state == ArDriveTextFieldState.error) {
+    } else if (textFieldState == TextFieldState.error) {
       return _getErrorBorder();
     }
 
@@ -171,5 +233,84 @@ class _ArDriveTextFieldState extends State<ArDriveTextField> {
       return ArDriveTheme.of(context).themeData.colors.themeInputPlaceholder;
     }
     return ArDriveTheme.of(context).themeData.colors.themeFgDisabled;
+  }
+}
+
+@visibleForTesting
+class AnimatedTextFieldLabel extends StatefulWidget {
+  const AnimatedTextFieldLabel({
+    super.key,
+    required this.text,
+    required this.showing,
+    required this.color,
+  });
+
+  final String text;
+  final bool showing;
+  final Color color;
+
+  @override
+  State<AnimatedTextFieldLabel> createState() => _AnimatedTextFieldLabelState();
+}
+
+class _AnimatedTextFieldLabelState extends State<AnimatedTextFieldLabel> {
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.showing) {
+      _visible = false;
+    }
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: AnimatedContainer(
+        onEnd: () => setState(() {
+          _visible = !_visible;
+        }),
+        duration: const Duration(milliseconds: 300),
+        height: widget.showing ? 35 : 0,
+        width: double.infinity,
+        child: AnimatedOpacity(
+          opacity: _visible ? 1.0 : 0.0,
+          duration: Duration(milliseconds: !_visible ? 100 : 300),
+          child: TextFieldLabel(
+            color: widget.color,
+            text: widget.text,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class TextFieldLabel extends StatelessWidget {
+  const TextFieldLabel({
+    super.key,
+    required this.text,
+    required this.color,
+    this.bold = false,
+  });
+  final String text;
+  final Color color;
+  final bool bold;
+
+  @override
+  Widget build(BuildContext context) {
+    return AutoSizeText(
+      text,
+      style: bold
+          ? ArDriveTypography.body.bodyBold(
+              color: color,
+            )
+          : ArDriveTypography.body.bodyRegular(
+              color: color,
+            ),
+    );
   }
 }
