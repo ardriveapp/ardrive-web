@@ -100,7 +100,6 @@ class ArDriveTheme extends InheritedWidget {
     required super.child,
     super.key,
   }) {
-    print(themeData?.name);
     this.themeData = themeData ?? ArDriveThemeData();
   }
 
