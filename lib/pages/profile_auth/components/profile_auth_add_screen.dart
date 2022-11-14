@@ -1,11 +1,11 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/split_localizations.dart';
+import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -38,8 +38,12 @@ class ProfileAuthAddScreen extends StatelessWidget {
                               mainAxisSize: MainAxisSize.max,
                               children: [
                                 Image.asset(
-                                  Resources.images.brand
-                                      .logoHorizontalNoSubtitleLight,
+                                  ArDriveTheme.of(context).themeData.name ==
+                                          'light'
+                                      ? Resources.images.brand
+                                          .logoHorizontalNoSubtitleLight
+                                      : Resources.images.brand
+                                          .logoHorizontalNoSubtitleDark,
                                   height: 126,
                                   fit: BoxFit.contain,
                                 ),
@@ -51,69 +55,75 @@ class ProfileAuthAddScreen extends StatelessWidget {
                                       : appLocalizationsOf(context)
                                           .letsGetStartedEmphasized,
                                   textAlign: TextAlign.center,
-                                  style: Theme.of(context).textTheme.headline5,
+                                  style: ArDriveTypography.headline
+                                      .headline4Bold(),
                                 ),
                                 const SizedBox(height: 32),
                                 if (state.isExistingUser)
                                   Text(
-                                      appLocalizationsOf(context)
-                                          .pleaseProvideSamePassword,
-                                      textAlign: TextAlign.center)
+                                    appLocalizationsOf(context)
+                                        .pleaseProvideSamePassword,
+                                    textAlign: TextAlign.center,
+                                    style: ArDriveTypography.body.smallBold(),
+                                  )
                                 else
                                   Text(
                                       appLocalizationsOf(context)
                                           .passwordCanNeverBeChanged,
                                       textAlign: TextAlign.center),
                                 const SizedBox(height: 16),
-                                ReactiveTextField(
-                                  formControlName: 'username',
-                                  autofocus: false,
+                                ArDriveTextField(
+                                  hintText: 'Enter Username',
+                                  // formControlName: 'username',
+                                  // autofocus: false,
                                   autofillHints: const [AutofillHints.username],
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        appLocalizationsOf(context).username,
-                                    prefixIcon: const Icon(Icons.person),
-                                  ),
-                                  onSubmitted: (_) =>
-                                      context.read<ProfileAddCubit>().submit(),
-                                  validationMessages: kValidationMessages(
-                                      appLocalizationsOf(context)),
+                                  // decoration: InputDecoration(
+                                  //   labelText:
+                                  //       appLocalizationsOf(context).username,
+                                  //   prefixIcon: const Icon(Icons.person),
+                                  // ),
+                                  // onSubmitted: (_) =>
+                                  //     context.read<ProfileAddCubit>().submit(),
+                                  // validationMessages: kValidationMessages(
+                                  //     appLocalizationsOf(context)),
                                 ),
                                 const SizedBox(height: 16),
-                                ReactiveTextField(
-                                  formControlName: 'password',
+                                ArDriveTextField(
+                                  hintText: 'Enter password',
                                   obscureText: true,
-                                  decoration: InputDecoration(
-                                    labelText:
-                                        appLocalizationsOf(context).password,
-                                    prefixIcon: const Icon(Icons.lock),
-                                  ),
+                                  // formControlName: 'password',
+                                  // obscureText: true,
+                                  // decoration: InputDecoration(
+                                  //   labelText:
+                                  //       appLocalizationsOf(context).password,
+                                  //   prefixIcon: const Icon(Icons.lock),
+                                  // ),
                                   autofillHints: const [AutofillHints.password],
-                                  onSubmitted: (_) =>
-                                      context.read<ProfileAddCubit>().submit(),
-                                  validationMessages: kValidationMessages(
-                                      appLocalizationsOf(context)),
+                                  // onSubmitted: (_) =>
+                                  // context.read<ProfileAddCubit>().submit(),
+                                  // validationMessages: kValidationMessages(
+                                  // appLocalizationsOf(context)),
                                 ),
                                 if (!state.isExistingUser) ...[
                                   const SizedBox(height: 16),
-                                  ReactiveTextField(
-                                    formControlName: 'passwordConfirmation',
+                                  ArDriveTextField(
+                                    // formControlName: 'passwordConfirmation',
                                     obscureText: true,
-                                    decoration: InputDecoration(
-                                      labelText: appLocalizationsOf(context)
-                                          .confirmPassword,
-                                      prefixIcon: const Icon(Icons.lock),
-                                    ),
-                                    onSubmitted: (_) => context
-                                        .read<ProfileAddCubit>()
-                                        .submit(),
-                                    validationMessages: {
-                                      ...kValidationMessages(
-                                          appLocalizationsOf(context)),
-                                      'mustMatch': (_) =>
-                                          appLocalizationsOf(context)
-                                              .passwordMismatch,
-                                    },
+                                    // decoration: InputDecoration(
+                                    //   labelText: appLocalizationsOf(context)
+                                    //       .confirmPassword,
+                                    //   prefixIcon: const Icon(Icons.lock),
+                                    // ),
+                                    // onSubmitted: (_) => context
+                                    // .read<ProfileAddCubit>()
+                                    // .submit(),
+                                    // validationMessages: {
+                                    // ...kValidationMessages(
+                                    //     appLocalizationsOf(context)),
+                                    // 'mustMatch': (_) =>
+                                    //     appLocalizationsOf(context)
+                                    //         .passwordMismatch,
+                                    // },
                                   ),
                                   const SizedBox(height: 16),
                                   Row(
@@ -163,12 +173,12 @@ class ProfileAuthAddScreen extends StatelessWidget {
                                 const SizedBox(height: 32),
                                 SizedBox(
                                   width: double.infinity,
-                                  child: ElevatedButton(
+                                  child: ArDriveButton(
                                     onPressed: () => context
                                         .read<ProfileAddCubit>()
                                         .submit(),
-                                    child: Text(appLocalizationsOf(context)
-                                        .addProfileEmphasized),
+                                    text: appLocalizationsOf(context)
+                                        .addProfileEmphasized,
                                   ),
                                 ),
                                 const SizedBox(height: 16),
@@ -183,15 +193,15 @@ class ProfileAuthAddScreen extends StatelessWidget {
                       ),
                       Align(
                         alignment: Alignment.bottomCenter,
-                        child: TextButton(
-                          onPressed: () =>
-                              context.read<ProfileAddCubit>().promptForWallet(),
-                          child: context
+                        child: ArDriveButton(
+                          style: ArDriveButtonStyle.tertiary,
+                          text: context
                                   .read<ProfileAddCubit>()
                                   .isArconnectInstalled()
-                              ? Text(
-                                  appLocalizationsOf(context).logOutEmphasized)
-                              : Text(appLocalizationsOf(context).changeWallet),
+                              ? appLocalizationsOf(context).logOutEmphasized
+                              : appLocalizationsOf(context).changeWallet,
+                          onPressed: () =>
+                              context.read<ProfileAddCubit>().promptForWallet(),
                         ),
                       ),
                     ],

@@ -8,6 +8,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -34,21 +35,22 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
               defaultMapper: (text) => Text(
                 text,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headline6,
+                style: ArDriveTypography.headline.headline5Regular(),
               ),
               parts: {
                 appLocalizationsOf(context).welcomeTo_main: (text) => Text(
                       text,
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headline5,
+                      style: ArDriveTypography.headline.headline3Bold(),
                     ),
               },
               separator: const SizedBox(height: 32),
             ),
             const SizedBox(height: 32),
-            ElevatedButton(
+            ArDriveButton(
+              style: ArDriveButtonStyle.secondary,
               onPressed: () => _pickWallet(context),
-              child: Text(appLocalizationsOf(context).selectWalletEmphasized),
+              text: appLocalizationsOf(context).selectWalletEmphasized,
             ),
             if (context.read<ProfileAddCubit>().isArconnectInstalled()) ...[
               const SizedBox(height: 32),
@@ -58,12 +60,9 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 16),
-            TextButton(
+            ArDriveTextButton(
               onPressed: () => openUrl(url: 'https://tokens.arweave.org'),
-              child: Text(
-                appLocalizationsOf(context).getAWallet,
-                textAlign: TextAlign.center,
-              ),
+              text: appLocalizationsOf(context).getAWallet,
             ),
             // const Spacer(),
           ],

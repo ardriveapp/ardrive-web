@@ -83,6 +83,8 @@ dependencies:
   device_info_plus: ^4.0.0
   local_auth: ^2.1.2
   flutter_secure_storage: ^6.0.0
+  ardrive_ui_library:
+    path: ./packages/ardrive_ui_library
 
 dev_dependencies:
   flutter_test:

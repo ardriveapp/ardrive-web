@@ -50,6 +50,13 @@ packages:
       relative: true
     source: path
     version: "0.0.1"
+  ardrive_ui_library:
+    dependency: "direct main"
+    description:
+      path: "packages/ardrive_ui_library"
+      relative: true
+    source: path
+    version: "0.0.1"
   args:
     dependency: transitive
     description:

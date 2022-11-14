@@ -1,5 +1,6 @@
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -42,7 +43,11 @@ class ProfileAuthShell extends StatelessWidget {
                   children: [
                     if (useLogo)
                       Image.asset(
-                        Resources.images.brand.logoHorizontalNoSubtitleLight,
+                        ArDriveTheme.of(context).themeData.name == 'light'
+                            ? Resources
+                                .images.brand.logoHorizontalNoSubtitleLight
+                            : Resources
+                                .images.brand.logoHorizontalNoSubtitleDark,
                         height: 126,
                         fit: BoxFit.contain,
                       ),
