@@ -1,5 +1,6 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
+import 'package:storybook/src/button.dart';
 import 'package:storybook/src/text_field.dart';
 import 'package:storybook/src/toggle.dart';
 import 'package:widgetbook/widgetbook.dart';
@@ -25,19 +26,12 @@ class StoryBook extends StatelessWidget {
           ],
           appInfo: AppInfo(name: 'ArDrive StoryBook'),
           categories: [
-            WidgetbookCategory(name: 'Colors', folders: [
-              getForegroundColors(),
-              getBackgroundColors(),
-              getWarningColors(),
-              getErrorColors(),
-              getInfoColors(),
-              getInputColors(),
-              getSuccessColors(),
-              getOverlayColors(),
-            ]),
             toggle(),
             textField(),
             loginForm(),
+            getTypographyCategory(true),
+            getTypographyCategory(false),
+            button(),
           ]),
     );
   }
