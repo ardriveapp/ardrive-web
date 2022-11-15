@@ -9,6 +9,8 @@ const MaterialColor red = MaterialColor(0xffFE0230, _red);
 const MaterialColor grey = MaterialColor(0xff9E9E9E, _grey);
 const Color white = Colors.white;
 const Color black = Colors.black;
+final Color shadowColor = const Color(0xff0D0D0D).withOpacity(0.9);
+final Color shadowColorLight = const Color(0xff303133).withOpacity(0.1);
 
 const Map<int, Color> _blue = {
   50: Color(0xffECEEFE),

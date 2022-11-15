@@ -87,6 +87,7 @@ ArDriveThemeData lightTheme() {
   ArDriveColors colors = ArDriveColors.light();
 
   return ArDriveThemeData(
+    backgroundColor: colors.themeBgSurface,
     colors: colors,
     materialThemeData: lightMaterialTheme(),
     name: 'light',
