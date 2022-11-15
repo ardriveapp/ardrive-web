@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "ardrive-web"
-  }
+  },
+  "targets": {
+    "ardrive-storybook": {
+      "hosting": {
+        "storybook": [
+          "storybook"
+        ],
+        "web": [
+          "web"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
