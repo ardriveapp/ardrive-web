@@ -4,6 +4,7 @@ import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -179,34 +180,39 @@ class FsEntryMoveForm extends StatelessWidget {
                             shrinkWrap: true,
                             children: [
                               ...state.viewingFolder.subfolders.map(
-                                (f) => ListTile(
-                                  key: ValueKey(f.id),
-                                  dense: true,
-                                  leading: const Icon(Icons.folder),
-                                  title: Text(f.name),
-                                  onTap: () {
-                                    context.read<FsEntryMoveBloc>().add(
-                                          FsEntryMoveUpdateTargetFolder(
-                                            folderId: f.id,
-                                          ),
-                                        );
-                                  },
+                                (f) => ArDriveCard(
+                                  content: ListTile(
+                                    key: ValueKey(f.id),
+                                    dense: true,
+                                    leading: const Icon(Icons.folder),
+                                    title: Text(f.name),
+                                    onTap: () {
+                                      context.read<FsEntryMoveBloc>().add(
+                                            FsEntryMoveUpdateTargetFolder(
+                                              folderId: f.id,
+                                            ),
+                                          );
+                                    },
 
-                                  trailing:
-                                      const Icon(Icons.keyboard_arrow_right),
-                                  // Do not allow users to navigate into the folder they are currently trying to move.
-                                  enabled: state.itemsToMove
-                                      .where((item) => item.id == f.id)
-                                      .isEmpty,
+                                    trailing:
+                                        const Icon(Icons.keyboard_arrow_right),
+                                    // Do not allow users to navigate into the folder they are currently trying to move.
+                                    enabled: state.itemsToMove
+                                        .where((item) => item.id == f.id)
+                                        .isEmpty,
+                                  ),
                                 ),
                               ),
                               ...state.viewingFolder.files.map(
-                                (f) => ListTile(
-                                  key: ValueKey(f.id),
-                                  leading: const Icon(Icons.insert_drive_file),
-                                  title: Text(f.name),
-                                  enabled: false,
-                                  dense: true,
+                                (f) => ArDriveCard(
+                                  content: ListTile(
+                                    key: ValueKey(f.id),
+                                    leading:
+                                        const Icon(Icons.insert_drive_file),
+                                    title: Text(f.name),
+                                    enabled: false,
+                                    dense: true,
+                                  ),
                                 ),
                               ),
                             ],

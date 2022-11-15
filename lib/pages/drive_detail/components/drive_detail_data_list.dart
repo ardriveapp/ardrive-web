@@ -48,7 +48,8 @@ Widget _buildFolderListTile({
   required Function onPressed,
   bool selected = false,
 }) =>
-    ListTile(
+    ArDriveCard(
+        content: ListTile(
       onTap: () => onPressed(),
       selected: selected,
       leading: const Padding(
@@ -70,7 +71,7 @@ Widget _buildFolderListTile({
               child: Text(appLocalizationsOf(context).fix),
             )
           : null,
-    );
+    ));
 
 Widget _buildFileListTile({
   required BuildContext context,
@@ -78,22 +79,24 @@ Widget _buildFileListTile({
   required Function onPressed,
   bool selected = false,
 }) =>
-    ListTile(
-      onTap: () => onPressed(),
-      selected: selected,
-      leading: Padding(
-        padding: const EdgeInsetsDirectional.only(end: 8.0),
-        child: _buildFileIcon(
-          fileStatusFromTransactions(file.metadataTx, file.dataTx),
-          file.dataContentType,
-          appLocalizationsOf(context),
+    ArDriveCard(
+      content: ListTile(
+        onTap: () => onPressed(),
+        selected: selected,
+        leading: Padding(
+          padding: const EdgeInsetsDirectional.only(end: 8.0),
+          child: _buildFileIcon(
+            fileStatusFromTransactions(file.metadataTx, file.dataTx),
+            file.dataContentType,
+            appLocalizationsOf(context),
+          ),
         ),
-      ),
-      title: Text(file.name),
-      subtitle: Text(
-        appLocalizationsOf(context).lastModifiedDate(
-            (file.lastUpdated.difference(DateTime.now()).inDays > 3
-                ? format(file.lastUpdated)
-                : yMMdDateFormatter.format(file.lastUpdated))),
+        title: Text(file.name),
+        subtitle: Text(
+          appLocalizationsOf(context).lastModifiedDate(
+              (file.lastUpdated.difference(DateTime.now()).inDays > 3
+                  ? format(file.lastUpdated)
+                  : yMMdDateFormatter.format(file.lastUpdated))),
+        ),
       ),
     );

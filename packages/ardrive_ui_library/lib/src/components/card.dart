@@ -32,7 +32,9 @@ class ArDriveCard extends StatelessWidget {
         elevation: elevation,
         shadowColor: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(borderRadius ?? 10),
+          borderRadius: BorderRadius.circular(
+            borderRadius ?? 10,
+          ),
         ),
         child: Padding(
           padding: contentPadding,

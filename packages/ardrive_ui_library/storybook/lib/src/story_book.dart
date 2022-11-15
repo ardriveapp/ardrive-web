@@ -5,6 +5,7 @@ import 'package:storybook/src/text_field.dart';
 import 'package:storybook/src/toggle.dart';
 import 'package:widgetbook/widgetbook.dart';
 
+import 'card.dart';
 import 'colors.dart';
 
 class StoryBook extends StatelessWidget {
@@ -32,6 +33,7 @@ class StoryBook extends StatelessWidget {
             getTypographyCategory(true),
             getTypographyCategory(false),
             button(),
+            card(),
           ]),
     );
   }

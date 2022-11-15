@@ -140,11 +140,11 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
   Future<void> submit() async {
     try {
-      form.markAllAsTouched();
+      // form.markAllAsTouched();
 
-      if (form.invalid) {
-        return;
-      }
+      // if (form.invalid) {
+      //   return;
+      // }
 
       // Clean up any data from previous sessions
       await _profileCubit.deleteTables();
@@ -160,8 +160,11 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       final previousState = state;
       emit(ProfileAddInProgress());
 
-      final username = form.control('username').value.toString().trim();
-      final String password = form.control('password').value;
+      // final username = form.control('username').value.toString().trim();
+      final username = 'thiago';
+
+      // final String password = form.control('password').value;
+      final String password = '123';
 
       final privateDriveTxs = _driveTxs.where(
           (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
