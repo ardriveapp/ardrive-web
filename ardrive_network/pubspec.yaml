@@ -16,8 +16,9 @@ script_runner:
   line_length: 80
   scripts:
     - webserver: dart run test/webserver.dart
-    - web-test: flutter test --platform chrome
-    - vm-test: flutter test
+    - test-web: flutter test --platform chrome
+    - test-vm: flutter test
+    - test: scr webserver & sleep 10 && scr test-vm && scr test-web && exit 0
 
 dependencies:
   dio: ^4.0.6

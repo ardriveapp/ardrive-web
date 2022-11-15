@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:convert';
+import 'dart:math';
 
 import 'package:ardrive_network/src/responses.dart';
 import 'package:ardrive_network/src/utils.dart';
 import 'package:dio/dio.dart';
+import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isolated_worker/js_isolated_worker.dart';
 
@@ -33,36 +34,61 @@ class ArdriveNetwork {
     }
 
     if (retries > 0) {
-      final dioRetry = getDioRetrySettings(
-        dio: dio,
-        retries: retries,
-        retryDelayMs: retryDelayMs,
-        retryAttempts: retryAttempts,
-        noLogs: noLogs,
-      );
-
-      dio.interceptors.add(dioRetry);
+      dio.interceptors.add(_getDioRetrySettings(dio));
     }
 
     return dio;
   }
 
-  Future<ArDriveNetworkResponse> getJson(String url) async {
+  Future<ArDriveNetworkResponse> get({
+    required String url,
+    bool isJson = false,
+    bool asBytes = false,
+  }) async {
+    checkIsJsonAndAsBytesParams(isJson, asBytes);
+
     if (kIsWeb) {
       if (await _loadWebWorkers()) {
-        return await _getJsonWeb(url);
+        return await _getWeb(
+          url: url,
+          isJson: isJson,
+          asBytes: asBytes,
+        );
       }
     }
 
-    return await compute(_getJsonIO, url);
+    final Map getIOParams = Map();
+    getIOParams['url'] = url;
+    getIOParams['asBytes'] = asBytes;
+
+    return await compute(_getIO, getIOParams);
   }
 
-  Future<ArDriveNetworkResponse> _getJsonIO(String url) async {
+  Future<ArDriveNetworkResponse> getJson(String url) async {
+    return get(url: url, isJson: true);
+  }
+
+  Future<ArDriveNetworkResponse> getAsBytes(String url) async {
+    return get(url: url, asBytes: true);
+  }
+
+  Future<ArDriveNetworkResponse> _getIO(Map params) async {
+    final String url = params['url'];
+    final bool asBytes = params['asBytes'];
+
     try {
-      Response<String> response = await this.dio().get(url);
+      var response;
+      if (asBytes) {
+        response = await this.dio().get<List<int>>(
+              url,
+              options: Options(responseType: ResponseType.bytes),
+            );
+      } else {
+        response = await this.dio().get(url);
+      }
 
       return ArDriveNetworkResponse(
-          data: jsonDecode(response.data ?? ''),
+          data: response.data,
           statusCode: response.statusCode,
           statusMessage: response.statusMessage,
           retryAttempts: this.retryAttempts);
@@ -72,16 +98,22 @@ class ArdriveNetwork {
     }
   }
 
-  Future<ArDriveNetworkResponse> _getJsonWeb(String url) async {
+  Future<ArDriveNetworkResponse> _getWeb({
+    required String url,
+    required bool isJson,
+    required bool asBytes,
+  }) async {
     try {
       final LinkedHashMap<dynamic, dynamic> response =
           await JsIsolatedWorker().run(
-        functionName: 'getJson',
+        functionName: 'get',
         arguments: [
           url,
-          this.retries,
-          this.retryDelayMs,
-          this.noLogs,
+          isJson,
+          asBytes,
+          retries,
+          retryDelayMs,
+          noLogs,
         ],
       );
 
@@ -92,7 +124,7 @@ class ArdriveNetwork {
       }
 
       return ArDriveNetworkResponse(
-        data: response['data'],
+        data: asBytes ? Uint8List.view(response['data']) : response['data'],
         statusCode: response['statusCode'],
         statusMessage: response['statusMessage'],
         retryAttempts: response['retryAttempts'],
@@ -117,5 +149,32 @@ class ArdriveNetwork {
     } else {
       throw Exception('ArDriveNetwork Web worker is not available!');
     }
+  }
+
+  RetryInterceptor _getDioRetrySettings(Dio dio) {
+    Duration retryDelay(int retryCount) =>
+        Duration(milliseconds: retryDelayMs) * pow(1.5, retryCount);
+
+    List<Duration> retryDelays =
+        List.generate(retries, (index) => retryDelay(index));
+
+    FutureOr<bool> setRetryAttempt(DioError error, int attempt) async {
+      bool shouldRetry =
+          await RetryInterceptor.defaultRetryEvaluator(error, attempt);
+
+      if (shouldRetry) {
+        retryAttempts = attempt;
+      }
+
+      return shouldRetry;
+    }
+
+    return RetryInterceptor(
+      dio: dio,
+      logPrint: noLogs ? null : print,
+      retries: retries,
+      retryDelays: retryDelays,
+      retryEvaluator: setRetryAttempt,
+    );
   }
 }

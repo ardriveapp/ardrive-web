@@ -11,10 +11,26 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function retry(url, retries, retryDelayMs, noLogs, retryAttempts) {
+async function retry(
+  url,
+  isJson,
+  asBytes,
+  retries,
+  retryDelayMs,
+  noLogs,
+  retryAttempts,
+) {
   await delay(retryDelay(retryAttempts, retryDelayMs));
 
-  return await getJson([url, retries - 1, retryDelayMs, noLogs, retryAttempts]);
+  return await get([
+    url,
+    isJson,
+    asBytes,
+    retries - 1,
+    retryDelayMs,
+    noLogs,
+    retryAttempts,
+  ]);
 }
 
 function formatLog(url, statusCode, statusMessage, retryAttempts) {
@@ -27,20 +43,17 @@ function isStatusCodeError(code) {
   return code >= 400 && code <= 599;
 }
 
-async function getJson(params) {
+async function get(params) {
   const url = params[0];
-  const retries = params[1];
-  const retryDelayMs = params[2];
-  const noLogs = params[3];
-  let retryAttempts = params[4] ?? 0;
+  const isJson = params[1];
+  const asBytes = params[2];
+  const retries = params[3];
+  const retryDelayMs = params[4];
+  const noLogs = params[5];
+  let retryAttempts = params[6] ?? 0;
 
   try {
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+    const response = await fetch(url);
 
     const statusCode = response.status;
 
@@ -56,7 +69,15 @@ async function getJson(params) {
         console.warn(`Network Request Retry\n${log}`);
       }
 
-      return await retry(url, retries, retryDelayMs, noLogs, retryAttempts + 1);
+      return await retry(
+        url,
+        isJson,
+        asBytes,
+        retries,
+        retryDelayMs,
+        noLogs,
+        retryAttempts + 1,
+      );
     } else {
       if (isStatusCodeError(statusCode)) {
         const log = formatLog(
@@ -73,21 +94,17 @@ async function getJson(params) {
       }
     }
 
-    // if (retries === 0 || (retries === 0 && isStatusCodeError(statusCode))) {
-    //   const log = formatLog(
-    //     url,
-    //     response.status,
-    //     response.statusText,
-    //     retryAttempts,
-    //   );
+    let data;
+    if (isJson) {
+      data = await response.json();
+    }
+    if (asBytes) {
+      data = await response.arrayBuffer();
+    }
 
-    //   return {
-    //     error: `Network Request Error\n${log}`,
-    //     retryAttempts,
-    //   };
-    // }
-
-    const data = await response.json();
+    if (!(isJson || asBytes)) {
+      data = await response.text();
+    }
 
     return {
       statusCode: response.status,

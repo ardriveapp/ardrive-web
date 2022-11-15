@@ -40,6 +40,16 @@ Future<void> main() async {
     ),
   );
 
+  app.get(
+    '/getText',
+    (Request request) => Response.ok(
+      'ok',
+      headers: {
+        'access-control-allow-origin': '*',
+      },
+    ),
+  );
+
   retryStatusCodes.forEach((code) {
     app.get(
       '/$code',
