@@ -4,8 +4,27 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('HeightRange class', () {
-    test('throws if fed with non-positive integers', () {});
-    test('can be constructed with healthy inputs', () {});
+    test('throws if fed with non-positive integers', () {
+      expect(
+        () => HeightRange(rangeSegments: [Range(start: -1, end: 0)]),
+        throwsA(isA<BadHeightRange>()),
+      );
+    });
+
+    test('can be constructed with healthy inputs', () {
+      final validRanges = [
+        Range(start: 0, end: 0),
+        Range(start: 0, end: 100),
+        Range(start: 50, end: 200),
+        Range(start: 0, end: 1),
+      ];
+      for (Range range in validRanges) {
+        final heightRange = HeightRange(rangeSegments: [range]);
+        expect(heightRange.rangeSegments.length, 1);
+        expect(heightRange.rangeSegments[0], range);
+      }
+    });
+
     group('difference method', () {
       final List<DiffExpectation> expectations = [
         DiffExpectation(

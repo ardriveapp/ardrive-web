@@ -1,9 +1,16 @@
 import 'package:ardrive/utils/snapshots/range.dart';
+import 'package:equatable/equatable.dart';
 
 class HeightRange {
   final List<Range> rangeSegments;
 
-  HeightRange({required this.rangeSegments});
+  HeightRange({required this.rangeSegments}) {
+    for (Range range in rangeSegments) {
+      if (range.start < 0 || range.end < 0) {
+        throw BadHeightRange(start: range.start, end: range.end);
+      }
+    }
+  }
 
   static HeightRange difference(HeightRange r_1, HeightRange r_2) {
     List<Range> prevDiff = r_1.rangeSegments;
@@ -51,5 +58,22 @@ class HeightRange {
     }
     normalized.add(value);
     return normalized;
+  }
+}
+
+class BadHeightRange implements Exception, Equatable {
+  final int start;
+  final int end;
+  BadHeightRange({required this.start, required this.end});
+
+  @override
+  List<Object?> get props => [start, end];
+
+  @override
+  bool? get stringify => true;
+
+  @override
+  String toString() {
+    return 'Bad height range: ($start; $end)';
   }
 }
