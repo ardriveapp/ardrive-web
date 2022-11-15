@@ -37,7 +37,7 @@ jobs:
         run: flutter test
 
   storybook:
-    needs: test
+    # needs: test
     runs-on: ubuntu-latest
     defaults:
       run:
