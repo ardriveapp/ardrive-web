@@ -3,13 +3,13 @@
     "default": "ardrive-web"
   },
   "targets": {
-    "ardrive-storybook": {
+    "ardrive-web": {
       "hosting": {
-        "storybook": [
-          "storybook"
-        ],
         "web": [
-          "web"
+          "ardrive-web"
+        ],
+        "storybook": [
+          "ardrive-storybook-d046e"
         ]
       }
     }
