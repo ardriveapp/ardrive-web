@@ -38,7 +38,7 @@ class AppShellState extends State<AppShell> {
             //Used to prevent the dialog being shown multiple times.
             _showWalletSwitchDialog = false;
           });
-          AppBar _buildAppBar() => AppBar(
+          AppBar buildAppBar() => AppBar(
                 elevation: 0.0,
                 backgroundColor: Colors.transparent,
                 actions: [
@@ -71,7 +71,7 @@ class AppShellState extends State<AppShell> {
                   ),
                 ],
               );
-          Widget _buildPage(scaffold) => BlocBuilder<SyncCubit, SyncState>(
+          Widget buildPage(scaffold) => BlocBuilder<SyncCubit, SyncState>(
                 builder: (context, syncState) => syncState is SyncInProgress
                     ? Stack(
                         children: [
@@ -138,22 +138,22 @@ class AppShellState extends State<AppShell> {
                     : scaffold,
               );
           return ScreenTypeLayout(
-            desktop: _buildPage(
+            desktop: buildPage(
               Row(
                 children: [
                   const AppDrawer(),
                   Expanded(
                     child: Scaffold(
-                      appBar: _buildAppBar(),
+                      appBar: buildAppBar(),
                       body: widget.page,
                     ),
                   ),
                 ],
               ),
             ),
-            mobile: _buildPage(
+            mobile: buildPage(
               Scaffold(
-                appBar: _buildAppBar(),
+                appBar: buildAppBar(),
                 drawer: const AppDrawer(),
                 body: Row(
                   children: [

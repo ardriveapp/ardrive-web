@@ -4,5 +4,12 @@
   },
   "bloc.newBlocTemplate": "equatable",
   "bloc.newCubitTemplate": "equatable",
-  "dart.additionalAnalyzerFileExtensions": ["drift"]
+  "dart.additionalAnalyzerFileExtensions": [
+    "drift"
+  ],
+  "cSpell.words": [
+    "Hkdf",
+    "hmac",
+    "Widgetbook"
+  ]
 }

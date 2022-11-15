@@ -10,7 +10,7 @@ class ArDriveColors {
     Color? themeFgOnDisabled,
     Color? themeFgDisabled,
     Color? themeBgSurface,
-    Color? themeGbmuted,
+    Color? themeGbMuted,
     Color? themeBgSubtle,
     Color? themeBgCanvas,
     Color? themeAccentBrand,
@@ -52,7 +52,7 @@ class ArDriveColors {
     this.themeFgOnDisabled = themeFgOnDisabled ?? grey.shade300;
     this.themeFgDisabled = themeFgDisabled ?? grey.shade600;
     this.themeBgSurface = themeBgSurface ?? grey.shade900;
-    this.themeGbmuted = themeGbmuted ?? grey.shade600;
+    this.themeGbMuted = themeGbMuted ?? grey.shade600;
     this.themeBgSubtle = themeBgSubtle ?? grey.shade900;
     this.themeBgCanvas = themeBgCanvas ?? black;
     this.themeAccentBrand = themeAccentBrand ?? red.shade500;
@@ -96,7 +96,7 @@ class ArDriveColors {
         themeFgOnDisabled: grey.shade600,
         themeFgDisabled: grey.shade400,
         themeBgSurface: white,
-        themeGbmuted: grey.shade300,
+        themeGbMuted: grey.shade300,
         themeBgSubtle: grey.shade200,
         themeBgCanvas: grey.shade50,
         themeWarningFg: yellow.shade600,
@@ -125,7 +125,7 @@ class ArDriveColors {
 
   /// Background
   late Color themeBgSurface;
-  late Color themeGbmuted;
+  late Color themeGbMuted;
   late Color themeBgSubtle;
   late Color themeBgCanvas;
 

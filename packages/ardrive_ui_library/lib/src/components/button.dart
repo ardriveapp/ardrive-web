@@ -47,7 +47,7 @@ class _ArDriveButtonState extends State<ArDriveButton> {
             maximumSize: _maxSize,
             minimumSize: _minimumSize,
             shape: _shapeOutlined,
-            side: _borderSise,
+            side: _borderSize,
             padding: _padding,
           ),
           child: Text(
@@ -86,7 +86,7 @@ class _ArDriveButtonState extends State<ArDriveButton> {
           );
         },
       );
-  MaterialStateProperty<BorderSide?> get _borderSise =>
+  MaterialStateProperty<BorderSide?> get _borderSize =>
       MaterialStateProperty.resolveWith<BorderSide?>(
         (Set<MaterialState> states) {
           return BorderSide(
