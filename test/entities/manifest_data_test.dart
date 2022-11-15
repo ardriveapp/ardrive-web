@@ -228,7 +228,8 @@ void main() {
             ManifestData.fromFolderNode(folderNode: stubRootFolderNode);
         final wallet = getTestWallet();
 
-        SystemPlatform.setMockPlatform(platform: 'Android');
+        AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+
         final dataItem = await manifest.asPreparedDataItem(
           owner: await wallet.getOwner(),
         );

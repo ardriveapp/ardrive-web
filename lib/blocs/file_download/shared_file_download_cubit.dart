@@ -71,7 +71,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(FileDownloadFailure());
+    emit(const FileDownloadFailure(FileDownloadFailureReason.unknownError));
     super.onError(error, stackTrace);
 
     log('Failed to download shared file: $error $stackTrace');

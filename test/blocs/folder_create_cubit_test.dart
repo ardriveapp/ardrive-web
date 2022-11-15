@@ -36,7 +36,7 @@ void main() {
         localStore: await LocalKeyValueStore.getInstance(),
       );
 
-      SystemPlatform.setMockPlatform(platform: 'unknown');
+      AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
       arweave = ArweaveService(
         Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
       );

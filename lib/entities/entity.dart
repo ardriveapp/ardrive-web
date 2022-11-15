@@ -92,7 +92,7 @@ extension TransactionUtils on TransactionBase {
     DateTime? unixTime,
     bool isWeb = kIsWeb,
   }) {
-    final String platform = SystemPlatform.platform;
+    final String platform = AppPlatform.getPlatform().name;
     addTag(EntityTag.appName, 'ArDrive-App');
     addTag(
       EntityTag.appPlatform,
