@@ -39,9 +39,6 @@ jobs:
   storybook:
     # needs: test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./packages/ardrive_ui_library/storybook
     steps:
     # Checkout
       - uses: actions/checkout@v3
@@ -54,6 +51,10 @@ jobs:
           channel: 'stable'
       - name: Build app
         run: |
+          flutter pub get
+          flutter pub run build_runner build --delete-conflicting-outputs
+          flutter build web --release
+          cd packages/ardrive_ui_library/storybook
           flutter pub get
           flutter build web --release
       # Disribute to Firebase
