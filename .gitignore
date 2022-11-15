@@ -44,6 +44,7 @@ linux/flutter/ephemeral
 windows/flutter/ephemeral
 
 # Web related
+lib/generated_plugin_registrant.dart
 
 # Symbolication related
 app.*.symbols
