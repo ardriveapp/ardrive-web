@@ -1,67 +1,121 @@
+import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
-import 'dart:math';
 
+import 'package:ardrive_network/src/responses.dart';
+import 'package:ardrive_network/src/utils.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/retry.dart';
 import 'package:isolated_worker/js_isolated_worker.dart';
 
-const List<String> _jsScript = <String>['ardrive-network.js'];
-
 class ArdriveNetwork {
-  bool _areScriptsImported = false;
   late int retries;
   late int retryDelayMs;
+  late bool noLogs;
+  bool _areScriptsImported = false;
+  int retryAttempts = 0;
 
-  ArdriveNetwork({int retries = 8, int retryDelayMs = 200}) {
+  ArdriveNetwork({
+    int retries = 8,
+    int retryDelayMs = 200,
+    noLogs = false,
+  }) {
     this.retries = retries;
     this.retryDelayMs = retryDelayMs;
+    this.noLogs = noLogs;
   }
 
-  Future<LinkedHashMap<dynamic, dynamic>> getJson(String url) async {
+  Dio dio() {
+    final dio = Dio();
+
+    if (!noLogs) {
+      dio.interceptors.add(LogInterceptor());
+    }
+
+    if (retries > 0) {
+      final dioRetry = getDioRetrySettings(
+        dio: dio,
+        retries: retries,
+        retryDelayMs: retryDelayMs,
+        retryAttempts: retryAttempts,
+        noLogs: noLogs,
+      );
+
+      dio.interceptors.add(dioRetry);
+    }
+
+    return dio;
+  }
+
+  Future<ArDriveNetworkResponse> getJson(String url) async {
     if (kIsWeb) {
-      if (!_areScriptsImported) {
-        await JsIsolatedWorker().importScripts(_jsScript);
-        _areScriptsImported = true;
+      if (await _loadWebWorkers()) {
+        return await _getJsonWeb(url);
+      }
+    }
+
+    return await compute(_getJsonIO, url);
+  }
+
+  Future<ArDriveNetworkResponse> _getJsonIO(String url) async {
+    try {
+      Response<String> response = await this.dio().get(url);
+
+      return ArDriveNetworkResponse(
+          data: jsonDecode(response.data ?? ''),
+          statusCode: response.statusCode,
+          statusMessage: response.statusMessage,
+          retryAttempts: this.retryAttempts);
+    } catch (error) {
+      throw ArDriveNetworkException(
+          retryAttempts: this.retryAttempts, dioException: error);
+    }
+  }
+
+  Future<ArDriveNetworkResponse> _getJsonWeb(String url) async {
+    try {
+      final LinkedHashMap<dynamic, dynamic> response =
+          await JsIsolatedWorker().run(
+        functionName: 'getJson',
+        arguments: [
+          url,
+          this.retries,
+          this.retryDelayMs,
+          this.noLogs,
+        ],
+      );
+
+      if (response['error'] != null) {
+        this.retryAttempts = response['retryAttempts'];
+
+        throw response['error'];
       }
 
-      return await JsIsolatedWorker().run(
-        functionName: 'getJson',
-        arguments: url,
-      ) as LinkedHashMap<dynamic, dynamic>;
-    }
-
-    final computedData = await compute(_getJsonCompute, url);
-    return computedData;
-  }
-
-  bool _defaultWhenError(Object error, StackTrace stackTrace) => true;
-
-  Future<LinkedHashMap<dynamic, dynamic>> _getJsonCompute(String url) async {
-    final client = RetryClient(http.Client(),
-        retries: retries, delay: _retryDelay, whenError: _defaultWhenError);
-    final uri = Uri.parse(url);
-    http.Response response;
-
-    try {
-      response = await client.get(uri);
-      final dynamic jsonResponse = jsonDecode(response.body);
-      final result = LinkedHashMap<String, dynamic>();
-
-      result['statusCode'] = response.statusCode;
-      result['reasonPhrase'] = response.reasonPhrase;
-      result['jsonResponse'] = jsonResponse;
-      return result;
+      return ArDriveNetworkResponse(
+        data: response['data'],
+        statusCode: response['statusCode'],
+        statusMessage: response['statusMessage'],
+        retryAttempts: response['retryAttempts'],
+      );
     } catch (error) {
-      final err = LinkedHashMap<String, dynamic>();
-      err['err'] = error;
-      return err;
-    } finally {
-      client.close();
+      throw ArDriveNetworkException(
+          retryAttempts: this.retryAttempts, dioException: error);
     }
   }
 
-  Duration _retryDelay(int retryCount) =>
-      Duration(milliseconds: retryDelayMs) * pow(1.5, retryCount);
+  Future<bool> _loadWebWorkers() async {
+    const List<String> _jsScript = <String>['ardrive-network.js'];
+    bool jsLoaded = false;
+
+    if (!_areScriptsImported) {
+      jsLoaded = await JsIsolatedWorker().importScripts(_jsScript);
+      _areScriptsImported = !jsLoaded;
+    }
+
+    if (jsLoaded) {
+      return true;
+    } else {
+      throw Exception('ArDriveNetwork Web worker is not available!');
+    }
+  }
 }

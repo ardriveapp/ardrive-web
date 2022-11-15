@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
@@ -746,19 +745,12 @@ class ArweaveService {
       );
 
   Future<double> getArUsdConversionRate() async {
-    const String coinGeckApi = 'https://mock.codes/500';
-    final LinkedHashMap<dynamic, dynamic> responseMap =
-        await ArdriveNetwork().getJson(coinGeckApi);
-    print("===============================");
-    print(responseMap);
-    print("===============================");
-    final Object? error = responseMap['err'];
-    if (error != null) {
-      throw error;
-    }
-    final jsonResponse = responseMap['jsonResponse'];
+    const String coinGeckoApi =
+        'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd';
 
-    return jsonResponse['arweave']['usd'];
+    final response = await ArdriveNetwork().getJson(coinGeckoApi);
+
+    return response.data?['arweave']['usd'];
   }
 }
 
