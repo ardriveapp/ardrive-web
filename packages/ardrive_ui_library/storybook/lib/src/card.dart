@@ -4,31 +4,33 @@ import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookCategory card() {
   return WidgetbookCategory(name: 'Card', widgets: [
-    WidgetbookComponent(name: 'Card', useCases: [
+    WidgetbookComponent(name: 'Card Dark', useCases: [
       WidgetbookUseCase(
-          name: 'Light',
+          name: 'With content',
+          builder: (context) {
+            return Center(
+              child: ArDriveTheme(
+                child: _cardWithContent(),
+              ),
+            );
+          }),
+    ]),
+    WidgetbookComponent(name: 'Card Light', useCases: [
+      WidgetbookUseCase(
+          name: 'With content',
           builder: (context) {
             return Center(
               child: ArDriveTheme(
                 themeData: lightTheme(),
-                child: _card(),
+                child: _cardWithContent(),
               ),
             );
           }),
-      WidgetbookUseCase(
-          name: 'Dark',
-          builder: (context) {
-            return Center(
-              child: ArDriveTheme(
-                child: _card(),
-              ),
-            );
-          })
     ]),
   ]);
 }
-
-Widget _card() {
+ 
+Widget _cardWithContent() {
   return ArDriveCard(
     contentPadding: const EdgeInsets.all(16),
     content: Row(
@@ -42,7 +44,7 @@ Widget _card() {
               'Success',
               style: ArDriveTypography.body.smallBold(),
             ),
-            SizedBox(
+            const SizedBox(
               height: 8,
             ),
             Text(
@@ -51,7 +53,7 @@ Widget _card() {
             ),
           ],
         ),
-        Icon(Icons.close)
+        const Icon(Icons.close)
       ],
     ),
   );
