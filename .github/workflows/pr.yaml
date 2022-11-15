@@ -73,13 +73,13 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      working-directory: ./packages/ardrive_ui_library/storybook
     # Checkout
       - uses: actions/checkout@v3
         with:
           persist-credentials: false
       # Install Flutter
       - uses: subosito/flutter-action@v2
+        working-directory: ./packages/ardrive_ui_library/storybook
         with:
           flutter-version: '3.0.5'
           channel: 'stable'
@@ -89,6 +89,7 @@ jobs:
           flutter build web --release
       # Disribute to Firebase
       - uses: FirebaseExtended/action-hosting-deploy@v0
+        working-directory: ./packages/ardrive_ui_library/storybook
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
