@@ -1,6 +1,7 @@
 {
   "hosting": {
-    "public": "build/web",
+    "target": "web",
+    "public": "packages/ardrive_ui_library/storybook/build/web",
     "ignore": [
       "firebase.json",
       "**/.*",
