@@ -33,7 +33,7 @@ class ArDriveCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor ??
             ArDriveTheme.of(context).themeData.colors.themeBgSurface,
-        borderRadius: BorderRadius.circular(borderRadius ?? 10),
+        borderRadius: BorderRadius.circular(borderRadius ?? 8),
         boxShadow: [_getBoxShadow(boxShadow, context)],
       ),
       child: Padding(
