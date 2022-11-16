@@ -1,7 +1,12 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
+import 'package:storybook/src/button.dart';
+import 'package:storybook/src/shadows.dart';
+import 'package:storybook/src/text_field.dart';
+import 'package:storybook/src/toggle.dart';
 import 'package:widgetbook/widgetbook.dart';
 
+import 'card.dart';
 import 'colors.dart';
 
 class StoryBook extends StatelessWidget {
@@ -10,7 +15,7 @@ class StoryBook extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveApp(
-      builder: (context) => Widgetbook(
+      builder: (context) => Widgetbook.material(
           themes: [
             WidgetbookTheme(
               name: 'Dark',
@@ -23,165 +28,15 @@ class StoryBook extends StatelessWidget {
           ],
           appInfo: AppInfo(name: 'ArDrive StoryBook'),
           categories: [
+            toggle(),
+            textField(),
+            loginForm(),
+            toggle(),
             getTypographyCategory(true),
             getTypographyCategory(false),
-            WidgetbookCategory(name: 'Toggle', widgets: [
-              WidgetbookComponent(name: 'Toggle Dark', useCases: [
-                WidgetbookUseCase(
-                  name: 'On',
-                  builder: (context) {
-                    return const Center(
-                      child: ArDriveToggle(
-                        initialState: ToggleState.on,
-                      ),
-                    );
-                  },
-                ),
-                WidgetbookUseCase(
-                  name: 'Off',
-                  builder: (context) {
-                    return const Center(
-                      child: ArDriveToggle(
-                        initialState: ToggleState.off,
-                      ),
-                    );
-                  },
-                ),
-                WidgetbookUseCase(
-                  name: 'disabled',
-                  builder: (context) {
-                    return const Center(
-                      child: ArDriveToggle(
-                        initialState: ToggleState.disabled,
-                      ),
-                    );
-                  },
-                )
-              ]),
-              WidgetbookComponent(name: 'Toggle Light', useCases: [
-                WidgetbookUseCase(
-                  name: 'On',
-                  builder: (context) {
-                    return Center(
-                      child: ArDriveTheme(
-                        themeData: lightTheme(),
-                        child: const ArDriveToggle(
-                          initialState: ToggleState.on,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                WidgetbookUseCase(
-                  name: 'Off',
-                  builder: (context) {
-                    return Center(
-                      child: ArDriveTheme(
-                        themeData: lightTheme(),
-                        child: const ArDriveToggle(
-                          initialState: ToggleState.off,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                WidgetbookUseCase(
-                  name: 'disabled',
-                  builder: (context) {
-                    return Center(
-                        child: ArDriveTheme(
-                      themeData: lightTheme(),
-                      child: const ArDriveToggle(
-                        initialState: ToggleState.disabled,
-                      ),
-                    ));
-                  },
-                )
-              ])
-            ]),
-            WidgetbookCategory(name: 'Button', widgets: [
-              WidgetbookComponent(name: 'Button', useCases: [
-                WidgetbookUseCase(
-                  name: 'Primary',
-                  builder: (context) {
-                    return Center(
-                      child: ArDriveButton(
-                        onPressed: () {
-                          debugPrint('Primary Button pressed');
-                        },
-                        text: 'Add Profile',
-                      ),
-                    );
-                  },
-                ),
-                WidgetbookUseCase(
-                  name: 'Secundary Light',
-                  builder: (context) {
-                    return Center(
-                      child: ArDriveTheme(
-                        themeData: lightTheme(),
-                        child: ArDriveButton(
-                          style: ArDriveButtonStyle.secondary,
-                          onPressed: () {
-                            debugPrint('Secundary Light Button pressed');
-                          },
-                          text: 'Add Profile',
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                WidgetbookUseCase(
-                  name: 'Secundary Dark',
-                  builder: (context) {
-                    return Center(
-                      child: ArDriveTheme(
-                        child: ArDriveButton(
-                          style: ArDriveButtonStyle.secondary,
-                          onPressed: () {
-                            debugPrint('Secundary Dark Button pressed');
-                          },
-                          text: 'Add Profile',
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                WidgetbookUseCase(
-                  name: 'Tertiary Dark',
-                  builder: (context) {
-                    return Center(
-                      child: ArDriveTheme(
-                        child: ArDriveButton(
-                          style: ArDriveButtonStyle.tertiary,
-                          onPressed: () {
-                            debugPrint('Tertiary Dark Button pressed');
-                          },
-                          text: 'Add Profile',
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                WidgetbookUseCase(
-                  name: 'Tertiary Light',
-                  builder: (context) {
-                    return Center(
-                      child: ArDriveTheme(
-                        themeData: lightTheme(),
-                        child: ArDriveButton(
-                          style: ArDriveButtonStyle.tertiary,
-                          onPressed: () {
-                            debugPrint('Tertiary Light Button pressed');
-                          },
-                          text: 'Add Profile',
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ])
-            ])
+            shadows(),
+            button(),
+            card(),
           ]),
     );
   }

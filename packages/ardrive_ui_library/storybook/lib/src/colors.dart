@@ -54,8 +54,8 @@ WidgetbookCategory getTypographyCategory(bool isDark) {
           builder: (context) => _getContainer(colors.themeBgSurface),
         ),
         WidgetbookUseCase(
-          name: 'themeGbmuted',
-          builder: (context) => _getContainer(colors.themeGbmuted),
+          name: 'themeGbMuted',
+          builder: (context) => _getContainer(colors.themeGbMuted),
         ),
         WidgetbookUseCase(
           name: 'themeBgSubtle',
@@ -75,6 +75,26 @@ WidgetbookCategory getTypographyCategory(bool isDark) {
         WidgetbookUseCase(
           name: 'themeAccentBrand',
           builder: (context) => _getContainer(colors.themeAccentBrand),
+        ),
+        WidgetbookUseCase(
+          name: 'themeAccentDisabled',
+          builder: (context) => _getContainer(colors.themeAccentDisabled),
+        ),
+        WidgetbookUseCase(
+          name: 'themeAccentDefault',
+          builder: (context) => _getContainer(colors.themeAccentDefault),
+        ),
+        WidgetbookUseCase(
+          name: 'themeAccentEmphasis',
+          builder: (context) => _getContainer(colors.themeAccentEmphasis),
+        ),
+        WidgetbookUseCase(
+          name: 'themeAccentMuted',
+          builder: (context) => _getContainer(colors.themeAccentMuted),
+        ),
+        WidgetbookUseCase(
+          name: 'themeAccentSubtle',
+          builder: (context) => _getContainer(colors.themeAccentSubtle),
         ),
       ])
     ]);
@@ -244,6 +264,7 @@ WidgetbookCategory getTypographyCategory(bool isDark) {
   return WidgetbookCategory(
       name: isDark ? 'Light Colors' : 'Dark Colors',
       folders: [
+        getAccentColors(),
         getForegroundColors(),
         getBackgroundColors(),
         getWarningColors(),
@@ -252,5 +273,6 @@ WidgetbookCategory getTypographyCategory(bool isDark) {
         getInputColors(),
         getSuccessColors(),
         getOverlayColors(),
+        getAccentColors(),
       ]);
 }

@@ -10,7 +10,7 @@ class ArDriveColors {
     Color? themeFgOnDisabled,
     Color? themeFgDisabled,
     Color? themeBgSurface,
-    Color? themeGbmuted,
+    Color? themeGbMuted,
     Color? themeBgSubtle,
     Color? themeBgCanvas,
     Color? themeAccentBrand,
@@ -44,6 +44,12 @@ class ArDriveColors {
     Color? themeAccentDefault,
     Color? themeAccentDisabled,
     Color? themeAccentSubtle,
+    Color? themeInputBorderDefault,
+    Color? themeErrorOnEmphasis,
+    Color? themeAccentEmphasis,
+    Color? themeErrorDefault,
+    Color? themeSuccessDefault,
+    Color? shadow,
   }) {
     this.themeFgDefault = themeFgDefault ?? white;
     this.themeFgMuted = themeFgMuted ?? grey.shade100;
@@ -52,7 +58,7 @@ class ArDriveColors {
     this.themeFgOnDisabled = themeFgOnDisabled ?? grey.shade300;
     this.themeFgDisabled = themeFgDisabled ?? grey.shade600;
     this.themeBgSurface = themeBgSurface ?? grey.shade900;
-    this.themeGbmuted = themeGbmuted ?? grey.shade600;
+    this.themeGbMuted = themeGbMuted ?? grey.shade600;
     this.themeBgSubtle = themeBgSubtle ?? grey.shade900;
     this.themeBgCanvas = themeBgCanvas ?? black;
     this.themeAccentBrand = themeAccentBrand ?? red.shade500;
@@ -86,6 +92,12 @@ class ArDriveColors {
     this.themeAccentDefault = blue;
     this.themeAccentDisabled = grey.shade600;
     this.themeAccentSubtle = themeAccentSubtle ?? blue.withOpacity(0.95);
+    this.themeInputBorderDefault = themeInputBorderDefault ?? grey.shade300;
+    this.themeErrorOnEmphasis = themeErrorOnEmphasis ?? red;
+    this.themeAccentEmphasis = themeAccentEmphasis ?? blue.shade600;
+    this.themeErrorDefault = themeErrorDefault ?? red.shade400;
+    this.themeSuccessDefault = themeSuccessDefault ?? green.shade400;
+    this.shadow = shadow ?? shadowColor;
   }
 
   factory ArDriveColors.light() => ArDriveColors(
@@ -96,7 +108,7 @@ class ArDriveColors {
         themeFgOnDisabled: grey.shade600,
         themeFgDisabled: grey.shade400,
         themeBgSurface: white,
-        themeGbmuted: grey.shade300,
+        themeGbMuted: grey.shade300,
         themeBgSubtle: grey.shade200,
         themeBgCanvas: grey.shade50,
         themeWarningFg: yellow.shade600,
@@ -111,6 +123,7 @@ class ArDriveColors {
         themeOverlayBackground: black,
         themeAccentDefault: grey.shade400,
         themeAccentSubtle: blue.shade50,
+        shadow: shadowColorLight,
       );
 
   factory ArDriveColors.dark() => ArDriveColors();
@@ -125,7 +138,7 @@ class ArDriveColors {
 
   /// Background
   late Color themeBgSurface;
-  late Color themeGbmuted;
+  late Color themeGbMuted;
   late Color themeBgSubtle;
   late Color themeBgCanvas;
 
@@ -135,6 +148,7 @@ class ArDriveColors {
   late Color themeAccentDisabled;
   late Color themeAccentMuted;
   late Color themeAccentSubtle;
+  late Color themeAccentEmphasis;
 
   /// Warning
   late Color themeWarningFg;
@@ -148,6 +162,8 @@ class ArDriveColors {
   late Color themeErrorMuted;
   late Color themeErrorSubtle;
   late Color themeErrorOnError;
+  late Color themeErrorOnEmphasis;
+  late Color themeErrorDefault;
 
   /// Info
   late Color themeInfoFb;
@@ -162,6 +178,7 @@ class ArDriveColors {
   late Color themeSuccessMuted;
   late Color themeSuccessSubtle;
   late Color themeSuccessOnSuccess;
+  late Color themeSuccessDefault;
 
   /// Input
   late Color themeInputBackground;
@@ -169,10 +186,14 @@ class ArDriveColors {
   late Color themeInputPlaceholder;
   late Color themeInputBorderDisabled;
   late Color themeInputFbDisabled;
+  late Color themeInputBorderDefault;
 
   /// Border
   late Color themeBorderDefault;
 
   /// Overlay
   late Color themeOverlayBackground;
+
+  /// Shadow
+  late Color shadow;
 }
