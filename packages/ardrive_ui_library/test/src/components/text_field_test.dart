@@ -88,6 +88,7 @@ void main() {
     expect(find.bySubtype<AnimatedTextFieldLabel>(), findsNothing);
     expect(state.textFieldState, TextFieldState.error);
   });
+
   testWidgets(
       'Should  show the AnimatedTextFieldLabel when there is a error message and the state is error',
       (tester) async {
@@ -172,6 +173,7 @@ void main() {
     expect(state.textFieldState, TextFieldState.success);
     expect(find.text('Success message'), findsOneWidget);
   });
+
   testWidgets('Should  show the TextFieldLabel when there is a label message',
       (tester) async {
     const textField = ArDriveTextField(
