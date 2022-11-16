@@ -328,7 +328,6 @@ class ArDriveDataTableState extends State<ArDriveDataTable> {
         pageTo: pageTo,
         rowsPerPage: widget.rowsPerPage,
         showFirstAndLastButtons: widget.showFirstLastButtons,
-        
       ),
     ]);
 
@@ -355,6 +354,11 @@ class ArDriveDataTableState extends State<ArDriveDataTable> {
                 columnSpacing: widget.columnSpacing,
                 showBottomBorder: true,
                 rows: _getRows(_firstRowIndex, widget.rowsPerPage),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+                ),
               ),
             ),
             DefaultTextStyle(

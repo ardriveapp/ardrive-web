@@ -196,22 +196,20 @@ class StoryBook extends StatelessWidget {
                 WidgetbookUseCase(
                   name: 'Sample Data Table',
                   builder: (context) {
-                    return Center(
-                      child: ArDriveDataTable(
-                        showCheckboxColumn: false,
-                        source: WidgetBookExampleDataTableSource(),
-                        columns: const [
-                          DataColumn(
-                            label: Text('Name'),
-                          ),
-                          DataColumn(
-                            label: Text('Size'),
-                          ),
-                          DataColumn(
-                            label: Text('Date Created'),
-                          ),
-                        ],
-                      ),
+                    return ArDriveDataTable(
+                      showCheckboxColumn: false,
+                      source: WidgetBookExampleDataTableSource(),
+                      columns: const [
+                        DataColumn(
+                          label: Text('Name'),
+                        ),
+                        DataColumn(
+                          label: Text('Size'),
+                        ),
+                        DataColumn(
+                          label: Text('Date Created'),
+                        ),
+                      ],
                     );
                   },
                 ),
