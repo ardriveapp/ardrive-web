@@ -36,7 +36,7 @@ jobs:
       - name: Test
         run: flutter test
 
-  storybook:
+  web-storybook:
     # needs: test
     runs-on: ubuntu-latest
     steps:
