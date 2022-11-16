@@ -30,13 +30,26 @@ jobs:
           flutter-version: '3.3.5'
           channel: 'stable'
 
+      # Install Chrome
+      - uses: browser-actions/setup-chrome@latest
+        with:
+          chrome-version: stable
+
       - name: Install script_runner
         run: flutter pub global activate script_runner
 
       - name: Build app
         run: scr setup
 
-      - name: Test
+      - name: Test app
+        run: scr test
+
+      - name: Test ardrive_io
+        working-directory: ./ardrive_io
+        run: flutter test
+
+      - name: Test ardrive_network
+        working-directory: ./ardrive_network
         run: scr test
 
   web:
