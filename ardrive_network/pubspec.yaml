@@ -18,7 +18,7 @@ script_runner:
     - webserver: dart run test/webserver.dart
     - test-web: flutter test --platform chrome
     - test-vm: flutter test
-    - test: scr webserver & sleep 10 && scr test-vm && scr test-web && exit 0
+    - test: scr webserver & sleep 10 && scr test-vm && scr webserver & sleep 10 && scr test-web
 
 dependencies:
   dio: ^4.0.6
@@ -26,6 +26,7 @@ dependencies:
   equatable: ^2.0.5
   flutter:
     sdk: flutter
+  flutter_lints: ^2.0.1
   isolated_worker: ^0.1.1
   shelf: ^1.4.0
   shelf_router: ^1.1.3

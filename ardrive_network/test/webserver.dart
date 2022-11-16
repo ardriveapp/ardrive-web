@@ -29,10 +29,16 @@ List<int> retryStatusCodes = [
 Future<void> main() async {
   Router app = Router();
 
+  final server = await shelf_io.serve(
+    app,
+    InternetAddress.anyIPv4, // Allows external connections
+    8080,
+  );
+
   app.get(
     '/getJson',
     (Request request) => Response.ok(
-      JsonEncoder.withIndent(' ').convert({'message': 'ok'}),
+      const JsonEncoder.withIndent(' ').convert({'message': 'ok'}),
       headers: {
         'content-type': 'application/json',
         'access-control-allow-origin': '*',
@@ -50,14 +56,14 @@ Future<void> main() async {
     ),
   );
 
-  retryStatusCodes.forEach((code) {
+  for (int statusCode in retryStatusCodes) {
     app.get(
-      '/$code',
-      (Request request) => Response(code, headers: {
+      '/$statusCode',
+      (Request request) => Response(statusCode, headers: {
         'access-control-allow-origin': '*',
       }),
     );
-  });
+  }
 
   app.get(
     '/404',
@@ -66,10 +72,14 @@ Future<void> main() async {
     }),
   );
 
-  final server = await shelf_io.serve(
-    app,
-    InternetAddress.anyIPv4, // Allows external connections
-    8080,
+  app.get(
+    '/exit',
+    (Request request) {
+      server.close();
+      return Response(200, headers: {
+        'access-control-allow-origin': '*',
+      });
+    },
   );
 
   print('Serving at http://${server.address.host}:${server.port}');

@@ -10,21 +10,17 @@ import 'package:flutter/foundation.dart';
 import 'package:isolated_worker/js_isolated_worker.dart';
 
 class ArdriveNetwork {
-  late int retries;
-  late int retryDelayMs;
-  late bool noLogs;
+  int retries;
+  int retryDelayMs;
+  bool noLogs;
   bool _areScriptsImported = false;
   int retryAttempts = 0;
 
   ArdriveNetwork({
-    int retries = 8,
-    int retryDelayMs = 200,
-    noLogs = false,
-  }) {
-    this.retries = retries;
-    this.retryDelayMs = retryDelayMs;
-    this.noLogs = noLogs;
-  }
+    this.retries = 8,
+    this.retryDelayMs = 200,
+    this.noLogs = false,
+  });
 
   Dio dio() {
     final dio = Dio();
@@ -57,7 +53,7 @@ class ArdriveNetwork {
       }
     }
 
-    final Map getIOParams = Map();
+    final Map getIOParams = <String, dynamic>{};
     getIOParams['url'] = url;
     getIOParams['asBytes'] = asBytes;
 
@@ -77,24 +73,26 @@ class ArdriveNetwork {
     final bool asBytes = params['asBytes'];
 
     try {
-      var response;
+      Response response;
       if (asBytes) {
-        response = await this.dio().get<List<int>>(
-              url,
-              options: Options(responseType: ResponseType.bytes),
-            );
+        response = await dio().get<List<int>>(
+          url,
+          options: Options(responseType: ResponseType.bytes),
+        );
       } else {
-        response = await this.dio().get(url);
+        response = await dio().get(url);
       }
 
       return ArDriveNetworkResponse(
           data: response.data,
           statusCode: response.statusCode,
           statusMessage: response.statusMessage,
-          retryAttempts: this.retryAttempts);
+          retryAttempts: retryAttempts);
     } catch (error) {
       throw ArDriveNetworkException(
-          retryAttempts: this.retryAttempts, dioException: error);
+        retryAttempts: retryAttempts,
+        dioException: error,
+      );
     }
   }
 
@@ -118,7 +116,7 @@ class ArdriveNetwork {
       );
 
       if (response['error'] != null) {
-        this.retryAttempts = response['retryAttempts'];
+        retryAttempts = response['retryAttempts'];
 
         throw response['error'];
       }
@@ -131,16 +129,18 @@ class ArdriveNetwork {
       );
     } catch (error) {
       throw ArDriveNetworkException(
-          retryAttempts: this.retryAttempts, dioException: error);
+        retryAttempts: retryAttempts,
+        dioException: error,
+      );
     }
   }
 
   Future<bool> _loadWebWorkers() async {
-    const List<String> _jsScript = <String>['ardrive-network.js'];
+    const List<String> jsScripts = <String>['ardrive-network.js'];
     bool jsLoaded = false;
 
     if (!_areScriptsImported) {
-      jsLoaded = await JsIsolatedWorker().importScripts(_jsScript);
+      jsLoaded = await JsIsolatedWorker().importScripts(jsScripts);
       _areScriptsImported = !jsLoaded;
     }
 

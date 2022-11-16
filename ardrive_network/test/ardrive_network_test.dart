@@ -4,15 +4,17 @@ import 'package:flutter_test/flutter_test.dart';
 
 import './webserver.dart';
 
-const baseUrl = 'http://localhost:8080';
+const String baseUrl = 'http://localhost:8080';
 
 void main() {
-  group('ArdriveNetwork', () {
-    final ardriveNetwork = ArdriveNetwork(
-      retryDelayMs: 0,
-      noLogs: true,
-    );
+  final ardriveNetwork = ArdriveNetwork(
+    retryDelayMs: 0,
+    noLogs: true,
+  );
 
+  tearDownAll(() => ardriveNetwork.get(url: '$baseUrl/exit'));
+
+  group('ArdriveNetwork', () {
     test('can be instantiated', () {
       expect(ardriveNetwork, isNotNull);
     });
@@ -25,11 +27,11 @@ void main() {
           asBytes: true,
         );
 
-        expect(() => response, throwsA(TypeMatcher<ArgumentError>()));
+        expect(() => response, throwsA(const TypeMatcher<ArgumentError>()));
       });
 
       test('returns plain response data', () async {
-        final url = '$baseUrl/getText';
+        const String url = '$baseUrl/getText';
         final response = await ardriveNetwork.get(url: url);
 
         expect(response.data, 'ok');
@@ -37,7 +39,7 @@ void main() {
       });
 
       test('returns decoded json response', () async {
-        final url = '$baseUrl/getJson';
+        const String url = '$baseUrl/getJson';
 
         final getResponse = await ardriveNetwork.get(url: url, isJson: true);
 
@@ -51,7 +53,7 @@ void main() {
       });
 
       test('returns byte response', () async {
-        final url = '$baseUrl/getText';
+        const String url = '$baseUrl/getText';
 
         final getResponse = await ardriveNetwork.get(url: url, asBytes: true);
 
@@ -65,28 +67,28 @@ void main() {
       });
 
       test('fail without retry', () async {
-        final url = '$baseUrl/404';
+        const String url = '$baseUrl/404';
 
         await expectLater(
             () => ardriveNetwork.get(url: url),
-            throwsA(ArDriveNetworkException(
+            throwsA(const ArDriveNetworkException(
               retryAttempts: 0,
               dioException: {},
             )));
       });
 
-      retryStatusCodes.forEach((statusCode) {
+      for (int statusCode in retryStatusCodes) {
         test('retry 8 times by default when response is $statusCode', () async {
           final url = '$baseUrl/$statusCode';
 
           await expectLater(
               () => ardriveNetwork.get(url: url),
-              throwsA(ArDriveNetworkException(
+              throwsA(const ArDriveNetworkException(
                 retryAttempts: 8,
                 dioException: {},
               )));
         });
-      });
+      }
 
       test('retry 4 times', () async {
         final ardriveNetwork = ArdriveNetwork(
@@ -94,11 +96,11 @@ void main() {
           retryDelayMs: 0,
           noLogs: true,
         );
-        final url = '$baseUrl/429';
+        const String url = '$baseUrl/429';
 
         await expectLater(
             () => ardriveNetwork.get(url: url),
-            throwsA(ArDriveNetworkException(
+            throwsA(const ArDriveNetworkException(
               retryAttempts: 4,
               dioException: {},
             )));
