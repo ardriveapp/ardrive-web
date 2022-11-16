@@ -36,6 +36,8 @@ class ArdriveNetwork {
     return dio;
   }
 
+  // get method
+  // in the case where isJson and asBytes is false it will return a text response
   Future<ArDriveNetworkResponse> get({
     required String url,
     bool isJson = false,
@@ -84,10 +86,11 @@ class ArdriveNetwork {
       }
 
       return ArDriveNetworkResponse(
-          data: response.data,
-          statusCode: response.statusCode,
-          statusMessage: response.statusMessage,
-          retryAttempts: retryAttempts);
+        data: response.data,
+        statusCode: response.statusCode,
+        statusMessage: response.statusMessage,
+        retryAttempts: retryAttempts,
+      );
     } catch (error) {
       throw ArDriveNetworkException(
         retryAttempts: retryAttempts,
