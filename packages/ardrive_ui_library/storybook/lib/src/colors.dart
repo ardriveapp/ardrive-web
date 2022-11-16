@@ -76,6 +76,26 @@ WidgetbookCategory getTypographyCategory(bool isDark) {
           name: 'themeAccentBrand',
           builder: (context) => _getContainer(colors.themeAccentBrand),
         ),
+        WidgetbookUseCase(
+          name: 'themeAccentDisabled',
+          builder: (context) => _getContainer(colors.themeAccentDisabled),
+        ),
+        WidgetbookUseCase(
+          name: 'themeAccentDefault',
+          builder: (context) => _getContainer(colors.themeAccentDefault),
+        ),
+        WidgetbookUseCase(
+          name: 'themeAccentEmphasis',
+          builder: (context) => _getContainer(colors.themeAccentEmphasis),
+        ),
+        WidgetbookUseCase(
+          name: 'themeAccentMuted',
+          builder: (context) => _getContainer(colors.themeAccentMuted),
+        ),
+        WidgetbookUseCase(
+          name: 'themeAccentSubtle',
+          builder: (context) => _getContainer(colors.themeAccentSubtle),
+        ),
       ])
     ]);
   }
@@ -244,6 +264,7 @@ WidgetbookCategory getTypographyCategory(bool isDark) {
   return WidgetbookCategory(
       name: isDark ? 'Light Colors' : 'Dark Colors',
       folders: [
+        getAccentColors(),
         getForegroundColors(),
         getBackgroundColors(),
         getWarningColors(),

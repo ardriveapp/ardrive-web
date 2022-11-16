@@ -2,6 +2,7 @@ import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
 import 'package:storybook/src/button.dart';
 import 'package:storybook/src/shadows.dart';
+import 'package:storybook/src/text_field.dart';
 import 'package:storybook/src/toggle.dart';
 import 'package:widgetbook/widgetbook.dart';
 
@@ -27,6 +28,9 @@ class StoryBook extends StatelessWidget {
           ],
           appInfo: AppInfo(name: 'ArDrive StoryBook'),
           categories: [
+            toggle(),
+            textField(),
+            loginForm(),
             toggle(),
             getTypographyCategory(true),
             getTypographyCategory(false),

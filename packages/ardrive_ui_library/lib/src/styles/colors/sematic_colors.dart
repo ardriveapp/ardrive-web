@@ -44,6 +44,11 @@ class ArDriveColors {
     Color? themeAccentDefault,
     Color? themeAccentDisabled,
     Color? themeAccentSubtle,
+    Color? themeInputBorderDefault,
+    Color? themeErrorOnEmphasis,
+    Color? themeAccentEmphasis,
+    Color? themeErrorDefault,
+    Color? themeSuccessDefault,
     Color? shadow,
   }) {
     this.themeFgDefault = themeFgDefault ?? white;
@@ -87,6 +92,11 @@ class ArDriveColors {
     this.themeAccentDefault = blue;
     this.themeAccentDisabled = grey.shade600;
     this.themeAccentSubtle = themeAccentSubtle ?? blue.withOpacity(0.95);
+    this.themeInputBorderDefault = themeInputBorderDefault ?? grey.shade300;
+    this.themeErrorOnEmphasis = themeErrorOnEmphasis ?? red;
+    this.themeAccentEmphasis = themeAccentEmphasis ?? blue.shade600;
+    this.themeErrorDefault = themeErrorDefault ?? red.shade400;
+    this.themeSuccessDefault = themeSuccessDefault ?? green.shade400;
     this.shadow = shadow ?? shadowColor;
   }
 
@@ -138,6 +148,7 @@ class ArDriveColors {
   late Color themeAccentDisabled;
   late Color themeAccentMuted;
   late Color themeAccentSubtle;
+  late Color themeAccentEmphasis;
 
   /// Warning
   late Color themeWarningFg;
@@ -151,6 +162,8 @@ class ArDriveColors {
   late Color themeErrorMuted;
   late Color themeErrorSubtle;
   late Color themeErrorOnError;
+  late Color themeErrorOnEmphasis;
+  late Color themeErrorDefault;
 
   /// Info
   late Color themeInfoFb;
@@ -165,6 +178,7 @@ class ArDriveColors {
   late Color themeSuccessMuted;
   late Color themeSuccessSubtle;
   late Color themeSuccessOnSuccess;
+  late Color themeSuccessDefault;
 
   /// Input
   late Color themeInputBackground;
@@ -172,6 +186,7 @@ class ArDriveColors {
   late Color themeInputPlaceholder;
   late Color themeInputBorderDisabled;
   late Color themeInputFbDisabled;
+  late Color themeInputBorderDefault;
 
   /// Border
   late Color themeBorderDefault;
