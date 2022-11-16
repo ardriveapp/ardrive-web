@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('Test if Card renders and if renders its content',
+  testWidgets('Card widget and its contents render',
       (tester) async {
     const card = ArDriveCard(
       content: Text('Some widget'),
