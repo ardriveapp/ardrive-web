@@ -50,7 +50,8 @@ void main() {
 
       expect(tx.tags.isEmpty, isTrue);
 
-      SystemPlatform.setMockPlatform(platform: 'Android');
+      AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+
       tx.addApplicationTags(
         version: packageInfo.version,
       );
@@ -64,7 +65,8 @@ void main() {
           await getTestTransaction('test/fixtures/signed_v2_tx.json');
       expect(tx.tags.isEmpty, isTrue);
 
-      SystemPlatform.setMockPlatform(platform: 'Android');
+      AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+
       tx.addApplicationTags(
         version: packageInfo.version,
       );
@@ -81,7 +83,8 @@ void main() {
       tx = await getTestTransaction('test/fixtures/signed_v2_tx.json');
       expect(tx.tags.isEmpty, isTrue);
 
-      SystemPlatform.setMockPlatform(platform: 'iOS');
+      AppPlatform.setMockPlatform(platform: SystemPlatform.iOS);
+
       tx.addApplicationTags(
         version: packageInfo.version,
       );
@@ -98,7 +101,8 @@ void main() {
       tx = await getTestTransaction('test/fixtures/signed_v2_tx.json');
       expect(tx.tags.isEmpty, isTrue);
 
-      SystemPlatform.setMockPlatform(platform: 'unknown');
+      AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
+
       tx.addApplicationTags(
         version: packageInfo.version,
       );
@@ -115,7 +119,8 @@ void main() {
       tx = await getTestTransaction('test/fixtures/signed_v2_tx.json');
       expect(tx.tags.isEmpty, isTrue);
 
-      SystemPlatform.setMockPlatform(platform: 'Web');
+      AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
+
       tx.addApplicationTags(
         version: packageInfo.version,
         isWeb: true,
@@ -143,7 +148,8 @@ void main() {
         lastModifiedDate: DateTime.now(),
       );
 
-      SystemPlatform.setMockPlatform(platform: 'unknwon');
+      AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
+
       final tx = await fileEntity.asTransaction();
       expect(tx.tags.contains(appNameTag), isTrue);
       expect(tx.tags.contains(appVersionTag), isTrue);
@@ -156,7 +162,8 @@ void main() {
         parentFolderId: rootFolderId,
         name: testEntityName,
       );
-      SystemPlatform.setMockPlatform(platform: 'unknown');
+      AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
+
       final tx = await folderEntity.asTransaction();
       tx.addApplicationTags(version: packageInfo.version);
 
@@ -171,7 +178,8 @@ void main() {
         rootFolderId: rootFolderId,
         privacy: DrivePrivacy.public,
       );
-      SystemPlatform.setMockPlatform(platform: 'unknown');
+      AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
+
       final tx = await driveEntity.asTransaction();
       tx.addApplicationTags(version: packageInfo.version);
 

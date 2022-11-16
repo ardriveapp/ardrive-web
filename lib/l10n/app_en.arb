@@ -557,9 +557,21 @@
   "@howDoIGetAR": {
     "description": "Link to a help page explaining how to get Arweave tokens"
   },
-  "sync": "Sync",
-  "@sync": {
-    "description": "Sync button tooltip"
+  "resync": "Resync",
+  "@resync": {
+    "description": "Sync button Text"
+  },
+  "resyncTooltip": "Refresh all drives",
+  "@resyncTooltip": {
+    "description": "resync tooltip text"
+  },
+  "deepResyncTooltip": "Empty cache & refresh all drives",
+  "@deepResyncTooltip": {
+    "description": "Deep Sync Tooltip Text"
+  },
+  "deepResync": "Deep Resync",
+  "@deepResync": {
+    "description": "Deep Sync Button Text"
   },
   "driveIssuesDetected": "We have detected issues with this drive. Navigate into drive to resolve them.",
   "@driveIssuesDetected": {
@@ -668,6 +680,14 @@
   "fileFailedToDownload": "File download failed",
   "@fileFailedToDownload": {
     "description": "Error message for failed downloads"
+  },
+  "waitForDownload": "Due to the size of your file, this download could take a while. Please keep the app open while the download is in progress.",
+  "@waitForDownload": {
+    "description": "User must to wait this download"
+  },
+  "fileFailedToDownloadFileAboveLimit": "The file you have selected is too large to download from the mobile app",
+  "@fileFailedToDownloadFileAboveLimit": {
+    "description": "Download failure message when a file is too big"
   },
   "tryAgainDownloadingFile": "This can happen if the file was only uploaded recently. Please try again later.",
   "@tryAgainDownloadingFile": {
@@ -1449,7 +1469,7 @@
   "deviceNotSupportBiometrics": "This device does not support the use of biometrics.",
   "@deviceNotSupportBiometrics": {
     "description": "Biometric is not supported"
-  },  
+  },
   "biometricsDisabledOnYourDevice": "This function is currently disabled on your device. To use it, please go to your device Settings and enable biometric authentication.",
   "@biometricsDisabledOnYourDevice": {
     "description": "Biometric is disabled"
@@ -1481,5 +1501,13 @@
   "forgetWalletDescription": "Are you sure you want to forget your wallet? You will need to select another wallet to login with another profile.",
   "@forgetWalletDescription": {
     "description": "Modal description to forget wallet"
+  },
+  "addressCopied": "Address Copied!",
+  "@addressCopied": {
+    "description": "Toast message when you copy wallet address"
+  },
+  "copyWalletAddress": "Copy Wallet Address",
+  "@addressCopied": {
+    "description": "Tooltip on copy wallet address button"
   }
 }
