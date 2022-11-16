@@ -38,7 +38,7 @@ jobs:
         run: scr test
 
   web-storybook:
-    # needs: test
+    needs: test
     runs-on: ubuntu-latest
     steps:
     # Checkout
