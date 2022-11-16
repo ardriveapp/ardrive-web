@@ -1,7 +1,5 @@
-import 'dart:math' as math;
-
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
-import 'package:ardrive_ui_library/utils/intersperse.dart';
+import 'package:ardrive_ui_library/src/components/data_table/data_table_page_indicators/numbered_page_indicator.dart';
 import 'package:flutter/material.dart';
 
 class ArDriveDataTable extends StatefulWidget {
@@ -31,10 +29,6 @@ class ArDriveDataTable extends StatefulWidget {
     this.checkboxHorizontalMargin,
     this.tableKey,
     this.rowsPerPageText,
-    this.goToFirstTooltip,
-    this.goToLastTooltip,
-    this.nextTooltip,
-    this.previousTooltip,
     this.rowCountText,
   })  : assert(columns.isNotEmpty),
         assert(sortColumnIndex == null ||
@@ -151,10 +145,7 @@ class ArDriveDataTable extends StatefulWidget {
 
   //Localizations and Tooltip Text
   final String? rowsPerPageText;
-  final String? goToFirstTooltip;
-  final String? goToLastTooltip;
-  final String? nextTooltip;
-  final String? previousTooltip;
+
   final String Function(int, int, int)? rowCountText;
 
   @override
@@ -169,7 +160,6 @@ class ArDriveDataTableState extends State<ArDriveDataTable> {
   late int _rowCount;
   late bool _rowCountApproximate;
   final Map<int, DataRow?> _rows = <int, DataRow?>{};
-  final int _pagesToShow = 5;
   final ScrollController scrollController = ScrollController();
   @override
   void initState() {
@@ -270,30 +260,6 @@ class ArDriveDataTableState extends State<ArDriveDataTable> {
     pageTo(0);
   }
 
-  void _handlePrevious() {
-    pageTo(math.max(_firstRowIndex - widget.rowsPerPage, 0));
-  }
-
-  void _handleNext() {
-    pageTo(_firstRowIndex + widget.rowsPerPage);
-  }
-
-  void _handleLast() {
-    pageTo(((_rowCount - 1) / widget.rowsPerPage).floor() * widget.rowsPerPage);
-  }
-
-  int _getPageCount() {
-    return (_rowCount / widget.rowsPerPage).ceil();
-  }
-
-  int _getCurrentPage() {
-    return (_firstRowIndex + 1) ~/ widget.rowsPerPage;
-  }
-
-  bool _isNextPageUnavailable() =>
-      !_rowCountApproximate &&
-      (_firstRowIndex + widget.rowsPerPage >= _rowCount);
-
   pageButtonStyle() {
     return TextButton.styleFrom(
       padding: EdgeInsets.zero,
@@ -309,86 +275,6 @@ class ArDriveDataTableState extends State<ArDriveDataTable> {
     final footerTextStyle = Theme.of(context).textTheme.caption!.copyWith(
           color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
         );
-
-    TextButton pageButton({
-      required int page,
-      required Function onPressed,
-    }) {
-      return TextButton(
-        style: pageButtonStyle(),
-        onPressed: () => pageTo(widget.rowsPerPage * page),
-        child: Text(
-          (page + 1).toString(),
-          style: footerTextStyle.copyWith(
-            color: page == _getCurrentPage()
-                ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
-                : ArDriveTheme.of(context).themeData.colors.themeAccentMuted,
-          ),
-        ),
-      );
-    }
-
-    const ellipsisSeparator = Text('...');
-    const pageNumberSeparator = SizedBox.square(dimension: 8);
-
-    Widget pageRow(int pagesToShow) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (_getPageCount() > pagesToShow) ...[
-            if (_getCurrentPage() < (pagesToShow - 1)) ...[
-              for (var i = 0; i < pagesToShow; i++)
-                pageButton(
-                  page: i,
-                  onPressed: () => pageTo(widget.rowsPerPage * i),
-                ),
-              ellipsisSeparator,
-              pageButton(
-                page: _getPageCount() - 1,
-                onPressed: () => _handleLast(),
-              ),
-            ] else if (_getCurrentPage() >= (pagesToShow - 1) &&
-                _getCurrentPage() < _getPageCount() - pagesToShow) ...[
-              pageButton(
-                page: 0,
-                onPressed: () => _handleFirst(),
-              ),
-              ellipsisSeparator,
-              for (var i = _getCurrentPage() - 2;
-                  i <= _getCurrentPage() + 2;
-                  i++)
-                pageButton(
-                  page: i,
-                  onPressed: () => pageTo(widget.rowsPerPage * i),
-                ),
-              ellipsisSeparator,
-              pageButton(
-                page: _getPageCount() - 1,
-                onPressed: () => _handleLast(),
-              ),
-            ] else ...[
-              pageButton(
-                page: 0,
-                onPressed: () => _handleFirst(),
-              ),
-              ellipsisSeparator,
-              for (var i = _getPageCount() - pagesToShow;
-                  i < _getPageCount();
-                  i++)
-                pageButton(
-                  page: i,
-                  onPressed: () => pageTo(widget.rowsPerPage * i),
-                ),
-            ]
-          ] else
-            for (var i = 0; i < _getPageCount(); i++)
-              pageButton(
-                page: i,
-                onPressed: () => pageTo(widget.rowsPerPage * i),
-              ),
-        ].intersperse(pageNumberSeparator).toList(),
-      );
-    }
 
     final footerWidgets = <Widget>[];
     if (widget.onRowsPerPageChanged != null) {
@@ -435,55 +321,15 @@ class ArDriveDataTableState extends State<ArDriveDataTable> {
             _rowCount,
           ) ??
           '${_firstRowIndex + 1} - ${_firstRowIndex + widget.rowsPerPage} of $_rowCount'),
-      Container(width: 32.0),
-      if (widget.showFirstLastButtons)
-        IconButton(
-          iconSize: 16,
-          icon: Icon(
-            Icons.skip_previous,
-            color: widget.arrowHeadColor,
-          ),
-          constraints: const BoxConstraints(maxWidth: 20),
-          padding: EdgeInsets.zero,
-          tooltip: widget.goToFirstTooltip ?? 'Go To First',
-          onPressed: _firstRowIndex <= 0 ? null : _handleFirst,
-        ),
-      IconButton(
-        iconSize: 16,
-        icon: Icon(
-          Icons.chevron_left,
-          color: widget.arrowHeadColor,
-        ),
-        constraints: const BoxConstraints(maxWidth: 20),
-        padding: EdgeInsets.zero,
-        tooltip: widget.previousTooltip,
-        onPressed: _firstRowIndex <= 0 ? null : _handlePrevious,
+      NumberedPageIndicator(
+        isRowCountApproximate: _rowCountApproximate,
+        rowCount: _rowCount,
+        firstRowIndex: _firstRowIndex,
+        pageTo: pageTo,
+        rowsPerPage: widget.rowsPerPage,
+        showFirstAndLastButtons: widget.showFirstLastButtons,
+        
       ),
-      pageRow(_pagesToShow),
-      IconButton(
-        iconSize: 16,
-        icon: Icon(
-          Icons.chevron_right,
-          color: widget.arrowHeadColor,
-        ),
-        constraints: const BoxConstraints(maxWidth: 20),
-        padding: EdgeInsets.zero,
-        tooltip: widget.nextTooltip,
-        onPressed: _isNextPageUnavailable() ? null : _handleNext,
-      ),
-      if (widget.showFirstLastButtons)
-        IconButton(
-          iconSize: 16,
-          icon: Icon(
-            Icons.skip_next,
-            color: widget.arrowHeadColor,
-          ),
-          constraints: const BoxConstraints(maxWidth: 20),
-          padding: EdgeInsets.zero,
-          tooltip: widget.goToLastTooltip,
-          onPressed: _isNextPageUnavailable() ? null : _handleLast,
-        ),
-      Container(width: 14.0),
     ]);
 
     return Scrollbar(
