@@ -54,8 +54,8 @@ WidgetbookCategory getTypographyCategory(bool isDark) {
           builder: (context) => _getContainer(colors.themeBgSurface),
         ),
         WidgetbookUseCase(
-          name: 'themeGbmuted',
-          builder: (context) => _getContainer(colors.themeGbmuted),
+          name: 'themeGbMuted',
+          builder: (context) => _getContainer(colors.themeGbMuted),
         ),
         WidgetbookUseCase(
           name: 'themeBgSubtle',
@@ -252,5 +252,6 @@ WidgetbookCategory getTypographyCategory(bool isDark) {
         getInputColors(),
         getSuccessColors(),
         getOverlayColors(),
+        getAccentColors(),
       ]);
 }
