@@ -257,8 +257,8 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
                             Text(appLocalizationsOf(context).fileWasModified);
                     }
 
-                    dateCreatedSubtitle =
-                        Text(yMMdDateFormatter.format(revision.dateCreated));
+                    dateCreatedSubtitle = Text(
+                        yMMdHmDateTimeFormatter.format(revision.dateCreated));
                   }
 
                   return ListTile(
