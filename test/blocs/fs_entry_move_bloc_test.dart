@@ -208,7 +208,7 @@ void main() {
 
       driveDao = db.driveDao;
       const arweaveGatewayUrl = 'https://www.fake-arweave-gateway-url.com';
-      SystemPlatform.setMockPlatform(platform: 'unknown');
+      AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
       arweave = ArweaveService(
         Arweave(gatewayUrl: Uri.parse(arweaveGatewayUrl)),
       );

@@ -10,38 +10,66 @@ void main() {
 
   group('getPlatform method', () {
     test('returns "Web" for browser platforms', () {
-      final platformString =
-          getPlatform(platform: unknownFakePlatform, isWeb: true);
-      expect(platformString, 'Web');
+      final platform =
+          AppPlatform.getPlatform(platform: unknownFakePlatform, isWeb: true);
+      expect(platform, SystemPlatform.Web);
     });
 
-    test('returns "Android" for Android devices', () {
-      final platformString =
-          getPlatform(platform: androidFakePlatform, isWeb: false);
-      expect(platformString, 'Android');
+    test('returns Android for Android devices', () {
+      final platform =
+          AppPlatform.getPlatform(platform: androidFakePlatform, isWeb: false);
+      expect(platform, SystemPlatform.Android);
     });
 
-    test('returns "iOS" for iOS devices', () {
-      final platformString =
-          getPlatform(platform: iOSFakePlatform, isWeb: false);
-      expect(platformString, 'iOS');
+    test('returns iOS for iOS devices', () {
+      final platform =
+          AppPlatform.getPlatform(platform: iOSFakePlatform, isWeb: false);
+      expect(platform, SystemPlatform.iOS);
     });
 
-    test('returns "unknown" when the device cannot be determined', () {
-      final platformString =
-          getPlatform(platform: unknownFakePlatform, isWeb: false);
-      expect(platformString, 'unknown');
+    test('returns unknown when the device cannot be determined', () {
+      final platform =
+          AppPlatform.getPlatform(platform: unknownFakePlatform, isWeb: false);
+      expect(platform, SystemPlatform.unknown);
     });
   });
 
-  group('SystemPlatform class', () {
-    test('will call getPlatform if not mocked', () {
-      expect(SystemPlatform.platform, 'unknown');
-    });
+  group('Testing setMockPlatform method', () {
+    test('return the mocked platform', () {
+      AppPlatform.setMockPlatform(platform: SystemPlatform.iOS);
+      expect(AppPlatform.getPlatform(), SystemPlatform.iOS);
 
-    test('can mock the platform string', () {
-      SystemPlatform.setMockPlatform(platform: 'abcdefg');
-      expect(SystemPlatform.platform, 'abcdefg');
+      AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+      expect(AppPlatform.getPlatform(), SystemPlatform.Android);
+
+      AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
+      expect(AppPlatform.getPlatform(), SystemPlatform.Web);
+
+      AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
+      expect(AppPlatform.getPlatform(), SystemPlatform.unknown);
+    });
+  });
+
+  group('Testing isMobile method', () {
+    test('should return true when android', () {
+      AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+
+      expect(AppPlatform.isMobile, true);
+    });
+    test('should return true when ios', () {
+      AppPlatform.setMockPlatform(platform: SystemPlatform.iOS);
+
+      expect(AppPlatform.isMobile, true);
+    });
+    test('should return false when web', () {
+      AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
+
+      expect(AppPlatform.isMobile, false);
+    });
+    test('should return false when unknown', () {
+      AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
+
+      expect(AppPlatform.isMobile, false);
     });
   });
 }

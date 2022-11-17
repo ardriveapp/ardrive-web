@@ -91,7 +91,12 @@ void main() {
     });
 
     group('constructor', () {
-      final List<String> validPlatforms = ['Web', 'Android', 'iOS', 'unknown'];
+      final List<SystemPlatform> validPlatforms = [
+        SystemPlatform.Web,
+        SystemPlatform.Android,
+        SystemPlatform.iOS,
+        SystemPlatform.unknown
+      ];
 
       late List<IOFile> multipleFilesToUpload;
       late List<IOFile> singleFileToUpload;
@@ -119,11 +124,12 @@ void main() {
         ];
       });
 
-      for (String stubPlatformString in validPlatforms) {
+      for (SystemPlatform stubPlatform in validPlatforms) {
         test(
-            'returns the expected values for Bundles on platform: "$stubPlatformString"',
+            'returns the expected values for Bundles on platform: "$stubPlatform"',
             () async {
-          SystemPlatform.setMockPlatform(platform: stubPlatformString);
+          AppPlatform.setMockPlatform(platform: stubPlatform);
+
           uploadPlanUtis = UploadPlanUtils(
             arweave: arweave,
             driveDao: driveDao,
@@ -156,7 +162,7 @@ void main() {
             uploadPlan: uploadPlan,
             pstService: pstService,
             arweaveService: arweave,
-            platform: stubPlatformString,
+            platform: stubPlatform.name,
           );
 
           expect(estimate.totalCost, expectedDataSize);
@@ -176,10 +182,10 @@ void main() {
           );
         });
 
-        test(
-            'returns the expected values for v2 on platform: "$stubPlatformString"',
+        test('returns the expected values for v2 on platform: "$stubPlatform"',
             () async {
-          SystemPlatform.setMockPlatform(platform: stubPlatformString);
+          AppPlatform.setMockPlatform(platform: stubPlatform);
+
           uploadPlanUtis = UploadPlanUtils(
             arweave: arweave,
             driveDao: driveDao,
@@ -212,7 +218,7 @@ void main() {
             uploadPlan: uploadPlan,
             pstService: pstService,
             arweaveService: arweave,
-            platform: stubPlatformString,
+            platform: stubPlatform.name,
           );
 
           expect(estimate.totalCost, expectedDataSize);
