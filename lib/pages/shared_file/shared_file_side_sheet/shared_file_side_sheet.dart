@@ -100,7 +100,8 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  yMMdDateFormatter.format(revisions.first.lastModifiedDate),
+                  yMMdHmDateTimeFormatter
+                      .format(revisions.first.lastModifiedDate),
                 ),
               ),
             )
@@ -111,7 +112,7 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  yMMdDateFormatter.format(revisions.first.dateCreated),
+                  yMMdHmDateTimeFormatter.format(revisions.first.dateCreated),
                 ),
               ),
             )
@@ -122,7 +123,7 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  yMMdDateFormatter.format(revisions.last.dateCreated),
+                  yMMdHmDateTimeFormatter.format(revisions.last.dateCreated),
                 ),
               ),
             ),
@@ -256,8 +257,8 @@ class _SharedFileSideSheetState extends State<SharedFileSideSheet> {
                             Text(appLocalizationsOf(context).fileWasModified);
                     }
 
-                    dateCreatedSubtitle =
-                        Text(yMMdDateFormatter.format(revision.dateCreated));
+                    dateCreatedSubtitle = Text(
+                        yMMdHmDateTimeFormatter.format(revision.dateCreated));
                   }
 
                   return ListTile(
