@@ -9,11 +9,12 @@ import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isolated_worker/js_isolated_worker.dart';
 
+const List<String> jsScriptsToImport = <String>['ardrive-network.js'];
+
 class ArdriveNetwork {
   int retries;
   int retryDelayMs;
   bool noLogs;
-  bool _areScriptsImported = false;
   int retryAttempts = 0;
 
   ArdriveNetwork({
@@ -45,6 +46,10 @@ class ArdriveNetwork {
   }) async {
     checkIsJsonAndAsBytesParams(isJson, asBytes);
 
+    final Map getIOParams = <String, dynamic>{};
+    getIOParams['url'] = url;
+    getIOParams['asBytes'] = asBytes;
+
     if (kIsWeb) {
       if (await _loadWebWorkers()) {
         return await _getWeb(
@@ -52,12 +57,10 @@ class ArdriveNetwork {
           isJson: isJson,
           asBytes: asBytes,
         );
+      } else {
+        return await _getIO(getIOParams);
       }
     }
-
-    final Map getIOParams = <String, dynamic>{};
-    getIOParams['url'] = url;
-    getIOParams['asBytes'] = asBytes;
 
     return await compute(_getIO, getIOParams);
   }
@@ -139,19 +142,7 @@ class ArdriveNetwork {
   }
 
   Future<bool> _loadWebWorkers() async {
-    const List<String> jsScripts = <String>['ardrive-network.js'];
-    bool jsLoaded = false;
-
-    if (!_areScriptsImported) {
-      jsLoaded = await JsIsolatedWorker().importScripts(jsScripts);
-      _areScriptsImported = !jsLoaded;
-    }
-
-    if (jsLoaded) {
-      return true;
-    } else {
-      throw Exception('ArDriveNetwork Web worker is not available!');
-    }
+    return await JsIsolatedWorker().importScripts(jsScriptsToImport);
   }
 
   RetryInterceptor _getDioRetrySettings(Dio dio) {

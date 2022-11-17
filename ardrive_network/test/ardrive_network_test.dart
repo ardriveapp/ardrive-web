@@ -1,5 +1,5 @@
 import 'package:ardrive_network/ardrive_network.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import './webserver.dart';
@@ -13,7 +13,6 @@ void main() {
   );
 
   tearDownAll(() => ardriveNetwork.get(url: '$baseUrl/exit'));
-
   group('ArdriveNetwork', () {
     test('can be instantiated', () {
       expect(ardriveNetwork, isNotNull);
