@@ -9,19 +9,17 @@ WidgetbookCategory radioButton() {
       WidgetbookUseCase(
           name: 'name',
           builder: (context) {
-            return Row(
-              children: [
-                ArDriveRadioButton(
-                  text: 'Option 1',
-                ),
-              ],
+            return Center(
+              child: ArDriveRadioButton(
+                text: 'Option 1',
+              ),
             );
           }),
       WidgetbookUseCase(
           name: 'Toggle Group',
           builder: (context) {
             return ArDriveApp(builder: (context) {
-              return const RadioGroupExample();
+              return const Scaffold(body: Center(child: RadioGroupExample()));
             });
           })
     ])
@@ -49,11 +47,13 @@ class _RadioGroupExampleState extends State<RadioGroupExample> {
 
     return Scaffold(
       body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           ArDriveRadioButtonGroup(
             onChanged: (i, value) {
               if (value) {
-                option = options[i].text;
+                option = 'Selected option: ${options[i].text}';
               } else {
                 option = '';
               }
@@ -61,7 +61,13 @@ class _RadioGroupExampleState extends State<RadioGroupExample> {
             },
             options: options,
           ),
-          Text(option ?? ''),
+          const SizedBox(
+            height: 32,
+          ),
+          Text(
+            option ?? '',
+            style: ArDriveTypography.body.buttonLargeBold(),
+          ),
         ],
       ),
     );

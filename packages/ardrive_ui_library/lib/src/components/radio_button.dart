@@ -9,13 +9,11 @@ class RadioButtonOptions {
     this.value = false,
     this.isEnabled = true,
     required this.text,
-    this.index,
   });
 
   bool value;
   bool isEnabled;
   String text;
-  int? index;
 }
 
 class ArDriveRadioButtonGroup extends StatefulWidget {
@@ -41,7 +39,6 @@ class _ArDriveRadioButtonGroupState extends State<ArDriveRadioButtonGroup> {
     _options = List.generate(
       widget.options.length,
       (i) => RadioButtonOptions(
-        index: i,
         isEnabled: widget.options[i].isEnabled,
         value: widget.options[i].value,
         text: widget.options[i].text,
@@ -58,24 +55,27 @@ class _ArDriveRadioButtonGroupState extends State<ArDriveRadioButtonGroup> {
   Widget build(BuildContext context) {
     return ListView.builder(
       itemBuilder: (context, i) {
-        return ArDriveRadioButton(
-          key: ValueKey(_keys[i]),
-          text: _options[i].text,
-          onChange: (value) async {
-            for (int j = 0; j < _options.length; j++) {
-              if (j == i) {
-                continue;
+        return Align(
+          alignment: Alignment.center,
+          child: ArDriveRadioButton(
+            key: ValueKey(_keys[i]),
+            text: _options[i].text,
+            onChange: (value) async {
+              for (int j = 0; j < _options.length; j++) {
+                if (j == i) {
+                  continue;
+                }
+                if (_options[j].value) {
+                  _options[j].value = false;
+                  _keys[j] = const Uuid().v1();
+                }
               }
-              if (_options[j].value) {
-                _options[j].value = false;
-                _keys[j] = const Uuid().v1();
-              }
-            }
-            setState(() {});
+              setState(() {});
 
-            _options[i].value = value;
-            widget.onChanged?.call(i, value);
-          },
+              _options[i].value = value;
+              widget.onChanged?.call(i, value);
+            },
+          ),
         );
       },
       itemCount: _options.length,
@@ -183,11 +183,13 @@ class _ArDriveRadioButtonState extends State<ArDriveRadioButton> {
         const SizedBox(
           width: 8,
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4.0),
-          child: Text(
-            widget.text,
-            style: ArDriveTypography.body.bodyRegular(),
+        Flexible(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Text(
+              widget.text,
+              style: ArDriveTypography.body.bodyRegular(),
+            ),
           ),
         )
       ],
