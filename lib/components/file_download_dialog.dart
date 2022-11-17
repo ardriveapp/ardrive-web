@@ -2,6 +2,11 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/progress_bar.dart';
+import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
+import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
+import 'package:ardrive/core/decrypt.dart';
+import 'package:ardrive/core/download_service.dart';
+import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -17,65 +22,83 @@ import 'components.dart';
 Future<void> promptToDownloadProfileFile({
   required BuildContext context,
   required FileWithLatestRevisionTransactions file,
-}) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider<FileDownloadCubit>(
-        create: (_) => ProfileFileDownloadCubit(
-          driveId: file.driveId,
-          fileId: file.id,
-          revisionDataTxId: file.dataTxId,
-          dataContentType: file.dataContentType,
-          fileName: file.name,
-          fileSize: file.size,
-          lastModified: file.lastModifiedDate,
-          profileCubit: context.read<ProfileCubit>(),
-          driveDao: context.read<DriveDao>(),
-          arweave: context.read<ArweaveService>(),
-        ),
-        child: const FileDownloadDialog(),
-      ),
-    );
+}) {
+  final ARFSFileEntity arfsFile =
+      ARFSFactory().getARFSFileFromFileWithLatestRevisionTransactions(file);
+
+  final profileState = context.read<ProfileCubit>().state;
+  final cipherKey =
+      profileState is ProfileLoggedIn ? profileState.cipherKey : null;
+  final cubit = ProfileFileDownloadCubit(
+    arfsRepository: ARFSRepository(
+      context.read<DriveDao>(),
+      ARFSFactory(),
+    ),
+    decrypt: Decrypt(),
+    downloadService: DownloadService(arweave),
+    downloader: ArDriveDownloader(),
+    file: arfsFile,
+    driveDao: context.read<DriveDao>(),
+    arweave: context.read<ArweaveService>(),
+  )..download(cipherKey);
+  return showDialog(
+    context: context,
+    builder: (_) => BlocProvider<FileDownloadCubit>.value(
+      value: cubit,
+      child: const FileDownloadDialog(),
+    ),
+  );
+}
 
 Future<void> promptToDownloadFileRevision({
   required BuildContext context,
   required FileRevisionWithTransactions revision,
-}) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider<FileDownloadCubit>(
-        create: (_) => ProfileFileDownloadCubit(
-          driveId: revision.driveId,
-          fileId: revision.fileId,
-          revisionDataTxId: revision.dataTxId,
-          dataContentType: revision.dataContentType,
-          fileName: revision.name,
-          fileSize: revision.size,
-          lastModified: revision.lastModifiedDate,
-          profileCubit: context.read<ProfileCubit>(),
-          driveDao: context.read<DriveDao>(),
-          arweave: context.read<ArweaveService>(),
-        ),
-        child: const FileDownloadDialog(),
-      ),
-    );
+}) {
+  final ARFSFileEntity arfsFile =
+      ARFSFactory().getARFSFileFromFileRevisionWithTransactions(revision);
+  final profileState = context.read<ProfileCubit>().state;
+  final cipherKey =
+      profileState is ProfileLoggedIn ? profileState.cipherKey : null;
+  final cubit = ProfileFileDownloadCubit(
+    arfsRepository: ARFSRepository(
+      context.read<DriveDao>(),
+      ARFSFactory(),
+    ),
+    decrypt: Decrypt(),
+    downloadService: DownloadService(arweave),
+    downloader: ArDriveDownloader(),
+    file: arfsFile,
+    driveDao: context.read<DriveDao>(),
+    arweave: context.read<ArweaveService>(),
+  )..download(cipherKey);
+
+  return showDialog(
+    context: context,
+    builder: (_) => BlocProvider<FileDownloadCubit>.value(
+      value: cubit,
+      child: const FileDownloadDialog(),
+    ),
+  );
+}
 
 Future<void> promptToDownloadSharedFile({
   required BuildContext context,
   SecretKey? fileKey,
   required FileRevision revision,
-}) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider<FileDownloadCubit>(
-        create: (_) => SharedFileDownloadCubit(
-          revision: revision,
-          fileKey: fileKey,
-          arweave: context.read<ArweaveService>(),
-        ),
-        child: const FileDownloadDialog(),
-      ),
-    );
+}) {
+  final cubit = SharedFileDownloadCubit(
+    revision: revision,
+    fileKey: fileKey,
+    arweave: context.read<ArweaveService>(),
+  );
+  return showDialog(
+    context: context,
+    builder: (_) => BlocProvider<FileDownloadCubit>.value(
+      value: cubit,
+      child: const FileDownloadDialog(),
+    ),
+  );
+}
 
 class FileDownloadDialog extends StatelessWidget {
   const FileDownloadDialog({Key? key}) : super(key: key);
@@ -107,7 +130,13 @@ class FileDownloadDialog extends StatelessWidget {
           } else if (state is FileDownloadInProgress) {
             return _fileDownloadInProgressDialog(context, state);
           } else if (state is FileDownloadFailure) {
-            return _fileDownloadFailedDialog(context);
+            if (state.reason == FileDownloadFailureReason.unknownError) {
+              return _fileDownloadFailedDialog(context);
+            }
+
+            return _fileDownloadFailedDueToFileAbovePrivateLimit(context);
+          } else if (state is FileDownloadWarning) {
+            return _warningToWaitDownloadFinishes(context);
           } else {
             return const SizedBox();
           }
@@ -125,6 +154,53 @@ class FileDownloadDialog extends StatelessWidget {
       actions: [
         ElevatedButton(
           onPressed: () => Navigator.pop(context),
+          child: Text(appLocalizationsOf(context).ok),
+        ),
+      ],
+    );
+  }
+
+  Widget _fileDownloadFailedDueToFileAbovePrivateLimit(BuildContext context) {
+    return AppDialog(
+      dismissable: false,
+      title: appLocalizationsOf(context).warningEmphasized,
+      content: SizedBox(
+        width: kMediumDialogWidth,
+        child: Text(
+            appLocalizationsOf(context).fileFailedToDownloadFileAboveLimit),
+      ),
+      actions: [
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(appLocalizationsOf(context).ok),
+        ),
+      ],
+    );
+  }
+
+  Widget _warningToWaitDownloadFinishes(BuildContext context) {
+    return AppDialog(
+      dismissable: false,
+      title: appLocalizationsOf(context).warningEmphasized,
+      content: SizedBox(
+        width: kMediumDialogWidth,
+        child: Text(appLocalizationsOf(context).waitForDownload),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(appLocalizationsOf(context).cancel),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final profileState = context.read<ProfileCubit>().state;
+
+            final cipherKey =
+                profileState is ProfileLoggedIn ? profileState.cipherKey : null;
+
+            (context.read<FileDownloadCubit>() as ProfileFileDownloadCubit)
+                .download(cipherKey);
+          },
           child: Text(appLocalizationsOf(context).ok),
         ),
       ],
