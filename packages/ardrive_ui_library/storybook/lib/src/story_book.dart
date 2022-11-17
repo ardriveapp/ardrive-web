@@ -212,95 +212,13 @@ class StoryBook extends StatelessWidget {
                 WidgetbookUseCase(
                   name: 'Sample Data Table',
                   builder: (context) {
-                    return Container(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeBgCanvas,
-                      child: Card(
-                        margin: const EdgeInsets.all(16),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeBgSurface,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                                margin: EdgeInsets.symmetric(horizontal: 16),
-                                height: 84,
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Flexible(
-                                      flex: 2,
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 28),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          children: [
-                                            const Padding(
-                                              padding:
-                                                  EdgeInsetsDirectional.only(
-                                                      end: 8.0),
-                                              child: Icon(Icons.image),
-                                            ),
-                                            Text('Name'),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                    Flexible(
-                                      child: Text(
-                                        'Size',
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.start,
-                                      ),
-                                    ),
-                                    Flexible(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 28),
-                                        child: Text(
-                                          'Last Updated',
-                                          overflow: TextOverflow.ellipsis,
-                                          textAlign: TextAlign.start,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                )),
-                            Expanded(
-                              child: ListView.builder(
-                                padding: const EdgeInsets.all(8),
-                                itemBuilder: (context, index) {
-                                  return Card(
-                                    margin: const EdgeInsets.all(8),
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8)),
-                                    color: ArDriveTheme.of(context)
-                                        .themeData
-                                        .colors
-                                        .themeBgSubtle,
-                                    child: SizedBox(
-                                      height: 80,
-                                      child: WidgetBookExampleDataTableSource()
-                                          .getRow(index),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    return ArDriveDataTable(
+                      rows: WidgetBookExampleDataTableSource().getRows(),
+                      columns: const [
+                        Text('Name'),
+                        Text('Size'),
+                        Text('Last Updated'),
+                      ],
                     );
                   },
                 ),

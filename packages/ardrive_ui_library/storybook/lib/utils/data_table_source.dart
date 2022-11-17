@@ -4,47 +4,35 @@ import 'package:flutter/material.dart';
 
 class WidgetBookExampleDataTableSource {
   final List<int> sampleData = List.generate(128, (index) => index);
-  Widget? getRow(int index) {
+  List<List<Widget>> getRows() {
     final date = DateTime.now();
-    
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Flexible(
-          flex: 2,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Row(
+
+    return sampleData
+        .map(
+          (sampleData) => [
+            Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 const Padding(
                   padding: EdgeInsetsDirectional.only(end: 8.0),
                   child: Icon(Icons.image),
                 ),
-                Text('Sample ${sampleData[index]}'),
+                Text('Sample $sampleData'),
               ],
             ),
-          ),
-        ),
-        Flexible(
-          child: Text(
-            Random(sampleData[index]).nextInt(1024).toString(),
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.start,
-          ),
-        ),
-        Flexible(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Text(
+            Text(
+              Random(sampleData).nextInt(1024).toString(),
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.start,
+            ),
+            Text(
               '${date.year} ${date.month} ${date.day}',
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.start,
             ),
-          ),
-        ),
-      ],
-    );
+          ],
+        )
+        .toList();
   }
 
   bool get isRowCountApproximate => false;
