@@ -1,8 +1,7 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 
-enum RadioButtonState { normal, hover, checked, disabled }
+enum RadioButtonState { unchecked, hover, checked, disabled }
 
 class RadioButtonOptions {
   RadioButtonOptions({
@@ -32,24 +31,22 @@ class ArDriveRadioButtonGroup extends StatefulWidget {
 }
 
 class _ArDriveRadioButtonGroupState extends State<ArDriveRadioButtonGroup> {
-  late List<RadioButtonOptions> _options;
+  late final List<ValueNotifier<RadioButtonOptions>> _options;
 
   @override
   void initState() {
     _options = List.generate(
-      widget.options.length,
-      (i) => RadioButtonOptions(
-        isEnabled: widget.options[i].isEnabled,
-        value: widget.options[i].value,
-        text: widget.options[i].text,
-      ),
-    );
-    _keys = List.generate(_options.length, (index) => const Uuid().v1());
+        widget.options.length,
+        (i) => ValueNotifier(
+              RadioButtonOptions(
+                isEnabled: widget.options[i].isEnabled,
+                value: widget.options[i].value,
+                text: widget.options[i].text,
+              ),
+            ));
 
     super.initState();
   }
-
-  late List _keys;
 
   @override
   Widget build(BuildContext context) {
@@ -57,24 +54,27 @@ class _ArDriveRadioButtonGroupState extends State<ArDriveRadioButtonGroup> {
       itemBuilder: (context, i) {
         return Align(
           alignment: Alignment.center,
-          child: ArDriveRadioButton(
-            key: ValueKey(_keys[i]),
-            text: _options[i].text,
-            onChange: (value) async {
-              for (int j = 0; j < _options.length; j++) {
-                if (j == i) {
-                  continue;
-                }
-                if (_options[j].value) {
-                  _options[j].value = false;
-                  _keys[j] = const Uuid().v1();
-                }
-              }
-              setState(() {});
+          child: ValueListenableBuilder(
+            builder: (context, t, w) {
+              return ArDriveRadioButton(
+                value: _options[i].value.value,
+                text: _options[i].value.text,
+                onChange: (value) async {
+                  for (int j = 0; j < _options.length; j++) {
+                    if (j == i) {
+                      continue;
+                    }
+                    if (_options[j].value.value) {
+                      _options[j].value.value = false;
+                    }
+                  }
+                  _options[i].value.value = value;
 
-              _options[i].value = value;
-              widget.onChanged?.call(i, value);
+                  widget.onChanged?.call(i, value);
+                },
+              );
             },
+            valueListenable: _options[i],
           ),
         );
       },
@@ -99,26 +99,44 @@ class ArDriveRadioButton extends StatefulWidget {
   final Function(bool)? onChange;
 
   @override
-  State<ArDriveRadioButton> createState() => _ArDriveRadioButtonState();
+  State<ArDriveRadioButton> createState() => ArDriveRadioButtonState();
 }
 
-class _ArDriveRadioButtonState extends State<ArDriveRadioButton> {
-  late RadioButtonState _state;
+@visibleForTesting
+class ArDriveRadioButtonState extends State<ArDriveRadioButton> {
+  @visibleForTesting
+  late RadioButtonState state;
   late bool _value;
 
   @override
   void initState() {
     if (!widget.isEnabled) {
-      _state = RadioButtonState.disabled;
+      state = RadioButtonState.disabled;
       _value = false;
     } else if (widget.value) {
-      _state = RadioButtonState.checked;
+      state = RadioButtonState.checked;
       _value = true;
     } else {
-      _state = RadioButtonState.normal;
+      state = RadioButtonState.unchecked;
       _value = false;
     }
     super.initState();
+  }
+
+  @override
+  void didUpdateWidget(covariant ArDriveRadioButton oldWidget) {
+    if (!widget.isEnabled) {
+      state = RadioButtonState.disabled;
+      _value = false;
+    } else if (widget.value) {
+      state = RadioButtonState.checked;
+      _value = true;
+    } else {
+      state = RadioButtonState.unchecked;
+      _value = false;
+    }
+    setState(() {});
+    super.didUpdateWidget(oldWidget);
   }
 
   @override
@@ -128,23 +146,22 @@ class _ArDriveRadioButtonState extends State<ArDriveRadioButton> {
 
   Widget _radio() {
     return Row(
-      key: widget.key,
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 4.0),
           child: GestureDetector(
             onTap: () async {
-              if (_state == RadioButtonState.disabled) {
+              if (state == RadioButtonState.disabled) {
                 return;
               }
-              if (_state == RadioButtonState.normal) {
+              if (state == RadioButtonState.unchecked) {
                 setState(() {
-                  _state = RadioButtonState.checked;
+                  state = RadioButtonState.checked;
                 });
-              } else if (_state == RadioButtonState.checked) {
+              } else if (state == RadioButtonState.checked) {
                 setState(() {
-                  _state = RadioButtonState.normal;
+                  state = RadioButtonState.unchecked;
                 });
               }
 
@@ -166,9 +183,8 @@ class _ArDriveRadioButtonState extends State<ArDriveRadioButton> {
                 child: Center(
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    height: _state == RadioButtonState.checked ||
-                            (_state == RadioButtonState.disabled &&
-                                widget.value)
+                    height: state == RadioButtonState.checked ||
+                            (state == RadioButtonState.disabled && widget.value)
                         ? 10
                         : 0,
                     width: 10,
@@ -197,8 +213,8 @@ class _ArDriveRadioButtonState extends State<ArDriveRadioButton> {
   }
 
   Color _color() {
-    switch (_state) {
-      case RadioButtonState.normal:
+    switch (state) {
+      case RadioButtonState.unchecked:
         return ArDriveTheme.of(context).themeData.colors.themeAccentDefault;
 
       case RadioButtonState.hover:
