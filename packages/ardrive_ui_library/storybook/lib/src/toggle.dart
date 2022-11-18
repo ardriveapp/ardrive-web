@@ -10,7 +10,7 @@ WidgetbookCategory toggle() {
         builder: (context) {
           return const Center(
             child: ArDriveToggle(
-              initialState: ToggleState.on,
+              initialValue: true,
             ),
           );
         },
@@ -20,7 +20,7 @@ WidgetbookCategory toggle() {
         builder: (context) {
           return const Center(
             child: ArDriveToggle(
-              initialState: ToggleState.off,
+              initialValue: false,
             ),
           );
         },
@@ -30,7 +30,7 @@ WidgetbookCategory toggle() {
         builder: (context) {
           return const Center(
             child: ArDriveToggle(
-              initialState: ToggleState.disabled,
+              isEnabled: false,
             ),
           );
         },
