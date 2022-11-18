@@ -17,7 +17,8 @@ class ArDriveDataTable extends StatefulWidget {
 }
 
 class _ArDriveDataTableState extends State<ArDriveDataTable> {
-  int? selectedIndex;
+  List<int> selectedIndexes = [];
+  bool multiSelect = false;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -54,13 +55,17 @@ class _ArDriveDataTableState extends State<ArDriveDataTable> {
                 padding: const EdgeInsets.all(8),
                 itemBuilder: (context, index) {
                   return ArDriveListTile(
-                    selected: index == selectedIndex ? true : false,
+                    selected: selectedIndexes.contains(index) ? true : false,
                     onTap: () {
                       setState(() {
-                        if (selectedIndex != index) {
-                          selectedIndex = index;
+                        if (selectedIndexes.contains(index)) {
+                          selectedIndexes.remove(index);
                         } else {
-                          selectedIndex = null;
+                          if (multiSelect) {
+                            selectedIndexes.add(index);
+                          } else {
+                            selectedIndexes = [index];
+                          }
                         }
                       });
                     },
