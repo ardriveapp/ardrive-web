@@ -53,7 +53,7 @@ class ArDriveColors {
     this.themeFgDisabled = themeFgDisabled ?? grey.shade600;
     this.themeBgSurface = themeBgSurface ?? const Color(0xff121212);
     this.themeGbMuted = themeGbMuted ?? const Color(0xff2C2C2C);
-    this.themeBgSubtle = themeBgSubtle ?? const Color(0xff2C2C2C);
+    this.themeBgSubtle = themeBgSubtle ?? const Color(0xff1C1C1C);
     this.themeBgCanvas = themeBgCanvas ?? black;
     this.themeAccentBrand = themeAccentBrand ?? red.shade500;
     this.themeAccentMuted = themeAccentMuted ?? grey.withOpacity(0.95);
