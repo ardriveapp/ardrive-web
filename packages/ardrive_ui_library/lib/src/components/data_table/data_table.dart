@@ -17,6 +17,7 @@ class ArDriveDataTable extends StatefulWidget {
 }
 
 class _ArDriveDataTableState extends State<ArDriveDataTable> {
+  int? selectedIndex;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -53,8 +54,16 @@ class _ArDriveDataTableState extends State<ArDriveDataTable> {
                 padding: const EdgeInsets.all(8),
                 itemBuilder: (context, index) {
                   return ArDriveListTile(
-                    selected: false,
-                    onTap: () {},
+                    selected: index == selectedIndex ? true : false,
+                    onTap: () {
+                      setState(() {
+                        if (selectedIndex != index) {
+                          selectedIndex = index;
+                        } else {
+                          selectedIndex = null;
+                        }
+                      });
+                    },
                     title: SizedBox(
                       height: 80,
                       child: Row(

@@ -21,7 +21,8 @@ class ArDriveListTile extends StatelessWidget {
       child: ListTile(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         tileColor: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
-        selectedColor: ArDriveTheme.of(context).themeData.colors.themeGbMuted,
+        selectedColor:
+            ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
         selected: selected,
         onTap: onTap,
         title: title,
