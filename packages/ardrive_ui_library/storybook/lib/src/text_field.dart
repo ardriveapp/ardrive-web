@@ -103,7 +103,3 @@ WidgetbookCategory textField() {
     ],
   );
 }
-
-WidgetbookCategory loginForm() {
-  return WidgetbookCategory(name: 'LoginForm', widgets: []);
-}
