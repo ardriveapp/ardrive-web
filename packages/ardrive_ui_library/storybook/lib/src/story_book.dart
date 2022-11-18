@@ -30,10 +30,7 @@ class StoryBook extends StatelessWidget {
           categories: [
             toggle(),
             textField(),
-            loginForm(),
-            toggle(),
-            getTypographyCategory(true),
-            getTypographyCategory(false),
+            getColors(),
             shadows(),
             button(),
             card(),

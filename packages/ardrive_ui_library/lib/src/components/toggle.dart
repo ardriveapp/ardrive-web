@@ -61,12 +61,11 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
           borderRadius: BorderRadius.circular(10),
           color: colorBackground(),
         ),
-        // TODO(@thiagocarvalhodev): use correct color here
         duration: animationDuration,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 2),
           child: AnimatedAlign(
-            alignment: alingment(),
+            alignment: alignment(),
             duration: animationDuration,
             child: _ToggleCircle(
               color: colorIndicator(),
@@ -78,7 +77,7 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
     );
   }
 
-  Alignment alingment() {
+  Alignment alignment() {
     switch (_state) {
       case ToggleState.on:
         return Alignment.centerRight;
