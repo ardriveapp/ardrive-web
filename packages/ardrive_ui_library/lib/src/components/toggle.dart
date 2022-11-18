@@ -6,10 +6,14 @@ enum ToggleState { on, off, disabled }
 class ArDriveToggle extends StatefulWidget {
   const ArDriveToggle({
     super.key,
-    this.initialState = ToggleState.off,
+    this.initialValue = false,
+    this.isEnabled = true,
+    this.onChanged,
   });
 
-  final ToggleState initialState;
+  final bool initialValue;
+  final bool isEnabled;
+  final Function(bool value)? onChanged;
 
   @override
   State<ArDriveToggle> createState() => _ArDriveToggleState();
@@ -22,7 +26,15 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
 
   @override
   void initState() {
-    _state = widget.initialState;
+    if (widget.isEnabled) {
+      if (widget.initialValue) {
+        _state = ToggleState.on;
+      } else {
+        _state = ToggleState.off;
+      }
+    } else {
+      _state = ToggleState.disabled;
+    }
 
     super.initState();
   }
@@ -34,8 +46,10 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
         if (_state != ToggleState.disabled) {
           if (_state == ToggleState.on) {
             _state = ToggleState.off;
+            widget.onChanged?.call(false);
           } else {
             _state = ToggleState.on;
+            widget.onChanged?.call(true);
           }
           setState(() {});
         }
