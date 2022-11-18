@@ -1,34 +1,23 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
+import 'package:storybook/src/ardrive_app_base.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookCategory card() {
   return WidgetbookCategory(name: 'Card', widgets: [
-    WidgetbookComponent(name: 'Card', useCases: [
+    WidgetbookComponent(name: 'Card ', useCases: [
       WidgetbookUseCase(
-          name: 'Light',
+          name: 'With content',
           builder: (context) {
-            return Center(
-              child: ArDriveTheme(
-                themeData: lightTheme(),
-                child: _card(),
-              ),
+            return ArDriveStorybookAppBase(
+              builder: (context) => _cardWithContent(),
             );
           }),
-      WidgetbookUseCase(
-          name: 'Dark',
-          builder: (context) {
-            return Center(
-              child: ArDriveTheme(
-                child: _card(),
-              ),
-            );
-          })
     ]),
   ]);
 }
 
-Widget _card() {
+Widget _cardWithContent() {
   return ArDriveCard(
     contentPadding: const EdgeInsets.all(16),
     content: Row(
@@ -42,7 +31,7 @@ Widget _card() {
               'Success',
               style: ArDriveTypography.body.smallBold(),
             ),
-            SizedBox(
+            const SizedBox(
               height: 8,
             ),
             Text(
@@ -51,7 +40,7 @@ Widget _card() {
             ),
           ],
         ),
-        Icon(Icons.close)
+        const Icon(Icons.close)
       ],
     ),
   );

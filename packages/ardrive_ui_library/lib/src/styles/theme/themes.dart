@@ -34,8 +34,10 @@ class ArDriveThemeData {
     ThemeData? materialThemeData,
     String? name,
     ArDriveColors? colors,
+    ArDriveShadows? shadows,
   }) {
     this.colors = colors ?? ArDriveColors();
+    this.shadows = shadows ?? ArDriveShadows(this.colors);
 
     this.toggleTheme = toggleTheme ??
         ArDriveToggleTheme(
@@ -59,6 +61,7 @@ class ArDriveThemeData {
   late ThemeData materialThemeData;
   late String name;
   late ArDriveColors colors;
+  late ArDriveShadows shadows;
 }
 
 ThemeData lightMaterialTheme() {
@@ -87,6 +90,7 @@ ArDriveThemeData lightTheme() {
   ArDriveColors colors = ArDriveColors.light();
 
   return ArDriveThemeData(
+    backgroundColor: colors.themeBgSurface,
     colors: colors,
     materialThemeData: lightMaterialTheme(),
     name: 'light',

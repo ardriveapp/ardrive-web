@@ -64,6 +64,16 @@ class FileDownloadSuccess extends FileDownloadState {
   List<Object> get props => [fileName];
 }
 
-class FileDownloadFailure extends FileDownloadState {}
+class FileDownloadFailure extends FileDownloadState {
+  const FileDownloadFailure(this.reason);
+
+  final FileDownloadFailureReason reason;
+}
+
+class FileDownloadWarning extends FileDownloadState {
+  const FileDownloadWarning();
+}
 
 class FileDownloadAborted extends FileDownloadState {}
+
+enum FileDownloadFailureReason { unknownError, fileAboveLimit }
