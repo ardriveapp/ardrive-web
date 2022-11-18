@@ -16,7 +16,7 @@ WidgetbookCategory radioButton() {
             );
           }),
       WidgetbookUseCase(
-          name: 'Toggle Group',
+          name: 'Radio Group',
           builder: (context) {
             return ArDriveApp(builder: (context) {
               return const Scaffold(body: Center(child: RadioGroupExample()));
