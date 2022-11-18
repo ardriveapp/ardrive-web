@@ -1,195 +1,109 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
+import 'package:storybook/src/ardrive_app_base.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookCategory textField() {
   return WidgetbookCategory(
     name: 'TextField',
-    folders: [
-      WidgetbookFolder(name: 'Dark', widgets: [
-        WidgetbookComponent(name: 'TextField', useCases: [
-          WidgetbookUseCase(
-              name: 'Dark',
-              builder: (context) {
-                return ArDriveTheme(
-                    themeData: lightTheme(),
-                    child: const Center(
-                        child: Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: ArDriveTextField(),
-                    )));
-              }),
-          WidgetbookUseCase(
-              name: 'Light',
-              builder: (context) {
-                return ArDriveTheme(
-                    themeData: lightTheme(),
-                    child: const Center(
-                        child: Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: ArDriveTextField(),
-                    )));
-              })
-        ])
-      ]),
-      WidgetbookFolder(name: 'Light', widgets: [
-        WidgetbookComponent(name: 'TextField', useCases: [
-          WidgetbookUseCase(
-              name: 'Enabled',
-              builder: (context) {
-                return ArDriveTheme(
-                    themeData: lightTheme(),
-                    child: const Center(
-                        child: Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: ArDriveTextField(
-                        label: 'Enabled',
-                        hintText: 'Enabled',
-                        isFieldRequired: true,
-                      ),
-                    )));
-              }),
-          WidgetbookUseCase(
-              name: 'Disabled',
-              builder: (context) {
-                return ArDriveTheme(
-                    themeData: lightTheme(),
-                    child: const Center(
-                        child: Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: ArDriveTextField(
-                        isEnabled: false,
-                        hintText: 'Disabled',
-                      ),
-                    )));
-              }),
-          WidgetbookUseCase(
-              name: 'Error',
-              builder: (context) {
-                return ArDriveTheme(
-                    themeData: lightTheme(),
-                    child: Center(
-                        child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: ArDriveTextField(
-                        hintText: 'Error',
-                        validator: (s) => false,
-                        errorMessage: 'Error message',
-                      ),
-                    )));
-              }),
-          WidgetbookUseCase(
-              name: 'Success',
-              builder: (context) {
-                return ArDriveTheme(
-                    themeData: lightTheme(),
-                    child: Center(
-                        child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: ArDriveTextField(
-                        hintText: 'Success',
-                        validator: (s) => true,
-                        successMessage: 'Success MessageEMESSAGEMESSAGEMESSAGE',
-                      ),
-                    )));
-              })
-        ]),
-      ]),
-      WidgetbookFolder(name: 'Dark', widgets: [
-        WidgetbookComponent(name: 'TextField', useCases: [
-          WidgetbookUseCase(
-              name: 'Enabled',
-              builder: (context) {
-                return ArDriveTheme(
-                    child: const Center(
-                        child: Padding(
-                  padding: EdgeInsets.all(8.0),
+    widgets: [
+      WidgetbookComponent(name: 'TextField', useCases: [
+        WidgetbookUseCase(
+            name: 'Enabled',
+            builder: (context) {
+              return ArDriveStorybookAppBase(
+                builder: (context) => Padding(
+                  padding: const EdgeInsets.all(8.0),
                   child: ArDriveTextField(
-                    label: 'Enabled',
-                    hintText: 'Enabled',
+                    label: context.knobs.text(label: 'Label'),
+                    hintText: context.knobs.text(label: 'Hint text'),
                     isFieldRequired: true,
                   ),
-                )));
-              }),
-          WidgetbookUseCase(
-              name: 'Disabled',
-              builder: (context) {
-                return ArDriveTheme(
-                    child: const Center(
-                        child: Padding(
+                ),
+              );
+            }),
+        WidgetbookUseCase(
+            name: 'Disabled',
+            builder: (context) {
+              return ArDriveStorybookAppBase(
+                builder: (context) => const Padding(
                   padding: EdgeInsets.all(8.0),
                   child: ArDriveTextField(
                     isEnabled: false,
                     hintText: 'Disabled',
                   ),
-                )));
-              }),
-          WidgetbookUseCase(
-              name: 'Error',
-              builder: (context) {
-                return ArDriveTheme(
-                    child: Center(
-                        child: Padding(
+                ),
+              );
+            }),
+        WidgetbookUseCase(
+            name: 'Error',
+            builder: (context) {
+              return ArDriveStorybookAppBase(
+                builder: (context) => Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: ArDriveTextField(
-                    hintText: 'Error',
+                    label: context.knobs.text(label: 'Label'),
+                    hintText: context.knobs.text(label: 'Hint text'),
                     validator: (s) => false,
-                    errorMessage: 'Error message',
+                    errorMessage: context.knobs.text(label: 'Error message'),
                   ),
-                )));
-              }),
-          WidgetbookUseCase(
-              name: 'Success',
-              builder: (context) {
-                return ArDriveTheme(
-                    child: Center(
-                        child: Padding(
+                ),
+              );
+            }),
+        WidgetbookUseCase(
+            name: 'Success',
+            builder: (context) {
+              return ArDriveStorybookAppBase(builder: (context) {
+                return Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: ArDriveTextField(
-                    hintText: 'Success',
+                    label: context.knobs.text(label: 'Label'),
+                    hintText: context.knobs.text(label: 'Hint text'),
                     validator: (s) => true,
-                    successMessage: 'Success MessageEMESSAGEMESSAGEMESSAGE',
+                    successMessage:
+                        context.knobs.text(label: 'Success message'),
                   ),
-                )));
-              })
-        ]),
+                );
+              });
+            }),
+      ]),
+      WidgetbookComponent(name: 'LoginForm', useCases: [
+        WidgetbookUseCase(
+            name: 'Login form',
+            builder: (context) {
+              return ArDriveStorybookAppBase(
+                builder: (context) => Scaffold(
+                  body: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Welcome Back',
+                            style: ArDriveTypography.headline.headline4Bold(),
+                          ),
+                          const SizedBox(
+                            height: 32,
+                          ),
+                          const ArDriveTextField(
+                            hintText: 'Enter Username',
+                          ),
+                          const SizedBox(
+                            height: 16,
+                          ),
+                          const ArDriveTextField(
+                            hintText: 'Enter Password',
+                          ),
+                        ]),
+                  ),
+                ),
+              );
+            })
       ])
     ],
   );
 }
 
 WidgetbookCategory loginForm() {
-  return WidgetbookCategory(name: 'LoginForm', widgets: [
-    WidgetbookComponent(name: 'LoginForm', useCases: [
-      WidgetbookUseCase(
-          name: 'Dark',
-          builder: (context) {
-            return Scaffold(
-              body: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Welcome Back',
-                        style: ArDriveTypography.headline.headline4Bold(),
-                      ),
-                      const SizedBox(
-                        height: 32,
-                      ),
-                      const ArDriveTextField(
-                        hintText: 'Enter Username',
-                      ),
-                      const SizedBox(
-                        height: 16,
-                      ),
-                      const ArDriveTextField(
-                        hintText: 'Enter Password',
-                      ),
-                    ]),
-              ),
-            );
-          })
-    ])
-  ]);
+  return WidgetbookCategory(name: 'LoginForm', widgets: []);
 }
