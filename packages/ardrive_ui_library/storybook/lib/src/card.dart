@@ -1,35 +1,22 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
+import 'package:storybook/src/ardrive_app_base.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookCategory card() {
   return WidgetbookCategory(name: 'Card', widgets: [
-    WidgetbookComponent(name: 'Card Dark', useCases: [
+    WidgetbookComponent(name: 'Card ', useCases: [
       WidgetbookUseCase(
           name: 'With content',
           builder: (context) {
-            return Center(
-              child: ArDriveTheme(
-                child: _cardWithContent(),
-              ),
-            );
-          }),
-    ]),
-    WidgetbookComponent(name: 'Card Light', useCases: [
-      WidgetbookUseCase(
-          name: 'With content',
-          builder: (context) {
-            return Center(
-              child: ArDriveTheme(
-                themeData: lightTheme(),
-                child: _cardWithContent(),
-              ),
+            return ArDriveStorybookAppBase(
+              builder: (context) => _cardWithContent(),
             );
           }),
     ]),
   ]);
 }
- 
+
 Widget _cardWithContent() {
   return ArDriveCard(
     contentPadding: const EdgeInsets.all(16),
