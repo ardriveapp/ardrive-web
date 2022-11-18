@@ -20,13 +20,13 @@ WidgetbookCategory button() {
         },
       ),
       WidgetbookUseCase(
-        name: 'Secundary',
+        name: 'Secondary',
         builder: (context) {
           return ArDriveStorybookAppBase(
             builder: (context) => ArDriveButton(
               style: ArDriveButtonStyle.secondary,
               onPressed: () {
-                debugPrint('Secundary Light Button pressed');
+                debugPrint('Secondary Light Button pressed');
               },
               text: 'Add Profile',
             ),
