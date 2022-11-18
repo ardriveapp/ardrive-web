@@ -36,5 +36,40 @@ WidgetbookCategory toggle() {
         },
       )
     ]),
+    WidgetbookComponent(name: 'Toggle Switch', useCases: [
+      WidgetbookUseCase(
+        name: 'On',
+        builder: (context) {
+          return ArDriveStorybookAppBase(
+            builder: (context) => ArDriveToggleSwitch(
+              text: context.knobs.text(label: 'Label'),
+              value: true,
+            ),
+          );
+        },
+      ),
+      WidgetbookUseCase(
+        name: 'Off',
+        builder: (context) {
+          return ArDriveStorybookAppBase(
+            builder: (context) => ArDriveToggleSwitch(
+              text: context.knobs.text(label: 'Label'),
+              value: false,
+            ),
+          );
+        },
+      ),
+      WidgetbookUseCase(
+        name: 'disabled',
+        builder: (context) {
+          return ArDriveStorybookAppBase(
+            builder: (context) => ArDriveToggleSwitch(
+              text: context.knobs.text(label: 'Label'),
+              isEnabled: false,
+            ),
+          );
+        },
+      )
+    ]),
   ]);
 }

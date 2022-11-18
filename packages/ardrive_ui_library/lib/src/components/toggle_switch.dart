@@ -24,16 +24,24 @@ class _ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        ArDriveToggle(
-          initialValue: widget.value,
-          isEnabled: widget.isEnabled,
-          onChanged: widget.onChanged,
+        Padding(
+          padding: const EdgeInsets.only(top: 4.0),
+          child: ArDriveToggle(
+            initialValue: widget.value,
+            isEnabled: widget.isEnabled,
+            onChanged: widget.onChanged,
+          ),
         ),
         const SizedBox(
           width: 8,
         ),
-        Text(widget.text),
+        Text(
+          widget.text,
+          style: ArDriveTypography.body.bodyRegular(),
+        ),
       ],
     );
   }
