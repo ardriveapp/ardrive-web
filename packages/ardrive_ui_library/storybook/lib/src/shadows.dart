@@ -118,9 +118,9 @@ WidgetbookCategory shadows() {
 
 class _Container extends StatelessWidget {
   const _Container({
-    super.key,
     required this.shadow,
   });
+
   final BoxShadow shadow;
 
   @override
