@@ -7,9 +7,9 @@ WidgetbookCategory radioButton() {
   return WidgetbookCategory(name: 'RadioButton', widgets: [
     WidgetbookComponent(name: 'RadioButton', useCases: [
       WidgetbookUseCase(
-          name: 'name',
+          name: 'Single Radio Button',
           builder: (context) {
-            return Center(
+            return const Center(
               child: ArDriveRadioButton(
                 text: 'Option 1',
               ),
@@ -19,7 +19,11 @@ WidgetbookCategory radioButton() {
           name: 'Radio Group',
           builder: (context) {
             return ArDriveApp(builder: (context) {
-              return const Scaffold(body: Center(child: RadioGroupExample()));
+              return const Scaffold(
+                body: Align(
+                  child: RadioGroupExample(),
+                ),
+              );
             });
           })
     ])
@@ -47,10 +51,20 @@ class _RadioGroupExampleState extends State<RadioGroupExample> {
 
     return Scaffold(
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           ArDriveRadioButtonGroup(
+            alignment: context.knobs.options(
+              label: 'Alignment',
+              options: [
+                const Option(label: 'Left', value: Alignment.centerLeft),
+                const Option(label: 'Right', value: Alignment.centerRight),
+                const Option(
+                  label: 'Center',
+                  value: Alignment.center,
+                ),
+              ],
+            ),
             onChanged: (i, value) {
               if (value) {
                 option = 'Selected option: ${options[i].text}';

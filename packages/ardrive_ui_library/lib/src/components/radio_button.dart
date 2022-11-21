@@ -20,10 +20,12 @@ class ArDriveRadioButtonGroup extends StatefulWidget {
     super.key,
     required this.options,
     this.onChanged,
+    this.alignment = Alignment.centerLeft,
   });
 
   final List<RadioButtonOptions> options;
   final Function(int, bool)? onChanged;
+  final Alignment alignment;
 
   @override
   State<ArDriveRadioButtonGroup> createState() =>
@@ -53,7 +55,7 @@ class _ArDriveRadioButtonGroupState extends State<ArDriveRadioButtonGroup> {
     return ListView.builder(
       itemBuilder: (context, i) {
         return Align(
-          alignment: Alignment.center,
+          alignment: widget.alignment,
           child: ValueListenableBuilder(
             builder: (context, t, w) {
               return ArDriveRadioButton(
@@ -110,21 +112,18 @@ class ArDriveRadioButtonState extends State<ArDriveRadioButton> {
 
   @override
   void initState() {
-    if (!widget.isEnabled) {
-      state = RadioButtonState.disabled;
-      _value = false;
-    } else if (widget.value) {
-      state = RadioButtonState.checked;
-      _value = true;
-    } else {
-      state = RadioButtonState.unchecked;
-      _value = false;
-    }
+    _verifyState();
     super.initState();
   }
 
   @override
   void didUpdateWidget(covariant ArDriveRadioButton oldWidget) {
+    _verifyState();
+    setState(() {});
+    super.didUpdateWidget(oldWidget);
+  }
+
+  void _verifyState() {
     if (!widget.isEnabled) {
       state = RadioButtonState.disabled;
       _value = false;
@@ -135,8 +134,6 @@ class ArDriveRadioButtonState extends State<ArDriveRadioButton> {
       state = RadioButtonState.unchecked;
       _value = false;
     }
-    setState(() {});
-    super.didUpdateWidget(oldWidget);
   }
 
   @override
@@ -216,7 +213,6 @@ class ArDriveRadioButtonState extends State<ArDriveRadioButton> {
     switch (state) {
       case RadioButtonState.unchecked:
         return ArDriveTheme.of(context).themeData.colors.themeAccentDefault;
-
       case RadioButtonState.hover:
         return ArDriveTheme.of(context).themeData.colors.themeFgDefault;
       case RadioButtonState.checked:
