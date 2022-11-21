@@ -22,7 +22,7 @@ import 'components.dart';
 Future<void> promptToDownloadProfileFile({
   required BuildContext context,
   required FileWithLatestRevisionTransactions file,
-}) {
+}) async {
   final ARFSFileEntity arfsFile =
       ARFSFactory().getARFSFileFromFileWithLatestRevisionTransactions(file);
 
@@ -41,6 +41,7 @@ Future<void> promptToDownloadProfileFile({
     driveDao: context.read<DriveDao>(),
     arweave: context.read<ArweaveService>(),
   )..download(cipherKey);
+
   return showDialog(
     context: context,
     builder: (_) => BlocProvider<FileDownloadCubit>.value(

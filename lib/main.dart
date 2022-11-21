@@ -171,7 +171,6 @@ class AppState extends State<App> {
                 ),
               ],
               child: ArDriveApp(
-                themeData: lightTheme(),
                 builder: (context) {
                   return MaterialApp.router(
                     title: 'ArDrive',

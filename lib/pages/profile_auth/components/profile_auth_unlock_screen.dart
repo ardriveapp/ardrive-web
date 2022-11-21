@@ -1,6 +1,4 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/components/app_dialog.dart';
-import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/profile_auth/components/profile_auth_add_screen.dart';
@@ -8,6 +6,7 @@ import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/authentication/biometric_permission_dialog.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -73,8 +72,12 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                 mainAxisSize: MainAxisSize.max,
                                 children: [
                                   Image.asset(
-                                    Resources.images.brand
-                                        .logoHorizontalNoSubtitleLight,
+                                    ArDriveTheme.of(context).themeData.name ==
+                                            'light'
+                                        ? Resources.images.brand
+                                            .logoHorizontalNoSubtitleLight
+                                        : Resources.images.brand
+                                            .logoHorizontalNoSubtitleDark,
                                     height: 126,
                                     fit: BoxFit.contain,
                                   ),
@@ -96,9 +99,9 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                                           state.username!)
                                                       .toUpperCase(),
                                                   textAlign: TextAlign.center,
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .headline5,
+                                                  style: ArDriveTypography
+                                                      .headline
+                                                      .headline4Bold(),
                                                 ),
                                                 AbsorbPointer(
                                                   child: SizedBox(
@@ -117,28 +120,21 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                                         )),
                                                   ),
                                                 ),
-                                                ReactiveTextField(
+                                                ArDriveTextField(
                                                     key: ValueKey(
                                                         state.autoFocus),
-                                                    formControlName: 'password',
                                                     autofocus: state.autoFocus,
                                                     obscureText: true,
                                                     autofillHints: const [
                                                       AutofillHints.password
                                                     ],
-                                                    decoration: InputDecoration(
-                                                      labelText:
-                                                          appLocalizationsOf(
-                                                                  context)
-                                                              .password,
-                                                      prefixIcon: const Icon(
-                                                          Icons.lock),
-                                                    ),
-                                                    validationMessages:
-                                                        kValidationMessages(
-                                                            appLocalizationsOf(
-                                                                context)),
-                                                    onSubmitted: (_) async {
+                                                    hintText: 'Password',
+                                                    errorMessage:
+                                                        appLocalizationsOf(
+                                                                context)
+                                                            .validationRequired,
+                                                    onFieldSubmitted:
+                                                        (_) async {
                                                       context
                                                           .read<
                                                               ProfileUnlockCubit>()
@@ -147,15 +143,14 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                                                 const SizedBox(height: 16),
                                                 SizedBox(
                                                   width: double.infinity,
-                                                  child: ElevatedButton(
+                                                  child: ArDriveButton(
                                                     onPressed: () => context
                                                         .read<
                                                             ProfileUnlockCubit>()
                                                         .submit(),
-                                                    child: Text(
-                                                        appLocalizationsOf(
-                                                                context)
-                                                            .unlockEmphasized),
+                                                    text: appLocalizationsOf(
+                                                            context)
+                                                        .unlockEmphasized,
                                                   ),
                                                 ),
                                               ],
@@ -190,52 +185,37 @@ class ProfileAuthUnlockScreenState extends State<ProfileAuthUnlockScreen> {
                           ),
                           Align(
                             alignment: Alignment.bottomCenter,
-                            child: TextButton(
+                            child: ArDriveButton(
                               onPressed: () {
-                                showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return AppDialog(
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                            },
-                                            child: Text(
-                                              appLocalizationsOf(context)
-                                                  .cancel,
-                                            ),
-                                          ),
-                                          ElevatedButton(
-                                            onPressed: () {
-                                              context
-                                                  .read<ProfileCubit>()
-                                                  .logoutProfile();
-                                              Navigator.pop(context);
-                                            },
-                                            child: Text(
-                                              appLocalizationsOf(context).ok,
-                                            ),
-                                          ),
-                                        ],
-                                        title: appLocalizationsOf(context)
-                                            .forgetWalletTitle,
-                                        content: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              appLocalizationsOf(context)
-                                                  .forgetWalletDescription,
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    });
+                                final actions = [
+                                  ModalAction(
+                                    action: () {
+                                      Navigator.pop(context);
+                                    },
+                                    title: appLocalizationsOf(context).cancel,
+                                  ),
+                                  ModalAction(
+                                    action: () {
+                                      Navigator.pop(context);
+
+                                      context
+                                          .read<ProfileCubit>()
+                                          .logoutProfile();
+                                    },
+                                    title: appLocalizationsOf(context).ok,
+                                  )
+                                ];
+                                showStandardDialog(
+                                  context,
+                                  title: appLocalizationsOf(context)
+                                      .forgetWalletTitle,
+                                  content: appLocalizationsOf(context)
+                                      .forgetWalletDescription,
+                                  actions: actions,
+                                );
                               },
-                              child: Text(
-                                appLocalizationsOf(context).forgetWallet,
-                                textAlign: TextAlign.center,
-                              ),
+                              style: ArDriveButtonStyle.tertiary,
+                              text: appLocalizationsOf(context).forgetWallet,
                             ),
                           ),
                         ],
