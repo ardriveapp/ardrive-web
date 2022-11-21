@@ -15,6 +15,7 @@ import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive_io/ardrive_io.dart';
+import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:arweave/arweave.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -153,52 +154,57 @@ class AppState extends State<App> {
         ],
         child: KeyboardHandler(
           child: MultiBlocProvider(
-            providers: [
-              BlocProvider(
-                create: (context) => ProfileCubit(
-                  arweave: context.read<ArweaveService>(),
-                  profileDao: context.read<ProfileDao>(),
-                  db: context.read<Database>(),
+              providers: [
+                BlocProvider(
+                  create: (context) => ProfileCubit(
+                    arweave: context.read<ArweaveService>(),
+                    profileDao: context.read<ProfileDao>(),
+                    db: context.read<Database>(),
+                  ),
                 ),
-              ),
-              BlocProvider(
-                create: (context) => ActivityCubit(),
-              ),
-              BlocProvider(
-                create: (context) =>
-                    FeedbackSurveyCubit(FeedbackSurveyInitialState()),
-              ),
-            ],
-            child: MaterialApp.router(
-              title: 'ArDrive',
-              theme: appTheme(),
-              debugShowCheckedModeBanner: false,
-              routeInformationParser: _routeInformationParser,
-              routerDelegate: _routerDelegate,
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-              ],
-              supportedLocales: const [
-                Locale('en', ''), // English, no country code
-                Locale('es', ''), // Spanish, no country code
-                Locale.fromSubtags(languageCode: 'zh'), // generic Chinese 'zh'
-                Locale.fromSubtags(
-                  languageCode: 'zh',
-                  countryCode: 'HK',
-                ), // generic traditional Chinese 'zh_Hant'
-                Locale('ja', ''), // Japanese, no country code
-              ],
-              builder: (context, child) => ListTileTheme(
-                textColor: kOnSurfaceBodyTextColor,
-                iconColor: kOnSurfaceBodyTextColor,
-                child: Portal(
-                  child: child!,
+                BlocProvider(
+                  create: (context) => ActivityCubit(),
                 ),
-              ),
-            ),
-          ),
+                BlocProvider(
+                  create: (context) =>
+                      FeedbackSurveyCubit(FeedbackSurveyInitialState()),
+                ),
+              ],
+              child: ArDriveApp(
+                themeData: lightTheme(),
+                builder: (context) {
+                  return MaterialApp.router(
+                    title: 'ArDrive',
+                    theme: ArDriveTheme.of(context).themeData.materialThemeData,
+                    debugShowCheckedModeBanner: false,
+                    routeInformationParser: _routeInformationParser,
+                    routerDelegate: _routerDelegate,
+                    localizationsDelegates: const [
+                      AppLocalizations.delegate,
+                      GlobalMaterialLocalizations.delegate,
+                      GlobalWidgetsLocalizations.delegate,
+                    ],
+                    supportedLocales: const [
+                      Locale('en', ''), // English, no country code
+                      Locale('es', ''), // Spanish, no country code
+                      Locale.fromSubtags(
+                          languageCode: 'zh'), // generic Chinese 'zh'
+                      Locale.fromSubtags(
+                        languageCode: 'zh',
+                        countryCode: 'HK',
+                      ), // generic traditional Chinese 'zh_Hant'
+                      Locale('ja', ''), // Japanese, no country code
+                    ],
+                    builder: (context, child) => ListTileTheme(
+                      textColor: kOnSurfaceBodyTextColor,
+                      iconColor: kOnSurfaceBodyTextColor,
+                      child: Portal(
+                        child: child!,
+                      ),
+                    ),
+                  );
+                },
+              )),
         ),
       );
 }

@@ -274,8 +274,8 @@ class _BiometricToggleState extends State<BiometricToggle> {
           if (hasSupport == null || !hasSupport) {
             return const SizedBox();
           }
-
           return ArDriveToggleSwitch(
+            value: _isEnabled,
             text: biometricText,
             onChanged: (value) async {
               setState(() {
