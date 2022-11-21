@@ -11,6 +11,7 @@ import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
+import 'package:just_audio/just_audio.dart';
 
 part 'fs_entry_preview_state.dart';
 
@@ -24,6 +25,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   final ProfileCubit _profileCubit;
 
   StreamSubscription? _entrySubscription;
+  final AudioPlayer audioPlayer = AudioPlayer();
 
   final previewMaxFileSize = 1024 * 1024 * 100;
   final allowedPreviewContentTypes = [];
@@ -50,7 +52,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         _entrySubscription = _driveDao
             .fileById(driveId: driveId, fileId: selectedItem.id)
             .watchSingle()
-            .listen((file) {
+            .listen((file) async {
           if (file.size <= previewMaxFileSize) {
             final contentType =
                 file.dataContentType ?? lookupMimeType(file.name);
@@ -71,9 +73,9 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
               /// Enable more previews in the future after dealing
               /// with state and widget disposal
 
-              // case 'audio':
-              //   emit(FsEntryPreviewAudio(previewUrl: previewUrl));
-              //   break;
+              case 'audio':
+                emitAudioPreview(file, previewUrl);
+                break;
               // case 'video':
               //   emit(FsEntryPreviewVideo(previewUrl: previewUrl));
               //   break;
@@ -158,6 +160,39 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
   }
 
+  Future<void> emitAudioPreview(FileEntry file, String dataUrl) async {
+    try {
+      emit(const FsEntryPreviewLoading());
+
+      final dataTx = await _arweave.getTransactionDetails(file.dataTxId);
+      if (dataTx == null) {
+        emit(FsEntryPreviewFailure());
+        return;
+      }
+
+      final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+      switch (drive.privacy) {
+        case DrivePrivacy.public:
+          audioPlayer.pause();
+          final duration = await audioPlayer.setUrl(
+            // Load a URL
+            dataUrl,
+          );
+          await audioPlayer.play();
+          emit(FsEntryPreviewAudio(previewUrl: dataUrl));
+          break;
+        case DrivePrivacy.private:
+          emit(FsEntryPreviewUnavailable());
+          break;
+
+        default:
+          emit(FsEntryPreviewFailure());
+      }
+    } catch (err) {
+      addError(err);
+    }
+  }
+
   @override
   void onError(Object error, StackTrace stackTrace) {
     emit(FsEntryPreviewFailure());
@@ -175,6 +210,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       case 'image':
         return supportedImageTypesInFilePreview
             .any((element) => element.contains(fileExtension));
+      case 'audio':
+        return true;
       default:
         return false;
     }

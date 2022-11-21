@@ -82,6 +82,7 @@ dependencies:
   device_info_plus: ^4.0.0
   local_auth: ^2.1.2
   flutter_secure_storage: ^6.0.0
+  just_audio: ^0.9.30
 
 dev_dependencies:
   flutter_test:

@@ -31,6 +31,11 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           fit: BoxFit.fitWidth,
         );
 
+      case FsEntryPreviewAudio:
+        return Container(
+          child: Text(widget.state.previewUrl),
+        );
+
       default:
         return Container();
     }
