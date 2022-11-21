@@ -23,6 +23,7 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
   late ToggleState _state;
 
   final animationDuration = const Duration(milliseconds: 400);
+  bool _isAnimating = false;
 
   @override
   void initState() {
@@ -54,6 +55,10 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        if (_isAnimating) {
+          return;
+        }
+
         if (_state != ToggleState.disabled) {
           if (_state == ToggleState.on) {
             _state = ToggleState.off;
@@ -62,6 +67,9 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
             _state = ToggleState.on;
             widget.onChanged?.call(true);
           }
+
+          _isAnimating = true;
+
           setState(() {});
         }
       },
@@ -76,6 +84,9 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 2),
           child: AnimatedAlign(
+            onEnd: () {
+              _isAnimating = false;
+            },
             alignment: alignment(),
             duration: animationDuration,
             child: _ToggleCircle(
