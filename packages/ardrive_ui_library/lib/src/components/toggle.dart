@@ -26,6 +26,19 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
 
   @override
   void initState() {
+    _changeState();
+
+    super.initState();
+  }
+
+  @override
+  void didUpdateWidget(ArDriveToggle oldWidget) {
+    _changeState();
+
+    super.didUpdateWidget(oldWidget);
+  }
+
+  void _changeState() {
     if (widget.isEnabled) {
       if (widget.initialValue) {
         _state = ToggleState.on;
@@ -35,8 +48,6 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
     } else {
       _state = ToggleState.disabled;
     }
-
-    super.initState();
   }
 
   @override
@@ -133,22 +144,26 @@ class _ToggleCircle extends StatefulWidget {
 class _ToggleCircleState extends State<_ToggleCircle> {
   final animationDuration = const Duration(milliseconds: 300);
   bool isAnimating = false;
+  late ToggleState state;
 
   @override
   void initState() {
+    state = widget.state;
     super.initState();
   }
 
   @override
   void didUpdateWidget(covariant _ToggleCircle oldWidget) {
-    setState(() {
-      isAnimating = true;
-    });
+    if (state != widget.state) {
+      setState(() {
+        isAnimating = true;
+      });
 
-    Future.delayed(animationDuration).then((value) => setState(() {
-          isAnimating = false;
-        }));
-
+      Future.delayed(animationDuration).then((value) => setState(() {
+            isAnimating = false;
+          }));
+      state = widget.state;
+    }
     super.didUpdateWidget(oldWidget);
   }
 
