@@ -23,6 +23,80 @@ class ArDriveModal extends StatelessWidget {
   }
 }
 
+class ArDriveMiniModal extends StatelessWidget {
+  const ArDriveMiniModal({
+    super.key,
+    required this.title,
+    required this.content,
+    this.leading,
+  });
+
+  final String title;
+  final String content;
+  final Widget? leading;
+
+  @override
+  Widget build(BuildContext context) {
+    late double maxWidth;
+    final deviceWidth = MediaQuery.of(context).size.width;
+
+    if (deviceWidth < 350) {
+      maxWidth = deviceWidth;
+    } else {
+      maxWidth = 350;
+    }
+
+    return ArDriveModal(
+      constraints: BoxConstraints(
+        minHeight: 100,
+        maxWidth: maxWidth,
+        minWidth: 250,
+      ),
+      content: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            if (leading != null) ...[
+              leading!,
+              const SizedBox(
+                width: 16,
+              )
+            ],
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: Text(
+                      title,
+                      style: ArDriveTypography.body.smallBold(),
+                    ),
+                  ),
+                  Flexible(
+                    child: Text(
+                      content,
+                      style: ArDriveTypography.body.captionRegular(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.pop(context);
+              },
+              child: ArDriveIcons.closeIcon(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class ArDriveStandardModal extends StatelessWidget {
   const ArDriveStandardModal({
     super.key,
@@ -40,15 +114,14 @@ class ArDriveStandardModal extends StatelessWidget {
     late double maxWidth;
     final deviceWidth = MediaQuery.of(context).size.width;
 
-    if (deviceWidth < 305) {
+    if (deviceWidth < 350) {
       maxWidth = deviceWidth;
     } else {
-      maxWidth = 305;
+      maxWidth = 350;
     }
 
     return ArDriveModal(
       constraints: BoxConstraints(
-        // maxHeight: 300,
         minHeight: 100,
         maxWidth: maxWidth,
         minWidth: 250,
@@ -68,7 +141,7 @@ class ArDriveStandardModal extends StatelessWidget {
           ),
           Text(
             content,
-            style: ArDriveTypography.body.xSmallBold(),
+            style: ArDriveTypography.body.smallRegular(),
           ),
           if (actions != null) ...[
             const SizedBox(
@@ -93,6 +166,7 @@ class ArDriveStandardModal extends StatelessWidget {
       children: [
         if (actions.isNotEmpty)
           ArDriveButton(
+            maxHeight: 32,
             style: ArDriveButtonStyle.secondary,
             backgroundColor:
                 ArDriveTheme.of(context).themeData.colors.themeFgDefault,
@@ -106,6 +180,7 @@ class ArDriveStandardModal extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 16),
             child: ArDriveButton(
+              maxHeight: 32,
               backgroundColor:
                   ArDriveTheme.of(context).themeData.colors.themeFgDefault,
               fontStyle: ArDriveTypography.body.buttonNormalRegular(
