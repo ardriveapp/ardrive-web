@@ -24,6 +24,7 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
 
   final animationDuration = const Duration(milliseconds: 400);
   bool _isAnimating = false;
+  late bool _checked;
 
   @override
   void initState() {
@@ -43,12 +44,17 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
     if (widget.isEnabled) {
       if (widget.initialValue) {
         _state = ToggleState.on;
+        _checked = true;
       } else {
         _state = ToggleState.off;
+        _checked = false;
       }
     } else {
       _state = ToggleState.disabled;
+      _checked = widget.initialValue;
     }
+
+    setState(() {});
   }
 
   @override
@@ -62,11 +68,12 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
         if (_state != ToggleState.disabled) {
           if (_state == ToggleState.on) {
             _state = ToggleState.off;
-            widget.onChanged?.call(false);
           } else {
             _state = ToggleState.on;
-            widget.onChanged?.call(true);
           }
+          _checked = !_checked;
+
+          widget.onChanged?.call(_checked);
 
           _isAnimating = true;
 
@@ -91,7 +98,7 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
             duration: animationDuration,
             child: _ToggleCircle(
               color: colorIndicator(),
-              state: _state,
+              checked: _checked,
             ),
           ),
         ),
@@ -107,7 +114,7 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
         return Alignment.centerLeft;
 
       case ToggleState.disabled:
-        return Alignment.centerLeft;
+        return _checked ? Alignment.centerRight : Alignment.centerLeft;
     }
   }
 
@@ -142,11 +149,11 @@ class _ToggleCircle extends StatefulWidget {
   const _ToggleCircle({
     Key? key,
     required this.color,
-    required this.state,
+    required this.checked,
   }) : super(key: key);
 
   final Color color;
-  final ToggleState state;
+  final bool checked;
 
   @override
   State<_ToggleCircle> createState() => _ToggleCircleState();
@@ -155,17 +162,17 @@ class _ToggleCircle extends StatefulWidget {
 class _ToggleCircleState extends State<_ToggleCircle> {
   final animationDuration = const Duration(milliseconds: 300);
   bool isAnimating = false;
-  late ToggleState state;
+  late bool checked;
 
   @override
   void initState() {
-    state = widget.state;
+    checked = widget.checked;
     super.initState();
   }
 
   @override
   void didUpdateWidget(covariant _ToggleCircle oldWidget) {
-    if (state != widget.state) {
+    if (checked != widget.checked) {
       setState(() {
         isAnimating = true;
       });
@@ -173,7 +180,7 @@ class _ToggleCircleState extends State<_ToggleCircle> {
       Future.delayed(animationDuration).then((value) => setState(() {
             isAnimating = false;
           }));
-      state = widget.state;
+      checked = widget.checked;
     }
     super.didUpdateWidget(oldWidget);
   }
@@ -186,26 +193,27 @@ class _ToggleCircleState extends State<_ToggleCircle> {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-        duration: animationDuration,
-        width: isAnimating ? 18 : 12,
-        height: 12,
-        decoration: BoxDecoration(
-          color: widget.color,
-          borderRadius: isAnimating
-              ? widget.state == ToggleState.on
-                  ? const BorderRadius.only(
-                      topLeft: Radius.circular(80),
-                      bottomLeft: Radius.circular(80),
-                      topRight: Radius.circular(90),
-                      bottomRight: Radius.circular(90),
-                    )
-                  : const BorderRadius.only(
-                      topLeft: Radius.circular(90),
-                      bottomLeft: Radius.circular(90),
-                      topRight: Radius.circular(80),
-                      bottomRight: Radius.circular(80),
-                    )
-              : BorderRadius.circular(90),
-        ));
+      duration: animationDuration,
+      width: isAnimating ? 18 : 12,
+      height: 12,
+      decoration: BoxDecoration(
+        color: widget.color,
+        borderRadius: isAnimating
+            ? widget.checked
+                ? const BorderRadius.only(
+                    topLeft: Radius.circular(80),
+                    bottomLeft: Radius.circular(80),
+                    topRight: Radius.circular(90),
+                    bottomRight: Radius.circular(90),
+                  )
+                : const BorderRadius.only(
+                    topLeft: Radius.circular(90),
+                    bottomLeft: Radius.circular(90),
+                    topRight: Radius.circular(80),
+                    bottomRight: Radius.circular(80),
+                  )
+            : BorderRadius.circular(90),
+      ),
+    );
   }
 }
