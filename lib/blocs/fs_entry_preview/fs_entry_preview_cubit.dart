@@ -67,6 +67,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
             switch (previewType) {
               case 'image':
+                audioPlayer.pause();
                 emitImagePreview(file, previewUrl);
                 break;
 
@@ -84,12 +85,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
               //   break;
 
               default:
+                audioPlayer.pause();
                 emit(FsEntryPreviewUnavailable());
             }
           }
         });
       }
     } else {
+      audioPlayer.pause();
       emit(FsEntryPreviewUnavailable());
     }
   }
