@@ -47,6 +47,9 @@ class _ArDriveRadioButtonGroupState extends State<ArDriveRadioButtonGroup> {
               ),
             ));
 
+    /// Can't have more than 1 checked at the time
+    assert(_options.where((element) => element.value.value).length < 2);
+
     super.initState();
   }
 
@@ -59,9 +62,15 @@ class _ArDriveRadioButtonGroupState extends State<ArDriveRadioButtonGroup> {
           child: ValueListenableBuilder(
             builder: (context, t, w) {
               return ArDriveRadioButton(
+                isEnabled: _options[i].value.isEnabled,
+                isFromAGroup: true,
                 value: _options[i].value.value,
                 text: _options[i].value.text,
                 onChange: (value) async {
+                  if (!value) {
+                    return;
+                  }
+
                   for (int j = 0; j < _options.length; j++) {
                     if (j == i) {
                       continue;
@@ -93,12 +102,14 @@ class ArDriveRadioButton extends StatefulWidget {
     this.isEnabled = true,
     required this.text,
     this.onChange,
+    this.isFromAGroup = false,
   });
 
   final bool value;
   final bool isEnabled;
   final String text;
   final Function(bool)? onChange;
+  final bool isFromAGroup;
 
   @override
   State<ArDriveRadioButton> createState() => ArDriveRadioButtonState();
@@ -156,7 +167,8 @@ class ArDriveRadioButtonState extends State<ArDriveRadioButton> {
                 setState(() {
                   state = RadioButtonState.checked;
                 });
-              } else if (state == RadioButtonState.checked) {
+              } else if (state == RadioButtonState.checked &&
+                  !widget.isFromAGroup) {
                 setState(() {
                   state = RadioButtonState.unchecked;
                 });

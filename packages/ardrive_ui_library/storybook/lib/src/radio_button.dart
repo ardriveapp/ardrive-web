@@ -43,7 +43,11 @@ class _RadioGroupExampleState extends State<RadioGroupExample> {
   @override
   Widget build(BuildContext context) {
     final options = [
-      RadioButtonOptions(text: 'Option 1'),
+      /// Starts with the first enabled
+      RadioButtonOptions(
+        text: 'Option 1',
+        value: true,
+      ),
       RadioButtonOptions(text: 'Option 2'),
       RadioButtonOptions(text: 'Option 3'),
       RadioButtonOptions(text: 'Option 4'),
