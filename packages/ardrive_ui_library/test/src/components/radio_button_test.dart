@@ -134,58 +134,5 @@ void main() {
       /// should be enabled
       expect(state.state, RadioButtonState.checked);
     });
-
-    // testWidgets('Should have only one the RadioButton checked at the time',
-    //     (tester) async {
-    //   /// Starts with radio button off
-    //   final options = [
-    //     RadioButtonOptions(text: 'one'),
-    //     RadioButtonOptions(text: 'two'),
-    //     RadioButtonOptions(text: 'three'),
-    //   ];
-
-    //   final radioButtonGroup = ArDriveRadioButtonGroup(
-    //     options: options,
-    //   );
-
-    //   await tester.pumpWidget(
-    //     ArDriveApp(
-    //       builder: (context) => MaterialApp(
-    //         home: Scaffold(body: radioButtonGroup),
-    //       ),
-    //     ),
-    //   );
-
-    //   /// Tap the RadioButton with index 1
-    //   var radioButton = find.byType(ArDriveRadioButton).at(1);
-    //   final radioButtonClick = find.byType(GestureDetector).at(1);
-
-    //   /// Taps the radio button
-    //   await tester.tap(radioButtonClick);
-
-    //   var state = tester.state<ArDriveRadioButtonState>(radioButton);
-
-    //   /// should be enabled
-    //   expect(state.state, RadioButtonState.checked);
-
-    //   /// Tap the RadioButton with index 2 which is unchecked
-    //   final radioButton2 = find.byType(ArDriveRadioButton).at(2);
-    //   final radioButtonClick2 = find.byType(GestureDetector).at(2);
-
-    //   /// Taps the radio button
-    //   await tester.tap(radioButtonClick2);
-
-    //   final state2 = tester.state<ArDriveRadioButtonState>(radioButton2);
-
-    //   /// the current radio button should be checked
-    //   expect(state2.state, RadioButtonState.checked);
-
-    //   var radioButtonAgain = find.byType(ArDriveRadioButton).at(1);
-
-    //   /// the previous one should be unchecked
-    //   state = tester.state<ArDriveRadioButtonState>(radioButtonAgain);
-
-    //   expect(state.state, RadioButtonState.unchecked);
-    // });
   });
 }
