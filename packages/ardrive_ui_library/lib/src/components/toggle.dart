@@ -23,9 +23,23 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
   late ToggleState _state;
 
   final animationDuration = const Duration(milliseconds: 400);
+  bool _isAnimating = false;
 
   @override
   void initState() {
+    _changeState();
+
+    super.initState();
+  }
+
+  @override
+  void didUpdateWidget(ArDriveToggle oldWidget) {
+    _changeState();
+
+    super.didUpdateWidget(oldWidget);
+  }
+
+  void _changeState() {
     if (widget.isEnabled) {
       if (widget.initialValue) {
         _state = ToggleState.on;
@@ -35,14 +49,16 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
     } else {
       _state = ToggleState.disabled;
     }
-
-    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        if (_isAnimating) {
+          return;
+        }
+
         if (_state != ToggleState.disabled) {
           if (_state == ToggleState.on) {
             _state = ToggleState.off;
@@ -51,6 +67,9 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
             _state = ToggleState.on;
             widget.onChanged?.call(true);
           }
+
+          _isAnimating = true;
+
           setState(() {});
         }
       },
@@ -65,6 +84,9 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 2),
           child: AnimatedAlign(
+            onEnd: () {
+              _isAnimating = false;
+            },
             alignment: alignment(),
             duration: animationDuration,
             child: _ToggleCircle(
@@ -133,22 +155,26 @@ class _ToggleCircle extends StatefulWidget {
 class _ToggleCircleState extends State<_ToggleCircle> {
   final animationDuration = const Duration(milliseconds: 300);
   bool isAnimating = false;
+  late ToggleState state;
 
   @override
   void initState() {
+    state = widget.state;
     super.initState();
   }
 
   @override
   void didUpdateWidget(covariant _ToggleCircle oldWidget) {
-    setState(() {
-      isAnimating = true;
-    });
+    if (state != widget.state) {
+      setState(() {
+        isAnimating = true;
+      });
 
-    Future.delayed(animationDuration).then((value) => setState(() {
-          isAnimating = false;
-        }));
-
+      Future.delayed(animationDuration).then((value) => setState(() {
+            isAnimating = false;
+          }));
+      state = widget.state;
+    }
     super.didUpdateWidget(oldWidget);
   }
 
