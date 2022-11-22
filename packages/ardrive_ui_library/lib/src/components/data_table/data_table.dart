@@ -1,6 +1,7 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:ardrive_ui_library/src/components/listtile.dart';
 import 'package:flutter/material.dart';
+import 'package:number_paginator/number_paginator.dart';
 
 class ArDriveDataTable extends StatefulWidget {
   final List<List<Widget>> rows;
@@ -19,6 +20,14 @@ class ArDriveDataTable extends StatefulWidget {
 class _ArDriveDataTableState extends State<ArDriveDataTable> {
   List<int> selectedIndexes = [];
   bool multiSelect = false;
+  int pageIndex = 0;
+
+  List<List<Widget>> getPage(int index) {
+    return widget.rows.sublist(pageIndex * 25, pageIndex + 25);
+  }
+
+  int numberOfPages() => widget.rows.length ~/ 25;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -52,6 +61,7 @@ class _ArDriveDataTableState extends State<ArDriveDataTable> {
             ),
             Expanded(
               child: ListView.builder(
+                itemCount: 24,
                 padding: const EdgeInsets.all(8),
                 itemBuilder: (context, index) {
                   return ArDriveListTile(
@@ -79,9 +89,9 @@ class _ArDriveDataTableState extends State<ArDriveDataTable> {
                             child: Padding(
                                 padding:
                                     const EdgeInsets.symmetric(horizontal: 28),
-                                child: widget.rows[index].first),
+                                child: getPage(pageIndex)[index].first),
                           ),
-                          ...widget.rows[index]
+                          ...getPage(pageIndex)[index]
                               .sublist(1)
                               .map((cell) => Flexible(child: cell)),
                         ],
@@ -91,6 +101,14 @@ class _ArDriveDataTableState extends State<ArDriveDataTable> {
                 },
               ),
             ),
+            NumberPaginator(
+              numberPages: numberOfPages(),
+              onPageChange: (int index) {
+                setState(() {
+                  pageIndex = index;
+                });
+              },
+            )
           ],
         ),
       ),
