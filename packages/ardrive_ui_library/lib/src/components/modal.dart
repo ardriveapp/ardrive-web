@@ -6,18 +6,89 @@ class ArDriveModal extends StatelessWidget {
     super.key,
     required this.content,
     required this.constraints,
+    this.contentPadding = const EdgeInsets.all(16),
   });
 
   final Widget content;
   final BoxConstraints constraints;
+  final EdgeInsets contentPadding;
 
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
       constraints: constraints,
       child: ArDriveCard(
-        content: content,
+        content: Padding(
+          padding: contentPadding,
+          child: content,
+        ),
         boxShadow: BoxShadowCard.shadow80,
+      ),
+    );
+  }
+}
+
+class ArDriveLongModal extends StatelessWidget {
+  const ArDriveLongModal({
+    super.key,
+    required this.title,
+    required this.content,
+    this.leading,
+    this.action,
+  });
+
+  final String title;
+  final String content;
+  final Widget? leading;
+  final ModalAction? action;
+
+  @override
+  Widget build(BuildContext context) {
+    late double maxWidth;
+    final deviceWidth = MediaQuery.of(context).size.width;
+
+    if (deviceWidth < 583) {
+      maxWidth = deviceWidth;
+    } else {
+      maxWidth = 583;
+    }
+    return ArDriveModal(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      content: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: ArDriveTypography.headline.headline5Bold(),
+                ),
+                Text(
+                  content,
+                  style: ArDriveTypography.body.smallRegular(),
+                ),
+              ],
+            ),
+          ),
+          if (action != null) ...[
+            // TODO(@thiagocarvalhodev): use correct font here
+            ArDriveButton(
+              maxHeight: 32,
+              text: action!.title,
+              onPressed: action!.action,
+            ),
+            const SizedBox(
+              width: 24,
+            ),
+          ],
+          const _ModalCloseButton(),
+        ],
+      ),
+      constraints: BoxConstraints(
+        maxWidth: maxWidth,
       ),
     );
   }
@@ -52,47 +123,53 @@ class ArDriveMiniModal extends StatelessWidget {
         maxWidth: maxWidth,
         minWidth: 250,
       ),
-      content: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            if (leading != null) ...[
-              leading!,
-              const SizedBox(
-                width: 16,
-              )
-            ],
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Align(
-                    alignment: Alignment.topLeft,
-                    child: Text(
-                      title,
-                      style: ArDriveTypography.body.smallBold(),
-                    ),
-                  ),
-                  Flexible(
-                    child: Text(
-                      content,
-                      style: ArDriveTypography.body.captionRegular(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                Navigator.pop(context);
-              },
-              child: ArDriveIcons.closeIcon(),
-            ),
+      content: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          if (leading != null) ...[
+            leading!,
+            const SizedBox(
+              width: 16,
+            )
           ],
-        ),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Text(
+                    title,
+                    style: ArDriveTypography.body.smallBold(),
+                  ),
+                ),
+                Flexible(
+                  child: Text(
+                    content,
+                    style: ArDriveTypography.body.captionRegular(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const _ModalCloseButton(),
+        ],
       ),
+    );
+  }
+}
+
+class _ModalCloseButton extends StatelessWidget {
+  const _ModalCloseButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pop(context);
+      },
+      child: ArDriveIcons.closeIcon(),
     );
   }
 }
@@ -126,37 +203,34 @@ class ArDriveStandardModal extends StatelessWidget {
         maxWidth: maxWidth,
         minWidth: 250,
       ),
-      content: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Align(
-            alignment: Alignment.topLeft,
-            child: Text(
-              title,
-              style: ArDriveTypography.headline.headline4Bold(),
-            ),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        Align(
+          alignment: Alignment.topLeft,
+          child: Text(
+            title,
+            style: ArDriveTypography.headline.headline4Bold(),
           ),
+        ),
+        const SizedBox(
+          height: 8,
+        ),
+        Text(
+          content,
+          style: ArDriveTypography.body.smallRegular(),
+        ),
+        if (actions != null) ...[
           const SizedBox(
-            height: 8,
+            height: 24,
           ),
-          Text(
-            content,
-            style: ArDriveTypography.body.smallRegular(),
-          ),
-          if (actions != null) ...[
-            const SizedBox(
-              height: 24,
+          Align(
+            alignment: Alignment.bottomRight,
+            child: _buildActions(
+              actions!,
+              context,
             ),
-            Align(
-              alignment: Alignment.bottomRight,
-              child: _buildActions(
-                actions!,
-                context,
-              ),
-            )
-          ]
-        ]),
-      ),
+          )
+        ]
+      ]),
     );
   }
 
@@ -206,12 +280,10 @@ class ModalAction {
   final dynamic Function() action;
 }
 
-Future<void> showStandardDialog(
+Future<void> showAnimatedDialog(
   BuildContext context, {
-  required String title,
-  required String content,
-  List<ModalAction>? actions,
   bool barrierDismissible = true,
+  required Widget content,
 }) {
   return showGeneralDialog(
     context: context,
@@ -231,12 +303,42 @@ Future<void> showStandardDialog(
       return Dialog(
         elevation: 0,
         backgroundColor: Colors.transparent,
-        child: ArDriveStandardModal(
-          content: content,
-          title: title,
-          actions: actions,
-        ),
+        child: content,
       );
     },
+  );
+}
+
+Future<void> showLongModal(
+  BuildContext context, {
+  required String title,
+  required String content,
+  ModalAction? action,
+}) {
+  return showAnimatedDialog(
+    context,
+    content: ArDriveLongModal(
+      title: title,
+      content: content,
+      action: action,
+    ),
+  );
+}
+
+Future<void> showStandardDialog(
+  BuildContext context, {
+  required String title,
+  required String content,
+  List<ModalAction>? actions,
+  bool barrierDismissible = true,
+}) {
+  return showAnimatedDialog(
+    context,
+    barrierDismissible: barrierDismissible,
+    content: ArDriveStandardModal(
+      content: content,
+      title: title,
+      actions: actions,
+    ),
   );
 }
