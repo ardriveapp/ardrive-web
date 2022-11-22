@@ -7,7 +7,7 @@ WidgetbookCategory modals() {
   return WidgetbookCategory(name: 'Modals', widgets: [
     WidgetbookComponent(name: 'Modals', useCases: [
       WidgetbookUseCase(
-          name: 'Base',
+          name: 'Standard',
           builder: (context) {
             return ArDriveStorybookAppBase(builder: (context) {
               final actions = [
@@ -31,6 +31,21 @@ WidgetbookCategory modals() {
                         'The file you have selected is too large to download from the mobile app.',
                     title: 'Warning',
                     actions: actions,
+                  ),
+                ),
+              );
+            });
+          }),
+      WidgetbookUseCase(
+          name: 'Mini',
+          builder: (context) {
+            return ArDriveStorybookAppBase(builder: (context) {
+              return Scaffold(
+                body: Center(
+                  child: ArDriveMiniModal(
+                    content: 'You created a new drive.',
+                    title: 'Warning',
+                    leading: ArDriveIcons.uploadCloud(size: 42),
                   ),
                 ),
               );

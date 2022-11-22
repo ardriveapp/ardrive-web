@@ -11,6 +11,7 @@ class ArDriveButton extends StatefulWidget {
     this.style = ArDriveButtonStyle.primary,
     this.backgroundColor,
     this.fontStyle,
+    this.maxHeight,
   });
 
   final String text;
@@ -18,6 +19,7 @@ class ArDriveButton extends StatefulWidget {
   final ArDriveButtonStyle style;
   final Color? backgroundColor;
   final TextStyle? fontStyle;
+  final double? maxHeight;
 
   @override
   State<ArDriveButton> createState() => _ArDriveButtonState();
@@ -28,42 +30,50 @@ class _ArDriveButtonState extends State<ArDriveButton> {
   Widget build(BuildContext context) {
     switch (widget.style) {
       case ArDriveButtonStyle.primary:
-        return ElevatedButton(
-          style: ButtonStyle(
-            backgroundColor: _backgroundColor,
-            maximumSize: _maxSize,
-            // minimumSize: _minimumSize,
-            shape: _shape,
-            padding: _padding,
-            alignment: Alignment.center,
-          ),
-          onPressed: widget.onPressed,
-          child: Text(
-            widget.text,
-            style: widget.fontStyle ??
-                ArDriveTypography.headline.headline5Bold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgOnAccent,
-                ),
+        return SizedBox(
+          height: widget.maxHeight ?? 56,
+          child: ElevatedButton(
+            style: ButtonStyle(
+              backgroundColor: _backgroundColor,
+              maximumSize: _maxSize,
+              shape: _shape,
+              padding: _padding,
+              alignment: Alignment.center,
+            ),
+            onPressed: widget.onPressed,
+            child: Text(
+              widget.text,
+              style: widget.fontStyle ??
+                  ArDriveTypography.headline.headline5Bold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgOnAccent,
+                  ),
+            ),
           ),
         );
       case ArDriveButtonStyle.secondary:
-        return OutlinedButton(
-          onPressed: widget.onPressed,
-          style: ButtonStyle(
-            maximumSize: _maxSize,
-            // minimumSize: _minimumSize,
-            shape: _shapeOutlined,
-            side: _borderSize,
-            padding: _padding,
-          ),
-          child: Text(
-            widget.text,
-            style: widget.fontStyle ??
-                ArDriveTypography.headline.headline5Bold(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                ),
+        return SizedBox(
+          height: widget.maxHeight ?? 56,
+          child: OutlinedButton(
+            onPressed: widget.onPressed,
+            style: ButtonStyle(
+              maximumSize: _maxSize,
+              shape: _shapeOutlined,
+              side: _borderSize,
+              padding: _padding,
+            ),
+            child: Text(
+              widget.text,
+              style: widget.fontStyle ??
+                  ArDriveTypography.headline.headline5Bold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
+            ),
           ),
         );
       case ArDriveButtonStyle.tertiary:
