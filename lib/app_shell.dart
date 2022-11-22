@@ -168,12 +168,14 @@ class AppShellState extends State<AppShell> {
         },
       );
 
-  Widget _syncStreamBuilder(
-          {required Widget Function(SyncProgress s) builderWithData}) =>
+  Widget _syncStreamBuilder({
+    required Widget Function(SyncProgress s) builderWithData,
+  }) =>
       StreamBuilder<SyncProgress>(
-          stream: context.read<SyncCubit>().syncProgressController.stream,
-          builder: (context, snapshot) =>
-              snapshot.hasData ? builderWithData(snapshot.data!) : Container());
+        stream: context.read<SyncCubit>().syncProgressController.stream,
+        builder: (context, snapshot) =>
+            snapshot.hasData ? builderWithData(snapshot.data!) : Container(),
+      );
 
   void toggleProfileOverlay() =>
       setState(() => _showProfileOverlay = !_showProfileOverlay);

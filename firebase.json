@@ -1,5 +1,6 @@
 {
-  "hosting": {
+  "hosting": [{
+    "target": "web",
     "public": "build/web",
     "ignore": [
       "firebase.json",
@@ -12,5 +13,20 @@
         "destination": "/index.html"
       }
     ]
-  }
+  },
+  {
+    "target": "storybook",
+    "public": "packages/ardrive_ui_library/storybook/build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }]
 }

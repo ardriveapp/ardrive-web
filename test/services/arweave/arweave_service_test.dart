@@ -9,7 +9,8 @@ const gatewayUrl = 'https://arweave.net';
 void main() {
   group('Arweave Service Tests', () {
     //TODO Create and inject mock artemis client
-    SystemPlatform.setMockPlatform(platform: 'unknown');
+    AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
+
     final arweave = ArweaveService(
       Arweave(gatewayUrl: Uri.parse(gatewayUrl)),
     );

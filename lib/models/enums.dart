@@ -10,3 +10,5 @@ abstract class TransactionStatus {
   static const confirmed = 'confirmed';
   static const failed = 'failed';
 }
+
+enum SyncType { normal, deep }

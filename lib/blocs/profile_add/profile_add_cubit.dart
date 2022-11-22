@@ -203,9 +203,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
       await _profileDao.addProfile(username, password, _wallet, _profileType);
 
-      final platform = SystemPlatform.platform;
-
-      if (platform == 'Android' || platform == 'iOS') {
+      if (AppPlatform.isMobile) {
         _savePasswordOnSecureStore(password);
       }
 
