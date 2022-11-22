@@ -3,27 +3,31 @@ import 'package:flutter/material.dart';
 
 enum ToggleState { on, off, disabled }
 
-class ArDriveToggle extends StatefulWidget {
-  const ArDriveToggle({
+class ArDriveToggleSwitch extends StatefulWidget {
+  const ArDriveToggleSwitch({
     super.key,
-    this.initialValue = false,
-    this.isEnabled = true,
+    required this.text,
     this.onChanged,
+    this.value = false,
+    this.isEnabled = true,
   });
 
-  final bool initialValue;
+  final String text;
+  final bool value;
   final bool isEnabled;
   final Function(bool value)? onChanged;
 
   @override
-  State<ArDriveToggle> createState() => _ArDriveToggleState();
+  State<ArDriveToggleSwitch> createState() => _ArDriveToggleSwitchState();
 }
 
-class _ArDriveToggleState extends State<ArDriveToggle> {
+class _ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
   late ToggleState _state;
 
   final animationDuration = const Duration(milliseconds: 400);
+
   bool _isAnimating = false;
+
   late bool _checked;
 
   @override
@@ -34,7 +38,7 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
   }
 
   @override
-  void didUpdateWidget(ArDriveToggle oldWidget) {
+  void didUpdateWidget(ArDriveToggleSwitch oldWidget) {
     _changeState();
 
     super.didUpdateWidget(oldWidget);
@@ -42,7 +46,7 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
 
   void _changeState() {
     if (widget.isEnabled) {
-      if (widget.initialValue) {
+      if (widget.value) {
         _state = ToggleState.on;
         _checked = true;
       } else {
@@ -51,59 +55,10 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
       }
     } else {
       _state = ToggleState.disabled;
-      _checked = widget.initialValue;
+      _checked = widget.value;
     }
 
     setState(() {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        if (_isAnimating) {
-          return;
-        }
-
-        if (_state != ToggleState.disabled) {
-          if (_state == ToggleState.on) {
-            _state = ToggleState.off;
-          } else {
-            _state = ToggleState.on;
-          }
-          _checked = !_checked;
-
-          widget.onChanged?.call(_checked);
-
-          _isAnimating = true;
-
-          setState(() {});
-        }
-      },
-      child: AnimatedContainer(
-        width: 36,
-        height: 20,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          color: colorBackground(),
-        ),
-        duration: animationDuration,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: AnimatedAlign(
-            onEnd: () {
-              _isAnimating = false;
-            },
-            alignment: alignment(),
-            duration: animationDuration,
-            child: _ToggleCircle(
-              color: colorIndicator(),
-              checked: _checked,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Alignment alignment() {
@@ -142,6 +97,78 @@ class _ArDriveToggleState extends State<ArDriveToggle> {
       case ToggleState.disabled:
         return theme.indicatorColorDisabled;
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () {
+          if (_isAnimating) {
+            return;
+          }
+
+          if (_state != ToggleState.disabled) {
+            if (_state == ToggleState.on) {
+              _state = ToggleState.off;
+            } else {
+              _state = ToggleState.on;
+            }
+            _checked = !_checked;
+
+            widget.onChanged?.call(_checked);
+
+            _isAnimating = true;
+
+            setState(() {});
+          }
+        },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: _toggle(),
+            ),
+            const SizedBox(
+              width: 8,
+            ),
+            Text(
+              widget.text,
+              style: ArDriveTypography.body.bodyRegular(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _toggle() {
+    return AnimatedContainer(
+      width: 36,
+      height: 20,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: colorBackground(),
+      ),
+      duration: animationDuration,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: AnimatedAlign(
+          onEnd: () {
+            _isAnimating = false;
+          },
+          alignment: alignment(),
+          duration: animationDuration,
+          child: _ToggleCircle(
+            color: colorIndicator(),
+            checked: _checked,
+          ),
+        ),
+      ),
+    );
   }
 }
 
