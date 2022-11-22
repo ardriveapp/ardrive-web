@@ -43,14 +43,16 @@ function isStatusCodeError(code) {
   return code >= 400 && code <= 599;
 }
 
-async function get(params) {
-  const url = params[0];
-  const isJson = params[1];
-  const asBytes = params[2];
-  const retries = params[3];
-  const retryDelayMs = params[4];
-  const noLogs = params[5];
-  let retryAttempts = params[6] ?? 0;
+async function get([
+  url,
+  isJson,
+  asBytes,
+  retries,
+  retryDelayMs,
+  noLogs,
+  retryAttempts,
+]) {
+  retryAttempts ??= 0;
 
   try {
     const response = await fetch(url);
