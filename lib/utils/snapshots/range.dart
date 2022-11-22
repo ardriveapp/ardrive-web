@@ -12,6 +12,11 @@ class Range {
     }
   }
 
+  bool isInRange(int value) {
+    bool inRange = value >= start && value <= end;
+    return inRange;
+  }
+
   static final nullRange = Range(start: -1, end: -1);
 
   static List<Range> union(Range r_1, Range r_2) {
