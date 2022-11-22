@@ -18,6 +18,9 @@ abstract class SnapshotItem implements SegmentedGQLData {
     required SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
         node,
     required List<HeightRange> subRanges,
+
+    // for testing purposes only
+    String? fakeSource,
   }) {
     final tags = node.tags;
     final blockStart =
@@ -36,6 +39,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
       timestamp: timestamp,
       txId: txId,
       subRanges: subRanges,
+      fakeSource: fakeSource,
     );
   }
 
@@ -115,6 +119,7 @@ class SnapshotItemToBeCreated implements SnapshotItem {
 class SnapshotItemOnChain implements SnapshotItem {
   final int timestamp;
   final TxID txId;
+  final String? _fakeSource;
 
   SnapshotItemOnChain({
     required this.blockEnd,
@@ -123,7 +128,10 @@ class SnapshotItemOnChain implements SnapshotItem {
     required this.timestamp,
     required this.txId,
     required this.subRanges,
-  });
+
+    // for testing purposes only
+    String? fakeSource,
+  }) : _fakeSource = fakeSource;
 
   @override
   final List<HeightRange> subRanges;
@@ -135,7 +143,10 @@ class SnapshotItemOnChain implements SnapshotItem {
   final DriveID driveId;
 
   Future<String> source() async {
-    // FIXME: make me testable by stubbing the network request
+    if (_fakeSource != null) {
+      return _fakeSource!;
+    }
+
     final snapshotItemData = await http.get(_dataUri);
     final String dataBytes = snapshotItemData.body;
     return dataBytes;
