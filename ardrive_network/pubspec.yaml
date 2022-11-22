@@ -1,0 +1,37 @@
+name: ardrive_network
+description: ArDrive Network abstractions
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: '>=2.18.2 <3.0.0'
+  flutter: 3.3.5
+
+script_runner:
+  shell:
+    default: /bin/sh
+    windows: cmd.exe
+    macos: /bin/sh
+    linux: /bin/sh
+  line_length: 80
+  scripts:
+    - webserver: dart run test/webserver.dart
+    - test-web: flutter test --platform chrome
+    - test-vm: flutter test
+    - test: scr webserver & sleep 10 && scr test-vm && scr webserver & sleep 10 && scr test-web
+
+dependencies:
+  dio: ^4.0.6
+  dio_smart_retry: ^1.3.2
+  equatable: ^2.0.5
+  flutter:
+    sdk: flutter
+  isolated_worker: ^0.1.1
+  shelf: ^1.4.0
+  shelf_router: ^1.1.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.1
+  mocktail: ^0.3.0

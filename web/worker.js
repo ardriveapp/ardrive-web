@@ -1,0 +1,1 @@
+../ardrive_network/lib/src/js/worker.js

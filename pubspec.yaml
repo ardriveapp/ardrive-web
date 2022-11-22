@@ -19,9 +19,7 @@ script_runner:
   line_length: 80
   scripts:
     - setup: flutter clean && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs
-    - test: scr test-app && scr test-io
-    - test-app: flutter test
-    - test-io: cd ardrive_io && flutter test
+    - test: flutter test
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
 
@@ -75,6 +73,8 @@ dependencies:
   app_settings: ^4.1.8
   ardrive_io:
     path: ./ardrive_io
+  ardrive_network:
+    path: ./ardrive_network
   firebase_crashlytics: ^3.0.4
   firebase_core: ^2.1.1
   bloc_concurrency: ^0.2.0
