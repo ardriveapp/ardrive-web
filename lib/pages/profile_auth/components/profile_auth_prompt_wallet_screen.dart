@@ -54,9 +54,9 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
             ),
             if (context.read<ProfileAddCubit>().isArconnectInstalled()) ...[
               const SizedBox(height: 32),
-              ElevatedButton(
+              ArDriveButton(
                 onPressed: () => _pickWalletArconnect(context),
-                child: Text(appLocalizationsOf(context).useArconnectEmphasized),
+                text: appLocalizationsOf(context).useArconnectEmphasized,
               ),
             ],
             const SizedBox(height: 16),
