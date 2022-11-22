@@ -153,71 +153,75 @@ class ArDriveRadioButtonState extends State<ArDriveRadioButton> {
   }
 
   Widget _radio() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4.0),
-          child: GestureDetector(
-            onTap: () async {
-              if (state == RadioButtonState.disabled) {
-                return;
-              }
-              if (state == RadioButtonState.unchecked) {
-                setState(() {
-                  state = RadioButtonState.checked;
-                });
-              } else if (state == RadioButtonState.checked &&
-                  !widget.isFromAGroup) {
-                setState(() {
-                  state = RadioButtonState.unchecked;
-                });
-              }
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () async {
+          if (state == RadioButtonState.disabled) {
+            return;
+          }
+          if (state == RadioButtonState.unchecked) {
+            setState(() {
+              state = RadioButtonState.checked;
+            });
+          } else if (state == RadioButtonState.checked &&
+              !widget.isFromAGroup) {
+            setState(() {
+              state = RadioButtonState.unchecked;
+            });
+          }
 
-              _value = !_value;
+          _value = !_value;
 
-              widget.onChange?.call(_value);
-            },
-            child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                height: 24,
-                width: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: _color(),
-                    width: 2,
-                  ),
-                ),
-                child: Center(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: state == RadioButtonState.checked ||
-                            (state == RadioButtonState.disabled && widget.value)
-                        ? 10
-                        : 0,
-                    width: 10,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
+          widget.onChange?.call(_value);
+        },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  height: 24,
+                  width: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
                       color: _color(),
+                      width: 2,
                     ),
                   ),
-                )),
-          ),
-        ),
-        const SizedBox(
-          width: 8,
-        ),
-        Flexible(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0),
-            child: Text(
-              widget.text,
-              style: ArDriveTypography.body.bodyRegular(),
+                  child: Center(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      height: state == RadioButtonState.checked ||
+                              (state == RadioButtonState.disabled &&
+                                  widget.value)
+                          ? 10
+                          : 0,
+                      width: 10,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _color(),
+                      ),
+                    ),
+                  )),
             ),
-          ),
-        )
-      ],
+            const SizedBox(
+              width: 8,
+            ),
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Text(
+                  widget.text,
+                  style: ArDriveTypography.body.bodyRegular(),
+                ),
+              ),
+            )
+          ],
+        ),
+      ),
     );
   }
 
