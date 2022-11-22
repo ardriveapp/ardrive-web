@@ -7,11 +7,13 @@ class ArDriveModal extends StatelessWidget {
     required this.content,
     required this.constraints,
     this.contentPadding = const EdgeInsets.all(16),
+    this.action,
   });
 
   final Widget content;
   final BoxConstraints constraints;
   final EdgeInsets contentPadding;
+  final ModalAction? action;
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +27,24 @@ class ArDriveModal extends StatelessWidget {
         boxShadow: BoxShadowCard.shadow80,
       ),
     );
+  }
+}
+
+class ArDriveIconModal extends StatelessWidget {
+  const ArDriveIconModal({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.content,
+  });
+
+  final Widget icon;
+  final String title;
+  final String content;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container();
   }
 }
 
