@@ -63,8 +63,17 @@ class ArweaveService {
       .get('wallet/$address/balance')
       .then((res) => BigInt.parse(res.body));
 
-  Future<int> getCurrentBlockHeight() =>
-      client.api.get('/').then((res) => json.decode(res.body)['height']);
+  Future<int> getCurrentBlockHeight() async {
+    //TODO (Javed) Use GQL Query to fetch block height
+    final blockHeight = await client.api
+        .get('/')
+        .then((res) => json.decode(res.body)['height']);
+    if (blockHeight < 0) {
+      throw Exception(
+          'The current block height $blockHeight is negative. It should be equal or greater than 0.');
+    }
+    return blockHeight;
+  }
 
   Future<BigInt> getPrice({required int byteSize}) async {
     return client.api

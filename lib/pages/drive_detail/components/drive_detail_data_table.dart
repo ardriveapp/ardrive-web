@@ -46,8 +46,9 @@ class _DriveDataTableState extends State<DriveDataTable> {
         checkBoxEnabled: widget.checkBoxEnabled,
         showItemDetails: widget.driveDetailState.showSelectedItemDetails,
       ),
+      // +1 to account for checkbox column
       sortColumnIndex:
-          DriveOrder.values.indexOf(widget.driveDetailState.contentOrderBy),
+          DriveOrder.values.indexOf(widget.driveDetailState.contentOrderBy) + 1,
       sortAscending:
           widget.driveDetailState.contentOrderingMode == OrderingMode.asc,
       rowsPerPage: widget.driveDetailState.rowsPerPage,
@@ -132,18 +133,16 @@ List<DataColumn> _buildTableColumns({
   required bool checkBoxEnabled,
   required bool showItemDetails,
 }) {
-  onSort(columnIndex, sortAscending) {
-    // Column index - 1 is to remove the checkbox column from being sorted.
+  onSort(DriveOrder column, sortAscending) {
     context.read<DriveDetailCubit>().sortFolder(
-          contentOrderBy: DriveOrder.values[columnIndex - 1],
+          contentOrderBy: column,
           contentOrderingMode:
               sortAscending ? OrderingMode.asc : OrderingMode.desc,
         );
   }
 
-  final defaultDrawerWidth = Theme.of(context).drawerTheme.width ?? 304.0;
   final double width = MediaQuery.of(context).size.width -
-      (showItemDetails ? 2 * defaultDrawerWidth : defaultDrawerWidth) -
+      (showItemDetails ? 2 * kSideDrawerWidth : kSideDrawerWidth) -
       48;
 
   return [
@@ -160,7 +159,7 @@ List<DataColumn> _buildTableColumns({
           overflow: TextOverflow.ellipsis,
         ),
       ),
-      onSort: onSort,
+      onSort: (_, ascending) => onSort(DriveOrder.name, ascending),
     ),
     DataColumn(
       label: SizedBox(
@@ -170,7 +169,7 @@ List<DataColumn> _buildTableColumns({
           overflow: TextOverflow.ellipsis,
         ),
       ),
-      onSort: onSort,
+      onSort: (_, ascending) => onSort(DriveOrder.size, ascending),
     ),
     DataColumn(
       label: SizedBox(
@@ -180,7 +179,7 @@ List<DataColumn> _buildTableColumns({
           overflow: TextOverflow.ellipsis,
         ),
       ),
-      onSort: onSort,
+      onSort: (_, ascending) => onSort(DriveOrder.lastUpdated, ascending),
     ),
   ];
 }

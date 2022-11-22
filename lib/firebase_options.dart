@@ -70,7 +70,8 @@ class DefaultFirebaseOptions {
     projectId: 'ardrive-web',
     databaseURL: 'https://ardrive-web.firebaseio.com',
     storageBucket: 'ardrive-web.appspot.com',
-    iosClientId: '305132849030-ivpp5546vltkebnd06gui3ntj0fvavk6.apps.googleusercontent.com',
+    iosClientId:
+        '305132849030-ivpp5546vltkebnd06gui3ntj0fvavk6.apps.googleusercontent.com',
     iosBundleId: 'io.ardrive.app',
   );
 
@@ -81,7 +82,8 @@ class DefaultFirebaseOptions {
     projectId: 'ardrive-web',
     databaseURL: 'https://ardrive-web.firebaseio.com',
     storageBucket: 'ardrive-web.appspot.com',
-    iosClientId: '305132849030-0opn0r5k7oa3bcilmvrnqocb97328gln.apps.googleusercontent.com',
+    iosClientId:
+        '305132849030-0opn0r5k7oa3bcilmvrnqocb97328gln.apps.googleusercontent.com',
     iosBundleId: 'com.example.drive',
   );
 }
