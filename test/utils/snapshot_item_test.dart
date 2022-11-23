@@ -81,13 +81,7 @@ void main() {
             },
           ),
           subRanges: HeightRange(rangeSegments: [r]),
-          fakeSource: (jsonEncode({
-            'txSnapshots': await fakeNodesStream(r)
-                .map(
-                  (event) => {'gqlNode': event, 'jsonData': '{}'},
-                )
-                .toList()
-          })),
+          fakeSource: await fakeSnapshotStream(r),
         );
         expect(item.subRanges.rangeSegments.length, 1);
         expect(item.currentIndex, -1);
@@ -100,6 +94,16 @@ void main() {
         );
       });
     });
+  });
+}
+
+Future<String> fakeSnapshotStream(Range range) async {
+  return jsonEncode({
+    'txSnapshots': await fakeNodesStream(range)
+        .map(
+          (event) => {'gqlNode': event, 'jsonData': '{}'},
+        )
+        .toList()
   });
 }
 
