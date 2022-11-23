@@ -181,11 +181,11 @@ class ArDriveLongModal extends StatelessWidget {
             ),
           ),
           if (action != null) ...[
-            // TODO(@thiagocarvalhodev): use correct font here
             ArDriveButton(
               maxHeight: 32,
               text: action!.title,
               onPressed: action!.action,
+              fontStyle: ArDriveTypography.body.buttonLargeBold(),
             ),
             const SizedBox(
               width: 24,
