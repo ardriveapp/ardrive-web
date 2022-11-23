@@ -97,6 +97,8 @@ void main() {
   });
 }
 
+// TODO: move these helper methods to its own source file
+
 Future<String> fakeSnapshotStream(Range range) async {
   return jsonEncode({
     'txSnapshots': await fakeNodesStream(range)
