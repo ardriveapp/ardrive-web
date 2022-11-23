@@ -11,8 +11,6 @@ abstract class TxSnapshot {
   @JsonKey(name: 'gqlNode')
   abstract DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
       gqlNode;
-
-  // Should this be a JSON object instead of string?
   @JsonKey(name: 'jsonMetadata')
   abstract String jsonMetadata;
 }
