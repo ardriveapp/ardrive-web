@@ -1,3 +1,4 @@
+import 'package:ardrive_ui_library/src/constants/size_constants.dart';
 import 'package:ardrive_ui_library/src/styles/theme/themes.dart';
 import 'package:flutter/material.dart';
 
@@ -33,7 +34,9 @@ class ArDriveCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor ??
             ArDriveTheme.of(context).themeData.colors.themeBgSurface,
-        borderRadius: BorderRadius.circular(borderRadius ?? 8),
+        borderRadius: BorderRadius.circular(
+          borderRadius ?? cardDefaultBorderRadius,
+        ),
         boxShadow: [_getBoxShadow(boxShadow, context)],
       ),
       child: Padding(

@@ -93,7 +93,7 @@ class ArDriveIconModal extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ArDriveButton(
-                  maxHeight: 32,
+                  maxHeight: buttonActionHeight,
                   style: ArDriveButtonStyle.secondary,
                   backgroundColor:
                       ArDriveTheme.of(context).themeData.colors.themeFgDefault,
@@ -110,7 +110,7 @@ class ArDriveIconModal extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(left: 16),
                     child: ArDriveButton(
-                      maxHeight: 32,
+                      maxHeight: buttonActionHeight,
                       backgroundColor: ArDriveTheme.of(context)
                           .themeData
                           .colors
@@ -182,7 +182,7 @@ class ArDriveLongModal extends StatelessWidget {
           ),
           if (action != null) ...[
             ArDriveButton(
-              maxHeight: 32,
+              maxHeight: buttonActionHeight,
               text: action!.title,
               onPressed: action!.action,
               fontStyle: ArDriveTypography.body.buttonLargeBold(),
@@ -351,7 +351,7 @@ class ArDriveStandardModal extends StatelessWidget {
       children: [
         if (actions.isNotEmpty)
           ArDriveButton(
-            maxHeight: 32,
+            maxHeight: buttonActionHeight,
             style: ArDriveButtonStyle.secondary,
             backgroundColor:
                 ArDriveTheme.of(context).themeData.colors.themeFgDefault,
@@ -365,7 +365,7 @@ class ArDriveStandardModal extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 16),
             child: ArDriveButton(
-              maxHeight: 32,
+              maxHeight: buttonActionHeight,
               backgroundColor:
                   ArDriveTheme.of(context).themeData.colors.themeFgDefault,
               fontStyle: ArDriveTypography.body.buttonNormalRegular(
