@@ -129,20 +129,6 @@ class _ArDriveButtonState extends State<ArDriveButton> {
         },
       );
 
-  // MaterialStateProperty<Size> get _minimumSize {
-  //   late double width;
-  //   if (MediaQuery.of(context).size.width * 0.8 > 368 + 16) {
-  //     width = 368;
-  //   } else {
-  //     width = MediaQuery.of(context).size.width * 0.8;
-  //   }
-  //   return MaterialStateProperty.resolveWith<Size>(
-  //     (Set<MaterialState> states) {
-  //       return Size(width, 56);
-  //     },
-  //   );
-  // }
-
   MaterialStateProperty<Color?> get _backgroundColor =>
       MaterialStateProperty.resolveWith<Color?>(
         (Set<MaterialState> states) {
