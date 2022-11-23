@@ -4,5 +4,6 @@ import 'package:ardrive/utils/snapshots/height_range.dart';
 abstract class SegmentedGQLData {
   abstract final HeightRange subRanges;
   Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-      getStreamForIndex(int index);
+      getNextStream();
+  int get currentIndex;
 }

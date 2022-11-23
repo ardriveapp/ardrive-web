@@ -64,6 +64,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
 
 class SnapshotItemToBeCreated implements SnapshotItem {
   final StreamQueue _streamQueue;
+  int _currentIndex = -1;
 
   SnapshotItemToBeCreated({
     required this.blockStart,
@@ -83,16 +84,24 @@ class SnapshotItemToBeCreated implements SnapshotItem {
   final int blockEnd;
   @override
   final DriveID driveId;
+  @override
+  int get currentIndex => _currentIndex;
 
   @override
   Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-      getStreamForIndex(int index) async* {
-    if (index >= subRanges.rangeSegments.length) {
-      print('index: $index, length: ${subRanges.rangeSegments.length}');
+      getNextStream() {
+    _currentIndex++;
+    if (currentIndex >= subRanges.rangeSegments.length) {
+      print('index: $currentIndex, length: ${subRanges.rangeSegments.length}');
       throw Exception('subRangeIndex overflow!');
     }
 
-    final Range range = subRanges.rangeSegments[index];
+    return _getNextStream();
+  }
+
+  Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
+      _getNextStream() async* {
+    final Range range = subRanges.rangeSegments[currentIndex];
 
     while (await _streamQueue.hasNext) {
       final DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
@@ -118,6 +127,7 @@ class SnapshotItemOnChain implements SnapshotItem {
   final int timestamp;
   final TxID txId;
   final String? _fakeSource;
+  int _currentIndex = -1;
 
   SnapshotItemOnChain({
     required this.blockEnd,
@@ -139,6 +149,8 @@ class SnapshotItemOnChain implements SnapshotItem {
   final int blockEnd;
   @override
   final DriveID driveId;
+  @override
+  int get currentIndex => _currentIndex;
 
   Future<String> source() async {
     if (_fakeSource != null) {
@@ -156,12 +168,19 @@ class SnapshotItemOnChain implements SnapshotItem {
 
   @override
   Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-      getStreamForIndex(int index) async* {
-    if (index >= subRanges.rangeSegments.length || index < 0) {
-      throw Exception('Index overflow!');
+      getNextStream() {
+    _currentIndex++;
+    if (currentIndex >= subRanges.rangeSegments.length) {
+      print('index: $currentIndex, length: ${subRanges.rangeSegments.length}');
+      throw Exception('subRangeIndex overflow!');
     }
 
-    final Range range = subRanges.rangeSegments[index];
+    return _getNextStream();
+  }
+
+  Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
+      _getNextStream() async* {
+    final Range range = subRanges.rangeSegments[currentIndex];
 
     // TODO: temporary cache the tx data
 

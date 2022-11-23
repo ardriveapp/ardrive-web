@@ -22,7 +22,9 @@ void main() {
           source: fakeNodesStream(r),
         );
         expect(item.subRanges.rangeSegments.length, 1);
-        Stream stream = item.getStreamForIndex(0);
+        expect(item.currentIndex, -1);
+        Stream stream = item.getNextStream();
+        expect(item.currentIndex, 0);
         expect(await countStreamItems(stream), 11);
         expect(
           () async => await countStreamItems(stream),
@@ -42,9 +44,12 @@ void main() {
           source: fakeNodesStream(r),
         );
         expect(item.subRanges.rangeSegments.length, 2);
-        stream = item.getStreamForIndex(0);
+        expect(item.currentIndex, -1);
+        stream = item.getNextStream();
+        expect(item.currentIndex, 0);
         expect(await countStreamItems(stream), 5);
-        stream = item.getStreamForIndex(1);
+        stream = item.getNextStream();
+        expect(item.currentIndex, 1);
         expect(await countStreamItems(stream), 5);
         expect(
           () async => await countStreamItems(stream),
@@ -85,7 +90,9 @@ void main() {
           })),
         );
         expect(item.subRanges.rangeSegments.length, 1);
-        Stream stream = item.getStreamForIndex(0);
+        expect(item.currentIndex, -1);
+        Stream stream = item.getNextStream();
+        expect(item.currentIndex, 0);
         expect(await countStreamItems(stream), 11);
         expect(
           () async => await countStreamItems(stream),
