@@ -309,34 +309,38 @@ class ArDriveStandardModal extends StatelessWidget {
         maxWidth: maxWidth,
         minWidth: 250,
       ),
-      content: Column(mainAxisSize: MainAxisSize.min, children: [
-        Align(
-          alignment: Alignment.topLeft,
-          child: Text(
-            title,
-            style: ArDriveTypography.headline.headline4Bold(),
-          ),
-        ),
-        const SizedBox(
-          height: 8,
-        ),
-        Text(
-          content,
-          style: ArDriveTypography.body.smallRegular(),
-        ),
-        if (actions != null) ...[
-          const SizedBox(
-            height: 24,
-          ),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: _buildActions(
-              actions!,
-              context,
+      content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.topLeft,
+              child: Text(
+                title,
+                style: ArDriveTypography.headline.headline4Bold(),
+              ),
             ),
-          )
-        ]
-      ]),
+            const SizedBox(
+              height: 8,
+            ),
+            Text(
+              content,
+              style: ArDriveTypography.body.smallRegular(),
+              textAlign: TextAlign.left,
+            ),
+            if (actions != null) ...[
+              const SizedBox(
+                height: 24,
+              ),
+              Align(
+                alignment: Alignment.bottomRight,
+                child: _buildActions(
+                  actions!,
+                  context,
+                ),
+              )
+            ]
+          ]),
     );
   }
 

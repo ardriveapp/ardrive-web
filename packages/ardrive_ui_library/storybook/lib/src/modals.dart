@@ -10,42 +10,57 @@ WidgetbookCategory modals() {
           name: 'Standard',
           builder: (context) {
             return ArDriveStorybookAppBase(builder: (context) {
+              final modal = ArDriveStandardModal(
+                title: context.knobs.text(
+                  label: 'Title',
+                  initialValue: 'Warning',
+                ),
+                content: context.knobs.text(
+                    label: 'content',
+                    initialValue:
+                        'The file you have selected is too large to download from the mobile app.'),
+                actions: context.knobs.options(label: 'Actions', options: [
+                  const Option(label: 'Zero Actions', value: []),
+                  Option(label: 'One Action', value: [
+                    ModalAction(
+                      action: () {
+                        print('action 1');
+                      },
+                      title: 'Action 1',
+                    ),
+                  ]),
+                  Option(label: 'Two Actions', value: [
+                    ModalAction(
+                      action: () {
+                        print('action 1');
+                      },
+                      title: 'Action 1',
+                    ),
+                    ModalAction(
+                      action: () {
+                        print('action 2');
+                      },
+                      title: 'Action 2',
+                    ),
+                  ])
+                ]),
+              );
               return Scaffold(
                 body: Center(
-                  child: ArDriveStandardModal(
-                    title: context.knobs.text(
-                      label: 'Title',
-                      initialValue: 'Warning',
-                    ),
-                    content: context.knobs.text(
-                        label: 'content',
-                        initialValue:
-                            'The file you have selected is too large to download from the mobile app.'),
-                    actions: context.knobs.options(label: 'Actions', options: [
-                      const Option(label: 'Zero Actions', value: []),
-                      Option(label: 'One Action', value: [
-                        ModalAction(
-                          action: () {
-                            print('action 1');
-                          },
-                          title: 'Action 1',
-                        ),
-                      ]),
-                      Option(label: 'Two Actions', value: [
-                        ModalAction(
-                          action: () {
-                            print('action 1');
-                          },
-                          title: 'Action 1',
-                        ),
-                        ModalAction(
-                          action: () {
-                            print('action 2');
-                          },
-                          title: 'Action 2',
-                        ),
-                      ])
-                    ]),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      modal,
+                      const SizedBox(
+                        height: 16,
+                      ),
+                      ArDriveButton(
+                        text: 'Open modal',
+                        onPressed: () {
+                          showAnimatedDialog(context, content: modal);
+                        },
+                      )
+                    ],
                   ),
                 ),
               );
@@ -55,24 +70,38 @@ WidgetbookCategory modals() {
           name: 'Mini',
           builder: (context) {
             return ArDriveStorybookAppBase(builder: (context) {
+              final modal = ArDriveMiniModal(
+                title: context.knobs.text(
+                  label: 'Title',
+                  initialValue: 'Warning',
+                ),
+                content: context.knobs.text(
+                    label: 'content', initialValue: 'You created a new drive.'),
+                leading: context.knobs.options(label: 'leading', options: [
+                  const Option(label: 'No leading', value: null),
+                  Option(
+                    label: 'With leading',
+                    value: ArDriveIcons.uploadCloud(size: 42),
+                  ),
+                ]),
+              );
               return Scaffold(
                 body: Center(
-                  child: ArDriveMiniModal(
-                      title: context.knobs.text(
-                        label: 'Title',
-                        initialValue: 'Warning',
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      modal,
+                      const SizedBox(
+                        height: 16,
                       ),
-                      content: context.knobs.text(
-                          label: 'content',
-                          initialValue: 'You created a new drive.'),
-                      leading:
-                          context.knobs.options(label: 'leading', options: [
-                        const Option(label: 'No leading', value: null),
-                        Option(
-                          label: 'With leading',
-                          value: ArDriveIcons.uploadCloud(size: 42),
-                        )
-                      ])),
+                      ArDriveButton(
+                        text: 'Open modal',
+                        onPressed: () {
+                          showAnimatedDialog(context, content: modal);
+                        },
+                      )
+                    ],
+                  ),
                 ),
               );
             });
@@ -81,24 +110,40 @@ WidgetbookCategory modals() {
           name: 'Long',
           builder: (context) {
             return ArDriveStorybookAppBase(builder: (context) {
+              final modal = ArDriveLongModal(
+                  title: context.knobs.text(
+                    label: 'Title',
+                    initialValue: 'Warning',
+                  ),
+                  content: context.knobs.text(
+                    label: 'content',
+                    initialValue: 'You created a new drive.',
+                  ),
+                  action: context.knobs.options(label: 'Action', options: [
+                    const Option(label: 'No actions', value: null),
+                    Option(
+                      label: 'With Action',
+                      value: ModalAction(action: () {}, title: 'Action'),
+                    )
+                  ]));
+
               return Scaffold(
                 body: Center(
-                  child: ArDriveLongModal(
-                      title: context.knobs.text(
-                        label: 'Title',
-                        initialValue: 'Warning',
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      modal,
+                      const SizedBox(
+                        height: 16,
                       ),
-                      content: context.knobs.text(
-                        label: 'content',
-                        initialValue: 'You created a new drive.',
-                      ),
-                      action: context.knobs.options(label: 'Action', options: [
-                        const Option(label: 'No actions', value: null),
-                        Option(
-                          label: 'With Action',
-                          value: ModalAction(action: () {}, title: 'Action'),
-                        )
-                      ])),
+                      ArDriveButton(
+                        text: 'Open modal',
+                        onPressed: () {
+                          showAnimatedDialog(context, content: modal);
+                        },
+                      )
+                    ],
+                  ),
                 ),
               );
             });
@@ -106,64 +151,64 @@ WidgetbookCategory modals() {
       WidgetbookUseCase(
           name: 'Modal Icon',
           builder: (context) {
+            final modal = ArDriveIconModal(
+              title: context.knobs
+                  .text(label: 'Title', initialValue: 'Settings saved!'),
+              content: context.knobs.text(
+                  label: 'Content',
+                  initialValue:
+                      'Your profile settings have been updated. Now you can go ahead and jump on into the ArDrive app, have some fun, enjoy yourself, and upload some really awesome stuff.'),
+              icon: ArDriveIcons.checkSuccess(
+                size: 88,
+                color: ArDriveTheme.of(context)
+                    .themeData
+                    .colors
+                    .themeSuccessDefault,
+              ),
+              actions: context.knobs.options(label: 'Actions', options: [
+                const Option(label: 'Zero Actions', value: []),
+                Option(label: 'One Action', value: [
+                  ModalAction(
+                    action: () {
+                      print('action 1');
+                    },
+                    title: 'Action 1',
+                  ),
+                ]),
+                Option(label: 'Two Actions', value: [
+                  ModalAction(
+                    action: () {
+                      print('action 1');
+                    },
+                    title: 'Action 1',
+                  ),
+                  ModalAction(
+                    action: () {
+                      print('action 2');
+                    },
+                    title: 'Action 2',
+                  ),
+                ]),
+              ]),
+            );
             return ArDriveStorybookAppBase(builder: (context) {
-              final actions = [
-                ModalAction(
-                  action: () {
-                    print('action 1');
-                  },
-                  title: 'Action 1',
-                ),
-                ModalAction(
-                  action: () {
-                    print('action 2');
-                  },
-                  title: 'Action 2',
-                ),
-              ];
               return Scaffold(
                 body: Center(
-                  child: ArDriveIconModal(
-                    title: context.knobs
-                        .text(label: 'Title', initialValue: 'Settings saved!'),
-                    content: context.knobs.text(
-                        label: 'Content',
-                        initialValue:
-                            'Your profile settings have been updated. Now you can go ahead and jump on into the ArDrive app, have some fun, enjoy yourself, and upload some really awesome stuff.'),
-                    icon: ArDriveIcons.checkSuccess(
-                      size: 88,
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeSuccessDefault,
+                    child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    modal,
+                    const SizedBox(
+                      height: 16,
                     ),
-                    actions: context.knobs.options(label: 'Actions', options: [
-                      const Option(label: 'Zero Actions', value: []),
-                      Option(label: 'One Action', value: [
-                        ModalAction(
-                          action: () {
-                            print('action 1');
-                          },
-                          title: 'Action 1',
-                        ),
-                      ]),
-                      Option(label: 'Two Actions', value: [
-                        ModalAction(
-                          action: () {
-                            print('action 1');
-                          },
-                          title: 'Action 1',
-                        ),
-                        ModalAction(
-                          action: () {
-                            print('action 2');
-                          },
-                          title: 'Action 2',
-                        ),
-                      ]),
-                    ]),
-                  ),
-                ),
+                    ArDriveButton(
+                      text: 'Open modal',
+                      onPressed: () {
+                        showAnimatedDialog(context, content: modal);
+                      },
+                    )
+                  ],
+                )),
               );
             });
           })
