@@ -17,7 +17,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   factory SnapshotItem.fromGQLNode({
     required SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
         node,
-    required List<HeightRange> subRanges,
+    required HeightRange subRanges,
 
     // for testing purposes only
     String? fakeSource,
@@ -50,7 +50,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
     required int blockStart,
     required int blockEnd,
     required DriveID driveId,
-    required List<HeightRange> subRanges,
+    required HeightRange subRanges,
   }) {
     return SnapshotItemToBeCreated(
       blockStart: blockStart,
@@ -76,7 +76,7 @@ class SnapshotItemToBeCreated implements SnapshotItem {
   }) : _streamQueue = StreamQueue(source);
 
   @override
-  final List<HeightRange> subRanges;
+  final HeightRange subRanges;
   @override
   final int blockStart;
   @override
@@ -87,14 +87,12 @@ class SnapshotItemToBeCreated implements SnapshotItem {
   @override
   Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
       getStreamForIndex(int index) async* {
-    if (index >= subRanges.length) {
-      print('index: $index, length: ${subRanges.length}');
+    if (index >= subRanges.rangeSegments.length) {
+      print('index: $index, length: ${subRanges.rangeSegments.length}');
       throw Exception('subRangeIndex overflow!');
     }
 
-    // assume there's only one single segment in the HeightRange
-    final HeightRange subRange = subRanges[index];
-    final Range range = subRange.rangeSegments[0];
+    final Range range = subRanges.rangeSegments[index];
 
     while (await _streamQueue.hasNext) {
       final DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
@@ -134,7 +132,7 @@ class SnapshotItemOnChain implements SnapshotItem {
   }) : _fakeSource = fakeSource;
 
   @override
-  final List<HeightRange> subRanges;
+  final HeightRange subRanges;
   @override
   final int blockStart;
   @override
@@ -159,13 +157,11 @@ class SnapshotItemOnChain implements SnapshotItem {
   @override
   Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
       getStreamForIndex(int index) async* {
-    if (index >= subRanges.length || index < 0) {
+    if (index >= subRanges.rangeSegments.length || index < 0) {
       throw Exception('Index overflow!');
     }
 
-    // assume there's only one single segment in the HeightRange
-    final HeightRange subRange = subRanges[index];
-    final Range range = subRange.rangeSegments[0];
+    final Range range = subRanges.rangeSegments[index];
 
     // TODO: temporary cache the tx data
 

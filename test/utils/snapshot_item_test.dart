@@ -18,12 +18,10 @@ void main() {
           blockStart: r.start,
           blockEnd: r.end,
           driveId: 'DRIVE_ID',
-          subRanges: [
-            HeightRange(rangeSegments: [Range(start: 0, end: 10)])
-          ],
+          subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
           source: fakeNodesStream(r),
         );
-        expect(item.subRanges.length, 1);
+        expect(item.subRanges.rangeSegments.length, 1);
         Stream stream = item.getStreamForIndex(0);
         expect(await countStreamItems(stream), 11);
         expect(
@@ -35,21 +33,15 @@ void main() {
           blockStart: r.start,
           blockEnd: r.end,
           driveId: 'DRIVE_ID',
-          subRanges: [
-            HeightRange(
-              rangeSegments: [
-                Range(start: 0, end: 4),
-              ],
-            ),
-            HeightRange(
-              rangeSegments: [
-                Range(start: 6, end: 10),
-              ],
-            ),
-          ],
+          subRanges: HeightRange(
+            rangeSegments: [
+              Range(start: 0, end: 4),
+              Range(start: 6, end: 10),
+            ],
+          ),
           source: fakeNodesStream(r),
         );
-        expect(item.subRanges.length, 2);
+        expect(item.subRanges.rangeSegments.length, 2);
         stream = item.getStreamForIndex(0);
         expect(await countStreamItems(stream), 5);
         stream = item.getStreamForIndex(1);
@@ -83,9 +75,7 @@ void main() {
               }
             },
           ),
-          subRanges: [
-            HeightRange(rangeSegments: [r])
-          ],
+          subRanges: HeightRange(rangeSegments: [r]),
           fakeSource: (jsonEncode({
             'txSnapshots': await fakeNodesStream(r)
                 .map(
@@ -94,7 +84,7 @@ void main() {
                 .toList()
           })),
         );
-        expect(item.subRanges.length, 1);
+        expect(item.subRanges.rangeSegments.length, 1);
         Stream stream = item.getStreamForIndex(0);
         expect(await countStreamItems(stream), 11);
         expect(
