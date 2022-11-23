@@ -1,4 +1,5 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
+import 'package:ardrive_ui_library/src/constants/size_constants.dart';
 import 'package:flutter/material.dart';
 
 class ArDriveModal extends StatelessWidget {
@@ -49,10 +50,10 @@ class ArDriveIconModal extends StatelessWidget {
     late double maxWidth;
     final deviceWidth = MediaQuery.of(context).size.width;
 
-    if (deviceWidth < 350) {
+    if (deviceWidth < modalIconMaxWidthSize) {
       maxWidth = deviceWidth;
     } else {
-      maxWidth = 350;
+      maxWidth = modalIconMaxWidthSize;
     }
 
     return ArDriveModal(
@@ -153,10 +154,10 @@ class ArDriveLongModal extends StatelessWidget {
     late double maxWidth;
     final deviceWidth = MediaQuery.of(context).size.width;
 
-    if (deviceWidth < 583) {
+    if (deviceWidth < modalLongMaxWidthSize) {
       maxWidth = deviceWidth;
     } else {
-      maxWidth = 583;
+      maxWidth = modalLongMaxWidthSize;
     }
     return ArDriveModal(
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -217,10 +218,10 @@ class ArDriveMiniModal extends StatelessWidget {
     late double maxWidth;
     final deviceWidth = MediaQuery.of(context).size.width;
 
-    if (deviceWidth < 350) {
+    if (deviceWidth < modalMiniMaxWidthSize) {
       maxWidth = deviceWidth;
     } else {
-      maxWidth = 350;
+      maxWidth = modalMiniMaxWidthSize;
     }
 
     return ArDriveModal(
@@ -297,10 +298,10 @@ class ArDriveStandardModal extends StatelessWidget {
     late double maxWidth;
     final deviceWidth = MediaQuery.of(context).size.width;
 
-    if (deviceWidth < 350) {
+    if (deviceWidth < modalStandardMaxWidthSize) {
       maxWidth = deviceWidth;
     } else {
-      maxWidth = 350;
+      maxWidth = modalStandardMaxWidthSize;
     }
 
     return ArDriveModal(
