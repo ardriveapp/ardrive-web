@@ -116,6 +116,11 @@ class SnapshotItemToBeCreated implements SnapshotItem {
         yield (await _streamQueue.next)
             as DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
       } else {
+        // when the stream for the latest sub-range is read, close the stream
+        if (currentIndex == subRanges.rangeSegments.length - 1) {
+          _streamQueue.cancel();
+        }
+
         // return when the next item is after the sub-range
         return;
       }
