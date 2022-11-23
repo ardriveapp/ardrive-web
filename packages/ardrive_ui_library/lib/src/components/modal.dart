@@ -36,15 +36,103 @@ class ArDriveIconModal extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.content,
+    this.actions,
   });
 
   final Widget icon;
   final String title;
   final String content;
+  final List<ModalAction>? actions;
 
   @override
   Widget build(BuildContext context) {
-    return Container();
+    late double maxWidth;
+    final deviceWidth = MediaQuery.of(context).size.width;
+
+    if (deviceWidth < 350) {
+      maxWidth = deviceWidth;
+    } else {
+      maxWidth = 350;
+    }
+
+    return ArDriveModal(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: ArDriveIcons.closeIcon(),
+            ),
+          ),
+          const SizedBox(
+            height: 18,
+          ),
+          icon,
+          Text(
+            title,
+            style: ArDriveTypography.headline.headline4Bold(),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(
+            height: 18,
+          ),
+          Text(
+            content,
+            style: ArDriveTypography.body.smallRegular(),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(
+            height: 32,
+          ),
+          if (actions != null && actions!.isNotEmpty) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ArDriveButton(
+                  maxHeight: 32,
+                  style: ArDriveButtonStyle.secondary,
+                  backgroundColor:
+                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                  fontStyle: ArDriveTypography.body.buttonNormalRegular(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
+                  text: actions!.first.title,
+                  onPressed: actions!.first.action,
+                ),
+                if (actions != null && actions!.length > 1)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16),
+                    child: ArDriveButton(
+                      maxHeight: 32,
+                      backgroundColor: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
+                      fontStyle: ArDriveTypography.body.buttonNormalRegular(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeAccentSubtle,
+                      ),
+                      text: actions![1].title,
+                      onPressed: actions![1].action,
+                    ),
+                  ),
+                const SizedBox(
+                  height: 32,
+                ),
+              ],
+            ),
+          ]
+        ],
+      ),
+    );
   }
 }
 
@@ -53,13 +141,11 @@ class ArDriveLongModal extends StatelessWidget {
     super.key,
     required this.title,
     required this.content,
-    this.leading,
     this.action,
   });
 
   final String title;
   final String content;
-  final Widget? leading;
   final ModalAction? action;
 
   @override
@@ -189,7 +275,7 @@ class _ModalCloseButton extends StatelessWidget {
       onTap: () {
         Navigator.pop(context);
       },
-      child: ArDriveIcons.closeIcon(),
+      child: ArDriveIcons.closeIconCircle(),
     );
   }
 }

@@ -17,6 +17,15 @@ class StoryBook extends StatelessWidget {
   Widget build(BuildContext context) {
     return ArDriveApp(
       builder: (context) => Widgetbook.material(
+          devices: [
+            Apple.iPhone12,
+            Apple.iPhone13,
+            Apple.macBook14Inch,
+            Apple.iMacRetina27Inch,
+            Desktop.desktop1080p,
+            Desktop.desktop1440p,
+            Desktop.desktop4k,
+          ],
           themes: [
             WidgetbookTheme(
               name: 'Dark',
