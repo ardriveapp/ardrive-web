@@ -106,6 +106,18 @@ class ArweaveService {
       getAllTransactionsFromDrive(
     String driveId, {
     int? lastBlockHeight,
+  }) {
+    return getSegmentedTransactionsFromDrive(
+      driveId,
+      minBlockHeight: lastBlockHeight,
+    );
+  }
+
+  Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
+      getSegmentedTransactionsFromDrive(
+    String driveId, {
+    int? minBlockHeight,
+    int? maxBlockHeight,
   }) async* {
     String? cursor;
 
@@ -115,7 +127,8 @@ class ArweaveService {
         DriveEntityHistoryQuery(
           variables: DriveEntityHistoryArguments(
             driveId: driveId,
-            lastBlockHeight: lastBlockHeight,
+            minBlockHeight: minBlockHeight,
+            maxBlockHeight: maxBlockHeight,
             after: cursor,
           ),
         ),
