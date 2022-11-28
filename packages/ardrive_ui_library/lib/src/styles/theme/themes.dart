@@ -99,8 +99,9 @@ ArDriveThemeData lightTheme() {
     backgroundColor: colors.themeBgSurface,
     colors: colors,
     tableTheme: ArDriveTableTheme(
-        backgroundColor: const Color(0xffFAFAFA),
-        cellColor: const Color(0xffF1EFF0)),
+      backgroundColor: const Color(0xffFAFAFA),
+      cellColor: const Color(0xffF1EFF0),
+    ),
     materialThemeData: lightMaterialTheme(),
     name: 'light',
   );

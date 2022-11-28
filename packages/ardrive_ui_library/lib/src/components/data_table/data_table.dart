@@ -139,6 +139,7 @@ class ArDriveTable<T> extends StatefulWidget {
     required this.rows,
     this.leading,
     this.trailing,
+    this.sort,
   });
 
   final List<TableColumn> columns;
@@ -146,12 +147,26 @@ class ArDriveTable<T> extends StatefulWidget {
   final TableRowWidget Function(T row) buildRow;
   final Widget Function(T row)? leading;
   final Widget Function(T row)? trailing;
+  final int Function(T a, T b) Function(int columnIndex)? sort;
 
   @override
   State<ArDriveTable> createState() => _ArDriveTableState<T>();
 }
 
+enum TableSort { asc, desc }
+
 class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
+  late List<T> rows;
+  late List<T> sortedRows;
+  int? sortedColumn;
+  TableSort? _tableSort;
+  @override
+  void initState() {
+    super.initState();
+    rows = widget.rows;
+    sortedRows = List.from(rows);
+  }
+
   @override
   Widget build(BuildContext context) {
     final columns = List.generate(
@@ -161,9 +176,46 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
           flex: widget.columns[index].size,
           child: Align(
             alignment: Alignment.centerLeft,
-            child: Text(
-              widget.columns[index].title,
-              style: ArDriveTypography.body.buttonNormalBold(),
+            child: GestureDetector(
+              onTap: () {
+                if (widget.sort != null) {
+                  setState(() {
+                    if (sortedColumn == index) {
+                      if (_tableSort == TableSort.asc) {
+                        _tableSort = TableSort.desc;
+                      } else {
+                        _tableSort = TableSort.asc;
+                      }
+                    } else {
+                      _tableSort = TableSort.asc;
+                    }
+                    int sort(T a, T b) {
+                      if (_tableSort == TableSort.desc) {
+                        return widget.sort!.call(index)(a, b);
+                      } else {
+                        return widget.sort!.call(index)(b, a);
+                      }
+                    }
+
+                    sortedColumn = index;
+
+                    sortedRows.sort(sort);
+                  });
+                }
+              },
+              child: Row(children: [
+                Text(
+                  widget.columns[index].title,
+                  style: ArDriveTypography.body.buttonNormalBold(),
+                ),
+                if (sortedColumn == index)
+                  Icon(
+                    _tableSort == TableSort.asc
+                        ? Icons.arrow_upward
+                        : Icons.arrow_downward,
+                    size: 14,
+                  )
+              ]),
             ),
           ),
         );
@@ -192,27 +244,29 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
           ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       key: widget.key,
-      content: Column(
-        children: [
-          const SizedBox(
-            height: 28,
-          ),
-          Padding(
-            padding: getPadding(),
-            child: Row(
-              children: [...columns],
+      content: SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(
+              height: 28,
             ),
-          ),
-          for (var row in widget.rows)
             Padding(
-              padding: const EdgeInsets.only(top: 20),
-              child: _buildRowSpacing(
-                widget.columns,
-                widget.buildRow(row).row,
-                row,
+              padding: getPadding(),
+              child: Row(
+                children: [...columns],
               ),
-            )
-        ],
+            ),
+            for (var row in sortedRows)
+              Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: _buildRowSpacing(
+                  widget.columns,
+                  widget.buildRow(row).row,
+                  row,
+                ),
+              )
+          ],
+        ),
       ),
     );
   }
