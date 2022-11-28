@@ -17,6 +17,7 @@ import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -27,6 +28,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:intersperse/intersperse.dart';
+import 'package:intl/intl.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 
@@ -115,11 +117,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Expanded(
-                                          child: _buildDataTable(
-                                            state: state,
-                                            context: context,
-                                            checkBoxEnabled: state.multiselect,
-                                          ),
+                                          child: _buildDataList(context, state),
                                         ),
                                       ],
                                     ),

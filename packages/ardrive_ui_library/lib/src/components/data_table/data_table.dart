@@ -245,27 +245,30 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       key: widget.key,
       content: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SizedBox(
-              height: 28,
-            ),
-            Padding(
-              padding: getPadding(),
-              child: Row(
-                children: [...columns],
+        child: Padding(
+          padding: EdgeInsets.only(bottom: 20),
+          child: Column(
+            children: [
+              const SizedBox(
+                height: 28,
               ),
-            ),
-            for (var row in sortedRows)
               Padding(
-                padding: const EdgeInsets.only(top: 20),
-                child: _buildRowSpacing(
-                  widget.columns,
-                  widget.buildRow(row).row,
-                  row,
+                padding: getPadding(),
+                child: Row(
+                  children: [...columns],
                 ),
-              )
-          ],
+              ),
+              for (var row in sortedRows)
+                Padding(
+                  padding: const EdgeInsets.only(top: 20),
+                  child: _buildRowSpacing(
+                    widget.columns,
+                    widget.buildRow(row).row,
+                    row,
+                  ),
+                )
+            ],
+          ),
         ),
       ),
     );
