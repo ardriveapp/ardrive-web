@@ -1,18 +1,23 @@
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
+import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
 import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
+import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../test_utils/utils.dart';
+import '../test_utils/mocks.dart';
+import 'snapshot_drive_history_test.dart';
 import 'snapshot_item_test.dart';
 
 void main() {
-  group('GQLDriveHistory class', () {
+  group('DriveHistoryComposite class', () {
     final arweave = MockArweaveService();
-
-    // TODO: test the getter for the data when implemented
+    final List<Range> mockSubRanges = [
+      Range(start: 11, end: 25),
+      Range(start: 51, end: 98),
+    ];
 
     setUp(() {
       when(
@@ -42,34 +47,32 @@ void main() {
       GQLDriveHistory gqlDriveHistory = GQLDriveHistory(
         arweave: arweave,
         driveId: 'DRIVE_ID',
-        subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
-      );
-      expect(gqlDriveHistory.subRanges.rangeSegments.length, 1);
-      expect(gqlDriveHistory.currentIndex, -1);
-      Stream stream = gqlDriveHistory.getNextStream();
-      expect(gqlDriveHistory.currentIndex, 0);
-      expect(await countStreamItems(stream), 11);
-      expect(
-        () async => await countStreamItems(stream),
-        throwsA(isA<StateError>()),
-      );
-
-      gqlDriveHistory = GQLDriveHistory(
-        arweave: arweave,
-        driveId: 'DRIVE_ID',
         subRanges: HeightRange(rangeSegments: [
           Range(start: 0, end: 10),
-          Range(start: 20, end: 30)
+          Range(start: 26, end: 50),
+          Range(start: 99, end: 100),
         ]),
       );
-      expect(gqlDriveHistory.subRanges.rangeSegments.length, 2);
-      expect(gqlDriveHistory.currentIndex, -1);
-      stream = gqlDriveHistory.getNextStream();
-      expect(gqlDriveHistory.currentIndex, 0);
-      expect(await countStreamItems(stream), 11);
-      stream = gqlDriveHistory.getNextStream();
-      expect(gqlDriveHistory.currentIndex, 1);
-      expect(await countStreamItems(stream), 11);
+      SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
+        items: mockSubRanges
+            .map(
+              (r) => fakeSnapshotItemFromRange(
+                HeightRange(rangeSegments: [r]),
+              ),
+            )
+            .toList(),
+      );
+      DriveHistoryComposite driveHistoryComposite = DriveHistoryComposite(
+        subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 100)]),
+        gqlDriveHistory: gqlDriveHistory,
+        snapshotDriveHistory: snapshotDriveHistory,
+      );
+
+      expect(driveHistoryComposite.subRanges.rangeSegments.length, 1);
+      expect(driveHistoryComposite.currentIndex, -1);
+      Stream stream = driveHistoryComposite.getNextStream();
+      expect(driveHistoryComposite.currentIndex, 0);
+      expect(await countStreamItems(stream), 101);
       expect(
         () async => await countStreamItems(stream),
         throwsA(isA<StateError>()),
