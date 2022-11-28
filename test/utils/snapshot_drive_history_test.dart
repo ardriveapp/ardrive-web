@@ -1,5 +1,6 @@
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
+import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
 import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,9 +50,8 @@ void main() {
       expect(snapshotDriveHistory.currentIndex, 0);
 
       expect(
-        () async =>
-            await countStreamItems(snapshotDriveHistory.getNextStream()),
-        throwsA(isA<Exception>()),
+        () => snapshotDriveHistory.getNextStream(),
+        throwsA(isA<SubRangeIndexOverflow>()),
       );
     });
 
@@ -73,9 +73,8 @@ void main() {
       expect(snapshotDriveHistory.currentIndex, 3);
 
       expect(
-        () async =>
-            await countStreamItems(snapshotDriveHistory.getNextStream()),
-        throwsA(isA<Exception>()),
+        () => snapshotDriveHistory.getNextStream(),
+        throwsA(isA<SubRangeIndexOverflow>()),
       );
       //
     });

@@ -3,6 +3,7 @@ import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
 import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
+import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
 import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -73,9 +74,10 @@ void main() {
       Stream stream = driveHistoryComposite.getNextStream();
       expect(driveHistoryComposite.currentIndex, 0);
       expect(await countStreamItems(stream), 101);
+
       expect(
-        () async => await countStreamItems(stream),
-        throwsA(isA<StateError>()),
+        () => driveHistoryComposite.getNextStream(),
+        throwsA(isA<SubRangeIndexOverflow>()),
       );
     });
   });

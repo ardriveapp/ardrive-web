@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
+import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -27,8 +28,8 @@ void main() {
         expect(item.currentIndex, 0);
         expect(await countStreamItems(stream), 11);
         expect(
-          () async => await countStreamItems(stream),
-          throwsA(isA<StateError>()),
+          () => item.getNextStream(),
+          throwsA(isA<SubRangeIndexOverflow>()),
         );
 
         item = SnapshotItem.fromStream(
@@ -51,9 +52,10 @@ void main() {
         stream = item.getNextStream();
         expect(item.currentIndex, 1);
         expect(await countStreamItems(stream), 5);
+
         expect(
-          () async => await countStreamItems(stream),
-          throwsA(isA<StateError>()),
+          () => item.getNextStream(),
+          throwsA(isA<SubRangeIndexOverflow>()),
         );
       });
     });
@@ -88,9 +90,10 @@ void main() {
         Stream stream = item.getNextStream();
         expect(item.currentIndex, 0);
         expect(await countStreamItems(stream), 11);
+
         expect(
-          () async => await countStreamItems(stream),
-          throwsA(isA<StateError>()),
+          () => item.getNextStream(),
+          throwsA(isA<SubRangeIndexOverflow>()),
         );
       });
     });

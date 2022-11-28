@@ -79,8 +79,7 @@ class SnapshotDriveHistory implements SegmentedGQLData {
       getNextStream() {
     _currentIndex++;
     if (currentIndex >= subRanges.rangeSegments.length) {
-      // FIXME: use a custom exception
-      throw Exception('subRangeIndex overflow!');
+      throw SubRangeIndexOverflow(index: currentIndex);
     }
 
     // TODO: use this same pattern in all other implementations of SegmentedGQLData so the avobe exception gets thrown synchronously

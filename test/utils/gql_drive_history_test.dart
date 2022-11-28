@@ -2,6 +2,7 @@ import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
+import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -49,9 +50,10 @@ void main() {
       Stream stream = gqlDriveHistory.getNextStream();
       expect(gqlDriveHistory.currentIndex, 0);
       expect(await countStreamItems(stream), 11);
+
       expect(
-        () async => await countStreamItems(stream),
-        throwsA(isA<StateError>()),
+        () => gqlDriveHistory.getNextStream(),
+        throwsA(isA<SubRangeIndexOverflow>()),
       );
 
       gqlDriveHistory = GQLDriveHistory(
@@ -70,9 +72,10 @@ void main() {
       stream = gqlDriveHistory.getNextStream();
       expect(gqlDriveHistory.currentIndex, 1);
       expect(await countStreamItems(stream), 11);
+
       expect(
-        () async => await countStreamItems(stream),
-        throwsA(isA<StateError>()),
+        () => gqlDriveHistory.getNextStream(),
+        throwsA(isA<SubRangeIndexOverflow>()),
       );
     });
   });

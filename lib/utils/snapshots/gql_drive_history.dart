@@ -28,8 +28,7 @@ class GQLDriveHistory implements SegmentedGQLData {
       getNextStream() {
     _currentIndex++;
     if (currentIndex >= subRanges.rangeSegments.length) {
-      // FIXME: use a custom exception
-      throw Exception('subRangeIndex overflow!');
+      throw SubRangeIndexOverflow(index: currentIndex);
     }
 
     return _getNextStream();

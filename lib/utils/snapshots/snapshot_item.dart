@@ -92,8 +92,7 @@ class SnapshotItemToBeCreated implements SnapshotItem {
       getNextStream() {
     _currentIndex++;
     if (currentIndex >= subRanges.rangeSegments.length) {
-      print('index: $currentIndex, length: ${subRanges.rangeSegments.length}');
-      throw Exception('subRangeIndex overflow!');
+      throw SubRangeIndexOverflow(index: currentIndex);
     }
 
     return _getNextStream();
@@ -176,8 +175,7 @@ class SnapshotItemOnChain implements SnapshotItem {
       getNextStream() {
     _currentIndex++;
     if (currentIndex >= subRanges.rangeSegments.length) {
-      print('index: $currentIndex, length: ${subRanges.rangeSegments.length}');
-      throw Exception('subRangeIndex overflow!');
+      throw SubRangeIndexOverflow(index: currentIndex);
     }
 
     return _getNextStream();
