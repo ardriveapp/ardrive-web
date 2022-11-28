@@ -67,9 +67,11 @@ class SnapshotDriveHistory implements SegmentedGQLData {
       }
     }
 
-    // the remaining items are the last ones added to the mapping
-    _subRangeToSnapshotItemMapping[auxiliarRange.rangeSegments[0]] =
-        auxiliarItems;
+    if (auxiliarRange.rangeSegments.length == 1) {
+      // the remaining items are the last ones added to the mapping
+      _subRangeToSnapshotItemMapping[auxiliarRange.rangeSegments[0]] =
+          auxiliarItems;
+    }
   }
 
   @override
