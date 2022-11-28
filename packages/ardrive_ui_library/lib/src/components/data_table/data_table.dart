@@ -1,5 +1,6 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:ardrive_ui_library/src/components/listtile.dart';
+import 'package:ardrive_ui_library/src/styles/colors/global_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:number_paginator/number_paginator.dart';
 
@@ -140,6 +141,8 @@ class ArDriveTable<T> extends StatefulWidget {
     this.leading,
     this.trailing,
     this.sort,
+    this.rowsPerPage,
+    this.onChangePage,
   });
 
   final List<TableColumn> columns;
@@ -148,6 +151,8 @@ class ArDriveTable<T> extends StatefulWidget {
   final Widget Function(T row)? leading;
   final Widget Function(T row)? trailing;
   final int Function(T a, T b) Function(int columnIndex)? sort;
+  final Function(int page)? onChangePage;
+  final int? rowsPerPage;
 
   @override
   State<ArDriveTable> createState() => _ArDriveTableState<T>();
@@ -158,13 +163,31 @@ enum TableSort { asc, desc }
 class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
   late List<T> rows;
   late List<T> sortedRows;
+  late List<T> currentPage;
+
+  int? numberOfPages;
+  int? selectedPage;
+
   int? sortedColumn;
+
   TableSort? _tableSort;
+
   @override
   void initState() {
     super.initState();
     rows = widget.rows;
     sortedRows = List.from(rows);
+    if (widget.rowsPerPage != null) {
+      print(rows.length);
+      numberOfPages = rows.length ~/ widget.rowsPerPage!;
+      if (rows.length % widget.rowsPerPage! != 0) {
+        numberOfPages = numberOfPages! + 1;
+      }
+      selectedPage = 0;
+      print(numberOfPages);
+
+      currentPage = widget.rows.sublist(0, widget.rowsPerPage!);
+    }
   }
 
   @override
@@ -200,6 +223,8 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                     sortedColumn = index;
 
                     sortedRows.sort(sort);
+
+                    selectPage(selectedPage!);
                   });
                 }
               },
@@ -252,19 +277,51 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
               const SizedBox(
                 height: 28,
               ),
-              Padding(
-                padding: getPadding(),
-                child: Row(
-                  children: [...columns],
-                ),
-              ),
-              for (var row in sortedRows)
+              for (var row in currentPage)
                 Padding(
-                  padding: const EdgeInsets.only(top: 20),
-                  child: _buildRowSpacing(
-                    widget.columns,
-                    widget.buildRow(row).row,
-                    row,
+                  padding: getPadding(),
+                  child: Row(
+                    children: [...columns],
+                  ),
+                ),
+              if (widget.rowsPerPage != null)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Text(
+                        'Rows per page: ${widget.rowsPerPage}',
+                        style: ArDriveTypography.body.bodyBold(),
+                      ),
+                      Text(
+                        '${_getMinIndexInView()}-${_getMaxIndexInView()} of ${rows.length}',
+                        style: ArDriveTypography.body.bodyBold(),
+                      ),
+                      Row(
+                        children: [
+                          ...List.generate(
+                            numberOfPages!,
+                            (index) => Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: GestureDetector(
+                                onTap: () {
+                                  print('current page ${index + 1}');
+                                  selectPage(index);
+                                },
+                                child: Text(
+                                  (index + 1).toString(),
+                                  style: ArDriveTypography.body.inputLargeBold(
+                                      color:
+                                          selectedPage == index ? null : grey),
+                                ),
+                              ),
+                            ),
+                          )
+                        ],
+                      )
+                    ],
                   ),
                 )
             ],
@@ -300,10 +357,36 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
             Padding(
               padding: const EdgeInsets.only(left: 20),
               child: SizedBox(
-                  height: 40, width: 40, child: widget.trailing!.call(row)),
+                height: 40,
+                width: 40,
+                child: widget.trailing!.call(row),
+              ),
             ),
         ],
       ),
     );
+  }
+
+  selectPage(int page) {
+    setState(() {
+      selectedPage = page;
+      int maxIndex = rows.length - 1 < (page + 1) * widget.rowsPerPage!
+          ? rows.length
+          : (page + 1) * widget.rowsPerPage!;
+
+      int minIndex = (selectedPage! * widget.rowsPerPage!);
+
+      currentPage = sortedRows.sublist(minIndex, maxIndex);
+    });
+  }
+
+  _getMinIndexInView() {
+    return (selectedPage! * widget.rowsPerPage!) + 1;
+  }
+
+  _getMaxIndexInView() {
+    return (rows.length - 1 < (selectedPage! + 1) * widget.rowsPerPage!
+        ? rows.length
+        : (selectedPage! + 1) * widget.rowsPerPage!);
   }
 }

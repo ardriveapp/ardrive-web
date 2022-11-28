@@ -31,8 +31,9 @@ Widget _tableWithContent(BuildContext context) {
       context.knobs.number(label: 'Space 2 column', initialValue: 1).toInt();
   final space3 =
       context.knobs.number(label: 'Space 3 column', initialValue: 1).toInt();
-  
+
   return ArDriveTable<File>(
+    rowsPerPage: 5,
     leading: context.knobs.boolean(label: 'With leading')
         ? (row) {
             return const Icon(Icons.folder_copy);
