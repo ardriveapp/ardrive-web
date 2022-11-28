@@ -294,24 +294,37 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    ...List.generate(
-                      numberOfPages!,
-                      (index) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                        child: GestureDetector(
-                          onTap: () {
-                            print('current page ${index + 1}');
-                            selectPage(index);
-                          },
-                          child: Text(
-                            (index + 1).toString(),
-                            style: ArDriveTypography.body.inputLargeBold(
-                                color: selectedPage == index ? null : grey),
+                    Text(
+                      'Rows per page: ${widget.rowsPerPage}',
+                      style: ArDriveTypography.body.bodyBold(),
+                    ),
+                    Text(
+                      '${_getMinIndexInView()}-${_getMaxIndexInView()} of ${rows.length}',
+                      style: ArDriveTypography.body.bodyBold(),
+                    ),
+                    Row(
+                      children: [
+                        ...List.generate(
+                          numberOfPages!,
+                          (index) => Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 4.0),
+                            child: GestureDetector(
+                              onTap: () {
+                                print('current page ${index + 1}');
+                                selectPage(index);
+                              },
+                              child: Text(
+                                (index + 1).toString(),
+                                style: ArDriveTypography.body.inputLargeBold(
+                                    color: selectedPage == index ? null : grey),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
+                        )
+                      ],
                     )
                   ],
                 ),
@@ -369,5 +382,15 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
 
       currentPage = sortedRows.sublist(minIndex, maxIndex);
     });
+  }
+
+  _getMinIndexInView() {
+    return (selectedPage! * widget.rowsPerPage!) + 1;
+  }
+
+  _getMaxIndexInView() {
+    return (rows.length - 1 < (selectedPage! + 1) * widget.rowsPerPage!
+        ? rows.length
+        : (selectedPage! + 1) * widget.rowsPerPage!);
   }
 }
