@@ -31,6 +31,7 @@ class ArDriveThemeData {
     Color? backgroundColor,
     Color? primaryColor,
     ArDriveToggleTheme? toggleTheme,
+    ArDriveTableTheme? tableTheme,
     ThemeData? materialThemeData,
     String? name,
     ArDriveColors? colors,
@@ -48,7 +49,11 @@ class ArDriveThemeData {
           indicatorColorOff: this.colors.themeAccentDefault,
           indicatorColorOn: this.colors.themeAccentSubtle,
         );
-
+    this.tableTheme = tableTheme ??
+        ArDriveTableTheme(
+          backgroundColor: const Color(0xff121212),
+          cellColor: const Color(0xff191919),
+        );
     this.backgroundColor = backgroundColor ?? this.colors.themeBgSubtle;
     this.primaryColor = primaryColor ?? this.colors.themeAccentBrand;
     this.materialThemeData = materialThemeData ?? darkMaterialTheme();
@@ -58,6 +63,7 @@ class ArDriveThemeData {
   late Color backgroundColor;
   late Color primaryColor;
   late ArDriveToggleTheme toggleTheme;
+  late ArDriveTableTheme tableTheme;
   late ThemeData materialThemeData;
   late String name;
   late ArDriveColors colors;
@@ -92,6 +98,10 @@ ArDriveThemeData lightTheme() {
   return ArDriveThemeData(
     backgroundColor: colors.themeBgSurface,
     colors: colors,
+    tableTheme: ArDriveTableTheme(
+      backgroundColor: const Color(0xffFAFAFA),
+      cellColor: const Color(0xffF1EFF0),
+    ),
     materialThemeData: lightMaterialTheme(),
     name: 'light',
   );
@@ -139,6 +149,16 @@ class ArDriveToggleTheme {
   final Color backgroundOnColor;
   final Color backgroundOffColor;
   final Color backgroundOffDisabled;
+}
+
+class ArDriveTableTheme {
+  ArDriveTableTheme({
+    required this.backgroundColor,
+    required this.cellColor,
+  });
+
+  final Color backgroundColor;
+  final Color cellColor;
 }
 
 ThemeData darkMaterialTheme() {
