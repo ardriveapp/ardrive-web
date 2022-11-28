@@ -1,19 +1,15 @@
-import 'dart:convert';
-
 import 'package:ardrive/pst/contract_reader.dart';
 import 'package:ardrive/types/transaction_id.dart';
-import 'package:http/http.dart' as http;
+import 'package:ardrive_network/ardrive_network.dart';
 
-const cacheUrl = 'v2.cache.verto.exchange';
+const cacheUrl = 'https://v2.cache.verto.exchange';
 
 class VertoContractReader implements ContractReader {
   @override
   Future<dynamic> readContract(TransactionID txId) async {
-    final apiUrl = Uri.https(cacheUrl, '$txId');
-    final response = await http.get(apiUrl);
-    final data = response.body;
-    final Map dataAsJson = jsonDecode(data);
+    final apiUrl = '$cacheUrl/$txId';
+    final response = await ArdriveNetwork().getJson(apiUrl);
 
-    return dataAsJson['state'];
+    return response.data['state'];
   }
 }

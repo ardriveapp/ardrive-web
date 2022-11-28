@@ -1,0 +1,3 @@
+• Improved UI performance during network calls
+• Repair folder moving
+• Update link to Arweave Manifests documentation
