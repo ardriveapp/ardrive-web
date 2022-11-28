@@ -1,0 +1,3 @@
+• Performant network calls
+• Fix issue when moving folders
+• Update link to Arweave Manifests documentation
