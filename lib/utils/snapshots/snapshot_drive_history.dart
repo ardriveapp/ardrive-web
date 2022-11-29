@@ -82,7 +82,6 @@ class SnapshotDriveHistory implements SegmentedGQLData {
       throw SubRangeIndexOverflow(index: currentIndex);
     }
 
-    // TODO: use this same pattern in all other implementations of SegmentedGQLData so the avobe exception gets thrown synchronously
     final stream = _getNextStream();
     return stream;
   }
