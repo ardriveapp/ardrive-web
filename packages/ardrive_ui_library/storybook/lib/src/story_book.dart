@@ -9,6 +9,7 @@ import 'package:widgetbook/widgetbook.dart';
 
 import 'card.dart';
 import 'colors.dart';
+import 'drop_area.dart';
 import 'modals.dart';
 
 class StoryBook extends StatelessWidget {
@@ -47,6 +48,7 @@ class StoryBook extends StatelessWidget {
             card(),
             modals(),
             radioButton(),
+            dropArea(),
           ]),
     );
   }

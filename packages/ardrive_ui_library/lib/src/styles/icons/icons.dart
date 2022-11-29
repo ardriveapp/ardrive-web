@@ -31,8 +31,8 @@ class ArDriveIcons {
       const ArDriveIcon(path: 'assets/icons/close_icon_circle.svg');
   static ArDriveIcon closeIcon({double? size}) =>
       const ArDriveIcon(path: 'assets/icons/close_icon.svg');
-  static ArDriveIcon uploadCloud({double? size}) =>
-      ArDriveIcon(path: 'assets/icons/cloud_upload.svg', size: size);
+  static ArDriveIcon uploadCloud({double? size, Color? color}) => ArDriveIcon(
+      path: 'assets/icons/cloud_upload.svg', size: size, color: color);
   static ArDriveIcon checkSuccess({double? size, Color? color}) => ArDriveIcon(
       path: 'assets/icons/check_success.svg', size: size, color: color);
 }
