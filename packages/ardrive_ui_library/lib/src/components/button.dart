@@ -1,4 +1,5 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
+import 'package:ardrive_ui_library/src/constants/size_constants.dart';
 import 'package:flutter/material.dart';
 
 enum ArDriveButtonStyle { primary, secondary, tertiary }
@@ -9,11 +10,17 @@ class ArDriveButton extends StatefulWidget {
     required this.text,
     required this.onPressed,
     this.style = ArDriveButtonStyle.primary,
+    this.backgroundColor,
+    this.fontStyle,
+    this.maxHeight,
   });
 
   final String text;
   final Function() onPressed;
   final ArDriveButtonStyle style;
+  final Color? backgroundColor;
+  final TextStyle? fontStyle;
+  final double? maxHeight;
 
   @override
   State<ArDriveButton> createState() => _ArDriveButtonState();
@@ -24,36 +31,49 @@ class _ArDriveButtonState extends State<ArDriveButton> {
   Widget build(BuildContext context) {
     switch (widget.style) {
       case ArDriveButtonStyle.primary:
-        return ElevatedButton(
-          style: ButtonStyle(
-            maximumSize: _maxSize,
-            minimumSize: _minimumSize,
-            shape: _shape,
-            padding: _padding,
-            alignment: Alignment.center,
-          ),
-          onPressed: widget.onPressed,
-          child: Text(
-            widget.text,
-            style: ArDriveTypography.headline.headline5Bold(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgOnAccent,
+        return SizedBox(
+          height: widget.maxHeight ?? buttonDefaultHeight,
+          child: ElevatedButton(
+            style: ButtonStyle(
+              backgroundColor: _backgroundColor,
+              maximumSize: _maxSize,
+              shape: _shape,
+              padding: _padding,
+              alignment: Alignment.center,
+            ),
+            onPressed: widget.onPressed,
+            child: Text(
+              widget.text,
+              style: widget.fontStyle ??
+                  ArDriveTypography.headline.headline5Bold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgOnAccent,
+                  ),
             ),
           ),
         );
       case ArDriveButtonStyle.secondary:
-        return OutlinedButton(
-          onPressed: widget.onPressed,
-          style: ButtonStyle(
-            maximumSize: _maxSize,
-            minimumSize: _minimumSize,
-            shape: _shapeOutlined,
-            side: _borderSise,
-            padding: _padding,
-          ),
-          child: Text(
-            widget.text,
-            style: ArDriveTypography.headline.headline5Bold(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+        return SizedBox(
+          height: widget.maxHeight ?? buttonDefaultHeight,
+          child: OutlinedButton(
+            onPressed: widget.onPressed,
+            style: ButtonStyle(
+              maximumSize: _maxSize,
+              shape: _shapeOutlined,
+              side: _borderSize,
+              padding: _padding,
+            ),
+            child: Text(
+              widget.text,
+              style: widget.fontStyle ??
+                  ArDriveTypography.headline.headline5Bold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeFgDefault,
+                  ),
             ),
           ),
         );
@@ -69,7 +89,7 @@ class _ArDriveButtonState extends State<ArDriveButton> {
       MaterialStateProperty.resolveWith<OutlinedBorder>(
         (Set<MaterialState> states) {
           return RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(buttonBorderRadius),
           );
         },
       );
@@ -78,19 +98,19 @@ class _ArDriveButtonState extends State<ArDriveButton> {
         (Set<MaterialState> states) {
           return RoundedRectangleBorder(
             side: BorderSide(
-              width: 3,
               style: BorderStyle.solid,
               color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
             ),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(buttonBorderRadius),
           );
         },
       );
-  MaterialStateProperty<BorderSide?> get _borderSise =>
+
+  MaterialStateProperty<BorderSide?> get _borderSize =>
       MaterialStateProperty.resolveWith<BorderSide?>(
         (Set<MaterialState> states) {
           return BorderSide(
-            width: 1,
+            width: buttonBorderWidth,
             style: BorderStyle.solid,
             color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
           );
@@ -103,26 +123,20 @@ class _ArDriveButtonState extends State<ArDriveButton> {
           return const EdgeInsets.symmetric(vertical: 12, horizontal: 12);
         },
       );
+
   MaterialStateProperty<Size> get _maxSize =>
       MaterialStateProperty.resolveWith<Size>(
         (Set<MaterialState> states) {
-          return const Size(368, 56);
+          return const Size(buttonDefaultWidth, buttonDefaultHeight);
         },
       );
 
-  MaterialStateProperty<Size> get _minimumSize {
-    late double width;
-    if (MediaQuery.of(context).size.width * 0.8 > 368 + 16) {
-      width = 368;
-    } else {
-      width = MediaQuery.of(context).size.width * 0.8;
-    }
-    return MaterialStateProperty.resolveWith<Size>(
-      (Set<MaterialState> states) {
-        return Size(width, 56);
-      },
-    );
-  }
+  MaterialStateProperty<Color?> get _backgroundColor =>
+      MaterialStateProperty.resolveWith<Color?>(
+        (Set<MaterialState> states) {
+          return widget.backgroundColor;
+        },
+      );
 }
 
 class ArDriveTextButton extends StatelessWidget {
