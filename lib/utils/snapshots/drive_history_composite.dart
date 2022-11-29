@@ -4,6 +4,7 @@ import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
 import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
+import 'package:equatable/equatable.dart';
 
 class DriveHistoryComposite implements SegmentedGQLData {
   final List<SegmentedGQLData> _subRangeToSnapshotItemMapping = [];
@@ -17,8 +18,7 @@ class DriveHistoryComposite implements SegmentedGQLData {
     required SnapshotDriveHistory snapshotDriveHistory,
   }) {
     if (subRanges.rangeSegments.length != 1) {
-      throw Exception(
-          'DriveHistoryComposite requires for a unique sub-range as the composed classes are the complement of each other');
+      throw TooManySubRanges(amount: subRanges.rangeSegments.length);
     }
 
     _gqlDriveHistory = gqlDriveHistory;
@@ -77,5 +77,21 @@ class DriveHistoryComposite implements SegmentedGQLData {
         yield node;
       }
     }
+  }
+}
+
+class TooManySubRanges implements Exception, Equatable {
+  final int _amount;
+  const TooManySubRanges({required int amount}) : _amount = amount;
+
+  @override
+  List<Object?> get props => [_amount];
+
+  @override
+  final bool stringify = true;
+
+  @override
+  String toString() {
+    return 'DriveHistoryComposite requires for a unique sub-range! (got: $_amount)';
   }
 }
