@@ -2,7 +2,6 @@ import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:ardrive_ui_library/src/components/listtile.dart';
 import 'package:ardrive_ui_library/src/styles/colors/global_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:number_paginator/number_paginator.dart';
 
 class ArDriveDataTable extends StatefulWidget {
   final List<List<Widget>> rows;
@@ -102,14 +101,14 @@ class _ArDriveDataTableState extends State<ArDriveDataTable> {
                 },
               ),
             ),
-            NumberPaginator(
-              numberPages: numberOfPages(),
-              onPageChange: (int index) {
-                setState(() {
-                  pageIndex = index;
-                });
-              },
-            )
+            // NumberPaginator(
+            //   numberPages: numberOfPages(),
+            //   onPageChange: (int index) {
+            //     setState(() {
+            //       pageIndex = index;
+            //     });
+            //   },
+            // )
           ],
         ),
       ),
@@ -269,64 +268,25 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       key: widget.key,
       content: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.only(bottom: 20),
-          child: Column(
-            children: [
-              const SizedBox(
-                height: 28,
+        child: Column(
+          children: [
+            const SizedBox(
+              height: 28,
+            ),
+            Padding(
+              padding: getPadding(),
+              child: Row(
+                children: [...columns],
               ),
-              for (var row in currentPage)
-                Padding(
-                  padding: getPadding(),
-                  child: Row(
-                    children: [...columns],
-                  ),
+            ),
+            for (var row in currentPage)
+              Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: _buildRowSpacing(
+                  widget.columns,
+                  widget.buildRow(row).row,
+                  row,
                 ),
-<<<<<<< HEAD
-              if (widget.rowsPerPage != null)
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Text(
-                        'Rows per page: ${widget.rowsPerPage}',
-                        style: ArDriveTypography.body.bodyBold(),
-                      ),
-                      Text(
-                        '${_getMinIndexInView()}-${_getMaxIndexInView()} of ${rows.length}',
-                        style: ArDriveTypography.body.bodyBold(),
-                      ),
-                      Row(
-                        children: [
-                          ...List.generate(
-                            numberOfPages!,
-                            (index) => Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 4.0),
-                              child: GestureDetector(
-                                onTap: () {
-                                  print('current page ${index + 1}');
-                                  selectPage(index);
-                                },
-                                child: Text(
-                                  (index + 1).toString(),
-                                  style: ArDriveTypography.body.inputLargeBold(
-                                      color:
-                                          selectedPage == index ? null : grey),
-                                ),
-                              ),
-                            ),
-                          )
-                        ],
-                      )
-                    ],
-                  ),
-                )
-            ],
-          ),
-=======
               ),
             if (widget.rowsPerPage != null)
               Padding(
@@ -419,7 +379,6 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                 ),
               )
           ],
->>>>>>> PE-2574-add-data-table
         ),
       ),
     );

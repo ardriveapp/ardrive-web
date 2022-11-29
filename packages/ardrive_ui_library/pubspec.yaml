@@ -19,8 +19,6 @@ dependencies:
   dotted_border: ^2.0.0+3
   flutter:
     sdk: flutter
-  flutter_svg: ^1.1.6
-  number_paginator: ^0.2.2
   number_paginator: ^0.2.2
   flutter_svg: ^1.1.6
 

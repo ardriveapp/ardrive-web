@@ -6,7 +6,6 @@ import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:arweave/arweave.dart';
@@ -30,21 +29,10 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            ...splitTranslationsWithMultipleStyles<Widget>(
-              originalText: appLocalizationsOf(context).welcomeTo_body,
-              defaultMapper: (text) => Text(
-                text,
-                textAlign: TextAlign.center,
-                style: ArDriveTypography.headline.headline5Regular(),
-              ),
-              parts: {
-                appLocalizationsOf(context).welcomeTo_main: (text) => Text(
-                      text,
-                      textAlign: TextAlign.center,
-                      style: ArDriveTypography.headline.headline3Bold(),
-                    ),
-              },
-              separator: const SizedBox(height: 32),
+            Text(
+              'Welcome to ArDrive',
+              textAlign: TextAlign.center,
+              style: ArDriveTypography.headline.headline3Bold(),
             ),
             const SizedBox(height: 32),
             ArDriveDropArea(

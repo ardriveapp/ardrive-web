@@ -311,6 +311,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.2.4"
+  desktop_drop:
+    dependency: transitive
+    description:
+      name: desktop_drop
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.4.0"
   device_info_plus:
     dependency: "direct main"
     description:
@@ -360,6 +367,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.4.1"
+  dotted_border:
+    dependency: transitive
+    description:
+      name: dotted_border
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.0+3"
   drift:
     dependency: "direct main"
     description:
