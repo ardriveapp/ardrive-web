@@ -1,6 +1,6 @@
 import 'package:ardrive/blocs/sync/sync_cubit.dart';
+import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
-import 'package:percent_indicator/linear_percent_indicator.dart';
 
 class ProgressBar extends StatefulWidget {
   const ProgressBar({Key? key, required this.percentage}) : super(key: key);
@@ -35,16 +35,7 @@ class _ProgressBarState extends State<ProgressBar> {
             _percentage = 0;
           }
 
-          return LinearPercentIndicator(
-            animation: true,
-            animateFromLastPercent: true,
-            lineHeight: 10.0,
-            barRadius: const Radius.circular(5),
-            backgroundColor: const Color(0xffFAFAFA),
-            animationDuration: 1000,
-            percent: _percentage,
-            progressColor: const Color(0xff3C3C3C),
-          );
+          return ArDriveProgressBar(percentage: _percentage);
         });
   }
 }
