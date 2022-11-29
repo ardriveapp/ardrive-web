@@ -62,7 +62,7 @@ class ArDriveColors {
     this.themeBgSubtle = themeBgSubtle ?? grey.shade900;
     this.themeBgCanvas = themeBgCanvas ?? black;
     this.themeAccentBrand = themeAccentBrand ?? red.shade500;
-    this.themeAccentMuted = themeAccentMuted ?? grey.withOpacity(0.95);
+    this.themeAccentMuted = themeAccentMuted ?? blue.shade400;
     this.themeWarningFg = themeWarningFg ?? yellow.shade400;
     this.themeWarningEmphasis = themeWarningEmphasis ?? yellow.shade500;
     this.themeWarningMuted = themeWarningMuted ?? yellow.shade600;
@@ -91,7 +91,7 @@ class ArDriveColors {
     this.themeOverlayBackground = themeOverlayBackground ?? black;
     this.themeAccentDefault = blue;
     this.themeAccentDisabled = grey.shade600;
-    this.themeAccentSubtle = themeAccentSubtle ?? blue.withOpacity(0.95);
+    this.themeAccentSubtle = themeAccentSubtle ?? blue.shade900;
     this.themeInputBorderDefault = themeInputBorderDefault ?? grey.shade300;
     this.themeErrorOnEmphasis = themeErrorOnEmphasis ?? red;
     this.themeAccentEmphasis = themeAccentEmphasis ?? blue.shade600;
