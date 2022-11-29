@@ -2,6 +2,7 @@ export 'components/button.dart';
 export 'components/card.dart';
 export 'components/data_table/data_table.dart';
 export 'components/data_table/data_table.dart';
+export 'components/drop_area.dart';
 export 'components/modal.dart';
 export 'components/radio_button.dart';
 export 'components/text_field.dart';
