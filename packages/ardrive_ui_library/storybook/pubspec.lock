@@ -389,7 +389,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.1"
-<<<<<<< HEAD
   path_provider:
     dependency: transitive
     description:
@@ -439,6 +438,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.7"
+  percent_indicator:
+    dependency: transitive
+    description:
+      name: percent_indicator
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "4.2.2"
   permission_handler:
     dependency: transitive
     description:
@@ -474,15 +480,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.1.2"
-=======
-  percent_indicator:
-    dependency: transitive
-    description:
-      name: percent_indicator
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "4.2.2"
->>>>>>> PE-2562-progress-bar-component
   petitparser:
     dependency: transitive
     description:

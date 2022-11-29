@@ -35,12 +35,13 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
               style: ArDriveTypography.headline.headline3Bold(),
             ),
             const SizedBox(height: 32),
-            ArDriveDropArea(
+            ArDriveDropAreaSingleInput(
               width: 552,
               height: 204,
               dragAndDropDescription: 'Drag & Drop your Keyfile',
               dragAndDropButtonTitle: 'Browse Json',
               onDragDone: (file) => pickWallet(file, context),
+              buttonCallback: (file) => pickWallet(file, context),
             ),
             if (context.read<ProfileAddCubit>().isArconnectInstalled()) ...[
               const SizedBox(height: 32),

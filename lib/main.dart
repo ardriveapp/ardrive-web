@@ -11,6 +11,7 @@ import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/utils/app_flavors.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
@@ -48,7 +49,7 @@ void main() async {
     localStore: await LocalKeyValueStore.getInstance(),
   );
 
-  if (!kIsWeb) {
+  if (AppPlatform.isMobile) {
     final flavor = await configService.getAppFlavor();
 
     if (flavor == Flavor.development) {

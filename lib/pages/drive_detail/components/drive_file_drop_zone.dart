@@ -7,7 +7,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:file_selector/file_selector.dart';
+import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
@@ -43,48 +43,82 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
         //ignoring: isHovering,
         child: Stack(
           children: [
-            if (isHovering) _buildDropZoneOnHover(),
-            DropzoneView(
-              key: const Key('dropZone'),
-              onCreated: (ctrl) => controller = ctrl,
-              operation: DragOperation.all,
-              onDrop: (htmlFile) => _onDrop(
-                htmlFile,
-                driveId: widget.driveId,
-                parentFolderId: widget.folderId,
-                context: context,
+            Opacity(
+              opacity: isHovering ? 1 : 0,
+              child: ArDriveDropZone(
+                child: Center(
+                  child: SizedBox(
+                    width: MediaQuery.of(context).size.width / 2,
+                    height: MediaQuery.of(context).size.width / 4,
+                    child: Center(
+                      child: Row(
+                        children: [
+                          ArDriveIcons.uploadCloud(size: 42),
+                          Text(
+                            appLocalizationsOf(context).uploadDragAndDrop,
+                            style: ArDriveTypography.headline.headline3Bold(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                onDragEntered: () => setState(() {
+                  isHovering = true;
+                }),
+                onDragExited: () => setState(() {
+                  isHovering = false;
+                }),
+                onDragDone: (files) => _onDrop(
+                  context: context,
+                  driveId: widget.driveId,
+                  parentFolderId: widget.folderId,
+                  files: files,
+                ),
               ),
-              onHover: _onHover,
-              onLeave: _onLeave,
-              onError: (e) => _onLeave,
-            ),
+            )
+            //  _buildDropZoneOnHover(),
+            // DropzoneView(
+            //   key: const Key('dropZone'),
+            //   onCreated: (ctrl) => controller = ctrl,
+            //   operation: DragOperation.all,
+            //   onDrop: (htmlFile) => _onDrop(
+            //     htmlFile,
+            //     driveId: widget.driveId,
+            //     parentFolderId: widget.folderId,
+            //     context: context,
+            //   ),
+            //   onHover: _onHover,
+            //   onLeave: _onLeave,
+            //   onError: (e) => _onLeave,
+            // ),
           ],
         ),
       ),
     );
   }
 
-  Future<void> _onDrop(
-    htmlFile, {
+  Future<void> _onDrop({
     required BuildContext context,
     required String driveId,
     required String parentFolderId,
+    required List<IOFile> files,
   }) async {
     if (!isCurrentlyShown) {
       isCurrentlyShown = true;
       _onLeave();
       final selectedFiles = <UploadFile>[];
       try {
-        final htmlUrl = await controller.createFileUrl(htmlFile);
+        // final htmlUrl = await controller.createFileUrl(htmlFile);
 
-        // We use xFile to get the bytes and also validate if it is a file
-        final bytes = await XFile(htmlUrl).readAsBytes();
-        final ioFile = await IOFile.fromData(bytes,
-            name: await controller.getFilename(htmlFile),
-            lastModifiedDate: await controller.getFileLastModified(htmlFile));
+        // // We use xFile to get the bytes and also validate if it is a file
+        // final bytes = await XFile(htmlUrl).readAsBytes();
+        // final ioFile = await IOFile.fromData(bytes,
+        //     name: await controller.getFilename(htmlFile),
+        //     lastModifiedDate: await controller.getFileLastModified(htmlFile));
 
         selectedFiles.add(UploadFile(
-          ioFile: ioFile,
+          ioFile: files.first,
           parentFolderId: parentFolderId,
         ));
       } catch (e) {
