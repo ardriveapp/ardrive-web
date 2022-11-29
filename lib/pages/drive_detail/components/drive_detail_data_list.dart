@@ -2,6 +2,7 @@ part of '../drive_detail_page.dart';
 
 Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
     ArDriveTable<FileWithLatestRevisionTransactions>(
+        rowsPerPage: 10,
         columns: [
           TableColumn('Name', 2),
           TableColumn('Size', 1),

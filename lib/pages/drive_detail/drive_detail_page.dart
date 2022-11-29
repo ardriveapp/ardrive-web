@@ -92,13 +92,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
-                                      child: SizedBox(
-                                        width: 400,
-                                        child: Text(
+                                      child: ArDriveCard(
+                                        contentPadding: EdgeInsets.all(36),
+                                        content: Text(
                                           state.currentDrive.name,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headline5,
+                                          style:
+                                              ArDriveTypography.body.leadBold(),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
@@ -170,11 +169,13 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        state.currentDrive.name,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .headline5,
+                                      ArDriveCard(
+                                        content: Text(
+                                          state.currentDrive.name,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headline5,
+                                        ),
                                       ),
                                       const SizedBox(
                                         height: 16,
