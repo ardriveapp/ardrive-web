@@ -9,7 +9,7 @@ WidgetbookCategory dropArea() {
         name: 'DropArea',
         builder: (context) {
           return ArDriveStorybookAppBase(builder: (context) {
-            return ArDriveDropArea(
+            return ArDriveDropAreaSingleInput(
               height: context.knobs
                   .number(label: 'height', initialValue: 204)
                   .toDouble(),
