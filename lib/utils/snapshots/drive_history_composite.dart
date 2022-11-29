@@ -8,21 +8,19 @@ import 'package:equatable/equatable.dart';
 
 class DriveHistoryComposite implements SegmentedGQLData {
   final List<SegmentedGQLData> _subRangeToSnapshotItemMapping = [];
-  late GQLDriveHistory _gqlDriveHistory;
-  late SnapshotDriveHistory _snapshotDriveHistory;
+  final GQLDriveHistory _gqlDriveHistory;
+  final SnapshotDriveHistory _snapshotDriveHistory;
   int _currentIndex = -1;
 
   DriveHistoryComposite({
     required this.subRanges,
     required GQLDriveHistory gqlDriveHistory,
     required SnapshotDriveHistory snapshotDriveHistory,
-  }) {
+  })  : _gqlDriveHistory = gqlDriveHistory,
+        _snapshotDriveHistory = snapshotDriveHistory {
     if (subRanges.rangeSegments.length != 1) {
       throw TooManySubRanges(amount: subRanges.rangeSegments.length);
     }
-
-    _gqlDriveHistory = gqlDriveHistory;
-    _snapshotDriveHistory = snapshotDriveHistory;
 
     _computeSubRanges();
   }
