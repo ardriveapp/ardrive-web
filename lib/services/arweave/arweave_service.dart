@@ -8,11 +8,11 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
+import 'package:ardrive_network/ardrive_network.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
-import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:retry/retry.dart';
 
@@ -63,8 +63,17 @@ class ArweaveService {
       .get('wallet/$address/balance')
       .then((res) => BigInt.parse(res.body));
 
-  Future<int> getCurrentBlockHeight() =>
-      client.api.get('/').then((res) => json.decode(res.body)['height']);
+  Future<int> getCurrentBlockHeight() async {
+    //TODO (Javed) Use GQL Query to fetch block height
+    final blockHeight = await client.api
+        .get('/')
+        .then((res) => json.decode(res.body)['height']);
+    if (blockHeight < 0) {
+      throw Exception(
+          'The current block height $blockHeight is negative. It should be equal or greater than 0.');
+    }
+    return blockHeight;
+  }
 
   Future<BigInt> getPrice({required int byteSize}) async {
     return client.api
@@ -758,13 +767,12 @@ class ArweaveService {
       );
 
   Future<double> getArUsdConversionRate() async {
-    final client = http.Client();
+    const String coinGeckoApi =
+        'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd';
 
-    return await client
-        .get(Uri.parse(
-            'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd'))
-        .then((res) => json.decode(res.body))
-        .then((res) => res['arweave']['usd']);
+    final response = await ArdriveNetwork().getJson(coinGeckoApi);
+
+    return response.data?['arweave']['usd'];
   }
 }
 

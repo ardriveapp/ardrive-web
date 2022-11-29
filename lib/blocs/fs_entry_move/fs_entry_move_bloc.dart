@@ -222,6 +222,8 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
           key: driveKey,
         );
 
+        moveTxDataItems.add(folderDataItem);
+
         await _driveDao.writeToFolder(folder);
         folderEntity.txId = folderDataItem.id;
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(

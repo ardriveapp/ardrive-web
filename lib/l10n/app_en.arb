@@ -557,9 +557,21 @@
   "@howDoIGetAR": {
     "description": "Link to a help page explaining how to get Arweave tokens"
   },
-  "sync": "Sync",
-  "@sync": {
-    "description": "Sync button tooltip"
+  "resync": "Resync",
+  "@resync": {
+    "description": "Sync button Text"
+  },
+  "resyncTooltip": "Refresh all drives",
+  "@resyncTooltip": {
+    "description": "resync tooltip text"
+  },
+  "deepResyncTooltip": "Empty cache & refresh all drives",
+  "@deepResyncTooltip": {
+    "description": "Deep Sync Tooltip Text"
+  },
+  "deepResync": "Deep Resync",
+  "@deepResync": {
+    "description": "Deep Sync Button Text"
   },
   "driveIssuesDetected": "We have detected issues with this drive. Navigate into drive to resolve them.",
   "@driveIssuesDetected": {
