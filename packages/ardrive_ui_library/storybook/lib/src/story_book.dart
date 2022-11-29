@@ -11,6 +11,7 @@ import 'package:widgetbook/widgetbook.dart';
 
 import 'card.dart';
 import 'colors.dart';
+import 'modals.dart';
 
 class StoryBook extends StatelessWidget {
   const StoryBook({super.key});
@@ -48,6 +49,7 @@ class StoryBook extends StatelessWidget {
             card(),
             dataTable(),
             table(),
+            modals(),
             radioButton(),
           ]),
     );
