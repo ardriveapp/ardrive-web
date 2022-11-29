@@ -178,15 +178,14 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
     rows = widget.rows;
     sortedRows = List.from(rows);
     if (widget.rowsPerPage != null) {
-      print(rows.length);
       numberOfPages = rows.length ~/ widget.rowsPerPage!;
       if (rows.length % widget.rowsPerPage! != 0) {
         numberOfPages = numberOfPages! + 1;
       }
       selectedPage = 0;
-      print(numberOfPages);
-
-      currentPage = widget.rows.sublist(0, widget.rowsPerPage!);
+      selectPage(0);
+    } else {
+      currentPage = widget.rows;
     }
   }
 
@@ -284,6 +283,7 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                     children: [...columns],
                   ),
                 ),
+<<<<<<< HEAD
               if (widget.rowsPerPage != null)
                 Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -326,6 +326,100 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                 )
             ],
           ),
+=======
+              ),
+            if (widget.rowsPerPage != null)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Text(
+                      'Rows per page: ${widget.rowsPerPage}',
+                      style: ArDriveTypography.body.bodyBold(),
+                    ),
+                    Text(
+                      '${_getMinIndexInView()}-${_getMaxIndexInView()} of ${rows.length}',
+                      style: ArDriveTypography.body.bodyBold(),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4.0, right: 12),
+                          child: GestureDetector(
+                            onTap: () {
+                              if (selectedPage! > 0) {
+                                goToThePreviousPage();
+                              }
+                            },
+                            child: Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: selectedPage! > 0 ? null : grey,
+                              size: 12,
+                            ),
+                          ),
+                        ),
+                        ...List.generate(
+                          numberOfPages!,
+                          (index) => Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 4.0),
+                            child: GestureDetector(
+                              onTap: () {
+                                selectPage(index);
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    (index + 1).toString(),
+                                    style:
+                                        ArDriveTypography.body.inputLargeBold(
+                                      color:
+                                          selectedPage == index ? null : grey,
+                                    ),
+                                  ),
+                                  if (index < numberOfPages! - 1)
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 6),
+                                      child: Text(
+                                        '|',
+                                        style: ArDriveTypography.body
+                                            .buttonLargeRegular(
+                                          color: grey,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                            padding: const EdgeInsets.only(top: 4.0, left: 12),
+                            child: GestureDetector(
+                              onTap: () {
+                                if (selectedPage! < numberOfPages!) {
+                                  goToNextPage();
+                                }
+                              },
+                              child: Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: selectedPage! < numberOfPages!
+                                    ? null
+                                    : grey,
+                                size: 14,
+                              ),
+                            )),
+                      ],
+                    )
+                  ],
+                ),
+              )
+          ],
+>>>>>>> PE-2574-add-data-table
         ),
       ),
     );
@@ -380,11 +474,19 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
     });
   }
 
-  _getMinIndexInView() {
+  void goToNextPage() {
+    selectPage(selectedPage! + 1);
+  }
+
+  void goToThePreviousPage() {
+    selectPage(selectedPage! - 1);
+  }
+
+  int _getMinIndexInView() {
     return (selectedPage! * widget.rowsPerPage!) + 1;
   }
 
-  _getMaxIndexInView() {
+  int _getMaxIndexInView() {
     return (rows.length - 1 < (selectedPage! + 1) * widget.rowsPerPage!
         ? rows.length
         : (selectedPage! + 1) * widget.rowsPerPage!);
