@@ -10,6 +10,7 @@ class ArDriveProgressBar extends StatefulWidget {
     this.backgroundColor,
   });
 
+  /// Should be a value between 0.0 and 1.0
   final double percentage;
   final Color? indicatorColor;
   final Color? backgroundColor;
