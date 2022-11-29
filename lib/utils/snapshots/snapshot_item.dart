@@ -131,6 +131,7 @@ class SnapshotItemOnChain implements SnapshotItem {
   final int timestamp;
   final TxID txId;
   final String? _fakeSource;
+  final Map<TxID, String> _txIdToDataMapping = {};
   int _currentIndex = -1;
 
   SnapshotItemOnChain({
@@ -184,27 +185,26 @@ class SnapshotItemOnChain implements SnapshotItem {
       _getNextStream() async* {
     final Range range = subRanges.rangeSegments[currentIndex];
 
-    // TODO: temporary cache the tx data
-
     final Map dataJson = jsonDecode(await source());
     final List<Map> txSnapshots =
         List.castFrom<dynamic, Map>(dataJson['txSnapshots']);
 
-    final sourceInRange = txSnapshots
-        .map(
-          (txItem) =>
-              // todo: store the data of the node
-              DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-                  .fromJson(txItem['gqlNode']),
-        )
-        .where(
-          (txItem) => range.isInRange(txItem.block!.height),
-        )
-        .toList();
+    for (Map item in txSnapshots) {
+      final node =
+          DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+              .fromJson(item['gqlNode']);
 
-    for (DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction node
-        in sourceInRange) {
-      yield node;
+      if (range.isInRange(node.block!.height)) {
+        yield node;
+
+        final TxID txId = node.id;
+        final String data = item['jsonData'];
+        _txIdToDataMapping[txId] = data;
+      }
     }
+  }
+
+  String? getDataForTxId(TxID txId) {
+    return _txIdToDataMapping.remove(txId);
   }
 }
