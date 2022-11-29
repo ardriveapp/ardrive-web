@@ -44,6 +44,47 @@ void main() {
       );
     });
 
+    test('constructor throws with invalid sub-ranges amount', () {
+      GQLDriveHistory gqlDriveHistory = GQLDriveHistory(
+        arweave: arweave,
+        driveId: 'DRIVE_ID',
+        subRanges: HeightRange(rangeSegments: [
+          Range(start: 0, end: 10),
+          Range(start: 26, end: 50),
+          Range(start: 99, end: 100),
+        ]),
+      );
+      SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
+        items: mockSubRanges
+            .map(
+              (r) => fakeSnapshotItemFromRange(
+                HeightRange(rangeSegments: [r]),
+              ),
+            )
+            .toList(),
+      );
+
+      expect(
+        () => DriveHistoryComposite(
+          subRanges: HeightRange(rangeSegments: [
+            Range(start: 0, end: 10),
+            Range(start: 11, end: 20),
+          ]),
+          gqlDriveHistory: gqlDriveHistory,
+          snapshotDriveHistory: snapshotDriveHistory,
+        ),
+        throwsA(isA<TooManySubRanges>()),
+      );
+      expect(
+        () => DriveHistoryComposite(
+          subRanges: HeightRange(rangeSegments: []),
+          gqlDriveHistory: gqlDriveHistory,
+          snapshotDriveHistory: snapshotDriveHistory,
+        ),
+        throwsA(isA<TooManySubRanges>()),
+      );
+    });
+
     test('getStreamForIndex returns a valid stream of nodes', () async {
       GQLDriveHistory gqlDriveHistory = GQLDriveHistory(
         arweave: arweave,
