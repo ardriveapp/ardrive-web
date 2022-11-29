@@ -938,6 +938,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.1"
+  number_paginator:
+    dependency: transitive
+    description:
+      name: number_paginator
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.2.2"
   package_config:
     dependency: transitive
     description:

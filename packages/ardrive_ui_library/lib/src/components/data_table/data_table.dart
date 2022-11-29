@@ -178,15 +178,14 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
     rows = widget.rows;
     sortedRows = List.from(rows);
     if (widget.rowsPerPage != null) {
-      print(rows.length);
       numberOfPages = rows.length ~/ widget.rowsPerPage!;
       if (rows.length % widget.rowsPerPage! != 0) {
         numberOfPages = numberOfPages! + 1;
       }
       selectedPage = 0;
-      print(numberOfPages);
-
-      currentPage = widget.rows.sublist(0, widget.rowsPerPage!);
+      selectPage(0);
+    } else {
+      currentPage = widget.rows;
     }
   }
 
@@ -305,7 +304,24 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                       style: ArDriveTypography.body.bodyBold(),
                     ),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: GestureDetector(
+                            onTap: () {
+                              if (selectedPage! > 0) {
+                                goToThePreviousPage();
+                              }
+                            },
+                            child: Icon(
+                              Icons.arrow_back_ios_new_rounded,
+                              color: selectedPage! > 0 ? null : grey,
+                              size: 12,
+                            ),
+                          ),
+                        ),
                         ...List.generate(
                           numberOfPages!,
                           (index) => Padding(
@@ -313,7 +329,6 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                                 const EdgeInsets.symmetric(horizontal: 4.0),
                             child: GestureDetector(
                               onTap: () {
-                                print('current page ${index + 1}');
                                 selectPage(index);
                               },
                               child: Text(
@@ -323,7 +338,23 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                               ),
                             ),
                           ),
-                        )
+                        ),
+                        Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: GestureDetector(
+                              onTap: () {
+                                if (selectedPage! < numberOfPages!) {
+                                  goToNextPage();
+                                }
+                              },
+                              child: Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: selectedPage! < numberOfPages!
+                                    ? null
+                                    : grey,
+                                size: 12,
+                              ),
+                            )),
                       ],
                     )
                   ],
@@ -384,11 +415,19 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
     });
   }
 
-  _getMinIndexInView() {
+  void goToNextPage() {
+    selectPage(selectedPage! + 1);
+  }
+
+  void goToThePreviousPage() {
+    selectPage(selectedPage! - 1);
+  }
+
+  int _getMinIndexInView() {
     return (selectedPage! * widget.rowsPerPage!) + 1;
   }
 
-  _getMaxIndexInView() {
+  int _getMaxIndexInView() {
     return (rows.length - 1 < (selectedPage! + 1) * widget.rowsPerPage!
         ? rows.length
         : (selectedPage! + 1) * widget.rowsPerPage!);
