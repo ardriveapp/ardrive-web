@@ -9,8 +9,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('SnapshotItem class', () {
-    // TODO: test the getter for the data when implemented
-
     group('fromStream factory', () {
       test('getStreamForIndex returns a valid stream of nodes', () async {
         final r = Range(start: 0, end: 10);
@@ -97,19 +95,93 @@ void main() {
         );
       });
     });
+
+    group('getDataForTxId method', () {
+      test('returns cached data if present', () async {
+        final r = Range(start: 0, end: 10);
+
+        SnapshotItemOnChain item = SnapshotItem.fromGQLNode(
+          node:
+              SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                  .fromJson(
+            {
+              'id': 'hwgMuTV_dtFqfC9fJXfZTv00aOm17yL0wYucqh05YAQ',
+              'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+              'owner': {'address': '1234567890'},
+              'tags': [
+                {'name': 'Block-Start', 'value': '${r.start}'},
+                {'name': 'Block-End', 'value': '${r.end}'},
+                {'name': 'Drive-Id', 'value': 'asdasdasdasd'},
+              ],
+              'block': {
+                'height': 100,
+                'timestamp': DateTime.now().microsecondsSinceEpoch
+              }
+            },
+          ),
+          subRanges: HeightRange(rangeSegments: [r]),
+          fakeSource: await fakeSnapshotStream(r),
+        ) as SnapshotItemOnChain;
+
+        await countStreamItems(item.getNextStream());
+
+        for (int height = r.start; height <= r.end; height++) {
+          // has data the first time
+          expect(item.getDataForTxId('$height'), '{"name": "$height"}');
+          // further calls to the method results in a null response
+          expect(item.getDataForTxId('$height'), null);
+        }
+      });
+
+      test('returns null if no data present', () async {
+        final r = Range(start: 0, end: 10);
+
+        SnapshotItemOnChain item = SnapshotItem.fromGQLNode(
+          node:
+              SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                  .fromJson(
+            {
+              'id': 'hwgMuTV_dtFqfC9fJXfZTv00aOm17yL0wYucqh05YAQ',
+              'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+              'owner': {'address': '1234567890'},
+              'tags': [
+                {'name': 'Block-Start', 'value': '${r.start}'},
+                {'name': 'Block-End', 'value': '${r.end}'},
+                {'name': 'Drive-Id', 'value': 'asdasdasdasd'},
+              ],
+              'block': {
+                'height': 100,
+                'timestamp': DateTime.now().microsecondsSinceEpoch
+              }
+            },
+          ),
+          subRanges: HeightRange(rangeSegments: [r]),
+          fakeSource: await fakeSnapshotStream(r),
+        ) as SnapshotItemOnChain;
+
+        await countStreamItems(item.getNextStream());
+
+        expect(item.getDataForTxId('not present tx id'), null);
+      });
+    });
   });
 }
 
 // TODO: move these helper methods to its own source file
 
 Future<String> fakeSnapshotStream(Range range) async {
-  return jsonEncode({
-    'txSnapshots': await fakeNodesStream(range)
-        .map(
-          (event) => {'gqlNode': event, 'jsonData': '{}'},
-        )
-        .toList()
-  });
+  return jsonEncode(
+    {
+      'txSnapshots': await fakeNodesStream(range)
+          .map(
+            (event) => {
+              'gqlNode': event,
+              'jsonData': '{"name": "${event.block!.height}"}',
+            },
+          )
+          .toList(),
+    },
+  );
 }
 
 Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
@@ -118,7 +190,7 @@ Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transactio
     yield DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
         .fromJson(
       {
-        'id': 'hwgMuTV_dtFqfC9fJXfZTv00aOm17yL0wYucqh05YAQ',
+        'id': '$height',
         'bundledIn': {'id': 'ASDASDASDASDASDASD'},
         'owner': {'address': '1234567890'},
         'tags': [],
