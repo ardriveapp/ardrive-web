@@ -35,4 +35,6 @@ class ArDriveIcons {
       path: 'assets/icons/cloud_upload.svg', size: size, color: color);
   static ArDriveIcon checkSuccess({double? size, Color? color}) => ArDriveIcon(
       path: 'assets/icons/check_success.svg', size: size, color: color);
+  static ArDriveIcon warning({double? size, Color? color}) =>
+      ArDriveIcon(path: 'assets/icons/warning.svg', size: size, color: color);
 }
