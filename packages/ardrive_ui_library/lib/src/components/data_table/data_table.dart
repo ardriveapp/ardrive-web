@@ -308,7 +308,7 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
+                          padding: const EdgeInsets.only(top: 4.0, right: 12),
                           child: GestureDetector(
                             onTap: () {
                               if (selectedPage! > 0) {
@@ -331,16 +331,35 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                               onTap: () {
                                 selectPage(index);
                               },
-                              child: Text(
-                                (index + 1).toString(),
-                                style: ArDriveTypography.body.inputLargeBold(
-                                    color: selectedPage == index ? null : grey),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    (index + 1).toString(),
+                                    style:
+                                        ArDriveTypography.body.inputLargeBold(
+                                      color:
+                                          selectedPage == index ? null : grey,
+                                    ),
+                                  ),
+                                  if (index < numberOfPages! - 1)
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 6),
+                                      child: Text(
+                                        '|',
+                                        style: ArDriveTypography.body
+                                            .buttonLargeRegular(
+                                          color: grey,
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                           ),
                         ),
                         Padding(
-                            padding: const EdgeInsets.only(top: 4.0),
+                            padding: const EdgeInsets.only(top: 4.0, left: 12),
                             child: GestureDetector(
                               onTap: () {
                                 if (selectedPage! < numberOfPages!) {
@@ -352,7 +371,7 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                                 color: selectedPage! < numberOfPages!
                                     ? null
                                     : grey,
-                                size: 12,
+                                size: 14,
                               ),
                             )),
                       ],
