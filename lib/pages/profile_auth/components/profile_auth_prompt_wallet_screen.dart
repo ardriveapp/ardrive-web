@@ -47,10 +47,12 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
               separator: const SizedBox(height: 32),
             ),
             const SizedBox(height: 32),
-            ArDriveButton(
-              style: ArDriveButtonStyle.secondary,
-              onPressed: () => _pickWallet(context),
-              text: appLocalizationsOf(context).selectWalletEmphasized,
+            ArDriveDropArea(
+              width: 552,
+              height: 204,
+              dragAndDropDescription: 'Drag & Drop your Keyfile',
+              dragAndDropButtonTitle: 'Browse Json',
+              onDragDone: (file) => pickWallet(file, context),
             ),
             if (context.read<ProfileAddCubit>().isArconnectInstalled()) ...[
               const SizedBox(height: 32),
@@ -105,6 +107,30 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
       // ignore: use_build_context_synchronously
       await context.read<ProfileAddCubit>().pickWallet(wallet);
     }
+  }
+
+  Future<void> pickWallet(IOFile walletFile, BuildContext context) async {
+    int walletSize = await walletFile.length;
+    int maxWalletSizeInBits = 10000;
+
+    if (walletSize > maxWalletSizeInBits) {
+      // ignore: use_build_context_synchronously
+      _showInvalidWalletFileDialog(context);
+      return;
+    }
+
+    Wallet wallet;
+
+    try {
+      wallet = Wallet.fromJwk(json.decode(await walletFile.readAsString()));
+    } catch (e) {
+      // ignore: use_build_context_synchronously
+      _showInvalidWalletFileDialog(context);
+      return;
+    }
+
+    // ignore: use_build_context_synchronously
+    await context.read<ProfileAddCubit>().pickWallet(wallet);
   }
 
   void _pickWalletArconnect(BuildContext context) async {

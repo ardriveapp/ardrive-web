@@ -49,12 +49,14 @@ class ArDriveDropArea extends StatefulWidget {
     this.width,
     required this.dragAndDropDescription,
     required this.dragAndDropButtonTitle,
+    this.onDragDone,
   });
 
   final double? height;
   final double? width;
   final String dragAndDropDescription;
   final String dragAndDropButtonTitle;
+  final Function(IOFile file)? onDragDone;
 
   @override
   State<ArDriveDropArea> createState() => _ArDriveDropAreaState();
@@ -70,6 +72,7 @@ class _ArDriveDropAreaState extends State<ArDriveDropArea> {
       onDragDone: (file) {
         setState(() {
           _file = file;
+          widget.onDragDone?.call(_file!);
         });
       },
       onDragExited: () {},
