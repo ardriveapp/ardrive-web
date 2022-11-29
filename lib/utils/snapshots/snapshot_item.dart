@@ -6,8 +6,8 @@ import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
+import 'package:ardrive_network/ardrive_network.dart';
 import 'package:async/async.dart';
-import 'package:http/http.dart' as http;
 
 abstract class SnapshotItem implements SegmentedGQLData {
   abstract final int blockStart;
@@ -161,9 +161,8 @@ class SnapshotItemOnChain implements SnapshotItem {
       return _fakeSource!;
     }
 
-    final snapshotItemData = await http.get(_dataUri);
-    final String dataBytes = snapshotItemData.body;
-    return dataBytes;
+    final dataBytes = await ArdriveNetwork().get(url: _dataUri, asBytes: true);
+    return dataBytes.data;
   }
 
   get _dataUri {
