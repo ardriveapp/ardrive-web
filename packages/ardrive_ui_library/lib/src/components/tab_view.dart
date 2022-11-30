@@ -1,11 +1,11 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
 
+typedef ArDriveTab = MapEntry<Tab, Widget>;
+
 class ArDriveTabView extends StatefulWidget {
-  final List<Tab> tabs;
-  final List<Widget> children;
-  const ArDriveTabView({Key? key, required this.tabs, required this.children})
-      : super(key: key);
+  final List<ArDriveTab> tabs;
+  const ArDriveTabView({Key? key, required this.tabs}) : super(key: key);
 
   @override
   State<ArDriveTabView> createState() => _ArDriveTabViewState();
@@ -31,13 +31,13 @@ class _ArDriveTabViewState extends State<ArDriveTabView>
       content: Column(
         children: [
           ArDriveTabBar(
-            tabs: widget.tabs,
+            tabs: [...widget.tabs.map((tab) => tab.key)],
             controller: _tabController,
           ),
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: widget.children,
+              children: [...widget.tabs.map((tab) => tab.value)],
             ),
           )
         ],

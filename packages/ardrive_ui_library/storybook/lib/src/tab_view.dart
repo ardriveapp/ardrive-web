@@ -12,26 +12,22 @@ WidgetbookCategory tabView() {
           return ArDriveStorybookAppBase(builder: (context) {
             return const ArDriveTabView(
               tabs: [
-                Tab(
-                  child: Text('One'),
+                ArDriveTab(
+                  Tab(child: Text('One')),
+                  Center(child: Text('One')),
                 ),
-                Tab(
-                  child: Text('Two'),
+                ArDriveTab(
+                  Tab(child: Text('Two')),
+                  Center(child: Text('Two')),
                 ),
-                Tab(
-                  child: Text('Three'),
+                ArDriveTab(
+                  Tab(child: Text('Three')),
+                  Center(child: Text('Three')),
                 ),
-              ],
-              children: [
-                Center(
-                  child: Text('One'),
-                ),
-                Center(
-                  child: Text('Two'),
-                ),
-                Center(
-                  child: Text('Three'),
-                ),
+                ArDriveTab(
+                  Tab(child: Text('Four')),
+                  Center(child: Text('Four')),
+                )
               ],
             );
           });
