@@ -1,5 +1,5 @@
 {
-  "@@locale": "fas",
+  "@@locale": "fa",
   "welcomeTo_body": "خوش آمدید به فضای ذخیره سازی خصوصی و امن، غیرمتمرکز، بدون اضافه پرداخت ، مقاوم در برابر سانسور و دائمی.",
   "@welcomeTo_body": {
     "description": "Welcoming message just after the ArDrive logo"
