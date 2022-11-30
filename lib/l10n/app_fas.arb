@@ -1,0 +1,1360 @@
+{
+  "@@locale": "fas",
+  "welcomeTo_body": "خوش آمدید به فضای ذخیره سازی خصوصی و امن، غیرمتمرکز، بدون اضافه پرداخت ، مقاوم در برابر سانسور و دائمی.",
+  "@welcomeTo_body": {
+    "description": "Welcoming message just after the ArDrive logo"
+  },
+  "welcomeTo_main": "خوش آمدید به",
+  "@welcomeTo_main": {
+    "description": "Highly emphasized text giving welcome"
+  },
+  "welcomeTo_description": "فضای ذخیره سازی خصوصی و امن، غیرمتمرکز، بدون اضافه پرداخت ، مقاوم در برابر سانسور و دائمی.",
+
+  "@welcomeTo_description": {
+    "description": "Brief description of ArDrive as welcoming"
+  },
+  "selectWalletEmphasized": "کیف پول خود را انتخاب کنید",
+  "@selectWalletEmphasized": {
+    "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
+  },
+  "useArconnectEmphasized": " از Arconnect استفاده کنید",
+  "@useArconnectEmphasized": {
+    "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
+  },
+  "getAWallet": "کیف پول ندارید؟ از اینجا بگیرید",
+  "@getAWallet": {
+    "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
+  },
+  "welcomeToThePermawebEmphasized": "به وب دائمی خوش آمدی",
+  "@welcomeToThePermawebEmphasized": {
+    "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
+  },
+  "ardriveIsntJustAnotherCloudSyncApp": "آردرایو، یک برنامه دیگر برای سینک شدن با فضای ابری نیست. بلکه شروعی برای یک درایو ذخیره سازی دائمی است.",
+  "@ardriveIsntJustAnotherCloudSyncApp": {
+    "description": "Description about the permanence and uniqueness of ArDrive"
+  },
+  "anyFilesWillOutliveYou": "هر فایلی که اینجا آپلود کنید بیشتر از شما زنده خواهد ماند!",
+  "@anyFilesWillOutliveYou": {
+    "description": "Files on the Weave will exist there forever"
+  },
+  "weDoAFewThingsDifferently": "این یعنی که ما چند کار متفاوت انجام میدهیم",
+  "@weDoAFewThingsDifferently": {
+    "description": "What ArDrive does differently"
+  },
+  "payPerFileEmphasized": "پرداخت به ازای هر فایل",
+  "@payPerFileEmphasized": {
+    "description": "Payment philosophy. Emphasized with upper case"
+  },
+  "noSubscriptions": "هیچ اشتراکی لازم نیست",
+  "@noSubscriptions": {
+    "description": "Payment philosophy"
+  },
+  "monthlyCharges": "به جای هزینه ماهیانه دیگر برای فضای خالی که استفاده نمی کنید، یک بار چند سنت پرداخت کنید و فایل های خود را برای همیشه در آردرایو ذخیره کنید.",
+  "@monthlyCharges": {
+    "description": "Payment philosophy"
+  },
+  "secondsFromForeverEmphasized": "ثانیه برای همیشه",
+  "@secondsFromForeverEmphasized": {
+    "description": "Shows how close you are from permanence. Emphasized with upper case"
+  },
+  "decentralizedPermanent": "ذخیره سازی غیرمتمرکز و دائمی داده ها در یک لحظه اتفاق نمی افتد.",
+  "@decentralizedPermanent": {
+    "description": "Permanence requires patience"
+  },
+  "greenCheckMark": "هنگامی که علامت سبز رنگ در کنار فایل شما ظاهر می شود، یعنی فایل در وب دائمی آپلود شده است.",
+  "@greenCheckMark": {
+    "description": "Describes the indicator of the status of uploaded files"
+  },
+  "totalPrivacyControlEmphasized": "کنترل کامل حریم خصوصی",
+  "@totalPrivacyControlEmphasized": {
+    "description": "Title for talking about privacy. Emphasized with upper case"
+  },
+  "yourChoice": "انتخاب شما: با استفاده از بهترین رمزگذاری ها، فایل ها را عمومی یا خصوصی کنید.",
+  "@yourChoice": {
+    "description": "User can choose whether or not to make the content public"
+  },
+  "noOneWillSee": "هیچ کس چیزی را نخواهد دید که شما نمی خواهید.",
+  "@noOneWillSee": {
+    "description": "Indicates that private content won't reach to the wrong hands"
+  },
+  "neverDeletedEmphasized": "هرگز حذف نشده",
+  "@neverDeletedEmphasized": {
+    "description": "Uploaded items cannot be deleted. Emphasized with upper case"
+  },
+  "noDeleteButton": "به یاد داشته باشید: هیچ دکمه حذفی (برای شما یا ما) وجود ندارد!",
+  "@noDeleteButton": {
+    "description": "Uploaded items cannot be deleted"
+  },
+  "onceUploadedCantBeRemoved": "پس از آپلود، امکان حذف داده های شما وجود ندارد.",
+  "@onceUploadedCantBeRemoved": {
+    "description": "Uploaded items cannot be deleted"
+  },
+  "thinkTwiceBeforeUploading": "قبل از آپلود شعرهای عاشقانه نوجوانی خود دو بار فکر کنید...",
+  "@thinkTwiceBeforeUploading": {
+    "description": "Uploaded items cannot be deleted"
+  },
+  "pleaseRemainOnThisTab": "در حال لود شدن... لطفا در این صفحه بمانید.",
+  "@pleaseRemainOnThisTab": {
+    "description": "Circular progress indicator"
+  },
+  "loginFailed": "خطا در ورود",
+  "@loginFailed": {
+    "description": "Text for when the user tried to login with wrong credentials"
+  },
+  "sorryLoginFailed": "با عرض پوزش، ورود ناموفق بود.  لطفا دوباره امتحان کنید.",
+  "@sorryLoginFailed": {
+    "description": "Text for when the user tried to login with wrong credentials"
+  },
+  "logIn": "ورود",
+  "@logIn": {
+    "description": "The action of logging in. Imperative form"
+  },
+  "welcomeBackEmphasized": "خوش برگشتید",
+  "@welcomeBackEmphasized": {
+    "description": "Welcoming for an existing user. Emphasized with upper case"
+  },
+  "letsGetStartedEmphasized": "بیایید شروع کنیم",
+  "@letsGetStartedEmphasized": {
+    "description": "Let's start setting up the account. Emphasized with upper case"
+  },
+  "pleaseProvideSamePassword": "لطفا همان رمز عبوری را که قبلا استفاده کردید را وارد کنید.",
+  "@pleaseProvideSamePassword": {
+    "description": "Asks for the wallet password"
+  },
+  "passwordCanNeverBeChanged": "رمز عبور شما هرگز قابل تغییر یا بازیابی نیست.  لطفا آن را در جای امن نگه دارید!",
+  "@passwordCanNeverBeChanged": {
+    "description": "Explains that the password cannot be changed as it is the one of the wallet"
+  },
+  "password": "رمز عبور",
+  "@password": {
+    "description": "Label for the 'password' input"
+  },
+  "confirmPassword": "تایید رمز عبور",
+  "@confirmPassword": {
+    "description": "Label for repeating the password again"
+  },
+  "username": "نام کاربری",
+  "@username": {
+    "description": "Label for the username"
+  },
+  "passwordMismatch": "رمز عبور تایید شده مطابقت ندارد",
+  "@passwordMismatch": {
+    "description": "Error message for when the confirmation password doesn't match the actual pass"
+  },
+  "aggreeToTerms_body": "من با شرایط خدمات ArDrive و حفظ حریم خصوصی موافقم",
+  "@aggreeToTerms_body": {
+    "description": "Checkbox for agreeing to the terms of service and privacy policy"
+  },
+  "aggreeToTerms_main": "من موافقم ",
+  "@aggreeToTerms_main": {
+    "description": "Checkbox for agreeing to the terms of service and privacy policy"
+  },
+  "aggreeToTerms_link": "شرایط خدمات و سیاست حفظ حریم خصوصی ArDrive",
+  "@aggreeToTerms_link": {
+    "description": "Segment of text representing a link to the legal documents"
+  },
+  "addProfileEmphasized": "افزودن پروفایل",
+  "@addProfileEmphasized": {
+    "description": "Add a wallet. Emphasized with upper case"
+  },
+  "logOut": "خروج",
+  "@logOut": {
+    "description": "The action of logging out"
+  },
+  "logOutEmphasized": "خروج",
+  "@logOutEmphasized": {
+    "description": "The action of logging out. Emphasized with upper case"
+  },
+  "changeWallet": "تغییر کیف پول",
+  "@changeWallet": {
+    "description": "To use a different wallet"
+  },
+  "welcomeBackUserEmphasized": "خوش برگشتید, {username}",
+  "@welcomeBackUserEmphasized": {
+    "description": "Welcoming to the user. Emphasized with upper case",
+    "placeholders": {
+      "username": {
+        "type": "String",
+        "example": "user"
+      }
+    }
+  },
+  "unlock": "قفل را باز کنید",
+  "@unlock": {
+    "description": "Unlock a file or drive."
+  },
+  "unlockEmphasized": "قفل را باز کنید",
+  "@unlockEmphasized": {
+    "description": "Unlock the wallet with its password. Emphasized with upper case"
+  },
+  "forgetWallet": "از کیف پول دیگری استفاده کنید",
+  "@forgetWallet": {
+    "description": "Use a different wallet by forgetting the current one"
+  },
+  "newString": "جدید",
+  "@newString": {
+    "description": "New entity (folder, file, drive, manifest, attached drive)"
+  },
+  "newStringEmphasized": "جدید",
+  "@newStringEmphasized": {
+    "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
+  },
+  "noDrives": "شما هیچ درایو شخصی یا پیوستی ندارید.\nبرای افزودن، روی دکمه \"جدید\" کلیک کنید!",
+  "@noDrives": {
+    "description": "Text for when the wallet has no on-chain drives to display"
+  },
+  "rowsPerPage": "ردیف در هر صفحه",
+  "@rowsPerPage": {
+    "description": "How many rows per page to use"
+  },
+  "goToFirst": "برو به اولی",
+  "@goToFirst": {
+    "description": "Action of going to the first page"
+  },
+  "previous": "قبلی",
+  "@previous": {
+    "description": "Action of going to the previous page"
+  },
+  "next": "بعدی",
+  "@next": {
+    "description": "Action of going to the next page"
+  },
+  "nextEmphasized": "بعدی",
+  "@nextEmphasized": {
+    "description": "Next step"
+  },
+  "goToLast": "برو به آخری",
+  "@goToLast": {
+    "description": "Action of going to the latest page"
+  },
+  "exportDriveContents": "صدور محتویات درایو",
+  "@exportDriveContents": {
+    "description": "Export the data of a drive into a CSV file"
+  },
+  "download": "دانلود",
+  "@download": {
+    "description": "Action of downloading a file"
+  },
+  "preview": "پیش نمایش",
+  "@preview": {
+    "description": "Action of previewing a file"
+  },
+  "move": "تغییر مکان",
+  "@move": {
+    "description": "Action of moving certain file or folder"
+  },
+  "viewOnly": "فقط مشاهده ",
+  "@viewOnly": {
+    "description": "The user has no permission to edit, only to view"
+  },
+  "privacy": "حریم خصوصی",
+  "@privacy": {
+    "description": "The privacy attribute of entities (e.g.: private drive, public folder)"
+  },
+  "private": "خصوصی",
+  "@private": {
+    "description": "A private entity"
+  },
+  "public": "عمومی",
+  "@public": {
+    "description": "A public entity"
+  },
+  "viewInfo": "مشاهده اطلاعات",
+  "@viewInfo": {
+    "description": "View the activity and details of the entity"
+  },
+  "driveRoot": "درایو ریشه",
+  "@driveRoot": {
+    "description": "The folder entity that is at the top of the folder hierarchy"
+  },
+  "lastModifiedDate": "آخرین تغییر {date}",
+  "@lastModifiedDate": {
+    "description": "Last modified date of the file in the local disk",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "pending": "در انتظار",
+  "@pending": {
+    "description": "Status tooltip for transactions which are waiting to be minted"
+  },
+  "confirmed": "تایید شده",
+  "@confirmed": {
+    "description": "Status tooltip for transactions that are confirmed by the network"
+  },
+  "failed": "ناموفق",
+  "@failed": {
+    "description": "Status tooltip for failed transactions"
+  },
+  "name": "نام",
+  "@name": {
+    "description": "Name of certain entity"
+  },
+  "fileSize": "اندازه فایل",
+  "@fileSize": {
+    "description": "The size of a file"
+  },
+  "size": "اندازه",
+  "@size": {
+    "description": "The size of a file, folder or drive"
+  },
+  "lastUpdated": "اخرین به روز رسانی",
+  "@lastUpdated": {
+    "description": "The timestamp of the transaction"
+  },
+  "addSomeFiles": "اینجا چیزی برای دیدن نیست برای افزودن چند فایل روی \"جدید\" کلیک کنید.",
+  "@addSomeFiles": {
+    "description": "Empty folder"
+  },
+  "noFiles": "اینجا چیزی برای دیدن نیست",
+  "@noFiles": {
+    "description": "Empty folder"
+  },
+  "error": "خطا",
+  "@error": {
+    "description": "Indicates that something went wrong"
+  },
+  "errorDragAndDropFolder": "ما در حال حاضر از کشیدن و رها کردن پوشه ها پشتیبانی نمی کنیم",
+  "@errorDragAndDropFolder": {
+    "description": "Error message for when user tries to upload folders with the drag-and-drop feature"
+  },
+  "ok": "باشه",
+  "@ok": {
+    "description": "OK button"
+  },
+  "okEmphasized": "باشه",
+  "@okEmphasized": {
+    "description": "OK button. Emphasized in upper case"
+  },
+  "uploadDragAndDrop": "آپلود فایل",
+  "@uploadDragAndDrop": {
+    "description": "The action of uploading a file"
+  },
+  "itemPreviewEmphasized": "پیش نمایش",
+  "@itemPreviewEmphasized": {
+    "description": "Item preview"
+  },
+  "itemDetailsEmphasized": "جزئیات",
+  "@itemDetailsEmphasized": {
+    "description": "Item details such as dates, transaction IDs and entity IDs. Emphasized with upper case"
+  },
+  "itemActivityEmphasized": "فعالیت",
+  "@itemActivityEmphasized": {
+    "description": "The journal of the entity (created, renamed, moved, revision uploaded). Emphasized with upper case"
+  },
+  "itemContains": "محتوا",
+  "@itemContains": {
+    "description": "Used like so: 'Contains 15 folders, 10 files'"
+  },
+  "driveID": "شناسه درایو",
+  "@driveID": {
+    "description": "The Drive-ID tag"
+  },
+  "copyDriveID": "کپی شناسه درایو",
+  "@copyDriveID": {
+    "description": "Tooltip of the copy icon for the Drive ID"
+  },
+  "folderID": "شناسه پوشه",
+  "@folderID": {
+    "description": "The Entity-ID tag of folders"
+  },
+  "copyFolderID": "کپی شناسه پوشه",
+  "@copyFolderID": {
+    "description": "Tooltip of the copy icon for the Folder ID"
+  },
+  "fileID": "شناسه فایل",
+  "@fileID": {
+    "description": "The Entity-ID tag of files"
+  },
+  "copyFileID": "کپی شناسه فایل",
+  "@copyFileID": {
+    "description": "Tooltip of the copy icon for the File ID"
+  },
+  "lastModified": "آخرین تغییر",
+  "@lastModified": {
+    "description": "Last modified date of the file in the local disk"
+  },
+  "dateCreated": "تاریخ ایجاد",
+  "@dateCreated": {
+    "description": "Creation time of the entity revision"
+  },
+  "driveTxID": "شناسه Tx درایو",
+  "@driveTxID": {
+    "description": "The transaction ID of the drive"
+  },
+  "copyDriveTxID": "کپی شناسه Tx درایو",
+  "@copyDriveTxID": {
+    "description": "Copy transaction ID of Drive tooltip"
+  },
+  "rootFolderTxID": "شناسه Tx پوشه ریشه",
+  "@rootFolderTxID": {
+    "description": "The transaction ID of the Root Folder entity"
+  },
+  "copyRootFolderTxID": "کپی شناسه Tx پوشه ریشه",
+  "@copyRootFolderTxID": {
+    "description": "Copy transaction ID of Root Folder tooltip"
+  },
+  "bundleTxID": "شناسه Tx بسته",
+  "@bundleTxID": {
+    "description": "The bundle transaction ID of the bundled item"
+  },
+  "copyBundleTxID": "کپی شناسه Tx بسته",
+  "@copyBundleTxID": {
+    "description": "Copy transaction ID of the Bundle transaction"
+  },
+  "metadataTxID": "شناسه Tx متادیتا",
+  "@metadataTxID": {
+    "description": "The transaction ID of the entity Metadata transaction"
+  },
+  "copyMetadataTxID": "کپی شناسه Tx متادیتا",
+  "@copyMetadataTxID": {
+    "description": "Copy the transaction ID of the Metadata transaction"
+  },
+  "dataTxID": "شناسه Tx داده",
+  "@dataTxID": {
+    "description": "The transaction ID of the entity Data transaction"
+  },
+  "copyDataTxID": "کپی شناسه Tx داده",
+  "@copyDataTxID": {
+    "description": "Copy the transaction ID of the Data transaction"
+  },
+  "itemIsBeingProcesed": "این مورد در حال پردازش است...",
+  "@itemIsBeingProcesed": {
+    "description": "The entity is being processed, no details to display yet"
+  },
+  "driveWasCreatedWithName": "این درایو با نام {driveName} ایجاد شده است.",
+  "@driveWasCreatedWithName": {
+    "description": "Drive activity (journal) entry: created",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "drive name"
+      }
+    }
+  },
+  "driveWasRenamed": "این درایو به {driveName} تغییر نام داده است.",
+  "@driveWasRenamed": {
+    "description": "Drive activity (journal) entry: renamed",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "drive name"
+      }
+    }
+  },
+  "driveWasModified": "این درایو اصلاح شده است.",
+  "@driveWasModified": {
+    "description": "Drive activity (journal) entry: modified"
+  },
+  "folderWasCreatedWithName": "این پوشه با نام {folderName} ایجاد شده است.",
+  "@folderWasCreatedWithName": {
+    "description": "Folder activity (journal) entry: created",
+    "placeholders": {
+      "folderName": {
+        "type": "String",
+        "example": "folder name"
+      }
+    }
+  },
+  "folderWasRenamed": "این پوشه به {folderName} تغییر نام داده است.",
+  "@folderWasRenamed": {
+    "description": "Folder activity (journal): renamed",
+    "placeholders": {
+      "folderName": {
+        "type": "String",
+        "example": "folder name"
+      }
+    }
+  },
+  "folderWasModified": "این پوشه اصلاح شده است.",
+  "@folderWasModified": {
+    "description": "Folder activity (journal): modified"
+  },
+  "folderWasMoved": "این پوشه منتقل شده است.",
+  "@folderWasMoved": {
+    "description": "Folder activity (journal): moved"
+  },
+  "fileWasCreatedWithName": "این فایل با نام {fileName} ایجاد شده است.",
+  "@fileWasCreatedWithName": {
+    "description": "File activity (journal): created",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "file name"
+      }
+    }
+  },
+  "fileWasRenamed": "این فایل به {fileName} تغییر نام داده است",
+  "@fileWasRenamed": {
+    "description": "File activity (journal): renamed",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "file name"
+      }
+    }
+  },
+  "fileWasModified": "این فایل اصلاح شده است.",
+  "@fileWasModified": {
+    "description": "File activity (journal): modified"
+  },
+  "fileWasMoved": "این فایل منتقل شده است.",
+  "@fileWasMoved": {
+    "description": "File activity (journal): moved"
+  },
+  "fileHadANewRevision": "نسخه جدیدی از این فایل آپلود شده است.",
+  "@fileHadANewRevision": {
+    "description": "File activity (journal): new revision"
+  },
+  "personalDrivesEmphasized": "درایوهای شخصی",
+  "@personalDrives": {
+    "description": "Sub-header for the personal drives list. Emphasized with upper case"
+  },
+  "sharedDrivesEmphasized": "درایوهای مشترک",
+  "@sharedDrives": {
+    "description": "Sub-header for the shared drives list. Emphasized with upper case"
+  },
+  "help": "کمک",
+  "@help": {
+    "description": "Link to a form for collecting feedback from the user"
+  },
+  "appVersion": "نسخه {version}.",
+  "@appVersion": {
+    "description": "App version number",
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "0.0.0"
+      }
+    }
+  },
+  "newFolder": "پوشه جدید",
+  "@newFolder": {
+    "description": "Create a new folder entity"
+  },
+  "uploadFiles": "آپلود فایل(ها)",
+  "@uploadFiles": {
+    "description": "Upload files to the Weave"
+  },
+  "uploadFolder": "آپلود پوشه",
+  "@uploadFolder": {
+    "description": "Upload a folder and every subfolder alongside files inside them"
+  },
+  "newDrive": "درایو جدید",
+  "@newDrive": {
+    "description": "Create a new drive entity"
+  },
+  "attachDrive": "درایو ضمیمه",
+  "@attachDrive": {
+    "description": "Attach a shared drive"
+  },
+  "attachDriveEmphasized": "درایو پیوست",
+  "@attachDriveEmphasized": {
+    "description": "Attach a shared drive. Emphasized with upper case"
+  },
+  "howDoIGetAR": "چگونه AR دریافت کنم؟",
+  "@howDoIGetAR": {
+    "description": "Link to a help page explaining how to get Arweave tokens"
+  },
+  "sync": "همگام سازی",
+  "@sync": {
+    "description": "Sync button tooltip"
+  },
+  "driveIssuesDetected": "ما مشکلاتی را با این درایو شناسایی کرده ایم. برای حل آنها به درایو بروید.",
+  "@driveIssuesDetected": {
+    "description": "Orphan folders detected, the user must navigate through the contents to reach them"
+  },
+  "downloadingCSV": "در حال دانلود CSV...",
+  "@downloadingCSV": {
+    "description": "The CSV file is being downloaded"
+  },
+  "cancel": "لغو",
+  "@cancel": {
+    "description": "Cancel button"
+  },
+  "exportingData": "در حال صادر کردن داده‌های شما، لطفا صبر کنید.",
+  "@exportingData": {
+    "description": "The drive data is being processed"
+  },
+  "fileDownloadFailed": "دانلود فایل انجام نشد",
+  "@fileDownloadFailed": {
+    "description": "Could not export the CSV data"
+  },
+  "attachingDriveEmphasized": "در حال پیوست کردن درایو...",
+  "@attachingDriveEmphasized": {
+    "description": "Drive attach form. Emphasized with upper case"
+  },
+  "cancelEmphasized": "لغو",
+  "@cancelEmphasized": {
+    "description": "Cancel button. Emphasized with upper case"
+  },
+  "attachEmphasized": "پیوست",
+  "@attachEmphasized": {
+    "description": "The action of attaching a drive. Emphasized with upper case"
+  },
+  "creatingDriveEmphasized": "در حال ایجاد درایو...",
+  "@creatingDriveEmphasized": {
+    "description": "The drive is being created. Emphasized with upper case"
+  },
+  "createDriveEmphasized": "ایجاد درایو",
+  "@createDriveEmphasized": {
+    "description": "Action of creating a new drive. Emphasized with upper case"
+  },
+  "insufficientARToCreateDrive": "شما AR کافی برای ایجاد یک درایو ندارید.",
+  "@insufficientARToCreateDrive": {
+    "description": "Not enough balance"
+  },
+  "create": "ایجاد",
+  "@create": {
+    "description": "Create an drive"
+  },
+  "createEmphasized": "ایجاد",
+  "@createEmphasized": {
+    "description": "Create a drive. Emphasized with upper case"
+  },
+  "renamingDriveEmphasized": "در حال تغییر نام درایو...",
+  "@renamingDriveEmphasized": {
+    "description": "The drive is being renamed. Emphasized with upper case"
+  },
+  "renameDrive": "تغییر نام درایو",
+  "@renameDrive": {
+    "description": "The action of renaming a drive"
+  },
+  "renameDriveEmphasized": "تغییر نام درایو",
+  "@renameDriveEmphasized": {
+    "description": "The action of renaming a drive. Emphasized with upper case"
+  },
+  "driveName": "نام درایو",
+  "@driveName": {
+    "description": "The name of certain drive"
+  },
+  "driveKey": "کلید درایو",
+  "@driveKey": {
+    "description": "Drive Key form field label"
+  },
+  "shareDrive": "اشتراک گذاری درایو",
+  "@shareDrive": {
+    "description": "The action of sharing a drive link"
+  },
+  "enterFileKey": "کلید فایل را وارد کنید",
+  "@enterFileKey": {
+    "description": "File Key form field label"
+  },
+  "shareDriveWithOthers": "درایو را با دیگران به اشتراک بگذارید",
+  "@shareDriveWithOthers": {
+    "description": "The action of sharing a drive link"
+  },
+  "copyLink": "کپی لینک",
+  "@copyLink": {
+    "description": "Copy the link for sharing an entity"
+  },
+  "anyoneCanAccessThisDrivePublic": "همه می توانند با استفاده از لینک بالا به این درایو عمومی دسترسی داشته باشند.",
+  "@anyoneCanAccessThisDrivePublic": {
+    "description": "Warning for the user that is about to share a drive"
+  },
+  "anyoneCanAccessThisDrivePrivate": "همه می توانند با استفاده از لینک بالا به این درایو خصوصی دسترسی داشته باشند.",
+  "@anyoneCanAccessThisDrivePrivate": {
+    "description": "Warning for the user that is about to share a drive"
+  },
+  "doneEmphasized": "انجام شد",
+  "@doneEmphaseized": {
+    "description": "Done, no more to do here. Emphasized with upper case"
+  },
+  "downloadingFile": "در حال دانلود فایل...",
+  "@downloadingFile": {
+    "description": "File is being downloaded"
+  },
+  "fileFailedToDownload": "دانلود فایل انجام نشد",
+  "@fileFailedToDownload": {
+    "description": "Error message for failed downloads"
+  },
+  "tryAgainDownloadingFile": "اگر فایل به تازگی آپلود شده باشد، ممکن است این اتفاق بیفتد. لطفا بعدا دوباره امتحان کنید.",
+  "@tryAgainDownloadingFile": {
+    "description": "The data is still being replicated between nodes of the network and it's yet not available"
+  },
+  "shareFile": "اشتراک گذاری فایل",
+  "@shareFile": {
+    "description": "The action of sharing a file link"
+  },
+  "sharePendingFile": "فایلی که می‌خواهید به اشتراک بگذارید در حال حاضر معلق است و نمی‌توان آن را به اشتراک گذاشت.",
+  "@sharePendingFile": {
+    "description": "Pending file share dialog text"
+  },
+  "shareFailedFile": "فایلی که می خواهید به اشتراک بگذارید نامعتبر است و نمی توان آن را به اشتراک گذاشت.",
+  "@shareFailedFile": {
+    "description": "Failed file share dialog text"
+  },
+  "shareFileWithOthers": "فایل را با دیگران به اشتراک بگذارید",
+  "@shareFileWithOthers": {
+    "description": "To share a file link"
+  },
+  "anyoneCanAccessThisFile": "همه می توانند با استفاده از لینک بالا به این فایل دسترسی داشته باشند.",
+  "@anyoneCanAccessThisFile": {
+    "description": "Warning for the user that is about to share a file"
+  },
+  "creatingFolderEmphasized": "در حال ایجاد پوشه...",
+  "@creatingFolderEmphasized": {
+    "description": "Folder is being created. Emphasized with upper case"
+  },
+  "createFolderEmphasized": "ایجاد پوشه",
+  "@createFolderEmphasized": {
+    "description": "The action of creating a folder. Emphasized with upper case"
+  },
+  "folderName": "نام پوشه",
+  "@folderName": {
+    "description": "The name of certain folder"
+  },
+  "movingFolderEmphasized": "در حال انتقال پوشه...",
+  "@movingFolderEmphasized": {
+    "description": "The action of moving a folder. Emphasized with upper case"
+  },
+  "movingFileEmphasized": "در حال انتقال فایل...",
+  "@movingFileEmphasized": {
+    "description": "The action of moving a file. Emphasized with upper case"
+  },
+  "nameConflict": "تداخل نام",
+  "@nameConflict": {
+    "description": "A conflict of names between two entities"
+  },
+  "entityAlreadyExists": " با این نام {entityName} از قبل در مقصد انتقال وجود دارد! لطفا نام فایل یا پوشه ای را که در حال انتقال آن هستید تغییر دهید و دوباره امتحان کنید.",
+  "@entityAlreadyExists": {
+    "description": "Message warning the user that the given entity name already exists. Then requests that the user to choose a new name for the entity.",
+    "placeholders": {
+      "entityName": {
+        "type": "String",
+        "example": "entity name"
+      }
+    }
+  },
+  "moveHereEmphasized": "انتقال به اینجا",
+  "@moveHereEmphasized": {
+    "description": "Move the entity to the current folder. Emphasized with upper case"
+  },
+  "moveFolderEmphasized": "انتقال پوشه",
+  "@moveFolderEmphasized": {
+    "description": "The action of moving a folder. Emphasized with upper case"
+  },
+  "moveFileEmphasized": "انتقال فایل",
+  "@moveFileEmphasized": {
+    "description": "The action of moving a file. Emphasized with upper case"
+  },
+  "backToFolder": "بازگشت به پوشه {entityName}",
+  "@backToFolder": {
+    "description": "Go back to folder",
+    "placeholders": {
+      "entityName": {
+        "type": "String",
+        "example": "entity name"
+      }
+    }
+  },
+  "renamingFolderEmphasized": "در حال تغییر نام پوشه...",
+  "@renamingFolderEmphasized": {
+    "description": "Folder is being renamed. Emphasized with upper case"
+  },
+  "renamingFileEmphasized": "در حال تغییر نام فایل...",
+  "@renamingFileEmphasized": {
+    "description": "File is being renamed. Emphasized with upper case"
+  },
+  "renameFolderEmphasized": "تغییر نام پوشه",
+  "@renameFolderEmphasized": {
+    "description": "The action of renaming a folder. Emphasized with upper case"
+  },
+  "renameFileEmphasized": "تغییر نام فایل",
+  "@renameFileEmphasized": {
+    "description": "The action of renaming a file. Emphasized with upper case"
+  },
+  "rename": "تغییر نام ",
+  "@rename": {
+    "description": "The action of renaming; imperative form"
+  },
+  "renameEmphasized": "تغییر نام ",
+  "@renameEmphasized": {
+    "description": "The action of renaming; imperative form. Emphasized with upper case"
+  },
+  "fileName": "نام فایل",
+  "@fileName": {
+    "description": "The name of certain file"
+  },
+  "recreateFolderEmphasized": "ایجاد دوباره پوشه",
+  "@recreateFolderEmphasized": {
+    "description": "Recreate a folder that failed to be minted"
+  },
+  "recreatingFolderEmphasized": "درحال ایجاد دوباره پوشه...",
+  "@recreatingFolderEmphasized": {
+    "description": "Folder is being recreated. Emphasized with upper case"
+  },
+  "fix": "درست کردن",
+  "@fix": {
+    "description": "Fix an orphan item"
+  },
+  "fixEmphasized": "درست کردن",
+  "@fixEmphasized": {
+    "description": "Fix an orphan item. Emphasized with upper case"
+  },
+  "targetFolderEmphasized": "پوشه هدف",
+  "@targetFolderEmphasized": {
+    "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
+  },
+  "back": "بازگشت",
+  "@back": {
+    "description": "Go back"
+  },
+  "backEmphasized": "بازگشت",
+  "@backEmphasized": {
+    "description": "Go back. Emphasized with upper case"
+  },
+  "logout": "خروج",
+  "@logout": {
+    "description": "The logout process"
+  },
+  "notLoggedIn": "شما وارد نشده اید",
+  "@notLoggedIn": {
+    "description": "User has not logged in"
+  },
+  "logInToExperienceFeatures": "برای تجربه تمام ویژگی های ArDrive وارد شوید!",
+  "@logInToExperienceFeatures": {
+    "description": "User must login to use the features of ArDrive"
+  },
+  "login": "ورود",
+  "@login": {
+    "description": "The login process"
+  },
+  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{یک فایل تکراری پیدا شد} =other{فایلهای تکراری یافت شد}}",
+  "@duplicateFiles": {
+    "description": "Count of conflicting items",
+    "placeholders": {
+      "numberOfDuplicateFiles": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{فایلی با همین نام از قبل در این مکان وجود دارد. آیا می‌خواهید این فایل را به‌عنوان نسخه جدید ادامه دهید و آپلود کنید؟} =دیگر{{numberOfFiles} فایل‌هایی با همین نام از قبل در این مکان وجود دارد. آیا می خواهید ادامه دهید و این فایل ها را به عنوان نسخه جدید آپلود کنید؟}}",
+  "@filesWithTheSameNameAlreadyExists": {
+    "description": "Asks the user what to do with the items conflicting names",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{یک پوشه تکراری پیدا شد} =other{پوشه‌های تکراری پیدا شد}}",
+  "@duplicateFolders": {
+    "description": "Folder name conflict dialog title",
+    "placeholders": {
+      "numberOfDuplicateFolders": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{یک پوشه با همین نام از قبل در این مکان وجود دارد. لطفا نام آن را تغییر دهید و دوباره آپلود کنید.} =دیگر پوشه‌های{{numberOfFolders} با همین نام از قبل در این مکان وجود دارد. لطفا نام آنها را تغییر دهید و دوباره آپلود کنید.}}",
+  "@foldersWithTheSameNameAlreadyExists": {
+    "description": "Asks the user what to do with folder name conflicts",
+    "placeholders": {
+      "numberOfFolders": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "conflictingFiles": "تداخل فایلها :",
+  "@conflictingFiles": {
+    "description": "Files conflict with already existing items"
+  },
+  "upload": "آپلود",
+  "@upload": {
+    "description": "The action of uploading certain item"
+  },
+  "uploadEmphasized": "آپلود",
+  "@uploadEmphasized": {
+    "description": "The action of uploading certain item"
+  },
+  "continueEmphasized": "ادامه",
+  "@continueEmphasized": {
+    "description": "To go ahead. Emphasized with upper case"
+  },
+  "filesTooLarge": "{numberOfFiles,plural, =1{1 فایل خیلی بزرگ است} =other{{numberOfFiles} فایل خیلی بزرگ است}}",
+  "@filesTooLarge": {
+    "description": "A single or many files are too large to upload",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "filesTooLargeExplanationPrivate": "ArDrive در وب در حال حاضر فقط از آپلود فایل های کمتر از ۱۰۰ مگابایت برای درایوهای خصوصی پشتیبانی می کند",
+  "@filesTooLargeExplanationPrivate": {
+    "description": "Limit of size to upload"
+  },
+  "filesTooLargeExplanationPublic": "ArDrive در وب در حال حاضر فقط از آپلود فایل های کمتر از ۱/۲۵ گیگابایت برای درایوهای عمومی پشتیبانی می کند.",
+  "@filesTooLargeExplanationPublic": {
+    "description": "Limit of size to upload"
+  },
+  "tooLargeForUpload": "برای آپلود خیلی بزرگ است:",
+  "@tooLargeForUpload": {
+    "description": "Files too large for upload"
+  },
+  "preparingUpload": "در حال آماده سازی آپلود...",
+  "@preparingUpload": {
+    "description": "The upload is being processed"
+  },
+  "arConnectRemainOnThisTab": "احتیاط: کیف پول Web3 شما در حال امضای معاملات شما است. لطفا تا تکمیل شدن آن در این صفحه بمانید.",
+  "@arConnectRemainOnThisTab": {
+    "description": "Warning for the user to do not leave the tab"
+  },
+  "thisMayTakeAWhile": "این ممکن است مدتی طول بکشد...",
+  "@thisMayTakeAWhile": {
+    "description": "Uploading may take a while"
+  },
+  "closeEmphasized": "بستن",
+  "@closeEmphasized": {
+    "description": "Close modal. Emphasized with upper case"
+  },
+  "uploadNFiles": "{numberOfFiles,plural, =1{آپلود 1 فایل} =other{آپلود {numberOfFiles} فایل}}",
+  "@uploadNFiles": {
+    "description": "Upload a single or many files",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "uploadingNFiles": "{numberOfFiles,plural, =1{آپلود 1 فایل...} =other{آپلود {numberOfFiles} فایل...}}",
+  "@uploadingNFiles": {
+    "description": "Uploading a single or many files",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "0"
+      }
+    }
+  },
+  "cost": "هزینه: {arPrice} AR",
+  "@cost": {
+    "description": "The total cost estimation of the upload quoted in AR",
+    "placeholders": {
+      "arPrice": {
+        "type": "String",
+        "example": "0"
+      }
+    }
+  },
+  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{این فایل به صورت عمومی آپلود خواهد شد.} =other{این فایل ها به صورت عمومی آپلود خواهند شد.}}",
+  "@filesWillBeUploadedPublicly": {
+    "description": "Warning for files that will be public after uploaded",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      }
+    }
+  },
+  "insufficientARForUpload": "AR ناکافی برای آپلود.",
+  "@insufficientARForUpload": {
+    "description": "The wallet does not have enough balance"
+  },
+  "bundlingAndSigningUpload": "بسته بندی و امضای آپلود",
+  "@bundlingAndSigningUpload": {
+    "description": "The app is bundling together and signing the transactions"
+  },
+  "signingUpload": "در حال امضای آپلود",
+  "@signingUpload": {
+    "description": "The app is signing the transactions"
+  },
+  "walletSwitch": "تغییرکیف پول",
+  "@walletSwitch": {
+    "description": "The wallet has changed. The user must log in again"
+  },
+  "walletChangeDetected": "تغییر کیف پول شناسایی شد. لطفا از سیستم خارج شوید و دوباره وارد شوید",
+  "@walletChangeDetected": {
+    "description": "The wallet has changed. The user must log in again"
+  },
+  "weReSorryEmphasized": "ما متاسفیم!",
+  "@weReSorryEmphasized": {
+    "description": "Screen not supported page. Emphasized with upper case"
+  },
+  "ardriveIsOptimizedForLargeScreens": "ArDrive در حال حاضر فقط برای نمایشگرهای بزرگتر بهینه شده است.",
+  "@ardriveIsOptimizedForLargeScreens": {
+    "description": "Screen not supported page"
+  },
+  "tryOnAnotherDevice": "لطفا دستگاه دیگری را امتحان کنید یا با عضویت در خبرنامه ما در زیر، برای برنامه تلفن همراه آینده ما به روز باشید.",
+  "@tryOnAnotherDevice": {
+    "description": "Screen not supported page"
+  },
+  "subscribeEmphasized": "اشتراک ",
+  "@subscribeEmphasized": {
+    "description": "Screen not supported page. Emphasized with upper case"
+  },
+  "specifiedFileDoesNotExist": "فایل مشخص شده وجود ندارد.",
+  "@specifiedFileDoesNotExist": {
+    "description": "The shared file the user is trying to access does not exist"
+  },
+  "validationSharedFileIncorrectFileKey": "کلید نادرست است، لطفا دوباره امتحان کنید.",
+  "@validationSharedFileIncorrectFileKey": {
+    "description": "The user entered an incorrect file key"
+  },
+  "sharedFileIsEncrypted": "این فایل رمزگذاری شده است.",
+  "@sharedFileIsEncrypted": {
+    "description": "Description that says the file is encrypted on shared file page"
+  },
+  "whatIsArDrive": "ArDrive چیست؟",
+  "@whatIsArDrive": {
+    "description": "What is ArDrive? link on shared file page"
+  },
+  "failedToSyncDrive": "محتویات درایو همگام‌سازی نشد.",
+  "@failedToSyncDrive": {
+    "description": "The app wasn't able to sync the drive"
+  },
+  "tryAgainEmphasized": "دوباره امتحان کنید",
+  "@tryAgainEmphasized": {
+    "description": "Try it again. Emphasized with upper case"
+  },
+  "warningEmphasized": "هشدار",
+  "@warningEmphasized": {
+    "description": "Congestion warning. Emphasized with upper case"
+  },
+  "congestionWarning": "Arweave در حال حاضر حجم بالایی را تجربه می کند. بعید است که آپلود شما در حال حاضر با موفقیت انجام شود.",
+  "@congestionWarning": {
+    "description": "Congestion warning"
+  },
+  "tryLaterCongestionEmphasized": "بعدا امتحان کنید",
+  "@tryLaterCongestionEmphasized": {
+    "description": "Try to upload later. Emphasized with upper case"
+  },
+  "proceedCongestionEmphasized": "ادامه",
+  "@proceedCongestionEmphasized": {
+    "description": "Proceed being aware of the network congestion. Emphasized with upper case"
+  },
+  "profile": "پروفایل",
+  "@profile": {
+    "description": "The user profile: user name, wallet address and wallet balance"
+  },
+  "syncingPleaseRemainOnThisTab": "در حال همگام سازی... لطفا در این صفحه بمانید.",
+  "@syncingPleaseRemainOnThisTab": {
+    "description": "Syncing drives"
+  },
+  "syncingPleaseWait": "در حال همگام سازی... لطفا صبر کنید.",
+  "@syncingPleaseWait": {
+    "description": "Syncing drives"
+  },
+  "syncingOnlyOneDrive": "در حال همگام سازی درایو شما...",
+  "@syncingOnlyOneDrive": {
+    "description": "Show the message when the user has only one drive"
+  },
+  "driveSyncedOfDrivesCount": "{drivesSynced} از {drivesCount} درایو همگام‌سازی شد",
+  "@driveSyncedOfDrivesCount": {
+    "description": "Show the number of drives synced and the number of user's drives",
+    "placeholders": {
+      "drivesSynced": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      },
+      "drivesCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      }
+    }
+  },
+  "syncProgressPercentage": "{percentage}% کامل شد",
+  "@syncProgressPercentage": {
+    "description": "The sync progress percentage",
+    "placeholders": {
+      "percentage": {
+        "type": "String",
+        "example": "45.5"
+      }
+    }
+  },
+  "exportFromCSV": "صدور از {driveId} {timestamp}.csv",
+  "@exportFromCSV": {
+    "description": "Filename of the CSV data export",
+    "placeholders": {
+      "driveId": {
+        "type": "String",
+        "example": "362cbfee-feae-4835-b3fc-d5ed513eec7a"
+      },
+      "timestamp": {
+        "type": "String",
+        "example": "1646828373148"
+      }
+    }
+  },
+  "folderCount": "{folderCount,plural, =0{بدون پوشه} =1{1 پوشه} پوشه دیگر{{folderCount}}",
+  "@folderCount": {
+    "description": "Plurals for the folder count. First character in lower case",
+    "placeholders": {
+      "folderCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      }
+    }
+  },
+  "fileCount": "{fileCount,plural, =0{بدون فایل} =1{1 فایل} فایلهای دیگر{{fileCount}}}",
+  "@fileCount": {
+    "description": "Plurals for the file count. First character in lower case",
+    "placeholders": {
+      "fileCount": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      }
+    }
+  },
+  "folderAndFileCountComposite": "{folderCountString}, {fileCountString}",
+  "@folderAndFileCountComposite": {
+    "description": "Composite of the folder and file counts. Comma separated for English",
+    "placeholders": {
+      "folderCountString": {
+        "type": "String",
+        "example": "10 folders"
+      },
+      "fileCountString": {
+        "type": "String",
+        "example": "10 files"
+      }
+    }
+  },
+  "uploadingManifestEmphasized": "در حال آپلود مانیفست...",
+  "@uploadingManifestEmphasized": {
+    "description": "The manifest is being uploaded"
+  },
+  "preparingManifestEmphasized": "آماده سازی مانیفست...",
+  "@preparingManifestEmphasized": {
+    "description": "The manifest is being prepared for the upload"
+  },
+  "manifestName": "نام مانیفست",
+  "@manifestName": {
+    "description": "The name of the manifest"
+  },
+  "failedToCreateManifestEmphasized": "ایجاد مانیفست ناموفق بود",
+  "@failedToCreateManifestEmphasized": {
+    "description": "The manifest could not be created"
+  },
+  "walletChangedDuringManifestCreation": "کیف پول ارائه شده به طور غیرمنتظره ای در طول ایجاد مانیفست تغییر کرده است...",
+  "@walletChangedDuringManifestCreation": {
+    "description": "The wallet has been changed while the creation of the manifest was in process"
+  },
+  "manifestTransactionUnexpectedlyFailed": "تراکنش مانیفست به طور غیرمنتظره ای در شبکه Arweave بارگذاری نشد...",
+  "@manifestTransactionUnexpectedlyFailed": {
+    "description": "The manifest transaction did not succeed being uploaded"
+  },
+  "insufficientBalanceForManifest": "موجودی کیف پول ارائه شده از {walletBalance} AR برای این تراکنش آشکار با هزینه AR {totalCost} کافی نیست...",
+  "@insufficientBalanceForManifest": {
+    "description": "The amount of AR the wallet has is not enough to upload the manifest transaction",
+    "placeholders": {
+      "walletBalance": {
+        "type": "String",
+        "example": "0"
+      },
+      "totalCost": {
+        "type": "String",
+        "example": "1.2"
+      }
+    }
+  },
+  "insufficientFundsForCreateADrive": "در حال حاضر بودجه کافی برای ایجاد درایو ندارید. لطفا برای افزودن وجه به حساب خود به بالای صفحه بروید.",
+  "@insufficientFundsForCreateADrive": {
+    "description": "Show that needs funds to create a Drive"
+  },
+  "insufficientFundsForCreateAFolder": "در حال حاضر بودجه کافی برای ایجاد یک پوشه ندارید. لطفا برای افزودن وجه به حساب خود به بالای صفحه بروید.",
+  "@insufficientFundsForCreateAFolder": {
+    "description": "Show that needs funds to create a Folder"
+  },
+  "insufficientFundsForCreateAManifest": "در حال حاضر بودجه کافی برای ایجاد مانیفست ندارید. لطفا برای افزودن وجه به حساب خود به بالای صفحه بروید.",
+  "@insufficientFundsForCreateAManifest": {
+    "description": "Show that needs funds to create a Manifest"
+  },
+  "insufficientFundsForUploadFiles": "در حال حاضر بودجه کافی برای آپلود فایل ها ندارید. لطفا برای افزودن وجه به حساب خود به بالای صفحه بروید.",
+  "@insufficientFundsForUploadFiles": {
+    "description": "Show that needs funds to upload files"
+  },
+  "insufficientFundsForUploadFolders": "در حال حاضر بودجه کافی برای آپلود پوشه ها ندارید. لطفا برای افزودن وجه به حساب خود به بالای صفحه بروید.",
+  "@insufficientFundsForUploadFolders": {
+    "description": "Show that needs funds to upload folders"
+  },
+  "conflictingNameFound": "تداخل نام پیدا شد",
+  "@conflictingNameFound": {
+    "description": "There is a non-manifest entity with the same name"
+  },
+  "conflictingNameFoundChooseNewName": "با این نام از قبل در این مکان وجود دارد. لطفا یک نام جدید انتخاب کنید",
+  "@conflictingNameFoundChooseNewName": {
+    "description": "The given name is conflicting with some entity, the user must type a non-conflicting name"
+  },
+  "conflictingManifestFound": "تداخل مانیفست پیدا شد",
+  "@conflictingManifestFound": {
+    "description": "There is an on-chain entity with the same name"
+  },
+  "conflictingManifestFoundChooseNewName": "یک مانیفست با همین نام از قبل در این مکان وجود دارد. آیا می خواهید این مانیفست را به عنوان نسخه جدید ادامه دهید و آپلود کنید؟",
+  "@conflictingManifestFoundChooseNewName": {
+    "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
+  },
+  "addnewManifestEmphasized": "افزودن مانیفست جدید",
+  "@addnewManifestEmphasized": {
+    "description": "There is a non-manifest entity with the same name"
+  },
+  "aManifestIsASpecialKindOfFile": "مانیفست نوع خاصی از فایل است که هر تعداد تراکنش Arweave را با یک نام  دوستانه ثبت می کند.",
+  "@aManifestIsASpecialKindOfFile": {
+    "description": "Simple explanation of what a manifest is"
+  },
+  "learnMore": "بیشتر بدانید",
+  "@learnMore": {
+    "description": "Link to a document explaining manifests in detail"
+  },
+  "createManifestEmphasized": "ایجاد مانیفست",
+  "@createManifestEmphasized": {
+    "description": "To create a manifest"
+  },
+  "createManifest": "ایجاد مانیفست",
+  "@createManifest": {
+    "description": "To create a manifest"
+  },
+  "filesWillBePermanentlyPublicWarning": "فایل‌های بارگذاری‌شده در اینجا برای همه افراد در اینترنت به‌طور دائم قابل مشاهده خواهند بود. مطمئن شوید که قصد دارید این داده ها را عمومی کنید.",
+  "@filesWillBePermanentlyPublicWarning": {
+    "description": "Make the user aware that it is uploading permanent data publicly"
+  },
+  "createHereEmphasized": "در اینجا ایجاد کنید",
+  "@createHereEmphasized": {
+    "description": "Create the manifest in the current selected folder"
+  },
+  "confirmEmphasized": "تایید",
+  "@confirmEmphasized": {
+    "description": "Confirm the prompted question"
+  },
+  "skipEmphasized": "پرش",
+  "@skipEmphasized": {
+    "description": "Example: to SKIP a conflict"
+  },
+  "replaceEmphasized": "جایگزینی",
+  "@replaceEmphasized": {
+    "description": "Example: to REPLACE an entity"
+  },
+  "validationRequired": "این فیلد ضروری است.",
+  "@validationRequired": {
+    "description": "Input validation error: the field is empty, but it's required"
+  },
+  "validationInvalid": "این فیلد نامعتبر است.",
+  "@validationInvalid": {
+    "description": "Input validation error: the field has invalid data"
+  },
+  "validationPasswordIncorrect": "این رمز عبور نادرست است.",
+  "@validationPasswordIncorrect": {
+    "description": "Input validation error: the given password is wrong"
+  },
+  "validationAttachDriveCouldNotBeFound": "درایو مشخص شده یافت نشد.",
+  "@validationAttachDriveCouldNotBeFound": {
+    "description": "Input validation error: The given drive ID does not exist"
+  },
+  "validationInvalidKey": "کلید درایو نامعتبر است.",
+  "@validationInvalidKey": {
+    "description": "Input validation error: The given drive key is wrong"
+  },
+  "validationAttachUserLoggedOut": "برای پیوست کردن درایوهای خصوصی باید وارد سیستم شوید.",
+  "@validationAttachUserLoggedOut": {
+    "description": "Input validation error: the user cannot attach a drive when not logged in"
+  },
+  "validationEntityNameAlreadyPresent": "یک پوشه/فایل با این نام از قبل در اینجا موجود است.",
+  "@validationEntityNameAlreadyPresent": {
+    "description": "Input validation error: The given name is already in use by some exising entity"
+  },
+  "validationDriveNameAlreadyPresent": "درایوی با این نام از قبل وجود دارد.",
+  "@validationDriveNameAlreadyPresent": {
+    "description": "Input validation error: The given name is already in use by some exising drive"
+  },
+  "validationNameUnchanged": "این نام با نام فعلی یکسان است",
+  "@validationNameUnchanged": {
+    "description": "Input validation error: The given name is exactly the same"
+  },
+  "insufficientARWarning": "بودجه ناکافی",
+  "@insufficientARWarning": {
+    "description": "Warns the user that the wallet balance is less than minimum AR required to make a transaction"
+  },
+  "displayedPaginatedData": "{از} - {به} از {مجموع}",
+  "@displayedPaginatedData": {
+    "description": "Indicates the user what items of a list are being displayed. Example: 1 - 25 of 100",
+    "placeholders": {
+      "from": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "1"
+      },
+      "to": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "25"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "100"
+      }
+    }
+  },
+  "detachEmphasized": "جدا کردن",
+  "@detachEmphasized": {
+    "description": "Example: To DETACH a drive. Emphasized in upper case"
+  },
+  "detachDrive": "درایو جدا شود؟",
+  "@detachDrive": {
+    "description": "Detach Drive Title"
+  },
+  "detachDriveQuestion": "آیا مطمئنید که می‌خواهید «{driveName}» را جدا کنید؟",
+  "@detachDriveQuestion": {
+    "description": "Ask for user confirmation to detach drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Shared Drive A"
+      }
+    }
+  },
+  "feedbackTitle": "از شما برای استفاده از ArDrive متشکریم!",
+  "@feedbackTitle": {
+    "description": "We thank the user"
+  },
+  "feedbackContent": "آیا مایلید درباره تجربه خود در استفاده از برنامه نظری بگذارید؟",
+  "@feedbackContent": {
+    "description": "Asks for feedback"
+  },
+  "leaveFeedback": "نظر بگذارید",
+  "@leaveFeedback": {
+    "description": "The action of leaving feedback"
+  },
+  "noThanks": "نه ممنون!  دیگه یادم نینداز",
+  "@noThanks": {
+    "description": "Don't leave feedback, and don't ask again for it"
+  },
+  "weWontRemindYou": "باشه خوبه!  ما دیگر به شما یادآوری نمی کنیم.",
+  "@weWontRemindYou": {
+    "description": "We let the user know that we won't remind them to leave feedback again"
+  },
+  "weWontRemindYouDescription": "اگر زمانی نظر خود را تغییر دادید و می‌خواهید نظر خود را بعدا ارسال کنید، می‌توانید از طریق لینک موجود در منوی خود این کار را انجام دهید.",
+  "@weWontRemindYouDescription": {
+    "description": "We let the user know where to find the 'Leave Feedback' button"
+  },
+  "gotIt": "فهمیدم",
+  "@gotIt": {
+    "description": "Example similar phrases: I've got it, I understood, OK"
+  },
+  "infernoIsInFullSwing": "برنامه پاداش اینفرنو در حال انجام است!  برای مشاهده قوانین شرکت اینجا را کلیک کنید!",
+  "@infernoIsInFullSwing": {
+    "description": "Text inviting the users to go read the Inferno rules"
+  }
+}

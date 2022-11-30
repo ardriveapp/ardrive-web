@@ -29,6 +29,8 @@ download:
       locale_code: zh-HK
     - file: lib/l10n/app_zh.arb
       locale_code: zh
+    - file: lib/l10n/app_fas.arb
+      locale_code: fas
   params:
     export_empty_as: skip # Optional, default: empty. How you would like empty translations to be exported. Allowed values are `empty` to keep empty, `main` to replace with the main language value, or `skip` to omit.
     exclude_tags: # Optional. List of tags to be excluded from the download. If not set, all string keys will be considered for download.
