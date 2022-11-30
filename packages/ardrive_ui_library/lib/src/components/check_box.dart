@@ -8,12 +8,14 @@ class ArDriveCheckBox extends StatefulWidget {
     this.isDisabled = false,
     this.isIndeterminate = false,
     required this.title,
+    this.onChange,
   });
 
   final bool checked;
   final bool isDisabled;
   final bool isIndeterminate;
   final String title;
+  final Function(bool value)? onChange;
 
   @override
   State<ArDriveCheckBox> createState() => ArDriveCheckBoxState();
@@ -67,11 +69,11 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
               state = CheckBoxState.normal;
               checked = false;
             });
-            print(state);
             break;
           case CheckBoxState.disabled:
             break;
         }
+        widget.onChange?.call(checked);
       },
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -10,22 +10,54 @@ WidgetbookCategory checkBox() {
         name: 'Check Box',
         builder: (context) {
           return ArDriveStorybookAppBase(builder: (context) {
-            final isEnabled =
-                context.knobs.boolean(label: 'IsEnabled', initialValue: true);
-            final isIndeterminate = context.knobs
-                .boolean(label: 'isIndeterminate', initialValue: false);
-            final value =
-                context.knobs.boolean(label: 'IsChecked', initialValue: true);
-            return ArDriveCheckBox(
-              title: context.knobs.text(label: 'Title', initialValue: 'Normal'),
-              checked: value,
-              isDisabled: !isEnabled,
-              isIndeterminate: isIndeterminate,
-              key: ValueKey('$isEnabled$value$isIndeterminate'),
-            );
+            return const CheckBoxExample();
           });
         },
       ),
     ]),
   ]);
+}
+
+class CheckBoxExample extends StatefulWidget {
+  const CheckBoxExample({super.key});
+
+  @override
+  State<CheckBoxExample> createState() => _CheckBoxExampleState();
+}
+
+class _CheckBoxExampleState extends State<CheckBoxExample> {
+  bool _value = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _value = context.knobs.boolean(label: 'IsChecked', initialValue: true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnabled =
+        context.knobs.boolean(label: 'IsEnabled', initialValue: true);
+    final isIndeterminate =
+        context.knobs.boolean(label: 'isIndeterminate', initialValue: false);
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        ArDriveCheckBox(
+          title:
+              context.knobs.text(label: 'Title', initialValue: 'Select File'),
+          checked: _value,
+          isDisabled: !isEnabled,
+          isIndeterminate: isIndeterminate,
+          key: ValueKey('$isEnabled$_value$isIndeterminate'),
+          onChange: (value) {
+            setState(() {
+              _value = value;
+            });
+          },
+        ),
+        Text('Check box is checked: ${_value.toString()}')
+      ],
+    );
+  }
 }
