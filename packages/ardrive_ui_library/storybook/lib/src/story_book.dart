@@ -2,6 +2,7 @@ import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
 import 'package:storybook/src/button.dart';
 import 'package:storybook/src/datatable.dart';
+import 'package:storybook/src/progress_bar.dart';
 import 'package:storybook/src/radio_button.dart';
 import 'package:storybook/src/shadows.dart';
 import 'package:storybook/src/table.dart';
@@ -51,6 +52,7 @@ class StoryBook extends StatelessWidget {
             table(),
             modals(),
             radioButton(),
+            progressBar(),
           ]),
     );
   }
