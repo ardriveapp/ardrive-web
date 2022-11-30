@@ -35,6 +35,7 @@ class ArDriveThemeData {
     String? name,
     ArDriveColors? colors,
     ArDriveShadows? shadows,
+    ArDriveTabViewTheme? tabViewTheme,
   }) {
     this.colors = colors ?? ArDriveColors();
     this.shadows = shadows ?? ArDriveShadows(this.colors);
@@ -52,6 +53,11 @@ class ArDriveThemeData {
     this.backgroundColor = backgroundColor ?? this.colors.themeBgSubtle;
     this.primaryColor = primaryColor ?? this.colors.themeAccentBrand;
     this.materialThemeData = materialThemeData ?? darkMaterialTheme();
+    this.tabViewTheme = tabViewTheme ??
+        ArDriveTabViewTheme(
+          selectedTabColor: this.colors.themeAccentSubtle,
+          unselectedTabColor: this.colors.themeAccentDefault,
+        );
     this.name = name ?? 'default';
   }
 
@@ -62,6 +68,7 @@ class ArDriveThemeData {
   late String name;
   late ArDriveColors colors;
   late ArDriveShadows shadows;
+  late ArDriveTabViewTheme tabViewTheme;
 }
 
 ThemeData lightMaterialTheme() {
@@ -139,6 +146,16 @@ class ArDriveToggleTheme {
   final Color backgroundOnColor;
   final Color backgroundOffColor;
   final Color backgroundOffDisabled;
+}
+
+class ArDriveTabViewTheme {
+  ArDriveTabViewTheme({
+    required this.selectedTabColor,
+    required this.unselectedTabColor,
+  });
+
+  final Color selectedTabColor;
+  final Color unselectedTabColor;
 }
 
 ThemeData darkMaterialTheme() {
