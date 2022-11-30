@@ -100,6 +100,34 @@
       }
     }
   },
+  "biometricLoginDisabled": "生体認証ログインが無効になっています",
+  "@biometricLoginDisabled": {
+    "description": "Biometric Login is Disabled."
+  },
+  "biometricLoginEnabled": "生体認証ログインが有効になっています",
+  "@biometricLoginEnabled": {
+    "description": "Biometric Login is Enabled."
+  },
+  "biometricsDisabledOnYourDevice": "この機能は現在、お使いのデバイスで無効になっています。使用するには、デバイスの設定に移動し、生体認証を有効にしてください。",
+  "@biometricsDisabledOnYourDevice": {
+    "description": "Biometric is disabled"
+  },
+  "biometricsPasscodeNotSetAndroid": "生体認証を使用するには、デバイスにPIN/パターン/パスワードが必要です。続行するには作成してください。",
+  "@biometricsPasscodeNotSetAndroid": {
+    "description": "Passcode it not set on Android"
+  },
+  "biometricsPasscodeNotSetIOS": "生体認証を使用するには、デバイスにパスコードが必要です。続行するには、[設定] > [Face ID＆パスコード]に移動して作成してください。",
+  "@biometricsPasscodeNotSetIOS": {
+    "description": "Passcode it not set on Android"
+  },
+  "biometricsPermanentlyLockedOut": "生体認証ログインは、失敗した試行回数が多すぎるため無効になっています。 生体認証機能のロックを解除するには、PIN/パスコードを入力してください。",
+  "@biometricsPermanentlyLockedOut": {
+    "description": "Biometrics permanently locked out"
+  },
+  "biometricTemporarilyDisabled": "生体認証ログインは、失敗した試行回数が多すぎるため一時的に無効になっています。",
+  "@biometricTemporarilyDisabled": {
+    "description": "Biometric is locked out"
+  },
   "bundleTxID": "バンドルTx ID",
   "@bundleTxID": {
     "description": "The bundle transaction ID of the bundled item"
@@ -107,6 +135,10 @@
   "bundlingAndSigningUpload": "バンドルと署名のアップロード",
   "@bundlingAndSigningUpload": {
     "description": "The app is bundling together and signing the transactions"
+  },
+  "camera": "カメラ",
+  "@camera": {
+    "description": "Button label to select a file from camera"
   },
   "cancel": "キャンセル",
   "@cancel": {
@@ -276,6 +308,10 @@
   "@detachEmphasized": {
     "description": "Example: To DETACH a drive. Emphasized in upper case"
   },
+  "deviceNotSupportBiometrics": "このデバイスは生体認証の使用をサポートしていません。",
+  "@deviceNotSupportBiometrics": {
+    "description": "Biometric is not supported"
+  },
   "displayedPaginatedData": "{total}件中の{from} ～ {to}件",
   "@displayedPaginatedData": {
     "description": "Indicates the user what items of a list are being displayed. Example: 1 - 25 of 100",
@@ -297,11 +333,19 @@
       }
     }
   },
+  "doneEmphaseized": "完了",
+  "@doneEmphaseized": {
+    "description": "Done, no more to do here. Emphasized with upper case"
+  },
   "doneEmphasized": "完了",
   "@doneEmphasized": {},
   "download": "ダウンロード",
   "@download": {
     "description": "Action of downloading a file"
+  },
+  "downloadFinished": "ダウンロードが完了しました！",
+  "@downloadFinished": {
+    "description": "Download finished"
   },
   "downloadingCSV": "CSVをダウンロード中…",
   "@downloadingCSV": {
@@ -397,6 +441,30 @@
       }
     }
   },
+  "enableBiometricLogin": "生体認証ログインを有効にする",
+  "@enableBiometricLogin": {
+    "description": "Enable Biometric Login"
+  },
+  "enableBiometricsOnSettings": "この機能は現在、お使いのデバイスで無効になっています。使用するには、デバイスの設定に移動し、生体認証を有効にしてください。",
+  "@enableBiometricsOnSettings": {
+    "description": "Open settings to enable biometric"
+  },
+  "enableCamera": "カメラを有効にする",
+  "@enableCamera": {
+    "description": "Enable camera"
+  },
+  "enableCameraAccess": "設定に移動し、ArDrive をタップして、カメラへのアクセスをオンにします。",
+  "@enableCameraAccess": {
+    "description": "enable camera access"
+  },
+  "enableStorageAccess": "設定に移動し、ArDrive をタップして、ストレージへのアクセスをオンにします。",
+  "@enableStorageAccess": {
+    "description": "enable camera access"
+  },
+  "enableStorageAccessTitle": "ストレージへのアクセスを有効にする",
+  "@enableStorageAccessTitle": {
+    "description": "enable camera access"
+  },
   "enterFileKey": "ファイルキーを入力する",
   "@enterFileKey": {
     "description": "File Key form field label"
@@ -461,7 +529,7 @@
   "@feedbackTitle": {
     "description": "We thank the user"
   },
-  "fileCount": "{fileCount, plural, zero{ファイルなし} other{{fileCount} ファイル}}",
+  "fileCount": "{count, plural, zero{ファイルなし} other{{fileCount} ファイル}}",
   "@fileCount": {
     "description": "Plurals for the file count. First character in lower case",
     "placeholders": {
@@ -507,6 +575,10 @@
       }
     }
   },
+  "filesTooLargeExplanationMobile": "モバイル上の ArDrive は現在、1024 MiB 未満のファイルアップロードにのみ対応しています",
+  "@filesTooLargeExplanationMobile": {
+    "description": "Limit of size to upload"
+  },
   "filesTooLargeExplanationPrivate": "ArDrive on web は現在、プライベート・ドライブでは 100 MiB 以下のファイルのアップロードにのみ対応しています。",
   "@filesTooLargeExplanationPrivate": {
     "description": "Limit of size to upload"
@@ -540,6 +612,10 @@
         "format": "decimalPattern"
       }
     }
+  },
+  "fileSystem": "ファイル",
+  "@fileSystem": {
+    "description": "Button label to select a file from file system"
   },
   "fileWasCreatedWithName": "このファイルは{fileName}という名前で作成されました。",
   "@fileWasCreatedWithName": {
@@ -591,7 +667,7 @@
       }
     }
   },
-  "folderCount": "{folderCount, plural, zero{フォルダーなし} other{{folderCount} フォルダー}}",
+  "folderCount": "{count, plural, zero{フォルダーなし} other{{folderCount} フォルダー}}",
   "@folderCount": {
     "description": "Plurals for the folder count. First character in lower case",
     "placeholders": {
@@ -653,6 +729,10 @@
   "@forgetWallet": {
     "description": "Use a different wallet by forgetting the current one"
   },
+  "gallery": "ギャラリー",
+  "@gallery": {
+    "description": "Button label to select a file from gallery"
+  },
   "getAWallet": "ウォレットをお持ちでないですか？今すぐここで手に入れましょう！",
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
@@ -660,6 +740,10 @@
   "gotIt": "了解です！",
   "@gotIt": {
     "description": "Example similar phrases: I've got it, I understood, OK"
+  },
+  "goToDeviceSettings": "設定に移動する",
+  "@goToDeviceSettings": {
+    "description": "Go to device settings"
   },
   "goToFirst": "最初に戻る",
   "@goToFirst": {
@@ -731,6 +815,14 @@
   "@insufficientFundsForUploadFolders": {
     "description": "Show that needs funds to upload folders"
   },
+  "invalidWalletFile": "無効なウォレットファイル",
+  "@invalidWalletFile": {
+    "description": "Wallet file is not a json or a text"
+  },
+  "invalidWalletFileDescription": "選択したファイルは無効です。",
+  "@invalidWalletFileDescription": {
+    "description": "Invalid wallet file description"
+  },
   "itemActivityEmphasized": "アクティビティ",
   "@itemActivityEmphasized": {
     "description": "The journal of the entity (created, renamed, moved, revision uploaded). Emphasized with upper case"
@@ -746,6 +838,16 @@
   "itemIsBeingProcesed": "このアイテムは処理中です...",
   "@itemIsBeingProcesed": {
     "description": "The entity is being processed, no details to display yet"
+  },
+  "itemMoveNameConflict": "「{destinationFolderName}」に同じ名前のアイテムが含まれているため、次のアイテムを移動できませんでした。",
+  "@itemMoveNameConflict": {
+    "description": "Description for dialog to skip conflicting files or cancel",
+    "placeholders": {
+      "destinationFolderName": {
+        "type": "String",
+        "example": "Folder A"
+      }
+    }
   },
   "itemPreviewEmphasized": "プレビュー",
   "@itemPreviewEmphasized": {
@@ -796,6 +898,10 @@
   "@logInToExperienceFeatures": {
     "description": "User must login to use the features of ArDrive"
   },
+  "loginUsingBiometricCredential": "生体認証情報を使用してログインする",
+  "@loginUsingBiometricCredential": {
+    "description": "Login using your biometric credential"
+  },
   "logout": "ログアウト",
   "@logout": {
     "description": "The logout process"
@@ -840,6 +946,10 @@
   "@moveHereEmphasized": {
     "description": "Move the entity to the current folder. Emphasized with upper case"
   },
+  "moveItems": "アイテムを移動する",
+  "@moveItems": {
+    "description": "Move Items dialog title"
+  },
   "movingFileEmphasized": "ファイル移動中…",
   "@movingFileEmphasized": {
     "description": "The action of moving a file. Emphasized with upper case"
@@ -847,6 +957,10 @@
   "movingFolderEmphasized": "フォルダ移動中…",
   "@movingFolderEmphasized": {
     "description": "The action of moving a folder. Emphasized with upper case"
+  },
+  "movingItemsEmphasized": "アイテムを移動する",
+  "@movingItemsEmphasized": {
+    "description": "Moving Items dialog title"
   },
   "name": "名前",
   "@name": {
