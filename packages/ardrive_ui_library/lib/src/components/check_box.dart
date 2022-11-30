@@ -16,14 +16,17 @@ class ArDriveCheckBox extends StatefulWidget {
   final String title;
 
   @override
-  State<ArDriveCheckBox> createState() => _ArDriveCheckBoxState();
+  State<ArDriveCheckBox> createState() => ArDriveCheckBoxState();
 }
 
 enum CheckBoxState { normal, hover, indeterminate, checked, disabled }
 
-class _ArDriveCheckBoxState extends State<ArDriveCheckBox> {
+@visibleForTesting
+class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
+  @visibleForTesting
   late CheckBoxState state;
 
+  @visibleForTesting
   late bool checked;
 
   @override
@@ -64,6 +67,7 @@ class _ArDriveCheckBoxState extends State<ArDriveCheckBox> {
               state = CheckBoxState.normal;
               checked = false;
             });
+            print(state);
             break;
           case CheckBoxState.disabled:
             break;
