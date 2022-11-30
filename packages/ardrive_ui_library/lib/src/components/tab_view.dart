@@ -73,19 +73,26 @@ class ArDriveTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TabBar(
-      controller: controller,
-      indicator: BoxDecoration(
-        borderRadius: calculateBorderRadius(
-          controller.index,
-          controller.length,
-        ),
-        color: ArDriveTheme.of(context).themeData.colors.themeGbMuted,
+    return Container(
+      height: 45,
+      decoration: BoxDecoration(
+        color: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
+        borderRadius: BorderRadius.circular(8),
       ),
-      labelColor: ArDriveTheme.of(context).themeData.colors.themeFgOnAccent,
-      unselectedLabelColor:
-          ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
-      tabs: tabs,
+      child: TabBar(
+        controller: controller,
+        indicator: BoxDecoration(
+          borderRadius: calculateBorderRadius(
+            controller.index,
+            controller.length,
+          ),
+          color: ArDriveTheme.of(context).themeData.colors.themeGbMuted,
+        ),
+        labelColor: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+        unselectedLabelColor:
+            ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+        tabs: tabs,
+      ),
     );
   }
 }
