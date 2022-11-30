@@ -189,6 +189,7 @@ class AppState extends State<App> {
                   countryCode: 'HK',
                 ), // generic traditional Chinese 'zh_Hant'
                 Locale('ja', ''), // Japanese, no country code
+                Locale('fas', ''), // Farsi, no country code
               ],
               builder: (context, child) => ListTileTheme(
                 textColor: kOnSurfaceBodyTextColor,
