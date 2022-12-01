@@ -12,6 +12,7 @@ import 'package:widgetbook/widgetbook.dart';
 import 'card.dart';
 import 'colors.dart';
 import 'modals.dart';
+import 'overlay.dart';
 
 class StoryBook extends StatelessWidget {
   const StoryBook({super.key});
@@ -51,6 +52,7 @@ class StoryBook extends StatelessWidget {
             radioButton(),
             tabView(),
             progressBar(),
+            overlay(),
           ]),
     );
   }
