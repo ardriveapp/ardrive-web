@@ -11,8 +11,12 @@ class ArDriveDropdown extends StatefulWidget {
     required this.child,
     required this.controller,
     this.contentPadding,
+    this.height = 60,
+    this.width = 200,
   });
 
+  final double height;
+  final double width;
   final List<ArDriveDropdownItem> items;
   final Widget child;
   final ArDriveOverlayController controller;
@@ -25,7 +29,7 @@ class ArDriveDropdown extends StatefulWidget {
 class _ArDriveDropdownState extends State<ArDriveDropdown> {
   @override
   Widget build(BuildContext context) {
-    double dropdownHeight = widget.items.length * 60;
+    double dropdownHeight = widget.items.length * widget.height;
     dropdownHeight = (widget.contentPadding?.top ?? 8) + dropdownHeight;
     dropdownHeight = (widget.contentPadding?.bottom ?? 8) + dropdownHeight;
 
@@ -49,10 +53,14 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
                     builder: (context, snapshot) {
                       return AnimatedCrossFade(
                         duration: const Duration(milliseconds: 100),
-                        firstChild: widget.items[index],
-                        secondChild: const SizedBox(
+                        firstChild: SizedBox(
+                          width: widget.width,
+                          height: widget.height,
+                          child: widget.items[index],
+                        ),
+                        secondChild: SizedBox(
                           height: 0,
-                          width: 200,
+                          width: widget.width,
                         ),
                         crossFadeState: snapshot.hasData && snapshot.data!
                             ? CrossFadeState.showFirst
@@ -156,8 +164,6 @@ class ArDriveDropdownItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       alignment: Alignment.center,
-      height: 60,
-      width: 200,
       child: content,
     );
   }
