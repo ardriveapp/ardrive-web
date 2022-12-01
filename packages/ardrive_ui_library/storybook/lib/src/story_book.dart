@@ -1,5 +1,6 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
+import 'package:storybook/src/accordion.dart';
 import 'package:storybook/src/button.dart';
 import 'package:storybook/src/progress_bar.dart';
 import 'package:storybook/src/radio_button.dart';
@@ -51,6 +52,7 @@ class StoryBook extends StatelessWidget {
             radioButton(),
             tabView(),
             progressBar(),
+            accordion(),
           ]),
     );
   }

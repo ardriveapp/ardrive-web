@@ -1,3 +1,4 @@
+export 'components/accordion.dart';
 export 'components/button.dart';
 export 'components/card.dart';
 export 'components/modal.dart';
