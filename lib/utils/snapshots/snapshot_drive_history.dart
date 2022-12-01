@@ -95,11 +95,7 @@ class SnapshotDriveHistory implements SegmentedGQLData {
     // reads the next stream of each item in the list and yields each node in order
     for (SnapshotItem item in itemsInRange) {
       final stream = item.getNextStream();
-
-      await for (DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction node
-          in stream) {
-        yield node;
-      }
+      yield* stream;
     }
   }
 }

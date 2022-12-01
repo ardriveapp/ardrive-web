@@ -60,6 +60,52 @@ abstract class SnapshotItem implements SegmentedGQLData {
       source: source,
     );
   }
+
+  static Stream<SnapshotItem> instantiateAll(
+    Stream<SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
+        itemsStream, {
+    int? lastBlockHeight,
+  }) async* {
+    HeightRange obscuredByAccumulator = HeightRange(rangeSegments: [
+      if (lastBlockHeight != null) Range(start: 0, end: lastBlockHeight),
+    ]);
+
+    await for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction item
+        in itemsStream) {
+      List<TransactionCommonMixin$Tag> tags = item.tags;
+      int? blockHeightStart;
+      int? blockHeightEnd;
+      late Range totalRange;
+
+      try {
+        blockHeightStart = int.parse(
+            tags.firstWhere((tag) => tag.name == 'Block-Start').value);
+        blockHeightEnd =
+            int.parse(tags.firstWhere((tag) => tag.name == 'Block-End').value);
+        totalRange = Range(start: blockHeightStart, end: blockHeightEnd);
+      } catch (_) {
+        print('Ignoring snapshot transaction with wrong block range');
+        continue;
+      }
+
+      HeightRange totalHeightRange = HeightRange(rangeSegments: [totalRange]);
+      HeightRange subRanges = HeightRange.difference(
+        totalHeightRange,
+        obscuredByAccumulator,
+      );
+      SnapshotItem snapshotItem = SnapshotItem.fromGQLNode(
+        node: item,
+        subRanges: subRanges,
+      );
+
+      yield snapshotItem;
+
+      obscuredByAccumulator = HeightRange.union(
+        obscuredByAccumulator,
+        totalHeightRange,
+      );
+    }
+  }
 }
 
 class SnapshotItemToBeCreated implements SnapshotItem {
@@ -130,7 +176,7 @@ class SnapshotItemToBeCreated implements SnapshotItem {
 class SnapshotItemOnChain implements SnapshotItem {
   final int timestamp;
   final TxID txId;
-  final String? _fakeSource;
+  String? _cachedSource;
   final Map<TxID, String> _txIdToDataMapping = {};
   int _currentIndex = -1;
 
@@ -144,7 +190,7 @@ class SnapshotItemOnChain implements SnapshotItem {
 
     // for testing purposes only
     String? fakeSource,
-  }) : _fakeSource = fakeSource;
+  }) : _cachedSource = fakeSource;
 
   @override
   final HeightRange subRanges;
@@ -158,16 +204,23 @@ class SnapshotItemOnChain implements SnapshotItem {
   int get currentIndex => _currentIndex;
 
   Future<String> source() async {
-    if (_fakeSource != null) {
-      return _fakeSource!;
+    if (_cachedSource != null) {
+      return _cachedSource!;
     }
 
-    final dataBytes = await ArdriveNetwork().get(url: _dataUri, asBytes: true);
-    return dataBytes.data;
+    final dataBytes =
+        await ArdriveNetwork().getAsBytes(_dataUri.toString()).catchError(
+      (e) {
+        print('Error while fetching Snapshot Data - $e');
+      },
+    );
+
+    final dataBytesAsString = String.fromCharCodes(dataBytes.data);
+    return _cachedSource = dataBytesAsString;
   }
 
-  get _dataUri {
-    return Uri(host: 'arweave.net', scheme: 'https:', path: '/$txId');
+  String get _dataUri {
+    return 'https://arweave.net/$txId';
   }
 
   @override
@@ -190,9 +243,17 @@ class SnapshotItemOnChain implements SnapshotItem {
         List.castFrom<dynamic, Map>(dataJson['txSnapshots']);
 
     for (Map item in txSnapshots) {
-      final node =
-          DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-              .fromJson(item['gqlNode']);
+      DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+          node;
+
+      try {
+        node =
+            DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                .fromJson(item['gqlNode']);
+      } catch (e, s) {
+        print('Error while parsing GQLNode - $e, $s');
+        rethrow;
+      }
 
       if (range.isInRange(node.block!.height)) {
         yield node;
@@ -202,6 +263,13 @@ class SnapshotItemOnChain implements SnapshotItem {
         _txIdToDataMapping[txId] = data;
       }
     }
+
+    if (currentIndex == subRanges.rangeSegments.length - 1) {
+      // Done reading all data, wiping
+      _cachedSource = null;
+    }
+
+    return;
   }
 
   String? getDataForTxId(TxID txId) {
