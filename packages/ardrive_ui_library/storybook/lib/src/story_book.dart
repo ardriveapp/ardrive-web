@@ -5,6 +5,7 @@ import 'package:storybook/src/datatable.dart';
 import 'package:storybook/src/progress_bar.dart';
 import 'package:storybook/src/radio_button.dart';
 import 'package:storybook/src/shadows.dart';
+import 'package:storybook/src/tab_view.dart';
 import 'package:storybook/src/table.dart';
 import 'package:storybook/src/text_field.dart';
 import 'package:storybook/src/toggle.dart';
@@ -14,6 +15,7 @@ import 'card.dart';
 import 'colors.dart';
 import 'drop_area.dart';
 import 'modals.dart';
+import 'overlay.dart';
 
 class StoryBook extends StatelessWidget {
   const StoryBook({super.key});
@@ -57,8 +59,10 @@ class StoryBook extends StatelessWidget {
             modals(),
             radioButton(),
             radioButton(),
+            tabView(),
             dropArea(),
             progressBar(),
+            overlay(),
           ]),
     );
   }
