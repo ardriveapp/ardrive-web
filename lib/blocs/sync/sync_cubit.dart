@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
@@ -9,6 +10,12 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
+import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
+import 'package:ardrive/utils/snapshots/height_range.dart';
+import 'package:ardrive/utils/snapshots/range.dart';
+import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
+import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
@@ -100,17 +107,21 @@ class SyncCubit extends Cubit<SyncState> {
   void _restartSync() {
     logSync(
         'Trying to create a sync subscription when window get focused again. This Cubit is active? ${!isClosed}');
-    final isTimerDurationReadyToSync = _lastSync != null &&
-        DateTime.now().difference(_lastSync!).inMinutes >= kSyncTimerDuration;
+    if (_lastSync != null) {
+      final minutesSinceLastSync =
+          DateTime.now().difference(_lastSync!).inMinutes;
+      final isTimerDurationReadyToSync =
+          minutesSinceLastSync >= kSyncTimerDuration;
 
-    if (!isTimerDurationReadyToSync) {
-      logSync('''
+      if (!isTimerDurationReadyToSync) {
+        logSync('''
               Can't restart sync when window is focused \n
               Is current active? ${!isClosed} \n
-              last sync was ${DateTime.now().difference(_lastSync!).inMinutes} minutes ago. \n
+              last sync was $minutesSinceLastSync minutes ago. \n
               It should be $kSyncTimerDuration
               ''');
-      return;
+        return;
+      }
     }
 
     /// This delay is for don't abruptly open the modal when the user is back
@@ -225,30 +236,31 @@ class SyncCubit extends Cubit<SyncState> {
         return;
       }
 
-      final currentBlockHeight =
-          await retry(() async => await _arweave.getCurrentBlockHeight(),
-              onRetry: (exception) {
-        logSync(
+      final currentBlockHeight = await retry(
+        () async => await _arweave.getCurrentBlockHeight(),
+        onRetry: (exception) => logSync(
           'Retrying for get the current block height on exception ${exception.toString()}',
-        );
-      });
+        ),
+      );
 
       _syncProgress = _syncProgress.copyWith(drivesCount: drives.length);
       logSync('Current block height number $currentBlockHeight');
-      final driveSyncProcesses = drives.map((drive) => _syncDrive(
-            drive.id,
-            driveDao: _driveDao,
-            arweaveService: _arweave,
-            database: _db,
-            profileState: profile,
-            addError: addError,
-            lastBlockHeight: syncDeep
-                ? 0
-                : calculateSyncLastBlockHeight(drive.lastBlockHeight!),
-            currentBlockHeight: currentBlockHeight,
-            transactionParseBatchSize:
-                200 ~/ (_syncProgress.drivesCount - _syncProgress.drivesSynced),
-          ).handleError((error, stackTrace) {
+      final driveSyncProcesses = drives.map(
+        (drive) => _syncDrive(
+          drive.id,
+          driveDao: _driveDao,
+          arweaveService: _arweave,
+          database: _db,
+          profileState: profile,
+          addError: addError,
+          lastBlockHeight: syncDeep
+              ? 0
+              : calculateSyncLastBlockHeight(drive.lastBlockHeight!),
+          currentBlockHeight: currentBlockHeight,
+          transactionParseBatchSize:
+              200 ~/ (_syncProgress.drivesCount - _syncProgress.drivesSynced),
+        ).handleError(
+          (error, stackTrace) {
             logSync('''
                     Error syncing drive with id ${drive.id}. \n
                     Skipping sync on this drive.\n
@@ -258,7 +270,9 @@ class SyncCubit extends Cubit<SyncState> {
                     ${stackTrace.toString()}
                     ''');
             addError(error!);
-          }));
+          },
+        ),
+      );
 
       double totalProgress = 0;
       await Future.wait(
@@ -266,6 +280,7 @@ class SyncCubit extends Cubit<SyncState> {
           (driveSyncProgress) async {
             double currentDriveProgress = 0;
             await for (var driveProgress in driveSyncProgress) {
+              print('Sync progress step: $driveProgress');
               currentDriveProgress =
                   (totalProgress + driveProgress) / drives.length;
               if (currentDriveProgress > _syncProgress.progress) {
@@ -273,6 +288,7 @@ class SyncCubit extends Cubit<SyncState> {
                   progress: currentDriveProgress,
                 );
               }
+              print('Updating progress: ${jsonEncode(_syncProgress)}');
               syncProgressController.add(_syncProgress);
             }
             totalProgress += 1;

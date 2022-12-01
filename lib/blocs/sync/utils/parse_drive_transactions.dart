@@ -6,7 +6,8 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   required DriveDao driveDao,
   required Database database,
   required ArweaveService arweaveService,
-  required List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>
+  required List<
+          DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
       transactions,
   required Drive drive,
   required SecretKey? driveKey,
@@ -42,7 +43,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   final owner = await arweave.getOwnerForDriveEntityWithId(drive.id);
 
   yield* _batchProcess<
-          DriveEntityHistory$Query$TransactionConnection$TransactionEdge>(
+          DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>(
       list: transactions,
       batchSize: batchSize,
       endOfBatchCallback: (items) async* {
@@ -50,12 +51,20 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
 
         final entityHistory =
             await arweave.createDriveEntityHistoryFromTransactions(
-                items, driveKey, owner, lastBlockHeight);
+          items,
+          driveKey,
+          owner,
+          lastBlockHeight,
+        );
 
         // Create entries for all the new revisions of file and folders in this drive.
         final newEntities = entityHistory.blockHistory
-            .map((b) => b.entities)
-            .expand((entities) => entities);
+            .map(
+              (b) => b.entities,
+            )
+            .expand(
+              (entities) => entities,
+            );
 
         numberOfDriveEntitiesParsed += items.length - newEntities.length;
 
