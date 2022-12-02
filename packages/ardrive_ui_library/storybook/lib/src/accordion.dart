@@ -44,7 +44,7 @@ Widget _accordionWithContent() {
   return ArDriveAccordion(
     children: data
         .map(
-          (item) => ArDriveAccordionEntry(
+          (item) => ArDriveAccordionItem(
             (BuildContext context, bool isExpanded) {
               return ListTile(
                 title: Text(item.headerValue),
@@ -53,7 +53,6 @@ Widget _accordionWithContent() {
             ListTile(
               title: Text(item.expandedValue),
               subtitle: const Text('Subtitle Lorem Ipsum'),
-              trailing: const Icon(Icons.delete),
               onTap: () {},
             ),
           ),
