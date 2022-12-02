@@ -140,9 +140,7 @@ class SnapshotItemOnChain implements SnapshotItem {
     required this.timestamp,
     required this.txId,
     required this.subRanges,
-
-    // for testing purposes only
-    String? fakeSource,
+    @visibleForTesting String? fakeSource,
   }) : _fakeSource = fakeSource;
 
   @override
