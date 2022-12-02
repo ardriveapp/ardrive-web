@@ -148,7 +148,7 @@ class _ArDriveDropAreaSingleInputState
                           ),
                     if (_file != null)
                       Padding(
-                        padding: const EdgeInsets.only(top: 8.0, bottom: 20),
+                        padding: dropAreaItemContentPadding,
                         child: Text(
                           _file!.name,
                           style: ArDriveTypography.body.smallBold(),
@@ -156,7 +156,7 @@ class _ArDriveDropAreaSingleInputState
                       ),
                     if (_file == null) ...[
                       Padding(
-                        padding: const EdgeInsets.only(top: 8.0, bottom: 20),
+                        padding: dropAreaItemContentPadding,
                         child: Text(
                           widget.dragAndDropDescription,
                           style: ArDriveTypography.body.smallBold(),
