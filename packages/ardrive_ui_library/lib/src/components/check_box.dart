@@ -1,4 +1,5 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
+import 'package:ardrive_ui_library/src/constants/size_constants.dart';
 import 'package:flutter/material.dart';
 
 class ArDriveCheckBox extends StatefulWidget {
@@ -80,10 +81,10 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           AnimatedContainer(
-            height: 22,
-            width: 22,
+            height: checkboxSize,
+            width: checkboxSize,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: BorderRadius.circular(checkboxBorderRadius),
               border: state == CheckBoxState.indeterminate
                   ? null
                   : Border.all(
