@@ -285,7 +285,8 @@ class SnapshotItemOnChain implements SnapshotItem {
 
   static String? getDataForTxId(TxID txId) {
     // FIXME: this is really slow
-    return _txIdToDataMapping.remove(txId);
+    final maybeData = _txIdToDataMapping.remove(txId);
+    return maybeData;
   }
 
   // TODO: call this method

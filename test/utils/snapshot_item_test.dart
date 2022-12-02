@@ -127,9 +127,10 @@ void main() {
 
         for (int height = r.start; height <= r.end; height++) {
           // has data the first time
-          expect(item.getDataForTxId('$height'), '{"name": "$height"}');
+          expect(SnapshotItemOnChain.getDataForTxId('$height'),
+              '{"name": "$height"}');
           // further calls to the method results in a null response
-          expect(item.getDataForTxId('$height'), null);
+          expect(SnapshotItemOnChain.getDataForTxId('$height'), null);
         }
       });
 
@@ -161,7 +162,7 @@ void main() {
 
         await countStreamItems(item.getNextStream());
 
-        expect(item.getDataForTxId('not present tx id'), null);
+        expect(SnapshotItemOnChain.getDataForTxId('not present tx id'), null);
       });
     });
   });
@@ -176,7 +177,7 @@ Future<String> fakeSnapshotStream(Range range) async {
           .map(
             (event) => {
               'gqlNode': event,
-              'jsonData': '{"name": "${event.block!.height}"}',
+              'jsonMetadata': '{"name": "${event.block!.height}"}',
             },
           )
           .toList(),
