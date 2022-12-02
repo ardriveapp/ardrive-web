@@ -127,10 +127,14 @@ void main() {
 
         for (int height = r.start; height <= r.end; height++) {
           // has data the first time
-          expect(SnapshotItemOnChain.getDataForTxId('$height'),
-              '{"name": "$height"}');
+          expect(
+            await SnapshotItemOnChain.getDataForTxId('$height'),
+            utf8.encode(
+              '{"name": "$height"}',
+            ),
+          );
           // further calls to the method results in a null response
-          expect(SnapshotItemOnChain.getDataForTxId('$height'), null);
+          expect(await SnapshotItemOnChain.getDataForTxId('$height'), null);
         }
       });
 
@@ -162,7 +166,10 @@ void main() {
 
         await countStreamItems(item.getNextStream());
 
-        expect(SnapshotItemOnChain.getDataForTxId('not present tx id'), null);
+        expect(
+          await SnapshotItemOnChain.getDataForTxId('not present tx id'),
+          null,
+        );
       });
     });
   });
