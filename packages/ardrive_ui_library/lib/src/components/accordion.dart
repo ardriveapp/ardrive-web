@@ -7,13 +7,13 @@ typedef ExpansionPanelHeaderBuilder = Widget Function(
 );
 
 class ArDriveAccordionItem {
-  final ExpansionPanelHeaderBuilder headerBuilder;
-  final Widget expandedBody;
+  final Widget title;
+  final List<Widget> children;
   bool isExpanded;
 
   ArDriveAccordionItem(
-    this.headerBuilder,
-    this.expandedBody, {
+    this.title,
+    this.children, {
     this.isExpanded = false,
   });
 }
@@ -30,40 +30,41 @@ class ArDriveAccordion extends StatefulWidget {
 }
 
 class _ArDriveAccordionState extends State<ArDriveAccordion> {
-  late List<ArDriveAccordionItem> panels;
+  late List<ArDriveAccordionItem> tiles;
   @override
   void initState() {
-    panels = [...widget.children];
+    tiles = [...widget.children];
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-      child: SingleChildScrollView(
-        child: ExpansionPanelList(
-          dividerColor: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-          expansionCallback: (panelIndex, isExpanded) {
-            setState(() {
-              panels[panelIndex].isExpanded = !isExpanded;
-            });
-          },
-          elevation: 0,
-          expandedHeaderPadding: const EdgeInsets.all(0),
-          children: [
-            ...panels.map(
-              (child) => ExpansionPanel(
-                headerBuilder: child.headerBuilder,
-                body: child.expandedBody,
-                isExpanded: child.isExpanded,
-                backgroundColor:
-                    ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-              ),
-            )
-          ],
-        ),
-      ),
+    return ListView(
+      children: tiles.map(
+        (tile) {
+          return ExpansionTileTheme(
+            data: ExpansionTileThemeData(
+              backgroundColor:
+                  ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+              collapsedBackgroundColor:
+                  ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+              collapsedIconColor:
+                  ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+              textColor:
+                  ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              collapsedTextColor:
+                  ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+            ),
+            child: ExpansionTile(
+              title: tile.title,
+              children: tile.children,
+              onExpansionChanged: (value) {
+                setState(() => tiles[tiles.indexOf(tile)].isExpanded = !value);
+              },
+            ),
+          );
+        },
+      ).toList(),
     );
   }
 }

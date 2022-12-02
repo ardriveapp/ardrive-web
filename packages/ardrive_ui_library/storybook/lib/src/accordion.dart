@@ -45,16 +45,16 @@ Widget _accordionWithContent() {
     children: data
         .map(
           (item) => ArDriveAccordionItem(
-            (BuildContext context, bool isExpanded) {
-              return ListTile(
-                title: Text(item.headerValue),
-              );
-            },
             ListTile(
-              title: Text(item.expandedValue),
-              subtitle: const Text('Subtitle Lorem Ipsum'),
-              onTap: () {},
+              title: Text(item.headerValue),
             ),
+            [
+              ListTile(
+                title: Text(item.expandedValue),
+                subtitle: const Text('Subtitle Lorem Ipsum'),
+                onTap: () {},
+              )
+            ],
           ),
         )
         .toList(),
