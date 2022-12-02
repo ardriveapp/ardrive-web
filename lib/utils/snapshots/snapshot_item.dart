@@ -8,7 +8,10 @@ import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
 import 'package:ardrive_network/ardrive_network.dart';
 import 'package:async/async.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:stash/stash_api.dart';
+import 'package:stash_memory/stash_memory.dart';
 
 abstract class SnapshotItem implements SegmentedGQLData {
   abstract final int blockStart;
@@ -180,8 +183,11 @@ class SnapshotItemOnChain implements SnapshotItem {
   final int timestamp;
   final TxID txId;
   String? _cachedSource;
-  static Map<TxID, String> _txIdToDataMapping = {};
   int _currentIndex = -1;
+
+  static const String _storeName = 'snapshot-cache';
+  // static MemoryVaultStore? _memCache;
+  static Vault<Uint8List>? _jsonMetadataVault;
 
   SnapshotItemOnChain({
     required this.blockEnd,
@@ -266,7 +272,8 @@ class SnapshotItemOnChain implements SnapshotItem {
         final String? data = item['jsonMetadata'];
         if (data != null) {
           final TxID txId = node.id;
-          _txIdToDataMapping[txId] = data;
+          final Uint8List dataAsBytes = Uint8List.fromList(utf8.encode(data));
+          _setDataForTxId(txId, dataAsBytes);
         }
       }
     }
@@ -280,15 +287,34 @@ class SnapshotItemOnChain implements SnapshotItem {
     return;
   }
 
-  static String? getDataForTxId(TxID txId) {
-    // FIXME: this is really slow
-    final maybeData = _txIdToDataMapping.remove(txId);
-    return maybeData;
+  static Future<Uint8List> _setDataForTxId(TxID txId, Uint8List data) async {
+    final cache = await _lazilyInitCache();
+
+    cache.put(txId, data);
+    return data;
+  }
+
+  static Future<Uint8List?> getDataForTxId(TxID txId) async {
+    final cache = await _lazilyInitCache();
+
+    final value = await cache.get(txId);
+    cache.remove(txId);
+
+    return value;
+  }
+
+  static Future<Vault<Uint8List>> _lazilyInitCache() async {
+    if (_jsonMetadataVault == null) {
+      final vaultStore = await newMemoryVaultStore();
+      _jsonMetadataVault = await vaultStore.vault<Uint8List>();
+    }
+
+    return _jsonMetadataVault!;
   }
 
   // TODO: call this method
-  void dispose() {
+  Future<void> dispose() async {
     _cachedSource = null;
-    _txIdToDataMapping = {};
+    await _jsonMetadataVault?.clear();
   }
 }

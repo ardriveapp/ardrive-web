@@ -208,9 +208,9 @@ class ArweaveService {
       entityTxs.map(
         (entity) async {
           final txId = entity.id;
-          final cachedData = SnapshotItemOnChain.getDataForTxId(txId);
+          final cachedData = await SnapshotItemOnChain.getDataForTxId(txId);
           if (cachedData != null) {
-            return Uint8List.fromList(utf8.encode(cachedData));
+            return cachedData;
           } else {
             return (await httpRetry
                     .processRequest(() => client.api.getSandboxedTx(txId)))
