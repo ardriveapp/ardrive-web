@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:equatable/equatable.dart';
 
-class Range {
+class Range implements Equatable {
   final int start;
   final int end;
 
@@ -86,6 +86,12 @@ class Range {
   String toString() {
     return 'Range: ($start; $end)';
   }
+
+  @override
+  List<Object?> get props => [start, end];
+
+  @override
+  bool? get stringify => true;
 }
 
 class BadRange implements Exception, Equatable {

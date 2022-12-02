@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
@@ -280,7 +279,6 @@ class SyncCubit extends Cubit<SyncState> {
           (driveSyncProgress) async {
             double currentDriveProgress = 0;
             await for (var driveProgress in driveSyncProgress) {
-              print('Sync progress step: $driveProgress');
               currentDriveProgress =
                   (totalProgress + driveProgress) / drives.length;
               if (currentDriveProgress > _syncProgress.progress) {
@@ -288,7 +286,6 @@ class SyncCubit extends Cubit<SyncState> {
                   progress: currentDriveProgress,
                 );
               }
-              print('Updating progress: ${jsonEncode(_syncProgress)}');
               syncProgressController.add(_syncProgress);
             }
             totalProgress += 1;

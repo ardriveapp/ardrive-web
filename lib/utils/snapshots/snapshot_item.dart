@@ -61,6 +61,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
     );
   }
 
+  /// itemStream - The result of SnapshotEntityHistory query in DESC order (newer first)
   static Stream<SnapshotItem> instantiateAll(
     Stream<SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
         itemsStream, {
@@ -83,8 +84,8 @@ abstract class SnapshotItem implements SegmentedGQLData {
         blockHeightEnd =
             int.parse(tags.firstWhere((tag) => tag.name == 'Block-End').value);
         totalRange = Range(start: blockHeightStart, end: blockHeightEnd);
-      } catch (_) {
-        print('Ignoring snapshot transaction with wrong block range');
+      } catch (e) {
+        print('Ignoring snapshot transaction with wrong block range - $e');
         continue;
       }
 
@@ -97,6 +98,9 @@ abstract class SnapshotItem implements SegmentedGQLData {
         node: item,
         subRanges: subRanges,
       );
+
+      print(
+          'SnapshotItem instantiated - ${snapshotItem.subRanges.rangeSegments}');
 
       yield snapshotItem;
 
@@ -238,6 +242,9 @@ class SnapshotItemOnChain implements SnapshotItem {
       _getNextStream() async* {
     final Range range = subRanges.rangeSegments[currentIndex];
 
+    print(
+        'Snapshot item ($txId) reading item #${currentIndex + 1}/${subRanges.rangeSegments.length}');
+
     final Map dataJson = jsonDecode(await source());
     final List<Map> txSnapshots =
         List.castFrom<dynamic, Map>(dataJson['txSnapshots']);
@@ -255,16 +262,20 @@ class SnapshotItemOnChain implements SnapshotItem {
         rethrow;
       }
 
-      if (range.isInRange(node.block!.height)) {
+      final isInRange = range.isInRange(node.block?.height ?? -1);
+      if (isInRange) {
         yield node;
 
-        final TxID txId = node.id;
-        final String data = item['jsonData'];
-        _txIdToDataMapping[txId] = data;
+        final String? data = item['jsonData'];
+        if (data != null) {
+          final TxID txId = node.id;
+          _txIdToDataMapping[txId] = data;
+        }
       }
     }
 
     if (currentIndex == subRanges.rangeSegments.length - 1) {
+      print('Done reading snapshot item data, releasing memory');
       // Done reading all data, wiping
       _cachedSource = null;
     }

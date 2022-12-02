@@ -41,7 +41,7 @@ Stream<double> _syncDrive(
       DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>[];
 
   final snapshotsStream = arweaveService
-      .getAllSnapshotsFromDrive(
+      .getAllSnapshotsOfDrive(
         driveId,
         lastBlockHeight,
       )
@@ -153,7 +153,6 @@ Stream<double> _syncDrive(
           calculatePercentageBasedOnBlockHeights() * fetchPhaseWeight;
       yield percentage;
     }
-    print('Still looping');
   }
   print('Done fetching data - ${gqlDriveHistory.driveId}');
 

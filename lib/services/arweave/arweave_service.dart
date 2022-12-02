@@ -112,7 +112,7 @@ class ArweaveService {
   }
 
   Stream<SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge>
-      getAllSnapshotsFromDrive(
+      getAllSnapshotsOfDrive(
     String driveId,
     int? lastBlockHeight,
   ) async* {
