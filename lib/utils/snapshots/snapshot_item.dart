@@ -181,7 +181,7 @@ class SnapshotItemOnChain implements SnapshotItem {
   final int timestamp;
   final TxID txId;
   String? _cachedSource;
-  Map<TxID, String> _txIdToDataMapping = {};
+  static Map<TxID, String> _txIdToDataMapping = {};
   int _currentIndex = -1;
 
   SnapshotItemOnChain({
@@ -283,7 +283,8 @@ class SnapshotItemOnChain implements SnapshotItem {
     return;
   }
 
-  String? getDataForTxId(TxID txId) {
+  static String? getDataForTxId(TxID txId) {
+    // FIXME: this is really slow
     return _txIdToDataMapping.remove(txId);
   }
 

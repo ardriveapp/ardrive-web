@@ -9,6 +9,7 @@ import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
+import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_network/ardrive_network.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
@@ -207,7 +208,7 @@ class ArweaveService {
       entityTxs.map(
         (entity) async {
           final txId = entity.id;
-          final cachedData = snapshotDriveHistory.getDataForTxId(txId);
+          final cachedData = SnapshotItemOnChain.getDataForTxId(txId);
           if (cachedData != null) {
             return Uint8List.fromList(utf8.encode(cachedData));
           } else {

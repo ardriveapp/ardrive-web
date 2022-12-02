@@ -4,8 +4,6 @@ import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 
-import '../../entities/string_types.dart';
-
 class SnapshotDriveHistory implements SegmentedGQLData {
   final List<SnapshotItem> items;
   int _currentIndex = -1;
@@ -99,17 +97,5 @@ class SnapshotDriveHistory implements SegmentedGQLData {
       final stream = item.getNextStream();
       yield* stream;
     }
-  }
-
-  String? getDataForTxId(TxID txId) {
-    // FIXME: This is really slow, we should consider using a mem cache
-    for (var item in items) {
-      item as SnapshotItemOnChain;
-      final value = item.getDataForTxId(txId);
-      if (value != null) {
-        return value;
-      }
-    }
-    return null;
   }
 }
