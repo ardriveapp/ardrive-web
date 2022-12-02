@@ -34,8 +34,7 @@ WidgetbookCategory overlay() {
                       ),
                     )
                   ],
-                  controller: controller,
-                  child: ArDriveButton(
+                  content: ArDriveButton(
                       text: 'Show overlay',
                       onPressed: () {
                         if (controller.isShowing) {
@@ -44,6 +43,7 @@ WidgetbookCategory overlay() {
                           controller.show();
                         }
                       }),
+                  child: Container(),
                 )
               ],
             );

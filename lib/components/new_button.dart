@@ -5,6 +5,7 @@ import 'package:ardrive/components/drive_create_form.dart';
 import 'package:ardrive/components/folder_create_form.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
 
 Widget buildNewButton(
@@ -31,12 +32,18 @@ Widget buildNewButton(
   final constraints = isPlusButton
       ? BoxConstraints.tightForFinite(width: width - 2 * menuMargin)
       : null;
-  return PopupMenuButtonRotable<Function>(
-    constraints: constraints,
-    offset: offset,
-    onSelected: (callback) => callback(context),
-    itemBuilder: (context) => menuItems,
-    rotable: isPlusButton,
+  return ArDriveDropdown(
+    items: [
+      ArDriveDropdownItem(
+        content: Text('New Folder'),
+      ),
+      ArDriveDropdownItem(
+        content: Text('New Folder'),
+      ),
+      ArDriveDropdownItem(
+        content: Text('New Folder'),
+      )
+    ],
     child: button,
   );
 }

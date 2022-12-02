@@ -602,12 +602,12 @@ packages:
     source: hosted
     version: "2.0.7"
   flutter_portal:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: flutter_portal
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.0"
+    version: "1.1.2"
   flutter_secure_storage:
     dependency: "direct main"
     description:

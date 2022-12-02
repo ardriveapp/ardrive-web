@@ -9,17 +9,17 @@ class ArDriveDropdown extends StatefulWidget {
     super.key,
     required this.items,
     required this.child,
-    required this.controller,
+    // required this.controller,
     this.contentPadding,
     this.height = 60,
-    this.width = 200,
+    this.width = 400,
   });
 
   final double height;
   final double width;
   final List<ArDriveDropdownItem> items;
   final Widget child;
-  final ArDriveOverlayController controller;
+  // final ArDriveOverlayController controller;
   final EdgeInsets? contentPadding;
 
   @override
@@ -34,7 +34,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
     dropdownHeight = (widget.contentPadding?.bottom ?? 8) + dropdownHeight;
 
     return ArDriveOverlay(
-      controller: widget.controller,
+      // controller: widget.controller,
       content: TweenAnimationBuilder<double>(
         duration: kThemeAnimationDuration,
         curve: Curves.easeOut,
@@ -42,6 +42,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
         builder: (context, size, _) {
           return SizedBox(
             height: size,
+            width: 300,
             child: ArDriveCard(
               content: Column(
                   children: List.generate(widget.items.length, (index) {
@@ -84,13 +85,13 @@ class ArDriveOverlay extends StatefulWidget {
     required this.content,
     this.contentPadding = const EdgeInsets.all(16),
     required this.child,
-    required this.controller,
+    // required this.controller,
   });
 
   final Widget child;
   final Widget content;
   final EdgeInsets contentPadding;
-  final ArDriveOverlayController controller;
+  // final ArDriveOverlayController controller;
 
   @override
   State<ArDriveOverlay> createState() => _ArDriveOverlayState();
@@ -131,24 +132,26 @@ class _ArDriveOverlayController implements ArDriveOverlayController {
 }
 
 class _ArDriveOverlayState extends State<ArDriveOverlay> {
+  bool _visible = false;
+
   @override
   Widget build(BuildContext context) {
     return Portal(
-      child: StreamBuilder<bool>(
-          stream: widget.controller.controller.stream,
-          initialData: false,
-          builder: (context, snapshot) {
-            return PortalTarget(
-              visible: snapshot.data!,
-              portalFollower: widget.content,
-              anchor: const Aligned(
-                follower: Alignment.topLeft,
-                target: Alignment.topRight,
-              ),
-              child: widget.child,
-            );
-          }),
-    );
+        child: PortalTarget(
+      visible: _visible,
+      portalFollower: widget.content,
+      anchor: const Aligned(
+        follower: Alignment.topLeft,
+        target: Alignment.topRight,
+      ),
+      child: GestureDetector(
+          onTap: () {
+            setState(() {
+              _visible = true;
+            });
+          },
+          child: widget.child),
+    ));
   }
 }
 
