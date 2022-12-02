@@ -13,3 +13,6 @@ const double buttonActionHeight = 32;
 const double buttonBorderRadius = 6;
 const double buttonBorderWidth = 1;
 const double cardDefaultBorderRadius = 8;
+
+/// DropArea constants
+const double dropAreaIconSize = 56;

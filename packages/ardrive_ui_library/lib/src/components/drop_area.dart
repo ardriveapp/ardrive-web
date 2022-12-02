@@ -133,14 +133,14 @@ class _ArDriveDropAreaSingleInputState
                   children: [
                     _file != null
                         ? ArDriveIcons.checkSuccess(
-                            size: 56,
+                            size: dropAreaIconSize,
                             color: ArDriveTheme.of(context)
                                 .themeData
                                 .colors
                                 .themeFgMuted,
                           )
                         : ArDriveIcons.uploadCloud(
-                            size: 56,
+                            size: dropAreaIconSize,
                             color: ArDriveTheme.of(context)
                                 .themeData
                                 .colors
