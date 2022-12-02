@@ -13,3 +13,9 @@ const double buttonActionHeight = 32;
 const double buttonBorderRadius = 6;
 const double buttonBorderWidth = 1;
 const double cardDefaultBorderRadius = 8;
+
+/// Check constants
+const double checkboxSize = 22;
+
+/// Border radius
+const double checkboxBorderRadius = 3;

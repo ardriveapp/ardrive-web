@@ -35,4 +35,12 @@ class ArDriveIcons {
       ArDriveIcon(path: 'assets/icons/cloud_upload.svg', size: size);
   static ArDriveIcon checkSuccess({double? size, Color? color}) => ArDriveIcon(
       path: 'assets/icons/check_success.svg', size: size, color: color);
+  static ArDriveIcon checked({double? size, Color? color}) =>
+      ArDriveIcon(path: 'assets/icons/checked.svg', size: size, color: color);
+  static ArDriveIcon indeterminateIndicator({double? size, Color? color}) =>
+      ArDriveIcon(
+        path: 'assets/icons/indeterminate_indicator.svg',
+        size: size,
+        color: color,
+      );
 }
