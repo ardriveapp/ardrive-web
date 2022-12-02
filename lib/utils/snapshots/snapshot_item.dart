@@ -8,6 +8,7 @@ import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
 import 'package:ardrive_network/ardrive_network.dart';
 import 'package:async/async.dart';
+import 'package:flutter/material.dart';
 
 abstract class SnapshotItem implements SegmentedGQLData {
   abstract final int blockStart;
@@ -18,9 +19,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
     required SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
         node,
     required HeightRange subRanges,
-
-    // for testing purposes only
-    String? fakeSource,
+    @visibleForTesting String? fakeSource,
   }) {
     final tags = node.tags;
     final blockStart =
