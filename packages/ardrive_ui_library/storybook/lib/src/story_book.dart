@@ -4,6 +4,7 @@ import 'package:storybook/src/button.dart';
 import 'package:storybook/src/progress_bar.dart';
 import 'package:storybook/src/radio_button.dart';
 import 'package:storybook/src/shadows.dart';
+import 'package:storybook/src/tab_view.dart';
 import 'package:storybook/src/text_field.dart';
 import 'package:storybook/src/toggle.dart';
 import 'package:widgetbook/widgetbook.dart';
@@ -50,6 +51,7 @@ class StoryBook extends StatelessWidget {
             modals(),
             radioButton(),
             dropArea(),
+            tabView(),
             progressBar(),
           ]),
     );
