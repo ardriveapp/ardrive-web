@@ -8,6 +8,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
+import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive_network/ardrive_network.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
@@ -199,11 +200,22 @@ class ArweaveService {
         entityTxs,
     SecretKey? driveKey,
     String? owner,
-    int lastBlockHeight,
-  ) async {
+    int lastBlockHeight, {
+    required SnapshotDriveHistory snapshotDriveHistory,
+  }) async {
     final responses = await Future.wait(
       entityTxs.map(
-        (e) => httpRetry.processRequest(() => client.api.getSandboxedTx(e.id)),
+        (entity) async {
+          final txId = entity.id;
+          final cachedData = snapshotDriveHistory.getDataForTxId(txId);
+          if (cachedData != null) {
+            return Uint8List.fromList(utf8.encode(cachedData));
+          } else {
+            return (await httpRetry
+                    .processRequest(() => client.api.getSandboxedTx(txId)))
+                .bodyBytes;
+          }
+        },
       ),
     );
 
@@ -226,7 +238,7 @@ class ArweaveService {
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
         final entityResponse = responses[i];
-        final rawEntityData = entityResponse.bodyBytes;
+        final rawEntityData = entityResponse;
 
         Entity? entity;
         if (entityType == EntityType.drive) {

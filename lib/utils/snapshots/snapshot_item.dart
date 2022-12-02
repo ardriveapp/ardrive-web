@@ -181,7 +181,7 @@ class SnapshotItemOnChain implements SnapshotItem {
   final int timestamp;
   final TxID txId;
   String? _cachedSource;
-  final Map<TxID, String> _txIdToDataMapping = {};
+  Map<TxID, String> _txIdToDataMapping = {};
   int _currentIndex = -1;
 
   SnapshotItemOnChain({
@@ -266,7 +266,7 @@ class SnapshotItemOnChain implements SnapshotItem {
       if (isInRange) {
         yield node;
 
-        final String? data = item['jsonData'];
+        final String? data = item['jsonMetadata'];
         if (data != null) {
           final TxID txId = node.id;
           _txIdToDataMapping[txId] = data;
@@ -276,7 +276,7 @@ class SnapshotItemOnChain implements SnapshotItem {
 
     if (currentIndex == subRanges.rangeSegments.length - 1) {
       print('Done reading snapshot item data, releasing memory');
-      // Done reading all data, wiping
+      // Done reading all data, the memory can be freed
       _cachedSource = null;
     }
 
@@ -285,5 +285,11 @@ class SnapshotItemOnChain implements SnapshotItem {
 
   String? getDataForTxId(TxID txId) {
     return _txIdToDataMapping.remove(txId);
+  }
+
+  // TODO: call this method
+  void dispose() {
+    _cachedSource = null;
+    _txIdToDataMapping = {};
   }
 }

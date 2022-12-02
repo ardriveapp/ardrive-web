@@ -177,6 +177,7 @@ Stream<double> _syncDrive(
     currentBlockHeight: currentBlockHeight,
     lastBlockHeight: lastBlockHeight,
     batchSize: transactionParseBatchSize,
+    snapshotDriveHistory: snapshotDriveHistory,
   ).map(
     (parseProgress) => parseProgress * 0.9,
   );

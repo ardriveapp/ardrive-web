@@ -14,6 +14,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   required int lastBlockHeight,
   required int currentBlockHeight,
   required int batchSize,
+  required SnapshotDriveHistory snapshotDriveHistory,
 }) async* {
   final numberOfDriveEntitiesToParse = transactions.length;
   var numberOfDriveEntitiesParsed = 0;
@@ -55,6 +56,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
           driveKey,
           owner,
           lastBlockHeight,
+          snapshotDriveHistory: snapshotDriveHistory,
         );
 
         // Create entries for all the new revisions of file and folders in this drive.
