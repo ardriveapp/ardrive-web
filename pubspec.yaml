@@ -6,8 +6,8 @@ publish_to: 'none'
 version: 1.40.0
 
 environment:
-  sdk: '>=2.18.2 <3.0.0'
-  flutter: 3.3.5
+  sdk: '>=2.18.5 <3.0.0'
+  flutter: 3.3.9
 
 # https://pub.dev/packages/script_runner
 script_runner:
@@ -28,6 +28,10 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  ardrive_http:
+    git:
+      url: https://github.com/ar-io/ardrive_http
+      ref: v1.0.0
   artemis: ^7.0.0-beta.13
   arweave:
     git:
@@ -73,8 +77,6 @@ dependencies:
   app_settings: ^4.1.8
   ardrive_io:
     path: ./ardrive_io
-  ardrive_network:
-    path: ./ardrive_network
   firebase_crashlytics: ^3.0.4
   firebase_core: ^2.1.1
   bloc_concurrency: ^0.2.0
