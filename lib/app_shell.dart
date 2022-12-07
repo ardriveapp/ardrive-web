@@ -42,12 +42,12 @@ class AppShellState extends State<AppShell> {
                 backgroundColor: Colors.transparent,
                 // actions: [
                 // IconButton(
-                //   icon: PortalEntry(
-                //     visible: _showProfileOverlay,
-                //     portal: GestureDetector(
-                //       behavior: HitTestBehavior.opaque,
-                //       onTap: () => toggleProfileOverlay(),
-                //     ),
+                // icon: PortalEntry(
+                //   visible: _showProfileOverlay,
+                //   portal: GestureDetector(
+                //     behavior: HitTestBehavior.opaque,
+                //     onTap: () => toggleProfileOverlay(),
+                //   ),
                 //     child: PortalEntry(
                 //       visible: _showProfileOverlay,
                 //       portal: Padding(

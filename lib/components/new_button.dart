@@ -35,14 +35,41 @@ Widget buildNewButton(
   return ArDriveDropdown(
     items: [
       ArDriveDropdownItem(
-        content: Text('New Folder'),
+        content: Text(
+          appLocalizationsOf(context).newFolder,
+          style: ArDriveTypography.body.buttonLargeBold(),
+        ),
       ),
       ArDriveDropdownItem(
-        content: Text('New Folder'),
+        content: Text(
+          appLocalizationsOf(context).uploadFiles,
+          style: ArDriveTypography.body.buttonLargeBold(),
+        ),
       ),
       ArDriveDropdownItem(
-        content: Text('New Folder'),
-      )
+        content: Text(
+          appLocalizationsOf(context).uploadFolder,
+          style: ArDriveTypography.body.buttonLargeBold(),
+        ),
+      ),
+      ArDriveDropdownItem(
+        content: Text(
+          appLocalizationsOf(context).newDrive,
+          style: ArDriveTypography.body.buttonLargeBold(),
+        ),
+      ),
+      ArDriveDropdownItem(
+        content: Text(
+          appLocalizationsOf(context).attachDrive,
+          style: ArDriveTypography.body.buttonLargeBold(),
+        ),
+      ),
+      ArDriveDropdownItem(
+        content: Text(
+          appLocalizationsOf(context).createManifest,
+          style: ArDriveTypography.body.buttonLargeBold(),
+        ),
+      ),
     ],
     child: button,
   );
