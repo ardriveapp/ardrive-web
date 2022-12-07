@@ -7,6 +7,8 @@ import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 
+import 'create_shortcut_form.dart';
+
 Widget buildNewButton(
   BuildContext context, {
   required Widget button,
@@ -223,6 +225,8 @@ List<PopupMenuEntry<Function>> _buildItems(
       if (driveDetailState is DriveDetailLoadSuccess) ...{
         _buildNewFolderItem(context, driveDetailState, hasMinBalance),
         const PopupMenuDivider(key: Key('divider-1')),
+        _buildCreateShortcut(context, driveDetailState, hasMinBalance),
+        const PopupMenuDivider(key: Key('divider-2')),
         _buildUploadFileItem(
           context,
           driveDetailState,
@@ -279,6 +283,22 @@ PopupMenuEntry<Function> _buildNewFolderItem(
       driveId: state.currentDrive.id,
       parentFolderId: state.folderInView.folder.id,
     ),
+  );
+}
+
+PopupMenuEntry<Function> _buildCreateShortcut(
+  context,
+  DriveDetailLoadSuccess state,
+  bool hasMinBalance,
+) {
+  return _buildMenuItemTile(
+    context: context,
+    isEnabled: state.hasWritePermissions && hasMinBalance,
+    message: state.hasWritePermissions && !hasMinBalance
+        ? appLocalizationsOf(context).insufficientFundsForUploadFiles
+        : null,
+    itemTitle: 'Create shortcut',
+    value: (context) => createShortcut(context: context),
   );
 }
 
