@@ -17,6 +17,12 @@ class CreateShortcutError extends CreateShortcutState {
   List<Object?> get props => [];
 }
 
+class CreateShortcutInvalidTransaction extends CreateShortcutState {
+  @override
+  List<Object?> get props => [];
+}
+
+
 class CreateShortcutSuccess extends CreateShortcutState {
   @override
   List<Object?> get props => [];

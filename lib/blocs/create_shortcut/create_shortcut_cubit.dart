@@ -44,6 +44,10 @@ class CreateShortcutCubit extends Cubit<CreateShortcutState> {
 
   Future<void> isValid() async {
     try {
+      if (form.invalid) {
+        return;
+      }
+
       emit(CreateShortcutLoading());
       final txId = form.control('shortcut').value;
       final graphQlClient = GraphQLRetry(
@@ -53,7 +57,7 @@ class CreateShortcutCubit extends Cubit<CreateShortcutState> {
           variables: GetDataTransactionArguments(txId: txId.toString())));
 
       if (result.data?.transaction == null) {
-        emit(CreateShortcutError());
+        emit(CreateShortcutInvalidTransaction());
         return;
       }
 
@@ -62,7 +66,7 @@ class CreateShortcutCubit extends Cubit<CreateShortcutState> {
       print(_graphQLResult.toJson());
       emit(CreateShortcutValidationSuccess());
     } catch (e) {
-      emit(CreateShortcutError());
+      emit(CreateShortcutInvalidTransaction());
     }
   }
 

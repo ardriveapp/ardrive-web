@@ -84,17 +84,22 @@ class CreateShortcutForm extends StatelessWidget {
             return AppDialog(
               title: 'Create shortcut',
               content: _getContent(state, context),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(null),
-                  child: Text(appLocalizationsOf(context).cancelEmphasized),
-                ),
-                ElevatedButton(
-                  onPressed: () =>
-                      context.read<CreateShortcutCubit>().isValid(),
-                  child: Text('Create'),
-                ),
-              ],
+              actions: (state is CreateShortcutSuccess)
+                  ? []
+                  : [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(null),
+                        child:
+                            Text(appLocalizationsOf(context).cancelEmphasized),
+                      ),
+                      if (state is! CreateShortcutError &&
+                          state is! CreateShortcutConflicting)
+                        ElevatedButton(
+                          onPressed: () =>
+                              context.read<CreateShortcutCubit>().isValid(),
+                          child: Text('Create'),
+                        ),
+                    ],
             );
           },
         ),
@@ -106,10 +111,20 @@ class CreateShortcutForm extends StatelessWidget {
     print(state);
     if (state is CreateShortcutLoading ||
         state is CreateShortcutValidationSuccess) {
-      return Container(child: const CircularProgressIndicator());
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          CircularProgressIndicator(),
+        ],
+      );
+    } else if (state is CreateShortcutInvalidTransaction) {
+      return Container(
+        child: Text('The transaction is invalid'),
+      );
     } else if (state is CreateShortcutSuccess) {
       return Container(
-        child: Text('its valid!'),
+        child: Text('Shortcut created with success!'),
       );
     } else if (state is CreateShortcutError) {
       return Container(
