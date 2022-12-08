@@ -5,6 +5,7 @@ import 'components.dart';
 
 Future<void> showGenerateSeedphraseDialog({
   required BuildContext context,
+  required Function(List<String> seedphrase) onGenerateMnemonic,
 }) {
   final seedphrase = generateMnemonic().split(' ');
   int seedIndex = 1;
@@ -20,7 +21,7 @@ Future<void> showGenerateSeedphraseDialog({
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                const Text(
                     'We are now creating your wallet. Please carefully write your seed phrase, in this order, and keep it somewhere safe.'),
                 Padding(
                   padding: const EdgeInsets.all(32.0),
@@ -45,7 +46,7 @@ Future<void> showGenerateSeedphraseDialog({
                                   color: Colors.black,
                                   child: Text(
                                     (i + 1).toString(),
-                                    style: TextStyle(color: Colors.white),
+                                    style: const TextStyle(color: Colors.white),
                                   ),
                                 ),
                                 Padding(
@@ -59,19 +60,21 @@ Future<void> showGenerateSeedphraseDialog({
                     ),
                   ),
                 ),
-                Text(
+                const Text(
                     'Anyone with your seedphrase will be able to access your drive and funds. Please confirm your seedphrase on the next screen.'),
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      onGenerateMnemonic(seedphrase);
+                    },
                     child: Container(
                       width: 224,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          Text('I\'ve written it down'),
-                          Icon(Icons.arrow_forward),
+                          const Text('I\'ve written it down'),
+                          const Icon(Icons.arrow_forward),
                         ],
                       ),
                     ),

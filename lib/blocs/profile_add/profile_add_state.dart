@@ -27,4 +27,6 @@ class ProfileAddInProgress extends ProfileAddState {}
 
 class ProfileAddFailure extends ProfileAddState {}
 
+class ProfileAddGenerate extends ProfileAddState {}
+
 class ProfileAddWalletMismatch extends ProfileAddState {}

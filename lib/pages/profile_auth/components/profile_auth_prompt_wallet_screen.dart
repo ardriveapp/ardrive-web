@@ -14,9 +14,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'profile_auth_shell.dart';
 
-class ProfileAuthPromptWalletScreen extends StatelessWidget {
+class ProfileAuthPromptWalletScreen extends StatefulWidget {
   const ProfileAuthPromptWalletScreen({Key? key}) : super(key: key);
 
+  @override
+  State<ProfileAuthPromptWalletScreen> createState() =>
+      _ProfileAuthPromptWalletScreenState();
+}
+
+class _ProfileAuthPromptWalletScreenState
+    extends State<ProfileAuthPromptWalletScreen> {
   @override
   Widget build(BuildContext context) => ProfileAuthShell(
         illustration: Image.asset(
@@ -51,7 +58,12 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             ElevatedButton(
-              onPressed: () => _useSeedPhrase(context),
+              onPressed: () => showInputSeedphraseDialog(
+                context: context,
+                onConfirmMnemonic: (mnemonic) => context
+                    .read<ProfileAddCubit>()
+                    .pickWalletFromMnemonic(mnemonic),
+              ),
               child: const Text('USE SEEDPHRASE'),
             ),
             if (context.read<ProfileAddCubit>().isArconnectInstalled()) ...[
@@ -64,42 +76,7 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
             const SizedBox(height: 16),
             TextButton(
               onPressed: () {
-                showDialog(
-                  context: context,
-                  builder: (context) {
-                    return AppDialog(
-                        title: 'Generate Wallet',
-                        content: SizedBox(
-                          height: 164,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.download),
-                                title: const Text('Download Keyfile'),
-                                onTap: () => showDownloadWalletDialog(
-                                  context: context,
-                                  onWalletGenerated: (wallet) async {
-                                    Navigator.pop(context);
-                                    await context
-                                        .read<ProfileAddCubit>()
-                                        .pickWallet(wallet);
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 32),
-                              ListTile(
-                                leading: const Icon(Icons.note_alt_outlined),
-                                title: const Text('Generate Seedphrase'),
-                                onTap: () => showGenerateSeedphraseDialog(
-                                  context: context,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ));
-                  },
-                );
+                context.read<ProfileAddCubit>().emit(ProfileAddGenerate());
               },
               child: Text(
                 appLocalizationsOf(context).getAWallet,
@@ -149,7 +126,10 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
     }
   }
 
-  void _useSeedPhrase(BuildContext context) async {
+  void _useSeedPhrase(
+    BuildContext context,
+    List<String> mnemonic,
+  ) async {
     final ardriveIO = ArDriveIO();
 
     final hasStoragePermission =

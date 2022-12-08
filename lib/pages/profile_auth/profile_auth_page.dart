@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'components/profile_auth_add_screen.dart';
+import 'components/profile_auth_generate_screen.dart';
 import 'components/profile_auth_loading_screen.dart';
 import 'components/profile_auth_onboarding_screen.dart';
 import 'components/profile_auth_prompt_wallet_screen.dart';
@@ -73,6 +74,8 @@ class ProfileAuthPageState extends State<ProfileAuthPage> {
                   );
                 } else if (state is ProfileAddFailure) {
                   return const ProfileAuthFailScreen();
+                } else if (state is ProfileAddGenerate) {
+                  return const ProfileAuthGenerateScreen();
                 }
 
                 return const SizedBox();
