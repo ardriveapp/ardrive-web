@@ -60,9 +60,12 @@ class _ProfileAuthPromptWalletScreenState
             ElevatedButton(
               onPressed: () => showInputSeedphraseDialog(
                 context: context,
-                onConfirmMnemonic: (mnemonic) => context
-                    .read<ProfileAddCubit>()
-                    .pickWalletFromMnemonic(mnemonic),
+                onConfirmMnemonic: (mnemonic) {
+                  context
+                      .read<ProfileAddCubit>()
+                      .pickWalletFromMnemonic(mnemonic);
+                  Navigator.pop(context);
+                },
               ),
               child: const Text('USE SEEDPHRASE'),
             ),
