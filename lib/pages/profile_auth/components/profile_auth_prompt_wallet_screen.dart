@@ -5,7 +5,6 @@ import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
@@ -50,6 +49,11 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
               onPressed: () => _pickWallet(context),
               child: Text(appLocalizationsOf(context).selectWalletEmphasized),
             ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () => _useSeedPhrase(context),
+              child: const Text('USE SEEDPHRASE'),
+            ),
             if (context.read<ProfileAddCubit>().isArconnectInstalled()) ...[
               const SizedBox(height: 32),
               ElevatedButton(
@@ -59,7 +63,44 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
             ],
             const SizedBox(height: 16),
             TextButton(
-              onPressed: () => openUrl(url: 'https://tokens.arweave.org'),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AppDialog(
+                        title: 'Generate Wallet',
+                        content: SizedBox(
+                          height: 164,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.download),
+                                title: const Text('Download Keyfile'),
+                                onTap: () => showDownloadWalletDialog(
+                                  context: context,
+                                  onWalletGenerated: (wallet) async {
+                                    Navigator.pop(context);
+                                    await context
+                                        .read<ProfileAddCubit>()
+                                        .pickWallet(wallet);
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+                              ListTile(
+                                leading: const Icon(Icons.note_alt_outlined),
+                                title: const Text('Generate Seedphrase'),
+                                onTap: () => showGenerateSeedphraseDialog(
+                                  context: context,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ));
+                  },
+                );
+              },
               child: Text(
                 appLocalizationsOf(context).getAWallet,
                 textAlign: TextAlign.center,
@@ -71,6 +112,44 @@ class ProfileAuthPromptWalletScreen extends StatelessWidget {
       );
 
   void _pickWallet(BuildContext context) async {
+    final ardriveIO = ArDriveIO();
+
+    final hasStoragePermission =
+        await verifyStoragePermissionAndShowModalWhenDenied(
+      context,
+    );
+
+    if (hasStoragePermission) {
+      final walletFile = await ardriveIO.pickFile(
+        allowedExtensions: null,
+        fileSource: FileSource.fileSystem,
+      );
+
+      int walletSize = await walletFile.length;
+      int maxWalletSizeInBits = 10000;
+
+      if (walletSize > maxWalletSizeInBits) {
+        // ignore: use_build_context_synchronously
+        _showInvalidWalletFileDialog(context);
+        return;
+      }
+
+      Wallet wallet;
+
+      try {
+        wallet = Wallet.fromJwk(json.decode(await walletFile.readAsString()));
+      } catch (e) {
+        // ignore: use_build_context_synchronously
+        _showInvalidWalletFileDialog(context);
+        return;
+      }
+
+      // ignore: use_build_context_synchronously
+      await context.read<ProfileAddCubit>().pickWallet(wallet);
+    }
+  }
+
+  void _useSeedPhrase(BuildContext context) async {
     final ardriveIO = ArDriveIO();
 
     final hasStoragePermission =
