@@ -1,0 +1,17 @@
+query GetDataTransaction($txId: ID!) {
+  transaction(
+    id: $txId
+  ) {
+    id
+    owner {
+      address
+    }
+    data {
+      size
+    }
+    block{
+      timestamp
+      height
+    }
+  }
+}

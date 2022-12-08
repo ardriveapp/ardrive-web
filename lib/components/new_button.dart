@@ -294,11 +294,14 @@ PopupMenuEntry<Function> _buildCreateShortcut(
   return _buildMenuItemTile(
     context: context,
     isEnabled: state.hasWritePermissions && hasMinBalance,
-    message: state.hasWritePermissions && !hasMinBalance
-        ? appLocalizationsOf(context).insufficientFundsForUploadFiles
-        : null,
-    itemTitle: 'Create shortcut',
-    value: (context) => createShortcut(context: context),
+    message: 'External file shortcut',
+    itemTitle: 'External file shortcut',
+    value: (context) => createShortcut(
+      context: context,
+      driveId: state.currentDrive.id,
+      folderInViewPath: state.folderInView.folder.path,
+      folderInViewId: state.folderInView.folder.id,
+    ),
   );
 }
 

@@ -21,3 +21,17 @@ class CreateShortcutSuccess extends CreateShortcutState {
   @override
   List<Object?> get props => [];
 }
+
+class CreateShortcutValidationSuccess extends CreateShortcutState {
+  @override
+  List<Object?> get props => [];
+}
+
+class CreateShortcutConflicting extends CreateShortcutState {
+  CreateShortcutConflicting(this.conflictingName);
+
+  final String conflictingName;
+
+  @override
+  List<Object?> get props => [];
+}

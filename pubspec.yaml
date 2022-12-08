@@ -65,7 +65,7 @@ dependencies:
   shared_preferences: ^2.0.15
   flutter_launcher_icons: ^0.10.0
   equatable: ^2.0.3
-  http: ^0.13.5
+  http: any
   stash: ^4.3.2
   path: ^1.8.1
   flutter_svg: ^1.1.3
