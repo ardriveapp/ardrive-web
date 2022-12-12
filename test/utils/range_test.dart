@@ -28,6 +28,16 @@ void main() {
       expect(range.end, -1);
     });
 
+    test('equatability', () {
+      Range rangeA = Range(start: 0, end: 0);
+      Range rangeB = Range(start: 0, end: 0);
+      expect(rangeA == rangeB, true);
+
+      rangeA = Range(start: 50, end: 100);
+      rangeB = Range(start: 50, end: 100);
+      expect(rangeA == rangeB, true);
+    });
+
     group('difference method', () {
       test('returns an empty array if B contains A', () {
         Range A = Range(start: 25, end: 50);

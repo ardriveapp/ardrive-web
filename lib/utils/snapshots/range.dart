@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:equatable/equatable.dart';
 
-class Range implements Equatable {
+class Range extends Equatable {
   final int start;
   final int end;
 
