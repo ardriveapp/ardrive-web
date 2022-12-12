@@ -17,42 +17,42 @@ WidgetbookCategory accordion() {
   ]);
 }
 
-class Item {
-  Item({
-    required this.expandedValue,
-    required this.headerValue,
-    this.isExpanded = false,
-  });
-
-  String expandedValue;
-  String headerValue;
-  bool isExpanded;
-}
-
-List<Item> generateItems(int numberOfItems) {
-  return List<Item>.generate(numberOfItems, (int index) {
-    return Item(
-      headerValue: 'Panel $index',
-      expandedValue: 'This is item number $index',
-    );
+List<Text> generateItems(int numberOfItems) {
+  return List<Text>.generate(numberOfItems, (int index) {
+    return Text('This is item number $index');
   });
 }
 
 Widget _accordionWithContent() {
-  final List<Item> data = generateItems(8);
+  final List<Text> data = generateItems(3);
 
   return ArDriveAccordion(
-    children: data
+    children: [1, 2]
         .map(
           (item) => ArDriveAccordionItem(
+            isExpanded: true,
             ListTile(
-              title: Text(item.headerValue),
+              title: Text(
+                'Drive $item',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
             [
-              ListTile(
-                title: Text(item.expandedValue),
-                subtitle: const Text('Subtitle Lorem Ipsum'),
-                onTap: () {},
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                child: Column(
+                  children: data
+                      .map(
+                        (e) => Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: e,
+                        ),
+                      )
+                      .toList(),
+                ),
               )
             ],
           ),

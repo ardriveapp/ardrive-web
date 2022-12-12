@@ -59,11 +59,14 @@ class _ArDriveAccordionState extends State<ArDriveAccordion> {
               ),
               child: ExpansionTile(
                 title: tile.title,
-                children: tile.children,
+                initiallyExpanded: tile.isExpanded,
+                expandedAlignment: Alignment.centerLeft,
+                expandedCrossAxisAlignment: CrossAxisAlignment.start,
                 onExpansionChanged: (value) {
                   setState(
                       () => tiles[tiles.indexOf(tile)].isExpanded = !value);
                 },
+                children: tile.children,
               ),
             );
           },
