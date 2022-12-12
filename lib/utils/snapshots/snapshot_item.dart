@@ -9,7 +9,6 @@ import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
 import 'package:ardrive_network/ardrive_network.dart';
 import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:stash/stash_api.dart';
 import 'package:stash_memory/stash_memory.dart';
 
@@ -185,8 +184,6 @@ class SnapshotItemOnChain implements SnapshotItem {
   String? _cachedSource;
   int _currentIndex = -1;
 
-  static const String _storeName = 'snapshot-cache';
-  // static MemoryVaultStore? _memCache;
   static Vault<Uint8List>? _jsonMetadataVault;
 
   SnapshotItemOnChain({
