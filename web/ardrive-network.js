@@ -1,1 +1,0 @@
-../ardrive_network/lib/src/js/ardrive-network.js
