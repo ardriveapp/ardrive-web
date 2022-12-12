@@ -309,9 +309,7 @@ class SnapshotItemOnChain implements SnapshotItem {
     return _jsonMetadataVault!;
   }
 
-  // TODO: call this method
-  Future<void> dispose() async {
-    _cachedSource = null;
+  static Future<void> dispose() async {
     await _jsonMetadataVault?.clear();
   }
 }

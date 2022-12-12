@@ -220,6 +220,9 @@ class ArweaveService {
       ),
     );
 
+    // release memory
+    await SnapshotItemOnChain.dispose();
+
     final blockHistory = <BlockEntities>[];
 
     for (var i = 0; i < entityTxs.length; i++) {
