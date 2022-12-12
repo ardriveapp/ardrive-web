@@ -287,7 +287,6 @@ class ArweaveService {
     }
 
     return DriveEntityHistory(
-      null,
       blockHistory.isNotEmpty ? blockHistory.last.blockHeight : lastBlockHeight,
       blockHistory,
     );
@@ -823,14 +822,12 @@ class ArweaveService {
 
 /// The entity history of a particular drive, chunked by block height.
 class DriveEntityHistory {
-  /// A cursor for continuing through this drive's history.
-  final String? cursor;
   final int? lastBlockHeight;
 
   /// A list of block entities, ordered by ascending block height.
   final List<BlockEntities> blockHistory;
 
-  DriveEntityHistory(this.cursor, this.lastBlockHeight, this.blockHistory);
+  DriveEntityHistory(this.lastBlockHeight, this.blockHistory);
 }
 
 /// The entities present in a particular block.
