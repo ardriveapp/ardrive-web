@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Modal constants
 const double modalIconMaxWidthSize = 350;
 const double modalStandardMaxWidthSize = 350;
@@ -14,6 +16,10 @@ const double buttonBorderRadius = 6;
 const double buttonBorderWidth = 1;
 const double cardDefaultBorderRadius = 8;
 
+/// DropArea constants
+const double dropAreaIconSize = 56;
+const EdgeInsets dropAreaItemContentPadding =
+    EdgeInsets.only(top: 8.0, bottom: 20);
 /// Check constants
 const double checkboxSize = 22;
 
