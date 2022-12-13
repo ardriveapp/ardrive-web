@@ -12,7 +12,6 @@ import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive/utils/wallet_file.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
-import 'package:bip39/bip39.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -95,9 +94,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
     List<String> mnemonic,
   ) async {
     final wallet = await Wallet.generate(
-      seed: mnemonicToSeed(
-        mnemonic.join(' '),
-      ),
+      seed: mnemonic.join(' '),
     );
 
     pickWallet(wallet);
