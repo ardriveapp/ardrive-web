@@ -15,6 +15,7 @@ import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
+import 'package:http/http.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:retry/retry.dart';
 
@@ -204,17 +205,19 @@ class ArweaveService {
     int lastBlockHeight, {
     required SnapshotDriveHistory snapshotDriveHistory,
   }) async {
-    final responses = await Future.wait(
+    final List<Uint8List> responses = await Future.wait(
       entityTxs.map(
         (entity) async {
           final txId = entity.id;
-          final cachedData = await SnapshotItemOnChain.getDataForTxId(txId);
+          final Uint8List? cachedData =
+              await SnapshotItemOnChain.getDataForTxId(txId);
           if (cachedData != null) {
             return cachedData;
           } else {
-            return (await httpRetry
-                    .processRequest(() => client.api.getSandboxedTx(txId)))
-                .bodyBytes;
+            // TODO: make use of the NetworkPackage
+            final Response data = (await httpRetry
+                .processRequest(() => client.api.getSandboxedTx(txId)));
+            return data.bodyBytes;
           }
         },
       ),
