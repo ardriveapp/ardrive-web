@@ -57,6 +57,7 @@ void main() {
         );
       });
     });
+
     group('fromGQLNode factory', () {
       test('getStreamForIndex returns a valid stream of nodes', () async {
         final r = Range(start: 0, end: 10);
@@ -81,7 +82,7 @@ void main() {
             },
           ),
           subRanges: HeightRange(rangeSegments: [r]),
-          fakeSource: await fakeSnapshotStream(r),
+          fakeSource: await fakeSnapshotSource(r),
         );
         expect(item.subRanges.rangeSegments.length, 1);
         expect(item.currentIndex, -1);
@@ -94,6 +95,213 @@ void main() {
           throwsA(isA<SubRangeIndexOverflow>()),
         );
       });
+    });
+
+    group('instantiateSingle static method', () {
+      test('instantiates a single item with the correct sub-ranges', () async {
+        final totalSnapshotRange = Range(start: 0, end: 10);
+        final obscuredBy = HeightRange(rangeSegments: []);
+
+        final String snapshotItemSource = await fakeSnapshotSource(
+          totalSnapshotRange,
+        );
+
+        final SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+            snapshotTx =
+            SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                .fromJson(
+          {
+            'id': 'tx-id',
+            'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+            'owner': {'address': '1234567890'},
+            'tags': [
+              {'name': 'Block-Start', 'value': '0'},
+              {'name': 'Block-End', 'value': '10'},
+              {'name': 'Drive-Id', 'value': 'DRIVE_ID'},
+            ],
+            'block': {
+              'height': 11,
+              'timestamp': DateTime.now().microsecondsSinceEpoch
+            }
+          },
+        );
+
+        SnapshotItem item = SnapshotItem.instantiateSingle(
+          snapshotTx,
+          obscuredBy: obscuredBy,
+          fakeSource: snapshotItemSource,
+        );
+
+        expect(item.subRanges.rangeSegments.length, 1);
+        expect(item.currentIndex, -1);
+        Stream stream = item.getNextStream();
+        expect(item.currentIndex, 0);
+        expect(await countStreamItems(stream), 11);
+
+        expect(
+          () => item.getNextStream(),
+          throwsA(isA<SubRangeIndexOverflow>()),
+        );
+      });
+
+      test(
+        'instantiates multiple items with the correct sub-ranges given the obscuredBy range',
+        () async {
+          final totalSnapshotRange = Range(start: 0, end: 10);
+          final obscuredBy = HeightRange(rangeSegments: [totalSnapshotRange]);
+
+          final String snapshotItemSource = await fakeSnapshotSource(
+            totalSnapshotRange,
+          );
+
+          final SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+              snapshotTx =
+              SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                  .fromJson(
+            {
+              'id': 'tx-id',
+              'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+              'owner': {'address': '1234567890'},
+              'tags': [
+                {'name': 'Block-Start', 'value': '0'},
+                {'name': 'Block-End', 'value': '10'},
+                {'name': 'Drive-Id', 'value': 'DRIVE_ID'},
+              ],
+              'block': {
+                'height': 11,
+                'timestamp': DateTime.now().microsecondsSinceEpoch
+              }
+            },
+          );
+
+          SnapshotItem item = SnapshotItem.instantiateSingle(
+            snapshotTx,
+            obscuredBy: obscuredBy,
+            fakeSource: snapshotItemSource,
+          );
+
+          expect(item.subRanges.rangeSegments.length, 0);
+          expect(item.currentIndex, -1);
+
+          expect(
+            () => item.getNextStream(),
+            throwsA(isA<SubRangeIndexOverflow>()),
+          );
+        },
+      );
+    });
+
+    group('instantiateAll static method', () {
+      test(
+        'instantiates multiple items with the correct sub-ranges',
+        () async {
+          final totalSnapshotRange = Range(start: 0, end: 10);
+
+          final String snapshotItemSource = await fakeSnapshotSource(
+            totalSnapshotRange,
+          );
+
+          final SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+              snapshotTx =
+              SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                  .fromJson(
+            {
+              'id': 'tx-id',
+              'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+              'owner': {'address': '1234567890'},
+              'tags': [
+                {'name': 'Block-Start', 'value': '0'},
+                {'name': 'Block-End', 'value': '10'},
+                {'name': 'Drive-Id', 'value': 'DRIVE_ID'},
+              ],
+              'block': {
+                'height': 11,
+                'timestamp': DateTime.now().microsecondsSinceEpoch
+              }
+            },
+          );
+
+          List<SnapshotItem> allItems = await SnapshotItem.instantiateAll(
+            Stream.fromIterable([snapshotTx, snapshotTx, snapshotTx]),
+            fakeSource: snapshotItemSource,
+          ).toList();
+
+          expect(allItems[0].subRanges.rangeSegments.length, 1);
+          expect(allItems[0].currentIndex, -1);
+          Stream stream = allItems[0].getNextStream();
+          expect(allItems[0].currentIndex, 0);
+          expect(await countStreamItems(stream), 11);
+          expect(
+            () => allItems[0].getNextStream(),
+            throwsA(isA<SubRangeIndexOverflow>()),
+          );
+
+          expect(allItems[1].subRanges.rangeSegments.length, 0);
+          expect(allItems[1].currentIndex, -1);
+          expect(
+            () => allItems[1].getNextStream(),
+            throwsA(isA<SubRangeIndexOverflow>()),
+          );
+
+          expect(allItems[2].subRanges.rangeSegments.length, 0);
+          expect(allItems[2].currentIndex, -1);
+          expect(
+            () => allItems[2].getNextStream(),
+            throwsA(isA<SubRangeIndexOverflow>()),
+          );
+        },
+      );
+
+      test(
+        'instantiates multiple items with the correct sub-ranges given a lastBlockHeigh',
+        () async {
+          final totalSnapshotRange = Range(start: 0, end: 10);
+
+          final String snapshotItemSource = await fakeSnapshotSource(
+            totalSnapshotRange,
+          );
+
+          final SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+              snapshotTx =
+              SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                  .fromJson(
+            {
+              'id': 'tx-id',
+              'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+              'owner': {'address': '1234567890'},
+              'tags': [
+                {'name': 'Block-Start', 'value': '0'},
+                {'name': 'Block-End', 'value': '10'},
+                {'name': 'Drive-Id', 'value': 'DRIVE_ID'},
+              ],
+              'block': {
+                'height': 11,
+                'timestamp': DateTime.now().microsecondsSinceEpoch
+              }
+            },
+          );
+
+          List<SnapshotItem> allItems = await SnapshotItem.instantiateAll(
+            Stream.fromIterable([snapshotTx, snapshotTx]),
+            lastBlockHeight: 100,
+            fakeSource: snapshotItemSource,
+          ).toList();
+
+          expect(allItems[0].subRanges.rangeSegments.length, 0);
+          expect(allItems[0].currentIndex, -1);
+          expect(
+            () => allItems[0].getNextStream(),
+            throwsA(isA<SubRangeIndexOverflow>()),
+          );
+
+          expect(allItems[1].subRanges.rangeSegments.length, 0);
+          expect(allItems[1].currentIndex, -1);
+          expect(
+            () => allItems[1].getNextStream(),
+            throwsA(isA<SubRangeIndexOverflow>()),
+          );
+        },
+      );
     });
 
     group('getDataForTxId method', () {
@@ -120,7 +328,7 @@ void main() {
             },
           ),
           subRanges: HeightRange(rangeSegments: [r]),
-          fakeSource: await fakeSnapshotStream(r),
+          fakeSource: await fakeSnapshotSource(r),
         ) as SnapshotItemOnChain;
 
         await countStreamItems(item.getNextStream());
@@ -128,7 +336,7 @@ void main() {
         for (int height = r.start; height <= r.end; height++) {
           // has data the first time
           expect(
-            await SnapshotItemOnChain.getDataForTxId('$height'),
+            await SnapshotItemOnChain.getDataForTxId('tx-$height'),
             utf8.encode(
               '{"name": "$height"}',
             ),
@@ -161,7 +369,7 @@ void main() {
             },
           ),
           subRanges: HeightRange(rangeSegments: [r]),
-          fakeSource: await fakeSnapshotStream(r),
+          fakeSource: await fakeSnapshotSource(r),
         ) as SnapshotItemOnChain;
 
         await countStreamItems(item.getNextStream());
@@ -177,7 +385,7 @@ void main() {
 
 // TODO: move these helper methods to its own source file
 
-Future<String> fakeSnapshotStream(Range range) async {
+Future<String> fakeSnapshotSource(Range range) async {
   return jsonEncode(
     {
       'txSnapshots': await fakeNodesStream(range)
@@ -198,7 +406,7 @@ Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transactio
     yield DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
         .fromJson(
       {
-        'id': '$height',
+        'id': 'tx-$height',
         'bundledIn': {'id': 'ASDASDASDASDASDASD'},
         'owner': {'address': '1234567890'},
         'tags': [],
