@@ -93,9 +93,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   Future<void> pickWalletFromMnemonic(
     List<String> mnemonic,
   ) async {
-    final wallet = await Wallet.generate(
-      seed: mnemonic.join(' '),
-    );
+    final wallet = await Wallet.generate(mnemonic: mnemonic.join(' '));
 
     pickWallet(wallet);
   }
