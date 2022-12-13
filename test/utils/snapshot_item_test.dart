@@ -8,6 +8,8 @@ import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'snapshot_test_helpers.dart';
+
 void main() {
   group('SnapshotItem class', () {
     group('fromStream factory', () {
@@ -393,49 +395,4 @@ void main() {
       });
     });
   });
-}
-
-// TODO: move these helper methods to its own source file
-
-Future<String> fakeSnapshotSource(Range range) async {
-  return jsonEncode(
-    {
-      'txSnapshots': await fakeNodesStream(range)
-          .map(
-            (event) => {
-              'gqlNode': event,
-              'jsonMetadata': '{"name": "${event.block!.height}"}',
-            },
-          )
-          .toList(),
-    },
-  );
-}
-
-Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-    fakeNodesStream(Range range) async* {
-  for (int height = range.start; height <= range.end; height++) {
-    yield DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-        .fromJson(
-      {
-        'id': 'tx-$height',
-        'bundledIn': {'id': 'ASDASDASDASDASDASD'},
-        'owner': {'address': '1234567890'},
-        'tags': [],
-        'block': {
-          'height': height,
-          'timestamp': DateTime.now().microsecondsSinceEpoch
-        }
-      },
-    );
-  }
-}
-
-Future<int> countStreamItems(Stream stream) async {
-  int count = 0;
-  await for (DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction _
-      in stream) {
-    count++;
-  }
-  return count;
 }
