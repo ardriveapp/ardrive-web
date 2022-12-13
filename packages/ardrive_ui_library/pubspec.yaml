@@ -12,12 +12,17 @@ environment:
   flutter: 3.0.5
 
 dependencies:
+  ardrive_io:
+    path: ../ardrive_io
   auto_size_text: ^3.0.0
+  desktop_drop: ^0.4.0
+  dotted_border: ^2.0.0+3
   flutter:
     sdk: flutter
   number_paginator: ^0.2.2
   flutter_svg: ^1.1.6
   percent_indicator: ^4.2.2
+  flutter_svg_image: ^1.0.0
 
 dev_dependencies:
   flutter_test:

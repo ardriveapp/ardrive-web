@@ -6,12 +6,17 @@ import 'package:storybook/src/progress_bar.dart';
 import 'package:storybook/src/radio_button.dart';
 import 'package:storybook/src/shadows.dart';
 import 'package:storybook/src/table.dart';
+import 'package:storybook/src/checkbox.dart';
+import 'package:storybook/src/fab.dart';
+import 'package:storybook/src/image.dart';
+import 'package:storybook/src/tab_view.dart';
 import 'package:storybook/src/text_field.dart';
 import 'package:storybook/src/toggle.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 import 'card.dart';
 import 'colors.dart';
+import 'drop_area.dart';
 import 'modals.dart';
 
 class StoryBook extends StatelessWidget {
@@ -52,7 +57,12 @@ class StoryBook extends StatelessWidget {
             table(),
             modals(),
             radioButton(),
+            dropArea(),
+            tabView(),
             progressBar(),
+            image(),
+            checkBox(),
+            fab(),
           ]),
     );
   }
