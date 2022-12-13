@@ -12,7 +12,11 @@ environment:
   flutter: 3.0.5
 
 dependencies:
+  ardrive_io:
+    path: ../ardrive_io
   auto_size_text: ^3.0.0
+  desktop_drop: ^0.4.0
+  dotted_border: ^2.0.0+3
   flutter:
     sdk: flutter
   flutter_svg: ^1.1.6
