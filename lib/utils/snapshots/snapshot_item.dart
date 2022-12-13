@@ -67,6 +67,9 @@ abstract class SnapshotItem implements SegmentedGQLData {
     Stream<SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
         itemsStream, {
     int? lastBlockHeight,
+
+    // FIXME: take a Map<TxID, String> instead
+    @visibleForTesting String? fakeSource,
   }) async* {
     HeightRange obscuredByAccumulator = HeightRange(rangeSegments: [
       if (lastBlockHeight != null) Range(start: 0, end: lastBlockHeight),
@@ -74,42 +77,64 @@ abstract class SnapshotItem implements SegmentedGQLData {
 
     await for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction item
         in itemsStream) {
-      List<TransactionCommonMixin$Tag> tags = item.tags;
-      int? blockHeightStart;
-      int? blockHeightEnd;
-      late Range totalRange;
+      late SnapshotItem snapshotItem;
 
       try {
-        blockHeightStart = int.parse(
-            tags.firstWhere((tag) => tag.name == 'Block-Start').value);
-        blockHeightEnd =
-            int.parse(tags.firstWhere((tag) => tag.name == 'Block-End').value);
-        totalRange = Range(start: blockHeightStart, end: blockHeightEnd);
+        snapshotItem = instantiateSingle(
+          item,
+          obscuredBy: obscuredByAccumulator,
+          fakeSource: fakeSource,
+        );
       } catch (e) {
         print('Ignoring snapshot transaction with wrong block range - $e');
         continue;
       }
 
-      HeightRange totalHeightRange = HeightRange(rangeSegments: [totalRange]);
-      HeightRange subRanges = HeightRange.difference(
-        totalHeightRange,
-        obscuredByAccumulator,
-      );
-      SnapshotItem snapshotItem = SnapshotItem.fromGQLNode(
-        node: item,
-        subRanges: subRanges,
-      );
-
-      print(
-          'SnapshotItem instantiated - ${snapshotItem.subRanges.rangeSegments}');
+      // print(
+      //     'SnapshotItem instantiated - ${snapshotItem.subRanges.rangeSegments}');
 
       yield snapshotItem;
 
+      Range totalSnapshotRange =
+          Range(start: snapshotItem.blockStart, end: snapshotItem.blockEnd);
+      HeightRange totalHeightRange =
+          HeightRange(rangeSegments: [totalSnapshotRange]);
       obscuredByAccumulator = HeightRange.union(
         obscuredByAccumulator,
         totalHeightRange,
       );
     }
+  }
+
+  static SnapshotItem instantiateSingle(
+    SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+        item, {
+    required HeightRange obscuredBy,
+    @visibleForTesting String? fakeSource,
+  }) {
+    List<TransactionCommonMixin$Tag> tags = item.tags;
+    int? blockHeightStart;
+    int? blockHeightEnd;
+    late Range totalRange;
+
+    // Might throw - TODO: utilie a custom exception: "Bad snapshot item range"
+    blockHeightStart =
+        int.parse(tags.firstWhere((tag) => tag.name == 'Block-Start').value);
+    blockHeightEnd =
+        int.parse(tags.firstWhere((tag) => tag.name == 'Block-End').value);
+    totalRange = Range(start: blockHeightStart, end: blockHeightEnd);
+
+    HeightRange totalHeightRange = HeightRange(rangeSegments: [totalRange]);
+    HeightRange subRanges = HeightRange.difference(
+      totalHeightRange,
+      obscuredBy,
+    );
+    SnapshotItem snapshotItem = SnapshotItem.fromGQLNode(
+      node: item,
+      subRanges: subRanges,
+      fakeSource: fakeSource,
+    );
+    return snapshotItem;
   }
 }
 
@@ -207,7 +232,7 @@ class SnapshotItemOnChain implements SnapshotItem {
   @override
   int get currentIndex => _currentIndex;
 
-  Future<String> source() async {
+  Future<String> _source() async {
     if (_cachedSource != null) {
       return _cachedSource!;
     }
@@ -242,10 +267,10 @@ class SnapshotItemOnChain implements SnapshotItem {
       _getNextStream() async* {
     final Range range = subRanges.rangeSegments[currentIndex];
 
-    print(
-        'Snapshot item ($txId) reading item #${currentIndex + 1}/${subRanges.rangeSegments.length}');
+    // print(
+    //     'Snapshot item ($txId) reading item #${currentIndex + 1}/${subRanges.rangeSegments.length}');
 
-    final Map dataJson = jsonDecode(await source());
+    final Map dataJson = jsonDecode(await _source());
     final List<Map> txSnapshots =
         List.castFrom<dynamic, Map>(dataJson['txSnapshots']);
 
@@ -276,7 +301,6 @@ class SnapshotItemOnChain implements SnapshotItem {
     }
 
     if (currentIndex == subRanges.rangeSegments.length - 1) {
-      print('Done reading snapshot item data, releasing memory');
       // Done reading all data, the memory can be freed
       _cachedSource = null;
     }
@@ -287,15 +311,15 @@ class SnapshotItemOnChain implements SnapshotItem {
   static Future<Uint8List> _setDataForTxId(TxID txId, Uint8List data) async {
     final cache = await _lazilyInitCache();
 
-    cache.put(txId, data);
+    await cache.put(txId, data);
     return data;
   }
 
   static Future<Uint8List?> getDataForTxId(TxID txId) async {
-    final cache = await _lazilyInitCache();
+    final Vault<Uint8List> cache = await _lazilyInitCache();
 
-    final value = await cache.get(txId);
-    cache.remove(txId);
+    final Uint8List? value = await cache.get(txId);
+    await cache.remove(txId);
 
     return value;
   }
@@ -303,7 +327,9 @@ class SnapshotItemOnChain implements SnapshotItem {
   static Future<Vault<Uint8List>> _lazilyInitCache() async {
     if (_jsonMetadataVault == null) {
       final vaultStore = await newMemoryVaultStore();
-      _jsonMetadataVault = await vaultStore.vault<Uint8List>();
+      _jsonMetadataVault = await vaultStore.vault<Uint8List>(
+          // name: 'snapshot-data',
+          );
     }
 
     return _jsonMetadataVault!;
