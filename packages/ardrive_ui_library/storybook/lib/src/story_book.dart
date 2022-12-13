@@ -1,5 +1,6 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
+import 'package:storybook/src/accordion.dart';
 import 'package:storybook/src/button.dart';
 import 'package:storybook/src/checkbox.dart';
 import 'package:storybook/src/fab.dart';
@@ -56,6 +57,7 @@ class StoryBook extends StatelessWidget {
             dropArea(),
             tabView(),
             progressBar(),
+            accordion(),
             image(),
             checkBox(),
             fab(),
