@@ -6,7 +6,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/mime_lookup.dart';
-import 'package:ardrive_network/ardrive_network.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:equatable/equatable.dart';
@@ -105,7 +105,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       late Uint8List dataBytes;
       final cachedBytes = await _driveDao.getPreviewDataFromMemory(dataTx.id);
       if (cachedBytes == null) {
-        final dataRes = await ArdriveNetwork().getAsBytes(dataUrl);
+        final dataRes = await ArDriveHTTP().getAsBytes(dataUrl);
         dataBytes = dataRes.data;
 
         await _driveDao.putPreviewDataInMemory(

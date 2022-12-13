@@ -27,13 +27,8 @@ jobs:
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.5'
+          flutter-version: '3.3.9'
           channel: 'stable'
-
-      # Install Chrome
-      - uses: browser-actions/setup-chrome@latest
-        with:
-          chrome-version: stable
 
       - name: Install script_runner
         run: flutter pub global activate script_runner
@@ -48,10 +43,6 @@ jobs:
         working-directory: ./ardrive_io
         run: flutter test
 
-      - name: Test ardrive_network
-        working-directory: ./ardrive_network
-        run: scr test
-
   web:
     needs: test
     runs-on: ubuntu-latest
@@ -64,7 +55,7 @@ jobs:
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.5'
+          flutter-version: '3.3.9'
           channel: 'stable'
 
       - name: Install script_runner
@@ -102,7 +93,7 @@ jobs:
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.5'
+          flutter-version: '3.3.9'
           channel: 'stable'
 
       - name: Set FIREBASE_JSON env var
@@ -145,7 +136,7 @@ jobs:
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.3.5'
+          flutter-version: '3.3.9'
           channel: 'stable'
 
       - name: Set FIREBASE_JSON env var

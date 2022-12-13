@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive_network/ardrive_network.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 
 abstract class DownloadService {
   Future<Uint8List> download(String fileId);
@@ -16,7 +16,7 @@ class _DownloadService implements DownloadService {
 
   @override
   Future<Uint8List> download(String fileTxId) async {
-    final dataRes = await ArdriveNetwork()
+    final dataRes = await ArDriveHTTP()
         .getAsBytes('${_arweave.client.api.gatewayUrl.origin}/$fileTxId');
 
     if (dataRes.statusCode == 200) {
