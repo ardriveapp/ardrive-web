@@ -34,7 +34,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       ),
     );
 
-    final dataRes = await ArdriveNetwork().getAsBytes(
+    final dataRes = await ArDriveHTTP().getAsBytes(
         '${_arweave.client.api.gatewayUrl.origin}/${revision.dataTxId}');
 
     if (fileKey != null) {

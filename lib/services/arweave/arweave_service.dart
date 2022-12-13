@@ -8,7 +8,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
-import 'package:ardrive_network/ardrive_network.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -757,7 +757,7 @@ class ArweaveService {
     const String coinGeckoApi =
         'https://api.coingecko.com/api/v3/simple/price?ids=arweave&vs_currencies=usd';
 
-    final response = await ArdriveNetwork().getJson(coinGeckoApi);
+    final response = await ArDriveHTTP().getJson(coinGeckoApi);
 
     return response.data?['arweave']['usd'];
   }

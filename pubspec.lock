@@ -43,17 +43,19 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.3.0"
+  ardrive_http:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: "v1.0.0"
+      resolved-ref: "64aeb308ee1e041df02add64009e40579ade5e6d"
+      url: "https://github.com/ar-io/ardrive_http"
+    source: git
+    version: "1.0.0"
   ardrive_io:
     dependency: "direct main"
     description:
       path: ardrive_io
-      relative: true
-    source: path
-    version: "0.0.1"
-  ardrive_network:
-    dependency: "direct main"
-    description:
-      path: ardrive_network
       relative: true
     source: path
     version: "0.0.1"
@@ -366,7 +368,7 @@ packages:
       name: dio_smart_retry
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.3.2"
+    version: "1.4.0"
   drift:
     dependency: "direct main"
     description:
@@ -951,7 +953,7 @@ packages:
       name: mime
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.2"
+    version: "1.0.3"
   mocktail:
     dependency: "direct dev"
     description:
@@ -1637,5 +1639,5 @@ packages:
     source: hosted
     version: "3.1.1"
 sdks:
-  dart: ">=2.18.2 <3.0.0"
-  flutter: ">=3.3.5"
+  dart: ">=2.18.5 <3.0.0"
+  flutter: ">=3.3.9"
