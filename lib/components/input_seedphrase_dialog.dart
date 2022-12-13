@@ -24,42 +24,40 @@ Future<void> showInputSeedphraseDialog({
                 ),
                 Padding(
                   padding: const EdgeInsets.all(32.0),
-                  child: Expanded(
-                    child: Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      children: [
-                        for (int i = 0; i < 12; i++)
-                          Container(
-                            height: 48,
-                            width: 128,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.black),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  alignment: Alignment.center,
-                                  width: 32,
-                                  height: 48,
-                                  color: Colors.black,
-                                  child: Text(
-                                    (i + 1).toString(),
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: TextField(
-                                    onChanged: ((value) {
-                                      seedphrase[i] = value;
-                                    }),
-                                  ),
-                                ),
-                              ],
-                            ),
+                  child: Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: [
+                      for (int i = 0; i < 12; i++)
+                        Container(
+                          height: 48,
+                          width: 128,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.black),
                           ),
-                      ],
-                    ),
+                          child: Row(
+                            children: [
+                              Container(
+                                alignment: Alignment.center,
+                                width: 32,
+                                height: 48,
+                                color: Colors.black,
+                                child: Text(
+                                  (i + 1).toString(),
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                              Expanded(
+                                child: TextField(
+                                  onChanged: ((value) {
+                                    seedphrase[i] = value;
+                                  }),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 const SizedBox(

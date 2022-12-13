@@ -25,39 +25,37 @@ Future<void> showGenerateSeedphraseDialog({
                     'We are now creating your wallet. Please carefully write your seed phrase, in this order, and keep it somewhere safe.'),
                 Padding(
                   padding: const EdgeInsets.all(32.0),
-                  child: Expanded(
-                    child: Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      children: [
-                        for (int i = 0; i < seedphrase.length; i++)
-                          Container(
-                            height: 48,
-                            width: 128,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.black),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  alignment: Alignment.center,
-                                  width: 32,
-                                  height: 48,
-                                  color: Colors.black,
-                                  child: Text(
-                                    (i + 1).toString(),
-                                    style: const TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(seedphrase[i]),
-                                ),
-                              ],
-                            ),
+                  child: Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    children: [
+                      for (int i = 0; i < seedphrase.length; i++)
+                        Container(
+                          height: 48,
+                          width: 128,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.black),
                           ),
-                      ],
-                    ),
+                          child: Row(
+                            children: [
+                              Container(
+                                alignment: Alignment.center,
+                                width: 32,
+                                height: 48,
+                                color: Colors.black,
+                                child: Text(
+                                  (i + 1).toString(),
+                                  style: const TextStyle(color: Colors.white),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(seedphrase[i]),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 const Text(
@@ -68,13 +66,13 @@ Future<void> showGenerateSeedphraseDialog({
                     onPressed: () {
                       onGenerateMnemonic(seedphrase);
                     },
-                    child: Container(
+                    child: SizedBox(
                       width: 224,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          const Text('I\'ve written it down'),
-                          const Icon(Icons.arrow_forward),
+                        children: const [
+                          Text('I\'ve written it down'),
+                          Icon(Icons.arrow_forward),
                         ],
                       ),
                     ),
