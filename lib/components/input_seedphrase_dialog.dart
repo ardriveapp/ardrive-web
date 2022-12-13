@@ -14,7 +14,7 @@ Future<void> showInputSeedphraseDialog({
         title: 'Generate Seedphrase',
         content: SizedBox(
           width: MediaQuery.of(context).size.width / 1.8,
-          height: MediaQuery.of(context).size.height / 3.5,
+          height: MediaQuery.of(context).size.height / 3,
           child: SingleChildScrollView(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -86,7 +86,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
   Future<void> generateWalletSaveAndPick(Wallet wallet) async {
     final ArDriveIO io = ArDriveIO();
-    await io.saveFile(WalletFile(wallet));
+    await io.saveFile(WalletFile(wallet, await wallet.getAddress()));
     await pickWallet(wallet);
   }
 

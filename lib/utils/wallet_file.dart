@@ -7,8 +7,10 @@ import 'package:arweave/arweave.dart';
 
 class WalletFile extends IOFile {
   final Wallet wallet;
+  final String address;
   WalletFile(
     this.wallet,
+    this.address,
   ) : super(contentType: 'application/json');
   @override
   DateTime get lastModifiedDate => DateTime.now();
@@ -17,7 +19,7 @@ class WalletFile extends IOFile {
   FutureOr<int> get length => json.encode(wallet.toJwk()).length;
 
   @override
-  String get name => wallet.toString();
+  String get name => 'ArDrive-Wallet-$address';
 
   @override
   String get path => throw UnimplementedError();
