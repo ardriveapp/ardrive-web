@@ -5,6 +5,7 @@ import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -374,10 +375,21 @@ void main() {
 
         await countStreamItems(item.getNextStream());
 
+        // There is indeed some data
+        expect(
+          await SnapshotItemOnChain.getDataForTxId('tx-0'),
+          isA<Uint8List>(),
+        );
+
+        // But data not present will return null
         expect(
           await SnapshotItemOnChain.getDataForTxId('not present tx id'),
           null,
         );
+
+        // And valid txs' data will be discarded after calling dispose
+        await SnapshotItemOnChain.dispose();
+        expect(await SnapshotItemOnChain.getDataForTxId('tx-1'), null);
       });
     });
   });
