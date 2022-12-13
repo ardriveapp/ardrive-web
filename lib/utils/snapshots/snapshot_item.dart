@@ -328,8 +328,8 @@ class SnapshotItemOnChain implements SnapshotItem {
     if (_jsonMetadataVault == null) {
       final vaultStore = await newMemoryVaultStore();
       _jsonMetadataVault = await vaultStore.vault<Uint8List>(
-          // name: 'snapshot-data',
-          );
+        name: 'snapshot-data',
+      );
     }
 
     return _jsonMetadataVault!;
