@@ -101,6 +101,34 @@ void main() {
     });
 
     group('instantiateSingle static method', () {
+      test('throws if the transaction has a bad range', () async {
+        final snapshotTxWithBadRange =
+            SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                .fromJson(
+          {
+            'id': 'tx-id',
+            'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+            'owner': {'address': '1234567890'},
+            'tags': [
+              {'name': 'Block-Start', 'value': '-5'},
+              {'name': 'Block-End', 'value': 'invalid value'},
+              {'name': 'Drive-Id', 'value': 'DRIVE_ID'},
+            ],
+            'block': {
+              'height': 11,
+              'timestamp': DateTime.now().microsecondsSinceEpoch
+            }
+          },
+        );
+
+        expect(
+            () => SnapshotItem.instantiateSingle(
+                  snapshotTxWithBadRange,
+                  obscuredBy: HeightRange(rangeSegments: []),
+                ),
+            throwsA(isA<Exception>()));
+      });
+
       test('instantiates a single item with the correct sub-ranges', () async {
         final totalSnapshotRange = Range(start: 0, end: 10);
         final obscuredBy = HeightRange(rangeSegments: []);
