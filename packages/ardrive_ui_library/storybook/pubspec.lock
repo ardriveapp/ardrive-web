@@ -64,15 +64,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.16.0"
-<<<<<<< HEAD
-  cross_file:
-    dependency: transitive
-    description:
-      name: cross_file
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.3.3+2"
-=======
   convert:
     dependency: transitive
     description:
@@ -80,6 +71,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.1.1"
+  cross_file:
+    dependency: transitive
+    description:
+      name: cross_file
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.3.3+2"
   crypto:
     dependency: transitive
     description:
@@ -87,7 +85,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.2"
->>>>>>> redesign
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -136,11 +133,7 @@ packages:
       name: ffi
       url: "https://pub.dartlang.org"
     source: hosted
-<<<<<<< HEAD
     version: "1.2.1"
-=======
-    version: "2.0.1"
->>>>>>> redesign
   file:
     dependency: transitive
     description:
@@ -148,7 +141,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "6.1.4"
-<<<<<<< HEAD
   file_picker:
     dependency: transitive
     description:
@@ -214,22 +206,11 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.9.1+4"
-=======
->>>>>>> redesign
   flutter:
     dependency: "direct main"
     description: flutter
     source: sdk
     version: "0.0.0"
-<<<<<<< HEAD
-  flutter_downloader:
-    dependency: transitive
-    description:
-      name: flutter_downloader
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.9.1"
-=======
   flutter_cache_manager:
     dependency: transitive
     description:
@@ -237,7 +218,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.3.0"
->>>>>>> redesign
+  flutter_downloader:
+    dependency: transitive
+    description:
+      name: flutter_downloader
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.9.1"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -304,7 +291,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "4.0.2"
-<<<<<<< HEAD
   image_picker:
     dependency: transitive
     description:
@@ -340,7 +326,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.6.2"
-=======
   intl:
     dependency: transitive
     description:
@@ -361,8 +346,7 @@ packages:
       name: jovial_svg
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.6"
->>>>>>> redesign
+    version: "1.1.7"
   js:
     dependency: transitive
     description:
@@ -495,10 +479,7 @@ packages:
       name: path_provider_windows
       url: "https://pub.dartlang.org"
     source: hosted
-<<<<<<< HEAD
     version: "2.0.7"
-=======
-    version: "2.1.3"
   pedantic:
     dependency: transitive
     description:
@@ -506,7 +487,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.11.1"
->>>>>>> redesign
   percent_indicator:
     dependency: transitive
     description:
@@ -570,8 +550,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.1.3"
-<<<<<<< HEAD
-=======
   pointycastle:
     dependency: transitive
     description:
@@ -579,7 +557,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.6.2"
->>>>>>> redesign
   process:
     dependency: transitive
     description:
@@ -594,15 +571,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "6.0.4"
-<<<<<<< HEAD
-  security_scoped_resource:
-    dependency: transitive
-    description:
-      name: security_scoped_resource
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.0.1"
-=======
   rxdart:
     dependency: transitive
     description:
@@ -610,7 +578,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.27.7"
->>>>>>> redesign
+  security_scoped_resource:
+    dependency: transitive
+    description:
+      name: security_scoped_resource
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.0.1"
   sky_engine:
     dependency: transitive
     description: flutter
@@ -629,7 +603,7 @@ packages:
       name: sqflite
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0+3"
+    version: "2.2.2"
   sqflite_common:
     dependency: transitive
     description:
@@ -686,8 +660,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.3.1"
-<<<<<<< HEAD
-=======
   uuid:
     dependency: transitive
     description:
@@ -695,7 +667,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.7"
->>>>>>> redesign
   vector_math:
     dependency: transitive
     description:
@@ -723,11 +694,7 @@ packages:
       name: win32
       url: "https://pub.dartlang.org"
     source: hosted
-<<<<<<< HEAD
     version: "2.6.1"
-=======
-    version: "3.1.2"
->>>>>>> redesign
   xdg_directories:
     dependency: transitive
     description:
