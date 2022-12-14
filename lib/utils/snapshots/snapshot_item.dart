@@ -68,7 +68,6 @@ abstract class SnapshotItem implements SegmentedGQLData {
         itemsStream, {
     int? lastBlockHeight,
 
-    // FIXME: take a Map<TxID, String> instead
     @visibleForTesting String? fakeSource,
   }) async* {
     HeightRange obscuredByAccumulator = HeightRange(rangeSegments: [
@@ -89,9 +88,6 @@ abstract class SnapshotItem implements SegmentedGQLData {
         print('Ignoring snapshot transaction with wrong block range - $e');
         continue;
       }
-
-      // print(
-      //     'SnapshotItem instantiated - ${snapshotItem.subRanges.rangeSegments}');
 
       yield snapshotItem;
 
@@ -266,9 +262,6 @@ class SnapshotItemOnChain implements SnapshotItem {
   Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
       _getNextStream() async* {
     final Range range = subRanges.rangeSegments[currentIndex];
-
-    // print(
-    //     'Snapshot item ($txId) reading item #${currentIndex + 1}/${subRanges.rangeSegments.length}');
 
     final Map dataJson = jsonDecode(await _source());
     final List<Map> txSnapshots =
