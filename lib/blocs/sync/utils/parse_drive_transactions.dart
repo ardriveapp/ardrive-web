@@ -61,12 +61,8 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
 
         // Create entries for all the new revisions of file and folders in this drive.
         final newEntities = entityHistory.blockHistory
-            .map(
-              (b) => b.entities,
-            )
-            .expand(
-              (entities) => entities,
-            );
+            .map((b) => b.entities)
+            .expand((entities) => entities);
 
         numberOfDriveEntitiesParsed += items.length - newEntities.length;
 
