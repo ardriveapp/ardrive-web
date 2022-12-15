@@ -37,10 +37,6 @@ jobs:
       - name: Test app
         run: scr test
 
-      - name: Test ardrive_io
-        working-directory: ./ardrive_io
-        run: flutter test
-
   web:
     needs: test
     runs-on: ubuntu-latest
