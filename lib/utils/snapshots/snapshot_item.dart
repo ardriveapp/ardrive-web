@@ -67,7 +67,6 @@ abstract class SnapshotItem implements SegmentedGQLData {
     Stream<SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
         itemsStream, {
     int? lastBlockHeight,
-
     @visibleForTesting String? fakeSource,
   }) async* {
     HeightRange obscuredByAccumulator = HeightRange(rangeSegments: [
@@ -108,17 +107,20 @@ abstract class SnapshotItem implements SegmentedGQLData {
     required HeightRange obscuredBy,
     @visibleForTesting String? fakeSource,
   }) {
-    List<TransactionCommonMixin$Tag> tags = item.tags;
-    int? blockHeightStart;
-    int? blockHeightEnd;
     late Range totalRange;
+    List<TransactionCommonMixin$Tag> tags = item.tags;
+    String? maybeBlockHeightStart =
+        tags.firstWhere((tag) => tag.name == 'Block-Start').value;
+    String? maybeBlockHeightEnd =
+        tags.firstWhere((tag) => tag.name == 'Block-End').value;
 
-    // Might throw - TODO: utilie a custom exception: "Bad snapshot item range"
-    blockHeightStart =
-        int.parse(tags.firstWhere((tag) => tag.name == 'Block-Start').value);
-    blockHeightEnd =
-        int.parse(tags.firstWhere((tag) => tag.name == 'Block-End').value);
-    totalRange = Range(start: blockHeightStart, end: blockHeightEnd);
+    try {
+      int blockHeightStart = int.parse(maybeBlockHeightStart);
+      int blockHeightEnd = int.parse(maybeBlockHeightEnd);
+      totalRange = Range(start: blockHeightStart, end: blockHeightEnd);
+    } catch (_) {
+      throw BadRange(start: maybeBlockHeightStart, end: maybeBlockHeightEnd);
+    }
 
     HeightRange totalHeightRange = HeightRange(rangeSegments: [totalRange]);
     HeightRange subRanges = HeightRange.difference(

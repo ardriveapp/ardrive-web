@@ -95,8 +95,8 @@ class Range extends Equatable {
 }
 
 class BadRange implements Exception, Equatable {
-  final int start;
-  final int end;
+  final dynamic start;
+  final dynamic end;
   BadRange({required this.start, required this.end});
 
   @override
