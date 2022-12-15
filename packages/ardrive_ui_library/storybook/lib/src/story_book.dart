@@ -17,6 +17,7 @@ import 'card.dart';
 import 'colors.dart';
 import 'drop_area.dart';
 import 'modals.dart';
+import 'overlay.dart';
 
 class StoryBook extends StatelessWidget {
   const StoryBook({super.key});
@@ -57,6 +58,7 @@ class StoryBook extends StatelessWidget {
             dropArea(),
             tabView(),
             progressBar(),
+            overlay(),
             accordion(),
             image(),
             checkBox(),

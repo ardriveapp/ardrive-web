@@ -19,6 +19,7 @@ dependencies:
   dotted_border: ^2.0.0+3
   flutter:
     sdk: flutter
+  flutter_portal: ^1.1.2
   flutter_svg: ^1.1.6
   percent_indicator: ^4.2.2
   flutter_svg_image: ^1.0.0
