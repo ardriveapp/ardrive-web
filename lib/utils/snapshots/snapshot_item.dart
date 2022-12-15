@@ -235,8 +235,7 @@ class SnapshotItemOnChain implements SnapshotItem {
       return _cachedSource!;
     }
 
-    final dataBytes =
-        await ArdriveNetwork().getAsBytes(_dataUri.toString()).catchError(
+    final dataBytes = await ArdriveNetwork().getAsBytes(_dataUri).catchError(
       (e) {
         print('Error while fetching Snapshot Data - $e');
       },
