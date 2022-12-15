@@ -126,7 +126,7 @@ void main() {
                   snapshotTxWithBadRange,
                   obscuredBy: HeightRange(rangeSegments: []),
                 ),
-            throwsA(isA<Exception>()));
+            throwsA(isA<BadRange>()));
       });
 
       test('instantiates a single item with the correct sub-ranges', () async {
