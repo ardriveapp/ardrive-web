@@ -1,5 +1,6 @@
 export 'package:flutter_svg_image/flutter_svg_image.dart';
 
+export 'components/accordion.dart';
 export 'components/button.dart';
 export 'components/card.dart';
 export 'components/check_box.dart';
