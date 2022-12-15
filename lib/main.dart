@@ -10,10 +10,13 @@ import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/services/bundler/bundler.dart';
 import 'package:ardrive/utils/app_flavors.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -125,6 +128,13 @@ class AppState extends State<App> {
   Widget build(BuildContext context) => MultiRepositoryProvider(
         providers: [
           RepositoryProvider<ArweaveService>(create: (_) => arweave),
+          RepositoryProvider<BundlerService>(
+            create: (_) => BundlerService(
+              bundlerUri: turboProdBundlerUrl,
+              allowedDataItemSize: freeArfsDataAllowLimit,
+              httpClient: ArDriveHTTP(),
+            ),
+          ),
           RepositoryProvider<PstService>(
             create: (_) => PstService(
               communityOracle: CommunityOracle(

@@ -121,6 +121,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
               parentFolderId: parentFolderId,
               files: selectedFiles,
               arweave: context.read<ArweaveService>(),
+              bundlerService: context.read<BundlerService>(),
               pst: context.read<PstService>(),
               profileCubit: context.read<ProfileCubit>(),
               driveDao: context.read<DriveDao>(),

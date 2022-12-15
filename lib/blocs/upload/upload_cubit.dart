@@ -27,6 +27,7 @@ class UploadCubit extends Cubit<UploadState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
+  final BundlerService _bundlerService;
   final PstService _pst;
   final UploadPlanUtils _uploadPlanUtils;
 
@@ -50,12 +51,14 @@ class UploadCubit extends Cubit<UploadState> {
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required ArweaveService arweave,
+    required BundlerService bundlerService,
     required PstService pst,
     required UploadPlanUtils uploadPlanUtils,
     this.uploadFolders = false,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
+        _bundlerService = bundlerService,
         _pst = pst,
         _uploadPlanUtils = uploadPlanUtils,
         super(UploadPreparationInProgress());
@@ -314,7 +317,21 @@ class UploadCubit extends Cubit<UploadState> {
 
     debugPrint('Starting bundle preparation....');
     debugPrint('Number of bundles: ${uploadPlan.bundleUploadHandles.length}');
+    // Upload to Bundler
+    for (final uploadHandle in uploadPlan.fileDataItemUploadHandles.values) {
+      try {
+        await uploadHandle.prepareAndSignDataItems();
+        await uploadHandle.writeFileEntityToDatabase(driveDao: _driveDao);
+      } catch (error) {
+        addError(error);
+      }
+      final uploadHandleDataItems = await uploadHandle.getDataItems();
+      for (final dataItem in uploadHandleDataItems) {
+        await _bundlerService.postDataItem(dataItem: dataItem);
+      }
 
+      emit(UploadInProgress(uploadPlan: uploadPlan));
+    }
     // Upload Bundles
     for (var bundleHandle in uploadPlan.bundleUploadHandles) {
       try {

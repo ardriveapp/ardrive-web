@@ -3,7 +3,9 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/bundler/bundler.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,6 +22,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
   final ProfileCubit _profileCubit;
 
   final ArweaveService _arweave;
+  final BundlerService _bundlerService;
   final DriveDao _driveDao;
 
   FolderCreateCubit({
@@ -27,9 +30,11 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     required this.parentFolderId,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
+    required BundlerService bundlerService,
     required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
+        _bundlerService = bundlerService,
         _driveDao = driveDao,
         super(FolderCreateInitial()) {
     form = FormGroup({
@@ -87,15 +92,26 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           parentFolderId: targetFolder.id,
           name: folderName,
         );
+        if (useBundler) {
+          final folderDataItem = await _arweave.prepareEntityDataItem(
+            folderEntity,
+            profile.wallet,
+            key: driveKey,
+          );
 
-        final folderTx = await _arweave.prepareEntityTx(
-          folderEntity,
-          profile.wallet,
-          driveKey,
-        );
+          await _bundlerService.postDataItem(dataItem: folderDataItem);
+          folderEntity.txId = folderDataItem.id;
+        } else {
+          final folderTx = await _arweave.prepareEntityTx(
+            folderEntity,
+            profile.wallet,
+            driveKey,
+          );
 
-        await _arweave.postTx(folderTx);
-        folderEntity.txId = folderTx.id;
+          await _arweave.postTx(folderTx);
+          folderEntity.txId = folderTx.id;
+        }
+
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create,
         ));

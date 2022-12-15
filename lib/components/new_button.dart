@@ -5,6 +5,7 @@ import 'package:ardrive/components/drive_create_form.dart';
 import 'package:ardrive/components/folder_create_form.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:flutter/material.dart';
 
 Widget buildNewButton(
@@ -340,7 +341,7 @@ PopupMenuEntry<Function> _buildCreateDrive(
 ) {
   return _buildMenuItemTile(
     context: context,
-    isEnabled: drivesState.canCreateNewDrive && hasMinBalance,
+    isEnabled: useBundler || drivesState.canCreateNewDrive && hasMinBalance,
     itemTitle: appLocalizationsOf(context).newDrive,
     message: hasMinBalance
         ? null
