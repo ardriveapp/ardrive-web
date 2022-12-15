@@ -6,9 +6,9 @@ import 'package:widgetbook/widgetbook.dart';
 WidgetbookCategory overlay() {
   final controller = ArDriveOverlayController();
   return WidgetbookCategory(name: 'Overlay', widgets: [
-    WidgetbookComponent(name: 'Overlay', useCases: [
+    WidgetbookComponent(name: 'Dropdown', useCases: [
       WidgetbookUseCase(
-        name: 'Overlay',
+        name: 'Dropdown',
         builder: (context) {
           return ArDriveStorybookAppBase(builder: (context) {
             return Column(
