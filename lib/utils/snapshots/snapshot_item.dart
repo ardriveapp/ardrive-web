@@ -6,7 +6,7 @@ import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
-import 'package:ardrive_network/ardrive_network.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:stash/stash_api.dart';
@@ -235,7 +235,7 @@ class SnapshotItemOnChain implements SnapshotItem {
       return _cachedSource!;
     }
 
-    final dataBytes = await ArdriveNetwork().getAsBytes(_dataUri).catchError(
+    final dataBytes = await ArDriveHTTP().getAsBytes(_dataUri).catchError(
       (e) {
         print('Error while fetching Snapshot Data - $e');
       },
