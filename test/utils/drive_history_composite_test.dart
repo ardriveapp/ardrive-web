@@ -10,7 +10,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/mocks.dart';
 import 'snapshot_drive_history_test.dart';
-import 'snapshot_item_test.dart';
+import 'snapshot_test_helpers.dart';
 
 void main() {
   group('DriveHistoryComposite class', () {

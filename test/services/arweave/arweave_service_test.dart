@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../test_utils/utils.dart';
-import '../../utils/snapshot_item_test.dart';
+import '../../utils/snapshot_test_helpers.dart';
 
 const gatewayUrl = 'https://arweave.net';
 void main() {

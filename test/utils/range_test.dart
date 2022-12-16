@@ -28,6 +28,16 @@ void main() {
       expect(range.end, -1);
     });
 
+    test('equatability', () {
+      Range rangeA = Range(start: 0, end: 0);
+      Range rangeB = Range(start: 0, end: 0);
+      expect(rangeA == rangeB, true);
+
+      rangeA = Range(start: 50, end: 100);
+      rangeB = Range(start: 50, end: 100);
+      expect(rangeA == rangeB, true);
+    });
+
     group('difference method', () {
       test('returns an empty array if B contains A', () {
         Range A = Range(start: 25, end: 50);
@@ -90,35 +100,35 @@ void main() {
       test('returns a sub-range of the inputs partially intersect', () {
         Range A = Range(start: 0, end: 100);
         Range B = Range(start: 50, end: 100);
-        Range? intersection = Range.intersection(A, B);
-        expect(intersection!.start, B.start);
-        expect(intersection!.end, B.end);
+        Range intersection = Range.intersection(A, B)!;
+        expect(intersection.start, B.start);
+        expect(intersection.end, B.end);
 
         A = Range(start: 0, end: 100);
         B = Range(start: 0, end: 50);
-        intersection = Range.intersection(A, B);
-        expect(intersection!.start, B.start);
-        expect(intersection!.end, B.end);
+        intersection = Range.intersection(A, B)!;
+        expect(intersection.start, B.start);
+        expect(intersection.end, B.end);
 
         A = Range(start: 0, end: 100);
         B = Range(start: 50, end: 150);
-        intersection = Range.intersection(A, B);
-        expect(intersection!.start, 50);
-        expect(intersection!.end, 100);
+        intersection = Range.intersection(A, B)!;
+        expect(intersection.start, 50);
+        expect(intersection.end, 100);
       });
 
       test('returns A if B includes A', () {
         Range A = Range(start: 25, end: 50);
         Range B = Range(start: 0, end: 100);
-        Range? intersection = Range.intersection(A, B);
-        expect(intersection!.start, A.start);
-        expect(intersection!.end, A.end);
+        Range intersection = Range.intersection(A, B)!;
+        expect(intersection.start, A.start);
+        expect(intersection.end, A.end);
 
         A = Range(start: 0, end: 100);
         B = Range(start: 0, end: 100);
-        intersection = Range.intersection(A, B);
-        expect(intersection!.start, A.start);
-        expect(intersection!.end, A.end);
+        intersection = Range.intersection(A, B)!;
+        expect(intersection.start, A.start);
+        expect(intersection.end, A.end);
       });
     });
 

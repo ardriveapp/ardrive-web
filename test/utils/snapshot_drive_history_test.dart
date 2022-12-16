@@ -5,7 +5,7 @@ import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'snapshot_item_test.dart';
+import 'snapshot_test_helpers.dart';
 
 void main() {
   final composableRanges = [

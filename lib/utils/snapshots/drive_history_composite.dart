@@ -70,10 +70,7 @@ class DriveHistoryComposite implements SegmentedGQLData {
   Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
       _getNextStream() async* {
     for (SegmentedGQLData source in _subRangeToSnapshotItemMapping) {
-      await for (DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction node
-          in source.getNextStream()) {
-        yield node;
-      }
+      yield* source.getNextStream();
     }
   }
 }

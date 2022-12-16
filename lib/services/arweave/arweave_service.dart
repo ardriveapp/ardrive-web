@@ -8,11 +8,14 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
+import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
+import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_network/ardrive_network.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
+import 'package:http/http.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:retry/retry.dart';
 
@@ -111,6 +114,40 @@ class ArweaveService {
     return query.data?.transaction;
   }
 
+  Stream<SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge>
+      getAllSnapshotsOfDrive(
+    String driveId,
+    int? lastBlockHeight,
+  ) async* {
+    String cursor = '';
+
+    while (true) {
+      // Get a page of 100 transactions
+      final snapshotEntityHistoryQuery = await _graphQLRetry.execute(
+        SnapshotEntityHistoryQuery(
+          variables: SnapshotEntityHistoryArguments(
+            driveId: driveId,
+            lastBlockHeight: lastBlockHeight,
+            after: cursor,
+          ),
+        ),
+      );
+
+      for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge node
+          in snapshotEntityHistoryQuery.data!.transactions.edges) {
+        yield node;
+      }
+
+      cursor = snapshotEntityHistoryQuery.data!.transactions.edges.isNotEmpty
+          ? snapshotEntityHistoryQuery.data!.transactions.edges.last.cursor
+          : '';
+
+      if (!snapshotEntityHistoryQuery.data!.transactions.pageInfo.hasNextPage) {
+        break;
+      }
+    }
+  }
+
   Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
       getAllTransactionsFromDrive(
     String driveId, {
@@ -161,19 +198,32 @@ class ArweaveService {
   ///
   /// returns DriveEntityHistory object
   Future<DriveEntityHistory> createDriveEntityHistoryFromTransactions(
-      List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>
-          queryEdges,
-      SecretKey? driveKey,
-      String? owner,
-      int lastBlockHeight) async {
-    final entityTxs = <
-        DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>[];
+    List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
+        entityTxs,
+    SecretKey? driveKey,
+    String? owner,
+    int lastBlockHeight, {
+    required SnapshotDriveHistory snapshotDriveHistory,
+  }) async {
+    final List<Uint8List> responses = await Future.wait(
+      entityTxs.map(
+        (entity) async {
+          final txId = entity.id;
+          final Uint8List? cachedData =
+              await SnapshotItemOnChain.getDataForTxId(txId);
+          if (cachedData != null) {
+            return cachedData;
+          } else {
+            // TODO: make use of the NetworkPackage
+            final Response data = (await httpRetry
+                .processRequest(() => client.api.getSandboxedTx(txId)));
+            return data.bodyBytes;
+          }
+        },
+      ),
+    );
 
-    entityTxs.addAll(queryEdges.map((e) => e.node).toList());
-
-    final responses = await Future.wait(entityTxs.map((e) async {
-      return httpRetry.processRequest(() => client.api.getSandboxedTx(e.id));
-    }));
+    await SnapshotItemOnChain.dispose();
 
     final blockHistory = <BlockEntities>[];
 
@@ -194,7 +244,7 @@ class ArweaveService {
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
         final entityResponse = responses[i];
-        final rawEntityData = entityResponse.bodyBytes;
+        final rawEntityData = entityResponse;
 
         Entity? entity;
         if (entityType == EntityType.drive) {
@@ -210,7 +260,7 @@ class ArweaveService {
             driveKey: driveKey,
           );
         }
-        //TODO: Revisit
+        // TODO: Revisit
         if (blockHistory.isEmpty ||
             transaction.block!.height != blockHistory.last.blockHeight) {
           blockHistory.add(BlockEntities(transaction.block!.height));
@@ -242,7 +292,6 @@ class ArweaveService {
     }
 
     return DriveEntityHistory(
-      queryEdges.isNotEmpty ? queryEdges.last.cursor : null,
       blockHistory.isNotEmpty ? blockHistory.last.blockHeight : lastBlockHeight,
       blockHistory,
     );
@@ -778,14 +827,12 @@ class ArweaveService {
 
 /// The entity history of a particular drive, chunked by block height.
 class DriveEntityHistory {
-  /// A cursor for continuing through this drive's history.
-  final String? cursor;
   final int? lastBlockHeight;
 
   /// A list of block entities, ordered by ascending block height.
   final List<BlockEntities> blockHistory;
 
-  DriveEntityHistory(this.cursor, this.lastBlockHeight, this.blockHistory);
+  DriveEntityHistory(this.lastBlockHeight, this.blockHistory);
 }
 
 /// The entities present in a particular block.

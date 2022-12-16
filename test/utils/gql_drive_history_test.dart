@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/utils.dart';
-import 'snapshot_item_test.dart';
+import 'snapshot_test_helpers.dart';
 
 void main() {
   group('GQLDriveHistory class', () {
