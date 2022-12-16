@@ -1,7 +1,4 @@
-retryStatusCodes = [
-  408, 429, 440, 460, 499, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525,
-  527, 598, 599,
-];
+retryStatusCodes = [408, 429, 440, 460, 499, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 527, 598, 599];
 
 function retryDelay(attempt, retryDelayMS) {
   return parseInt(retryDelayMS * Math.pow(1.5, attempt));
@@ -11,26 +8,10 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function retry(
-  url,
-  isJson,
-  asBytes,
-  retries,
-  retryDelayMs,
-  noLogs,
-  retryAttempts,
-) {
+async function retry(url, isJson, asBytes, retries, retryDelayMs, noLogs, retryAttempts) {
   await delay(retryDelay(retryAttempts, retryDelayMs));
 
-  return await get([
-    url,
-    isJson,
-    asBytes,
-    retries - 1,
-    retryDelayMs,
-    noLogs,
-    retryAttempts,
-  ]);
+  return await get([url, isJson, asBytes, retries - 1, retryDelayMs, noLogs, retryAttempts]);
 }
 
 function formatLog(url, statusCode, statusMessage, retryAttempts) {
@@ -43,15 +24,7 @@ function isStatusCodeError(code) {
   return code >= 400 && code <= 599;
 }
 
-async function get([
-  url,
-  isJson,
-  asBytes,
-  retries,
-  retryDelayMs,
-  noLogs,
-  retryAttempts,
-]) {
+async function get([url, isJson, asBytes, retries, retryDelayMs, noLogs, retryAttempts]) {
   retryAttempts ??= 0;
 
   try {
@@ -60,34 +33,16 @@ async function get([
     const statusCode = response.status;
 
     if (retries > 0 && retryStatusCodes.includes(statusCode)) {
-      const log = formatLog(
-        url,
-        response.status,
-        response.statusText,
-        retryAttempts,
-      );
+      const log = formatLog(url, response.status, response.statusText, retryAttempts);
 
       if (!noLogs) {
         console.warn(`Network Request Retry\n${log}`);
       }
 
-      return await retry(
-        url,
-        isJson,
-        asBytes,
-        retries,
-        retryDelayMs,
-        noLogs,
-        retryAttempts + 1,
-      );
+      return await retry(url, isJson, asBytes, retries, retryDelayMs, noLogs, retryAttempts + 1);
     } else {
       if (isStatusCodeError(statusCode)) {
-        const log = formatLog(
-          url,
-          response.status,
-          response.statusText,
-          retryAttempts,
-        );
+        const log = formatLog(url, response.status, response.statusText, retryAttempts);
 
         return {
           error: `Network Request Error\n${log}`,
