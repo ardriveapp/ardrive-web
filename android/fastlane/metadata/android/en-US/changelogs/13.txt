@@ -1,0 +1,4 @@
+• Limit private file download size on Mobile to 300Mib
+• Add Time Stamps to File/Folder Details
+• Added a deep resync option which clears data caches before syncing
+• Fixes an issue with sorting files and folders
