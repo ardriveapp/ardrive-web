@@ -8,6 +8,6 @@ const List<String> supportedImageTypesInFilePreview = [
 ];
 
 const freeArfsDataAllowLimit = 102400; // 100 KiB
-final turboProdBundlerUrl = Uri.parse('https://upload.ardrive.io/');
+final turboProdTurboUrl = Uri.parse('https://upload.ardrive.dev/');
 
-const useBundler = true;
+const useTurbo = true;

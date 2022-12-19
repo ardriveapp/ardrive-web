@@ -2,8 +2,8 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/bundler/bundler.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/services/turbo/turbo.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
@@ -27,19 +27,19 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
   });
 
   final ArweaveService _arweave;
-  final BundlerService _bundlerService;
+  final TurboService _turboService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final DrivesCubit _drivesCubit;
 
   DriveCreateCubit({
     required ArweaveService arweave,
-    required BundlerService bundlerService,
+    required TurboService turboService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required DrivesCubit drivesCubit,
   })  : _arweave = arweave,
-        _bundlerService = bundlerService,
+        _turboService = turboService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _drivesCubit = drivesCubit,
@@ -59,7 +59,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     }
 
     final minimumWalletBalance = BigInt.from(10000000);
-    if (!useBundler && profile.walletBalance <= minimumWalletBalance) {
+    if (!useTurbo && profile.walletBalance <= minimumWalletBalance) {
       emit(DriveCreateZeroBalance());
       return;
     }
@@ -109,9 +109,9 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await rootFolderDataItem.sign(profile.wallet);
       await driveDataItem.sign(profile.wallet);
 
-      if (useBundler) {
-        await _bundlerService.postDataItem(dataItem: rootFolderDataItem);
-        await _bundlerService.postDataItem(dataItem: driveDataItem);
+      if (useTurbo) {
+        await _turboService.postDataItem(dataItem: rootFolderDataItem);
+        await _turboService.postDataItem(dataItem: driveDataItem);
       } else {
         final createTx = await _arweave.prepareDataBundleTx(
           await DataBundle.fromDataItems(

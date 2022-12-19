@@ -84,7 +84,7 @@ class FsEntryMoveForm extends StatelessWidget {
                     parentFolderId: state.viewingFolder.folder.id,
                     profileCubit: context.read<ProfileCubit>(),
                     arweave: context.read<ArweaveService>(),
-                    bundlerService: context.read<BundlerService>(),
+                    turboService: context.read<TurboService>(),
                     driveDao: context.read<DriveDao>(),
                   ),
                   child: const FolderCreateForm(),

@@ -219,7 +219,8 @@ List<PopupMenuEntry<Function>> _buildItems(
   if (profileState.runtimeType == ProfileLoggedIn) {
     final minimumWalletBalance = BigInt.from(10000000);
     final profile = profileState as ProfileLoggedIn;
-    final hasMinBalance = profile.walletBalance >= minimumWalletBalance;
+    final hasMinBalance =
+        useTurbo || profile.walletBalance >= minimumWalletBalance;
     return [
       if (driveDetailState is DriveDetailLoadSuccess) ...{
         _buildNewFolderItem(context, driveDetailState, hasMinBalance),
@@ -341,7 +342,7 @@ PopupMenuEntry<Function> _buildCreateDrive(
 ) {
   return _buildMenuItemTile(
     context: context,
-    isEnabled: useBundler || drivesState.canCreateNewDrive && hasMinBalance,
+    isEnabled: useTurbo || drivesState.canCreateNewDrive && hasMinBalance,
     itemTitle: appLocalizationsOf(context).newDrive,
     message: hasMinBalance
         ? null

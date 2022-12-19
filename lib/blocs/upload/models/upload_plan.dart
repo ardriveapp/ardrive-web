@@ -20,6 +20,8 @@ class UploadPlan {
 
   final List<BundleUploadHandle> bundleUploadHandles = [];
 
+  bool isFreeThanksToTurbo = false;
+
   UploadPlan._create({
     required this.fileV2UploadHandles,
   });
@@ -48,11 +50,11 @@ class UploadPlan {
     Map<String, FolderDataItemUploadHandle> folderDataItemUploadHandles =
         const {},
   }) async {
-    bool canUseBundler = useBundler &&
+    isFreeThanksToTurbo = useTurbo &&
         fileDataItemUploadHandles.values
             .map((dataItem) => dataItem.size <= freeArfsDataAllowLimit)
             .reduce((value, acc) => value && acc);
-    if (canUseBundler) {
+    if (isFreeThanksToTurbo) {
       this.fileDataItemUploadHandles.addAll(fileDataItemUploadHandles);
       return;
     }

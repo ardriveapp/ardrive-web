@@ -2,13 +2,13 @@ import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 
-class BundlerService {
-  final Uri bundlerUri;
+class TurboService {
+  final Uri turboUri;
   final int allowedDataItemSize;
   late ArDriveHTTP httpClient;
 
-  BundlerService({
-    required this.bundlerUri,
+  TurboService({
+    required this.turboUri,
     required this.allowedDataItemSize,
     required this.httpClient,
   });
@@ -17,7 +17,7 @@ class BundlerService {
     final dioInstance = httpClient.dio();
     final options = Options(contentType: 'application/octet-stream');
     await dioInstance.post(
-      '${bundlerUri}v1/tx',
+      '${turboUri}v1/tx',
       options: options,
       data: Stream.fromIterable([(await dataItem.asBinary()).toBytes()]),
     );

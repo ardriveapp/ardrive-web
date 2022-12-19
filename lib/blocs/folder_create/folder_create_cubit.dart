@@ -3,8 +3,8 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/bundler/bundler.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/services/turbo/turbo.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -22,7 +22,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
   final ProfileCubit _profileCubit;
 
   final ArweaveService _arweave;
-  final BundlerService _bundlerService;
+  final TurboService _turboService;
   final DriveDao _driveDao;
 
   FolderCreateCubit({
@@ -30,11 +30,11 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
     required this.parentFolderId,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
-    required BundlerService bundlerService,
+    required TurboService turboService,
     required DriveDao driveDao,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
-        _bundlerService = bundlerService,
+        _turboService = turboService,
         _driveDao = driveDao,
         super(FolderCreateInitial()) {
     form = FormGroup({
@@ -92,14 +92,14 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           parentFolderId: targetFolder.id,
           name: folderName,
         );
-        if (useBundler) {
+        if (useTurbo) {
           final folderDataItem = await _arweave.prepareEntityDataItem(
             folderEntity,
             profile.wallet,
             key: driveKey,
           );
 
-          await _bundlerService.postDataItem(dataItem: folderDataItem);
+          await _turboService.postDataItem(dataItem: folderDataItem);
           folderEntity.txId = folderDataItem.id;
         } else {
           final folderTx = await _arweave.prepareEntityTx(

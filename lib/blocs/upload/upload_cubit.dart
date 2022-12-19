@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/turbo/turbo.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -27,7 +28,7 @@ class UploadCubit extends Cubit<UploadState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
-  final BundlerService _bundlerService;
+  final TurboService _turboService;
   final PstService _pst;
   final UploadPlanUtils _uploadPlanUtils;
 
@@ -51,14 +52,14 @@ class UploadCubit extends Cubit<UploadState> {
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required ArweaveService arweave,
-    required BundlerService bundlerService,
+    required TurboService turboService,
     required PstService pst,
     required UploadPlanUtils uploadPlanUtils,
     this.uploadFolders = false,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
-        _bundlerService = bundlerService,
+        _turboService = turboService,
         _pst = pst,
         _uploadPlanUtils = uploadPlanUtils,
         super(UploadPreparationInProgress());
@@ -317,7 +318,7 @@ class UploadCubit extends Cubit<UploadState> {
 
     debugPrint('Starting bundle preparation....');
     debugPrint('Number of bundles: ${uploadPlan.bundleUploadHandles.length}');
-    // Upload to Bundler
+    // Upload to Turbo
     for (final uploadHandle in uploadPlan.fileDataItemUploadHandles.values) {
       try {
         await uploadHandle.prepareAndSignDataItems();
@@ -327,7 +328,7 @@ class UploadCubit extends Cubit<UploadState> {
       }
       final uploadHandleDataItems = await uploadHandle.getDataItems();
       for (final dataItem in uploadHandleDataItems) {
-        await _bundlerService.postDataItem(dataItem: dataItem);
+        await _turboService.postDataItem(dataItem: dataItem);
       }
 
       emit(UploadInProgress(uploadPlan: uploadPlan));
