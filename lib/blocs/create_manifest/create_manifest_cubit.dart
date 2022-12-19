@@ -7,6 +7,7 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:collection/collection.dart';
@@ -26,6 +27,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   final Drive drive;
 
   final ArweaveService _arweave;
+  final TurboService _turboService;
   final DriveDao _driveDao;
   final PstService _pst;
 
@@ -35,10 +37,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     required this.drive,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
+    required TurboService turboService,
     required DriveDao driveDao,
     required PstService pst,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
+        _turboService = turboService,
         _driveDao = driveDao,
         _pst = pst,
         super(CreateManifestInitial()) {
@@ -215,6 +219,27 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       await manifestMetaDataItem.sign(wallet);
       manifestFileEntity.txId = manifestMetaDataItem.id;
 
+      if (useTurbo) {
+        emit(
+          CreateManifestTurboUploadConfirmation(
+            manifestSize: arweaveManifest.size,
+            manifestName: manifestName,
+            manifestDataItems: [manifestDataItem, manifestMetaDataItem],
+            addManifestToDatabase: () => _driveDao.transaction(() async {
+              await _driveDao.writeFileEntity(
+                  manifestFileEntity, '${parentFolder.path}/$manifestName');
+              await _driveDao.insertFileRevision(
+                manifestFileEntity.toRevisionCompanion(
+                    performedAction: existingManifestFileId == null
+                        ? RevisionAction.create
+                        : RevisionAction.uploadNewVersion),
+              );
+            }),
+          ),
+        );
+        return;
+      }
+
       final bundle = await DataBundle.fromDataItems(
         items: [manifestDataItem, manifestMetaDataItem],
       );
@@ -278,7 +303,22 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       emit(CreateManifestWalletMismatch());
       return;
     }
+    if (state is CreateManifestTurboUploadConfirmation) {
+      final params = state as CreateManifestTurboUploadConfirmation;
+      emit(CreateManifestUploadInProgress());
+      try {
+        for (var dataItem in params.manifestDataItems) {
+          await _turboService.postDataItem(dataItem: dataItem);
+        }
 
+        await params.addManifestToDatabase();
+
+        emit(CreateManifestSuccess());
+      } catch (err) {
+        addError(err);
+      }
+      return;
+    }
     final params =
         (state as CreateManifestUploadConfirmation).uploadManifestParams;
 
