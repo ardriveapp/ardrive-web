@@ -5,8 +5,8 @@ import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/turbo/turbo.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/services/turbo/turbo.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -319,10 +319,24 @@ class UploadCubit extends Cubit<UploadState> {
     debugPrint('Starting bundle preparation....');
     debugPrint('Number of bundles: ${uploadPlan.bundleUploadHandles.length}');
     // Upload to Turbo
-    for (final uploadHandle in uploadPlan.fileDataItemUploadHandles.values) {
+    for (final uploadHandle in uploadPlan.fileDataItemHandles.values) {
       try {
         await uploadHandle.prepareAndSignDataItems();
         await uploadHandle.writeFileEntityToDatabase(driveDao: _driveDao);
+      } catch (error) {
+        addError(error);
+      }
+      final uploadHandleDataItems = await uploadHandle.getDataItems();
+      for (final dataItem in uploadHandleDataItems) {
+        await _turboService.postDataItem(dataItem: dataItem);
+      }
+
+      emit(UploadInProgress(uploadPlan: uploadPlan));
+    }
+    for (final uploadHandle in uploadPlan.folderDataItemHandles.values) {
+      try {
+        await uploadHandle.prepareAndSignFolderDataItem();
+        await uploadHandle.writeFolderToDatabase(driveDao: _driveDao);
       } catch (error) {
         addError(error);
       }

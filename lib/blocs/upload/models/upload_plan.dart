@@ -16,11 +16,12 @@ const maxFilesPerBundle = maxBundleDataItemCount ~/ 2;
 class UploadPlan {
   /// A map of [FileV2UploadHandle]s keyed by their respective file's id.
   late Map<String, FileV2UploadHandle> fileV2UploadHandles;
-  final Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles = {};
-
   final List<BundleUploadHandle> bundleUploadHandles = [];
 
+  // These are only used for turbo bundler uploads
   bool isFreeThanksToTurbo = false;
+  final Map<String, FileDataItemUploadHandle> fileDataItemHandles = {};
+  final Map<String, FolderDataItemUploadHandle> folderDataItemHandles = {};
 
   UploadPlan._create({
     required this.fileV2UploadHandles,
@@ -55,7 +56,8 @@ class UploadPlan {
             .map((dataItem) => dataItem.size <= freeArfsDataAllowLimit)
             .reduce((value, acc) => value && acc);
     if (isFreeThanksToTurbo) {
-      this.fileDataItemUploadHandles.addAll(fileDataItemUploadHandles);
+      this.fileDataItemHandles.addAll(fileDataItemUploadHandles);
+      this.folderDataItemHandles.addAll(folderDataItemUploadHandles);
       return;
     }
     // Set bundle size limit according the platform

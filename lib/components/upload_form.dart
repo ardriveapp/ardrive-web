@@ -268,10 +268,13 @@ class UploadForm extends StatelessWidget {
                         .reduce((value, element) => value += element)
                     : 0;
             final numberOfV2Files = state.uploadPlan.fileV2UploadHandles.length;
-
+            final numberOfTurboDataItems =
+                state.uploadPlan.fileDataItemHandles.length;
             return AppDialog(
-              title: appLocalizationsOf(context)
-                  .uploadNFiles(numberOfFilesInBundles + numberOfV2Files),
+              title: appLocalizationsOf(context).uploadNFiles(
+                  numberOfFilesInBundles +
+                      numberOfV2Files +
+                      numberOfTurboDataItems),
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -286,6 +289,14 @@ class UploadForm extends StatelessWidget {
                           children: [
                             for (final file in state
                                 .uploadPlan.fileV2UploadHandles.values) ...{
+                              ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(file.entity.name!),
+                                subtitle: Text(filesize(file.size)),
+                              ),
+                            },
+                            for (final file in state
+                                .uploadPlan.fileDataItemHandles.values) ...{
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(file.entity.name!),
@@ -308,22 +319,24 @@ class UploadForm extends StatelessWidget {
                     ),
                     const Divider(),
                     const SizedBox(height: 16),
-                    Text.rich(
-                      TextSpan(
-                        children: [
-                          TextSpan(
-                            text: appLocalizationsOf(context)
-                                .cost(state.costEstimate.arUploadCost),
-                          ),
-                          if (state.costEstimate.usdUploadCost != null)
+                    if (!state.uploadPlan.isFreeThanksToTurbo)
+                      Text.rich(
+                        TextSpan(
+                          children: [
                             TextSpan(
-                                text: state.costEstimate.usdUploadCost! >= 0.01
-                                    ? ' (~${state.costEstimate.usdUploadCost!.toStringAsFixed(2)} USD)'
-                                    : ' (< 0.01 USD)'),
-                        ],
-                        style: Theme.of(context).textTheme.bodyText1,
+                              text: appLocalizationsOf(context)
+                                  .cost(state.costEstimate.arUploadCost),
+                            ),
+                            if (state.costEstimate.usdUploadCost != null)
+                              TextSpan(
+                                  text: state.costEstimate.usdUploadCost! >=
+                                          0.01
+                                      ? ' (~${state.costEstimate.usdUploadCost!.toStringAsFixed(2)} USD)'
+                                      : ' (< 0.01 USD)'),
+                          ],
+                          style: Theme.of(context).textTheme.bodyText1,
+                        ),
                       ),
-                    ),
                     if (state.uploadIsPublic) ...{
                       const SizedBox(height: 8),
                       Text(
@@ -395,7 +408,7 @@ class UploadForm extends StatelessWidget {
                     : 0;
             final numberOfV2Files = state.uploadPlan.fileV2UploadHandles.length;
             final numberOfTurboDataItems =
-                state.uploadPlan.fileDataItemUploadHandles.length;
+                state.uploadPlan.fileDataItemHandles.length;
             return AppDialog(
               dismissable: false,
               title: appLocalizationsOf(context).uploadingNFiles(
@@ -426,8 +439,8 @@ class UploadForm extends StatelessWidget {
                                     : null),
                           ),
                         },
-                        for (final file in state
-                            .uploadPlan.fileDataItemUploadHandles.values) ...{
+                        for (final file
+                            in state.uploadPlan.fileDataItemHandles.values) ...{
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(file.entity.name!),
