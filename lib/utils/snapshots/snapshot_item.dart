@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/string_types.dart';
-import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/main.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
@@ -241,7 +241,7 @@ class SnapshotItemOnChain implements SnapshotItem {
   }
 
   String get _dataUri {
-    return '${Resources.arweaveGatewayUrl}/$txId';
+    return '${config.defaultArweaveGatewayUrl}/$txId';
   }
 
   @override
