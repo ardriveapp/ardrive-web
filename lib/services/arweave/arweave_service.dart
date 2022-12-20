@@ -21,6 +21,9 @@ import 'package:retry/retry.dart';
 
 import 'error/gateway_response_handler.dart';
 
+typedef SnapshotEntityTransaction
+    = SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
+
 const byteCountPerChunk = 262144; // 256 KiB
 const defaultMaxRetries = 8;
 const kMaxNumberOfTransactionsPerPage = 100;
@@ -114,8 +117,7 @@ class ArweaveService {
     return query.data?.transaction;
   }
 
-  Stream<SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge>
-      getAllSnapshotsOfDrive(
+  Stream<SnapshotEntityTransaction> getAllSnapshotsOfDrive(
     String driveId,
     int? lastBlockHeight,
   ) async* {
@@ -133,9 +135,9 @@ class ArweaveService {
         ),
       );
 
-      for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge node
+      for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge edge
           in snapshotEntityHistoryQuery.data!.transactions.edges) {
-        yield node;
+        yield edge.node;
       }
 
       cursor = snapshotEntityHistoryQuery.data!.transactions.edges.isNotEmpty

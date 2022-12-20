@@ -39,14 +39,10 @@ Stream<double> _syncDrive(
 
   final transactions = <DriveHistoryTransaction>[];
 
-  final snapshotsStream = arweaveService
-      .getAllSnapshotsOfDrive(
-        driveId,
-        lastBlockHeight,
-      )
-      .map(
-        (edge) => edge.node,
-      );
+  final snapshotsStream = arweaveService.getAllSnapshotsOfDrive(
+    driveId,
+    lastBlockHeight,
+  );
   final List<SnapshotItem> snapshotItems = await SnapshotItem.instantiateAll(
     snapshotsStream,
   ).toList();
