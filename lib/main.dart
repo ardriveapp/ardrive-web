@@ -77,7 +77,10 @@ Future<void> _initialize() async {
   ArDriveDownloader.initialize();
 
   arweave = ArweaveService(
-      Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
+    Arweave(
+      gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!),
+    ),
+  );
 
   if (kIsWeb) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));

@@ -22,6 +22,7 @@ Future<void> promptToMove(
           driveId: driveId,
           selectedItems: selectedItems,
           arweave: context.read<ArweaveService>(),
+          turboService: context.read<TurboService>(),
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),
           syncCubit: context.read<SyncCubit>(),

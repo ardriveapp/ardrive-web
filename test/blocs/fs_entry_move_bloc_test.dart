@@ -3,6 +3,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
@@ -23,6 +24,7 @@ void main() {
     late Database db;
     late DriveDao driveDao;
     late ArweaveService arweave;
+    late TurboService turboService;
 
     late ProfileCubit profileCubit;
     late SyncCubit syncBloc;
@@ -212,6 +214,12 @@ void main() {
       arweave = ArweaveService(
         Arweave(gatewayUrl: Uri.parse(arweaveGatewayUrl)),
       );
+      when(() => arweave.postTx(any())).thenAnswer((_) async {});
+      turboService = TurboService(
+        turboUri: Uri.parse('mockTurboURl.dev'),
+        allowedDataItemSize: 0,
+        httpClient: ArDriveHTTP(),
+      );
       syncBloc = MockSyncBloc();
 
       profileCubit = MockProfileCubit();
@@ -248,6 +256,7 @@ void main() {
       'throws when selectedItems is empty',
       build: () => FsEntryMoveBloc(
         arweave: arweave,
+        turboService: turboService,
         syncCubit: syncBloc,
         driveId: driveId,
         driveDao: driveDao,
@@ -272,6 +281,7 @@ void main() {
       }),
       build: () => FsEntryMoveBloc(
         arweave: arweave,
+        turboService: turboService,
         syncCubit: syncBloc,
         driveId: driveId,
         driveDao: driveDao,
@@ -286,7 +296,6 @@ void main() {
           bloc.add(FsEntryMoveSubmit(
             folderInView:
                 (bloc.state as FsEntryMoveLoadSuccess).viewingFolder.folder,
-            dryRun: true,
           ));
         }
       },

@@ -4,6 +4,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +23,7 @@ void main() {
     late Database db;
 
     late ArweaveService arweave;
+    late TurboService turboService;
     late ProfileCubit profileCubit;
     late FolderCreateCubit folderCreateCubit;
 
@@ -40,10 +42,16 @@ void main() {
       arweave = ArweaveService(
         Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
       );
+      turboService = TurboService(
+        turboUri: Uri.parse('mockTurboURl.dev'),
+        allowedDataItemSize: 0,
+        httpClient: ArDriveHTTP(),
+      );
       profileCubit = MockProfileCubit();
 
       folderCreateCubit = FolderCreateCubit(
         arweave: arweave,
+        turboService: turboService,
         driveDao: driveDao,
         profileCubit: profileCubit,
         //TODO Mock or supply a driveId or parentFolderId

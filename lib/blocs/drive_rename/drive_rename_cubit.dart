@@ -3,6 +3,7 @@ import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -15,16 +16,19 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
   final String driveId;
 
   final ArweaveService _arweave;
+  final TurboService _turboService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
 
   DriveRenameCubit({
     required this.driveId,
     required ArweaveService arweave,
+    required TurboService turboService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
   })  : _arweave = arweave,
+        _turboService = turboService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         super(DriveRenameInitial()) {
@@ -71,20 +75,33 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
       await _driveDao.transaction(() async {
         var drive = await _driveDao.driveById(driveId: driveId).getSingle();
         drive = drive.copyWith(name: newName, lastUpdated: DateTime.now());
-
         final driveEntity = drive.asEntity();
 
-        final driveTx = await _arweave.prepareEntityTx(
-            driveEntity, profile.wallet, driveKey);
+        if (useTurbo) {
+          final driveTx = await _arweave.prepareEntityDataItem(
+            driveEntity,
+            profile.wallet,
+            key: driveKey,
+          );
 
-        await _arweave.postTx(driveTx);
-        await _driveDao.writeToDrive(drive);
+          await _turboService.postDataItem(dataItem: driveTx);
+
+          driveEntity.txId = driveTx.id;
+        } else {
+          final driveTx = await _arweave.prepareEntityTx(
+              driveEntity, profile.wallet, driveKey);
+
+          await _arweave.postTx(driveTx);
+          await _driveDao.writeToDrive(drive);
+
+          driveEntity.txId = driveTx.id;
+        }
 
         driveEntity.ownerAddress = profile.walletAddress;
-        driveEntity.txId = driveTx.id;
-
+        await _driveDao.writeToDrive(drive);
         await _driveDao.insertDriveRevision(driveEntity.toRevisionCompanion(
-            performedAction: RevisionAction.rename));
+          performedAction: RevisionAction.rename,
+        ));
       });
 
       emit(DriveRenameSuccess());
