@@ -3,7 +3,6 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_platform.dart';
-import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
@@ -35,6 +34,15 @@ void main() {
     const rootFolderFileCount = 3;
 
     setUp(() async {
+      registerFallbackValue(
+        await getTestTransaction('test/fixtures/signed_v2_tx.json'),
+      );
+      registerFallbackValue(
+        await getTestDataItem('test/fixtures/signed_v2_tx.json'),
+      );
+      registerFallbackValue(FileEntity());
+      registerFallbackValue(Wallet());
+
       db = getTestDb();
       await db.batch((batch) {
         // Default date
@@ -209,19 +217,22 @@ void main() {
       });
 
       driveDao = db.driveDao;
-      const arweaveGatewayUrl = 'https://www.fake-arweave-gateway-url.com';
       AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
-      arweave = ArweaveService(
-        Arweave(gatewayUrl: Uri.parse(arweaveGatewayUrl)),
+      arweave = MockArweaveService();
+      when(() => arweave.postTx(any())).thenAnswer((_) async => Future.value());
+      when(() => arweave.prepareEntityDataItem(any(), any(),
+          key: any(named: 'key'))).thenAnswer(
+        (_) async => await getTestDataItem('test/fixtures/signed_v2_tx.json'),
       );
-      when(() => arweave.postTx(any())).thenAnswer((_) async {});
-      turboService = TurboService(
-        turboUri: Uri.parse('mockTurboURl.dev'),
-        allowedDataItemSize: 0,
-        httpClient: ArDriveHTTP(),
+      turboService = MockTurboService();
+      when(() => turboService.postDataItem(dataItem: any(named: 'dataItem')))
+          .thenAnswer(
+        (_) async => Future.value(),
       );
       syncBloc = MockSyncBloc();
-
+      when(() => syncBloc.generateFsEntryPaths(any(), any(), any())).thenAnswer(
+        (_) async => Future.value(),
+      );
       profileCubit = MockProfileCubit();
 
       final keyBytes = Uint8List(32);
