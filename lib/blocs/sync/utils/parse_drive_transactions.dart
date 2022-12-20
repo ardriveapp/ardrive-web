@@ -6,9 +6,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   required DriveDao driveDao,
   required Database database,
   required ArweaveService arweaveService,
-  required List<
-          DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-      transactions,
+  required List<DriveHistoryTransaction> transactions,
   required Drive drive,
   required SecretKey? driveKey,
   required int lastBlockHeight,
@@ -43,8 +41,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
 
   final owner = await arweave.getOwnerForDriveEntityWithId(drive.id);
 
-  yield* _batchProcess<
-          DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>(
+  yield* _batchProcess<DriveHistoryTransaction>(
       list: transactions,
       batchSize: batchSize,
       endOfBatchCallback: (items) async* {

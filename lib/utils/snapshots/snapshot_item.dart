@@ -12,14 +12,19 @@ import 'package:flutter/foundation.dart';
 import 'package:stash/stash_api.dart';
 import 'package:stash_memory/stash_memory.dart';
 
+// TODO: PE-2782: Abstract auto-generated GQL types
+typedef DriveHistoryTransaction
+    = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
+typedef SnapshotEntityTransaction
+    = SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
+
 abstract class SnapshotItem implements SegmentedGQLData {
   abstract final int blockStart;
   abstract final int blockEnd;
   abstract final DriveID driveId;
 
   factory SnapshotItem.fromGQLNode({
-    required SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-        node,
+    required SnapshotEntityTransaction node,
     required HeightRange subRanges,
     @visibleForTesting String? fakeSource,
   }) {
@@ -45,9 +50,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   }
 
   factory SnapshotItem.fromStream({
-    required Stream<
-            DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-        source,
+    required Stream<DriveHistoryTransaction> source,
     required int blockStart,
     required int blockEnd,
     required DriveID driveId,
@@ -64,8 +67,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
 
   /// itemStream - The result of SnapshotEntityHistory query in DESC order (newer first)
   static Stream<SnapshotItem> instantiateAll(
-    Stream<SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-        itemsStream, {
+    Stream<SnapshotEntityTransaction> itemsStream, {
     int? lastBlockHeight,
     @visibleForTesting String? fakeSource,
   }) async* {
@@ -73,8 +75,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
       if (lastBlockHeight != null) Range(start: 0, end: lastBlockHeight),
     ]);
 
-    await for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction item
-        in itemsStream) {
+    await for (SnapshotEntityTransaction item in itemsStream) {
       late SnapshotItem snapshotItem;
 
       try {
@@ -102,8 +103,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   }
 
   static SnapshotItem instantiateSingle(
-    SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-        item, {
+    SnapshotEntityTransaction item, {
     required HeightRange obscuredBy,
     @visibleForTesting String? fakeSource,
   }) {
@@ -145,9 +145,7 @@ class SnapshotItemToBeCreated implements SnapshotItem {
     required this.blockEnd,
     required this.driveId,
     required this.subRanges,
-    required Stream<
-            DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-        source,
+    required Stream<DriveHistoryTransaction> source,
   }) : _streamQueue = StreamQueue(source);
 
   @override
@@ -162,8 +160,7 @@ class SnapshotItemToBeCreated implements SnapshotItem {
   int get currentIndex => _currentIndex;
 
   @override
-  Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-      getNextStream() {
+  Stream<DriveHistoryTransaction> getNextStream() {
     _currentIndex++;
     if (currentIndex >= subRanges.rangeSegments.length) {
       throw SubRangeIndexOverflow(index: currentIndex);
@@ -172,13 +169,11 @@ class SnapshotItemToBeCreated implements SnapshotItem {
     return _getNextStream();
   }
 
-  Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-      _getNextStream() async* {
+  Stream<DriveHistoryTransaction> _getNextStream() async* {
     final Range range = subRanges.rangeSegments[currentIndex];
 
     while (await _streamQueue.hasNext) {
-      final DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-          node = (await _streamQueue.peek);
+      final DriveHistoryTransaction node = (await _streamQueue.peek);
       final height = node.block!.height;
 
       if (range.start > height) {
@@ -186,8 +181,7 @@ class SnapshotItemToBeCreated implements SnapshotItem {
         _streamQueue.skip(1);
       } else if (range.isInRange(height)) {
         // yield items in range
-        yield (await _streamQueue.next)
-            as DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
+        yield (await _streamQueue.next) as DriveHistoryTransaction;
       } else {
         // when the stream for the latest sub-range is read, close the stream
         if (currentIndex == subRanges.rangeSegments.length - 1) {
@@ -250,8 +244,7 @@ class SnapshotItemOnChain implements SnapshotItem {
   }
 
   @override
-  Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-      getNextStream() {
+  Stream<DriveHistoryTransaction> getNextStream() {
     _currentIndex++;
     if (currentIndex >= subRanges.rangeSegments.length) {
       throw SubRangeIndexOverflow(index: currentIndex);
@@ -260,8 +253,7 @@ class SnapshotItemOnChain implements SnapshotItem {
     return _getNextStream();
   }
 
-  Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
-      _getNextStream() async* {
+  Stream<DriveHistoryTransaction> _getNextStream() async* {
     final Range range = subRanges.rangeSegments[currentIndex];
 
     final Map dataJson = jsonDecode(await _source());
@@ -269,13 +261,10 @@ class SnapshotItemOnChain implements SnapshotItem {
         List.castFrom<dynamic, Map>(dataJson['txSnapshots']);
 
     for (Map item in txSnapshots) {
-      DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-          node;
+      DriveHistoryTransaction node;
 
       try {
-        node =
-            DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-                .fromJson(item['gqlNode']);
+        node = DriveHistoryTransaction.fromJson(item['gqlNode']);
       } catch (e, s) {
         print('Error while parsing GQLNode - $e, $s');
         rethrow;

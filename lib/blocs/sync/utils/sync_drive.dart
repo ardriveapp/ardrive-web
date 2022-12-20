@@ -37,8 +37,7 @@ Stream<double> _syncDrive(
 
   logSync('Fetching all transactions for drive ${drive.name}\n');
 
-  final transactions = <
-      DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>[];
+  final transactions = <DriveHistoryTransaction>[];
 
   final snapshotsStream = arweaveService
       .getAllSnapshotsOfDrive(
@@ -99,8 +98,7 @@ Stream<double> _syncDrive(
 
   /// First phase of the sync
   /// Here we get all transactions from its drive.
-  await for (DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction t
-      in transactionsStream) {
+  await for (DriveHistoryTransaction t in transactionsStream) {
     double calculatePercentageBasedOnBlockHeights() {
       final block = t.block;
 

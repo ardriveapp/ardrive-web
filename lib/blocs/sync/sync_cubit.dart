@@ -36,6 +36,10 @@ part 'utils/parse_drive_transactions.dart';
 part 'utils/sync_drive.dart';
 part 'utils/update_transaction_statuses.dart';
 
+// TODO: PE-2782: Abstract auto-generated GQL types
+typedef DriveHistoryTransaction
+    = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
+
 const kRequiredTxConfirmationCount = 15;
 const kRequiredTxConfirmationPendingThreshold = 60 * 8;
 
