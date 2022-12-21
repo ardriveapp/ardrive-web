@@ -206,13 +206,14 @@ class ArweaveService {
     String? owner,
     int lastBlockHeight, {
     required SnapshotDriveHistory snapshotDriveHistory,
+    required DriveID driveId,
   }) async {
     final List<Uint8List> responses = await Future.wait(
       entityTxs.map(
         (entity) async {
           final txId = entity.id;
           final Uint8List? cachedData =
-              await SnapshotItemOnChain.getDataForTxId(txId);
+              await SnapshotItemOnChain.getDataForTxId(driveId, txId);
           if (cachedData != null) {
             return cachedData;
           } else {
@@ -224,8 +225,6 @@ class ArweaveService {
         },
       ),
     );
-
-    await SnapshotItemOnChain.dispose();
 
     final blockHistory = <BlockEntities>[];
 

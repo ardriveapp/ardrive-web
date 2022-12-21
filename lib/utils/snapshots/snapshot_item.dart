@@ -202,7 +202,7 @@ class SnapshotItemOnChain implements SnapshotItem {
   String? _cachedSource;
   int _currentIndex = -1;
 
-  static Vault<Uint8List>? _jsonMetadataVault;
+  static Map<String, Cache<Uint8List>> _jsonMetadataCaches = {};
 
   SnapshotItemOnChain({
     required this.blockEnd,
@@ -279,7 +279,7 @@ class SnapshotItemOnChain implements SnapshotItem {
         if (data != null) {
           final TxID txId = node.id;
           final Uint8List dataAsBytes = Uint8List.fromList(utf8.encode(data));
-          _setDataForTxId(txId, dataAsBytes);
+          await _setDataForTxId(driveId, txId, dataAsBytes);
         }
       }
     }
@@ -292,34 +292,42 @@ class SnapshotItemOnChain implements SnapshotItem {
     return;
   }
 
-  static Future<Uint8List> _setDataForTxId(TxID txId, Uint8List data) async {
-    final cache = await _lazilyInitCache();
+  static Future<Uint8List> _setDataForTxId(
+    DriveID driveId,
+    TxID txId,
+    Uint8List data,
+  ) async {
+    final Cache<Uint8List> cache = await _lazilyInitCache(driveId);
 
     await cache.put(txId, data);
     return data;
   }
 
-  static Future<Uint8List?> getDataForTxId(TxID txId) async {
-    final Vault<Uint8List> cache = await _lazilyInitCache();
+  static Future<Uint8List?> getDataForTxId(DriveID driveId, TxID txId) async {
+    final Cache<Uint8List> cache = await _lazilyInitCache(driveId);
 
-    final Uint8List? value = await cache.get(txId);
-    await cache.remove(txId);
+    final Uint8List? value = await cache.getAndRemove(txId);
 
     return value;
   }
 
-  static Future<Vault<Uint8List>> _lazilyInitCache() async {
-    if (_jsonMetadataVault == null) {
-      final vaultStore = await newMemoryVaultStore();
-      _jsonMetadataVault = await vaultStore.vault<Uint8List>(
-        name: 'snapshot-data',
+  static Future<Cache<Uint8List>> _lazilyInitCache(DriveID driveId) async {
+    if (!_jsonMetadataCaches.containsKey(driveId)) {
+      final store = await newMemoryCacheStore();
+      final cache = await store.cache<Uint8List>(
+        name: 'snapshot-data-$driveId',
+        maxEntries: 100000,
       );
+
+      _jsonMetadataCaches[driveId] = cache;
     }
 
-    return _jsonMetadataVault!;
+    return _jsonMetadataCaches[driveId]!;
   }
 
-  static Future<void> dispose() async {
-    await _jsonMetadataVault?.clear();
+  static Future<void> dispose(DriveID driveId) async {
+    final cache = _jsonMetadataCaches[driveId];
+
+    await cache?.clear();
   }
 }

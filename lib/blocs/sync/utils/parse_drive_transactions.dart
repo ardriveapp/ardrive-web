@@ -54,6 +54,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
           owner,
           lastBlockHeight,
           snapshotDriveHistory: snapshotDriveHistory,
+          driveId: drive.id,
         );
 
         // Create entries for all the new revisions of file and folders in this drive.

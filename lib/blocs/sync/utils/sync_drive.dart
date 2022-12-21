@@ -176,6 +176,8 @@ Stream<double> _syncDrive(
     (parseProgress) => parseProgress * 0.9,
   );
 
+  await SnapshotItemOnChain.dispose(drive.id);
+
   final syncDriveTotalTime =
       DateTime.now().difference(startSyncDT).inMilliseconds;
 
