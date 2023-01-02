@@ -31,7 +31,7 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ar-io/ardrive_http
-      ref: v1.0.0
+      ref: b2c1480aef1c3c0c03e41e6afa08f3ce932841d2
   artemis: ^7.0.0-beta.13
   arweave:
     git:
