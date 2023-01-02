@@ -117,7 +117,7 @@ Stream<double> _syncDrive(
 
   yield* _parseDriveTransactionsIntoDatabaseEntities(
     driveDao: driveDao,
-    arweaveService: arweaveService,
+    arweave: arweaveService,
     database: database,
     transactions: transactions,
     drive: drive,

@@ -6,7 +6,6 @@ import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/services.dart';
@@ -153,7 +152,7 @@ void main() {
               fileV2UploadHandles: {},
               fileDataItemUploadHandles: {},
               folderDataItemUploadHandles: {},
-              turboService: turbo,
+              turboService: DontUseTurbo(),
             ),
           ));
 
@@ -167,7 +166,7 @@ void main() {
           walletAddress: tWalletAddress!,
           walletBalance: BigInt.one,
           cipherKey: SecretKey(tKeyBytes),
-          useTurbo: turbo.useTurbo,
+          useTurbo: false,
         ),
       );
       when(() => mockProfileCubit!.checkIfWalletMismatch())
@@ -243,7 +242,7 @@ void main() {
           walletAddress: tWalletAddress!,
           walletBalance: BigInt.one,
           cipherKey: SecretKey(tKeyBytes),
-          useTurbo: turbo.useTurbo,
+          useTurbo: false,
         ),
       );
       when(() => mockProfileCubit!.checkIfWalletMismatch())
@@ -264,7 +263,7 @@ void main() {
             fileV2UploadHandles: {},
             fileDataItemUploadHandles: {},
             folderDataItemUploadHandles: {},
-            turboService: turbo,
+            turboService: DontUseTurbo(),
           ),
         ),
       );
