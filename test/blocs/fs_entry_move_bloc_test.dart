@@ -224,7 +224,7 @@ void main() {
           key: any(named: 'key'))).thenAnswer(
         (_) async => await getTestDataItem('test/fixtures/signed_v2_tx.json'),
       );
-      turboService = MockTurboService();
+      turboService = DontUseTurbo();
       when(() => turboService.postDataItem(dataItem: any(named: 'dataItem')))
           .thenAnswer(
         (_) async => Future.value(),

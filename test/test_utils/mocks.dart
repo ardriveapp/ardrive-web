@@ -21,8 +21,6 @@ class MockContext extends Mock implements BuildContext {}
 
 class MockArweaveService extends Mock implements ArweaveService {}
 
-class MockTurboService extends Mock implements TurboService {}
-
 class MockProfileDao extends Mock implements ProfileDao {}
 
 class MockDriveDao extends Mock implements DriveDao {}
