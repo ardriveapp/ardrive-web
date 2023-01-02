@@ -30,7 +30,6 @@ dev_dependencies:
   flutter_lints: ^2.0.0
 
 flutter:
-
   # To add assets to your package, add an assets section, like this:
   assets:
     - assets/icons/

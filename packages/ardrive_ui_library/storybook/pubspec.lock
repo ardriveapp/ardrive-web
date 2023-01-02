@@ -353,7 +353,11 @@ packages:
       name: jovial_svg
       url: "https://pub.dartlang.org"
     source: hosted
+<<<<<<< HEAD
     version: "1.1.8"
+=======
+    version: "1.1.7"
+>>>>>>> origin/PE-2574-add-data-table
   js:
     dependency: transitive
     description:
