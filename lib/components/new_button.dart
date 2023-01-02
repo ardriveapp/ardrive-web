@@ -5,7 +5,6 @@ import 'package:ardrive/components/drive_create_form.dart';
 import 'package:ardrive/components/folder_create_form.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/constants.dart';
 import 'package:flutter/material.dart';
 
 Widget buildNewButton(
@@ -219,8 +218,12 @@ List<PopupMenuEntry<Function>> _buildItems(
   if (profileState.runtimeType == ProfileLoggedIn) {
     final minimumWalletBalance = BigInt.from(10000000);
     final profile = profileState as ProfileLoggedIn;
-    final hasMinBalance =
-        useTurbo || profile.walletBalance >= minimumWalletBalance;
+    final hasMinBalance = !profile.canUpload(
+      minimumWalletBalance: minimumWalletBalance,
+    );
+    final canCreateNewDrive = drivesState is DrivesLoadSuccess
+        ? drivesState.canCreateNewDrive && hasMinBalance
+        : false;
     return [
       if (driveDetailState is DriveDetailLoadSuccess) ...{
         _buildNewFolderItem(context, driveDetailState, hasMinBalance),
@@ -238,7 +241,7 @@ List<PopupMenuEntry<Function>> _buildItems(
         const PopupMenuDivider(key: Key('divider-2')),
       },
       if (drivesState is DrivesLoadSuccess) ...{
-        _buildCreateDrive(context, drivesState, hasMinBalance),
+        _buildCreateDrive(context, canCreateNewDrive),
         _buildAttachDrive(context)
       },
       if (driveDetailState is DriveDetailLoadSuccess &&
@@ -337,14 +340,13 @@ PopupMenuEntry<Function> _buildAttachDrive(BuildContext context) {
 
 PopupMenuEntry<Function> _buildCreateDrive(
   BuildContext context,
-  DrivesLoadSuccess drivesState,
-  bool hasMinBalance,
+  bool canCreateNewDrive,
 ) {
   return _buildMenuItemTile(
     context: context,
-    isEnabled: useTurbo || drivesState.canCreateNewDrive && hasMinBalance,
+    isEnabled: canCreateNewDrive,
     itemTitle: appLocalizationsOf(context).newDrive,
-    message: hasMinBalance
+    message: canCreateNewDrive
         ? null
         : appLocalizationsOf(context).insufficientFundsForCreateADrive,
     value: (context) => promptToCreateDrive(context),

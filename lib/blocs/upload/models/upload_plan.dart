@@ -1,8 +1,8 @@
 import 'package:ardrive/blocs/upload/upload_handles/bundle_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/folder_data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/bundles/next_fit_bundle_packer.dart';
-import 'package:ardrive/utils/constants.dart';
 import 'package:flutter/foundation.dart';
 
 import '../upload_handles/file_data_item_upload_handle.dart';
@@ -32,32 +32,36 @@ class UploadPlan {
     required Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles,
     required Map<String, FolderDataItemUploadHandle>
         folderDataItemUploadHandles,
+    required TurboService turboService,
   }) async {
     final uploadPlan = UploadPlan._create(
       fileV2UploadHandles: fileV2UploadHandles,
     );
     if (fileDataItemUploadHandles.isNotEmpty ||
         folderDataItemUploadHandles.isNotEmpty) {
-      await uploadPlan.createBundleHandlesFromDataItemHandles(
+      await uploadPlan._createBundleHandlesFromDataItemHandles(
         fileDataItemUploadHandles: fileDataItemUploadHandles,
         folderDataItemUploadHandles: folderDataItemUploadHandles,
+        turboService: turboService,
       );
     }
     return uploadPlan;
   }
 
-  Future<void> createBundleHandlesFromDataItemHandles({
+  Future<void> _createBundleHandlesFromDataItemHandles({
     Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles = const {},
     Map<String, FolderDataItemUploadHandle> folderDataItemUploadHandles =
         const {},
+    required TurboService turboService,
   }) async {
-    isFreeThanksToTurbo = useTurbo &&
+    isFreeThanksToTurbo = turboService.useTurbo &&
         fileDataItemUploadHandles.values
-            .map((dataItem) => dataItem.size <= freeArfsDataAllowLimit)
+            .map(
+                (dataItem) => dataItem.size <= turboService.allowedDataItemSize)
             .reduce((value, acc) => value && acc);
     if (isFreeThanksToTurbo) {
-      this.fileDataItemHandles.addAll(fileDataItemUploadHandles);
-      this.folderDataItemHandles.addAll(folderDataItemUploadHandles);
+      fileDataItemHandles.addAll(fileDataItemUploadHandles);
+      folderDataItemHandles.addAll(folderDataItemUploadHandles);
       return;
     }
     // Set bundle size limit according the platform

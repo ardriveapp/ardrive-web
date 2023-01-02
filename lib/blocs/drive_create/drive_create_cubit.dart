@@ -4,7 +4,6 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/services/turbo/turbo.dart';
-import 'package:ardrive/utils/constants.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -59,7 +58,8 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     }
 
     final minimumWalletBalance = BigInt.from(10000000);
-    if (!useTurbo && profile.walletBalance <= minimumWalletBalance) {
+    if (!_turboService.useTurbo &&
+        profile.walletBalance <= minimumWalletBalance) {
       emit(DriveCreateZeroBalance());
       return;
     }
@@ -109,7 +109,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await rootFolderDataItem.sign(profile.wallet);
       await driveDataItem.sign(profile.wallet);
 
-      if (useTurbo) {
+      if (_turboService.useTurbo) {
         await _turboService.postDataItem(dataItem: rootFolderDataItem);
         await _turboService.postDataItem(dataItem: driveDataItem);
       } else {

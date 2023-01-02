@@ -10,9 +10,7 @@ import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
-import 'package:ardrive/services/turbo/turbo.dart';
 import 'package:ardrive/utils/app_flavors.dart';
-import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
@@ -41,6 +39,7 @@ import 'theme/theme.dart';
 late ConfigService configService;
 late AppConfig config;
 late ArweaveService arweave;
+late TurboService turbo;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -81,6 +80,15 @@ Future<void> _initialize() async {
       gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!),
     ),
   );
+  final useTurbo = config.useTurbo ?? false;
+  turbo = useTurbo
+      ? TurboService(
+          useTurbo: useTurbo,
+          turboUri: Uri.parse(config.defaultTurboUrl!),
+          allowedDataItemSize: config.allowedDataItemSizeForTurbo!,
+          httpClient: ArDriveHTTP(),
+        )
+      : DontUseTurbo();
 
   if (kIsWeb) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
@@ -132,11 +140,7 @@ class AppState extends State<App> {
         providers: [
           RepositoryProvider<ArweaveService>(create: (_) => arweave),
           RepositoryProvider<TurboService>(
-            create: (_) => TurboService(
-              turboUri: turboProdTurboUrl,
-              allowedDataItemSize: freeArfsDataAllowLimit,
-              httpClient: ArDriveHTTP(),
-            ),
+            create: (_) => turbo,
           ),
           RepositoryProvider<PstService>(
             create: (_) => PstService(
@@ -170,6 +174,7 @@ class AppState extends State<App> {
               BlocProvider(
                 create: (context) => ProfileCubit(
                   arweave: context.read<ArweaveService>(),
+                  turboService: context.read<TurboService>(),
                   profileDao: context.read<ProfileDao>(),
                   db: context.read<Database>(),
                 ),

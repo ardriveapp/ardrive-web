@@ -60,6 +60,7 @@ Future<void> promptToUpload(
         create: (context) => UploadCubit(
           uploadPlanUtils: UploadPlanUtils(
             arweave: context.read<ArweaveService>(),
+            turboService: context.read<TurboService>(),
             driveDao: context.read<DriveDao>(),
           ),
           driveId: driveId,

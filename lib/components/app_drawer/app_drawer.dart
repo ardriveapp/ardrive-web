@@ -5,7 +5,6 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/enums.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/inferno_rules_url.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:flutter/foundation.dart';
@@ -220,15 +219,18 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildDriveActionsButton(BuildContext context, DrivesState drivesState,
-      ProfileState profileState) {
+  Widget _buildDriveActionsButton(
+    BuildContext context,
+    DrivesState drivesState,
+    ProfileState profileState,
+  ) {
     final theme = Theme.of(context);
     final minimumWalletBalance = BigInt.from(10000000);
 
     if (profileState.runtimeType == ProfileLoggedIn) {
       final profile = profileState as ProfileLoggedIn;
       final notEnoughARInWallet =
-          useTurbo || profile.walletBalance <= minimumWalletBalance;
+          !profile.canUpload(minimumWalletBalance: minimumWalletBalance);
       return Column(
         children: [
           ListTileTheme(

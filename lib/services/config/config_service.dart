@@ -16,14 +16,18 @@ class ConfigService {
   Future<AppConfig> getConfig({required LocalKeyValueStore localStore}) async {
     if (_config == null) {
       const environment = kReleaseMode ? 'prod' : 'dev';
-      final configContent =
-          await rootBundle.loadString('assets/config/$environment.json');
+      final configContent = await rootBundle.loadString(
+        'assets/config/$environment.json',
+      );
 
       final gatewayUrl = localStore.getString('arweaveGatewayUrl');
-
-      _config = AppConfig.fromJson(gatewayUrl != null
-          ? {'defaultArweaveGatewayUrl': gatewayUrl}
-          : json.decode(configContent));
+      AppConfig configFromEnv = AppConfig.fromJson(json.decode(configContent));
+      if (gatewayUrl != null) {
+        configFromEnv = configFromEnv.copyWith(
+          defaultArweaveGatewayUrl: gatewayUrl,
+        );
+      }
+      _config = configFromEnv;
     }
 
     return _config!;

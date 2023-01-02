@@ -7,7 +7,6 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
-import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
@@ -47,11 +46,7 @@ void main() {
       arweave = ArweaveService(
         Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
       );
-      turboService = TurboService(
-        turboUri: Uri.parse('mockTurboURl.dev'),
-        allowedDataItemSize: 0,
-        httpClient: ArDriveHTTP(),
-      );
+      turboService = DontUseTurbo();
       drivesCubit = MockDrivesCubit();
       profileCubit = MockProfileCubit();
 
@@ -69,6 +64,7 @@ void main() {
           walletAddress: walletAddress,
           walletBalance: BigInt.one,
           cipherKey: SecretKey(keyBytes),
+          useTurbo: turboService.useTurbo,
         ),
       );
 

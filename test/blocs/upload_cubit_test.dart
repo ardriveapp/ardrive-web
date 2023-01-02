@@ -6,11 +6,11 @@ import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
+import 'package:ardrive/main.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/types/winston.dart';
-import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -137,11 +137,7 @@ void main() {
         profileCubit: mockProfileCubit!,
         driveDao: mockDriveDao,
         arweave: mockArweave,
-        turboService: TurboService(
-          turboUri: Uri.parse('mockTurboURl.dev'),
-          allowedDataItemSize: 0,
-          httpClient: ArDriveHTTP(),
-        ),
+        turboService: DontUseTurbo(),
         pst: mockPst);
   }
 
@@ -157,6 +153,7 @@ void main() {
               fileV2UploadHandles: {},
               fileDataItemUploadHandles: {},
               folderDataItemUploadHandles: {},
+              turboService: turbo,
             ),
           ));
 
@@ -170,6 +167,7 @@ void main() {
           walletAddress: tWalletAddress!,
           walletBalance: BigInt.one,
           cipherKey: SecretKey(tKeyBytes),
+          useTurbo: turbo.useTurbo,
         ),
       );
       when(() => mockProfileCubit!.checkIfWalletMismatch())
@@ -245,6 +243,7 @@ void main() {
           walletAddress: tWalletAddress!,
           walletBalance: BigInt.one,
           cipherKey: SecretKey(tKeyBytes),
+          useTurbo: turbo.useTurbo,
         ),
       );
       when(() => mockProfileCubit!.checkIfWalletMismatch())
@@ -265,6 +264,7 @@ void main() {
             fileV2UploadHandles: {},
             fileDataItemUploadHandles: {},
             folderDataItemUploadHandles: {},
+            turboService: turbo,
           ),
         ),
       );

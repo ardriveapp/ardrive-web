@@ -3,7 +3,6 @@ import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/constants.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -77,7 +76,7 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
         drive = drive.copyWith(name: newName, lastUpdated: DateTime.now());
         final driveEntity = drive.asEntity();
 
-        if (useTurbo) {
+        if (_turboService.useTurbo) {
           final driveTx = await _arweave.prepareEntityDataItem(
             driveEntity,
             profile.wallet,

@@ -7,7 +7,6 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/constants.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
 import 'package:collection/collection.dart';
@@ -219,7 +218,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       await manifestMetaDataItem.sign(wallet);
       manifestFileEntity.txId = manifestMetaDataItem.id;
 
-      if (useTurbo) {
+      if (_turboService.useTurbo) {
         emit(
           CreateManifestTurboUploadConfirmation(
             manifestSize: arweaveManifest.size,

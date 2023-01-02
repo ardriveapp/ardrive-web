@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/utils/constants.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
@@ -238,7 +237,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
       }
     });
 
-    if (useTurbo) {
+    if (_turboService.useTurbo) {
       for (var dataItem in moveTxDataItems) {
         await _turboService.postDataItem(dataItem: dataItem);
       }
