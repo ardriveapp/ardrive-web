@@ -3,11 +3,11 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 1.38.0
+version: 1.40.0
 
 environment:
-  sdk: '>=2.18.2 <3.0.0'
-  flutter: 3.3.5
+  sdk: '>=2.18.5 <3.0.0'
+  flutter: 3.3.9
 
 # https://pub.dev/packages/script_runner
 script_runner:
@@ -19,9 +19,8 @@ script_runner:
   line_length: 80
   scripts:
     - setup: flutter clean && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs
-    - test: scr test-app && scr test-io && test-ui-library
+    - test: scr test-app && test-ui-library
     - test-app: flutter test
-    - test-io: cd packages/ardrive_io && flutter test
     - test-ui-library: cd packages/ardrive_ui_library && flutter test
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
@@ -31,10 +30,18 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  ardrive_http:
+    git:
+      url: https://github.com/ar-io/ardrive_http.git
+      ref: v1.0.0
+  ardrive_io:
+    git:
+      url: https://github.com/ar-io/ardrive_io.git
+      ref: v1.0.0
   artemis: ^7.0.0-beta.13
   arweave:
     git:
-      url: https://github.com/ardriveapp/arweave-dart
+      url: https://github.com/ardriveapp/arweave-dart.git
       ref: v3.4.0
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
@@ -74,8 +81,6 @@ dependencies:
   flutter_svg: ^1.1.3
   sqlite3_flutter_libs: ^0.5.9
   app_settings: ^4.1.8
-  ardrive_io:
-    path: packages/ardrive_io
   firebase_crashlytics: ^3.0.4
   firebase_core: ^2.1.1
   bloc_concurrency: ^0.2.0

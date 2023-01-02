@@ -218,7 +218,7 @@ class CreateManifestForm extends StatelessWidget {
                                     .aManifestIsASpecialKindOfFile, // trimmed spaces
                                 style: Theme.of(context).textTheme.bodyText1),
                             TextSpan(
-                              text: appLocalizationsOf(context).learnMore,
+                              text: ' ${appLocalizationsOf(context).learnMore}',
                               style: TextStyle(
                                   color: Theme.of(context)
                                       .textTheme

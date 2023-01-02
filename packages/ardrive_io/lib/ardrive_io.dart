@@ -1,5 +1,7 @@
 library ardrive_io;
 
+export 'package:cross_file/cross_file.dart';
+
 export 'src/ardrive_downloader.dart';
 export 'src/ardrive_io.dart';
 export 'src/cache_storage.dart';

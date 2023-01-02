@@ -34,11 +34,8 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       ),
     );
 
-    final dataRes = await http.get(
-      Uri.parse(
-        '${_arweave.client.api.gatewayUrl.origin}/${revision.dataTxId}',
-      ),
-    );
+    final dataRes = await ArDriveHTTP().getAsBytes(
+        '${_arweave.client.api.gatewayUrl.origin}/${revision.dataTxId}');
 
     if (fileKey != null) {
       final dataTx = await (_arweave.getTransactionDetails(revision.dataTxId));
@@ -46,12 +43,12 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       if (dataTx != null) {
         dataBytes = await decryptTransactionData(
           dataTx,
-          dataRes.bodyBytes,
+          dataRes.data,
           fileKey!,
         );
       }
     } else {
-      dataBytes = dataRes.bodyBytes;
+      dataBytes = dataRes.data;
     }
 
     emit(
