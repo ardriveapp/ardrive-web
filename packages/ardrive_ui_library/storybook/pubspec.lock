@@ -417,16 +417,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.0"
-<<<<<<< Updated upstream
-=======
-  number_paginator:
-    dependency: transitive
-    description:
-      name: number_paginator
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.2.3"
->>>>>>> Stashed changes
   path:
     dependency: transitive
     description:
@@ -588,7 +578,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "6.0.5"
-<<<<<<< Updated upstream
   rxdart:
     dependency: transitive
     description:
@@ -596,8 +585,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.27.7"
-=======
->>>>>>> Stashed changes
   security_scoped_resource:
     dependency: transitive
     description:
