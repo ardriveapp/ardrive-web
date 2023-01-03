@@ -1,7 +1,11 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
+import 'package:storybook/src/accordion.dart';
 import 'package:storybook/src/button.dart';
 import 'package:storybook/src/datatable.dart';
+import 'package:storybook/src/checkbox.dart';
+import 'package:storybook/src/fab.dart';
+import 'package:storybook/src/image.dart';
 import 'package:storybook/src/progress_bar.dart';
 import 'package:storybook/src/radio_button.dart';
 import 'package:storybook/src/shadows.dart';
@@ -59,10 +63,14 @@ class StoryBook extends StatelessWidget {
             modals(),
             radioButton(),
             radioButton(),
-            tabView(),
             dropArea(),
+            tabView(),
             progressBar(),
             overlay(),
+            accordion(),
+            image(),
+            checkBox(),
+            fab(),
           ]),
     );
   }

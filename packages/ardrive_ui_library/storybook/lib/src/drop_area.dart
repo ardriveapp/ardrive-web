@@ -10,6 +10,10 @@ WidgetbookCategory dropArea() {
         builder: (context) {
           return ArDriveStorybookAppBase(builder: (context) {
             return ArDriveDropAreaSingleInput(
+              errorDescription: context.knobs.text(
+                label: 'Error description',
+                initialValue: 'Something went wrong!',
+              ),
               height: context.knobs
                   .number(label: 'height', initialValue: 204)
                   .toDouble(),

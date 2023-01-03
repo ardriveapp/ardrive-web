@@ -19,6 +19,7 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
   @override
   Widget build(BuildContext context) => Drawer(
         elevation: 1,
+        width: kSideDrawerWidth,
         child: MultiBlocProvider(
           // Specify a key to ensure a new cubit is provided when the folder/file id changes.
           key: widget.maybeSelectedItem?.id != null
@@ -247,7 +248,8 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    yMMdDateFormatter.format(state.entry.lastModifiedDate),
+                    yMMdHmDateTimeFormatter
+                        .format(state.entry.lastModifiedDate),
                   ),
                 ),
               )
@@ -259,7 +261,7 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  yMMdDateFormatter.format(state.lastUpdated),
+                  yMMdHmDateTimeFormatter.format(state.lastUpdated),
                 ),
               ),
             ),
@@ -270,7 +272,7 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
               Align(
                 alignment: Alignment.centerRight,
                 child: Text(
-                  yMMdDateFormatter.format(state.dateCreated),
+                  yMMdHmDateTimeFormatter.format(state.dateCreated),
                 ),
               ),
             ),
@@ -451,8 +453,8 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                                 appLocalizationsOf(context).driveWasModified);
                         }
 
-                        dateCreatedSubtitle = Text(
-                            yMMdDateFormatter.format(revision.dateCreated));
+                        dateCreatedSubtitle = Text(yMMdHmDateTimeFormatter
+                            .format(revision.dateCreated));
 
                         revisionConfirmationStatus =
                             revision.confirmationStatus;
@@ -475,8 +477,8 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                                 appLocalizationsOf(context).folderWasModified);
                         }
 
-                        dateCreatedSubtitle = Text(
-                            yMMdDateFormatter.format(revision.dateCreated));
+                        dateCreatedSubtitle = Text(yMMdHmDateTimeFormatter
+                            .format(revision.dateCreated));
 
                         revisionConfirmationStatus =
                             revision.confirmationStatus;
@@ -546,8 +548,8 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
                                 appLocalizationsOf(context).fileWasModified);
                         }
 
-                        dateCreatedSubtitle = Text(
-                            yMMdDateFormatter.format(revision.dateCreated));
+                        dateCreatedSubtitle = Text(yMMdHmDateTimeFormatter
+                            .format(revision.dateCreated));
 
                         revisionConfirmationStatus = fileStatusFromTransactions(
                             revision.metadataTx, revision.dataTx);
