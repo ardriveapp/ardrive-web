@@ -1019,6 +1019,7 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.0.1"
+<<<<<<< HEAD
   number_paginator:
     dependency: transitive
     description:
@@ -1026,6 +1027,8 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.2.3"
+=======
+>>>>>>> PE-2574-add-data-table
   package_config:
     dependency: transitive
     description:

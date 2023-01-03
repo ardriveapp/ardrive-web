@@ -4,7 +4,6 @@ import 'package:storybook/src/ardrive_app_base.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookCategory overlay() {
-  final controller = ArDriveOverlayController();
   return WidgetbookCategory(name: 'Overlay', widgets: [
     WidgetbookComponent(name: 'Dropdown', useCases: [
       WidgetbookUseCase(
@@ -14,37 +13,29 @@ WidgetbookCategory overlay() {
             return Column(
               children: [
                 ArDriveDropdown(
-                  items: [
-                    ArDriveDropdownItem(
-                      content: Text(
-                        'Create new Drive',
-                        style: ArDriveTypography.body.buttonLargeBold(),
+                    items: [
+                      ArDriveDropdownItem(
+                        content: Text(
+                          'Create new Drive',
+                          style: ArDriveTypography.body.buttonLargeBold(),
+                        ),
                       ),
-                    ),
-                    ArDriveDropdownItem(
-                      content: Text(
-                        'Create new Drive',
-                        style: ArDriveTypography.body.buttonLargeBold(),
+                      ArDriveDropdownItem(
+                        content: Text(
+                          'Create new Drive',
+                          style: ArDriveTypography.body.buttonLargeBold(),
+                        ),
                       ),
-                    ),
-                    ArDriveDropdownItem(
-                      content: Text(
-                        'Create new Drive',
-                        style: ArDriveTypography.body.buttonLargeBold(),
-                      ),
-                    )
-                  ],
-                  content: ArDriveButton(
-                      text: 'Show overlay',
-                      onPressed: () {
-                        if (controller.isShowing) {
-                          controller.hide();
-                        } else {
-                          controller.show();
-                        }
-                      }),
-                  child: Container(),
-                )
+                      ArDriveDropdownItem(
+                        content: Text(
+                          'Create new Drive',
+                          style: ArDriveTypography.body.buttonLargeBold(),
+                        ),
+                      )
+                    ],
+                    child: Container(
+                      child: Text('some text'),
+                    ))
               ],
             );
           });

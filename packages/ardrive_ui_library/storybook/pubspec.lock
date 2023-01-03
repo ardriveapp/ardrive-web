@@ -224,7 +224,7 @@ packages:
       name: flutter_downloader
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.9.1"
+    version: "1.10.0"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -253,11 +253,15 @@ packages:
       name: flutter_portal
       url: "https://pub.dartlang.org"
     source: hosted
+<<<<<<< HEAD
     version: "1.1.2"
 <<<<<<< HEAD
 >>>>>>> PE-2567-dropdown
 =======
 >>>>>>> redesign
+=======
+    version: "1.1.3"
+>>>>>>> PE-2574-add-data-table
   flutter_svg:
     dependency: transitive
     description:
@@ -323,7 +327,7 @@ packages:
       name: image_picker_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.5+3"
+    version: "0.8.5+4"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -337,7 +341,7 @@ packages:
       name: image_picker_ios
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.6+1"
+    version: "0.8.6+4"
   image_picker_platform_interface:
     dependency: transitive
     description:
@@ -347,17 +351,24 @@ packages:
     version: "2.6.2"
   intl:
 <<<<<<< HEAD
+<<<<<<< HEAD
     dependency: "direct main"
 =======
     dependency: transitive
 >>>>>>> redesign
+=======
+    dependency: "direct main"
+>>>>>>> PE-2574-add-data-table
     description:
       name: intl
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.17.0"
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> PE-2574-add-data-table
   jovial_misc:
     dependency: transitive
     description:
@@ -371,8 +382,12 @@ packages:
       name: jovial_svg
       url: "https://pub.dartlang.org"
     source: hosted
+<<<<<<< HEAD
     version: "1.1.7"
 >>>>>>> redesign
+=======
+    version: "1.1.8"
+>>>>>>> PE-2574-add-data-table
   js:
     dependency: transitive
     description:
@@ -436,13 +451,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.0"
-  number_paginator:
-    dependency: transitive
-    description:
-      name: number_paginator
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.2.2"
   path:
     dependency: transitive
     description:
@@ -606,7 +614,7 @@ packages:
       name: provider
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.4"
+    version: "6.0.5"
   rxdart:
     dependency: transitive
     description:

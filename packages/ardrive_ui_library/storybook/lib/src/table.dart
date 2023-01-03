@@ -33,7 +33,7 @@ Widget _tableWithContent(BuildContext context) {
       context.knobs.number(label: 'Space 3 column', initialValue: 1).toInt();
 
   return ArDriveTable<File>(
-    rowsPerPage: 5,
+    pageItemsDivisorFactor: 25,
     leading: context.knobs.boolean(label: 'With leading')
         ? (row) {
             return const Icon(Icons.folder_copy);
@@ -73,34 +73,12 @@ Widget _tableWithContent(BuildContext context) {
       return TableRowWidget(widgets);
     },
     rows: [
-      File(name: 'FOLDER_3081', size: '1MB', createdAt: DateTime(2022, 10, 1)),
-      File(
-          name: 'TUNE_3081.mp3',
-          size: '3.2MB',
-          createdAt: DateTime(2022, 10, 1)),
-      File(
-          name: 'STYLE_3081.css',
-          size: '123.2MB',
-          createdAt: DateTime(2022, 10, 1)),
-      File(
-          name: 'DOC_3081.doc',
-          size: '11.2MB',
-          createdAt: DateTime(2022, 10, 1)),
-      File(
-          name: 'MOV_3081.mp4',
-          size: '14.2MB',
-          createdAt: DateTime(2022, 10, 1)),
-      File(name: 'APPLE.mp3', size: '1.22MB', createdAt: DateTime(2022, 10, 2)),
-      File(name: 'TSLA.mp3', size: '12.2MB', createdAt: DateTime(2022, 10, 30)),
-      File(name: 'NFT.png', size: '51.2MB', createdAt: DateTime(2022, 10, 10)),
-      File(
-          name: 'Thiagos Doc',
+      for (int i = 0; i < 180; i++)
+        File(
+          name: 'Item $i',
           size: '32.2MB',
-          createdAt: DateTime(2022, 10, 1)),
-      File(name: 'Karls Doc', size: '23.2MB', createdAt: DateTime(2022, 1, 10)),
-      File(name: 'Archive', size: '12.2MB', createdAt: DateTime(2022, 10, 11)),
-      File(
-          name: 'Palmeiras', size: '32.2MB', createdAt: DateTime(2022, 10, 22)),
+          createdAt: DateTime(2022, 10, 22),
+        ),
     ],
   );
 }

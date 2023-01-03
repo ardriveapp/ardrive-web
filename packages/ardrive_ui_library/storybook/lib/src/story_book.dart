@@ -2,7 +2,6 @@ import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
 import 'package:storybook/src/accordion.dart';
 import 'package:storybook/src/button.dart';
-import 'package:storybook/src/datatable.dart';
 import 'package:storybook/src/checkbox.dart';
 import 'package:storybook/src/fab.dart';
 import 'package:storybook/src/image.dart';
@@ -56,9 +55,7 @@ class StoryBook extends StatelessWidget {
             button(),
             card(),
             modals(),
-            dataTable(),
             table(),
-            dataTable(),
             table(),
             modals(),
             radioButton(),
