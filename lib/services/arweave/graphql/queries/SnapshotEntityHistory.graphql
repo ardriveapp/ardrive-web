@@ -1,27 +1,26 @@
-query DriveEntityHistory(
+query SnapshotEntityHistory(
   $driveId: String!
   $after: String
-  $minBlockHeight: Int
-  $maxBlockHeight: Int
+  $lastBlockHeight: Int
 ) {
   transactions(
     first: 100
-    sort: HEIGHT_ASC
+    sort: HEIGHT_DESC
     tags: [
-      { name: "ArFS", values: ["0.10", "0.11"] }
       { name: "Drive-Id", values: [$driveId] }
+      { name: "Entity-Type", values: "snapshot" }
     ]
     after: $after
-    block: { min: $minBlockHeight, max: $maxBlockHeight }
+    block: { min: $lastBlockHeight }
   ) {
     pageInfo {
       hasNextPage
     }
     edges {
+      cursor
       node {
         ...TransactionCommon
       }
-      cursor
     }
   }
 }

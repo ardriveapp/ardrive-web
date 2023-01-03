@@ -508,11 +508,11 @@
     "description": "File activity (journal): new revision"
   },
   "personalDrivesEmphasized": "PERSONAL DRIVES",
-  "@personalDrives": {
+  "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
   "sharedDrivesEmphasized": "SHARED DRIVES",
-  "@sharedDrives": {
+  "@sharedDrivesEmphasized": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
   "help": "Help",
