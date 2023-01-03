@@ -218,9 +218,10 @@ List<PopupMenuEntry<Function>> _buildItems(
   if (profileState.runtimeType == ProfileLoggedIn) {
     final minimumWalletBalance = BigInt.from(10000000);
     final profile = profileState as ProfileLoggedIn;
-    final hasMinBalance = !profile.canUpload(
-      minimumWalletBalance: minimumWalletBalance,
-    );
+    final hasMinBalance = profile.useTurbo ||
+        profile.canUpload(
+          minimumWalletBalance: minimumWalletBalance,
+        );
     final canCreateNewDrive = drivesState is DrivesLoadSuccess
         ? drivesState.canCreateNewDrive && hasMinBalance
         : false;

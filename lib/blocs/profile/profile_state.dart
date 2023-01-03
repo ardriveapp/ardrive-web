@@ -66,7 +66,7 @@ class ProfileLoggedIn extends ProfileAvailable {
         useTurbo: useTurbo ?? this.useTurbo,
       );
   bool canUpload({required BigInt minimumWalletBalance}) =>
-      useTurbo || walletBalance < minimumWalletBalance;
+      walletBalance > minimumWalletBalance;
 
   @override
   List<Object?> get props => [
