@@ -56,8 +56,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-2784
-      resolved-ref: "189e868a916731579c7d0a25567e9ccad733f322"
+      ref: "v1.1.0"
+      resolved-ref: e9b24fc847f414d85b12ebc280db8dbd45c8abcc
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.0.0"
