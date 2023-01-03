@@ -40,6 +40,7 @@ void main() {
       registerFallbackValue(
         await getTestDataItem('test/fixtures/signed_v2_tx.json'),
       );
+      registerFallbackValue(DataBundle(blob: Uint8List(0)));
       registerFallbackValue(FileEntity());
       registerFallbackValue(Wallet());
 
@@ -224,11 +225,11 @@ void main() {
           key: any(named: 'key'))).thenAnswer(
         (_) async => await getTestDataItem('test/fixtures/signed_v2_tx.json'),
       );
-      turboService = DontUseTurbo();
-      when(() => turboService.postDataItem(dataItem: any(named: 'dataItem')))
-          .thenAnswer(
-        (_) async => Future.value(),
+      when(() => arweave.prepareDataBundleTx(any(), any())).thenAnswer(
+        (_) async =>
+            await getTestTransaction('test/fixtures/signed_v2_tx.json'),
       );
+      turboService = DontUseTurbo();
       syncBloc = MockSyncBloc();
       when(() => syncBloc.generateFsEntryPaths(any(), any(), any())).thenAnswer(
         (_) async => Future.value(),
