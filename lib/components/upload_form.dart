@@ -342,7 +342,10 @@ class UploadForm extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         appLocalizationsOf(context).filesWillBeUploadedPublicly(
-                            numberOfFilesInBundles + numberOfV2Files),
+                          numberOfFilesInBundles +
+                              numberOfV2Files +
+                              numberOfTurboDataItems,
+                        ),
                       ),
                     },
                     if (state.uploadPlan.isFreeThanksToTurbo) ...{
