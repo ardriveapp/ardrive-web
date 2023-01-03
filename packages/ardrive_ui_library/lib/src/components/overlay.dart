@@ -9,32 +9,38 @@ class ArDriveDropdown extends StatefulWidget {
     super.key,
     required this.items,
     required this.child,
-    required this.controller,
     this.contentPadding,
     this.height = 60,
     this.width = 200,
+    this.anchor = const Aligned(
+      follower: Alignment.topLeft,
+      target: Alignment.bottomLeft,
+      offset: Offset(0, 4),
+    ),
   });
 
   final double height;
   final double width;
   final List<ArDriveDropdownItem> items;
   final Widget child;
-  final ArDriveOverlayController controller;
   final EdgeInsets? contentPadding;
+  final Anchor anchor;
 
   @override
   State<ArDriveDropdown> createState() => _ArDriveDropdownState();
 }
 
 class _ArDriveDropdownState extends State<ArDriveDropdown> {
+  bool? visible;
+
   @override
   Widget build(BuildContext context) {
     double dropdownHeight = widget.items.length * widget.height;
-    dropdownHeight = (widget.contentPadding?.top ?? 8) + dropdownHeight;
-    dropdownHeight = (widget.contentPadding?.bottom ?? 8) + dropdownHeight;
 
     return ArDriveOverlay(
-      controller: widget.controller,
+      key: ValueKey(visible),
+      visible: visible,
+      anchor: widget.anchor,
       content: TweenAnimationBuilder<double>(
         duration: kThemeAnimationDuration,
         curve: Curves.easeOut,
@@ -43,31 +49,44 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
           return SizedBox(
             height: size,
             child: ArDriveCard(
-              content: Column(
+              contentPadding: EdgeInsets.zero,
+              content: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Column(
                   children: List.generate(widget.items.length, (index) {
-                return FutureBuilder<bool>(
-                    future: Future.delayed(
-                      Duration(milliseconds: (index + 1) * 50),
-                      () => true,
-                    ),
-                    builder: (context, snapshot) {
-                      return AnimatedCrossFade(
-                        duration: const Duration(milliseconds: 100),
-                        firstChild: SizedBox(
-                          width: widget.width,
-                          height: widget.height,
-                          child: widget.items[index],
+                    return FutureBuilder<bool>(
+                        future: Future.delayed(
+                          Duration(milliseconds: (index + 1) * 50),
+                          () => true,
                         ),
-                        secondChild: SizedBox(
-                          height: 0,
-                          width: widget.width,
-                        ),
-                        crossFadeState: snapshot.hasData && snapshot.data!
-                            ? CrossFadeState.showFirst
-                            : CrossFadeState.showSecond,
-                      );
-                    });
-              })),
+                        builder: (context, snapshot) {
+                          return AnimatedCrossFade(
+                            duration: const Duration(milliseconds: 100),
+                            firstChild: SizedBox(
+                              width: widget.width,
+                              height: widget.height,
+                              child: GestureDetector(
+                                onTap: () {
+                                  widget.items[index].onClick?.call();
+                                  setState(() {
+                                    visible = false;
+                                  });
+                                },
+                                child: widget.items[index],
+                              ),
+                            ),
+                            secondChild: SizedBox(
+                              height: 0,
+                              width: widget.width,
+                            ),
+                            crossFadeState: snapshot.hasData && snapshot.data!
+                                ? CrossFadeState.showFirst
+                                : CrossFadeState.showSecond,
+                          );
+                        });
+                  }),
+                ),
+              ),
               boxShadow: BoxShadowCard.shadow80,
             ),
           );
@@ -84,87 +103,120 @@ class ArDriveOverlay extends StatefulWidget {
     required this.content,
     this.contentPadding = const EdgeInsets.all(16),
     required this.child,
-    required this.controller,
+    required this.anchor,
+    this.visible,
   });
 
   final Widget child;
   final Widget content;
   final EdgeInsets contentPadding;
-  final ArDriveOverlayController controller;
-
+  final Anchor anchor;
+  final bool? visible;
   @override
   State<ArDriveOverlay> createState() => _ArDriveOverlayState();
 }
 
-abstract class ArDriveOverlayController {
-  factory ArDriveOverlayController() = _ArDriveOverlayController;
-  void show();
-  void hide();
-
-  bool get isShowing;
-
-  StreamController<bool> get controller;
-}
-
-class _ArDriveOverlayController implements ArDriveOverlayController {
-  bool _isShowing = false;
-
-  @override
-  void hide() {
-    _isShowing = false;
-    _controller.sink.add(_isShowing);
-  }
-
-  @override
-  void show() {
-    _isShowing = true;
-    _controller.sink.add(_isShowing);
-  }
-
-  @override
-  StreamController<bool> get controller => _controller;
-
-  final StreamController<bool> _controller = StreamController<bool>.broadcast();
-
-  @override
-  bool get isShowing => _isShowing;
-}
-
 class _ArDriveOverlayState extends State<ArDriveOverlay> {
   @override
+  void initState() {
+    super.initState();
+    if (widget.visible != null) {
+      _visible = widget.visible!;
+    } else {
+      _visible = false;
+    }
+  }
+
+  late bool _visible;
+  @override
   Widget build(BuildContext context) {
-    return Portal(
-      child: StreamBuilder<bool>(
-          stream: widget.controller.controller.stream,
-          initialData: false,
-          builder: (context, snapshot) {
-            return PortalTarget(
-              visible: snapshot.data!,
-              portalFollower: widget.content,
-              anchor: const Aligned(
-                follower: Alignment.topLeft,
-                target: Alignment.topRight,
-              ),
-              child: widget.child,
-            );
-          }),
+    return Barrier(
+      onClose: () {
+        setState(() {
+          _visible = !_visible;
+        });
+      },
+      visible: _visible,
+      child: PortalTarget(
+        anchor: widget.anchor,
+        portalFollower: widget.content,
+        visible: _visible,
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              _visible = true;
+            });
+          },
+          child: IgnorePointer(
+            ignoring: _visible,
+            child: widget.child,
+          ),
+        ),
+      ),
     );
   }
 }
 
-class ArDriveDropdownItem extends StatelessWidget {
-  const ArDriveDropdownItem({
-    super.key,
-    required this.content,
-  });
+class Barrier extends StatelessWidget {
+  const Barrier({
+    Key? key,
+    required this.onClose,
+    required this.visible,
+    required this.child,
+  }) : super(key: key);
 
-  final Widget content;
+  final Widget child;
+  final VoidCallback onClose;
+  final bool visible;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      alignment: Alignment.center,
-      child: content,
+    return PortalTarget(
+      visible: visible,
+      closeDuration: kThemeAnimationDuration,
+      portalFollower: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onClose,
+      ),
+      child: child,
+    );
+  }
+}
+
+class ArDriveDropdownItem extends StatefulWidget {
+  const ArDriveDropdownItem({
+    super.key,
+    required this.content,
+    this.onClick,
+  });
+
+  final Widget content;
+  final Function()? onClick;
+
+  @override
+  State<ArDriveDropdownItem> createState() => _ArDriveDropdownItemState();
+}
+
+class _ArDriveDropdownItemState extends State<ArDriveDropdownItem> {
+  bool hovering = false;
+  @override
+  Widget build(BuildContext context) {
+    final theme = ArDriveTheme.of(context).themeData.dropdownTheme;
+
+    return MouseRegion(
+      onHover: (event) {
+        setState(() {
+          hovering = true;
+        });
+      },
+      onExit: (event) => setState(() {
+        hovering = false;
+      }),
+      child: Container(
+        color: hovering ? theme.hoverColor : theme.backgroundColor,
+        alignment: Alignment.center,
+        child: widget.content,
+      ),
     );
   }
 }
