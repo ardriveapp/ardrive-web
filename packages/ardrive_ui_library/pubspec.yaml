@@ -13,7 +13,9 @@ environment:
 
 dependencies:
   ardrive_io:
-    path: ../ardrive_io
+    git:
+      url: https://github.com/ar-io/ardrive_io.git
+      ref: v1.0.0
   auto_size_text: ^3.0.0
   desktop_drop: ^0.4.0
   dotted_border: ^2.0.0+3
