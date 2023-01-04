@@ -27,7 +27,7 @@ class ArDriveTable<T> extends StatefulWidget {
     this.leading,
     this.trailing,
     this.sort,
-    this.pageItemsDivisorFactor,
+    this.pageItemsDivisorFactor = 25,
     this.onChangePage,
     this.maxItemsPerPage = 100,
   });
@@ -39,7 +39,7 @@ class ArDriveTable<T> extends StatefulWidget {
   final Widget Function(T row)? trailing;
   final int Function(T a, T b) Function(int columnIndex)? sort;
   final Function(int page)? onChangePage;
-  final int? pageItemsDivisorFactor;
+  final int pageItemsDivisorFactor;
   final int maxItemsPerPage;
 
   @override
@@ -53,10 +53,10 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
   late List<T> sortedRows;
   late List<T> currentPage;
 
-  int? numberOfPages;
-  int? selectedPage;
-  int? pageItemsDivisorFactor;
-  int? numberOfItemsPerPage;
+  late int numberOfPages;
+  late int selectedPage;
+  late int pageItemsDivisorFactor;
+  late int numberOfItemsPerPage;
   int? sortedColumn;
 
   TableSort? _tableSort;
@@ -66,26 +66,22 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
     super.initState();
     rows = widget.rows;
     sortedRows = List.from(rows);
-    if (widget.pageItemsDivisorFactor != null) {
-      pageItemsDivisorFactor = widget.pageItemsDivisorFactor;
-      numberOfItemsPerPage = pageItemsDivisorFactor;
-      numberOfPages = rows.length ~/ pageItemsDivisorFactor!;
-      if (rows.length % pageItemsDivisorFactor! != 0) {
-        numberOfPages = numberOfPages! + 1;
-      }
-      selectedPage = 0;
-      selectPage(0);
-    } else {
-      currentPage = widget.rows;
+    pageItemsDivisorFactor = widget.pageItemsDivisorFactor;
+    numberOfItemsPerPage = pageItemsDivisorFactor;
+    numberOfPages = rows.length ~/ pageItemsDivisorFactor;
+    if (rows.length % pageItemsDivisorFactor != 0) {
+      numberOfPages = numberOfPages + 1;
     }
+    selectedPage = 0;
+    selectPage(0);
   }
 
   int getNumberOfPages() {
-    numberOfPages = rows.length ~/ numberOfItemsPerPage!;
-    if (rows.length % numberOfItemsPerPage! != 0) {
-      numberOfPages = numberOfPages! + 1;
+    numberOfPages = rows.length ~/ numberOfItemsPerPage;
+    if (rows.length % numberOfItemsPerPage != 0) {
+      numberOfPages = numberOfPages + 1;
     }
-    return numberOfPages!;
+    return numberOfPages;
   }
 
   @override
@@ -122,7 +118,7 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
 
                     sortedRows.sort(sort);
 
-                    selectPage(selectedPage!);
+                    selectPage(selectedPage);
                   });
                 }
               },
@@ -202,14 +198,13 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                         ),
                         PaginationSelect(
                           currentNumber: numberOfItemsPerPage,
-                          divisorFactor: pageItemsDivisorFactor!,
+                          divisorFactor: pageItemsDivisorFactor,
                           maxOption: widget.maxItemsPerPage,
                           maxNumber: widget.rows.length,
                           onSelect: (n) {
                             setState(() {
                               int newPage =
-                                  ((selectedPage!) * numberOfItemsPerPage!) ~/
-                                      n;
+                                  ((selectedPage) * numberOfItemsPerPage) ~/ n;
 
                               numberOfItemsPerPage = n;
 
@@ -227,18 +222,18 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (getNumberOfPages() > 5 && selectedPage! >= 3)
+                        if (getNumberOfPages() > 5 && selectedPage >= 3)
                           Padding(
                             padding: const EdgeInsets.only(top: 4.0, right: 8),
                             child: GestureDetector(
                               onTap: () {
-                                if (selectedPage! > 0) {
+                                if (selectedPage > 0) {
                                   goToFirstPage();
                                 }
                               },
                               child: Icon(
                                 Icons.keyboard_double_arrow_left,
-                                color: selectedPage! > 0 ? null : grey,
+                                color: selectedPage > 0 ? null : grey,
                                 size: 14,
                               ),
                             ),
@@ -247,30 +242,35 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                           padding: const EdgeInsets.only(top: 4.0, right: 12),
                           child: GestureDetector(
                             onTap: () {
-                              if (selectedPage! > 0) {
+                              if (selectedPage > 0) {
                                 goToThePreviousPage();
                               }
                             },
                             child: Icon(
                               Icons.arrow_back_ios_new_rounded,
-                              color: selectedPage! > 0 ? null : grey,
+                              color: selectedPage > 0 ? null : grey,
                               size: 12,
                             ),
                           ),
                         ),
-                        if (getNumberOfPages() > 5 && selectedPage! >= 3)
-                          Text(
-                            '1 ...',
-                            style: ArDriveTypography.body.inputLargeBold(
-                              color: selectedPage == 1 ? null : grey,
-                            ),
-                          ),
-                        ..._getPagesIndicators2(),
-                        if (getNumberOfPages() > 5 &&
-                            selectedPage! < numberOfPages! - 3)
+                        if (getNumberOfPages() > 5 && selectedPage >= 3)
                           GestureDetector(
                             onTap: () {
-                              selectPage(getNumberOfPages() - 1);
+                              goToFirstPage();
+                            },
+                            child: Text(
+                              '1 ...',
+                              style: ArDriveTypography.body.inputLargeBold(
+                                color: selectedPage == 1 ? null : grey,
+                              ),
+                            ),
+                          ),
+                        ..._getPagesIndicators(),
+                        if (getNumberOfPages() > 5 &&
+                            selectedPage < numberOfPages - 3)
+                          GestureDetector(
+                            onTap: () {
+                              goToLastPage();
                             },
                             child: Text(
                               '... ${getNumberOfPages()}',
@@ -285,31 +285,30 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                           padding: const EdgeInsets.only(top: 4.0, left: 8),
                           child: GestureDetector(
                             onTap: () {
-                              if (selectedPage! + 1 < getNumberOfPages()) {
+                              if (selectedPage + 1 < getNumberOfPages()) {
                                 goToNextPage();
                               }
                             },
                             child: Icon(
                               Icons.arrow_forward_ios_rounded,
-                              color: selectedPage! + 1 < getNumberOfPages()
+                              color: selectedPage + 1 < getNumberOfPages()
                                   ? null
                                   : grey,
                               size: 14,
                             ),
                           ),
                         ),
-                        if (getNumberOfPages() > 6)
+                        if (getNumberOfPages() > 6 &&
+                            selectedPage <= getNumberOfPages() - 4)
                           Padding(
                             padding: const EdgeInsets.only(top: 4.0, left: 12),
                             child: GestureDetector(
                               onTap: () {
-                                if (selectedPage! + 1 < getNumberOfPages()) {
-                                  goToLastPage();
-                                }
+                                goToLastPage();
                               },
                               child: Icon(
                                 Icons.keyboard_double_arrow_right,
-                                color: selectedPage! + 1 < getNumberOfPages()
+                                color: selectedPage + 1 < getNumberOfPages()
                                     ? null
                                     : grey,
                                 size: 14,
@@ -327,178 +326,73 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
     );
   }
 
-  List<Widget> _getPagesIndicators2() {
-    if (numberOfPages! < 6) {
-      return List.generate(numberOfPages!, (index) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: GestureDetector(
-            onTap: () {
-              selectPage(index);
-            },
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  (index + 1).toString(),
-                  style: ArDriveTypography.body.inputLargeBold(
-                    color: selectedPage! == index ? null : grey,
-                  ),
-                ),
-                if (index < numberOfPages! - 1)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 6),
-                    child: Text(
-                      '|',
-                      style: ArDriveTypography.body.buttonLargeRegular(
-                        color: grey,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
+  List<Widget> _getPagesIndicators() {
+    if (numberOfPages < 6) {
+      return List.generate(numberOfPages, (index) {
+        return _pageNumber(index);
       });
     } else {
-      if (selectedPage! + 1 == 1) {
-        return List.generate(5, (index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: GestureDetector(
-              onTap: () {
-                selectPage(index);
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    (index + 1).toString(),
-                    style: ArDriveTypography.body.inputLargeBold(
-                      color: selectedPage! == index ? null : grey,
-                    ),
-                  ),
-                  if (index < numberOfPages! - 1)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Text(
-                        '|',
-                        style: ArDriveTypography.body.buttonLargeRegular(
-                          color: grey,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          );
-        });
-      } else if (selectedPage! == 1) {
-        List<Widget> items = [];
-        for (int i = selectedPage!; i <= selectedPage! + 4; i++) {
-          items.add(Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: GestureDetector(
-              onTap: () {
-                selectPage(i);
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    (i).toString(),
-                    style: ArDriveTypography.body.inputLargeBold(
-                      color: selectedPage! + 1 == i ? null : grey,
-                    ),
-                  ),
-                  if (i < numberOfPages! - 1)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Text(
-                        '|',
-                        style: ArDriveTypography.body.buttonLargeRegular(
-                          color: grey,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ));
-        }
-        return items;
-      } else if (selectedPage! >= numberOfPages! - 2) {
-        List<Widget> items = [];
+      List<Widget> items = [];
 
-        for (int i = numberOfPages! - 1; i >= selectedPage! - 4; i--) {
-          items.add(Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: GestureDetector(
-              onTap: () {
-                selectPage(i);
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    (i + 1).toString(),
-                    style: ArDriveTypography.body.inputLargeBold(
-                      color: selectedPage! == i ? null : grey,
-                    ),
-                  ),
-                  if (i < numberOfPages!)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Text(
-                        '|',
-                        style: ArDriveTypography.body.buttonLargeRegular(
-                          color: grey,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ));
+      /// 1, 2, 3, 4, 5, 6 ... max
+      if (selectedPage <= 1) {
+        return List.generate(5, (index) {
+          return _pageNumber(index);
+        });
+      } else if (selectedPage >= numberOfPages - 2) {
+        /// 1 ... x1, x2, x3, x4, max
+        for (int i = numberOfPages - 1; i >= selectedPage - 4; i--) {
+          items.add(_pageNumber(i));
         }
+
         return items.reversed.toList();
       } else {
-        List<Widget> items = [];
-
-        for (int i = selectedPage! - 2; i <= selectedPage! + 2; i++) {
-          items.add(Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: GestureDetector(
-              onTap: () {
-                selectPage(i);
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    (i + 1).toString(),
-                    style: ArDriveTypography.body.inputLargeBold(
-                      color: selectedPage! == i ? null : grey,
-                    ),
-                  ),
-                  if (i < numberOfPages! - 1)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Text(
-                        '|',
-                        style: ArDriveTypography.body.buttonLargeRegular(
-                          color: grey,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ));
+        /// 1...x1, x2, selectedPage, x3, x4 ... max
+        for (int i = selectedPage - 2; i <= selectedPage + 2; i++) {
+          items.add(_pageNumber(i));
         }
+
         return items;
       }
     }
+  }
+
+  int showSemanticPage() {
+    return selectedPage + 1;
+  }
+
+  /// The pages are counted starting from 0, so, to show correctly add + 1
+  ///
+  Widget _pageNumber(int page) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: GestureDetector(
+        onTap: () {
+          selectPage(page);
+        },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              (page + 1).toString(),
+              style: ArDriveTypography.body.inputLargeBold(
+                color: selectedPage == page ? null : grey,
+              ),
+            ),
+            if (page < numberOfPages - 1)
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: Text(
+                  '|',
+                  style: ArDriveTypography.body.buttonLargeRegular(
+                    color: grey,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildRowSpacing(
@@ -537,25 +431,25 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
     );
   }
 
-  selectPage(int page) {
+  void selectPage(int page) {
     setState(() {
       selectedPage = page;
-      int maxIndex = rows.length - 1 < (page + 1) * numberOfItemsPerPage!
+      int maxIndex = rows.length - 1 < (page + 1) * numberOfItemsPerPage
           ? rows.length - 1
-          : (page + 1) * numberOfItemsPerPage!;
+          : (page + 1) * numberOfItemsPerPage;
 
-      int minIndex = (selectedPage! * numberOfItemsPerPage!);
+      int minIndex = (selectedPage * numberOfItemsPerPage);
 
       currentPage = sortedRows.sublist(minIndex, maxIndex);
     });
   }
 
   void goToNextPage() {
-    selectPage(selectedPage! + 1);
+    selectPage(selectedPage + 1);
   }
 
   void goToLastPage() {
-    selectPage(numberOfPages! - 1);
+    selectPage(numberOfPages - 1);
   }
 
   void goToFirstPage() {
@@ -563,17 +457,17 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
   }
 
   void goToThePreviousPage() {
-    selectPage(selectedPage! - 1);
+    selectPage(selectedPage - 1);
   }
 
   int _getMinIndexInView() {
-    return (selectedPage! * numberOfItemsPerPage!) + 1;
+    return (selectedPage * numberOfItemsPerPage) + 1;
   }
 
   int _getMaxIndexInView() {
-    return (rows.length - 1 < (selectedPage! + 1) * numberOfItemsPerPage!
+    return (rows.length - 1 < (selectedPage + 1) * numberOfItemsPerPage
         ? rows.length
-        : (selectedPage! + 1) * numberOfItemsPerPage!);
+        : (selectedPage + 1) * numberOfItemsPerPage);
   }
 }
 
