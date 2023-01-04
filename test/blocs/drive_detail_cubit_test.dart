@@ -36,7 +36,7 @@ void main() {
             cipherKey: SecretKey(keyBytes),
             walletAddress: await wallet.getAddress(),
             walletBalance: BigInt.one,
-            useTurbo: false),
+            useTurbo: false,),
       );
 
       driveDetailCubit = DriveDetailCubit(
