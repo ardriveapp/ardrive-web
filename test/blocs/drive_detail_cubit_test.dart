@@ -30,13 +30,14 @@ void main() {
       final wallet = getTestWallet();
       when(() => profileCubit.state).thenReturn(
         ProfileLoggedIn(
-            username: '',
-            password: '123',
-            wallet: wallet,
-            cipherKey: SecretKey(keyBytes),
-            walletAddress: await wallet.getAddress(),
-            walletBalance: BigInt.one,
-            useTurbo: false,),
+          username: '',
+          password: '123',
+          wallet: wallet,
+          cipherKey: SecretKey(keyBytes),
+          walletAddress: await wallet.getAddress(),
+          walletBalance: BigInt.one,
+          useTurbo: false,
+        ),
       );
 
       driveDetailCubit = DriveDetailCubit(
