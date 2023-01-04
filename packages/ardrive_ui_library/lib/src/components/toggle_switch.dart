@@ -18,11 +18,13 @@ class ArDriveToggleSwitch extends StatefulWidget {
   final Function(bool value)? onChanged;
 
   @override
-  State<ArDriveToggleSwitch> createState() => _ArDriveToggleSwitchState();
+  State<ArDriveToggleSwitch> createState() => ArDriveToggleSwitchState();
 }
 
-class _ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
-  late ToggleState _state;
+@visibleForTesting
+class ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
+  @visibleForTesting
+  late ToggleState state;
 
   final animationDuration = const Duration(milliseconds: 400);
 
@@ -47,14 +49,14 @@ class _ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
   void _changeState() {
     if (widget.isEnabled) {
       if (widget.value) {
-        _state = ToggleState.on;
+        state = ToggleState.on;
         _checked = true;
       } else {
-        _state = ToggleState.off;
+        state = ToggleState.off;
         _checked = false;
       }
     } else {
-      _state = ToggleState.disabled;
+      state = ToggleState.disabled;
       _checked = widget.value;
     }
 
@@ -62,7 +64,7 @@ class _ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
   }
 
   Alignment alignment() {
-    switch (_state) {
+    switch (state) {
       case ToggleState.on:
         return Alignment.centerRight;
       case ToggleState.off:
@@ -75,7 +77,7 @@ class _ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
 
   Color colorBackground() {
     final theme = ArDriveTheme.of(context).themeData.toggleTheme;
-    switch (_state) {
+    switch (state) {
       case ToggleState.on:
         return theme.backgroundOnColor;
       case ToggleState.off:
@@ -89,7 +91,7 @@ class _ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
   Color colorIndicator() {
     final theme = ArDriveTheme.of(context).themeData.toggleTheme;
 
-    switch (_state) {
+    switch (state) {
       case ToggleState.on:
         return theme.indicatorColorOn;
       case ToggleState.off:
@@ -109,11 +111,11 @@ class _ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
             return;
           }
 
-          if (_state != ToggleState.disabled) {
-            if (_state == ToggleState.on) {
-              _state = ToggleState.off;
+          if (state != ToggleState.disabled) {
+            if (state == ToggleState.on) {
+              state = ToggleState.off;
             } else {
-              _state = ToggleState.on;
+              state = ToggleState.on;
             }
             _checked = !_checked;
 
