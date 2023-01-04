@@ -34,13 +34,13 @@ dependencies:
       ref: v1.0.0
   ardrive_io:
     git:
-      url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.1.0
+      url: https://github.com/elliotsayes/ardrive_io.git
+      ref: a7657ed2eb28f356fcfe69d2d3a9290c9bbd8921
   artemis: ^7.0.0-beta.13
   arweave:
     git:
-      url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v3.4.0
+      url: https://github.com/elliotsayes/arweave-dart.git
+      ref: 910dc058cb37a7c902edd09eb355acf8f597ec69
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   flutter_portal: ^0.4.0

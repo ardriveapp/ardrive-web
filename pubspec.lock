@@ -56,9 +56,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.1.0"
-      resolved-ref: e9b24fc847f414d85b12ebc280db8dbd45c8abcc
-      url: "https://github.com/ar-io/ardrive_io.git"
+      ref: a7657ed2eb28f356fcfe69d2d3a9290c9bbd8921
+      resolved-ref: a7657ed2eb28f356fcfe69d2d3a9290c9bbd8921
+      url: "https://github.com/elliotsayes/ardrive_io.git"
     source: git
     version: "1.0.0"
   args:
@@ -79,9 +79,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v3.4.0"
-      resolved-ref: ea4118115a80c52b7aedbb6f361080e92d5cf298
-      url: "https://github.com/ardriveapp/arweave-dart.git"
+      ref: "910dc058cb37a7c902edd09eb355acf8f597ec69"
+      resolved-ref: "910dc058cb37a7c902edd09eb355acf8f597ec69"
+      url: "https://github.com/elliotsayes/arweave-dart.git"
     source: git
     version: "3.4.0"
   async:
@@ -935,6 +935,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.3.0"
+  mutex:
+    dependency: transitive
+    description:
+      name: mutex
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.0.1"
   nested:
     dependency: transitive
     description:
