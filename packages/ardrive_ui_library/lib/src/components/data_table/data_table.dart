@@ -265,7 +265,7 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                               color: selectedPage == 1 ? null : grey,
                             ),
                           ),
-                        ..._getPagesIndicators2(),
+                        ..._getPagesIndicators(),
                         if (getNumberOfPages() > 5 &&
                             selectedPage! < numberOfPages! - 3)
                           Text(
@@ -293,7 +293,8 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                             ),
                           ),
                         ),
-                        if (getNumberOfPages() > 6)
+                        if (getNumberOfPages() > 6 &&
+                            selectedPage! <= getNumberOfPages() - 4)
                           Padding(
                             padding: const EdgeInsets.only(top: 4.0, left: 12),
                             child: GestureDetector(
@@ -322,178 +323,67 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
     );
   }
 
-  List<Widget> _getPagesIndicators2() {
+  List<Widget> _getPagesIndicators() {
     if (numberOfPages! < 6) {
       return List.generate(numberOfPages!, (index) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: GestureDetector(
-            onTap: () {
-              selectPage(index);
-            },
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  (index + 1).toString(),
-                  style: ArDriveTypography.body.inputLargeBold(
-                    color: selectedPage! == index ? null : grey,
-                  ),
-                ),
-                if (index < numberOfPages! - 1)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 6),
-                    child: Text(
-                      '|',
-                      style: ArDriveTypography.body.buttonLargeRegular(
-                        color: grey,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
+        return _pageNumber(index);
       });
     } else {
-      if (selectedPage! + 1 == 1) {
-        return List.generate(5, (index) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: GestureDetector(
-              onTap: () {
-                selectPage(index);
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    (index + 1).toString(),
-                    style: ArDriveTypography.body.inputLargeBold(
-                      color: selectedPage! == index ? null : grey,
-                    ),
-                  ),
-                  if (index < numberOfPages! - 1)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Text(
-                        '|',
-                        style: ArDriveTypography.body.buttonLargeRegular(
-                          color: grey,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          );
-        });
-      } else if (selectedPage! == 1) {
-        List<Widget> items = [];
-        for (int i = selectedPage!; i <= selectedPage! + 4; i++) {
-          items.add(Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: GestureDetector(
-              onTap: () {
-                selectPage(i);
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    (i).toString(),
-                    style: ArDriveTypography.body.inputLargeBold(
-                      color: selectedPage! + 1 == i ? null : grey,
-                    ),
-                  ),
-                  if (i < numberOfPages! - 1)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Text(
-                        '|',
-                        style: ArDriveTypography.body.buttonLargeRegular(
-                          color: grey,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ));
-        }
-        return items;
-      } else if (selectedPage! >= numberOfPages! - 2) {
-        List<Widget> items = [];
+      List<Widget> items = [];
 
+      /// 1, 2, 3, 4, 5, 6 ... max
+      if (selectedPage! <= 1) {
+        return List.generate(5, (index) {
+          return _pageNumber(index);
+        });
+      } else if (selectedPage! >= numberOfPages! - 2) {
+        /// 1 ... x1, x2, x3, x4, max
         for (int i = numberOfPages! - 1; i >= selectedPage! - 4; i--) {
-          items.add(Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: GestureDetector(
-              onTap: () {
-                selectPage(i);
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    (i + 1).toString(),
-                    style: ArDriveTypography.body.inputLargeBold(
-                      color: selectedPage! == i ? null : grey,
-                    ),
-                  ),
-                  if (i < numberOfPages!)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Text(
-                        '|',
-                        style: ArDriveTypography.body.buttonLargeRegular(
-                          color: grey,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ));
+          items.add(_pageNumber(i));
         }
+
         return items.reversed.toList();
       } else {
-        List<Widget> items = [];
-
+        /// 1...x1, x2, selectedPage, x3, x4 ... max
         for (int i = selectedPage! - 2; i <= selectedPage! + 2; i++) {
-          items.add(Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: GestureDetector(
-              onTap: () {
-                selectPage(i);
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    (i + 1).toString(),
-                    style: ArDriveTypography.body.inputLargeBold(
-                      color: selectedPage! == i ? null : grey,
-                    ),
-                  ),
-                  if (i < numberOfPages! - 1)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 6),
-                      child: Text(
-                        '|',
-                        style: ArDriveTypography.body.buttonLargeRegular(
-                          color: grey,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ));
+          items.add(_pageNumber(i));
         }
+
         return items;
       }
     }
+  }
+
+  Widget _pageNumber(int page) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: GestureDetector(
+        onTap: () {
+          selectPage(page);
+        },
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              (page + 1).toString(),
+              style: ArDriveTypography.body.inputLargeBold(
+                color: selectedPage! == page ? null : grey,
+              ),
+            ),
+            if (page < numberOfPages! - 1)
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: Text(
+                  '|',
+                  style: ArDriveTypography.body.buttonLargeRegular(
+                    color: grey,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildRowSpacing(
