@@ -17,7 +17,7 @@ class TurboService {
   Future<void> postDataItem({required DataItem dataItem}) async {
     await httpClient.postBytes(
       url: '$turboUri/v1/tx',
-      dataBytes: (await dataItem.asBinary()).toBytes(),
+      data: (await dataItem.asBinary()).toBytes(),
     );
   }
 }
