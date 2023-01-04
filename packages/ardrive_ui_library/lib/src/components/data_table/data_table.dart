@@ -268,12 +268,17 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                         ..._getPagesIndicators2(),
                         if (getNumberOfPages() > 5 &&
                             selectedPage! < numberOfPages! - 3)
-                          Text(
-                            '... ${getNumberOfPages()}',
-                            style: ArDriveTypography.body.inputLargeBold(
-                              color: selectedPage == getNumberOfPages() - 1
-                                  ? null
-                                  : grey,
+                          GestureDetector(
+                            onTap: () {
+                              selectPage(getNumberOfPages() - 1);
+                            },
+                            child: Text(
+                              '... ${getNumberOfPages()}',
+                              style: ArDriveTypography.body.inputLargeBold(
+                                color: selectedPage == getNumberOfPages() - 1
+                                    ? null
+                                    : grey,
+                              ),
                             ),
                           ),
                         Padding(
