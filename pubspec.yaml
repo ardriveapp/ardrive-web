@@ -35,7 +35,7 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/elliotsayes/ardrive_io.git
-      ref: a7657ed2eb28f356fcfe69d2d3a9290c9bbd8921
+      ref: 595a9e209e8fff07d6d30375d888c4f893f18808
   artemis: ^7.0.0-beta.13
   arweave:
     git:
