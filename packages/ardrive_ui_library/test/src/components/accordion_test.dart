@@ -32,5 +32,7 @@ void main() {
 
     expect(find.byWidget(accordion), findsOneWidget);
     expect(find.text('Accordion Title'), findsOneWidget);
+    // verify if the second list tile shows
+    expect(find.byType(ListTile), findsNWidgets(2));
   });
 }
