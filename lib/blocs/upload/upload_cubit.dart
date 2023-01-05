@@ -319,6 +319,8 @@ class UploadCubit extends Cubit<UploadState> {
     debugPrint('Starting bundle preparation....');
     debugPrint('Number of bundles: ${uploadPlan.bundleUploadHandles.length}');
     // Upload to Turbo
+    // Data Items only exist if turbo is enabled.
+    // The upload plan is responsible.
     for (final uploadHandle in uploadPlan.fileDataItemHandles.values) {
       try {
         await uploadHandle.prepareAndSignDataItems();

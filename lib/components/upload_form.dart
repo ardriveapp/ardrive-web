@@ -273,9 +273,10 @@ class UploadForm extends StatelessWidget {
                 state.uploadPlan.fileDataItemHandles.length;
             return AppDialog(
               title: appLocalizationsOf(context).uploadNFiles(
-                  numberOfFilesInBundles +
-                      numberOfV2Files +
-                      numberOfTurboDataItems,),
+                numberOfFilesInBundles +
+                    numberOfV2Files +
+                    numberOfTurboDataItems,
+              ),
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(

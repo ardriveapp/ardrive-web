@@ -218,22 +218,27 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       await manifestMetaDataItem.sign(wallet);
       manifestFileEntity.txId = manifestMetaDataItem.id;
 
+      addManifestToDatabase() => _driveDao.transaction(
+            () async {
+              await _driveDao.writeFileEntity(
+                  manifestFileEntity, '${parentFolder.path}/$manifestName');
+              await _driveDao.insertFileRevision(
+                manifestFileEntity.toRevisionCompanion(
+                  performedAction: existingManifestFileId == null
+                      ? RevisionAction.create
+                      : RevisionAction.uploadNewVersion,
+                ),
+              );
+            },
+          );
+
       if (_turboService.useTurbo) {
         emit(
           CreateManifestTurboUploadConfirmation(
             manifestSize: arweaveManifest.size,
             manifestName: manifestName,
             manifestDataItems: [manifestDataItem, manifestMetaDataItem],
-            addManifestToDatabase: () => _driveDao.transaction(() async {
-              await _driveDao.writeFileEntity(
-                  manifestFileEntity, '${parentFolder.path}/$manifestName');
-              await _driveDao.insertFileRevision(
-                manifestFileEntity.toRevisionCompanion(
-                    performedAction: existingManifestFileId == null
-                        ? RevisionAction.create
-                        : RevisionAction.uploadNewVersion),
-              );
-            }),
+            addManifestToDatabase: addManifestToDatabase,
           ),
         );
         return;
@@ -271,16 +276,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
       final uploadManifestParams = UploadManifestParams(
         signedBundleTx: bundleTx,
-        addManifestToDatabase: () => _driveDao.transaction(() async {
-          await _driveDao.writeFileEntity(
-              manifestFileEntity, '${parentFolder.path}/$manifestName');
-          await _driveDao.insertFileRevision(
-            manifestFileEntity.toRevisionCompanion(
-                performedAction: existingManifestFileId == null
-                    ? RevisionAction.create
-                    : RevisionAction.uploadNewVersion),
-          );
-        }),
+        addManifestToDatabase: addManifestToDatabase,
       );
 
       emit(
