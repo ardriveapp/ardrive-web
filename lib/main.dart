@@ -80,10 +80,9 @@ Future<void> _initialize() async {
       gatewayUrl: Uri.parse(_config.defaultArweaveGatewayUrl!),
     ),
   );
-  final useTurbo = _config.useTurbo ?? false;
-  _turbo = useTurbo
+
+  _turbo = _config.useTurbo
       ? TurboService(
-          useTurbo: useTurbo,
           turboUri: Uri.parse(_config.defaultTurboUrl!),
           allowedDataItemSize: _config.allowedDataItemSizeForTurbo!,
           httpClient: ArDriveHTTP(),

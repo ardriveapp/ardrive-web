@@ -2,13 +2,12 @@ import 'package:ardrive_http/ardrive_http.dart';
 import 'package:arweave/arweave.dart';
 
 class TurboService {
-  final bool useTurbo;
+  final bool useTurbo = true;
   final Uri turboUri;
   final int allowedDataItemSize;
   ArDriveHTTP httpClient;
 
   TurboService({
-    required this.useTurbo,
     required this.turboUri,
     required this.allowedDataItemSize,
     required this.httpClient,
