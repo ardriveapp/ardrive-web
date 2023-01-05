@@ -5,13 +5,13 @@ part 'app_config.g.dart';
 @JsonSerializable()
 class AppConfig {
   final String? defaultArweaveGatewayUrl;
-  final bool? useTurbo;
+  final bool useTurbo;
   final String? defaultTurboUrl;
   final int? allowedDataItemSizeForTurbo;
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
-    this.useTurbo,
+    this.useTurbo = false,
     this.defaultTurboUrl,
     this.allowedDataItemSizeForTurbo,
   });
@@ -24,10 +24,10 @@ class AppConfig {
     return AppConfig(
       defaultArweaveGatewayUrl:
           defaultArweaveGatewayUrl ?? this.defaultArweaveGatewayUrl,
-      useTurbo: useTurbo ?? useTurbo,
-      defaultTurboUrl: defaultTurboUrl ?? defaultTurboUrl,
+      useTurbo: useTurbo ?? this.useTurbo,
+      defaultTurboUrl: defaultTurboUrl ?? this.defaultTurboUrl,
       allowedDataItemSizeForTurbo:
-          allowedDataItemSizeForTurbo ?? allowedDataItemSizeForTurbo,
+          allowedDataItemSizeForTurbo ?? this.allowedDataItemSizeForTurbo,
     );
   }
 
