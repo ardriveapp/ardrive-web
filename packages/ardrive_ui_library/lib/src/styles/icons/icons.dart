@@ -45,4 +45,20 @@ class ArDriveIcons {
         size: size,
         color: color,
       );
+
+  static ArDriveIcon chevronRight({double? size, Color? color}) => ArDriveIcon(
+        path: 'assets/icons/chevron_right.svg',
+        size: size,
+        color: color,
+      );
+  static ArDriveIcon chevronLeft({double? size, Color? color}) => ArDriveIcon(
+        path: 'assets/icons/chevron_left.svg',
+        size: size,
+        color: color,
+      );
+  static ArDriveIcon dots({double? size, Color? color}) => ArDriveIcon(
+        path: 'assets/icons/dots.svg',
+        size: size,
+        color: color,
+      );
 }
