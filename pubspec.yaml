@@ -31,7 +31,7 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ar-io/ardrive_http
-      ref: bee9a84385e6666f1a322e6f4dc12cbf9d34dd89
+      ref: v1.1.0
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
