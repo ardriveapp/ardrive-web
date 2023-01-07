@@ -14,7 +14,7 @@ packages:
       name: _flutterfire_internals
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.10"
+    version: "1.0.12"
   analyzer:
     dependency: transitive
     description:
@@ -47,8 +47,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.0.0"
-      resolved-ref: "64aeb308ee1e041df02add64009e40579ade5e6d"
+      ref: "v1.1.1"
+      resolved-ref: f3b59b639b38908759a1fa448e5642d1995f8d49
       url: "https://github.com/ar-io/ardrive_http.git"
     source: git
     version: "1.0.0"
@@ -209,7 +209,7 @@ packages:
       name: checked_yaml
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.1"
+    version: "2.0.2"
   cli_util:
     dependency: transitive
     description:
@@ -224,20 +224,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.1.1"
-  cloud_firestore_platform_interface:
-    dependency: transitive
-    description:
-      name: cloud_firestore_platform_interface
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "5.9.2"
-  cloud_firestore_web:
-    dependency: transitive
-    description:
-      name: cloud_firestore_web
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "3.1.1"
   code_builder:
     dependency: transitive
     description:
@@ -463,7 +449,7 @@ packages:
       name: firebase_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.0"
+    version: "2.4.1"
   firebase_core_platform_interface:
     dependency: transitive
     description:
@@ -477,21 +463,21 @@ packages:
       name: firebase_core_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.2"
+    version: "2.1.0"
   firebase_crashlytics:
     dependency: "direct main"
     description:
       name: firebase_crashlytics
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.7"
+    version: "3.0.9"
   firebase_crashlytics_platform_interface:
     dependency: transitive
     description:
       name: firebase_crashlytics_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.3.8"
+    version: "3.3.10"
   fixnum:
     dependency: transitive
     description:
@@ -517,7 +503,7 @@ packages:
       name: flutter_downloader
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.9.1"
+    version: "1.10.0"
   flutter_driver:
     dependency: "direct dev"
     description: flutter
@@ -759,7 +745,7 @@ packages:
       name: image
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.2.2"
+    version: "3.3.0"
   image_picker:
     dependency: transitive
     description:
@@ -787,7 +773,7 @@ packages:
       name: image_picker_ios
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.6+3"
+    version: "0.8.6+5"
   image_picker_platform_interface:
     dependency: transitive
     description:
@@ -1249,7 +1235,7 @@ packages:
       name: shared_preferences_macos
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.4"
+    version: "2.0.5"
   shared_preferences_platform_interface:
     dependency: transitive
     description:
