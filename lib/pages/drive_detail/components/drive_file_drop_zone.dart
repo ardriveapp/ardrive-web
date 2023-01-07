@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/components/upload_form.dart';
@@ -7,7 +9,6 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
@@ -75,13 +76,21 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
       _onLeave();
       final selectedFiles = <UploadFile>[];
       try {
-        final htmlUrl = await controller.createFileUrl(htmlFile);
+        final fileSize = await controller.getFileSize(htmlFile);
+        final fileName = await controller.getFilename(htmlFile);
+        final fileLastModified = await controller.getFileLastModified(htmlFile);
 
-        // We use xFile to get the bytes and also validate if it is a file
-        final bytes = await XFile(htmlUrl).readAsBytes();
-        final ioFile = await IOFile.fromData(bytes,
-            name: await controller.getFilename(htmlFile),
-            lastModifiedDate: await controller.getFileLastModified(htmlFile));
+        final ioFile = await IOFileAdapter().fromReadStreamGenerator(
+          ([s, e]) {
+            if ((s != null && s != 0) || (e != null && e != fileSize)) {
+              throw ArgumentError('Range not supported');
+            }
+            return controller.getFileStream(htmlFile).map((c) => c as Uint8List);
+          },
+          fileSize,
+          name: fileName,
+          lastModifiedDate: fileLastModified,
+        );
 
         selectedFiles.add(UploadFile(
           ioFile: ioFile,
