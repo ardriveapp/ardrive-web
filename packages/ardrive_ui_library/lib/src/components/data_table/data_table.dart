@@ -228,7 +228,12 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                           },
                           child: ArDriveIcons.chevronLeft(
                             size: 28,
-                            color: selectedPage > 0 ? null : grey,
+                            color: selectedPage > 0
+                                ? ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault
+                                : grey,
                           ),
                         ),
                       ),
@@ -280,7 +285,10 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                           },
                           child: ArDriveIcons.chevronRight(
                             color: selectedPage + 1 < getNumberOfPages()
-                                ? null
+                                ? ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault
                                 : grey,
                             size: 18,
                           ),
