@@ -184,142 +184,113 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                   row,
                 ),
               ),
-            if (widget.pageItemsDivisorFactor != null)
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Rows per page ',
-                          style: ArDriveTypography.body.bodyBold(),
-                        ),
-                        PaginationSelect(
-                          currentNumber: numberOfItemsPerPage,
-                          divisorFactor: pageItemsDivisorFactor,
-                          maxOption: widget.maxItemsPerPage,
-                          maxNumber: widget.rows.length,
-                          onSelect: (n) {
-                            setState(() {
-                              int newPage =
-                                  ((selectedPage) * numberOfItemsPerPage) ~/ n;
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Rows per page ',
+                        style: ArDriveTypography.body.buttonNormalBold(),
+                      ),
+                      PaginationSelect(
+                        currentNumber: numberOfItemsPerPage,
+                        divisorFactor: pageItemsDivisorFactor,
+                        maxOption: widget.maxItemsPerPage,
+                        maxNumber: widget.rows.length,
+                        onSelect: (n) {
+                          setState(() {
+                            int newPage =
+                                ((selectedPage) * numberOfItemsPerPage) ~/ n;
 
-                              numberOfItemsPerPage = n;
+                            numberOfItemsPerPage = n;
 
-                              selectPage(newPage);
-                            });
+                            selectPage(newPage);
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4.0, right: 0),
+                        child: GestureDetector(
+                          onTap: () {
+                            if (selectedPage > 0) {
+                              goToThePreviousPage();
+                            }
                           },
-                        ),
-                      ],
-                    ),
-                    Text(
-                      '${_getMinIndexInView()}-${_getMaxIndexInView()} of ${rows.length}',
-                      style: ArDriveTypography.body.bodyBold(),
-                    ),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (getNumberOfPages() > 5 && selectedPage >= 3)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4.0, right: 8),
-                            child: GestureDetector(
-                              onTap: () {
-                                if (selectedPage > 0) {
-                                  goToFirstPage();
-                                }
-                              },
-                              child: Icon(
-                                Icons.keyboard_double_arrow_left,
-                                color: selectedPage > 0 ? null : grey,
-                                size: 14,
-                              ),
-                            ),
-                          ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4.0, right: 12),
-                          child: GestureDetector(
-                            onTap: () {
-                              if (selectedPage > 0) {
-                                goToThePreviousPage();
-                              }
-                            },
-                            child: Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              color: selectedPage > 0 ? null : grey,
-                              size: 12,
-                            ),
+                          child: ArDriveIcons.chevronLeft(
+                            size: 28,
+                            color: selectedPage > 0 ? null : grey,
                           ),
                         ),
-                        if (getNumberOfPages() > 5 && selectedPage >= 3)
-                          GestureDetector(
-                            onTap: () {
-                              goToFirstPage();
-                            },
-                            child: Text(
-                              '1 ...',
-                              style: ArDriveTypography.body.inputLargeBold(
-                                color: selectedPage == 1 ? null : grey,
+                      ),
+                      if (getNumberOfPages() > 5 && selectedPage >= 3)
+                        GestureDetector(
+                          onTap: () {
+                            goToFirstPage();
+                          },
+                          child: Row(
+                            children: [
+                              _pageNumber(0),
+                              ArDriveIcons.dots(
+                                size: 24,
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault,
                               ),
-                            ),
-                          ),
-                        ..._getPagesIndicators(),
-                        if (getNumberOfPages() > 5 &&
-                            selectedPage < numberOfPages - 3)
-                          GestureDetector(
-                            onTap: () {
-                              goToLastPage();
-                            },
-                            child: Text(
-                              '... ${getNumberOfPages()}',
-                              style: ArDriveTypography.body.inputLargeBold(
-                                color: selectedPage == getNumberOfPages() - 1
-                                    ? null
-                                    : grey,
-                              ),
-                            ),
-                          ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4.0, left: 8),
-                          child: GestureDetector(
-                            onTap: () {
-                              if (selectedPage + 1 < getNumberOfPages()) {
-                                goToNextPage();
-                              }
-                            },
-                            child: Icon(
-                              Icons.arrow_forward_ios_rounded,
-                              color: selectedPage + 1 < getNumberOfPages()
-                                  ? null
-                                  : grey,
-                              size: 14,
-                            ),
+                            ],
                           ),
                         ),
-                        if (getNumberOfPages() > 6 &&
-                            selectedPage <= getNumberOfPages() - 4)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4.0, left: 12),
-                            child: GestureDetector(
-                              onTap: () {
-                                goToLastPage();
-                              },
-                              child: Icon(
-                                Icons.keyboard_double_arrow_right,
-                                color: selectedPage + 1 < getNumberOfPages()
-                                    ? null
-                                    : grey,
-                                size: 14,
+                      ..._getPagesIndicators(),
+                      if (getNumberOfPages() > 5 &&
+                          selectedPage < numberOfPages - 3)
+                        GestureDetector(
+                          onTap: () {
+                            goToLastPage();
+                          },
+                          child: Row(
+                            children: [
+                              ArDriveIcons.dots(
+                                size: 24,
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colors
+                                    .themeFgDefault,
                               ),
-                            ),
+                              _pageNumber(getNumberOfPages() - 1),
+                            ],
                           ),
-                      ],
-                    )
-                  ],
-                ),
-              )
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4.0, left: 8),
+                        child: GestureDetector(
+                          onTap: () {
+                            if (selectedPage + 1 < getNumberOfPages()) {
+                              goToNextPage();
+                            }
+                          },
+                          child: ArDriveIcons.chevronRight(
+                            color: selectedPage + 1 < getNumberOfPages()
+                                ? null
+                                : grey,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                ],
+              ),
+            )
           ],
         ),
       ),
@@ -364,34 +335,12 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
   /// The pages are counted starting from 0, so, to show correctly add + 1
   ///
   Widget _pageNumber(int page) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: GestureDetector(
-        onTap: () {
-          selectPage(page);
-        },
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              (page + 1).toString(),
-              style: ArDriveTypography.body.inputLargeBold(
-                color: selectedPage == page ? null : grey,
-              ),
-            ),
-            if (page < numberOfPages - 1)
-              Padding(
-                padding: const EdgeInsets.only(left: 6),
-                child: Text(
-                  '|',
-                  style: ArDriveTypography.body.buttonLargeRegular(
-                    color: grey,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
+    return _PageNumber(
+      page: page,
+      isSelected: selectedPage == page,
+      onPressed: () {
+        selectPage(page);
+      },
     );
   }
 
@@ -459,16 +408,6 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
   void goToThePreviousPage() {
     selectPage(selectedPage - 1);
   }
-
-  int _getMinIndexInView() {
-    return (selectedPage * numberOfItemsPerPage) + 1;
-  }
-
-  int _getMaxIndexInView() {
-    return (rows.length - 1 < (selectedPage + 1) * numberOfItemsPerPage
-        ? rows.length
-        : (selectedPage + 1) * numberOfItemsPerPage);
-  }
 }
 
 class PaginationSelect extends StatefulWidget {
@@ -533,28 +472,59 @@ class _PaginationSelectState extends State<PaginationSelect> {
             ),
           ),
       ],
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            width: 1,
-            color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(
-          vertical: 6,
-          horizontal: 12,
-        ),
+      child: _PageNumber(
+        page: currentNumber - 1,
+        isSelected: false,
+      ),
+    );
+  }
+}
+
+class _PageNumber extends StatelessWidget {
+  const _PageNumber({
+    this.onPressed,
+    required this.page,
+    required this.isSelected,
+    super.key,
+  });
+
+  final int page;
+  final bool isSelected;
+  final Function()? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4.0),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '$currentNumber',
-              style: ArDriveTypography.body.bodyBold(),
+            Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.fromLTRB(10, 2, 10, 4),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  width: 2,
+                  color: isSelected
+                      ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
+                      : ArDriveTheme.of(context).themeData.colors.themeGbMuted,
+                ),
+                borderRadius: BorderRadius.circular(4),
+                color: isSelected
+                    ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
+                    : ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+              ),
+              child: Text(
+                (page + 1).toString(),
+                style: ArDriveTypography.body.buttonNormalBold(
+                  color: isSelected
+                      ? ArDriveTheme.of(context).themeData.colors.themeBgSurface
+                      : grey,
+                ),
+              ),
             ),
-            const SizedBox(
-              width: 8,
-            ),
-            const Icon(Icons.arrow_drop_down)
           ],
         ),
       ),
