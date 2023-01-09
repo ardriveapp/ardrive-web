@@ -1,5 +1,6 @@
 import 'package:ardrive/pst/contract_oracle.dart';
 import 'package:ardrive/pst/pst_contract_data.dart';
+import 'package:ardrive/utils/first_future_with_a_value.dart';
 import 'package:equatable/equatable.dart';
 import 'package:retry/retry.dart';
 
@@ -17,30 +18,29 @@ class ArDriveContractOracle implements ContractOracle {
 
   @override
   Future<CommunityContractData> getCommunityContract() async {
-    CommunityContractData? data = await _getContractFromOracles();
+    try {
+      CommunityContractData data = await _getContractFromOracles();
 
-    if (data == null) {
+      return data;
+    } catch (e) {
       throw const CouldNotReadContractState(
         reason: 'Max retry attempts reached',
       );
     }
-
-    return data;
   }
 
   /// iterates over all contract readers attempting to read the contract
-  Future<CommunityContractData?> _getContractFromOracles() async {
-    for (ContractOracle contractOracle in _contractOracles) {
-      final data = await _getContractWithRetries(contractOracle);
-      if (data != null) {
-        return data;
-      }
-    }
-    return null;
+  Future<CommunityContractData> _getContractFromOracles() async {
+    final contract = await firstWithAValue<CommunityContractData>(
+        _contractOracles
+            .map((e) async => await _getContractWithRetries(e))
+            .toList());
+
+    return contract;
   }
 
   /// attempts multiple retries to read the given contract oracle
-  Future<CommunityContractData?> _getContractWithRetries(
+  Future<CommunityContractData> _getContractWithRetries(
     ContractOracle contractOracle, {
     int maxAttempts = _maxReadContractAttempts,
   }) async {
@@ -51,7 +51,7 @@ class ArDriveContractOracle implements ContractOracle {
       );
       return data;
     } catch (_) {
-      return null;
+      rethrow;
     }
   }
 
