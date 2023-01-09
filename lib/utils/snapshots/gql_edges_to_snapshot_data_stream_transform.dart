@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:ardrive/utils/snapshots/snapshot_types.dart';
 
+/// FIXME: this should be a stream transform, not a function
+
 // Function that maps a stream of TxSnapshot to a stream of JSON serialized objects as Uint8Array
 Stream<Uint8List> gqlEdgesToSnapshotDataStreamTransform(
     Stream<TxSnapshot> stream) async* {
@@ -12,18 +14,17 @@ Stream<Uint8List> gqlEdgesToSnapshotDataStreamTransform(
   // Yield the beginning of a JSON array
   yield Uint8List.fromList(utf8.encode('{"txSnapshots":['));
 
-  // Set a flag to determine if this is the first object in the stream
-  var first = true;
+  int index = 0;
 
   // Iterate through the stream
   await for (final txSnapshot in stream) {
     // If this is not the first object in the stream, yield a comma separator
-    if (!first) {
+    if (index != 0) {
       yield Uint8List.fromList(utf8.encode(','));
     }
 
-    // Set the flag to false, so that future iterations know they are not the first object
-    first = false;
+    // Update the index, so that future iterations know they are not the first object
+    index++;
 
     // Serialize the object to a JSON string
     final jsonString = encoder.convert(txSnapshot);

@@ -7,10 +7,24 @@ abstract class SnapshotData {
   abstract List<TxSnapshot> txSnapshots; // contains revisions as well
 }
 
-abstract class TxSnapshot {
+class TxSnapshot {
   @JsonKey(name: 'gqlNode')
-  abstract DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+  DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
       gqlNode;
+
   @JsonKey(name: 'jsonMetadata')
-  abstract String jsonMetadata;
+  String jsonMetadata;
+
+  TxSnapshot({required this.gqlNode, required this.jsonMetadata});
+
+  TxSnapshot.fromJson(Map<String, dynamic> json)
+      : gqlNode =
+            DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                .fromJson(json['gqlNode'] as Map<String, dynamic>),
+        jsonMetadata = json['jsonMetadata'] as String;
+
+  toJson() => {
+        'gqlNode': gqlNode,
+        'jsonMetadata': jsonMetadata,
+      };
 }
