@@ -12,6 +12,7 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
+import 'package:universal_html/html.dart';
 
 class DriveFileDropZone extends StatefulWidget {
   final String driveId;
@@ -75,28 +76,15 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
       isCurrentlyShown = true;
       _onLeave();
       final selectedFiles = <UploadFile>[];
+
       try {
-        final fileSize = await controller.getFileSize(htmlFile);
-        final fileName = await controller.getFilename(htmlFile);
-        final fileLastModified = await controller.getFileLastModified(htmlFile);
+        // TODO: find a way to trigger exception on folders without loading the blob.
+        // Current behavior is to proceed with the first file in the folder.
 
-        final ioFile = await IOFileAdapter().fromReadStreamGenerator(
-          ([s, e]) {
-            if ((s != null && s != 0) || (e != null && e != fileSize)) {
-              throw ArgumentError('Range not supported');
-            }
-            return controller.getFileStream(htmlFile).map((c) => c as Uint8List);
-          },
-          fileSize,
-          name: fileName,
-          lastModifiedDate: fileLastModified,
-        );
-
-        selectedFiles.add(UploadFile(
-          ioFile: ioFile,
-          parentFolderId: parentFolderId,
-        ));
-      } catch (e) {
+        // final fileUrl = await controller.createFileUrl(htmlFile);
+        // final fileRequest = await HttpRequest.request(fileUrl, responseType: 'blob');
+        // await controller.releaseFileUrl(fileUrl);
+      } on ProgressEvent catch (_) {
         await showDialog(
           context: context,
           builder: (_) => AlertDialog(
@@ -113,8 +101,30 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
           ),
           barrierDismissible: true,
         ).then((value) => isCurrentlyShown = false);
+
         return;
       }
+
+      final fileSize = await controller.getFileSize(htmlFile);
+      final fileName = await controller.getFilename(htmlFile);
+      final fileLastModified = await controller.getFileLastModified(htmlFile);
+
+      final ioFile = await IOFileAdapter().fromReadStreamGenerator(
+        ([s, e]) {
+          if ((s != null && s != 0) || (e != null && e != fileSize)) {
+            throw ArgumentError('Range not supported');
+          }
+          return controller.getFileStream(htmlFile).map((c) => c as Uint8List);
+        },
+        fileSize,
+        name: fileName,
+        lastModifiedDate: fileLastModified,
+      );
+
+      selectedFiles.add(UploadFile(
+        ioFile: ioFile,
+        parentFolderId: parentFolderId,
+      ));
 
       await showCongestionDependentModalDialog(
         context,
