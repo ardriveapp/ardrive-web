@@ -5,7 +5,7 @@
 import FlutterMacOS
 import Foundation
 
-import device_info_plus_macos
+import device_info_plus
 import file_saver
 import file_selector_macos
 import firebase_core

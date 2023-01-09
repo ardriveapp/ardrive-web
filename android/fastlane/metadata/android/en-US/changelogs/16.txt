@@ -1,0 +1,2 @@
+• Increase network timeouts to 8 seconds.
+• Change the way the app read the ArDrive smart contract
