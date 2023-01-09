@@ -4,38 +4,14 @@ import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/gql_edges_to_snapshot_data_stream_transform.dart';
 import 'package:ardrive/utils/snapshots/snapshot_types.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:json_annotation/json_annotation.dart';
-
-class FakeTxSnapshot extends TxSnapshot {
-  @override
-  @JsonKey(name: 'gqlNode')
-  DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-      gqlNode;
-
-  @override
-  @JsonKey(name: 'jsonMetadata')
-  String jsonMetadata;
-
-  FakeTxSnapshot(this.gqlNode, this.jsonMetadata);
-
-  FakeTxSnapshot.fromJson(Map<String, dynamic> json)
-      : gqlNode =
-            DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-                .fromJson(json['gqlNode'] as Map<String, dynamic>),
-        jsonMetadata = json['jsonMetadata'] as String;
-
-  toJson() => {
-        'gqlNode': gqlNode,
-        'jsonMetadata': jsonMetadata,
-      };
-}
 
 // stream of fake TxSnapshot items
 Stream<TxSnapshot> fakeTxSnapshotStream(int amount) async* {
   for (var i = 0; i < amount; i++) {
-    yield FakeTxSnapshot(
-      DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-          .fromJson(
+    yield TxSnapshot(
+      gqlNode:
+          DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+              .fromJson(
         {
           'id': 'id_$i',
           'name': 'name_$i',
@@ -52,7 +28,7 @@ Stream<TxSnapshot> fakeTxSnapshotStream(int amount) async* {
           'tags': [],
         },
       ),
-      '{"name": "name_$i"}',
+      jsonMetadata: '{"name": "name_$i"}',
     );
   }
 }
