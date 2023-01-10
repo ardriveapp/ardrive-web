@@ -18,6 +18,7 @@ void main() {
           blockEnd: 10,
           subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
           source: const Stream.empty(),
+          jsonMetadataOfTxId: (txId) async => '{"name":"$txId"}',
         );
 
         final snapshotData = (await snapshotItem
@@ -36,6 +37,7 @@ void main() {
           blockEnd: 10,
           subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
           source: fakeNodesStream(Range(start: 8, end: 8)),
+          jsonMetadataOfTxId: (txId) async => '{"name":"$txId"}',
         );
 
         final snapshotData = (await snapshotItem
@@ -46,7 +48,7 @@ void main() {
 
         expect(
           snapshotData,
-          '{"txSnapshots":[{"gqlNode":{"id":"tx-8","owner":{"address":"1234567890"},"bundledIn":{"id":"ASDASDASDASDASDASD"},"block":{"height":8,"timestamp":800},"tags":[]},"jsonMetadata":"TODO"}]}',
+          '{"txSnapshots":[{"gqlNode":{"id":"tx-8","owner":{"address":"1234567890"},"bundledIn":{"id":"ASDASDASDASDASDASD"},"block":{"height":8,"timestamp":800},"tags":[]},"jsonMetadata":"{\\"name\\":\\"tx-8\\"}"}]}',
         );
       });
 
@@ -58,23 +60,26 @@ void main() {
           blockStart: 0,
           blockEnd: 10,
           subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
-          source: Stream.fromIterable([
-            DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-                .fromJson(
-              {
-                'id': 'tx-7',
-                'bundledIn': {'id': 'ASDASDASDASDASDASD'},
-                'owner': {'address': '1234567890'},
-                'tags': [
-                  {'name': 'Entity-Type', 'value': 'snapshot'},
-                ],
-                'block': {
-                  'height': 7,
-                  'timestamp': 700,
-                }
-              },
-            ),
-          ]),
+          source: Stream.fromIterable(
+            [
+              DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+                  .fromJson(
+                {
+                  'id': 'tx-7',
+                  'bundledIn': {'id': 'ASDASDASDASDASDASD'},
+                  'owner': {'address': '1234567890'},
+                  'tags': [
+                    {'name': 'Entity-Type', 'value': 'snapshot'},
+                  ],
+                  'block': {
+                    'height': 7,
+                    'timestamp': 700,
+                  }
+                },
+              ),
+            ],
+          ),
+          jsonMetadataOfTxId: (txId) async => '{"name":"tx-$txId"}',
         );
 
         final snapshotData = (await snapshotItem
