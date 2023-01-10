@@ -1,13 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/utils/snapshots/snapshot_types.dart';
 
-/// FIXME: this should be a stream transform, not a function
-
-// Function that maps a stream of TxSnapshot to a stream of JSON serialized objects as Uint8Array
-Stream<Uint8List> gqlEdgesToSnapshotDataStreamTransform(
-    Stream<TxSnapshot> stream) async* {
+// StreamTransformer that converts a stream of TxSnapshot objects into a stream of Uint8List objects
+StreamTransformer<TxSnapshot, Uint8List> gqlEdgesToSnapshotDataStreamTransform =
+    StreamTransformer.fromBind((stream) async* {
   // Use a JSON encoder to serialize the objects in the stream.
   const encoder = JsonEncoder();
 
@@ -36,4 +35,4 @@ Stream<Uint8List> gqlEdgesToSnapshotDataStreamTransform(
 
   // Yield the end of the JSON array
   yield Uint8List.fromList(utf8.encode(']}'));
-}
+});
