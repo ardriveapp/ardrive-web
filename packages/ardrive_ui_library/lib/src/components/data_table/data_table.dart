@@ -357,10 +357,6 @@ class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
     }
   }
 
-  int showSemanticPage() {
-    return _selectedPage + 1;
-  }
-
   /// The pages are counted starting from 0, so, to show correctly add + 1
   ///
   Widget _pageNumber(int page) {
@@ -550,7 +546,7 @@ class _PageNumber extends StatelessWidget {
                     : null,
               ),
               child: Text(
-                (page + 1).toString(),
+                _showSemanticPageNumber(page),
                 style: ArDriveTypography.body.buttonNormalBold(
                   color: isSelected
                       ? ArDriveTheme.of(context)
@@ -569,4 +565,8 @@ class _PageNumber extends StatelessWidget {
       ),
     );
   }
+}
+
+String _showSemanticPageNumber(int page) {
+  return (page + 1).toString();
 }
