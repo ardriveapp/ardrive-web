@@ -53,7 +53,7 @@ void main() {
       });
 
       test(
-          'the returned data won\'t contain metadatadata of other snapshots, but only the gql node',
+          'the returned data won\'t contain the json metadata of other snapshots, but only the gql node',
           () async {
         final snapshotItem = SnapshotItemToBeCreated(
           driveId: 'DRIVE_ID',
