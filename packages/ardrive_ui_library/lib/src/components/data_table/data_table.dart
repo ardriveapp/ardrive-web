@@ -48,7 +48,6 @@ enum TableSort { asc, desc }
 
 class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
   late List<T> _rows;
-  late List<T> _sortedRows;
   late List<T> _currentPage;
 
   late int _numberOfPages;
@@ -113,7 +112,7 @@ class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
 
                     _sortedColumn = index;
 
-                    _sortedRows.sort(sort);
+                    _rows.sort(sort);
 
                     selectPage(_selectedPage);
                   });
@@ -247,7 +246,7 @@ class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
                         ),
                       ),
                     ),
-                    if (_getNumberOfPages() > 5 && _selectedPage >= 3)
+                    if (_getNumberOfPages() > 5 && _selectedPage >= 4)
                       GestureDetector(
                         onTap: () {
                           goToFirstPage();
@@ -267,7 +266,7 @@ class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
                       ),
                     ..._getPagesIndicators(),
                     if (_getNumberOfPages() > 5 &&
-                        _selectedPage < _numberOfPages - 3)
+                        _selectedPage < _numberOfPages - 4)
                       GestureDetector(
                         onTap: () {
                           goToLastPage();
@@ -289,12 +288,12 @@ class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
                       padding: const EdgeInsets.only(top: 4.0, left: 8),
                       child: GestureDetector(
                         onTap: () {
-                          if (_selectedPage <= _getNumberOfPages()) {
+                          if (_selectedPage + 1 < _getNumberOfPages()) {
                             goToNextPage();
                           }
                         },
                         child: ArDriveIcons.chevronRight(
-                          color: _selectedPage <= _getNumberOfPages()
+                          color: _selectedPage + 1 < _getNumberOfPages()
                               ? ArDriveTheme.of(context)
                                   .themeData
                                   .colors
@@ -410,7 +409,7 @@ class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
 
       int minIndex = (_selectedPage * _numberOfItemsPerPage);
 
-      _currentPage = _sortedRows.sublist(minIndex, maxIndex);
+      _currentPage = _rows.sublist(minIndex, maxIndex);
     });
   }
 
