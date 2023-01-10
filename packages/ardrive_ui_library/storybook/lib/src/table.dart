@@ -32,7 +32,7 @@ Widget _tableWithContent(BuildContext context) {
   final space3 =
       context.knobs.number(label: 'Space 3 column', initialValue: 1).toInt();
 
-  return ArDriveTable<File>(
+  return ArDriveDataTable<File>(
     pageItemsDivisorFactor: 25,
     leading: context.knobs.boolean(label: 'With leading')
         ? (row) {

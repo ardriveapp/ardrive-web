@@ -16,10 +16,8 @@ class TableRowWidget {
   final List<Widget> row;
 }
 
-class TableRow {}
-
-class ArDriveTable<T> extends StatefulWidget {
-  const ArDriveTable({
+class ArDriveDataTable<T> extends StatefulWidget {
+  const ArDriveDataTable({
     super.key,
     required this.columns,
     required this.buildRow,
@@ -43,45 +41,43 @@ class ArDriveTable<T> extends StatefulWidget {
   final int maxItemsPerPage;
 
   @override
-  State<ArDriveTable> createState() => _ArDriveTableState<T>();
+  State<ArDriveDataTable> createState() => _ArDriveDataTableState<T>();
 }
 
 enum TableSort { asc, desc }
 
-class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
-  late List<T> rows;
-  late List<T> sortedRows;
-  late List<T> currentPage;
+class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
+  late List<T> _rows;
+  late List<T> _sortedRows;
+  late List<T> _currentPage;
 
-  late int numberOfPages;
-  late int selectedPage;
-  late int pageItemsDivisorFactor;
-  late int numberOfItemsPerPage;
-  int? sortedColumn;
+  late int _numberOfPages;
+  late int _selectedPage;
+  late int _pageItemsDivisorFactor;
+  late int _numberOfItemsPerPage;
+  int? _sortedColumn;
 
   TableSort? _tableSort;
 
   @override
   void initState() {
     super.initState();
-    rows = widget.rows;
-    sortedRows = List.from(rows);
-    pageItemsDivisorFactor = widget.pageItemsDivisorFactor;
-    numberOfItemsPerPage = pageItemsDivisorFactor;
-    numberOfPages = rows.length ~/ pageItemsDivisorFactor;
-    if (rows.length % pageItemsDivisorFactor != 0) {
-      numberOfPages = numberOfPages + 1;
+    _rows = widget.rows;
+    _pageItemsDivisorFactor = widget.pageItemsDivisorFactor;
+    _numberOfItemsPerPage = _pageItemsDivisorFactor;
+    _numberOfPages = _rows.length ~/ _pageItemsDivisorFactor;
+    if (_rows.length % _pageItemsDivisorFactor != 0) {
+      _numberOfPages++;
     }
-    selectedPage = 0;
     selectPage(0);
   }
 
-  int getNumberOfPages() {
-    numberOfPages = rows.length ~/ numberOfItemsPerPage;
-    if (rows.length % numberOfItemsPerPage != 0) {
-      numberOfPages = numberOfPages + 1;
+  int _getNumberOfPages() {
+    _numberOfPages = _rows.length ~/ _numberOfItemsPerPage;
+    if (_rows.length % _numberOfItemsPerPage != 0) {
+      _numberOfPages = _numberOfPages + 1;
     }
-    return numberOfPages;
+    return _numberOfPages;
   }
 
   @override
@@ -97,7 +93,8 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
               onTap: () {
                 if (widget.sort != null) {
                   setState(() {
-                    if (sortedColumn == index) {
+                    if (_sortedColumn == index) {
+                      // toggles the sort state
                       if (_tableSort == TableSort.asc) {
                         _tableSort = TableSort.desc;
                       } else {
@@ -114,11 +111,11 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                       }
                     }
 
-                    sortedColumn = index;
+                    _sortedColumn = index;
 
-                    sortedRows.sort(sort);
+                    _sortedRows.sort(sort);
 
-                    selectPage(selectedPage);
+                    selectPage(_selectedPage);
                   });
                 }
               },
@@ -127,7 +124,7 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                   widget.columns[index].title,
                   style: ArDriveTypography.body.buttonNormalBold(),
                 ),
-                if (sortedColumn == index)
+                if (_sortedColumn == index)
                   Icon(
                     _tableSort == TableSort.asc
                         ? Icons.arrow_upward
@@ -171,7 +168,7 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
           Padding(
             padding: getPadding(),
             child: Row(
-              children: [...columns],
+              children: columns,
             ),
           ),
           const SizedBox(
@@ -184,7 +181,7 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
               ),
               child: SingleChildScrollView(
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
-                for (var row in currentPage) ...[
+                for (var row in _currentPage) ...[
                   Padding(
                     padding: const EdgeInsets.only(top: 5),
                     child: _buildRowSpacing(
@@ -198,7 +195,7 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(36.0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -210,16 +207,16 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                       style: ArDriveTypography.body.buttonNormalBold(),
                     ),
                     PaginationSelect(
-                      currentNumber: numberOfItemsPerPage,
-                      divisorFactor: pageItemsDivisorFactor,
+                      currentNumber: _numberOfItemsPerPage,
+                      divisorFactor: _pageItemsDivisorFactor,
                       maxOption: widget.maxItemsPerPage,
                       maxNumber: widget.rows.length,
                       onSelect: (n) {
                         setState(() {
                           int newPage =
-                              ((selectedPage) * numberOfItemsPerPage) ~/ n;
+                              ((_selectedPage) * _numberOfItemsPerPage) ~/ n;
 
-                          numberOfItemsPerPage = n;
+                          _numberOfItemsPerPage = n;
 
                           selectPage(newPage);
                         });
@@ -235,13 +232,13 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                       padding: const EdgeInsets.only(top: 4.0, right: 0),
                       child: GestureDetector(
                         onTap: () {
-                          if (selectedPage > 0) {
-                            goToThePreviousPage();
+                          if (_selectedPage > 0) {
+                            goToPreviousPage();
                           }
                         },
                         child: ArDriveIcons.chevronLeft(
                           size: 28,
-                          color: selectedPage > 0
+                          color: _selectedPage > 0
                               ? ArDriveTheme.of(context)
                                   .themeData
                                   .colors
@@ -250,7 +247,7 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                         ),
                       ),
                     ),
-                    if (getNumberOfPages() > 5 && selectedPage >= 3)
+                    if (_getNumberOfPages() > 5 && _selectedPage >= 3)
                       GestureDetector(
                         onTap: () {
                           goToFirstPage();
@@ -269,8 +266,8 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                         ),
                       ),
                     ..._getPagesIndicators(),
-                    if (getNumberOfPages() > 5 &&
-                        selectedPage < numberOfPages - 3)
+                    if (_getNumberOfPages() > 5 &&
+                        _selectedPage < _numberOfPages - 3)
                       GestureDetector(
                         onTap: () {
                           goToLastPage();
@@ -284,7 +281,7 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                                   .colors
                                   .themeFgDefault,
                             ),
-                            _pageNumber(getNumberOfPages() - 1),
+                            _pageNumber(_getNumberOfPages() - 1),
                           ],
                         ),
                       ),
@@ -292,12 +289,12 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
                       padding: const EdgeInsets.only(top: 4.0, left: 8),
                       child: GestureDetector(
                         onTap: () {
-                          if (selectedPage + 1 < getNumberOfPages()) {
+                          if (_selectedPage <= _getNumberOfPages()) {
                             goToNextPage();
                           }
                         },
                         child: ArDriveIcons.chevronRight(
-                          color: selectedPage + 1 < getNumberOfPages()
+                          color: _selectedPage <= _getNumberOfPages()
                               ? ArDriveTheme.of(context)
                                   .themeData
                                   .colors
@@ -318,28 +315,28 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
   }
 
   List<Widget> _getPagesIndicators() {
-    if (numberOfPages < 6) {
-      return List.generate(numberOfPages, (index) {
+    if (_numberOfPages < 6) {
+      return List.generate(_numberOfPages, (index) {
         return _pageNumber(index);
       });
     } else {
       List<Widget> items = [];
 
       /// 1, 2, 3, 4, 5, 6 ... max
-      if (selectedPage <= 1) {
+      if (_selectedPage <= 1) {
         return List.generate(5, (index) {
           return _pageNumber(index);
         });
-      } else if (selectedPage >= numberOfPages - 2) {
+      } else if (_selectedPage >= _numberOfPages - 2) {
         /// 1 ... x1, x2, x3, x4, max
-        for (int i = numberOfPages - 1; i >= selectedPage - 4; i--) {
+        for (int i = _numberOfPages - 1; i >= _selectedPage - 4; i--) {
           items.add(_pageNumber(i));
         }
 
         return items.reversed.toList();
       } else {
         /// 1...x1, x2, selectedPage, x3, x4 ... max
-        for (int i = selectedPage - 2; i <= selectedPage + 2; i++) {
+        for (int i = _selectedPage - 2; i <= _selectedPage + 2; i++) {
           items.add(_pageNumber(i));
         }
 
@@ -349,7 +346,7 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
   }
 
   int showSemanticPage() {
-    return selectedPage + 1;
+    return _selectedPage + 1;
   }
 
   /// The pages are counted starting from 0, so, to show correctly add + 1
@@ -357,7 +354,7 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
   Widget _pageNumber(int page) {
     return _PageNumber(
       page: page,
-      isSelected: selectedPage == page,
+      isSelected: _selectedPage == page,
       onPressed: () {
         selectPage(page);
       },
@@ -406,31 +403,31 @@ class _ArDriveTableState<T> extends State<ArDriveTable<T>> {
 
   void selectPage(int page) {
     setState(() {
-      selectedPage = page;
-      int maxIndex = rows.length - 1 < (page + 1) * numberOfItemsPerPage
-          ? rows.length - 1
-          : (page + 1) * numberOfItemsPerPage;
+      _selectedPage = page;
+      int maxIndex = _rows.length - 1 < (page + 1) * _numberOfItemsPerPage
+          ? _rows.length - 1
+          : (page + 1) * _numberOfItemsPerPage;
 
-      int minIndex = (selectedPage * numberOfItemsPerPage);
+      int minIndex = (_selectedPage * _numberOfItemsPerPage);
 
-      currentPage = sortedRows.sublist(minIndex, maxIndex);
+      _currentPage = _sortedRows.sublist(minIndex, maxIndex);
     });
   }
 
   void goToNextPage() {
-    selectPage(selectedPage + 1);
+    selectPage(_selectedPage + 1);
   }
 
   void goToLastPage() {
-    selectPage(numberOfPages - 1);
+    selectPage(_numberOfPages - 1);
   }
 
   void goToFirstPage() {
     selectPage(0);
   }
 
-  void goToThePreviousPage() {
-    selectPage(selectedPage - 1);
+  void goToPreviousPage() {
+    selectPage(_selectedPage - 1);
   }
 }
 
