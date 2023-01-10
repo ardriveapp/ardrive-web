@@ -28,6 +28,7 @@ class ArDriveDataTable<T> extends StatefulWidget {
     this.pageItemsDivisorFactor = 25,
     this.onChangePage,
     this.maxItemsPerPage = 100,
+    required this.rowsPerPageText,
   });
 
   final List<TableColumn> columns;
@@ -39,6 +40,7 @@ class ArDriveDataTable<T> extends StatefulWidget {
   final Function(int page)? onChangePage;
   final int pageItemsDivisorFactor;
   final int maxItemsPerPage;
+  final String rowsPerPageText;
 
   @override
   State<ArDriveDataTable> createState() => _ArDriveDataTableState<T>();
@@ -202,7 +204,7 @@ class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
                 Row(
                   children: [
                     Text(
-                      'Rows per page ',
+                      widget.rowsPerPageText,
                       style: ArDriveTypography.body.buttonNormalBold(),
                     ),
                     PaginationSelect(
