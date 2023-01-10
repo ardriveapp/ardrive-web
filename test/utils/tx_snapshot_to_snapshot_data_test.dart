@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
-import 'package:ardrive/utils/snapshots/gql_edges_to_snapshot_data_stream_transform.dart';
 import 'package:ardrive/utils/snapshots/snapshot_types.dart';
+import 'package:ardrive/utils/snapshots/tx_snapshot_to_snapshot_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // stream of fake TxSnapshot items
@@ -37,7 +37,7 @@ void main() {
   const emptyStreamOfTxSnapshot = Stream<TxSnapshot>.empty();
   final Stream<TxSnapshot> streamOfFakeTxSnapshots = fakeTxSnapshotStream(3);
 
-  group('gqlEdgesToSnapshotDataStreamTransform transform method', () {
+  group('txSnapshotToSnapshotData transformer', () {
     test('should return an empty stream when given an empty stream', () async {
       final result =
           emptyStreamOfTxSnapshot.transform(txSnapshotToSnapshotData);
