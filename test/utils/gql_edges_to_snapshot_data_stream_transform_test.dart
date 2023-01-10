@@ -33,7 +33,6 @@ Stream<TxSnapshot> fakeTxSnapshotStream(int amount) async* {
   }
 }
 
-// Test sheet for the gqlEdgesToSnapshotDataStreamTransform method
 void main() {
   const emptyStreamOfTxSnapshot = Stream<TxSnapshot>.empty();
   final Stream<TxSnapshot> streamOfFakeTxSnapshots = fakeTxSnapshotStream(3);
