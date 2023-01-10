@@ -38,7 +38,6 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
     double dropdownHeight = widget.items.length * widget.height;
 
     return ArDriveOverlay(
-      key: ValueKey(visible),
       visible: visible,
       anchor: widget.anchor,
       content: TweenAnimationBuilder<double>(
@@ -120,6 +119,18 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
   @override
   void initState() {
     super.initState();
+    _updateVisibleState();
+  }
+
+  @override
+  void didUpdateWidget(oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    setState(() {
+      _updateVisibleState();
+    });
+  }
+
+  void _updateVisibleState() {
     if (widget.visible != null) {
       _visible = widget.visible!;
     } else {
@@ -143,6 +154,7 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
         visible: _visible,
         child: GestureDetector(
           onTap: () {
+            print('on tap');
             setState(() {
               _visible = true;
             });
