@@ -39,15 +39,15 @@ void main() {
 
   group('gqlEdgesToSnapshotDataStreamTransform transform method', () {
     test('should return an empty stream when given an empty stream', () async {
-      final result = emptyStreamOfTxSnapshot
-          .transform(gqlEdgesToSnapshotDataStreamTransform);
+      final result =
+          emptyStreamOfTxSnapshot.transform(txSnapshotToSnapshotData);
 
       expect(result, emitsInOrder([]));
     });
 
     test('should return the expected SnapshotData', () async {
-      final result = streamOfFakeTxSnapshots
-          .transform(gqlEdgesToSnapshotDataStreamTransform);
+      final result =
+          streamOfFakeTxSnapshots.transform(txSnapshotToSnapshotData);
 
       // Await for the whole stream data and transform into string
       final streamResult =

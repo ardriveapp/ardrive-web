@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:ardrive/utils/snapshots/snapshot_types.dart';
 
 // StreamTransformer that converts a stream of TxSnapshot objects into a stream of Uint8List objects
-StreamTransformer<TxSnapshot, Uint8List> gqlEdgesToSnapshotDataStreamTransform =
+StreamTransformer<TxSnapshot, Uint8List> txSnapshotToSnapshotData =
     StreamTransformer.fromBind((stream) async* {
   // Use a JSON encoder to serialize the objects in the stream.
   const encoder = JsonEncoder();
