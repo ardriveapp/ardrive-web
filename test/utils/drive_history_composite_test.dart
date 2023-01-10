@@ -44,7 +44,7 @@ void main() {
       );
     });
 
-    test('constructor throws with invalid sub-ranges amount', () {
+    test('constructor throws with invalid sub-ranges amount', () async {
       GQLDriveHistory gqlDriveHistory = GQLDriveHistory(
         arweave: arweave,
         driveId: 'DRIVE_ID',
@@ -55,13 +55,13 @@ void main() {
         ]),
       );
       SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
-        items: mockSubRanges
+        items: await Future.wait(mockSubRanges
             .map(
               (r) => fakeSnapshotItemFromRange(
                 HeightRange(rangeSegments: [r]),
               ),
             )
-            .toList(),
+            .toList()),
       );
 
       expect(
@@ -96,13 +96,13 @@ void main() {
         ]),
       );
       SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
-        items: mockSubRanges
+        items: await Future.wait(mockSubRanges
             .map(
               (r) => fakeSnapshotItemFromRange(
                 HeightRange(rangeSegments: [r]),
               ),
             )
-            .toList(),
+            .toList()),
       );
       DriveHistoryComposite driveHistoryComposite = DriveHistoryComposite(
         subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 100)]),
