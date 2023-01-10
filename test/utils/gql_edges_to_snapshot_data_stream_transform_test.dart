@@ -40,24 +40,28 @@ void main() {
 
   group('gqlEdgesToSnapshotDataStreamTransform transform method', () {
     test('should return an empty stream when given an empty stream', () async {
-      final result = gqlEdgesToSnapshotDataStreamTransform(
-        emptyStreamOfTxSnapshot,
-      );
+      final result = emptyStreamOfTxSnapshot
+          .transform(gqlEdgesToSnapshotDataStreamTransform);
 
       expect(result, emitsInOrder([]));
     });
 
     test('should return the expected SnapshotData', () async {
-      final result = gqlEdgesToSnapshotDataStreamTransform(
-        streamOfFakeTxSnapshots,
-      );
+      final result = streamOfFakeTxSnapshots
+          .transform(gqlEdgesToSnapshotDataStreamTransform);
 
       // Await for the whole stream data and transform into string
       final streamResult =
           await result.map((event) => utf8.decode(event)).join('');
 
-      expect(streamResult,
-          '{"txSnapshots":[{"gqlNode":{"id":"id_0","owner":{"address":"owner_0"},"bundledIn":{"id":"bundleTxId_0"},"block":null,"tags":[]},"jsonMetadata":"{\\"name\\": \\"name_0\\"}"},{"gqlNode":{"id":"id_1","owner":{"address":"owner_1"},"bundledIn":{"id":"bundleTxId_1"},"block":null,"tags":[]},"jsonMetadata":"{\\"name\\": \\"name_1\\"}"},{"gqlNode":{"id":"id_2","owner":{"address":"owner_2"},"bundledIn":{"id":"bundleTxId_2"},"block":null,"tags":[]},"jsonMetadata":"{\\"name\\": \\"name_2\\"}"}]}');
+      // Check if the string is a valid JSON
+      expect(() => jsonDecode(streamResult), returnsNormally);
+
+      // Assert the expected value
+      expect(
+        streamResult,
+        '{"txSnapshots":[{"gqlNode":{"id":"id_0","owner":{"address":"owner_0"},"bundledIn":{"id":"bundleTxId_0"},"block":null,"tags":[]},"jsonMetadata":"{\\"name\\": \\"name_0\\"}"},{"gqlNode":{"id":"id_1","owner":{"address":"owner_1"},"bundledIn":{"id":"bundleTxId_1"},"block":null,"tags":[]},"jsonMetadata":"{\\"name\\": \\"name_1\\"}"},{"gqlNode":{"id":"id_2","owner":{"address":"owner_2"},"bundledIn":{"id":"bundleTxId_2"},"block":null,"tags":[]},"jsonMetadata":"{\\"name\\": \\"name_2\\"}"}]}',
+      );
     });
   });
 }
