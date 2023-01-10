@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/utils/snapshots/snapshot_types.dart';
 import 'package:ardrive/utils/snapshots/tx_snapshot_to_snapshot_data.dart';
 
@@ -42,12 +43,14 @@ class SnapshotItemToBeCreated {
 
   bool _isSnapshotTx(DriveHistoryTransaction node) {
     final tags = node.tags;
-    final entityTypeTags = tags.where((tag) => tag.name == 'Entity-Type');
+    final entityTypeTags =
+        tags.where((tag) => tag.name == EntityTag.entityType);
 
     return entityTypeTags.any((tag) => tag.value == 'snapshot');
   }
 
   String _jsonMetadataOfTxId(String txId) {
+    // FIXME: let me read the DB, and go to the network if not present.
     return "TODO";
   }
 }
