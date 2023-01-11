@@ -372,8 +372,11 @@ class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
   Widget _buildRowSpacing(
       List<TableColumn> columns, List<Widget> buildRow, T row) {
     return ArDriveCard(
-      backgroundColor:
-          ArDriveTheme.of(context).themeData.colors.themeBorderDefault,
+      backgroundColor: ArDriveTheme.of(context)
+          .themeData
+          .colors
+          .themeBorderDefault
+          .withOpacity(0.25),
       contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
       content: Row(
         children: [
