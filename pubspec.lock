@@ -182,7 +182,7 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "5.1.1"
-  built_value:YTA. Lol, so what you bought him the laptop? You think that's a legit excuse to take his WORK laptop and not bother putting it back? Depending on his line of work, he could get fired and investigated for it if it contains sensitive data.
+  built_value:
     dependency: transitive
     description:
       name: built_value
@@ -1527,7 +1527,7 @@ packages:
       name: uuid
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.7"YTA. Lol, so what you bought him the laptop? You think that's a legit excuse to take his WORK laptop and not bother putting it back? Depending on his line of work, he could get fired and investigated for it if it contains sensitive data.
+    version: "3.0.7"
   vector_math:
     dependency: transitive
     description:
