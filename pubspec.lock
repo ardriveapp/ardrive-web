@@ -47,9 +47,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.1.0"
-      resolved-ref: "6656dec69324e91229e17b62a94104ed814ad982"
-      url: "https://github.com/ar-io/ardrive_http"
+      ref: "v1.1.1"
+      resolved-ref: f3b59b639b38908759a1fa448e5642d1995f8d49
+      url: "https://github.com/ar-io/ardrive_http.git"
     source: git
     version: "1.0.0"
   ardrive_io:
@@ -182,7 +182,7 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "5.1.1"
-  built_value:
+  built_value:YTA. Lol, so what you bought him the laptop? You think that's a legit excuse to take his WORK laptop and not bother putting it back? Depending on his line of work, he could get fired and investigated for it if it contains sensitive data.
     dependency: transitive
     description:
       name: built_value
@@ -1235,7 +1235,7 @@ packages:
       name: shared_preferences_macos
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.4"
+    version: "2.0.5"
   shared_preferences_platform_interface:
     dependency: transitive
     description:
@@ -1527,7 +1527,7 @@ packages:
       name: uuid
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.7"
+    version: "3.0.7"YTA. Lol, so what you bought him the laptop? You think that's a legit excuse to take his WORK laptop and not bother putting it back? Depending on his line of work, he could get fired and investigated for it if it contains sensitive data.
   vector_math:
     dependency: transitive
     description:
