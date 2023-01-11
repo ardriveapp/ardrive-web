@@ -50,6 +50,6 @@ class SnapshotItemToBeCreated {
     final entityTypeTags =
         tags.where((tag) => tag.name == EntityTag.entityType);
 
-    return entityTypeTags.any((tag) => tag.value == 'snapshot');
+    return entityTypeTags.any((tag) => tag.value == EntityType.snapshot);
   }
 }
