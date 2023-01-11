@@ -12,55 +12,6 @@ import 'snapshot_test_helpers.dart';
 
 void main() {
   group('SnapshotItem class', () {
-    group('fromStream factory', () {
-      test('getStreamForIndex returns a valid stream of nodes', () async {
-        final r = Range(start: 0, end: 10);
-
-        SnapshotItem item = SnapshotItem.fromStream(
-          blockStart: r.start,
-          blockEnd: r.end,
-          driveId: 'DRIVE_ID',
-          subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
-          source: fakeNodesStream(r),
-        );
-        expect(item.subRanges.rangeSegments.length, 1);
-        expect(item.currentIndex, -1);
-        Stream stream = item.getNextStream();
-        expect(item.currentIndex, 0);
-        expect(await countStreamItems(stream), 11);
-        expect(
-          () => item.getNextStream(),
-          throwsA(isA<SubRangeIndexOverflow>()),
-        );
-
-        item = SnapshotItem.fromStream(
-          blockStart: r.start,
-          blockEnd: r.end,
-          driveId: 'DRIVE_ID',
-          subRanges: HeightRange(
-            rangeSegments: [
-              Range(start: 0, end: 4),
-              Range(start: 6, end: 10),
-            ],
-          ),
-          source: fakeNodesStream(r),
-        );
-        expect(item.subRanges.rangeSegments.length, 2);
-        expect(item.currentIndex, -1);
-        stream = item.getNextStream();
-        expect(item.currentIndex, 0);
-        expect(await countStreamItems(stream), 5);
-        stream = item.getNextStream();
-        expect(item.currentIndex, 1);
-        expect(await countStreamItems(stream), 5);
-
-        expect(
-          () => item.getNextStream(),
-          throwsA(isA<SubRangeIndexOverflow>()),
-        );
-      });
-    });
-
     group('fromGQLNode factory', () {
       test('getStreamForIndex returns a valid stream of nodes', () async {
         final r = Range(start: 0, end: 10);

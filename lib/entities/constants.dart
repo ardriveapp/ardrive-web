@@ -36,6 +36,7 @@ class EntityType {
   static const drive = 'drive';
   static const folder = 'folder';
   static const file = 'file';
+  static const snapshot = 'snapshot';
 }
 
 class Cipher {
