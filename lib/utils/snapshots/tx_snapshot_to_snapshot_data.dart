@@ -13,17 +13,17 @@ StreamTransformer<TxSnapshot, Uint8List> txSnapshotToSnapshotData =
   // Yield the beginning of a JSON array
   yield Uint8List.fromList(utf8.encode('{"txSnapshots":['));
 
-  int index = 0;
+  bool isFirstIteration = true;
 
   // Iterate through the stream
   await for (final txSnapshot in stream) {
     // If this is not the first object in the stream, yield a comma separator
-    if (index != 0) {
+    if (!isFirstIteration) {
       yield Uint8List.fromList(utf8.encode(','));
     }
 
-    // Update the index, so that future iterations know they are not the first object
-    index++;
+    // Update isFirstIteration, so that future iterations know they are not the first object
+    isFirstIteration = false;
 
     // Serialize the object to a JSON string
     final jsonString = encoder.convert(txSnapshot);
