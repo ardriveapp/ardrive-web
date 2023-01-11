@@ -326,6 +326,8 @@ class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
     );
   }
 
+  /// The pages are counted starting from 0, so, to show correctly add + 1
+  ///
   List<Widget> _getPagesIndicators() {
     if (_numberOfPages < 6) {
       return List.generate(_numberOfPages, (index) {
@@ -357,8 +359,6 @@ class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
     }
   }
 
-  /// The pages are counted starting from 0, so, to show correctly add + 1
-  ///
   Widget _pageNumber(int page) {
     return _PageNumber(
       page: page,
@@ -517,7 +517,6 @@ class _PageNumber extends StatelessWidget {
     this.onPressed,
     required this.page,
     required this.isSelected,
-    super.key,
   });
 
   final int page;
