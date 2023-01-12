@@ -120,19 +120,33 @@ class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
                   });
                 }
               },
-              child: Row(children: [
-                Text(
-                  widget.columns[index].title,
-                  style: ArDriveTypography.body.buttonNormalBold(),
-                ),
-                if (_sortedColumn == index)
-                  Icon(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Text(
+                      widget.columns[index].title,
+                      style: ArDriveTypography.body.buttonNormalBold(),
+                    ),
+                  ),
+                  if (_sortedColumn == index)
                     _tableSort == TableSort.asc
-                        ? Icons.arrow_upward
-                        : Icons.arrow_downward,
-                    size: 14,
-                  )
-              ]),
+                        ? ArDriveIcons.chevronUp(
+                            size: 8,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault)
+                        : ArDriveIcons.chevronDown(
+                            size: 8,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgDefault,
+                          ),
+                ],
+              ),
             ),
           ),
         );
@@ -239,22 +253,25 @@ class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisSize: MainAxisSize.max,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4.0, right: 0),
+                      SizedBox(
+                        height: 32,
+                        width: 32,
                         child: GestureDetector(
                           onTap: () {
                             if (_selectedPage > 0) {
                               goToPreviousPage();
                             }
                           },
-                          child: ArDriveIcons.chevronLeft(
-                            size: 28,
-                            color: _selectedPage > 0
-                                ? ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgDefault
-                                : grey,
+                          child: Center(
+                            child: ArDriveIcons.chevronLeft(
+                              size: 18,
+                              color: _selectedPage > 0
+                                  ? ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeFgDefault
+                                  : grey,
+                            ),
                           ),
                         ),
                       ),
@@ -296,22 +313,25 @@ class _ArDriveDataTableState<T> extends State<ArDriveDataTable<T>> {
                             ],
                           ),
                         ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4.0, left: 8),
+                      SizedBox(
+                        height: 32,
+                        width: 32,
                         child: GestureDetector(
                           onTap: () {
                             if (_selectedPage + 1 < _getNumberOfPages()) {
                               goToNextPage();
                             }
                           },
-                          child: ArDriveIcons.chevronRight(
-                            color: _selectedPage + 1 < _getNumberOfPages()
-                                ? ArDriveTheme.of(context)
-                                    .themeData
-                                    .colors
-                                    .themeFgDefault
-                                : grey,
-                            size: 18,
+                          child: Center(
+                            child: ArDriveIcons.chevronRight(
+                              color: _selectedPage + 1 < _getNumberOfPages()
+                                  ? ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeFgDefault
+                                  : grey,
+                              size: 18,
+                            ),
                           ),
                         ),
                       ),

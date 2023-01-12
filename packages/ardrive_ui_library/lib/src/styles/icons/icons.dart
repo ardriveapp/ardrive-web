@@ -56,6 +56,17 @@ class ArDriveIcons {
         size: size,
         color: color,
       );
+
+  static ArDriveIcon chevronUp({double? size, Color? color}) => ArDriveIcon(
+        path: 'assets/icons/chevron_up.svg',
+        size: size,
+        color: color,
+      );
+  static ArDriveIcon chevronDown({double? size, Color? color}) => ArDriveIcon(
+        path: 'assets/icons/chevron_down.svg',
+        size: size,
+        color: color,
+      );
   static ArDriveIcon dots({double? size, Color? color}) => ArDriveIcon(
         path: 'assets/icons/dots.svg',
         size: size,
