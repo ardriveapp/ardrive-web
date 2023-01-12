@@ -16,6 +16,7 @@ dependencies:
   ardrive_ui_library:
     path: ../
   widgetbook: ^2.4.1
+  intl: ^0.17.0
 
 dev_dependencies:
   flutter_test:

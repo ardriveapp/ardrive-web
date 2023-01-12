@@ -1,5 +1,6 @@
 import 'package:ardrive_ui_library/ardrive_ui_library.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_portal/flutter_portal.dart';
 
 class ArDriveApp extends StatefulWidget {
   const ArDriveApp({
@@ -19,9 +20,11 @@ class _ArDriveAppState extends State<ArDriveApp> {
   Widget build(BuildContext context) {
     return ArDriveTheme(
       themeData: widget.themeData,
-      child: Builder(builder: (context) {
-        return widget.builder(context);
-      }),
+      child: Portal(
+        child: Builder(builder: (context) {
+          return widget.builder(context);
+        }),
+      ),
     );
   }
 }
@@ -31,10 +34,12 @@ class ArDriveThemeData {
     Color? backgroundColor,
     Color? primaryColor,
     ArDriveToggleTheme? toggleTheme,
+    ArDriveTableTheme? tableTheme,
     ThemeData? materialThemeData,
     String? name,
     ArDriveColors? colors,
     ArDriveShadows? shadows,
+    ArDriveDropdownTheme? dropdownTheme,
   }) {
     this.colors = colors ?? ArDriveColors();
     this.shadows = shadows ?? ArDriveShadows(this.colors);
@@ -48,6 +53,16 @@ class ArDriveThemeData {
           indicatorColorOff: this.colors.themeAccentDefault,
           indicatorColorOn: this.colors.themeAccentSubtle,
         );
+    this.tableTheme = tableTheme ??
+        ArDriveTableTheme(
+          backgroundColor: const Color(0xff121212),
+          cellColor: const Color(0xff191919),
+        );
+    this.dropdownTheme = dropdownTheme ??
+        ArDriveDropdownTheme(
+          backgroundColor: this.colors.themeBgSurface,
+          hoverColor: Color(0xff1D1D1D),
+        );
 
     this.backgroundColor = backgroundColor ?? this.colors.themeBgSubtle;
     this.primaryColor = primaryColor ?? this.colors.themeAccentBrand;
@@ -58,6 +73,8 @@ class ArDriveThemeData {
   late Color backgroundColor;
   late Color primaryColor;
   late ArDriveToggleTheme toggleTheme;
+  late ArDriveTableTheme tableTheme;
+  late ArDriveDropdownTheme dropdownTheme;
   late ThemeData materialThemeData;
   late String name;
   late ArDriveColors colors;
@@ -92,6 +109,14 @@ ArDriveThemeData lightTheme() {
   return ArDriveThemeData(
     backgroundColor: colors.themeBgSurface,
     colors: colors,
+    tableTheme: ArDriveTableTheme(
+      backgroundColor: const Color(0xffFAFAFA),
+      cellColor: const Color(0xffF1EFF0),
+    ),
+    dropdownTheme: ArDriveDropdownTheme(
+      backgroundColor: const Color(0xffFAFAFA),
+      hoverColor: const Color(0xffF1EFF0),
+    ),
     materialThemeData: lightMaterialTheme(),
     name: 'light',
   );
@@ -139,6 +164,26 @@ class ArDriveToggleTheme {
   final Color backgroundOnColor;
   final Color backgroundOffColor;
   final Color backgroundOffDisabled;
+}
+
+class ArDriveTableTheme {
+  ArDriveTableTheme({
+    required this.backgroundColor,
+    required this.cellColor,
+  });
+
+  final Color backgroundColor;
+  final Color cellColor;
+}
+
+class ArDriveDropdownTheme {
+  ArDriveDropdownTheme({
+    required this.backgroundColor,
+    required this.hoverColor,
+  });
+
+  final Color backgroundColor;
+  final Color hoverColor;
 }
 
 ThemeData darkMaterialTheme() {
