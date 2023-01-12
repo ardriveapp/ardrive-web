@@ -1,0 +1,11 @@
+CREATE TABLE snapshot_entries (
+    id TEXT NOT NULL,
+    driveId TEXT NOT NULL,
+    blockStart INTEGER NOT NULL,
+    blockEnd INTEGER NOT NULL,
+    dataStart INTEGER NOT NULL,
+    dataEnd INTEGER NOT NULL,
+
+    dateCreated DATETIME NOT NULL DEFAULT (strftime('%s','now')),
+    PRIMARY KEY (id, driveId)
+) As SnapshotEntry;
