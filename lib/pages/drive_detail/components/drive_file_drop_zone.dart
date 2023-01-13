@@ -12,7 +12,6 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dropzone/flutter_dropzone.dart';
-import 'package:universal_html/html.dart';
 
 class DriveFileDropZone extends StatefulWidget {
   final String driveId;
@@ -84,7 +83,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
         // final fileUrl = await controller.createFileUrl(htmlFile);
         // final fileRequest = await HttpRequest.request(fileUrl, responseType: 'blob');
         // await controller.releaseFileUrl(fileUrl);
-      } on ProgressEvent catch (_) {
+      } catch (_) {
         await showDialog(
           context: context,
           builder: (_) => AlertDialog(
