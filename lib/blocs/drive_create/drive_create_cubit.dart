@@ -110,8 +110,12 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await driveDataItem.sign(profile.wallet);
 
       if (_turboService.useTurbo) {
-        await _turboService.postDataItem(dataItem: rootFolderDataItem);
-        await _turboService.postDataItem(dataItem: driveDataItem);
+        await Future.wait(
+          [
+            _turboService.postDataItem(dataItem: rootFolderDataItem),
+            _turboService.postDataItem(dataItem: driveDataItem)
+          ],
+        );
       } else {
         final createTx = await _arweave.prepareDataBundleTx(
           await DataBundle.fromDataItems(

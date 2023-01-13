@@ -219,7 +219,7 @@ List<PopupMenuEntry<Function>> _buildItems(
     final minimumWalletBalance = BigInt.from(10000000);
     final profile = profileState as ProfileLoggedIn;
     final hasMinBalance = profile.useTurbo ||
-        profile.canUpload(
+        profile.hasBalanceForUpload(
           minimumWalletBalance: minimumWalletBalance,
         );
     final canCreateNewDrive = drivesState is DrivesLoadSuccess

@@ -65,7 +65,8 @@ class ProfileLoggedIn extends ProfileAvailable {
         cipherKey: cipherKey ?? this.cipherKey,
         useTurbo: useTurbo ?? this.useTurbo,
       );
-  bool canUpload({required BigInt minimumWalletBalance}) =>
+
+  bool hasBalanceForUpload({required BigInt minimumWalletBalance}) =>
       walletBalance > minimumWalletBalance;
 
   @override
