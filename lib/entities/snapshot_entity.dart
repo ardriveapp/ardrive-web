@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:json_annotation/json_annotation.dart';
@@ -35,13 +32,10 @@ class SnapshotEntity extends Entity {
 
   static Future<SnapshotEntity> fromTransaction(
     TransactionCommonMixin transaction,
-    Uint8List data,
   ) async {
     try {
-      Map<String, dynamic>? entityJson = json.decode(utf8.decode(data));
-
-      return SnapshotEntity.fromJson(entityJson!)
-        ..id = transaction.getTag(EntityTag.folderId)
+      return SnapshotEntity()
+        ..id = transaction.getTag(EntityTag.snapshotId)
         ..driveId = transaction.getTag(EntityTag.driveId)
         ..blockStart = transaction.getTag(EntityTag.blockStart)
         ..blockEnd = transaction.getTag(EntityTag.blockEnd)
@@ -74,9 +68,6 @@ class SnapshotEntity extends Entity {
       ..addTag(EntityTag.dataStart, dataStart!)
       ..addTag(EntityTag.dataEnd, dataEnd!);
   }
-
-  factory SnapshotEntity.fromJson(Map<String, dynamic> json) =>
-      _$SnapshotEntityFromJson(json);
 
   Map<String, dynamic> toJson() => _$SnapshotEntityToJson(this);
 }
