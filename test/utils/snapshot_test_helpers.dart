@@ -30,7 +30,7 @@ Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transactio
         'tags': [],
         'block': {
           'height': height,
-          'timestamp': DateTime.now().microsecondsSinceEpoch
+          'timestamp': height * 100,
         }
       },
     );
