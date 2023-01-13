@@ -54,10 +54,10 @@ void main() {
 
         expect(snapshotEntity.id, 'FAKE SNAPSHOT ID');
         expect(snapshotEntity.driveId, 'FAKE DRIVE ID');
-        expect(snapshotEntity.blockStart, '0');
-        expect(snapshotEntity.blockEnd, '100');
-        expect(snapshotEntity.dataStart, '20');
-        expect(snapshotEntity.dataEnd, '98');
+        expect(snapshotEntity.blockStart, 0);
+        expect(snapshotEntity.blockEnd, 100);
+        expect(snapshotEntity.dataStart, 20);
+        expect(snapshotEntity.dataEnd, 98);
         expect(snapshotEntity.txId, 'FAKE TX ID');
         expect(snapshotEntity.ownerAddress, 'FAKE WALLET ADDRESS');
         expect(snapshotEntity.createdAt, fakeTimestamp);
@@ -76,10 +76,10 @@ void main() {
         final snapshotEntity = SnapshotEntity(
           id: 'FAKE SNAPSHOT ID',
           driveId: 'FAKE DRIVE ID',
-          blockStart: '0',
-          blockEnd: '100',
-          dataStart: '20',
-          dataEnd: '98',
+          blockStart: 0,
+          blockEnd: 100,
+          dataStart: 20,
+          dataEnd: 98,
         );
         final transaction = Transaction();
 
