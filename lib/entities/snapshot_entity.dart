@@ -68,6 +68,4 @@ class SnapshotEntity extends Entity {
       ..addTag(EntityTag.dataStart, dataStart!)
       ..addTag(EntityTag.dataEnd, dataEnd!);
   }
-
-  Map<String, dynamic> toJson() => _$SnapshotEntityToJson(this);
 }
