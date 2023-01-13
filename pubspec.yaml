@@ -36,6 +36,12 @@ dependencies:
     git:
       url: https://github.com/ar-io/ardrive_io.git
       ref: v1.1.0
+  ardrive_ui:
+    path: ../packages/ardrive_ui    
+  # ardrive_ui:
+  #   git:
+  #     url: https://github.com/ar-io/ardrive_ui.git
+  #     ref: main
   artemis: ^7.0.0-beta.13
   arweave:
     git:
@@ -43,7 +49,6 @@ dependencies:
       ref: v3.4.0
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
-  flutter_portal: ^0.4.0
   file_selector: ^0.9.0
   file_selector_web: ^0.9.0
   file_selector_macos: ^0.9.0
@@ -110,3 +115,4 @@ flutter:
     - assets/images/brand/
     - assets/images/profile/
     - assets/images/inferno/
+    - assets/images/login/
