@@ -1,7 +1,6 @@
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_portal/flutter_portal.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import 'blocs/blocs.dart';
@@ -38,39 +37,40 @@ class AppShellState extends State<AppShell> {
             //Used to prevent the dialog being shown multiple times.
             _showWalletSwitchDialog = false;
           });
-          AppBar _buildAppBar() => AppBar(
-                elevation: 0.0,
-                backgroundColor: Colors.transparent,
-                actions: [
-                  IconButton(
-                    icon: PortalEntry(
-                      visible: _showProfileOverlay,
-                      portal: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => toggleProfileOverlay(),
-                      ),
-                      child: PortalEntry(
-                        visible: _showProfileOverlay,
-                        portal: Padding(
-                          padding: const EdgeInsets.only(top: 56, left: 24),
-                          child: ProfileOverlay(
-                            onCloseProfileOverlay: () {
-                              setState(() {
-                                _showProfileOverlay = false;
-                              });
-                            },
-                          ),
-                        ),
-                        portalAnchor: Alignment.topRight,
-                        childAnchor: Alignment.topRight,
-                        child: const Icon(Icons.account_circle),
-                      ),
-                    ),
-                    tooltip: appLocalizationsOf(context).profile,
-                    onPressed: () => toggleProfileOverlay(),
-                  ),
-                ],
-              );
+          // FIXME
+          // AppBar _buildAppBar() => AppBar(
+          //       elevation: 0.0,
+          //       backgroundColor: Colors.transparent,
+          //       actions: [
+          //         IconButton(
+          //           icon: PortalEntry(
+          //             visible: _showProfileOverlay,
+          //             portal: GestureDetector(
+          //               behavior: HitTestBehavior.opaque,
+          //               onTap: () => toggleProfileOverlay(),
+          //             ),
+          //             child: PortalEntry(
+          //               visible: _showProfileOverlay,
+          //               portal: Padding(
+          //                 padding: const EdgeInsets.only(top: 56, left: 24),
+          //                 child: ProfileOverlay(
+          //                   onCloseProfileOverlay: () {
+          //                     setState(() {
+          //                       _showProfileOverlay = false;
+          //                     });
+          //                   },
+          //                 ),
+          //               ),
+          //               portalAnchor: Alignment.topRight,
+          //               childAnchor: Alignment.topRight,
+          //               child: const Icon(Icons.account_circle),
+          //             ),
+          //           ),
+          //           tooltip: appLocalizationsOf(context).profile,
+          //           onPressed: () => toggleProfileOverlay(),
+          //         ),
+          //       ],
+          //     );
           Widget _buildPage(scaffold) => BlocBuilder<SyncCubit, SyncState>(
                 builder: (context, syncState) => syncState is SyncInProgress
                     ? Stack(
@@ -144,7 +144,8 @@ class AppShellState extends State<AppShell> {
                   const AppDrawer(),
                   Expanded(
                     child: Scaffold(
-                      appBar: _buildAppBar(),
+                      // FIXME
+                      // appBar: _buildAppBar(),
                       body: widget.page,
                     ),
                   ),
@@ -153,7 +154,8 @@ class AppShellState extends State<AppShell> {
             ),
             mobile: _buildPage(
               Scaffold(
-                appBar: _buildAppBar(),
+                // FIXME
+                // appBar: _buildAppBar(),
                 drawer: const AppDrawer(),
                 body: Row(
                   children: [
