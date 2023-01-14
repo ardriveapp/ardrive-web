@@ -176,8 +176,9 @@ class AppState extends State<App> {
                 theme: ArDriveTheme.of(context)
                     .themeData
                     .materialThemeData
-                    .copyWith(scaffoldBackgroundColor: Color(0xff090A0A)),
-                
+                    .copyWith(
+                        scaffoldBackgroundColor: const Color(
+                            0xff090A0A)), // TODO: Remove this once the new design is implemented
                 debugShowCheckedModeBanner: false,
                 routeInformationParser: _routeInformationParser,
                 routerDelegate: _routerDelegate,

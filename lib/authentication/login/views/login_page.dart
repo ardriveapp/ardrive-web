@@ -1,7 +1,14 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/main.dart';
+import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/models/daos/daos.dart';
+import 'package:ardrive/user/services/user_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -67,9 +74,12 @@ class LoginPageScaffold extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                const ArDriveImage(
+                ArDriveImage(
                   image: AssetImage(
-                      'assets/images/brand/ArDrive-Logo-Wordmark-Light.png'),
+                    ArDriveTheme.of(context).themeData.name == 'light'
+                        ? Resources.images.brand.logoHorizontalNoSubtitleLight
+                        : Resources.images.brand.logoHorizontalNoSubtitleDark,
+                  ),
                   height: 65,
                   fit: BoxFit.contain,
                 ),
@@ -119,15 +129,65 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<LoginBloc>(
-      create: (context) => LoginBloc(),
-      child: BlocBuilder<LoginBloc, LoginState>(
+      create: (context) => LoginBloc(
+        arDriveAuth: ArDriveAuth(
+          userService: UserService(
+            context.read<ProfileDao>(),
+          ),
+          arweave: arweave,
+        ),
+      )..add(const CheckIfUserIsLoggedIn()),
+      child: BlocConsumer<LoginBloc, LoginState>(
+        buildWhen: (previous, current) =>
+            current is! LoginFailure && current is! LoginSuccess,
+        listener: (context, state) {
+          if (state is LoginFailure) {
+            showAnimatedDialog(
+              context,
+              content: ArDriveIconModal(
+                title: 'Login Failed',
+                content: 'Please try again.',
+                icon: ArDriveIcons.warning(
+                  size: 88,
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeErrorDefault,
+                ),
+              ),
+            );
+          } else if (state is LoginSuccess) {
+            context.read<ProfileCubit>().unlockDefaultProfile(
+                state.user.password, state.user.profileType);
+          }
+        },
         builder: (context, state) {
           if (state is PromptPassword) {
             return LoginPageScaffold(
-              content: PromptPasswordView(),
+              content: PromptPasswordView(
+                wallet: state.walletFile,
+              ),
+            );
+          } else if (state is CreatingNewPassword) {
+            return LoginPageScaffold(
+              content: CreatePasswordView(
+                wallet: state.walletFile,
+              ),
+            );
+          } else if (state is LoginLoading) {
+            return LoginPageScaffold(
+              content: ConstrainedBox(
+                constraints:
+                    const BoxConstraints(maxWidth: 512, maxHeight: 489),
+                child: const _LoginCard(
+                  content: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+              ),
             );
           }
-          return LoginPageScaffold(
+          return const LoginPageScaffold(
             content: PromptWalletView(),
           );
         },
@@ -304,13 +364,17 @@ class _LoginCard extends StatelessWidget {
 }
 
 class PromptPasswordView extends StatefulWidget {
-  const PromptPasswordView({super.key});
+  const PromptPasswordView({super.key, this.wallet});
+
+  final Wallet? wallet;
 
   @override
   State<PromptPasswordView> createState() => _PromptPasswordViewState();
 }
 
 class _PromptPasswordViewState extends State<PromptPasswordView> {
+  final _passwordController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
@@ -329,6 +393,7 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
               Column(
                 children: [
                   ArDriveTextField(
+                      controller: _passwordController,
                       // key: ValueKey(state.autoFocus),
                       // autofocus: state.autoFocus,
                       obscureText: true,
@@ -344,7 +409,20 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                     width: double.infinity,
                     child: ArDriveButton(
                       onPressed: () {
-                        // on submit
+                        if (widget.wallet == null) {
+                          context.read<LoginBloc>().add(
+                                UnlockUserWithPassword(
+                                  password: _passwordController.text,
+                                ),
+                              );
+                        } else {
+                          context.read<LoginBloc>().add(
+                                LoginWithPassword(
+                                  password: _passwordController.text,
+                                  wallet: widget.wallet!,
+                                ),
+                              );
+                        }
                       },
                       text: 'Proceed',
                     ),
@@ -366,7 +444,7 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                         action: () {
                           Navigator.pop(context);
 
-                          // context.read<ProfileCubit>().logoutProfile();
+                          context.read<LoginBloc>().add(const ForgetWallet());
                         },
                         title: appLocalizationsOf(context).ok,
                       )
@@ -387,6 +465,193 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class CreatePasswordView extends StatefulWidget {
+  const CreatePasswordView({super.key, required this.wallet});
+
+  final Wallet wallet;
+
+  @override
+  State<CreatePasswordView> createState() => _CreatePasswordViewState();
+}
+
+class _CreatePasswordViewState extends State<CreatePasswordView> {
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 512, maxHeight: 618),
+      child: _LoginCard(
+        content: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ArDriveImage(
+                image: SvgImage.asset('assets/images/brand/ArDrive-Logo.svg'),
+                height: 73,
+              ),
+              Text(
+                'Please create and confirm your password. You will use this password to log in.',
+                textAlign: TextAlign.center,
+                style: ArDriveTypography.headline.headline5Regular(),
+              ),
+              const SizedBox(height: 16),
+              _createPasswordForm(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _createPasswordForm() {
+    return Column(
+      children: [
+        ArDriveTextField(
+          controller: _passwordController,
+          // key: ValueKey(state.autoFocus),
+          // autofocus: state.autoFocus,
+          obscureText: true,
+          autofillHints: const [AutofillHints.password],
+          hintText: 'Enter password',
+          errorMessage: appLocalizationsOf(context).validationRequired,
+          onFieldSubmitted: (_) async {
+            // on submit
+          },
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return false;
+            }
+            return true;
+          },
+        ),
+        const SizedBox(height: 16),
+        ArDriveTextField(
+          controller: _confirmPasswordController,
+          // key: ValueKey(state.autoFocus),
+          // autofocus: state.autoFocus,
+          obscureText: true,
+          autofillHints: const [AutofillHints.password],
+          hintText: 'Confirm password',
+          validator: (value) {
+            if (value != _passwordController.text) {
+              return false;
+            }
+            return true;
+          },
+          errorMessage: appLocalizationsOf(context).validationRequired,
+          onFieldSubmitted: (_) async {
+            // on submit
+          },
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ArDriveButton(
+            onPressed: () {
+              // validate if password is not empty
+              if (_passwordController.text.isEmpty ||
+                  _confirmPasswordController.text.isEmpty) {
+                showAnimatedDialog(context,
+                    content: ArDriveIconModal(
+                      icon: ArDriveIcons.warning(
+                        size: 88,
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeErrorDefault,
+                      ),
+                      title: 'Password cannot be empty',
+                      content: 'Please try again',
+                      actions: [
+                        ModalAction(
+                          action: () {
+                            Navigator.pop(context);
+                          },
+                          title: 'Ok',
+                        )
+                      ],
+                    ));
+                return;
+              }
+
+              if (_passwordController.text != _confirmPasswordController.text) {
+                showAnimatedDialog(context,
+                    content: ArDriveIconModal(
+                      icon: ArDriveIcons.warning(
+                        size: 88,
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeErrorDefault,
+                      ),
+                      title: 'Passwords do not matchr',
+                      content: 'Please try again',
+                      actions: [
+                        ModalAction(
+                          action: () {
+                            Navigator.pop(context);
+                          },
+                          title: 'Ok',
+                        )
+                      ],
+                    ));
+                return;
+              }
+
+              context.read<LoginBloc>().add(
+                    CreatePassword(
+                      password: _passwordController.text,
+                      wallet: widget.wallet,
+                    ),
+                  );
+            },
+            text: 'Proceed',
+          ),
+        ),
+        const SizedBox(
+          height: 53,
+        ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: ArDriveButton(
+            onPressed: () {
+              final actions = [
+                ModalAction(
+                  action: () {
+                    Navigator.pop(context);
+                  },
+                  title: appLocalizationsOf(context).cancel,
+                ),
+                ModalAction(
+                  action: () {
+                    Navigator.pop(context);
+
+                    context.read<LoginBloc>().add(const ForgetWallet());
+                  },
+                  title: appLocalizationsOf(context).ok,
+                )
+              ];
+              showStandardDialog(
+                context,
+                title: appLocalizationsOf(context).forgetWalletTitle,
+                content: appLocalizationsOf(context).forgetWalletDescription,
+                actions: actions,
+              );
+            },
+            style: ArDriveButtonStyle.tertiary,
+            text: appLocalizationsOf(context).forgetWallet,
+          ),
+        ),
+      ],
     );
   }
 }
