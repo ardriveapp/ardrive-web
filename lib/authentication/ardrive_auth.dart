@@ -33,14 +33,10 @@ class ArDriveAuth extends ChangeNotifier {
   }
 
   Future<User> login(Wallet wallet, String password) async {
-    debugPrint('Logging in...');
-
     final driveTxs = await _arweave.getUniqueUserDriveEntityTxs(
       await wallet.getAddress(),
       maxRetries: profileQueryMaxRetries,
     );
-
-    debugPrint('driveTxs: $driveTxs');
 
     final privateDriveTxs = driveTxs.where(
         (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
@@ -73,8 +69,6 @@ class ArDriveAuth extends ChangeNotifier {
       }
     }
 
-    debugPrint('Saving user...');
-
     await _userService.deleteUser();
 
     // save user
@@ -87,15 +81,18 @@ class ArDriveAuth extends ChangeNotifier {
     return await _userService.getProfile(password);
   }
 
-  Future<User> addUser(Wallet wallet, String password) async {
+  Future<User> addUser(
+      Wallet wallet, String password, ProfileType profileType) async {
     // delete previous user
     // verify if it is necessary, the user only will add a new user if he is not logged in
-    await _userService.deleteUser();
+    if (await _userService.isUserLoggedIn()) {
+      await _userService.deleteUser();
+    }
 
     // save user
     await _userService.saveUser(
       password,
-      ProfileType.json,
+      profileType,
       wallet,
     );
 
@@ -132,6 +129,10 @@ class AuthenticationFailedException implements Exception {
   final String message;
 
   AuthenticationFailedException(this.message);
+}
+
+class WalletMismatchException implements Exception {
+  const WalletMismatchException();
 }
 
 class AuthenticationUnknownException implements Exception {

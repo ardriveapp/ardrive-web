@@ -16,6 +16,13 @@ class AddWalletFile extends LoginEvent {
   List<Object> get props => [walletFile];
 }
 
+class AddWalletFromArConnect extends LoginEvent {
+  const AddWalletFromArConnect();
+
+  @override
+  List<Object> get props => [];
+}
+
 class CheckIfUserIsLoggedIn extends LoginEvent {
   const CheckIfUserIsLoggedIn();
 

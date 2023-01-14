@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/daos/daos.dart';
+import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/user/services/user_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -130,6 +131,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return BlocProvider<LoginBloc>(
       create: (context) => LoginBloc(
+        arConnectService: ArConnectService(),
         arDriveAuth: ArDriveAuth(
           userService: UserService(
             context.read<ProfileDao>(),
@@ -142,6 +144,24 @@ class _LoginPageState extends State<LoginPage> {
             current is! LoginFailure && current is! LoginSuccess,
         listener: (context, state) {
           if (state is LoginFailure) {
+            if (state.error is WalletMismatchException) {
+              showAnimatedDialog(
+                context,
+                content: ArDriveIconModal(
+                  title: 'Login Failed',
+                  content:
+                      'Your ArConnect wallet does not match your ArDrive wallet. Please try again.',
+                  icon: ArDriveIcons.warning(
+                    size: 88,
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeErrorDefault,
+                  ),
+                ),
+              );
+              return;
+            }
             showAnimatedDialog(
               context,
               content: ArDriveIconModal(
@@ -187,8 +207,11 @@ class _LoginPageState extends State<LoginPage> {
               ),
             );
           }
-          return const LoginPageScaffold(
-            content: PromptWalletView(),
+          return LoginPageScaffold(
+            content: PromptWalletView(
+              isArConnectAvailable:
+                  (state as LoginInitial).isArConnectAvailable,
+            ),
           );
         },
       ),
@@ -197,7 +220,12 @@ class _LoginPageState extends State<LoginPage> {
 }
 
 class PromptWalletView extends StatefulWidget {
-  const PromptWalletView({super.key});
+  const PromptWalletView({
+    super.key,
+    required this.isArConnectAvailable,
+  });
+
+  final bool isArConnectAvailable;
 
   @override
   State<PromptWalletView> createState() => _PromptWalletViewState();
@@ -254,20 +282,25 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                             .themeFgMuted),
                   ),
                 ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: ArDriveButton(
-                          style: ArDriveButtonStyle.secondary,
-                          onPressed: () {},
-                          text: 'ArConnect',
+                if (widget.isArConnectAvailable)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: ArDriveButton(
+                            style: ArDriveButtonStyle.secondary,
+                            onPressed: () {
+                              context
+                                  .read<LoginBloc>()
+                                  .add(const AddWalletFromArConnect());
+                            },
+                            text: 'ArConnect',
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
                 const SizedBox(
                   height: 24,
                 ),
@@ -557,6 +590,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
           width: double.infinity,
           child: ArDriveButton(
             onPressed: () {
+              print('onPressed');
               // validate if password is not empty
               if (_passwordController.text.isEmpty ||
                   _confirmPasswordController.text.isEmpty) {
@@ -606,6 +640,8 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
                     ));
                 return;
               }
+
+              print('passwords match');
 
               context.read<LoginBloc>().add(
                     CreatePassword(
