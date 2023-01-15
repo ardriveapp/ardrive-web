@@ -133,9 +133,7 @@ class _LoginPageState extends State<LoginPage> {
       create: (context) => LoginBloc(
         arConnectService: ArConnectService(),
         arDriveAuth: ArDriveAuth(
-          userService: UserService(
-            context.read<ProfileDao>(),
-          ),
+          userService: UserService(context.read<ProfileDao>(), arweave),
           arweave: arweave,
         ),
       )..add(const CheckIfUserIsLoggedIn()),

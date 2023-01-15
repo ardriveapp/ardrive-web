@@ -1,16 +1,17 @@
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:equatable/equatable.dart';
 
 /// Class representing a user's profile.
 ///
-abstract class User {
-  late String password;
-  late Wallet wallet;
-  late String walletAddress;
-  late BigInt walletBalance;
-  late SecretKey cipherKey;
-  late ProfileType profileType;
+abstract class User with EquatableMixin {
+  late final String password;
+  late final Wallet wallet;
+  late final String walletAddress;
+  late final BigInt walletBalance;
+  late final SecretKey cipherKey;
+  late final ProfileType profileType;
 
   factory User({
     required String password,
@@ -32,22 +33,17 @@ abstract class User {
 
 class _User implements User {
   @override
-  late String password;
-
+  late final String password;
   @override
-  late Wallet wallet;
-
+  late final Wallet wallet;
   @override
-  late String walletAddress;
-
+  late final String walletAddress;
   @override
-  late BigInt walletBalance;
-
+  late final BigInt walletBalance;
   @override
-  late SecretKey cipherKey;
-
+  late final SecretKey cipherKey;
   @override
-  late ProfileType profileType;
+  late final ProfileType profileType;
 
   _User({
     required this.password,
@@ -57,4 +53,16 @@ class _User implements User {
     required this.cipherKey,
     required this.profileType,
   });
+
+  @override
+  List<Object> get props => [
+        password,
+        walletAddress,
+        walletBalance,
+        cipherKey,
+        profileType,
+      ];
+
+  @override
+  bool? get stringify => true;
 }

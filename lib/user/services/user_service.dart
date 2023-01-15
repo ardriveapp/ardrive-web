@@ -1,5 +1,4 @@
 import 'package:ardrive/entities/profile_types.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/user/user.dart';
@@ -9,11 +8,12 @@ abstract class UserService {
   Future<User> getProfile(String password);
   Future<bool> isUserLoggedIn();
   Future<bool> isExistingUser(String walletAddress);
-  Future<bool> saveUser(
+  Future<void> saveUser(
       String password, ProfileType profileType, Wallet wallet);
   Future<void> deleteUser();
 
-  factory UserService(ProfileDao profileDao) => _UserService(
+  factory UserService(ProfileDao profileDao, ArweaveService arweave) =>
+      _UserService(
         profileDao: profileDao,
         arweave: arweave,
       );
@@ -24,7 +24,6 @@ class _UserService implements UserService {
   final ArweaveService _arweave;
 
   // TODO(@thiagocarvalhodev): create a data source for this
-
   _UserService({
     required ProfileDao profileDao,
     required ArweaveService arweave,
@@ -53,7 +52,7 @@ class _UserService implements UserService {
 
   @override
   Future<bool> isUserLoggedIn() async {
-    final profile = await _profileDao.defaultProfile().getSingleOrNull();
+    final profile = await _profileDao.getDefaultProfile();
 
     return profile != null;
   }
@@ -69,7 +68,7 @@ class _UserService implements UserService {
   }
 
   @override
-  Future<bool> saveUser(
+  Future<void> saveUser(
       String password, ProfileType profileType, Wallet wallet) async {
     await _profileDao.addProfile(
       // FIXME: This is a hack to get the username from the user object
@@ -78,8 +77,6 @@ class _UserService implements UserService {
       wallet,
       profileType,
     );
-
-    return true;
   }
 
   @override

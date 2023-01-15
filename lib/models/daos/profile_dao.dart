@@ -78,6 +78,11 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     }
   }
 
+  Future<Profile?> getDefaultProfile() async {
+    final profile = await (select(profiles)..limit(1)).getSingleOrNull();
+    return profile;
+  }
+
   Future<void> deleteProfile() async {
     final profile = await defaultProfile().getSingle();
     (delete(profiles)..where((p) => p.id.equals(profile.id))).go();
