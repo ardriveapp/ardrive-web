@@ -65,4 +65,7 @@ class _User implements User {
 
   @override
   bool? get stringify => true;
+
+  @override
+  toString() => 'User { walletAddress: $walletAddress }';
 }
