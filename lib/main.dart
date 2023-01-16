@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
@@ -10,6 +11,7 @@ import 'package:ardrive/pst/contract_readers/redstone_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/smartweave_contract_reader.dart';
 import 'package:ardrive/pst/contract_readers/verto_contract_reader.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
@@ -151,6 +153,16 @@ class AppState extends State<App> {
               create: (context) => context.read<Database>().profileDao),
           RepositoryProvider<DriveDao>(
               create: (context) => context.read<Database>().driveDao),
+          RepositoryProvider<UserRepository>(
+            create: (context) => UserRepository(
+              context.read<ProfileDao>(),
+              context.read<ArweaveService>(),
+            ),
+          ),
+          RepositoryProvider(
+              create: (context) => ArDriveAuth(
+                  arweave: arweave,
+                  userRepository: context.read<UserRepository>())),
         ],
         child: KeyboardHandler(
           child: MultiBlocProvider(

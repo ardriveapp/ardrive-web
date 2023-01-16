@@ -42,7 +42,7 @@ class _UserRepository implements UserRepository {
 
     final profileDetails = await _profileDao.loadDefaultProfile(password);
 
-    return User(
+    final user = User(
       profileType: ProfileType.values[profileDetails.details.profileType],
       wallet: profileDetails.wallet,
       cipherKey: profileDetails.key,
@@ -52,11 +52,16 @@ class _UserRepository implements UserRepository {
         await profileDetails.wallet.getAddress(),
       ),
     );
+
+    print('Loaded user: ${user.walletAddress}');
+
+    return user;
   }
 
   @override
   Future<void> saveUser(
       String password, ProfileType profileType, Wallet wallet) async {
+    print('Saving user');
     await _profileDao.addProfile(
       // FIXME: This is a hack to get the username from the user object
       'user.username',
@@ -68,6 +73,7 @@ class _UserRepository implements UserRepository {
 
   @override
   Future<void> deleteUser() async {
+    print('Deleting user');
     _profileDao.deleteProfile();
   }
 

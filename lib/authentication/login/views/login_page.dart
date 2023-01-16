@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -13,23 +15,49 @@ import 'package:responsive_builder/responsive_builder.dart';
 
 import '../../../utils/split_localizations.dart';
 
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<LoginBloc>(
+      create: (context) => LoginBloc(
+        arConnectService: ArConnectService(),
+        arDriveAuth: context.read<ArDriveAuth>(),
+      )..add(const CheckIfUserIsLoggedIn()),
+      child: const LoginPageScaffold(),
+    );
+  }
+}
+
 class LoginPageScaffold extends StatelessWidget {
   const LoginPageScaffold({
     super.key,
-    required this.content,
   });
-
-  final Widget content;
 
   @override
   Widget build(BuildContext context) {
+    final images = [
+      Resources.images.login.login1,
+      Resources.images.login.login2,
+      Resources.images.login.login3,
+      Resources.images.login.login4,
+    ];
+
+    final image = Random().nextInt(images.length);
+
     return ScreenTypeLayout(
       desktop: Material(
         color: const Color(0xff090A0A),
         child: Row(
           children: [
             Expanded(
-              child: _buildIllustration(context),
+              child: _buildIllustration(context, images[image]),
             ),
             Expanded(
               child: FractionallySizedBox(
@@ -54,111 +82,68 @@ class LoginPageScaffold extends StatelessWidget {
     );
   }
 
-  Widget _buildIllustration(BuildContext context) => Stack(
-        fit: StackFit.expand,
-        children: [
-          // Container(
-          const Opacity(
-            opacity: 0.25,
-            child: ArDriveImage(
-              image: AssetImage(
-                'assets/images/login/photo-1604684116250-e79276b241fd.png',
-              ),
-              fit: BoxFit.cover,
+  Widget _buildIllustration(BuildContext context, String image) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Container(
+        Opacity(
+          opacity: 0.25,
+          child: ArDriveImage(
+            image: AssetImage(
+              image,
             ),
+            fit: BoxFit.cover,
           ),
-          Center(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ArDriveImage(
-                  image: AssetImage(
-                    ArDriveTheme.of(context).themeData.name == 'light'
-                        ? Resources.images.brand.logoHorizontalNoSubtitleLight
-                        : Resources.images.brand.logoHorizontalNoSubtitleDark,
-                  ),
-                  height: 65,
-                  fit: BoxFit.contain,
+        ),
+        Center(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ArDriveImage(
+                image: AssetImage(
+                  ArDriveTheme.of(context).themeData.name == 'light'
+                      ? Resources.images.brand.logoHorizontalNoSubtitleLight
+                      : Resources.images.brand.logoHorizontalNoSubtitleDark,
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 42),
-                  child: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.25,
-                    child: Text(
-                      'Your private, secure, and permanent hard drive.',
-                      textAlign: TextAlign.start,
-                      style: ArDriveTypography.headline.headline4Regular(
-                        // FIXME: This is a hack to get the text to be white
-                        color: const Color(0xffFAFAFA),
-                      ),
+                height: 65,
+                fit: BoxFit.contain,
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 42),
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.25,
+                  child: Text(
+                    'Your private, secure, and permanent hard drive.',
+                    textAlign: TextAlign.start,
+                    style: ArDriveTypography.headline.headline4Regular(
+                      // FIXME: This is a hack to get the text to be white
+                      color: const Color(0xffFAFAFA),
                     ),
                   ),
                 ),
-              ],
-            ),
-          )
-        ],
-      );
-
-  Widget _buildContent(BuildContext context) {
-    return SizedBox(
-      height: MediaQuery.of(context).size.height,
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          content,
-        ],
-      ),
+              ),
+            ],
+          ),
+        )
+      ],
     );
   }
-}
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
-
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider<LoginBloc>(
-      create: (context) => LoginBloc(
-        arConnectService: ArConnectService(),
-        arDriveAuth: context.read<ArDriveAuth>(),
-      )..add(const CheckIfUserIsLoggedIn()),
-      child: BlocConsumer<LoginBloc, LoginState>(
-        buildWhen: (previous, current) =>
-            current is! LoginFailure && current is! LoginSuccess,
-        listener: (context, state) {
-          if (state is LoginFailure) {
-            if (state.error is WalletMismatchException) {
-              showAnimatedDialog(
-                context,
-                content: ArDriveIconModal(
-                  title: 'Login Failed',
-                  content:
-                      'Your ArConnect wallet does not match your ArDrive wallet. Please try again.',
-                  icon: ArDriveIcons.warning(
-                    size: 88,
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeErrorDefault,
-                  ),
-                ),
-              );
-              return;
-            }
+  Widget _buildContent(BuildContext context) {
+    return BlocConsumer<LoginBloc, LoginState>(
+      buildWhen: (previous, current) =>
+          current is! LoginFailure && current is! LoginSuccess,
+      listener: (context, state) {
+        if (state is LoginFailure) {
+          if (state.error is WalletMismatchException) {
             showAnimatedDialog(
               context,
               content: ArDriveIconModal(
                 title: 'Login Failed',
-                content: 'Please try again.',
+                content:
+                    'Your ArConnect wallet does not match your ArDrive wallet. Please try again.',
                 icon: ArDriveIcons.warning(
                   size: 88,
                   color: ArDriveTheme.of(context)
@@ -168,48 +153,68 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             );
-          } else if (state is LoginSuccess) {
-            context.read<ProfileCubit>().unlockDefaultProfile(
-                state.user.password, state.user.profileType);
+            return;
           }
-        },
-        builder: (context, state) {
-          if (state is PromptPassword) {
-            return LoginPageScaffold(
-              content: PromptPasswordView(
-                wallet: state.walletFile,
+          showAnimatedDialog(
+            context,
+            content: ArDriveIconModal(
+              title: 'Login Failed',
+              content: 'Please try again.',
+              icon: ArDriveIcons.warning(
+                size: 88,
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
               ),
-            );
-          } else if (state is CreatingNewPassword) {
-            return LoginPageScaffold(
-              content: CreatePasswordView(
-                wallet: state.walletFile,
-              ),
-            );
-          } else if (state is LoginLoading) {
-            return LoginPageScaffold(
-              content: ConstrainedBox(
-                constraints:
-                    const BoxConstraints(maxWidth: 512, maxHeight: 489),
-                child: const _LoginCard(
-                  content: Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-              ),
-            );
-          }
-          return LoginPageScaffold(
-            content: PromptWalletView(
-              isArConnectAvailable:
-                  (state as LoginInitial).isArConnectAvailable,
             ),
           );
-        },
-      ),
+        } else if (state is LoginSuccess) {
+          context.read<ProfileCubit>().unlockDefaultProfile(
+              state.user.password, state.user.profileType);
+        }
+      },
+      builder: (context, state) {
+        late Widget content;
+
+        if (state is PromptPassword) {
+          content = PromptPasswordView(
+            wallet: state.walletFile,
+          );
+        } else if (state is CreatingNewPassword) {
+          content = CreatePasswordView(
+            wallet: state.walletFile,
+          );
+        } else if (state is LoginLoading) {
+          content = ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 512, maxHeight: 489),
+            child: const _LoginCard(
+              content: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          );
+        } else {
+          content = PromptWalletView(
+            isArConnectAvailable: (state as LoginInitial).isArConnectAvailable,
+          );
+        }
+
+        return SizedBox(
+          height: MediaQuery.of(context).size.height,
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              content,
+            ],
+          ),
+        );
+      },
     );
   }
 }
+
+// Views
 
 class PromptWalletView extends StatefulWidget {
   const PromptWalletView({
@@ -263,6 +268,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                 const SizedBox(
                   height: 24,
                 ),
+                // if (widget.isArConnectAvailable) ...[
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -274,31 +280,38 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                             .themeFgMuted),
                   ),
                 ),
-                if (widget.isArConnectAvailable)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 16),
-                          child: ArDriveButton(
-                            style: ArDriveButtonStyle.secondary,
-                            onPressed: () {
-                              context
-                                  .read<LoginBloc>()
-                                  .add(const AddWalletFromArConnect());
-                            },
-                            text: 'ArConnect',
+                Row(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: ArDriveButton(
+                          icon: ArDriveIcons.arConnectLogo(
+                            size: 24,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeFgMuted,
                           ),
+                          style: ArDriveButtonStyle.secondary,
+                          onPressed: () {
+                            context
+                                .read<LoginBloc>()
+                                .add(const AddWalletFromArConnect());
+                          },
+                          text: 'ArConnect',
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+                // ],
                 const SizedBox(
                   height: 24,
                 ),
                 Row(
                   children: [
-                    const ArDriveCheckBox(title: ''),
+                    const ArDriveCheckBox(title: '', checked: true),
                     Flexible(
                       child: GestureDetector(
                         onTap: () => openUrl(

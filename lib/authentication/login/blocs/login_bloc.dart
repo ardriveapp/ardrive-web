@@ -137,6 +137,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
           emit(CreatingNewPassword(walletFile: wallet));
         }
       } else if (event is ForgetWallet) {
+        if (await _arDriveAuth.isUserLoggedIn()) {
+          await _arDriveAuth.logout();
+        }
+
         emit(LoginInitial(_arConnectService.isExtensionPresent()));
       }
     });

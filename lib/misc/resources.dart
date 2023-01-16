@@ -17,6 +17,7 @@ class Images {
   final brand = const Brand();
   final profile = const Profile();
   final inferno = const Inferno();
+  final login = const Login();
 }
 
 class Brand {
@@ -49,4 +50,13 @@ class Inferno {
   const Inferno();
 
   final fire = 'assets/images/inferno/fire_icon.png';
+}
+
+class Login {
+  const Login();
+
+  final login1 = 'assets/images/login/login_1.png';
+  final login2 = 'assets/images/login/login_2.png';
+  final login3 = 'assets/images/login/login_3.png';
+  final login4 = 'assets/images/login/login_4.png';
 }
