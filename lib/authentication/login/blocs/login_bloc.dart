@@ -80,9 +80,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
         try {
           final user = await _arDriveAuth.unlockUser(password: event.password);
+
           emit(LoginSuccess(user));
         } catch (e) {
-          await Future.delayed(const Duration(seconds: 1));
           emit(LoginFailure(e));
           emit(previousState);
 
