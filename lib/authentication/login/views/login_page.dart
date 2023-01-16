@@ -1,11 +1,8 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
-import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
-import 'package:ardrive/user/services/user_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -132,10 +129,7 @@ class _LoginPageState extends State<LoginPage> {
     return BlocProvider<LoginBloc>(
       create: (context) => LoginBloc(
         arConnectService: ArConnectService(),
-        arDriveAuth: ArDriveAuth(
-          userService: UserService(context.read<ProfileDao>(), arweave),
-          arweave: arweave,
-        ),
+        arDriveAuth: context.read<ArDriveAuth>(),
       )..add(const CheckIfUserIsLoggedIn()),
       child: BlocConsumer<LoginBloc, LoginState>(
         buildWhen: (previous, current) =>

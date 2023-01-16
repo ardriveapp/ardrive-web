@@ -2,7 +2,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive/user/services/user_service.dart';
+import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
@@ -14,7 +14,7 @@ import '../../test_utils/utils.dart';
 class MockTransaction extends Mock implements TransactionCommonMixin {}
 
 void main() {
-  late UserService userService;
+  late UserRepository userRepository;
   late ArweaveService mockArweaveService;
   late ProfileDao mockProfileDao;
 
@@ -29,7 +29,7 @@ void main() {
     mockArweaveService = MockArweaveService();
     mockProfileDao = MockProfileDao();
 
-    userService = UserService(
+    userRepository = UserRepository(
       mockProfileDao,
       mockArweaveService,
     );
@@ -39,9 +39,18 @@ void main() {
     registerFallbackValue(emptyListOfTranscations);
   });
 
-  group('testing getProfile method', () {
-    test('should return a user with the same information of the profile',
-        () async {
+  group('testing getUser method', () {
+    setUp(() {
+      when(() => mockProfileDao.getDefaultProfile())
+          .thenAnswer((_) async => Profile(
+                encryptedPublicKey: Uint8List.fromList([]),
+                encryptedWallet: Uint8List.fromList([]),
+                keySalt: Uint8List.fromList([]),
+                profileType: 0, //json
+                username: '',
+                walletPublicKey: '',
+                id: 'id',
+              ));
       when(() => mockProfileDao.loadDefaultProfile(rightPassword))
           .thenAnswer((_) async => Future.value(ProfileLoadDetails(
               wallet: wallet,
@@ -58,8 +67,12 @@ void main() {
               ))));
       when(() => mockArweaveService.getWalletBalance(any()))
           .thenAnswer((_) async => BigInt.zero);
+    });
 
-      final result = await userService.getProfile(rightPassword);
+    test('should return a user with the same information of the profile',
+        () async {
+      final result = await userRepository.getUser(rightPassword);
+
       final userToMatch = User(
         password: rightPassword,
         wallet: wallet,
@@ -69,7 +82,8 @@ void main() {
         profileType: ProfileType.json,
       );
 
-      expect(result.password, userToMatch.password);
+      expect(result, isNotNull);
+      expect(result!.password, userToMatch.password);
       expect(result.wallet, userToMatch.wallet);
       expect(result.walletAddress, await wallet.getAddress());
       expect(result.walletBalance, userToMatch.walletBalance);
@@ -90,9 +104,20 @@ void main() {
       //     ),
       // );
     });
+
+    test('should return null if there is no profile', () async {
+      when(() => mockProfileDao.getDefaultProfile())
+          .thenAnswer((_) async => Future.value(null));
+
+      final result = await userRepository.getUser(rightPassword);
+
+      expect(result, isNull);
+      verify(() => mockProfileDao.getDefaultProfile()).called(1);
+      verifyNever(() => mockProfileDao.loadDefaultProfile(rightPassword));
+    });
   });
 
-  group('testing isUserLoggedIn method', () {
+  group('testing hasUser method', () {
     test('should return true if there is a profile', () async {
       when(() => mockProfileDao.getDefaultProfile())
           .thenAnswer((_) async => Future.value(Profile(
@@ -105,7 +130,7 @@ void main() {
                 id: 'id',
               )));
 
-      final result = await userService.isUserLoggedIn();
+      final result = await userRepository.hasUser();
 
       expect(result, true);
 
@@ -116,39 +141,11 @@ void main() {
       when(() => mockProfileDao.getDefaultProfile())
           .thenAnswer((_) async => Future.value(null));
 
-      final result = await userService.isUserLoggedIn();
+      final result = await userRepository.hasUser();
 
       expect(result, false);
 
       verify(() => mockProfileDao.getDefaultProfile()).called(1);
-    });
-  });
-
-  group('testing isExistingUser function', () {
-    test('should return true if there is a profile', () async {
-      when(() => mockArweaveService.getUniqueUserDriveEntityTxs(any(),
-              maxRetries: any(named: 'maxRetries')))
-          .thenAnswer((invocation) async => listOfTransactions);
-
-      final result = await userService.isExistingUser('wallet_address');
-
-      expect(result, true);
-
-      verify(() => mockArweaveService.getUniqueUserDriveEntityTxs(any(),
-          maxRetries: any(named: 'maxRetries'))).called(1);
-    });
-
-    test('should return false if there is a profile', () async {
-      when(() => mockArweaveService.getUniqueUserDriveEntityTxs(any(),
-              maxRetries: any(named: 'maxRetries')))
-          .thenAnswer((_) async => emptyListOfTranscations);
-
-      final result = await userService.isExistingUser('wallet_address');
-
-      expect(result, false);
-
-      verify(() => mockArweaveService.getUniqueUserDriveEntityTxs(any(),
-          maxRetries: any(named: 'maxRetries'))).called(1);
     });
   });
 
@@ -167,7 +164,7 @@ void main() {
               'user.username', rightPassword, wallet, user.profileType))
           .thenAnswer((_) async => Future.value(SecretKey([1, 2, 3])));
 
-      await userService.saveUser(
+      await userRepository.saveUser(
         rightPassword,
         user.profileType,
         user.wallet,
@@ -183,7 +180,7 @@ void main() {
       when(() => mockProfileDao.deleteProfile())
           .thenAnswer((_) async => Future.value());
 
-      await userService.deleteUser();
+      await userRepository.deleteUser();
 
       verify(() => mockProfileDao.deleteProfile()).called(1);
     });
