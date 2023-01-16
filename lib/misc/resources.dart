@@ -59,4 +59,5 @@ class Login {
   final login2 = 'assets/images/login/login_2.png';
   final login3 = 'assets/images/login/login_3.png';
   final login4 = 'assets/images/login/login_4.png';
+  final arconnectLogo = 'assets/images/login/arconnect_logo.png';
 }

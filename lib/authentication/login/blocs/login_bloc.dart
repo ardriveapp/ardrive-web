@@ -25,9 +25,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required ArConnectService arConnectService,
   })  : _arDriveAuth = arDriveAuth,
         _arConnectService = arConnectService,
-        super(LoginInitial(
-          arConnectService.isExtensionPresent(),
-        )) {
+        super(LoginLoading()) {
     on<LoginEvent>((event, emit) async {
       if (event is AddWalletFile) {
         emit(LoginLoading());

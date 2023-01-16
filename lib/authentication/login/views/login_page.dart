@@ -35,22 +35,33 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-class LoginPageScaffold extends StatelessWidget {
+class LoginPageScaffold extends StatefulWidget {
   const LoginPageScaffold({
     super.key,
   });
 
   @override
+  State<LoginPageScaffold> createState() => _LoginPageScaffoldState();
+}
+
+class _LoginPageScaffoldState extends State<LoginPageScaffold> {
+  final images = [
+    Resources.images.login.login1,
+    Resources.images.login.login2,
+    Resources.images.login.login3,
+    Resources.images.login.login4,
+  ];
+
+  late int image;
+
+  @override
+  void initState() {
+    super.initState();
+    image = Random().nextInt(images.length);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final images = [
-      Resources.images.login.login1,
-      Resources.images.login.login2,
-      Resources.images.login.login3,
-      Resources.images.login.login4,
-    ];
-
-    final image = Random().nextInt(images.length);
-
     return ScreenTypeLayout(
       desktop: Material(
         color: const Color(0xff090A0A),
@@ -90,6 +101,7 @@ class LoginPageScaffold extends StatelessWidget {
         Opacity(
           opacity: 0.25,
           child: ArDriveImage(
+            key: const Key('loginPageIllustration'),
             image: AssetImage(
               image,
             ),
@@ -268,44 +280,47 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                 const SizedBox(
                   height: 24,
                 ),
-                // if (widget.isArConnectAvailable) ...[
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Or continue with',
-                    style: ArDriveTypography.body.smallRegular(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgMuted),
+                if (widget.isArConnectAvailable) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Or continue with',
+                      style: ArDriveTypography.body.smallRegular(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgMuted),
+                    ),
                   ),
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: ArDriveButton(
-                          icon: ArDriveIcons.arConnectLogo(
-                            size: 24,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgMuted,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: ArDriveButton(
+                            icon: Padding(
+                              padding: const EdgeInsets.only(right: 20),
+                              child: ArDriveImage(
+                                height: 24,
+                                width: 22,
+                                image: AssetImage(
+                                  const Images().login.arconnectLogo,
+                                ),
+                              ),
+                            ),
+                            style: ArDriveButtonStyle.secondary,
+                            onPressed: () {
+                              context
+                                  .read<LoginBloc>()
+                                  .add(const AddWalletFromArConnect());
+                            },
+                            text: 'ArConnect',
                           ),
-                          style: ArDriveButtonStyle.secondary,
-                          onPressed: () {
-                            context
-                                .read<LoginBloc>()
-                                .add(const AddWalletFromArConnect());
-                          },
-                          text: 'ArConnect',
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                // ],
+                    ],
+                  ),
+                ],
                 const SizedBox(
                   height: 24,
                 ),
@@ -413,6 +428,8 @@ class PromptPasswordView extends StatefulWidget {
 class _PromptPasswordViewState extends State<PromptPasswordView> {
   final _passwordController = TextEditingController();
 
+  bool _isPasswordValid = false;
+
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
@@ -431,14 +448,23 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
               Column(
                 children: [
                   ArDriveTextField(
+                      showObfuscationToggle: true,
                       controller: _passwordController,
-                      // key: ValueKey(state.autoFocus),
-                      // autofocus: state.autoFocus,
                       obscureText: true,
                       autofillHints: const [AutofillHints.password],
                       hintText: 'Enter password',
-                      errorMessage:
-                          appLocalizationsOf(context).validationRequired,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          setState(() {
+                            _isPasswordValid = false;
+                          });
+                          return appLocalizationsOf(context).validationRequired;
+                        }
+
+                        setState(() {
+                          _isPasswordValid = true;
+                        });
+                      },
                       onFieldSubmitted: (_) async {
                         // on submit
                       }),
@@ -446,6 +472,7 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                   SizedBox(
                     width: double.infinity,
                     child: ArDriveButton(
+                      isDisabled: !_isPasswordValid,
                       onPressed: () {
                         if (widget.wallet == null) {
                           context.read<LoginBloc>().add(
@@ -521,6 +548,9 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
   final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
+  bool _passwordIsValid = false;
+  bool _confirmPasswordIsValid = false;
+
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
@@ -557,104 +587,68 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
           controller: _passwordController,
           // key: ValueKey(state.autoFocus),
           // autofocus: state.autoFocus,
+          showObfuscationToggle: true,
           obscureText: true,
           autofillHints: const [AutofillHints.password],
           hintText: 'Enter password',
-          errorMessage: appLocalizationsOf(context).validationRequired,
           onFieldSubmitted: (_) async {
             // on submit
           },
           validator: (value) {
             if (value == null || value.isEmpty) {
-              return false;
+              setState(() {
+                _passwordIsValid = false;
+              });
+
+              return appLocalizationsOf(context).validationRequired;
             }
-            return true;
+
+            setState(() {
+              _passwordIsValid = true;
+            });
+
+            return null;
           },
         ),
         const SizedBox(height: 16),
         ArDriveTextField(
           controller: _confirmPasswordController,
+          showObfuscationToggle: true,
           // key: ValueKey(state.autoFocus),
           // autofocus: state.autoFocus,
           obscureText: true,
           autofillHints: const [AutofillHints.password],
           hintText: 'Confirm password',
           validator: (value) {
-            if (value != _passwordController.text) {
-              return false;
+            if (value == null || value.isEmpty) {
+              setState(() {
+                _confirmPasswordIsValid = false;
+              });
+
+              return appLocalizationsOf(context).validationRequired;
+            } else if (value != _passwordController.text) {
+              setState(() {
+                _confirmPasswordIsValid = false;
+              });
+
+              return appLocalizationsOf(context).passwordMismatch;
             }
-            return true;
+
+            setState(() {
+              _confirmPasswordIsValid = true;
+            });
+
+            return null;
           },
-          errorMessage: appLocalizationsOf(context).validationRequired,
-          onFieldSubmitted: (_) async {
-            // on submit
-          },
+          onFieldSubmitted: (_) => _onSubmit(),
         ),
         const SizedBox(height: 16),
         SizedBox(
           width: double.infinity,
           child: ArDriveButton(
-            onPressed: () {
-              print('onPressed');
-              // validate if password is not empty
-              if (_passwordController.text.isEmpty ||
-                  _confirmPasswordController.text.isEmpty) {
-                showAnimatedDialog(context,
-                    content: ArDriveIconModal(
-                      icon: ArDriveIcons.warning(
-                        size: 88,
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeErrorDefault,
-                      ),
-                      title: 'Password cannot be empty',
-                      content: 'Please try again',
-                      actions: [
-                        ModalAction(
-                          action: () {
-                            Navigator.pop(context);
-                          },
-                          title: 'Ok',
-                        )
-                      ],
-                    ));
-                return;
-              }
-
-              if (_passwordController.text != _confirmPasswordController.text) {
-                showAnimatedDialog(context,
-                    content: ArDriveIconModal(
-                      icon: ArDriveIcons.warning(
-                        size: 88,
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeErrorDefault,
-                      ),
-                      title: 'Passwords do not matchr',
-                      content: 'Please try again',
-                      actions: [
-                        ModalAction(
-                          action: () {
-                            Navigator.pop(context);
-                          },
-                          title: 'Ok',
-                        )
-                      ],
-                    ));
-                return;
-              }
-
-              print('passwords match');
-
-              context.read<LoginBloc>().add(
-                    CreatePassword(
-                      password: _passwordController.text,
-                      wallet: widget.wallet,
-                    ),
-                  );
-            },
+            isDisabled:
+                _passwordIsValid == false || _confirmPasswordIsValid == false,
+            onPressed: _onSubmit,
             text: 'Proceed',
           ),
         ),
@@ -694,5 +688,62 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
         ),
       ],
     );
+  }
+
+  void _onSubmit() {
+    // validate if password is not empty
+    if (_passwordController.text.isEmpty ||
+        _confirmPasswordController.text.isEmpty) {
+      showAnimatedDialog(context,
+          content: ArDriveIconModal(
+            icon: ArDriveIcons.warning(
+              size: 88,
+              color:
+                  ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+            ),
+            title: 'Password cannot be empty',
+            content: 'Please try again',
+            actions: [
+              ModalAction(
+                action: () {
+                  Navigator.pop(context);
+                },
+                title: 'Ok',
+              )
+            ],
+          ));
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      showAnimatedDialog(context,
+          content: ArDriveIconModal(
+            icon: ArDriveIcons.warning(
+              size: 88,
+              color:
+                  ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+            ),
+            title: 'Passwords do not matchr',
+            content: 'Please try again',
+            actions: [
+              ModalAction(
+                action: () {
+                  Navigator.pop(context);
+                },
+                title: 'Ok',
+              )
+            ],
+          ));
+      return;
+    }
+
+    print('passwords match');
+
+    context.read<LoginBloc>().add(
+          CreatePassword(
+            password: _passwordController.text,
+            wallet: widget.wallet,
+          ),
+        );
   }
 }
