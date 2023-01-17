@@ -1,6 +1,11 @@
+import 'dart:typed_data';
+
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:json_annotation/json_annotation.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'entities.dart';
 
@@ -21,6 +26,9 @@ class SnapshotEntity extends Entity {
   @JsonKey(ignore: true)
   int? dataEnd;
 
+  @JsonKey(ignore: true)
+  Uint8List? data;
+
   SnapshotEntity({
     this.id,
     this.driveId,
@@ -28,19 +36,23 @@ class SnapshotEntity extends Entity {
     this.blockEnd,
     this.dataStart,
     this.dataEnd,
+    this.data,
   });
 
   static Future<SnapshotEntity> fromTransaction(
     TransactionCommonMixin transaction,
+    Uint8List? data,
   ) async {
     try {
-      return SnapshotEntity()
-        ..id = transaction.getTag(EntityTag.snapshotId)
-        ..driveId = transaction.getTag(EntityTag.driveId)
-        ..blockStart = int.parse(transaction.getTag(EntityTag.blockStart)!)
-        ..blockEnd = int.parse(transaction.getTag(EntityTag.blockEnd)!)
-        ..dataStart = int.parse(transaction.getTag(EntityTag.dataStart)!)
-        ..dataEnd = int.parse(transaction.getTag(EntityTag.dataEnd)!)
+      return SnapshotEntity(
+        id: transaction.getTag(EntityTag.snapshotId),
+        driveId: transaction.getTag(EntityTag.driveId),
+        blockStart: int.parse(transaction.getTag(EntityTag.blockStart)!),
+        blockEnd: int.parse(transaction.getTag(EntityTag.blockEnd)!),
+        dataStart: int.parse(transaction.getTag(EntityTag.dataStart)!),
+        dataEnd: int.parse(transaction.getTag(EntityTag.dataEnd)!),
+        data: data,
+      )
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..createdAt = transaction.getCommitTime();
@@ -67,5 +79,38 @@ class SnapshotEntity extends Entity {
       ..addTag(EntityTag.blockEnd, '$blockEnd')
       ..addTag(EntityTag.dataStart, '$dataStart')
       ..addTag(EntityTag.dataEnd, '$dataEnd');
+  }
+
+  Future<DataItem> asPreparedDataItem({
+    required ArweaveAddress owner,
+  }) async {
+    final manifestDataItem = DataItem()
+      ..setOwner(owner)
+      ..addApplicationTags(
+        version: (await PackageInfo.fromPlatform()).version,
+      )
+      ..addTag(EntityTag.contentType, ContentType.json);
+
+    return manifestDataItem;
+  }
+
+  @override
+  Future<Transaction> asTransaction({
+    SecretKey? key,
+  }) async {
+    if (key != null) {
+      throw UnsupportedError('Snapshot entities are not encrypted.');
+    }
+
+    final tx = Transaction.withJsonData(data: data!);
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    addEntityTagsToTransaction(tx);
+
+    tx.addApplicationTags(
+      version: packageInfo.version,
+      unixTime: createdAt,
+    );
+    return tx;
   }
 }

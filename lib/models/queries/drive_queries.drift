@@ -4,6 +4,7 @@ import '../tables/folder_entries.drift';
 import '../tables/folder_revisions.drift';
 import '../tables/file_entries.drift';
 import '../tables/file_revisions.drift';
+import '../tables/snapshot_entries.drift'
 import '../tables/network_transactions.drift';
 
 allDrives ($order = ''):
@@ -161,6 +162,7 @@ latestFileRevisionsByFileIdWithTransactions AS FileRevisionWithTransactions:
     JOIN network_transactions AS dataTx ON dataTx.id = rev.dataTxId
     WHERE driveId = :driveId AND fileId = :fileId
     ORDER BY rev.dateCreated DESC;
+
 
 pendingTransactions:
     SELECT * FROM network_transactions

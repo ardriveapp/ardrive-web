@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/models/snapshot_revision.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -427,6 +429,24 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
+  Future<void> writeSnapshotEntity(SnapshotEntity entity) {
+    final companion = SnapshotEntriesCompanion.insert(
+      id: entity.id!,
+      txId: entity.txId,
+      driveId: entity.driveId!,
+      blockStart: entity.blockStart!,
+      blockEnd: entity.blockEnd!,
+      dataStart: entity.dataStart!,
+      dataEnd: entity.dataEnd!,
+      // dateCreated: entity.createdAt,
+    );
+
+    return into(snapshotEntries).insert(
+      companion,
+      // onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
+    );
+  }
+
   Future<void> writeToTransaction(Insertable<NetworkTransaction> transaction) =>
       (update(networkTransactions)..whereSamePrimaryKey(transaction))
           .write(transaction);
@@ -457,4 +477,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<void> writeTransaction(Insertable<NetworkTransaction> transaction) =>
       into(networkTransactions).insertOnConflictUpdate(transaction);
+
+  Future<void> insertSnapshotItem(SnapshotEntriesCompanion item) async {
+    await db.transaction(() async {
+      await writeTransaction(item.getTransactionCompanions());
+      await into(snapshotEntries).insert(item);
+    });
+  }
 }
