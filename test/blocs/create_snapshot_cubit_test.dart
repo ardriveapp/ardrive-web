@@ -2,6 +2,8 @@ import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
+import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +11,22 @@ import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../test_utils/utils.dart';
+
+Future<Transaction> fakePrepareTransaction(invocation) async {
+  final entity = invocation.positionalArguments[0] as SnapshotEntity;
+  final wallet = invocation.positionalArguments[1] as Wallet;
+
+  final transaction = await entity.asTransaction();
+  transaction.setOwner(await wallet.getOwner());
+  transaction.setReward(BigInt.from(100));
+  transaction.setLastTx(encodeStringToBase64('lastTx'));
+
+  await transaction.prepareChunks();
+
+  await transaction.sign(wallet);
+
+  return transaction;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -42,10 +60,7 @@ void main() {
           any(),
           any(),
         ),
-      ).thenAnswer(
-        (invocation) async =>
-            await invocation.positionalArguments[0].asTransaction(),
-      );
+      ).thenAnswer(fakePrepareTransaction);
 
       // mocks the state of the profile cubit
       when(() => profileCubit.state).thenReturn(
@@ -67,6 +82,10 @@ void main() {
         buildNumber: 'buildNumber',
         buildSignature: 'buildSignature',
       );
+    });
+
+    tearDown(() {
+      // TODO: delete the temporal file
     });
 
     blocTest(
@@ -98,6 +117,8 @@ void main() {
           driveId: 'driveId',
           range: Range(start: 0, end: 1),
         ),
+        // can't check for the actual value because it contains a signed transaction
+        isA<ConfirmUpload>(),
       ],
     );
 
@@ -109,8 +130,20 @@ void main() {
         profileCubit: profileCubit,
         driveDao: driveDao,
       ),
-      act: (cubit) => cubit.upload(),
+      act: (cubit) => cubit
+          .selectDriveAndHeightRange(
+            'driveId',
+            Range(start: 0, end: 1),
+            100,
+          )
+          .then((value) => cubit.upload()),
       expect: () => [
+        ComputingSnapshotData(
+          driveId: 'driveId',
+          range: Range(start: 0, end: 1),
+        ),
+        // can't check for the actual value because it contains a signed transaction
+        isA<ConfirmUpload>(),
         Uploading(),
       ],
     );
