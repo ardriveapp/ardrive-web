@@ -60,8 +60,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final tempFileSink = tempFile.openWrite();
 
     emit(ComputingSnapshotData(
-      driveId: 'driveId',
-      range: Range(start: 0, end: 0),
+      driveId: driveId,
+      range: range,
     ));
 
     // declare the GQL read stream out of arweave
@@ -155,10 +155,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     //   return;
     // }
 
-    emit(Uploading());
-
     try {
       final params = (state as ConfirmUpload).createSnapshotParams;
+
+      emit(Uploading());
+
       await _arweave.client.transactions.post(params.signedTx);
       await params.addSnapshotItemToDatabase();
 
