@@ -79,8 +79,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     // declares the reading stream from the SnapshotItemToBeCreated
     final snapshotItemToBeCreated = SnapshotItemToBeCreated(
-      blockStart: 0, // TODO: get from the range (?)
-      blockEnd: currentHeight, // TODO: get from the range (?)
+      blockStart: range.start,
+      blockEnd: range.end,
       driveId: driveId,
       subRanges: HeightRange(rangeSegments: [range]),
       source: gqlNodesStream,
@@ -92,6 +92,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       tempFileSink.add(item);
     }
 
+    final dataStart = snapshotItemToBeCreated.dataStart;
+    final dataEnd = snapshotItemToBeCreated.dataEnd;
+
     // close the file as writing, and open as reading
     await tempFileSink.close();
     final tempFileRead = tempFile.openRead();
@@ -102,8 +105,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       driveId: driveId,
       blockStart: range.start,
       blockEnd: range.end,
-      dataStart: range.start,
-      dataEnd: range.end,
+      dataStart: dataStart,
+      dataEnd: dataEnd,
       data: Uint8List.fromList(
         await tempFileRead.expand((element) => element).toList(),
       ),
