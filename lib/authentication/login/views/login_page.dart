@@ -546,7 +546,7 @@ class CreatePasswordView extends StatefulWidget {
 class _CreatePasswordViewState extends State<CreatePasswordView> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<ArDriveFormState>();
 
   bool _passwordIsValid = false;
   bool _confirmPasswordIsValid = false;
@@ -556,144 +556,122 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 512, maxHeight: 618),
       child: _LoginCard(
-        content: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ArDriveImage(
-                image: SvgImage.asset('assets/images/brand/ArDrive-Logo.svg'),
-                height: 73,
-              ),
-              Text(
-                'Please create and confirm your password. You will use this password to log in.',
-                textAlign: TextAlign.center,
-                style: ArDriveTypography.headline.headline5Regular(),
-              ),
-              const SizedBox(height: 16),
-              _createPasswordForm(),
-            ],
-          ),
+        content: Column(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ArDriveImage(
+              image: SvgImage.asset('assets/images/brand/ArDrive-Logo.svg'),
+              height: 73,
+            ),
+            Text(
+              'Please create and confirm your password. You will use this password to log in.',
+              textAlign: TextAlign.center,
+              style: ArDriveTypography.headline.headline5Regular(),
+            ),
+            const SizedBox(height: 16),
+            _createPasswordForm(),
+          ],
         ),
       ),
     );
   }
 
   Widget _createPasswordForm() {
-    return Column(
-      children: [
-        ArDriveTextField(
-          controller: _passwordController,
-          // key: ValueKey(state.autoFocus),
-          // autofocus: state.autoFocus,
-          showObfuscationToggle: true,
-          obscureText: true,
-          autofillHints: const [AutofillHints.password],
-          hintText: 'Enter password',
-          onFieldSubmitted: (_) async {
-            // on submit
-          },
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              setState(() {
-                _passwordIsValid = false;
-              });
-
-              return appLocalizationsOf(context).validationRequired;
-            }
-
-            setState(() {
-              _passwordIsValid = true;
-            });
-
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        ArDriveTextField(
-          controller: _confirmPasswordController,
-          showObfuscationToggle: true,
-          // key: ValueKey(state.autoFocus),
-          // autofocus: state.autoFocus,
-          obscureText: true,
-          autofillHints: const [AutofillHints.password],
-          hintText: 'Confirm password',
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              setState(() {
-                _confirmPasswordIsValid = false;
-              });
-
-              return appLocalizationsOf(context).validationRequired;
-            } else if (value != _passwordController.text) {
-              setState(() {
-                _confirmPasswordIsValid = false;
-              });
-
-              return appLocalizationsOf(context).passwordMismatch;
-            }
-
-            setState(() {
-              _confirmPasswordIsValid = true;
-            });
-
-            return null;
-          },
-          onFieldSubmitted: (_) => _onSubmit(),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          child: ArDriveButton(
-            isDisabled:
-                _passwordIsValid == false || _confirmPasswordIsValid == false,
-            onPressed: _onSubmit,
-            text: 'Proceed',
-          ),
-        ),
-        const SizedBox(
-          height: 53,
-        ),
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: ArDriveButton(
-            onPressed: () {
-              final actions = [
-                ModalAction(
-                  action: () {
-                    Navigator.pop(context);
-                  },
-                  title: appLocalizationsOf(context).cancel,
-                ),
-                ModalAction(
-                  action: () {
-                    Navigator.pop(context);
-
-                    context.read<LoginBloc>().add(const ForgetWallet());
-                  },
-                  title: appLocalizationsOf(context).ok,
-                )
-              ];
-              showStandardDialog(
-                context,
-                title: appLocalizationsOf(context).forgetWalletTitle,
-                content: appLocalizationsOf(context).forgetWalletDescription,
-                actions: actions,
-              );
+    return ArDriveForm(
+      key: _formKey,
+      child: Column(
+        children: [
+          ArDriveTextField(
+            controller: _passwordController,
+            showObfuscationToggle: true,
+            obscureText: true,
+            autofillHints: const [AutofillHints.password],
+            hintText: 'Enter password',
+            onChanged: (s) {
+              _formKey.currentState?.validate();
             },
-            style: ArDriveButtonStyle.tertiary,
-            text: appLocalizationsOf(context).forgetWallet,
+            onFieldSubmitted: (_) async {
+              // TODO:on submit
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return appLocalizationsOf(context).validationRequired;
+              }
+              return null;
+            },
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          ArDriveTextField(
+            controller: _confirmPasswordController,
+            showObfuscationToggle: true,
+            obscureText: true,
+            autofillHints: const [AutofillHints.password],
+            hintText: 'Confirm password',
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return appLocalizationsOf(context).validationRequired;
+              } else if (value != _passwordController.text) {
+                return appLocalizationsOf(context).passwordMismatch;
+              }
+
+              return null;
+            },
+            onFieldSubmitted: (_) => _onSubmit(),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ArDriveButton(
+              isDisabled:
+                  _passwordIsValid == false || _confirmPasswordIsValid == false,
+              onPressed: _onSubmit,
+              text: 'Proceed',
+            ),
+          ),
+          const SizedBox(
+            height: 53,
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: ArDriveButton(
+              onPressed: () {
+                final actions = [
+                  ModalAction(
+                    action: () {
+                      Navigator.pop(context);
+                    },
+                    title: appLocalizationsOf(context).cancel,
+                  ),
+                  ModalAction(
+                    action: () {
+                      Navigator.pop(context);
+
+                      context.read<LoginBloc>().add(const ForgetWallet());
+                    },
+                    title: appLocalizationsOf(context).ok,
+                  )
+                ];
+                showStandardDialog(
+                  context,
+                  title: appLocalizationsOf(context).forgetWalletTitle,
+                  content: appLocalizationsOf(context).forgetWalletDescription,
+                  actions: actions,
+                );
+              },
+              style: ArDriveButtonStyle.tertiary,
+              text: appLocalizationsOf(context).forgetWallet,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   void _onSubmit() {
-    // validate if password is not empty
-    if (_passwordController.text.isEmpty ||
-        _confirmPasswordController.text.isEmpty) {
+    final isValid = _formKey.currentState!.validate();
+
+    if (!isValid) {
       showAnimatedDialog(context,
           content: ArDriveIconModal(
             icon: ArDriveIcons.warning(
@@ -739,11 +717,11 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
 
     print('passwords match');
 
-    context.read<LoginBloc>().add(
-          CreatePassword(
-            password: _passwordController.text,
-            wallet: widget.wallet,
-          ),
-        );
+    // context.read<LoginBloc>().add(
+    //       CreatePassword(
+    //         password: _passwordController.text,
+    //         wallet: widget.wallet,
+    //       ),
+    //     );
   }
 }
