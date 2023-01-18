@@ -19,6 +19,15 @@ class SnapshotItemToBeCreated {
   final DriveID driveId;
   final Stream<DriveHistoryTransaction> source;
 
+  int? _dataStart;
+  int? _dataEnd;
+
+  // TODO: what these values will be for a snapshot with no transactions?
+  // Maybe a special value like -1? - In that case the snapshot would be ignored
+  // at sync time.
+  int get dataStart => _dataStart ?? -1;
+  int get dataEnd => _dataEnd ?? -1;
+
   final Future<String> Function(TxID txId) _jsonMetadataOfTxId;
 
   SnapshotItemToBeCreated({
@@ -32,11 +41,21 @@ class SnapshotItemToBeCreated {
 
   Stream<Uint8List> getSnapshotData() async* {
     final txSnapshotStream = source.asyncMap<TxSnapshot>(
-      (node) async => TxSnapshot(
-        gqlNode: node,
-        jsonMetadata:
-            _isSnapshotTx(node) ? '' : await _jsonMetadataOfTxId(node.id),
-      ),
+      (node) async {
+        // updates dataStart and dataEnd being the start the minimum and end the maximum
+        _dataStart = _dataStart == null || node.block!.height < _dataStart!
+            ? node.block!.height
+            : _dataStart;
+        _dataEnd = _dataEnd == null || node.block!.height > _dataEnd!
+            ? node.block!.height
+            : _dataEnd;
+
+        return TxSnapshot(
+          gqlNode: node,
+          jsonMetadata:
+              _isSnapshotTx(node) ? '' : await _jsonMetadataOfTxId(node.id),
+        );
+      },
     );
 
     final snapshotDataStream =
