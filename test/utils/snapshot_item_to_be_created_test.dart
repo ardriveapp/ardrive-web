@@ -12,7 +12,7 @@ void main() {
   group('SnapshotItemToBeCreated class', () {
     group('getSnapshotData method', () {
       test('returns the correct data for an empty set', () async {
-        final snapshotItem = SnapshotItemToBeCreated(
+        final snapshotItemToBeCreated = SnapshotItemToBeCreated(
           driveId: 'DRIVE_ID',
           blockStart: 0,
           blockEnd: 10,
@@ -21,17 +21,23 @@ void main() {
           jsonMetadataOfTxId: (txId) async => '{"name":"$txId"}',
         );
 
-        final snapshotData = (await snapshotItem
+        final snapshotData = (await snapshotItemToBeCreated
                 .getSnapshotData()
                 .map(utf8.decoder.convert)
                 .toList())
             .join();
 
+        final dataStart = snapshotItemToBeCreated.dataStart;
+        final dataEnd = snapshotItemToBeCreated.dataEnd;
+
         expect(snapshotData, '{"txSnapshots":[]}');
+
+        expect(dataStart, -1);
+        expect(dataEnd, -1);
       });
 
       test('returns the correct data for a single transaction', () async {
-        final snapshotItem = SnapshotItemToBeCreated(
+        final snapshotItemToBeCreated = SnapshotItemToBeCreated(
           driveId: 'DRIVE_ID',
           blockStart: 0,
           blockEnd: 10,
@@ -40,22 +46,28 @@ void main() {
           jsonMetadataOfTxId: (txId) async => '{"name":"$txId"}',
         );
 
-        final snapshotData = (await snapshotItem
+        final snapshotData = (await snapshotItemToBeCreated
                 .getSnapshotData()
                 .map(utf8.decoder.convert)
                 .toList())
             .join();
 
+        final dataStart = snapshotItemToBeCreated.dataStart;
+        final dataEnd = snapshotItemToBeCreated.dataEnd;
+
         expect(
           snapshotData,
           '{"txSnapshots":[{"gqlNode":{"id":"tx-8","owner":{"address":"1234567890"},"bundledIn":{"id":"ASDASDASDASDASDASD"},"block":{"height":8,"timestamp":800},"tags":[]},"jsonMetadata":"{\\"name\\":\\"tx-8\\"}"}]}',
         );
+
+        expect(dataStart, 8);
+        expect(dataEnd, 8);
       });
 
       test(
           'the returned data won\'t contain the json metadata of other snapshots, but only the gql node',
           () async {
-        final snapshotItem = SnapshotItemToBeCreated(
+        final snapshotItemToBeCreated = SnapshotItemToBeCreated(
           driveId: 'DRIVE_ID',
           blockStart: 0,
           blockEnd: 10,
@@ -82,7 +94,7 @@ void main() {
           jsonMetadataOfTxId: (txId) async => '{"name":"tx-$txId"}',
         );
 
-        final snapshotData = (await snapshotItem
+        final snapshotData = (await snapshotItemToBeCreated
                 .getSnapshotData()
                 .map(utf8.decoder.convert)
                 .toList())
