@@ -8,7 +8,6 @@ import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
-import 'package:ardrive/services/services.dart';
 import 'package:ardrive/types/winston.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
@@ -136,7 +135,6 @@ void main() {
         profileCubit: mockProfileCubit!,
         driveDao: mockDriveDao,
         arweave: mockArweave,
-        turboService: DontUseTurbo(),
         pst: mockPst);
   }
 
@@ -152,7 +150,6 @@ void main() {
               fileV2UploadHandles: {},
               fileDataItemUploadHandles: {},
               folderDataItemUploadHandles: {},
-              turboService: DontUseTurbo(),
             ),
           ));
 
@@ -263,7 +260,6 @@ void main() {
             fileV2UploadHandles: {},
             fileDataItemUploadHandles: {},
             folderDataItemUploadHandles: {},
-            turboService: DontUseTurbo(),
           ),
         ),
       );

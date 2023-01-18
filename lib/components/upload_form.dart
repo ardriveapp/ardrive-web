@@ -6,7 +6,6 @@ import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/services/turbo/turbo.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
@@ -60,7 +59,6 @@ Future<void> promptToUpload(
         create: (context) => UploadCubit(
           uploadPlanUtils: UploadPlanUtils(
             arweave: context.read<ArweaveService>(),
-            turboService: context.read<TurboService>(),
             driveDao: context.read<DriveDao>(),
           ),
           driveId: driveId,
@@ -68,7 +66,6 @@ Future<void> promptToUpload(
           files: selectedFiles,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
-          turboService: context.read<TurboService>(),
           pst: context.read<PstService>(),
           driveDao: context.read<DriveDao>(),
           uploadFolders: isFolderUpload,
@@ -269,14 +266,10 @@ class UploadForm extends StatelessWidget {
                         .reduce((value, element) => value += element)
                     : 0;
             final numberOfV2Files = state.uploadPlan.fileV2UploadHandles.length;
-            final numberOfTurboDataItems =
-                state.uploadPlan.fileDataItemHandles.length;
+
             return AppDialog(
-              title: appLocalizationsOf(context).uploadNFiles(
-                numberOfFilesInBundles +
-                    numberOfV2Files +
-                    numberOfTurboDataItems,
-              ),
+              title: appLocalizationsOf(context)
+                  .uploadNFiles(numberOfFilesInBundles + numberOfV2Files),
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: Column(
@@ -291,14 +284,6 @@ class UploadForm extends StatelessWidget {
                           children: [
                             for (final file in state
                                 .uploadPlan.fileV2UploadHandles.values) ...{
-                              ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                title: Text(file.entity.name!),
-                                subtitle: Text(filesize(file.size)),
-                              ),
-                            },
-                            for (final file in state
-                                .uploadPlan.fileDataItemHandles.values) ...{
                               ListTile(
                                 contentPadding: EdgeInsets.zero,
                                 title: Text(file.entity.name!),
@@ -321,41 +306,30 @@ class UploadForm extends StatelessWidget {
                     ),
                     const Divider(),
                     const SizedBox(height: 16),
-                    if (!state.uploadPlan.isFreeThanksToTurbo)
-                      Text.rich(
-                        TextSpan(
-                          children: [
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: appLocalizationsOf(context)
+                                .cost(state.costEstimate.arUploadCost),
+                          ),
+                          if (state.costEstimate.usdUploadCost != null)
                             TextSpan(
-                              text: appLocalizationsOf(context)
-                                  .cost(state.costEstimate.arUploadCost),
-                            ),
-                            if (state.costEstimate.usdUploadCost != null)
-                              TextSpan(
-                                  text: state.costEstimate.usdUploadCost! >=
-                                          0.01
-                                      ? ' (~${state.costEstimate.usdUploadCost!.toStringAsFixed(2)} USD)'
-                                      : ' (< 0.01 USD)'),
-                          ],
-                          style: Theme.of(context).textTheme.bodyText1,
-                        ),
+                                text: state.costEstimate.usdUploadCost! >= 0.01
+                                    ? ' (~${state.costEstimate.usdUploadCost!.toStringAsFixed(2)} USD)'
+                                    : ' (< 0.01 USD)'),
+                        ],
+                        style: Theme.of(context).textTheme.bodyText1,
                       ),
+                    ),
                     if (state.uploadIsPublic) ...{
                       const SizedBox(height: 8),
                       Text(
                         appLocalizationsOf(context).filesWillBeUploadedPublicly(
-                          numberOfFilesInBundles +
-                              numberOfV2Files +
-                              numberOfTurboDataItems,
-                        ),
+                            numberOfFilesInBundles + numberOfV2Files),
                       ),
                     },
-                    if (state.uploadPlan.isFreeThanksToTurbo) ...{
-                      const SizedBox(height: 8),
-                      Text(
-                        appLocalizationsOf(context).freeTurboTransaction,
-                        style: Theme.of(context).textTheme.subtitle1,
-                      ),
-                    } else if (!state.sufficientArBalance) ...{
+                    if (!state.sufficientArBalance) ...{
                       const SizedBox(height: 8),
                       Text(
                         appLocalizationsOf(context).insufficientARForUpload,
@@ -373,8 +347,7 @@ class UploadForm extends StatelessWidget {
                   child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
                 ElevatedButton(
-                  onPressed: state.sufficientArBalance ||
-                          state.uploadPlan.isFreeThanksToTurbo
+                  onPressed: state.sufficientArBalance
                       ? () => context.read<UploadCubit>().startUpload(
                             uploadPlan: state.uploadPlan,
                             costEstimate: state.costEstimate,
@@ -412,15 +385,11 @@ class UploadForm extends StatelessWidget {
                         .reduce((value, element) => value += element)
                     : 0;
             final numberOfV2Files = state.uploadPlan.fileV2UploadHandles.length;
-            final numberOfTurboDataItems =
-                state.uploadPlan.fileDataItemHandles.length;
+
             return AppDialog(
               dismissable: false,
-              title: appLocalizationsOf(context).uploadingNFiles(
-                numberOfFilesInBundles +
-                    numberOfV2Files +
-                    numberOfTurboDataItems,
-              ),
+              title: appLocalizationsOf(context)
+                  .uploadingNFiles(numberOfFilesInBundles + numberOfV2Files),
               content: SizedBox(
                 width: kMediumDialogWidth,
                 child: ConstrainedBox(
@@ -431,21 +400,6 @@ class UploadForm extends StatelessWidget {
                       children: [
                         for (final file
                             in state.uploadPlan.fileV2UploadHandles.values) ...{
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(file.entity.name!),
-                            subtitle: Text(
-                                '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
-                            trailing: CircularProgressIndicator(
-                                // Show an indeterminate progress indicator if the upload hasn't started yet as
-                                // small uploads might never report a progress.
-                                value: file.uploadProgress != 0
-                                    ? file.uploadProgress
-                                    : null),
-                          ),
-                        },
-                        for (final file
-                            in state.uploadPlan.fileDataItemHandles.values) ...{
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             title: Text(file.entity.name!),

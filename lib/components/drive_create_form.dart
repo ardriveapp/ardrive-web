@@ -19,7 +19,6 @@ Future<void> promptToCreateDrive(BuildContext context) =>
         builder: (BuildContext context) => BlocProvider(
           create: (_) => DriveCreateCubit(
             arweave: context.read<ArweaveService>(),
-            turboService: context.read<TurboService>(),
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
             drivesCubit: context.read<DrivesCubit>(),

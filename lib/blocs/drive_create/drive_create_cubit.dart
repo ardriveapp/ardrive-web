@@ -3,7 +3,6 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
-import 'package:ardrive/services/turbo/turbo.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -26,19 +25,16 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
   });
 
   final ArweaveService _arweave;
-  final TurboService _turboService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final DrivesCubit _drivesCubit;
 
   DriveCreateCubit({
     required ArweaveService arweave,
-    required TurboService turboService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required DrivesCubit drivesCubit,
   })  : _arweave = arweave,
-        _turboService = turboService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _drivesCubit = drivesCubit,
@@ -58,8 +54,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
     }
 
     final minimumWalletBalance = BigInt.from(10000000);
-    if (!_turboService.useTurbo &&
-        profile.walletBalance <= minimumWalletBalance) {
+    if (profile.walletBalance <= minimumWalletBalance) {
       emit(DriveCreateZeroBalance());
       return;
     }
@@ -109,25 +104,14 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
       await rootFolderDataItem.sign(profile.wallet);
       await driveDataItem.sign(profile.wallet);
 
-      if (_turboService.useTurbo) {
-        await Future.wait(
-          [
-            _turboService.postDataItem(dataItem: rootFolderDataItem),
-            _turboService.postDataItem(dataItem: driveDataItem)
-          ],
-        );
-      } else {
-        final createTx = await _arweave.prepareDataBundleTx(
-          await DataBundle.fromDataItems(
-            items: [driveDataItem, rootFolderDataItem],
-          ),
-          profile.wallet,
-        );
+      final createTx = await _arweave.prepareDataBundleTx(
+        await DataBundle.fromDataItems(
+          items: [driveDataItem, rootFolderDataItem],
+        ),
+        profile.wallet,
+      );
 
-        await _arweave.postTx(createTx);
-        drive.bundledIn = createTx.id;
-      }
-
+      await _arweave.postTx(createTx);
       rootFolderEntity.txId = rootFolderDataItem.id;
       await _driveDao.insertFolderRevision(rootFolderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create));
@@ -139,6 +123,7 @@ class DriveCreateCubit extends Cubit<DriveCreateState> {
 
       drive
         ..ownerAddress = walletAddress
+        ..bundledIn = createTx.id
         ..txId = driveDataItem.id;
 
       await _driveDao.insertDriveRevision(

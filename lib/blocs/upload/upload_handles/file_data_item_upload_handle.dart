@@ -54,8 +54,8 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   });
 
   Future<void> writeFileEntityToDatabase({
+    required String bundledInTxId,
     required DriveDao driveDao,
-    String? bundledInTxId,
   }) async {
     entity.bundledIn = bundledInTxId;
     await driveDao.transaction(() async {

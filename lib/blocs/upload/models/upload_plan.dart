@@ -1,7 +1,6 @@
 import 'package:ardrive/blocs/upload/upload_handles/bundle_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/folder_data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
-import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/bundles/next_fit_bundle_packer.dart';
 import 'package:flutter/foundation.dart';
 
@@ -16,12 +15,8 @@ const maxFilesPerBundle = maxBundleDataItemCount ~/ 2;
 class UploadPlan {
   /// A map of [FileV2UploadHandle]s keyed by their respective file's id.
   late Map<String, FileV2UploadHandle> fileV2UploadHandles;
-  final List<BundleUploadHandle> bundleUploadHandles = [];
 
-  // These are only used for turbo bundler uploads
-  bool isFreeThanksToTurbo = false;
-  final Map<String, FileDataItemUploadHandle> fileDataItemHandles = {};
-  final Map<String, FolderDataItemUploadHandle> folderDataItemHandles = {};
+  final List<BundleUploadHandle> bundleUploadHandles = [];
 
   UploadPlan._create({
     required this.fileV2UploadHandles,
@@ -32,38 +27,25 @@ class UploadPlan {
     required Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles,
     required Map<String, FolderDataItemUploadHandle>
         folderDataItemUploadHandles,
-    required TurboService turboService,
   }) async {
-    final uploadPlan = UploadPlan._create(
+    final bundle = UploadPlan._create(
       fileV2UploadHandles: fileV2UploadHandles,
     );
     if (fileDataItemUploadHandles.isNotEmpty ||
         folderDataItemUploadHandles.isNotEmpty) {
-      await uploadPlan._createBundleHandlesFromDataItemHandles(
+      await bundle.createBundleHandlesFromDataItemHandles(
         fileDataItemUploadHandles: fileDataItemUploadHandles,
         folderDataItemUploadHandles: folderDataItemUploadHandles,
-        turboService: turboService,
       );
     }
-    return uploadPlan;
+    return bundle;
   }
 
-  Future<void> _createBundleHandlesFromDataItemHandles({
+  Future<void> createBundleHandlesFromDataItemHandles({
     Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles = const {},
     Map<String, FolderDataItemUploadHandle> folderDataItemUploadHandles =
         const {},
-    required TurboService turboService,
   }) async {
-    isFreeThanksToTurbo = turboService.useTurbo &&
-        fileDataItemUploadHandles.values
-            .map(
-                (dataItem) => dataItem.size <= turboService.allowedDataItemSize)
-            .reduce((value, acc) => value && acc);
-    if (isFreeThanksToTurbo) {
-      fileDataItemHandles.addAll(fileDataItemUploadHandles);
-      folderDataItemHandles.addAll(folderDataItemUploadHandles);
-      return;
-    }
     // Set bundle size limit according the platform
     // This should be reviewed when we implement stream uploads
     const int maxBundleSize = kIsWeb ? bundleSizeLimit : mobileBundleSizeLimit;
