@@ -229,8 +229,9 @@ class AppDrawer extends StatelessWidget {
 
     if (profileState.runtimeType == ProfileLoggedIn) {
       final profile = profileState as ProfileLoggedIn;
-      final notEnoughARInWallet = !profile.hasBalanceForUpload(
-          minimumWalletBalance: minimumWalletBalance);
+      final notEnoughARInWallet = !profile.hasMinimumBalanceForUpload(
+        minimumWalletBalance: minimumWalletBalance,
+      );
       return Column(
         children: [
           ListTileTheme(
