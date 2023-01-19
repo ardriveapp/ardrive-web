@@ -223,10 +223,7 @@ List<PopupMenuEntry<Function>> _buildItems(
           minimumWalletBalance: minimumWalletBalance,
         );
     final canCreateNewDrive = drivesState is DrivesLoadSuccess
-        ? drivesState.canCreateNewDrive &&
-            profile.hasBalanceForUpload(
-              minimumWalletBalance: minimumWalletBalance,
-            )
+        ? drivesState.canCreateNewDrive && hasMinBalance
         : false;
     return [
       if (driveDetailState is DriveDetailLoadSuccess) ...{
