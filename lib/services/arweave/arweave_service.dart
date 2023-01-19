@@ -803,8 +803,7 @@ class ArweaveService {
       ..addApplicationTags(
         version: packageInfo.version,
       )
-      ..addTag('Bundle-Format', 'binary')
-      ..addTag('Bundle-Version', '2.0.0')
+      ..addBundleTags()
       ..addBarTags()
       ..setOwner(await wallet.getOwner());
     await item.sign(wallet);
