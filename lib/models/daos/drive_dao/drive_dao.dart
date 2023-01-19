@@ -4,7 +4,6 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/models/snapshot_revision.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -477,11 +476,4 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<void> writeTransaction(Insertable<NetworkTransaction> transaction) =>
       into(networkTransactions).insertOnConflictUpdate(transaction);
-
-  Future<void> insertSnapshotItem(SnapshotEntriesCompanion item) async {
-    await db.transaction(() async {
-      await writeTransaction(item.getTransactionCompanions());
-      await into(snapshotEntries).insert(item);
-    });
-  }
 }
