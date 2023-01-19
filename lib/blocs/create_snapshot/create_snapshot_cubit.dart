@@ -134,7 +134,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     const usdUploadCost = 0.0;
 
     // TODO: emit ConfirmUpload or ComputeSnapshotDataFailure
-    emit(ConfirmUpload(
+    emit(ConfirmSnapshotCreation(
       snapshotSize: tempFile.lengthSync(),
       arUploadCost: arUploadCost,
       usdUploadCost: usdUploadCost,
@@ -152,21 +152,21 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     return '';
   }
 
-  void upload() async {
+  void confirmSnapshotCreation() async {
     // if (await _profileCubit.logoutIfWalletMismatch()) {
     //   emit(CreateManifestWalletMismatch());
     //   return;
     // }
 
     try {
-      final params = (state as ConfirmUpload).createSnapshotParams;
+      final params = (state as ConfirmSnapshotCreation).createSnapshotParams;
 
-      emit(Uploading());
+      emit(UploadingSnapshot());
 
       await _arweave.client.transactions.post(params.signedTx);
       await params.addSnapshotItemToDatabase();
 
-      emit(UploadSuccess());
+      emit(SnapshotUploadSuccess());
     } catch (err) {
       // ignore: avoid_print
       print('Error while posting the snapshot transaction: $err');

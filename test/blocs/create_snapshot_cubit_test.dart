@@ -118,7 +118,7 @@ void main() {
           range: Range(start: 0, end: 1),
         ),
         // can't check for the actual value because it contains a signed transaction
-        isA<ConfirmUpload>(),
+        isA<ConfirmSnapshotCreation>(),
       ],
     );
 
@@ -136,15 +136,15 @@ void main() {
             Range(start: 0, end: 1),
             100,
           )
-          .then((value) => cubit.upload()),
+          .then((value) => cubit.confirmSnapshotCreation()),
       expect: () => [
         ComputingSnapshotData(
           driveId: 'driveId',
           range: Range(start: 0, end: 1),
         ),
         // can't check for the actual value because it contains a signed transaction
-        isA<ConfirmUpload>(),
-        Uploading(),
+        isA<ConfirmSnapshotCreation>(),
+        UploadingSnapshot(),
       ],
     );
   });

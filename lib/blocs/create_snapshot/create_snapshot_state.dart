@@ -34,13 +34,13 @@ class ComputeSnapshotDataFailure extends CreateSnapshotState {
 }
 
 /// Snapshot data has been computed and it's ready to be confirmed
-class ConfirmUpload extends CreateSnapshotState {
+class ConfirmSnapshotCreation extends CreateSnapshotState {
   final int snapshotSize;
   final String arUploadCost;
   final double usdUploadCost;
   final CreateSnapshotParameters createSnapshotParams;
 
-  ConfirmUpload({
+  ConfirmSnapshotCreation({
     required this.snapshotSize,
     required this.arUploadCost,
     required this.usdUploadCost,
@@ -53,17 +53,17 @@ class ConfirmUpload extends CreateSnapshotState {
 }
 
 /// User has confirmed the upload and we are now uploading the snapshot
-class Uploading extends CreateSnapshotState {}
+class UploadingSnapshot extends CreateSnapshotState {}
 
 /// Upload has failed
-class UploadFailure extends CreateSnapshotState {
+class SnapshotUploadFailure extends CreateSnapshotState {
   final String errorMessage;
 
-  UploadFailure({required this.errorMessage});
+  SnapshotUploadFailure({required this.errorMessage});
 
   @override
   List<Object> get props => [errorMessage];
 }
 
 /// Upload has succeeded
-class UploadSuccess extends CreateSnapshotState {}
+class SnapshotUploadSuccess extends CreateSnapshotState {}
