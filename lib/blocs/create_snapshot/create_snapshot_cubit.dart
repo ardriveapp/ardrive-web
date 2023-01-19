@@ -84,7 +84,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       driveId: driveId,
       subRanges: HeightRange(rangeSegments: [range]),
       source: gqlNodesStream,
-      jsonMetadataOfTxId: jsonMetadataOfTxId,
+      jsonMetadataOfTxId: _jsonMetadataOfTxId,
     );
 
     // Stream snapshot data to the temporal file
@@ -146,7 +146,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     return range.end <= currentHeight;
   }
 
-  Future<String> jsonMetadataOfTxId(String txId) async {
+  Future<String> _jsonMetadataOfTxId(String txId) async {
     // TODO: implement me
     // Will try to read from the DB, and from netwirk if the data is not present
     return '';
