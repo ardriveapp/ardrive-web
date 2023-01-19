@@ -218,29 +218,28 @@ List<PopupMenuEntry<Function>> _buildItems(
   if (profileState.runtimeType == ProfileLoggedIn) {
     final minimumWalletBalance = BigInt.from(10000000);
     final profile = profileState as ProfileLoggedIn;
-    final hasMinBalance = profile.useTurbo ||
-        profile.hasBalanceForUpload(
-          minimumWalletBalance: minimumWalletBalance,
-        );
+    final canUpload = profile.canUpload(
+      minimumWalletBalance: minimumWalletBalance,
+    );
     final canCreateNewDrive = drivesState is DrivesLoadSuccess
         ? drivesState.canCreateNewDrive &&
-            profile.hasBalanceForUpload(
+            profile.hasMinimumBalanceForUpload(
               minimumWalletBalance: minimumWalletBalance,
             )
         : false;
     return [
       if (driveDetailState is DriveDetailLoadSuccess) ...{
-        _buildNewFolderItem(context, driveDetailState, hasMinBalance),
+        _buildNewFolderItem(context, driveDetailState, canUpload),
         const PopupMenuDivider(key: Key('divider-1')),
         _buildUploadFileItem(
           context,
           driveDetailState,
-          hasMinBalance,
+          canUpload,
         ),
         _buildUploadFolderItem(
           context,
           driveDetailState,
-          hasMinBalance,
+          canUpload,
         ),
         const PopupMenuDivider(key: Key('divider-2')),
       },
@@ -253,7 +252,7 @@ List<PopupMenuEntry<Function>> _buildItems(
         _buildCreateManifestItem(
           context,
           driveDetailState,
-          hasMinBalance,
+          canUpload,
         )
       },
     ];
