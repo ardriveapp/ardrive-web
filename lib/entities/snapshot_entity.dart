@@ -84,14 +84,14 @@ class SnapshotEntity extends Entity {
   Future<DataItem> asPreparedDataItem({
     required ArweaveAddress owner,
   }) async {
-    final manifestDataItem = DataItem()
+    final dataItem = DataItem()
       ..setOwner(owner)
       ..addApplicationTags(
         version: (await PackageInfo.fromPlatform()).version,
       )
       ..addTag(EntityTag.contentType, ContentType.json);
 
-    return manifestDataItem;
+    return dataItem;
   }
 
   @override
