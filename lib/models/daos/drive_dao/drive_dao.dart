@@ -526,12 +526,4 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     return null;
   }
-
-  // // getMetadataOfTxId takes from the DB the metadata of a transaction
-  // // given its id.
-  // Future<NetworkTransaction> getMetadataOfTxId(String txId) async {
-  //   return (select(networkTransactions)..where((t) => t.id.equals(txId)))
-  //       .getSingle();
-  // }
-
 }
