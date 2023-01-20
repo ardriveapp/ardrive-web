@@ -20,20 +20,17 @@ part 'create_snapshot_state.dart';
 class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   final ArweaveService _arweave;
   final DriveDao _driveDao;
-  final String _tempFilePath;
   final ProfileCubit _profileCubit;
 
-  late DriveID driveId;
-  late Range range;
-  late int currentHeight;
+  late DriveID _driveId;
+  late Range _range;
+  late int _currentHeight;
 
   CreateSnapshotCubit({
-    required String tempFile,
     required ArweaveService arweave,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
-  })  : _tempFilePath = tempFile,
-        _arweave = arweave,
+  })  : _arweave = arweave,
         _profileCubit = profileCubit,
         _driveDao = driveDao,
         super(CreateSnapshotInitial());
@@ -43,9 +40,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     Range range,
     int currentHeight,
   ) async {
-    this.driveId = driveId;
-    this.range = range;
-    this.currentHeight = currentHeight;
+    this._driveId = driveId;
+    this._range = range;
+    this._currentHeight = currentHeight;
 
     if (_isValidHeightRange()) {
       emit(ComputeSnapshotDataFailure(
@@ -135,7 +132,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   bool _isValidHeightRange() {
-    return range.end <= currentHeight;
+    return _range.end <= _currentHeight;
   }
 
   Future<String> _jsonMetadataOfTxId(String txId) async {
@@ -147,7 +144,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     }
 
     // gather from arweave if not cached
-    final driveKey = await _driveDao.getDriveKeyFromMemory(driveId);
+    final driveKey = await _driveDao.getDriveKeyFromMemory(_driveId);
     final String entityAsString =
         await _arweave.entityMetadataFromFromTxId(txId, driveKey);
     return entityAsString;

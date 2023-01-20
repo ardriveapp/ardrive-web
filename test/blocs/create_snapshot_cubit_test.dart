@@ -84,14 +84,9 @@ void main() {
       );
     });
 
-    tearDown(() {
-      // TODO: delete the temporal file
-    });
-
     blocTest(
       'has the initial state when just constructed',
       build: () => CreateSnapshotCubit(
-        tempFile: './temp.bin',
         arweave: arweave,
         profileCubit: profileCubit,
         driveDao: driveDao,
@@ -102,7 +97,6 @@ void main() {
     blocTest(
       'emits the correct states when selectDriveAndHeightRange is called',
       build: () => CreateSnapshotCubit(
-        tempFile: './temp.bin',
         arweave: arweave,
         profileCubit: profileCubit,
         driveDao: driveDao,
@@ -125,7 +119,6 @@ void main() {
     blocTest(
       'emits the correct states when upload is called',
       build: () => CreateSnapshotCubit(
-        tempFile: './temp.bin',
         arweave: arweave,
         profileCubit: profileCubit,
         driveDao: driveDao,
