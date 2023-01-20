@@ -40,9 +40,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     Range range,
     int currentHeight,
   ) async {
-    this._driveId = driveId;
-    this._range = range;
-    this._currentHeight = currentHeight;
+    _driveId = driveId;
+    _range = range;
+    _currentHeight = currentHeight;
 
     if (_isValidHeightRange()) {
       emit(ComputeSnapshotDataFailure(
