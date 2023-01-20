@@ -440,12 +440,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       blockEnd: entity.blockEnd!,
       dataStart: entity.dataStart!,
       dataEnd: entity.dataEnd!,
-      // dateCreated: entity.createdAt,
+      dateCreated: Value<DateTime>(entity.createdAt),
     );
 
     return into(snapshotEntries).insert(
       companion,
-      // onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
     );
   }
 
