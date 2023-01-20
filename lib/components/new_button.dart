@@ -7,6 +7,8 @@ import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 
+import 'create_snapshot_dialog.dart';
+
 Widget buildNewButton(
   BuildContext context, {
   required Widget button,
@@ -247,6 +249,9 @@ List<PopupMenuEntry<Function>> _buildItems(
           hasMinBalance,
         )
       },
+      if (driveDetailState is DriveDetailLoadSuccess) ...{
+        _buildCreateSnapshotItem(context, driveDetailState, hasMinBalance)
+      },
     ];
   } else {
     return [
@@ -364,6 +369,25 @@ PopupMenuEntry<Function> _buildCreateManifestItem(
     value: (context) => promptToCreateManifest(
       context,
       drive: state.currentDrive,
+    ),
+  );
+}
+
+PopupMenuEntry<Function> _buildCreateSnapshotItem(
+  BuildContext context,
+  DriveDetailLoadSuccess state,
+  bool hasMinBalance,
+) {
+  return _buildMenuItemTile(
+    context: context,
+    isEnabled: !state.driveIsEmpty && hasMinBalance,
+    itemTitle: appLocalizationsOf(context).createSnapshot,
+    // message: !state.driveIsEmpty && !hasMinBalance
+    //     ? appLocalizationsOf(context).insufficientFundsForCreateASnapshot
+    //     : null,
+    value: (context) => promptToCreateSnapshot(
+      context,
+      state.currentDrive,
     ),
   );
 }

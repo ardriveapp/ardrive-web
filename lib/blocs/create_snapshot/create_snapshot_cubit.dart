@@ -122,6 +122,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     await _pst.addCommunityTipToTx(preparedTx);
 
+    // Sign again because the tip does change the signature
+    await preparedTx.sign(wallet);
+
     snapshotEntity.txId = preparedTx.id;
 
     final uploadSnapshotItemParams = CreateSnapshotParameters(

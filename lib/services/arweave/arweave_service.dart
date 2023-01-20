@@ -123,6 +123,9 @@ class ArweaveService {
   ) async* {
     String cursor = '';
 
+    // // TODO: remove this return statement!
+    // return;
+
     while (true) {
       // Get a page of 100 transactions
       final snapshotEntityHistoryQuery = await _graphQLRetry.execute(

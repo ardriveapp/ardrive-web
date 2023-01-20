@@ -1507,7 +1507,25 @@
     "description": "Toast message when you copy wallet address"
   },
   "copyWalletAddress": "Copy Wallet Address",
-  "@addressCopied": {
+  "@copyWalletAddress": {
     "description": "Tooltip on copy wallet address button"
+  },
+  "createSnapshot": "Create Snapshot",
+  "@createSnapshot": {
+    "description": "The action of snapshotting a drive"
+  },
+  "createNewSnapshot": "Create New Snapshot",
+  "@createNewSnapshot": {
+    "description": "The action of snapshotting a drive"
+  },
+  "createSnapshotExplanation": "Snapshots reduce the time it takes for the drive to load. Do you want to create a snapshot of your drive '{driveName}'?",
+  "@createSnapshotExplanation": {
+    "description": "Explains how Snapshots improves the sync-time of the drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Curious Cat"
+      }
+    }
   }
 }

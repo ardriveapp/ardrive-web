@@ -102,7 +102,7 @@ class SnapshotEntity extends Entity {
       throw UnsupportedError('Snapshot entities are not encrypted.');
     }
 
-    final tx = Transaction.withJsonData(data: data!);
+    final tx = Transaction.withBlobData(data: data!);
     final packageInfo = await PackageInfo.fromPlatform();
 
     addEntityTagsToTransaction(tx);

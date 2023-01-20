@@ -496,6 +496,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
               : null);
     }
 
+    print('No drive found with txId: $metadataTxId');
+
     final folder = await (select(folderRevisions)
           ..where((f) => f.metadataTxId.equals(metadataTxId)))
         .getSingleOrNull();
@@ -507,6 +509,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         name: folder.name,
       );
     }
+
+    print('No folder found with txId: $metadataTxId');
 
     final file = await (select(fileRevisions)
           ..where((f) => f.metadataTxId.equals(metadataTxId)))
@@ -523,6 +527,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         dataContentType: file.dataContentType,
       );
     }
+
+    print('No file found with txId: $metadataTxId');
 
     return null;
   }
