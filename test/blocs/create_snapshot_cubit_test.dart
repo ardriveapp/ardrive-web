@@ -35,6 +35,7 @@ void main() {
     final arweave = MockArweaveService();
     final profileCubit = MockProfileCubit();
     final driveDao = MockDriveDao();
+    final pst = MockPstService();
     final testWallet = getTestWallet();
 
     setUpAll(() async {
@@ -70,6 +71,10 @@ void main() {
         (_) async => Future<void>.value(),
       );
 
+      when(() => arweave.getArUsdConversionRate()).thenAnswer(
+        (_) => Future<double>.value(1),
+      );
+
       // mocks the state of the profile cubit
       when(() => profileCubit.state).thenReturn(
         ProfileLoggedIn(
@@ -91,6 +96,10 @@ void main() {
         (_) => Future.value(),
       );
 
+      when(() => pst.addCommunityTipToTx(any())).thenAnswer(
+        (_) => Future<double>.value(0.1),
+      );
+
       // mocks PackageInfo
       PackageInfo.setMockInitialValues(
         appName: 'appName',
@@ -107,6 +116,7 @@ void main() {
         arweave: arweave,
         profileCubit: profileCubit,
         driveDao: driveDao,
+        pst: pst,
       ),
       expect: () => [],
     );
@@ -117,6 +127,7 @@ void main() {
         arweave: arweave,
         profileCubit: profileCubit,
         driveDao: driveDao,
+        pst: pst,
       ),
       act: (cubit) => cubit.selectDriveAndHeightRange(
         'driveId',
@@ -139,6 +150,7 @@ void main() {
         arweave: arweave,
         profileCubit: profileCubit,
         driveDao: driveDao,
+        pst: pst,
       ),
       act: (cubit) => cubit
           .selectDriveAndHeightRange(
