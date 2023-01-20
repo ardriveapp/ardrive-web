@@ -151,10 +151,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   void confirmSnapshotCreation() async {
-    // if (await _profileCubit.logoutIfWalletMismatch()) {
-    //   emit(CreateManifestWalletMismatch());
-    //   return;
-    // }
+    if (await _profileCubit.logoutIfWalletMismatch()) {
+      emit(SnapshotUploadFailure(errorMessage: 'Wallet mismatch.'));
+      return;
+    }
 
     try {
       final params = (state as ConfirmingSnapshotCreation).createSnapshotParams;
