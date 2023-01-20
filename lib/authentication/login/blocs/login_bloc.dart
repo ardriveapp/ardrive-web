@@ -38,7 +38,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         if (await _arDriveAuth.isExistingUser(wallet)) {
           emit(PromptPassword(walletFile: wallet));
         } else {
-          emit(CreatingNewPassword(walletFile: wallet));
+          emit(LoginOnBoarding(wallet));
         }
       } else if (event is LoginWithPassword) {
         final previousState = state;
@@ -89,9 +89,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       } else if (event is CreatePassword) {
         final previousState = state;
 
-        try {
-          emit(LoginLoading());
+        emit(LoginLoading());
 
+        try {
           if (_profileType == ProfileType.arConnect &&
               _lastKnownWalletAddress !=
                   await _arConnectService.getWalletAddress()) {
@@ -140,6 +140,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         }
 
         emit(LoginInitial(_arConnectService.isExtensionPresent()));
+      } else if (event is FinishOnboarding) {
+        emit(CreatingNewPassword(walletFile: event.wallet));
       }
     });
   }

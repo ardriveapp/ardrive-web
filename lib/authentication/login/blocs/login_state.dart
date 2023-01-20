@@ -15,6 +15,12 @@ class LoginInitial extends LoginState {
 
 class LoginLoading extends LoginState {}
 
+class LoginOnBoarding extends LoginState {
+  const LoginOnBoarding(this.walletFile);
+
+  final Wallet walletFile;
+}
+
 class PromptPassword extends LoginState {
   const PromptPassword({this.walletFile});
 

@@ -90,6 +90,7 @@ dependencies:
   local_auth: ^2.1.2
   flutter_secure_storage: ^6.0.0
   async: ^2.9.0
+  animations: ^2.0.7
 
 dev_dependencies:
   flutter_test:
@@ -114,3 +115,4 @@ flutter:
     - assets/images/profile/
     - assets/images/inferno/
     - assets/images/login/
+    - assets/images/login/onboarding/

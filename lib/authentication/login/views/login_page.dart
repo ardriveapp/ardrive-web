@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:animations/animations.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -7,6 +8,7 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +17,7 @@ import 'package:responsive_builder/responsive_builder.dart';
 
 import '../../../utils/split_localizations.dart';
 
+// TODO: Remove hardcoded colors and replace with design tokens
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -30,7 +33,16 @@ class _LoginPageState extends State<LoginPage> {
         arConnectService: ArConnectService(),
         arDriveAuth: context.read<ArDriveAuth>(),
       )..add(const CheckIfUserIsLoggedIn()),
-      child: const LoginPageScaffold(),
+      child: BlocBuilder<LoginBloc, LoginState>(
+        builder: (context, state) {
+          return _FadeThroughTransitionSwitcher(
+            fillColor: Colors.transparent,
+            child: state is LoginOnBoarding
+                ? OnBoardingView(wallet: state.walletFile)
+                : const LoginPageScaffold(),
+          );
+        },
+      ),
     );
   }
 }
@@ -130,7 +142,6 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
                     'Your private, secure, and permanent hard drive.',
                     textAlign: TextAlign.start,
                     style: ArDriveTypography.headline.headline4Regular(
-                      // FIXME: This is a hack to get the text to be white
                       color: const Color(0xffFAFAFA),
                     ),
                   ),
@@ -146,7 +157,9 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
   Widget _buildContent(BuildContext context) {
     return BlocConsumer<LoginBloc, LoginState>(
       buildWhen: (previous, current) =>
-          current is! LoginFailure && current is! LoginSuccess,
+          current is! LoginFailure &&
+          current is! LoginSuccess &&
+          current is! LoginOnBoarding,
       listener: (context, state) {
         if (state is LoginFailure) {
           if (state.error is WalletMismatchException) {
@@ -226,8 +239,6 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
   }
 }
 
-// Views
-
 class PromptWalletView extends StatefulWidget {
   const PromptWalletView({
     super.key,
@@ -241,6 +252,9 @@ class PromptWalletView extends StatefulWidget {
 }
 
 class _PromptWalletViewState extends State<PromptWalletView> {
+  bool _isTermsChecked = true;
+  IOFile? _file;
+
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
@@ -263,9 +277,47 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   dragAndDropDescription: 'Drag & Drop your Keyfile',
                   dragAndDropButtonTitle: 'Browse Json',
                   onDragDone: (file) {
+                    _file = file;
+                    if (!_isTermsChecked) {
+                      showAnimatedDialog(
+                        context,
+                        content: ArDriveIconModal(
+                          title: 'Terms and Conditions',
+                          content:
+                              'Please accept the terms and conditions to continue.',
+                          icon: ArDriveIcons.warning(
+                            size: 88,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeErrorDefault,
+                          ),
+                        ),
+                      );
+                      return;
+                    }
                     context.read<LoginBloc>().add(AddWalletFile(file));
                   },
                   buttonCallback: (file) {
+                    _file = file;
+                    if (!_isTermsChecked) {
+                      showAnimatedDialog(
+                        context,
+                        content: ArDriveIconModal(
+                          title: 'Terms and Conditions',
+                          content:
+                              'Please accept the terms and conditions to continue.',
+                          icon: ArDriveIcons.warning(
+                            size: 88,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colors
+                                .themeErrorDefault,
+                          ),
+                        ),
+                      );
+                      return;
+                    }
                     context.read<LoginBloc>().add(AddWalletFile(file));
                   },
                   errorDescription: 'Invalid Keyfile',
@@ -326,7 +378,17 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                 ),
                 Row(
                   children: [
-                    const ArDriveCheckBox(title: '', checked: true),
+                    ArDriveCheckBox(
+                        title: '',
+                        checked: _isTermsChecked,
+                        onChange: ((value) {
+                          if (_file != null && value) {
+                            context
+                                .read<LoginBloc>()
+                                .add(AddWalletFile(_file!));
+                          }
+                          setState(() => _isTermsChecked = value);
+                        })),
                     Flexible(
                       child: GestureDetector(
                         onTap: () => openUrl(
@@ -451,6 +513,7 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                       showObfuscationToggle: true,
                       controller: _passwordController,
                       obscureText: true,
+                      autofocus: true,
                       autofillHints: const [AutofillHints.password],
                       hintText: 'Enter password',
                       validator: (value) {
@@ -466,7 +529,9 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                         });
                       },
                       onFieldSubmitted: (_) async {
-                        // on submit
+                        if (_isPasswordValid) {
+                          _onSubmit();
+                        }
                       }),
                   const SizedBox(height: 16),
                   SizedBox(
@@ -474,20 +539,7 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                     child: ArDriveButton(
                       isDisabled: !_isPasswordValid,
                       onPressed: () {
-                        if (widget.wallet == null) {
-                          context.read<LoginBloc>().add(
-                                UnlockUserWithPassword(
-                                  password: _passwordController.text,
-                                ),
-                              );
-                        } else {
-                          context.read<LoginBloc>().add(
-                                LoginWithPassword(
-                                  password: _passwordController.text,
-                                  wallet: widget.wallet!,
-                                ),
-                              );
-                        }
+                        _onSubmit();
                       },
                       text: 'Proceed',
                     ),
@@ -532,6 +584,23 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
       ),
     );
   }
+
+  void _onSubmit() {
+    if (widget.wallet == null) {
+      context.read<LoginBloc>().add(
+            UnlockUserWithPassword(
+              password: _passwordController.text,
+            ),
+          );
+    } else {
+      context.read<LoginBloc>().add(
+            LoginWithPassword(
+              password: _passwordController.text,
+              wallet: widget.wallet!,
+            ),
+          );
+    }
+  }
 }
 
 class CreatePasswordView extends StatefulWidget {
@@ -550,6 +619,11 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
 
   bool _passwordIsValid = false;
   bool _confirmPasswordIsValid = false;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -583,6 +657,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
       child: Column(
         children: [
           ArDriveTextField(
+            autofocus: true,
             controller: _passwordController,
             showObfuscationToggle: true,
             obscureText: true,
@@ -591,13 +666,19 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
             onChanged: (s) {
               _formKey.currentState?.validate();
             },
-            onFieldSubmitted: (_) async {
-              // TODO:on submit
-            },
+            textInputAction: TextInputAction.next,
             validator: (value) {
               if (value == null || value.isEmpty) {
+                setState(() {
+                  _passwordIsValid = false;
+                });
                 return appLocalizationsOf(context).validationRequired;
               }
+
+              setState(() {
+                _passwordIsValid = true;
+              });
+
               return null;
             },
           ),
@@ -608,16 +689,30 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
             obscureText: true,
             autofillHints: const [AutofillHints.password],
             hintText: 'Confirm password',
+            textInputAction: TextInputAction.done,
             validator: (value) {
               if (value == null || value.isEmpty) {
+                setState(() {
+                  _confirmPasswordIsValid = false;
+                });
                 return appLocalizationsOf(context).validationRequired;
               } else if (value != _passwordController.text) {
+                setState(() {
+                  _confirmPasswordIsValid = false;
+                });
                 return appLocalizationsOf(context).passwordMismatch;
               }
+              setState(() {
+                _confirmPasswordIsValid = true;
+              });
 
               return null;
             },
-            onFieldSubmitted: (_) => _onSubmit(),
+            onFieldSubmitted: (_) {
+              if (_passwordIsValid && _confirmPasswordIsValid) {
+                _onSubmit();
+              }
+            },
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -715,13 +810,302 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
       return;
     }
 
-    print('passwords match');
+    context.read<LoginBloc>().add(
+          CreatePassword(
+            password: _passwordController.text,
+            wallet: widget.wallet,
+          ),
+        );
+  }
+}
 
-    // context.read<LoginBloc>().add(
-    //       CreatePassword(
-    //         password: _passwordController.text,
-    //         wallet: widget.wallet,
-    //       ),
-    //     );
+class OnBoardingView extends StatefulWidget {
+  const OnBoardingView({
+    super.key,
+    required this.wallet,
+  });
+  final Wallet wallet;
+
+  @override
+  State<OnBoardingView> createState() => OnBoardingViewState();
+}
+
+class OnBoardingViewState extends State<OnBoardingView> {
+  int _currentPage = 0;
+
+  List<_OnBoarding> get _list => [
+        _OnBoarding(
+          primaryButtonText: 'Next',
+          primaryButtonAction: () {
+            setState(() {
+              _currentPage++;
+            });
+          },
+          secundaryButtonHasIcon: false,
+          secundaryButtonText: 'Skip',
+          secundaryButtonAction: () {
+            context.read<LoginBloc>().add(
+                  FinishOnboarding(
+                    wallet: widget.wallet,
+                  ),
+                );
+          },
+          title: 'Welcome to the Permaweb',
+          description:
+              'ArDrive isn\'t just another cloud sync app. It\'s the beginning of a permanent hard drive. Any files you upload here will outlive you! That means we do a few things differently.',
+          illustration:
+              AssetImage(Resources.images.login.onboarding.onboarding6),
+        ),
+        _OnBoarding(
+          primaryButtonText: 'Next',
+          primaryButtonAction: () {
+            setState(() {
+              _currentPage++;
+            });
+          },
+          secundaryButtonText: 'Back',
+          secundaryButtonAction: () {
+            setState(() {
+              _currentPage--;
+            });
+          },
+          title: 'Pay Per File',
+          description:
+              'No subscriptions are needed! Instead of another monthly charge for empty space you don\'t use, pay a few cents once and store your files forever on ArDrive.',
+          illustration:
+              AssetImage(Resources.images.login.onboarding.onboarding2),
+        ),
+        _OnBoarding(
+          primaryButtonText: 'Next',
+          primaryButtonAction: () {
+            setState(() {
+              _currentPage++;
+            });
+          },
+          secundaryButtonText: 'Back',
+          secundaryButtonAction: () {
+            setState(() {
+              _currentPage--;
+            });
+          },
+          title: 'Seconds from Forever',
+          description:
+              'Decentralized, permanent data storage doesn\'t happen in an instant. When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.',
+          illustration:
+              AssetImage(Resources.images.login.onboarding.onboarding5),
+        ),
+        _OnBoarding(
+          primaryButtonText: 'Next',
+          primaryButtonAction: () {
+            setState(() {
+              _currentPage++;
+            });
+          },
+          secundaryButtonText: 'Back',
+          secundaryButtonAction: () {
+            setState(() {
+              _currentPage--;
+            });
+          },
+          title: 'Total Privacy Control',
+          description:
+              'Your choice: you can permanently make files public or private, using the best encryption available today. No one will see what you don\'t want them to.',
+          illustration:
+              AssetImage(Resources.images.login.onboarding.onboarding4),
+        ),
+        _OnBoarding(
+          primaryButtonText: 'Dive in',
+          primaryButtonAction: () {
+            context.read<LoginBloc>().add(
+                  FinishOnboarding(
+                    wallet: widget.wallet,
+                  ),
+                );
+          },
+          secundaryButtonText: 'Back',
+          secundaryButtonAction: () {
+            setState(() {
+              _currentPage--;
+            });
+          },
+          title: 'Never Deleted',
+          description:
+              'Remember: There is no delete button (for you or us)! Once uploaded, your data can’t be removed, so think twice before uploading all your teenage love poetry...',
+          illustration:
+              AssetImage(Resources.images.login.onboarding.onboarding3),
+        ),
+      ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ScreenTypeLayout(
+      desktop: Material(
+        color: const Color(0xff090A0A),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Container(
+                color: const Color(0xff1F1F1F),
+                child: Align(
+                  child: ConstrainedBox(
+                    constraints:
+                        const BoxConstraints(maxWidth: 512, maxHeight: 489),
+                    child: _FadeThroughTransitionSwitcher(
+                        fillColor: const Color(0xff1F1F1F),
+                        child: _buildOnBoardingContent()),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: FractionallySizedBox(
+                widthFactor: 0.5,
+                child: Center(child: _buildOnBoardingIllustration()),
+              ),
+            ),
+          ],
+        ),
+      ),
+      mobile: Scaffold(
+        resizeToAvoidBottomInset: true,
+        body: Container(
+          color: const Color(0xff1F1F1F),
+          child: Align(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 512, maxHeight: 489),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: _buildOnBoardingContent(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOnBoardingIllustration() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // image
+        ArDriveImage(
+          image: _list[_currentPage].illustration,
+          height: 272,
+          width: 372,
+        ),
+        const SizedBox(
+          height: 92,
+        ),
+        // pagination dots
+        ArDrivePaginationDots(
+          currentPage: _currentPage,
+          numberOfPages: _list.length,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOnBoardingContent() {
+    return _OnBoardingContent(
+      key: ValueKey(_currentPage),
+      onBoarding: _list[_currentPage],
+    );
+  }
+}
+
+class _OnBoardingContent extends StatelessWidget {
+  const _OnBoardingContent({
+    super.key,
+    required this.onBoarding,
+  });
+
+  final _OnBoarding onBoarding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        Text(
+          onBoarding.title,
+          style: ArDriveTypography.headline.headline3Bold(),
+        ),
+        Text(
+          onBoarding.description,
+          style: ArDriveTypography.body.buttonXLargeBold(),
+        ),
+        Row(
+          key: const ValueKey('buttons'),
+          children: [
+            ArDriveButton(
+              icon: onBoarding.secundaryButtonHasIcon
+                  ? ArDriveIcons.arrowLeftCircle()
+                  : null,
+              style: ArDriveButtonStyle.secondary,
+              text: onBoarding.secundaryButtonText,
+              onPressed: () => onBoarding.secundaryButtonAction(),
+            ),
+            const SizedBox(width: 32),
+            ArDriveButton(
+              iconAlignment: IconButtonAlignment.right,
+              icon: ArDriveIcons.arrowRightCircle(),
+              text: onBoarding.primaryButtonText,
+              onPressed: () => onBoarding.primaryButtonAction(),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _OnBoarding {
+  final String title;
+  final String description;
+  final String primaryButtonText;
+  final String secundaryButtonText;
+  final Function primaryButtonAction;
+  final Function secundaryButtonAction;
+  final bool secundaryButtonHasIcon;
+  final ImageProvider illustration;
+
+  _OnBoarding({
+    required this.title,
+    required this.description,
+    required this.primaryButtonText,
+    required this.secundaryButtonText,
+    required this.illustration,
+    required this.primaryButtonAction,
+    required this.secundaryButtonAction,
+    this.secundaryButtonHasIcon = true,
+  });
+}
+
+class _FadeThroughTransitionSwitcher extends StatelessWidget {
+  const _FadeThroughTransitionSwitcher({
+    required this.fillColor,
+    required this.child,
+    Key? key,
+  }) : super(key: key);
+
+  final Widget child;
+  final Color fillColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return PageTransitionSwitcher(
+      transitionBuilder: (child, animation, secondaryAnimation) {
+        return FadeThroughTransition(
+          fillColor: const Color(0xff1F1F1F),
+          animation: animation,
+          secondaryAnimation: secondaryAnimation,
+          child: child,
+        );
+      },
+      child: child,
+    );
   }
 }

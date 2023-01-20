@@ -64,3 +64,9 @@ class CreatePassword extends LoginEvent {
 class ForgetWallet extends LoginEvent {
   const ForgetWallet();
 }
+
+class FinishOnboarding extends LoginEvent {
+  const FinishOnboarding({required this.wallet});
+
+  final Wallet wallet;
+}

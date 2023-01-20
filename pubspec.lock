@@ -29,6 +29,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.11.1"
+  animations:
+    dependency: "direct main"
+    description:
+      name: animations
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.7"
   app_settings:
     dependency: "direct main"
     description:
@@ -64,11 +71,9 @@ packages:
   ardrive_ui:
     dependency: "direct main"
     description:
-      path: "."
-      ref: PE-2583-new-login-flow
-      resolved-ref: a3ba757548303e56197231b3f6714a1f0aa1df68
-      url: "https://github.com/ar-io/ardrive_ui.git"
-    source: git
+      path: "../packages/ardrive_ui"
+      relative: true
+    source: path
     version: "1.0.0"
   args:
     dependency: transitive
