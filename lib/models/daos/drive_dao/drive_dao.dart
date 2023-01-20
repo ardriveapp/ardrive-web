@@ -432,20 +432,22 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   }
 
   Future<void> writeSnapshotEntity(SnapshotEntity entity) {
-    final companion = SnapshotEntriesCompanion.insert(
-      id: entity.id!,
-      txId: entity.txId,
-      driveId: entity.driveId!,
-      blockStart: entity.blockStart!,
-      blockEnd: entity.blockEnd!,
-      dataStart: entity.dataStart!,
-      dataEnd: entity.dataEnd!,
-      dateCreated: Value<DateTime>(entity.createdAt),
-    );
+    return db.transaction(() async {
+      final companion = SnapshotEntriesCompanion.insert(
+        id: entity.id!,
+        txId: entity.txId,
+        driveId: entity.driveId!,
+        blockStart: entity.blockStart!,
+        blockEnd: entity.blockEnd!,
+        dataStart: entity.dataStart!,
+        dataEnd: entity.dataEnd!,
+        dateCreated: Value<DateTime>(entity.createdAt),
+      );
 
-    return into(snapshotEntries).insert(
-      companion,
-    );
+      await into(snapshotEntries).insert(
+        companion,
+      );
+    });
   }
 
   Future<void> writeToTransaction(Insertable<NetworkTransaction> transaction) =>

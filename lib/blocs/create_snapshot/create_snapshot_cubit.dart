@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show BytesBuilder;
 
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -44,15 +45,18 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _range = range;
     _currentHeight = currentHeight;
 
-    if (_isValidHeightRange()) {
+    if (!_isValidHeightRange()) {
       emit(ComputeSnapshotDataFailure(
-        errorMessage: 'Invalid height range chosen',
+        errorMessage:
+            'Invalid height range chosen. ${_range.end} >= $_currentHeight',
       ));
+      return;
     }
 
     // FIXME: This uses a lot of memory
     // it will be a Uint8List buffer for now
-    final dataBuffer = Uint8List(0);
+    // ignore: deprecated_export_use
+    final dataBuffer = BytesBuilder(copy: false);
 
     emit(ComputingSnapshotData(
       driveId: driveId,
@@ -84,11 +88,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     // Stream snapshot data to the temporal file
     await for (final item in snapshotItemToBeCreated.getSnapshotData()) {
-      dataBuffer.addAll(item);
+      dataBuffer.add(item);
     }
 
     final dataStart = snapshotItemToBeCreated.dataStart;
     final dataEnd = snapshotItemToBeCreated.dataEnd;
+
+    final data = dataBuffer.takeBytes();
 
     // declares the new snapshot entity
     final snapshotEntity = SnapshotEntity(
@@ -98,7 +104,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       blockEnd: range.end,
       dataStart: dataStart,
       dataEnd: dataEnd,
-      data: dataBuffer,
+      data: data,
     );
 
     final profile = _profileCubit.state as ProfileLoggedIn;
@@ -113,9 +119,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     final uploadSnapshotItemParams = CreateSnapshotParameters(
       signedTx: preparedTx,
-      addSnapshotItemToDatabase: () => _driveDao.transaction(() async {
-        await _driveDao.writeSnapshotEntity(snapshotEntity);
-      }),
+      addSnapshotItemToDatabase: () =>
+          _driveDao.writeSnapshotEntity(snapshotEntity),
     );
 
     // TODO: estimate upload cost
@@ -124,7 +129,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     // TODO: emit ConfirmUpload or ComputeSnapshotDataFailure
     emit(ConfirmingSnapshotCreation(
-      snapshotSize: dataBuffer.length,
+      snapshotSize: data.length,
       arUploadCost: arUploadCost,
       usdUploadCost: usdUploadCost,
       createSnapshotParams: uploadSnapshotItemParams,
@@ -150,7 +155,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     return entityAsString;
   }
 
-  void confirmSnapshotCreation() async {
+  Future<void> confirmSnapshotCreation() async {
     if (await _profileCubit.logoutIfWalletMismatch()) {
       emit(SnapshotUploadFailure(errorMessage: 'Wallet mismatch.'));
       return;
@@ -161,13 +166,14 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
       emit(UploadingSnapshot());
 
-      await _arweave.client.transactions.post(params.signedTx);
+      await _arweave.postTx(params.signedTx);
       await params.addSnapshotItemToDatabase();
 
       emit(SnapshotUploadSuccess());
     } catch (err) {
       // ignore: avoid_print
-      print('Error while posting the snapshot transaction: $err');
+      print(
+          'Error while posting the snapshot transaction: ${(err as TypeError).stackTrace}');
       emit(SnapshotUploadFailure(errorMessage: '$err'));
     }
   }

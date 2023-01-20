@@ -37,9 +37,13 @@ void main() {
     final driveDao = MockDriveDao();
     final testWallet = getTestWallet();
 
-    setUpAll(() {
+    setUpAll(() async {
       registerFallbackValue(SnapshotEntity());
       registerFallbackValue(testWallet);
+      registerFallbackValue(
+        await getTestTransaction('test/fixtures/signed_v2_tx.json'),
+      );
+      registerFallbackValue(Future.value());
     });
 
     setUp(() async {
@@ -62,6 +66,10 @@ void main() {
         ),
       ).thenAnswer(fakePrepareTransaction);
 
+      when(() => arweave.postTx(any())).thenAnswer(
+        (_) async => Future<void>.value(),
+      );
+
       // mocks the state of the profile cubit
       when(() => profileCubit.state).thenReturn(
         ProfileLoggedIn(
@@ -72,6 +80,15 @@ void main() {
           walletBalance: BigInt.from(100),
           cipherKey: SecretKey([1, 2, 3, 4, 5]),
         ),
+      );
+
+      // mocks logoutIfWalletMissmatch
+      when(() => profileCubit.logoutIfWalletMismatch()).thenAnswer(
+        (_) => Future.value(false),
+      );
+
+      when(() => driveDao.writeSnapshotEntity(any())).thenAnswer(
+        (_) => Future.value(),
       );
 
       // mocks PackageInfo
@@ -117,7 +134,7 @@ void main() {
     );
 
     blocTest(
-      'emits the correct states when upload is called',
+      'emits the correct states when confirmSnapshotCreation is called',
       build: () => CreateSnapshotCubit(
         arweave: arweave,
         profileCubit: profileCubit,
@@ -138,6 +155,7 @@ void main() {
         // can't check for the actual value because it contains a signed transaction
         isA<ConfirmingSnapshotCreation>(),
         UploadingSnapshot(),
+        SnapshotUploadSuccess(),
       ],
     );
   });
