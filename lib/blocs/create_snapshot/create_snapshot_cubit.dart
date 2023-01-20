@@ -156,6 +156,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
   Future<void> confirmSnapshotCreation() async {
     if (await _profileCubit.logoutIfWalletMismatch()) {
+      // ignore: avoid_print
+      print('Failed to confirm the upload: Wallet mismathc');
       emit(SnapshotUploadFailure(errorMessage: 'Wallet mismatch.'));
       return;
     }
