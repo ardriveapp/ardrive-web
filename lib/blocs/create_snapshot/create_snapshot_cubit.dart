@@ -7,10 +7,12 @@ import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -22,6 +24,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
+  final PstService _pst;
 
   late DriveID _driveId;
   late Range _range;
@@ -31,9 +34,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     required ArweaveService arweave,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
+    required PstService pst,
   })  : _arweave = arweave,
         _profileCubit = profileCubit,
         _driveDao = driveDao,
+        _pst = pst,
         super(CreateSnapshotInitial());
 
   Future<void> selectDriveAndHeightRange(
@@ -115,6 +120,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       // key is null because we don't re-encrypt the snapshot data
     );
 
+    await _pst.addCommunityTipToTx(preparedTx);
+
     snapshotEntity.txId = preparedTx.id;
 
     final uploadSnapshotItemParams = CreateSnapshotParameters(
@@ -123,9 +130,22 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           _driveDao.writeSnapshotEntity(snapshotEntity),
     );
 
-    // TODO: estimate upload cost
-    const arUploadCost = '0';
-    const usdUploadCost = 0.0;
+    final totalCost = preparedTx.reward + preparedTx.quantity;
+
+    if (profile.walletBalance < totalCost) {
+      emit(
+        ComputeSnapshotDataFailure(
+          errorMessage: '''Insufficient AR balance to create snapshot.
+Balance: ${profile.walletBalance} AR, Cost: $totalCost AR''',
+        ),
+      );
+      return;
+    }
+
+    final arUploadCost = winstonToAr(totalCost);
+    final usdUploadCost = await _arweave
+        .getArUsdConversionRate()
+        .then((conversionRate) => double.parse(arUploadCost) * conversionRate);
 
     emit(ConfirmingSnapshotCreation(
       snapshotSize: data.length,
