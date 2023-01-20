@@ -126,7 +126,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     const usdUploadCost = 0.0;
 
     // TODO: emit ConfirmUpload or ComputeSnapshotDataFailure
-    emit(ConfirmSnapshotCreation(
+    emit(ConfirmingSnapshotCreation(
       snapshotSize: dataBuffer.length,
       arUploadCost: arUploadCost,
       usdUploadCost: usdUploadCost,
@@ -160,7 +160,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     // }
 
     try {
-      final params = (state as ConfirmSnapshotCreation).createSnapshotParams;
+      final params = (state as ConfirmingSnapshotCreation).createSnapshotParams;
 
       emit(UploadingSnapshot());
 

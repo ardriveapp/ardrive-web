@@ -34,13 +34,13 @@ class ComputeSnapshotDataFailure extends CreateSnapshotState {
 }
 
 /// Snapshot data has been computed and it's ready to be confirmed
-class ConfirmSnapshotCreation extends CreateSnapshotState {
+class ConfirmingSnapshotCreation extends CreateSnapshotState {
   final int snapshotSize;
   final String arUploadCost;
   final double usdUploadCost;
   final CreateSnapshotParameters createSnapshotParams;
 
-  ConfirmSnapshotCreation({
+  ConfirmingSnapshotCreation({
     required this.snapshotSize,
     required this.arUploadCost,
     required this.usdUploadCost,

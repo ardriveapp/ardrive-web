@@ -118,7 +118,7 @@ void main() {
           range: Range(start: 0, end: 1),
         ),
         // can't check for the actual value because it contains a signed transaction
-        isA<ConfirmSnapshotCreation>(),
+        isA<ConfirmingSnapshotCreation>(),
       ],
     );
 
@@ -143,7 +143,7 @@ void main() {
           range: Range(start: 0, end: 1),
         ),
         // can't check for the actual value because it contains a signed transaction
-        isA<ConfirmSnapshotCreation>(),
+        isA<ConfirmingSnapshotCreation>(),
         UploadingSnapshot(),
       ],
     );
