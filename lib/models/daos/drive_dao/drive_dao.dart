@@ -22,6 +22,9 @@ part 'drive_order.dart';
 part 'folder_node.dart';
 part 'folder_with_contents.dart';
 
+typedef DriveHistoryTransaction
+    = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
+
 @DriftAccessor(include: {'../../queries/drive_queries.drift'})
 class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   final _uuid = const Uuid();
@@ -476,4 +479,58 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<void> writeTransaction(Insertable<NetworkTransaction> transaction) =>
       into(networkTransactions).insertOnConflictUpdate(transaction);
+
+  Future<Entity?> getEntityByMetadataTxId(String metadataTxId) async {
+    final drive = await (select(driveRevisions)
+          ..where((d) => d.metadataTxId.equals(metadataTxId)))
+        .getSingleOrNull();
+    if (drive != null) {
+      return DriveEntity(
+          id: drive.driveId,
+          name: drive.name,
+          rootFolderId: drive.rootFolderId,
+          privacy: drive.privacy,
+          authMode: drive.privacy == DrivePrivacy.private
+              ? DriveAuthMode.password
+              : null);
+    }
+
+    final folder = await (select(folderRevisions)
+          ..where((f) => f.metadataTxId.equals(metadataTxId)))
+        .getSingleOrNull();
+    if (folder != null) {
+      return FolderEntity(
+        id: folder.folderId,
+        driveId: folder.driveId,
+        parentFolderId: folder.parentFolderId,
+        name: folder.name,
+      );
+    }
+
+    final file = await (select(fileRevisions)
+          ..where((f) => f.metadataTxId.equals(metadataTxId)))
+        .getSingleOrNull();
+    if (file != null) {
+      return FileEntity(
+        id: file.fileId,
+        driveId: file.driveId,
+        parentFolderId: file.parentFolderId,
+        name: file.name,
+        dataTxId: file.dataTxId,
+        size: file.size,
+        lastModifiedDate: file.lastModifiedDate,
+        dataContentType: file.dataContentType,
+      );
+    }
+
+    return null;
+  }
+
+  // // getMetadataOfTxId takes from the DB the metadata of a transaction
+  // // given its id.
+  // Future<NetworkTransaction> getMetadataOfTxId(String txId) async {
+  //   return (select(networkTransactions)..where((t) => t.id.equals(txId)))
+  //       .getSingle();
+  // }
+
 }

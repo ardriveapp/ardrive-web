@@ -1,7 +1,7 @@
-// is it ok to have dart:io here?
-import 'dart:io';
+import 'dart:convert';
 
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
@@ -12,15 +12,12 @@ import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 
 part 'create_snapshot_state.dart';
 
 class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
-  // FIXME: this is a skeleton, yet missing to add the functionality
-
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final String _tempFilePath;
@@ -50,14 +47,15 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     this.range = range;
     this.currentHeight = currentHeight;
 
-    // TODO: validate drive id and range
     if (_isValidHeightRange()) {
-      // TODO -
+      emit(ComputeSnapshotDataFailure(
+        errorMessage: 'Invalid height range chosen',
+      ));
     }
 
-    // declares the writing stream to the temporal file
-    final tempFile = File(_tempFilePath);
-    final tempFileSink = tempFile.openWrite();
+    // FIXME: This uses a lot of memory
+    // it will be a Uint8List buffer for now
+    final dataBuffer = Uint8List(0);
 
     emit(ComputingSnapshotData(
       driveId: driveId,
@@ -89,27 +87,21 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     // Stream snapshot data to the temporal file
     await for (final item in snapshotItemToBeCreated.getSnapshotData()) {
-      tempFileSink.add(item);
+      dataBuffer.addAll(item);
     }
 
     final dataStart = snapshotItemToBeCreated.dataStart;
     final dataEnd = snapshotItemToBeCreated.dataEnd;
 
-    // close the file as writing, and open as reading
-    await tempFileSink.close();
-    final tempFileRead = tempFile.openRead();
-
     // declares the new snapshot entity
     final snapshotEntity = SnapshotEntity(
-      id: const Uuid().v4(), // TODO: take from arguments (?)
+      id: const Uuid().v4(),
       driveId: driveId,
       blockStart: range.start,
       blockEnd: range.end,
       dataStart: dataStart,
       dataEnd: dataEnd,
-      data: Uint8List.fromList(
-        await tempFileRead.expand((element) => element).toList(),
-      ),
+      data: dataBuffer,
     );
 
     final profile = _profileCubit.state as ProfileLoggedIn;
@@ -135,7 +127,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     // TODO: emit ConfirmUpload or ComputeSnapshotDataFailure
     emit(ConfirmSnapshotCreation(
-      snapshotSize: tempFile.lengthSync(),
+      snapshotSize: dataBuffer.length,
       arUploadCost: arUploadCost,
       usdUploadCost: usdUploadCost,
       createSnapshotParams: uploadSnapshotItemParams,
@@ -147,9 +139,18 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   Future<String> _jsonMetadataOfTxId(String txId) async {
-    // TODO: implement me
-    // Will try to read from the DB, and from netwirk if the data is not present
-    return '';
+    // check if the entity is already in the DB
+    final Entity? entity = await _driveDao.getEntityByMetadataTxId(txId);
+    if (entity == null) {
+      final String entityAsString = jsonEncode(entity);
+      return entityAsString;
+    }
+
+    // gather from arweave if not cached
+    final driveKey = await _driveDao.getDriveKeyFromMemory(driveId);
+    final String entityAsString =
+        await _arweave.entityMetadataFromFromTxId(txId, driveKey);
+    return entityAsString;
   }
 
   void confirmSnapshotCreation() async {
@@ -170,7 +171,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     } catch (err) {
       // ignore: avoid_print
       print('Error while posting the snapshot transaction: $err');
-      addError(err);
+      emit(SnapshotUploadFailure(errorMessage: '$err'));
     }
   }
 }

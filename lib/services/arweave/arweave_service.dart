@@ -824,6 +824,20 @@ class ArweaveService {
 
     return response.data?['arweave']['usd'];
   }
+
+  // instantiate entity from tx and metadata
+  Future<String> entityMetadataFromFromTxId(
+    String txId,
+    SecretKey? driveKey,
+  ) async {
+    // FIXME: not prepared for rate limiting
+
+    final Response data =
+        (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
+
+    final metadata = data.bodyBytes;
+    return utf8.decode(metadata);
+  }
 }
 
 /// The entity history of a particular drive, chunked by block height.
