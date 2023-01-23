@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/open_stream_queue.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -67,8 +68,10 @@ class FileV2UploadHandle implements UploadHandle {
         fileKey!,
       );
     } else {
+      // Open all required streams in advanced in case original file reference is destroyed. 
+      final openStreamQueue = OpenStreamQueue((_) => file.ioFile.openReadStream(), 2);
       transaction = TransactionStream.withBlobData(
-        dataStreamGenerator: file.ioFile.openReadStream,
+        dataStreamGenerator: openStreamQueue.pop,
         dataSize: await file.ioFile.length,
       );
     }
