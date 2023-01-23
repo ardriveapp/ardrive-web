@@ -514,23 +514,29 @@ packages:
   flutter_dropzone:
     dependency: "direct main"
     description:
-      name: flutter_dropzone
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: flutter_dropzone
+      ref: "109e6293149a61270f0a2bf84d4da0eb5e84b7cf"
+      resolved-ref: "109e6293149a61270f0a2bf84d4da0eb5e84b7cf"
+      url: "https://github.com/elliotsayes/flutter_dropzone"
+    source: git
     version: "3.0.5"
   flutter_dropzone_platform_interface:
     dependency: transitive
     description:
-      name: flutter_dropzone_platform_interface
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: flutter_dropzone_platform_interface
+      ref: folder-detect
+      resolved-ref: "109e6293149a61270f0a2bf84d4da0eb5e84b7cf"
+      url: "https://github.com/elliotsayes/flutter_dropzone"
+    source: git
     version: "2.0.5"
   flutter_dropzone_web:
     dependency: transitive
     description:
-      name: flutter_dropzone_web
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: flutter_dropzone_web
+      ref: folder-detect
+      resolved-ref: "109e6293149a61270f0a2bf84d4da0eb5e84b7cf"
+      url: "https://github.com/elliotsayes/flutter_dropzone"
+    source: git
     version: "3.0.8"
   flutter_launcher_icons:
     dependency: "direct main"

@@ -49,8 +49,9 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
               key: const Key('dropZone'),
               onCreated: (ctrl) => controller = ctrl,
               operation: DragOperation.all,
-              onDrop: (htmlFile) => _onDrop(
+              onDrop: (htmlFile, source) => _onDrop(
                 htmlFile,
+                source,
                 driveId: widget.driveId,
                 parentFolderId: widget.folderId,
                 context: context,
@@ -66,7 +67,8 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
   }
 
   Future<void> _onDrop(
-    htmlFile, {
+    htmlFile,
+    source, {
     required BuildContext context,
     required String driveId,
     required String parentFolderId,
@@ -76,14 +78,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
       _onLeave();
       final selectedFiles = <UploadFile>[];
 
-      try {
-        // TODO: find a way to trigger exception on folders without loading the blob.
-        // Current behavior is to proceed with the first file in the folder.
-
-        // final fileUrl = await controller.createFileUrl(htmlFile);
-        // final fileRequest = await HttpRequest.request(fileUrl, responseType: 'blob');
-        // await controller.releaseFileUrl(fileUrl);
-      } catch (_) {
+      if (source == 'folder') {
         await showDialog(
           context: context,
           builder: (_) => AlertDialog(
