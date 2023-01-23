@@ -56,8 +56,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "9dc9806993ff9a35d72b88460ac5c91f3ed33c81"
-      resolved-ref: "9dc9806993ff9a35d72b88460ac5c91f3ed33c81"
+      ref: "8e6016aaea1a32b9a412197835649a434ee82149"
+      resolved-ref: "8e6016aaea1a32b9a412197835649a434ee82149"
       url: "https://github.com/elliotsayes/ardrive_io.git"
     source: git
     version: "1.0.0"
@@ -382,11 +382,11 @@ packages:
     dependency: transitive
     description:
       path: "."
-      ref: "6cdf207ba762c6bc1ee688bbd8f217efcc4bb041"
-      resolved-ref: "6cdf207ba762c6bc1ee688bbd8f217efcc4bb041"
+      ref: "63a3ef6839d641bae7239a7758389c8f120c7137"
+      resolved-ref: "63a3ef6839d641bae7239a7758389c8f120c7137"
       url: "https://github.com/elliotsayes/flutter_file_picker"
     source: git
-    version: "5.2.4"
+    version: "5.2.0"
   file_saver:
     dependency: transitive
     description:
