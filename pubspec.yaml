@@ -34,13 +34,13 @@ dependencies:
       ref: v1.1.1
   ardrive_io:
     git:
-      url: https://github.com/elliotsayes/ardrive_io.git
-      ref: 8e6016aaea1a32b9a412197835649a434ee82149
+      url: https://github.com/ar-io/ardrive_io.git
+      ref: PE-2833
   artemis: ^7.0.0-beta.13
   arweave:
     git:
-      url: https://github.com/elliotsayes/arweave-dart.git
-      ref: 910dc058cb37a7c902edd09eb355acf8f597ec69
+      url: https://github.com/ardriveapp/arweave-dart.git
+      ref: PE-2833
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   flutter_portal: ^0.4.0
@@ -62,8 +62,8 @@ dependencies:
   http_client: ^1.5.1
   flutter_dropzone:
     git:
-      url: https://github.com/elliotsayes/flutter_dropzone
-      ref: 1b694faf02aefba15f7848741eefdf8df0593928
+      url: https://github.com/ar-io/flutter_dropzone.git
+      ref: master
       path: flutter_dropzone
   responsive_builder: ^0.4.1
   package_info_plus: ^1.0.3

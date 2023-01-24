@@ -35,7 +35,7 @@ packages:
       name: app_settings
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.1.8"
+    version: "4.2.0"
   archive:
     dependency: transitive
     description:
@@ -56,9 +56,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "8e6016aaea1a32b9a412197835649a434ee82149"
-      resolved-ref: "8e6016aaea1a32b9a412197835649a434ee82149"
-      url: "https://github.com/elliotsayes/ardrive_io.git"
+      ref: PE-2833
+      resolved-ref: f546102399edf244e4284449e4e589b1856f1f9e
+      url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.0.0"
   args:
@@ -67,7 +67,7 @@ packages:
       name: args
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.3.1"
+    version: "2.3.2"
   artemis:
     dependency: "direct main"
     description:
@@ -79,9 +79,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "910dc058cb37a7c902edd09eb355acf8f597ec69"
-      resolved-ref: "910dc058cb37a7c902edd09eb355acf8f597ec69"
-      url: "https://github.com/elliotsayes/arweave-dart.git"
+      ref: PE-2833
+      resolved-ref: d23ef00edc9fd285a56b500a2e49011931e7ce20
+      url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
     version: "3.4.0"
   async:
@@ -132,7 +132,7 @@ packages:
       name: buffer
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.1.1"
+    version: "1.2.0"
   build:
     dependency: transitive
     description:
@@ -188,7 +188,7 @@ packages:
       name: built_value
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "8.4.2"
+    version: "8.4.3"
   characters:
     dependency: transitive
     description:
@@ -382,11 +382,11 @@ packages:
     dependency: transitive
     description:
       path: "."
-      ref: "63a3ef6839d641bae7239a7758389c8f120c7137"
-      resolved-ref: "63a3ef6839d641bae7239a7758389c8f120c7137"
-      url: "https://github.com/elliotsayes/flutter_file_picker"
+      ref: master
+      resolved-ref: daebefbc6f3eab201a3c0c3841b83a710d1100a6
+      url: "https://github.com/ar-io/flutter_file_picker"
     source: git
-    version: "5.2.0"
+    version: "5.2.4"
   file_saver:
     dependency: transitive
     description:
@@ -416,14 +416,14 @@ packages:
       name: file_selector_linux
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.0+1"
+    version: "0.9.1"
   file_selector_macos:
     dependency: "direct main"
     description:
       name: file_selector_macos
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.9.0+3"
+    version: "0.9.0+4"
   file_selector_platform_interface:
     dependency: transitive
     description:
@@ -472,14 +472,14 @@ packages:
       name: firebase_crashlytics
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.9"
+    version: "3.0.11"
   firebase_crashlytics_platform_interface:
     dependency: transitive
     description:
       name: firebase_crashlytics_platform_interface
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.3.10"
+    version: "3.3.11"
   fixnum:
     dependency: transitive
     description:
@@ -505,7 +505,7 @@ packages:
       name: flutter_downloader
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.10.0"
+    version: "1.10.1+2"
   flutter_driver:
     dependency: "direct dev"
     description: flutter
@@ -515,27 +515,27 @@ packages:
     dependency: "direct main"
     description:
       path: flutter_dropzone
-      ref: "1b694faf02aefba15f7848741eefdf8df0593928"
-      resolved-ref: "1b694faf02aefba15f7848741eefdf8df0593928"
-      url: "https://github.com/elliotsayes/flutter_dropzone"
+      ref: master
+      resolved-ref: cf486176da4efa1367130efc902fa5935a069968
+      url: "https://github.com/ar-io/flutter_dropzone.git"
     source: git
     version: "3.0.5"
   flutter_dropzone_platform_interface:
     dependency: transitive
     description:
       path: flutter_dropzone_platform_interface
-      ref: folder-detect
-      resolved-ref: "109e6293149a61270f0a2bf84d4da0eb5e84b7cf"
-      url: "https://github.com/elliotsayes/flutter_dropzone"
+      ref: master
+      resolved-ref: cf486176da4efa1367130efc902fa5935a069968
+      url: "https://github.com/ar-io/flutter_dropzone"
     source: git
     version: "2.0.5"
   flutter_dropzone_web:
     dependency: transitive
     description:
       path: flutter_dropzone_web
-      ref: folder-detect
-      resolved-ref: "109e6293149a61270f0a2bf84d4da0eb5e84b7cf"
-      url: "https://github.com/elliotsayes/flutter_dropzone"
+      ref: master
+      resolved-ref: cf486176da4efa1367130efc902fa5935a069968
+      url: "https://github.com/ar-io/flutter_dropzone"
     source: git
     version: "3.0.8"
   flutter_launcher_icons:
@@ -760,14 +760,14 @@ packages:
       name: image_picker
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.6"
+    version: "0.8.6+1"
   image_picker_android:
     dependency: transitive
     description:
       name: image_picker_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.5+4"
+    version: "0.8.5+5"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -781,7 +781,7 @@ packages:
       name: image_picker_ios
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.6+5"
+    version: "0.8.6+6"
   image_picker_platform_interface:
     dependency: transitive
     description:
@@ -809,7 +809,7 @@ packages:
       name: io
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.3"
+    version: "1.0.4"
   isolated_worker:
     dependency: transitive
     description:
@@ -886,7 +886,7 @@ packages:
       name: local_auth_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.4"
+    version: "1.0.5"
   logging:
     dependency: transitive
     description:
@@ -921,7 +921,7 @@ packages:
       name: mime
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.3"
+    version: "1.0.4"
   mocktail:
     dependency: "direct dev"
     description:
@@ -1054,7 +1054,7 @@ packages:
       name: path_provider_macos
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.6"
+    version: "2.0.7"
   path_provider_platform_interface:
     dependency: transitive
     description:
@@ -1222,35 +1222,28 @@ packages:
       name: shared_preferences
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.15"
+    version: "2.0.17"
   shared_preferences_android:
     dependency: transitive
     description:
       name: shared_preferences_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.14"
-  shared_preferences_ios:
+    version: "2.0.15"
+  shared_preferences_foundation:
     dependency: transitive
     description:
-      name: shared_preferences_ios
+      name: shared_preferences_foundation
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.1"
+    version: "2.1.2"
   shared_preferences_linux:
     dependency: transitive
     description:
       name: shared_preferences_linux
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.2"
-  shared_preferences_macos:
-    dependency: transitive
-    description:
-      name: shared_preferences_macos
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "2.0.5"
+    version: "2.1.3"
   shared_preferences_platform_interface:
     dependency: transitive
     description:
@@ -1271,7 +1264,7 @@ packages:
       name: shared_preferences_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.2"
+    version: "2.1.3"
   shelf:
     dependency: transitive
     description:
@@ -1458,7 +1451,7 @@ packages:
       name: timing
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.0"
+    version: "1.0.1"
   typed_data:
     dependency: transitive
     description:
@@ -1486,35 +1479,35 @@ packages:
       name: url_launcher
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.1.7"
+    version: "6.1.8"
   url_launcher_android:
     dependency: transitive
     description:
       name: url_launcher_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.22"
+    version: "6.0.23"
   url_launcher_ios:
     dependency: transitive
     description:
       name: url_launcher_ios
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.0.17"
+    version: "6.0.18"
   url_launcher_linux:
     dependency: transitive
     description:
       name: url_launcher_linux
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.1"
+    version: "3.0.2"
   url_launcher_macos:
     dependency: transitive
     description:
       name: url_launcher_macos
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.1"
+    version: "3.0.2"
   url_launcher_platform_interface:
     dependency: transitive
     description:
@@ -1528,14 +1521,14 @@ packages:
       name: url_launcher_web
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.13"
+    version: "2.0.14"
   url_launcher_windows:
     dependency: transitive
     description:
       name: url_launcher_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "3.0.1"
+    version: "3.0.2"
   uuid:
     dependency: "direct main"
     description:
@@ -1570,7 +1563,7 @@ packages:
       name: web_socket_channel
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0"
+    version: "2.3.0"
   webdriver:
     dependency: transitive
     description:
@@ -1598,7 +1591,7 @@ packages:
       name: xdg_directories
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.2.0+2"
+    version: "0.2.0+3"
   xml:
     dependency: transitive
     description:
