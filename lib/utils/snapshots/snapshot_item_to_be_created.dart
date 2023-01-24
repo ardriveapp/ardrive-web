@@ -28,7 +28,7 @@ class SnapshotItemToBeCreated {
   int get dataStart => _dataStart ?? -1;
   int get dataEnd => _dataEnd ?? -1;
 
-  final Future<String> Function(TxID txId) _jsonMetadataOfTxId;
+  final Future<Uint8List> Function(TxID txId) _jsonMetadataOfTxId;
 
   SnapshotItemToBeCreated({
     required this.blockStart,
@@ -36,7 +36,7 @@ class SnapshotItemToBeCreated {
     required this.driveId,
     required this.subRanges,
     required this.source,
-    required Future<String> Function(TxID txId) jsonMetadataOfTxId,
+    required Future<Uint8List> Function(TxID txId) jsonMetadataOfTxId,
   }) : _jsonMetadataOfTxId = jsonMetadataOfTxId;
 
   Stream<Uint8List> getSnapshotData() async* {
@@ -55,7 +55,7 @@ class SnapshotItemToBeCreated {
         return TxSnapshot(
           gqlNode: node,
           jsonMetadata:
-              _isSnapshotTx(node) ? '' : await _jsonMetadataOfTxId(node.id),
+              _isSnapshotTx(node) ? null : await _jsonMetadataOfTxId(node.id),
         );
       },
     );

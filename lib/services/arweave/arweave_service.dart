@@ -231,8 +231,13 @@ class ArweaveService {
             return Uint8List(0);
           }
 
+          final isPrivate = driveKey != null;
           final Uint8List? cachedData =
-              await SnapshotItemOnChain.getDataForTxId(driveId, txId);
+              await SnapshotItemOnChain.getDataForTxId(
+            driveId,
+            txId,
+            isPrivate,
+          );
           if (cachedData != null) {
             return cachedData;
           } else {
@@ -859,7 +864,7 @@ class ArweaveService {
   }
 
   // instantiate entity from tx and metadata
-  Future<String> entityMetadataFromFromTxId(
+  Future<Uint8List> entityMetadataFromFromTxId(
     String txId,
     SecretKey? driveKey,
   ) async {
@@ -881,11 +886,11 @@ class ArweaveService {
 
     print('[ArweaveService] Metadata for $txId: $metadata');
 
-    final dataAsString = utf8.decode(metadata, allowMalformed: true);
+    // final dataAsString = utf8.decode(metadata, allowMalformed: true);
 
     // print('[ArweaveService] Metadata for $txId: $dataAsString');
 
-    return dataAsString;
+    return metadata;
   }
 }
 

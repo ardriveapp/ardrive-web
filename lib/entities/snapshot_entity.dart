@@ -106,12 +106,15 @@ class SnapshotEntity extends Entity {
     final tx = Transaction.withBlobData(data: data!);
     final packageInfo = await PackageInfo.fromPlatform();
 
+    tx.addTag(EntityTag.contentType, ContentType.json);
+
     addEntityTagsToTransaction(tx);
 
     tx.addApplicationTags(
       version: packageInfo.version,
       unixTime: createdAt,
     );
+
     return tx;
   }
 }

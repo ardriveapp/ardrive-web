@@ -13,6 +13,7 @@ import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,6 +28,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final PstService _pst;
+  final SecretKey? _driveKey;
 
   late DriveID _driveId;
   late Range _range;
@@ -41,6 +43,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         _profileCubit = profileCubit,
         _driveDao = driveDao,
         _pst = pst,
+        _driveKey = null,
         super(CreateSnapshotInitial());
 
   Future<void> selectDriveAndHeightRange(
@@ -196,36 +199,51 @@ Balance: ${profile.walletBalance} AR, Cost: $totalCost AR''',
     return _range.end <= _currentHeight;
   }
 
-  Future<String> _jsonMetadataOfTxId(String txId) async {
+  Future<Uint8List> _jsonMetadataOfTxId(String txId) async {
     print('About to request metadata of $txId');
 
-    // check if the entity is already in the DB
-    final Entity? entity =
-        await _driveDao.getEntityByMetadataTxId(_driveId, txId);
-    if (entity != null) {
-      final String entityAsString = jsonEncode(entity);
+    final drive =
+        await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
+    final isPrivate = drive != null && drive.privacy != DrivePrivacy.public;
 
-      print('Cache hit! - $txId');
+    // check if the entity is already in the DB
+    // final Entity? entity =
+    //     await _driveDao.getEntityByMetadataTxId(_driveId, txId);
+    final safeEntityData =
+        await _driveDao.getSafeCachedMetadataFromTxId(_driveId, txId);
+    if (safeEntityData != null) {
+      // final String entityJsonData = sa;
 
       // Now that we can gather the data drom the cache, we must re-encrypt it
-      // TODO: encrypt if private!
-      final drive =
-          await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
-      if (drive != null && drive.privacy == DrivePrivacy.public) {
-        return entityAsString;
+
+      if (!isPrivate) {
+        print('Cache hit! - $txId');
+        // return Uint8List.fromList(utf8.encode(entityJsonData));
+        return safeEntityData;
       }
     }
 
     print('Cache miss! - $txId');
 
     // gather from arweave if not cached
-    final String entityAsString = await _arweave.entityMetadataFromFromTxId(
+    final Uint8List entityJsonData = await _arweave.entityMetadataFromFromTxId(
       txId,
       null, // key is null because we don't re-encrypt the snapshot data
     );
 
     print('Requested to arweave - $txId');
-    return entityAsString;
+
+    if (isPrivate) {
+      final safeEntityDataFromArweave = Uint8List.fromList(
+        utf8.encode(base64Encode(entityJsonData)),
+      );
+
+      print('Base64-encoded private data: $safeEntityDataFromArweave');
+      return safeEntityDataFromArweave;
+    }
+
+    print('Public data: $entityJsonData');
+    return entityJsonData;
   }
 
   Future<void> confirmSnapshotCreation() async {

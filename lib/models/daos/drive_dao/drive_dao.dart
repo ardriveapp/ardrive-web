@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
@@ -483,14 +484,41 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeTransaction(Insertable<NetworkTransaction> transaction) =>
       into(networkTransactions).insertOnConflictUpdate(transaction);
 
-  Future<Entity?> getEntityByMetadataTxId(
+  // Will return a base64 encoded string if it's a private drive.
+  Future<Uint8List?> getSafeCachedMetadataFromTxId(
     DriveID driveId,
     String metadataTxId,
   ) async {
-    final driveOwner = await driveById(driveId: driveId).getSingleOrNull();
-    if (driveOwner?.privacy == 'private') {
-      return null;
+    final entity = await _getEntityByMetadataTxId(driveId, metadataTxId);
+
+    if (entity != null) {
+      final driveOwner = await driveById(driveId: driveId).getSingleOrNull();
+      Uint8List data = Uint8List.fromList(utf8.encode(jsonEncode(entity)));
+
+      if (driveOwner?.privacy == 'private') {
+        // TODO: encrypt the data and return
+        // final driveKey = await getDriveKeyFromMemory(driveId);
+
+        return null;
+      }
+
+      return data;
     }
+
+    return null;
+  }
+
+  // This method might return decrypted private data.
+  //
+  // BE MINDFUL WHEN USING THIS METHOD.
+  Future<Entity?> _getEntityByMetadataTxId(
+    DriveID driveId,
+    String metadataTxId,
+  ) async {
+    // final driveOwner = await driveById(driveId: driveId).getSingleOrNull();
+    // if (driveOwner?.privacy == 'private') {
+    //   return null;
+    // }
 
     final drive =
         await driveRevisionByMetadataTxId(driveId: driveId, tx: metadataTxId)
