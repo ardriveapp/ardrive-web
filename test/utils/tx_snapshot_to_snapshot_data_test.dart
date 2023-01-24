@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/snapshot_types.dart';
@@ -28,7 +29,7 @@ Stream<TxSnapshot> fakeTxSnapshotStream(int amount) async* {
           'tags': [],
         },
       ),
-      jsonMetadata: '{"name": "name_$i"}',
+      jsonMetadata: Uint8List.fromList(utf8.encode('{"name": "name_$i"}')),
     );
   }
 }

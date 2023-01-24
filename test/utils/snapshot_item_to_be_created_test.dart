@@ -4,6 +4,7 @@ import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'snapshot_test_helpers.dart';
@@ -18,7 +19,8 @@ void main() {
           blockEnd: 10,
           subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
           source: const Stream.empty(),
-          jsonMetadataOfTxId: (txId) async => '{"name":"$txId"}',
+          jsonMetadataOfTxId: (txId) async =>
+              Uint8List.fromList(utf8.encode('{"name":"$txId"}')),
         );
 
         final snapshotData = (await snapshotItemToBeCreated
@@ -43,7 +45,8 @@ void main() {
           blockEnd: 10,
           subRanges: HeightRange(rangeSegments: [Range(start: 0, end: 10)]),
           source: fakeNodesStream(Range(start: 8, end: 8)),
-          jsonMetadataOfTxId: (txId) async => '{"name":"$txId"}',
+          jsonMetadataOfTxId: (txId) async =>
+              Uint8List.fromList(utf8.encode('{"name":"$txId"}')),
         );
 
         final snapshotData = (await snapshotItemToBeCreated
@@ -91,7 +94,8 @@ void main() {
               ),
             ],
           ),
-          jsonMetadataOfTxId: (txId) async => '{"name":"tx-$txId"}',
+          jsonMetadataOfTxId: (txId) async =>
+              Uint8List.fromList(utf8.encode('{"name":"tx-$txId"}')),
         );
 
         final snapshotData = (await snapshotItemToBeCreated
@@ -102,7 +106,7 @@ void main() {
 
         expect(
           snapshotData,
-          '{"txSnapshots":[{"gqlNode":{"id":"tx-7","owner":{"address":"1234567890"},"bundledIn":{"id":"ASDASDASDASDASDASD"},"block":{"height":7,"timestamp":700},"tags":[{"name":"Entity-Type","value":"snapshot"}]},"jsonMetadata":""}]}',
+          '{"txSnapshots":[{"gqlNode":{"id":"tx-7","owner":{"address":"1234567890"},"bundledIn":{"id":"ASDASDASDASDASDASD"},"block":{"height":7,"timestamp":700},"tags":[{"name":"Entity-Type","value":"snapshot"}]},"jsonMetadata":null}]}',
         );
       });
     });

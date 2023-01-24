@@ -77,6 +77,10 @@ void main() {
           (_) => Future<double>.value(1),
         );
 
+        when(() => arweave.getCurrentBlockHeight()).thenAnswer(
+          (_) => Future<int>.value(100),
+        );
+
         // mocks the state of the profile cubit
         when(() => profileCubit.state).thenReturn(
           ProfileLoggedIn(
@@ -171,6 +175,5 @@ void main() {
         ],
       );
     },
-    skip: true,
   );
 }

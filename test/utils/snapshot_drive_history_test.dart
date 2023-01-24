@@ -91,6 +91,7 @@ Range heightRangeToRange(HeightRange hr) {
 Future<SnapshotItem> fakeSnapshotItemFromRange(HeightRange r) async {
   final range = heightRangeToRange(r);
   return SnapshotItem.fromGQLNode(
+    arweaveUrl: 'localhost',
     node:
         SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
             .fromJson(
