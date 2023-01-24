@@ -1,7 +1,7 @@
 class Resources {
   static const images = Images();
   static const arHelpLink =
-      'https://ardrive.io/questions/where-do-i-get-additional-arweave-tokens/';
+      'https://ar-io.zendesk.com/hc/en-us/articles/5258520347419-Fund-Your-Wallet';
   static const manifestLearnMoreLink =
       'https://ar-io.zendesk.com/hc/en-us/articles/5300353421467-Arweave-Manifests';
   static const surveyFeedbackFormUrl = 'https://ar-io.typeform.com/UserSurvey';
