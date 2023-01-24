@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ardrive/entities/entities.dart';
 import 'package:drift/drift.dart';
 
@@ -33,16 +35,18 @@ extension FolderEntityExtensions on FolderEntity {
   ///
   /// This requires a `performedAction` to be specified.
   FolderRevisionsCompanion toRevisionCompanion(
-          {required String performedAction}) =>
-      FolderRevisionsCompanion.insert(
-        folderId: id!,
-        driveId: driveId!,
-        name: name!,
-        parentFolderId: Value(parentFolderId),
-        metadataTxId: txId,
-        dateCreated: Value(createdAt),
-        action: performedAction,
-      );
+      {required String performedAction}) {
+    print('Folder ($txId): ${jsonEncode(this)}');
+    return FolderRevisionsCompanion.insert(
+      folderId: id!,
+      driveId: driveId!,
+      name: name!,
+      parentFolderId: Value(parentFolderId),
+      metadataTxId: txId,
+      dateCreated: Value(createdAt),
+      action: performedAction,
+    );
+  }
 
   /// Returns the action performed on the folder that lead to the new revision.
   String? getPerformedRevisionAction(

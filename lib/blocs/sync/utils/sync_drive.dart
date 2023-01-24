@@ -45,6 +45,7 @@ Stream<double> _syncDrive(
   );
   final List<SnapshotItem> snapshotItems = await SnapshotItem.instantiateAll(
     snapshotsStream,
+    arweaveUrl: arweaveService.client.api.gatewayUrl.origin,
   ).toList();
   final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
     items: snapshotItems,
@@ -128,14 +129,21 @@ Stream<double> _syncDrive(
         );
       }
     } else {
-      print('Block attribute is already present - $firstBlockHeight');
+      // print('Block attribute is already present - $firstBlockHeight');
     }
 
-    print('Adding transaction ${t.id}');
+    // if (t.block != null) {
+    logSync('[$driveId] Adding transaction ${t.id}');
     transactions.add(t);
+    // } else {
+    //   logSync(
+    //     'The transaction block is null. \nTransaction node id: ${t.id}',
+    //   );
+    // }
 
     /// We can only calculate the fetch percentage if we have the `firstBlockHeight`
     if (firstBlockHeight != null) {
+      print('Calculating fetch phase percentage...');
       if (totalBlockHeightDifference > 0) {
         fetchPhasePercentage = calculatePercentageBasedOnBlockHeights();
       } else {
@@ -143,11 +151,18 @@ Stream<double> _syncDrive(
         print('The first phase just finished!');
         fetchPhasePercentage = 1;
       }
+
       final percentage =
           calculatePercentageBasedOnBlockHeights() * fetchPhaseWeight;
+      print('New fetch-phase percentage: $percentage');
       yield percentage;
+    } else {
+      print('First block height is still null');
     }
+
+    print('Done adding transaction ${t.id} - ${gqlDriveHistory.driveId}');
   }
+
   print('Done fetching data - ${gqlDriveHistory.driveId}');
 
   final fetchPhaseTotalTime =

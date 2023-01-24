@@ -49,5 +49,6 @@ class GQLDriveHistory implements SegmentedGQLData {
         yield edge.node;
       }
     }
+    return;
   }
 }

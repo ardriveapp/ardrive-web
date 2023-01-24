@@ -4,6 +4,7 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/models/snapshot_revision.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -431,7 +432,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     );
   }
 
-  Future<void> writeSnapshotEntity(SnapshotEntity entity) {
+  Future<void> insertSnapshotEntry(SnapshotEntity entity) {
     return db.transaction(() async {
       final companion = SnapshotEntriesCompanion.insert(
         id: entity.id!,
@@ -444,6 +445,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         dateCreated: Value<DateTime>(entity.createdAt),
       );
 
+      await writeTransaction(companion.getTransactionCompanion());
       await into(snapshotEntries).insert(
         companion,
       );
@@ -481,10 +483,18 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeTransaction(Insertable<NetworkTransaction> transaction) =>
       into(networkTransactions).insertOnConflictUpdate(transaction);
 
-  Future<Entity?> getEntityByMetadataTxId(String metadataTxId) async {
-    final drive = await (select(driveRevisions)
-          ..where((d) => d.metadataTxId.equals(metadataTxId)))
-        .getSingleOrNull();
+  Future<Entity?> getEntityByMetadataTxId(
+    DriveID driveId,
+    String metadataTxId,
+  ) async {
+    final driveOwner = await driveById(driveId: driveId).getSingleOrNull();
+    if (driveOwner?.privacy == 'private') {
+      return null;
+    }
+
+    final drive =
+        await driveRevisionByMetadataTxId(driveId: driveId, tx: metadataTxId)
+            .getSingleOrNull();
     if (drive != null) {
       return DriveEntity(
           id: drive.driveId,
@@ -498,9 +508,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     print('No drive found with txId: $metadataTxId');
 
-    final folder = await (select(folderRevisions)
-          ..where((f) => f.metadataTxId.equals(metadataTxId)))
-        .getSingleOrNull();
+    final folder =
+        await folderRevisionByMetadataTxId(driveId: driveId, tx: metadataTxId)
+            .getSingleOrNull();
     if (folder != null) {
       return FolderEntity(
         id: folder.folderId,
@@ -512,9 +522,9 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     print('No folder found with txId: $metadataTxId');
 
-    final file = await (select(fileRevisions)
-          ..where((f) => f.metadataTxId.equals(metadataTxId)))
-        .getSingleOrNull();
+    final file =
+        await fileRevisionByMetadataTxId(driveId: driveId, tx: metadataTxId)
+            .getSingleOrNull();
     if (file != null) {
       return FileEntity(
         id: file.fileId,

@@ -10,6 +10,8 @@ StreamTransformer<TxSnapshot, Uint8List> txSnapshotToSnapshotData =
   // Use a JSON encoder to serialize the objects in the stream.
   const encoder = JsonEncoder();
 
+  print('Yielding the beginning of the JSON array');
+
   // Yield the beginning of a JSON array
   yield Uint8List.fromList(utf8.encode('{"txSnapshots":['));
 
@@ -28,10 +30,14 @@ StreamTransformer<TxSnapshot, Uint8List> txSnapshotToSnapshotData =
     // Serialize the object to a JSON string
     final jsonString = encoder.convert(txSnapshot);
 
+    // print('Yielding JSON string: $jsonString');
+
     // Convert the JSON string to a Uint8Array.
     final jsonData = Uint8List.fromList(utf8.encode(jsonString));
     yield jsonData;
   }
+
+  print('Yielding the end of the JSON array');
 
   // Yield the end of the JSON array
   yield Uint8List.fromList(utf8.encode(']}'));

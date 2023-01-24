@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
@@ -185,6 +186,9 @@ class ArweaveService {
         ),
       );
 
+      print(
+          'Yielding ${driveEntityHistoryQuery.data!.transactions.edges.length} transactions for drive $driveId');
+
       yield driveEntityHistoryQuery.data!.transactions.edges;
 
       cursor = driveEntityHistoryQuery.data!.transactions.edges.isNotEmpty
@@ -195,6 +199,7 @@ class ArweaveService {
         break;
       }
     }
+    print('Done fetching segmented transactions for drive $driveId');
   }
 
   /// Get the metadata of transactions
@@ -211,10 +216,21 @@ class ArweaveService {
     required SnapshotDriveHistory snapshotDriveHistory,
     required DriveID driveId,
   }) async {
-    final List<Uint8List> responses = await Future.wait(
+    final List<Uint8List> entitiesJsonMetadata = await Future.wait(
       entityTxs.map(
-        (entity) async {
-          final txId = entity.id;
+        (node) async {
+          final txId = node.id;
+
+          final isSnapshot = node.tags.any(
+            (tag) =>
+                tag.name == EntityTag.entityType &&
+                tag.value == EntityType.snapshot,
+          );
+          if (isSnapshot) {
+            // Snapshot entities are not constructed from its data
+            return Uint8List(0);
+          }
+
           final Uint8List? cachedData =
               await SnapshotItemOnChain.getDataForTxId(driveId, txId);
           if (cachedData != null) {
@@ -247,8 +263,9 @@ class ArweaveService {
 
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
-        final entityResponse = responses[i];
-        final rawEntityData = entityResponse;
+        final rawEntityData = entitiesJsonMetadata[i];
+
+        print('Entity ${transaction.id} is a $entityType');
 
         Entity? entity;
         if (entityType == EntityType.drive) {
@@ -263,14 +280,25 @@ class ArweaveService {
             rawEntityData,
             driveKey: driveKey,
           );
+        } else if (entityType == EntityType.snapshot) {
+          print('Snapshot entity found - ${transaction.id}');
+          entity = await SnapshotEntity.fromTransaction(
+            transaction,
+            // the snapshot entity is not constructed from its data, just the transaction
+            null,
+          );
+          print('Snapshot entity instantiated - ${entity.txId}');
         }
+
         // TODO: Revisit
         if (blockHistory.isEmpty ||
             transaction.block!.height != blockHistory.last.blockHeight) {
           blockHistory.add(BlockEntities(transaction.block!.height));
         }
 
+        // if (entity != null) {
         blockHistory.last.entities.add(entity);
+        // }
 
         // If there are errors in parsing the entity, ignore it.
       } on EntityTransactionParseException catch (parseException) {
@@ -285,6 +313,8 @@ class ArweaveService {
           'with status ${fetchException.statusCode} '
           'and reason ${fetchException.reasonPhrase}',
         );
+      } catch (e) {
+        print(e);
       }
     }
 
@@ -835,11 +865,27 @@ class ArweaveService {
   ) async {
     // FIXME: not prepared for rate limiting
 
+    // final http = ArDriveHTTP();
+    // final url = '${client.api.gatewayUrl.origin}/$txId';
+    // print('[ArweaveService] Getting metadata for $txId - (RUL: $url))');
+    // final response = await http.getAsBytes(url);
+    // final Uint8List metadata = response.data;
+    // return utf8.decode(metadata);
+
     final Response data =
         (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
 
+    print('[ArweaveService] Got metadata for $txId - (${data.statusCode})');
+
     final metadata = data.bodyBytes;
-    return utf8.decode(metadata);
+
+    print('[ArweaveService] Metadata for $txId: $metadata');
+
+    final dataAsString = utf8.decode(metadata, allowMalformed: true);
+
+    // print('[ArweaveService] Metadata for $txId: $dataAsString');
+
+    return dataAsString;
   }
 }
 

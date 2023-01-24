@@ -20,6 +20,8 @@ import 'package:uuid/uuid.dart';
 
 part 'create_snapshot_state.dart';
 
+const kRequiredTxConfirmationCount = 15;
+
 class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   final ArweaveService _arweave;
   final DriveDao _driveDao;
@@ -42,18 +44,38 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         super(CreateSnapshotInitial());
 
   Future<void> selectDriveAndHeightRange(
-    DriveID driveId,
-    Range range,
-    int currentHeight,
-  ) async {
+    DriveID driveId, {
+    Range? range,
+  }) async {
+    print('Select drive $driveId and height range $range');
+
+    final currentHeight = await _arweave.getCurrentBlockHeight();
+
+    final maximumHeightToSnapshot =
+        currentHeight - kRequiredTxConfirmationCount;
+
     _driveId = driveId;
-    _range = range;
+
+    if (range != null) {
+      _range = range.end > maximumHeightToSnapshot
+          ? Range(start: range.start, end: maximumHeightToSnapshot)
+          : range;
+    } else {
+      _range = Range(start: 0, end: maximumHeightToSnapshot);
+    }
+
+    print(
+      'Trusted range to be snapshotted (Current height: $currentHeight): $_range',
+    );
+
     _currentHeight = currentHeight;
 
     if (!_isValidHeightRange()) {
+      final errMessage =
+          'Invalid height range chosen. ${_range.end} >= $_currentHeight';
+      print(errMessage);
       emit(ComputeSnapshotDataFailure(
-        errorMessage:
-            'Invalid height range chosen. ${_range.end} >= $_currentHeight',
+        errorMessage: errMessage,
       ));
       return;
     }
@@ -65,14 +87,16 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     emit(ComputingSnapshotData(
       driveId: driveId,
-      range: range,
+      range: _range,
     ));
+
+    print('Computing snapshot data event emmited');
 
     // declare the GQL read stream out of arweave
     final gqlEdgesStream = _arweave.getSegmentedTransactionsFromDrive(
       driveId,
-      minBlockHeight: range.start,
-      maxBlockHeight: range.end,
+      minBlockHeight: _range.start,
+      maxBlockHeight: _range.end,
     );
 
     // transforms the stream of arrays into a flat stream
@@ -83,21 +107,29 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     // declares the reading stream from the SnapshotItemToBeCreated
     final snapshotItemToBeCreated = SnapshotItemToBeCreated(
-      blockStart: range.start,
-      blockEnd: range.end,
+      blockStart: _range.start,
+      blockEnd: _range.end,
       driveId: driveId,
-      subRanges: HeightRange(rangeSegments: [range]),
+      subRanges: HeightRange(rangeSegments: [_range]),
       source: gqlNodesStream,
       jsonMetadataOfTxId: _jsonMetadataOfTxId,
     );
 
+    print('About to start reading the snapshot data stream');
+
     // Stream snapshot data to the temporal file
     await for (final item in snapshotItemToBeCreated.getSnapshotData()) {
+      print('##> $item');
       dataBuffer.add(item);
     }
 
+    print('Done reading the snapshot data stream');
+
     final dataStart = snapshotItemToBeCreated.dataStart;
     final dataEnd = snapshotItemToBeCreated.dataEnd;
+
+    print('Data start: $dataStart');
+    print('Data end: $dataEnd');
 
     final data = dataBuffer.takeBytes();
 
@@ -105,12 +137,14 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final snapshotEntity = SnapshotEntity(
       id: const Uuid().v4(),
       driveId: driveId,
-      blockStart: range.start,
-      blockEnd: range.end,
+      blockStart: _range.start,
+      blockEnd: _range.end,
       dataStart: dataStart,
       dataEnd: dataEnd,
       data: data,
     );
+
+    print('Snapshot entity created: $snapshotEntity');
 
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
@@ -130,7 +164,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final uploadSnapshotItemParams = CreateSnapshotParameters(
       signedTx: preparedTx,
       addSnapshotItemToDatabase: () =>
-          _driveDao.writeSnapshotEntity(snapshotEntity),
+          _driveDao.insertSnapshotEntry(snapshotEntity),
     );
 
     final totalCost = preparedTx.reward + preparedTx.quantity;
@@ -163,24 +197,41 @@ Balance: ${profile.walletBalance} AR, Cost: $totalCost AR''',
   }
 
   Future<String> _jsonMetadataOfTxId(String txId) async {
+    print('About to request metadata of $txId');
+
     // check if the entity is already in the DB
-    final Entity? entity = await _driveDao.getEntityByMetadataTxId(txId);
-    if (entity == null) {
+    final Entity? entity =
+        await _driveDao.getEntityByMetadataTxId(_driveId, txId);
+    if (entity != null) {
       final String entityAsString = jsonEncode(entity);
-      return entityAsString;
+
+      print('Cache hit! - $txId');
+
+      // Now that we can gather the data drom the cache, we must re-encrypt it
+      // TODO: encrypt if private!
+      final drive =
+          await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
+      if (drive != null && drive.privacy == DrivePrivacy.public) {
+        return entityAsString;
+      }
     }
 
+    print('Cache miss! - $txId');
+
     // gather from arweave if not cached
-    final driveKey = await _driveDao.getDriveKeyFromMemory(_driveId);
-    final String entityAsString =
-        await _arweave.entityMetadataFromFromTxId(txId, driveKey);
+    final String entityAsString = await _arweave.entityMetadataFromFromTxId(
+      txId,
+      null, // key is null because we don't re-encrypt the snapshot data
+    );
+
+    print('Requested to arweave - $txId');
     return entityAsString;
   }
 
   Future<void> confirmSnapshotCreation() async {
     if (await _profileCubit.logoutIfWalletMismatch()) {
       // ignore: avoid_print
-      print('Failed to confirm the upload: Wallet mismathc');
+      print('Failed to confirm the upload: Wallet mismatch');
       emit(SnapshotUploadFailure(errorMessage: 'Wallet mismatch.'));
       return;
     }

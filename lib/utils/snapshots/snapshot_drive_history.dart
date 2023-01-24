@@ -97,5 +97,6 @@ class SnapshotDriveHistory implements SegmentedGQLData {
       final stream = item.getNextStream();
       yield* stream;
     }
+    return;
   }
 }

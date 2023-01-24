@@ -28,6 +28,10 @@ latestDriveRevisionsByDriveIdWithTransactions AS DriveRevisionWithTransaction:
     WHERE driveId = :driveId
     ORDER BY rev.dateCreated DESC;
 
+driveRevisionByMetadataTxId:
+    SELECT * FROM drive_revisions
+    WHERE driveId = :driveId AND metadataTxId = :tx;
+
 folderById:
     SELECT * FROM folder_entries
     WHERE driveId = :driveId AND id = :folderId;
@@ -73,6 +77,10 @@ latestFolderRevisionsByFolderIdWithTransactions AS FolderRevisionWithTransaction
     INNER JOIN network_transactions metadataTx ON metadataTx.id = rev.metadataTxId
     WHERE driveId = :driveId AND folderId = :folderId
     ORDER BY rev.dateCreated DESC;
+
+folderRevisionByMetadataTxId:
+    SELECT * FROM folder_revisions
+    WHERE driveId = :driveId AND metadataTxId = :tx;
 
 fileById:
     SELECT * FROM file_entries
@@ -163,6 +171,9 @@ latestFileRevisionsByFileIdWithTransactions AS FileRevisionWithTransactions:
     WHERE driveId = :driveId AND fileId = :fileId
     ORDER BY rev.dateCreated DESC;
 
+fileRevisionByMetadataTxId:
+    SELECT * FROM file_revisions
+    WHERE driveId = :driveId AND metadataTxId = :tx;
 
 pendingTransactions:
     SELECT * FROM network_transactions

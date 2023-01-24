@@ -34,7 +34,6 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) =>
           ),
         ),
         // TODO: maybe there's a better way to place this blank space
-        // FIXME: remove the extra divider at the end
         // TODO: make it conditional?
         const SizedBox(
           height: 128,

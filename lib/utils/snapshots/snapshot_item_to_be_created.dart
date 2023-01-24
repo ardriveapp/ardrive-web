@@ -50,6 +50,8 @@ class SnapshotItemToBeCreated {
             ? node.block!.height
             : _dataEnd;
 
+        print('SnapshotItemToBeCreated: ${node.id}');
+
         return TxSnapshot(
           gqlNode: node,
           jsonMetadata:

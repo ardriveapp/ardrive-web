@@ -49,14 +49,15 @@ class SnapshotEntity extends Entity {
         driveId: transaction.getTag(EntityTag.driveId),
         blockStart: int.parse(transaction.getTag(EntityTag.blockStart)!),
         blockEnd: int.parse(transaction.getTag(EntityTag.blockEnd)!),
-        dataStart: int.parse(transaction.getTag(EntityTag.dataStart)!),
-        dataEnd: int.parse(transaction.getTag(EntityTag.dataEnd)!),
+        dataStart: int.parse(transaction.getTag(EntityTag.dataStart) ?? '-1'),
+        dataEnd: int.parse(transaction.getTag(EntityTag.dataEnd) ?? '-1'),
         data: data,
       )
         ..txId = transaction.id
         ..ownerAddress = transaction.owner.address
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
+      print('Error parsing transaction: ${transaction.id}, ');
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
   }

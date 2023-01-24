@@ -14,6 +14,8 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   required int batchSize,
   required SnapshotDriveHistory snapshotDriveHistory,
 }) async* {
+  print('parseDriveTransactionsIntoDatabaseEntities() called - ${drive.id}');
+
   final numberOfDriveEntitiesToParse = transactions.length;
   var numberOfDriveEntitiesParsed = 0;
 
@@ -41,11 +43,15 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
 
   final owner = await arweave.getOwnerForDriveEntityWithId(drive.id);
 
+  print('Before yielding _batchProcess');
+
   yield* _batchProcess<DriveHistoryTransaction>(
       list: transactions,
       batchSize: batchSize,
       endOfBatchCallback: (items) async* {
         logSync('Getting metadata from drive ${drive.name}');
+
+        print('items length: ${items.length}');
 
         final entityHistory =
             await arweave.createDriveEntityHistoryFromTransactions(
@@ -56,6 +62,8 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
           snapshotDriveHistory: snapshotDriveHistory,
           driveId: drive.id,
         );
+
+        print('entityHistory has: ${entityHistory.blockHistory.length} items');
 
         // Create entries for all the new revisions of file and folders in this drive.
         final newEntities = entityHistory.blockHistory
@@ -94,6 +102,12 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
             database: database,
             driveId: drive.id,
             newEntities: newEntities.whereType<FileEntity>(),
+          );
+          await _addNewSnapshotEntities(
+            driveDao: driveDao,
+            database: database,
+            driveId: drive.id,
+            newEntities: newEntities.whereType<SnapshotEntity>(),
           );
 
           // Check and handle cases where there's no more revisions

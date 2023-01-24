@@ -40,6 +40,9 @@ class DriveHistoryComposite implements SegmentedGQLData {
         Map.fromIterable(allSubRanges,
             key: (r) => r,
             value: (r) {
+              // TODO: remove this
+              // return _gqlDriveHistory;
+
               final theRangeIsInSnapshotDriveHistory =
                   _snapshotDriveHistory.subRanges.rangeSegments.any(
                 (element) => element == r,
@@ -70,8 +73,13 @@ class DriveHistoryComposite implements SegmentedGQLData {
   Stream<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
       _getNextStream() async* {
     for (SegmentedGQLData source in _subRangeToSnapshotItemMapping) {
+      print('Reading stream - ${source.hashCode} - ${source.currentIndex}');
       yield* source.getNextStream();
+      print(
+        'Done iterating stream - ${source.hashCode} - ${source.currentIndex}',
+      );
     }
+    return;
   }
 }
 

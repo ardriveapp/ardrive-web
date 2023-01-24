@@ -7,7 +7,6 @@ import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -15,14 +14,7 @@ Future<void> promptToCreateSnapshot(
   BuildContext context,
   Drive drive,
 ) async {
-  final arweave = context.read<ArweaveService>();
-  final pst = context.read<PstService>();
-
   final driveId = drive.id;
-  final currentHeight = await arweave.getCurrentBlockHeight();
-  final range = Range(start: 0, end: currentHeight);
-
-  print('Create snapshot for drive $driveId at $range');
 
   // ignore: use_build_context_synchronously
   return showModalDialog(
@@ -32,17 +24,12 @@ Future<void> promptToCreateSnapshot(
             builder: (context) {
               return BlocProvider(
                 create: (_) => CreateSnapshotCubit(
-                  arweave: arweave,
+                  arweave: context.read<ArweaveService>(),
                   driveDao: context.read<DriveDao>(),
                   profileCubit: context.read<ProfileCubit>(),
-                  pst: pst,
-                )..selectDriveAndHeightRange(
-                    driveId,
-                    range,
-                    currentHeight,
-                  ),
+                  pst: context.read<PstService>(),
+                )..selectDriveAndHeightRange(driveId),
                 child: CreateSnapshotDialog(
-                  arweave: arweave,
                   drive: drive,
                 ),
               );
@@ -52,10 +39,8 @@ Future<void> promptToCreateSnapshot(
 
 class CreateSnapshotDialog extends StatelessWidget {
   final Drive drive;
-  final ArweaveService _arweave;
 
-  const CreateSnapshotDialog({super.key, required this.drive, required arweave})
-      : _arweave = arweave;
+  const CreateSnapshotDialog({super.key, required this.drive});
 
   @override
   Widget build(BuildContext context) {

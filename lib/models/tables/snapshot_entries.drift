@@ -2,7 +2,6 @@ import 'network_transactions.drift';
 
 CREATE TABLE snapshot_entries (
     id TEXT NOT NULL,
-    txId TEXT NOT NULL,
     driveId TEXT NOT NULL,
     blockStart INTEGER NOT NULL,
     blockEnd INTEGER NOT NULL,

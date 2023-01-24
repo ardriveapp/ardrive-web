@@ -17,7 +17,7 @@ extension SnapshotEntriesCompanionExtensions on SnapshotEntriesCompanion {
       );
 
   /// Returns a list of [NetworkTransactionsCompanion] representing this entity.
-  NetworkTransactionsCompanion getTransactionCompanions() =>
+  NetworkTransactionsCompanion getTransactionCompanion() =>
       NetworkTransactionsCompanion.insert(
         id: txId.value,
         dateCreated: dateCreated,
