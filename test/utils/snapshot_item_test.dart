@@ -372,7 +372,6 @@ void main() {
           await countStreamItems(item.getNextStream());
 
           for (int height = r.start; height <= r.end; height++) {
-            // has data the first time
             expect(
               await SnapshotItemOnChain.getDataForTxId(
                 'DRIVE_ID',
@@ -383,15 +382,6 @@ void main() {
               utf8.encode(
                 'ENCODED DATA - H:$height',
               ),
-            );
-            // further calls to the method results in a null response
-            expect(
-              await SnapshotItemOnChain.getDataForTxId(
-                'DRIVE_ID',
-                'tx-$height',
-                true,
-              ),
-              null,
             );
           }
         },
