@@ -319,16 +319,23 @@ void main() {
           // has data the first time
           expect(
             await SnapshotItemOnChain.getDataForTxId(
-                'asdasdasdasd', 'tx-$height'),
+              'asdasdasdasd',
+              'tx-$height',
+              false,
+            ),
             utf8.encode(
               '{"name": "$height"}',
             ),
           );
           // further calls to the method results in a null response
           expect(
-              await SnapshotItemOnChain.getDataForTxId(
-                  'asdasdasdasd', '$height'),
-              null);
+            await SnapshotItemOnChain.getDataForTxId(
+              'asdasdasdasd',
+              '$height',
+              false,
+            ),
+            null,
+          );
         }
       });
 
@@ -362,21 +369,32 @@ void main() {
 
         // There is indeed some data
         expect(
-          await SnapshotItemOnChain.getDataForTxId('asdasdasdasd', 'tx-0'),
+          await SnapshotItemOnChain.getDataForTxId(
+            'asdasdasdasd',
+            'tx-0',
+            false,
+          ),
           isA<Uint8List>(),
         );
 
         // But data not present will return null
         expect(
           await SnapshotItemOnChain.getDataForTxId(
-              'asdasdasdasd', 'not present tx id'),
+            'asdasdasdasd',
+            'not present tx id',
+            false,
+          ),
           null,
         );
 
         // And valid txs' data will be discarded after calling dispose
         await SnapshotItemOnChain.dispose('asdasdasdasd');
         expect(
-          await SnapshotItemOnChain.getDataForTxId('asdasdasdasd', 'tx-1'),
+          await SnapshotItemOnChain.getDataForTxId(
+            'asdasdasdasd',
+            'tx-1',
+            false,
+          ),
           null,
         );
       });
