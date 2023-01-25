@@ -227,12 +227,26 @@ class SnapshotItemOnChain implements SnapshotItem {
     return data;
   }
 
-  static Future<Uint8List?> getDataForTxId(DriveID driveId, TxID txId) async {
+  static Future<Uint8List?> getDataForTxId(
+    DriveID driveId,
+    TxID txId,
+    bool isPrivate,
+  ) async {
     final Cache<Uint8List> cache = await _lazilyInitCache(driveId);
 
     final Uint8List? value = await cache.getAndRemove(txId);
 
-    return value;
+    if (value != null) {
+      if (isPrivate) {
+        // then it's base64-encoded
+        return base64.decode(String.fromCharCodes(value));
+      }
+
+      // if it's public then it's a non-base64 plain text
+      return value;
+    }
+
+    return null;
   }
 
   static Future<Cache<Uint8List>> _lazilyInitCache(DriveID driveId) async {

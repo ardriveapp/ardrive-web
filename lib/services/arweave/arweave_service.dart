@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
@@ -212,8 +213,13 @@ class ArweaveService {
       entityTxs.map(
         (entity) async {
           final txId = entity.id;
+          final isPrivate = driveKey != null;
           final Uint8List? cachedData =
-              await SnapshotItemOnChain.getDataForTxId(driveId, txId);
+              await SnapshotItemOnChain.getDataForTxId(
+            driveId,
+            txId,
+            isPrivate,
+          );
           if (cachedData != null) {
             return cachedData;
           } else {
@@ -260,7 +266,13 @@ class ArweaveService {
             rawEntityData,
             driveKey: driveKey,
           );
+        } else if (entityType == EntityType.snapshot) {
+          entity = await SnapshotEntity.fromTransaction(
+            transaction,
+          );
+          print('Snapshot entity found - ${transaction.toJson()}');
         }
+
         // TODO: Revisit
         if (blockHistory.isEmpty ||
             transaction.block!.height != blockHistory.last.blockHeight) {
