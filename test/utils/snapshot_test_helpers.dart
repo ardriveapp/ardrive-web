@@ -3,6 +3,23 @@ import 'dart:convert';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 
+Future<String> fakePrivateSnapshotSource(Range range) async {
+  return jsonEncode(
+    {
+      'txSnapshots': await fakeNodesStream(range)
+          .map(
+            (event) => {
+              'gqlNode': event,
+              'jsonMetadata': base64Encode(
+                utf8.encode(('ENCODED DATA - H:${event.block!.height}')),
+              ),
+            },
+          )
+          .toList(),
+    },
+  );
+}
+
 Future<String> fakeSnapshotSource(Range range) async {
   return jsonEncode(
     {
