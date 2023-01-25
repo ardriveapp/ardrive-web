@@ -269,6 +269,7 @@ class ArweaveService {
         } else if (entityType == EntityType.snapshot) {
           entity = await SnapshotEntity.fromTransaction(
             transaction,
+            null,
           );
           print('Snapshot entity found - ${transaction.toJson()}');
         }
@@ -835,6 +836,27 @@ class ArweaveService {
     final response = await ArDriveHTTP().getJson(coinGeckoApi);
 
     return response.data?['arweave']['usd'];
+  }
+
+  // instantiate entity from tx and metadata
+  Future<Uint8List> entityMetadataFromFromTxId(
+    String txId,
+    SecretKey? driveKey,
+  ) async {
+    // final http = ArDriveHTTP();
+    // final url = '${client.api.gatewayUrl.origin}/$txId';
+    // print('[ArweaveService] Getting metadata for $txId - (RUL: $url))');
+    // final response = await http.getAsBytes(url);
+    // final Uint8List metadata = response.data;
+    // return utf8.decode(metadata);
+
+    // The code below will eat all the redirects. How do I get the final URL?
+
+    // FIXME: not prepared for rate limiting
+    final Response data =
+        (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
+    final metadata = data.bodyBytes;
+    return metadata;
   }
 }
 
