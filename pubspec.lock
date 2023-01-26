@@ -517,7 +517,7 @@ packages:
       path: flutter_dropzone
       ref: "1b694faf02aefba15f7848741eefdf8df0593928"
       resolved-ref: "1b694faf02aefba15f7848741eefdf8df0593928"
-      url: "https://github.com/elliotsayes/flutter_dropzone"
+      url: "https://github.com/ar-io/flutter_dropzone"
     source: git
     version: "3.0.5"
   flutter_dropzone_platform_interface:

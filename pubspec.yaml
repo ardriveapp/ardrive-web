@@ -62,7 +62,7 @@ dependencies:
   http_client: ^1.5.1
   flutter_dropzone:
     git:
-      url: https://github.com/elliotsayes/flutter_dropzone
+      url: https://github.com/ar-io/flutter_dropzone
       ref: 1b694faf02aefba15f7848741eefdf8df0593928
       path: flutter_dropzone
   responsive_builder: ^0.4.1
