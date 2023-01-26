@@ -94,7 +94,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
           driveKey,
         );
 
-        await _arweave.postTx(folderTx);
+        // await _arweave.postTx(folderTx);
         folderEntity.txId = folderTx.id;
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
           performedAction: RevisionAction.create,
