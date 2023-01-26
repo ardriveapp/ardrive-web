@@ -58,7 +58,7 @@ packages:
       path: "."
       ref: "9dc9806993ff9a35d72b88460ac5c91f3ed33c81"
       resolved-ref: "9dc9806993ff9a35d72b88460ac5c91f3ed33c81"
-      url: "https://github.com/elliotsayes/ardrive_io.git"
+      url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.0.0"
   args:
@@ -81,7 +81,7 @@ packages:
       path: "."
       ref: "910dc058cb37a7c902edd09eb355acf8f597ec69"
       resolved-ref: "910dc058cb37a7c902edd09eb355acf8f597ec69"
-      url: "https://github.com/elliotsayes/arweave-dart.git"
+      url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
     version: "3.4.0"
   async:
@@ -379,12 +379,12 @@ packages:
     source: hosted
     version: "6.1.2"
   file_picker:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       path: "."
-      ref: "6cdf207ba762c6bc1ee688bbd8f217efcc4bb041"
+      ref: power-stream
       resolved-ref: "6cdf207ba762c6bc1ee688bbd8f217efcc4bb041"
-      url: "https://github.com/elliotsayes/flutter_file_picker"
+      url: "https://github.com/ar-io/flutter_file_picker"
     source: git
     version: "5.2.4"
   file_saver:
