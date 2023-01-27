@@ -57,13 +57,24 @@ class FileV2UploadHandle implements UploadHandle {
     required Wallet wallet,
     required PstService pstService,
   }) async {
-    final fileData = await file.ioFile.readAsBytes();
     final packageInfo = await PackageInfo.fromPlatform();
     final String version = packageInfo.version;
+
+    Transaction transaction;
+    if (isPrivate) {
+      transaction = await createEncryptedTransaction(
+        await file.ioFile.readAsBytes(),
+        fileKey!,
+      );
+    } else {
+      transaction = TransactionStream.withBlobData(
+        dataStreamGenerator: file.ioFile.openReadStream,
+        dataSize: await file.ioFile.length,
+      );
+    }
+
     dataTx = await arweaveService.client.transactions.prepare(
-      isPrivate
-          ? await createEncryptedTransaction(fileData, fileKey!)
-          : Transaction.withBlobData(data: fileData),
+      transaction,
       wallet,
     )
       ..addApplicationTags(version: version)

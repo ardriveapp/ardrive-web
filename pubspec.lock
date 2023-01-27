@@ -56,8 +56,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.1.0"
-      resolved-ref: e9b24fc847f414d85b12ebc280db8dbd45c8abcc
+      ref: "9dc9806993ff9a35d72b88460ac5c91f3ed33c81"
+      resolved-ref: "9dc9806993ff9a35d72b88460ac5c91f3ed33c81"
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.0.0"
@@ -79,8 +79,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v3.4.0"
-      resolved-ref: ea4118115a80c52b7aedbb6f361080e92d5cf298
+      ref: "910dc058cb37a7c902edd09eb355acf8f597ec69"
+      resolved-ref: "910dc058cb37a7c902edd09eb355acf8f597ec69"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
     version: "3.4.0"
@@ -379,11 +379,13 @@ packages:
     source: hosted
     version: "6.1.2"
   file_picker:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: file_picker
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: "."
+      ref: power-stream
+      resolved-ref: "6cdf207ba762c6bc1ee688bbd8f217efcc4bb041"
+      url: "https://github.com/ar-io/flutter_file_picker"
+    source: git
     version: "5.2.4"
   file_saver:
     dependency: transitive
@@ -512,23 +514,29 @@ packages:
   flutter_dropzone:
     dependency: "direct main"
     description:
-      name: flutter_dropzone
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: flutter_dropzone
+      ref: "1b694faf02aefba15f7848741eefdf8df0593928"
+      resolved-ref: "1b694faf02aefba15f7848741eefdf8df0593928"
+      url: "https://github.com/ar-io/flutter_dropzone"
+    source: git
     version: "3.0.5"
   flutter_dropzone_platform_interface:
     dependency: transitive
     description:
-      name: flutter_dropzone_platform_interface
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: flutter_dropzone_platform_interface
+      ref: folder-detect
+      resolved-ref: "109e6293149a61270f0a2bf84d4da0eb5e84b7cf"
+      url: "https://github.com/elliotsayes/flutter_dropzone"
+    source: git
     version: "2.0.5"
   flutter_dropzone_web:
     dependency: transitive
     description:
-      name: flutter_dropzone_web
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: flutter_dropzone_web
+      ref: folder-detect
+      resolved-ref: "109e6293149a61270f0a2bf84d4da0eb5e84b7cf"
+      url: "https://github.com/elliotsayes/flutter_dropzone"
+    source: git
     version: "3.0.8"
   flutter_launcher_icons:
     dependency: "direct main"
@@ -921,6 +929,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.3.0"
+  mutex:
+    dependency: transitive
+    description:
+      name: mutex
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.0.1"
   nested:
     dependency: transitive
     description:
