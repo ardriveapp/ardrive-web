@@ -70,6 +70,7 @@ void main() {
 
       driveCreateCubit = DriveCreateCubit(
         arweave: arweave,
+        turboService: turboService,
         driveDao: driveDao,
         drivesCubit: drivesCubit,
         profileCubit: profileCubit,
