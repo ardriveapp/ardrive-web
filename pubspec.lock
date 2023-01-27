@@ -47,8 +47,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: request-encoder
-      resolved-ref: "04e21b54693cb97911f6a73738254c3edf8d233a"
+      ref: "v1.1.2"
+      resolved-ref: d6ecfb5cd856a3ead100671135c05e1943e1be16
       url: "https://github.com/ar-io/ardrive_http.git"
     source: git
     version: "1.0.0"
