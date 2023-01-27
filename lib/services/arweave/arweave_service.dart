@@ -212,15 +212,21 @@ class ArweaveService {
       entityTxs.map(
         (entity) async {
           final txId = entity.id;
-          final isPrivate = driveKey != null;
           final Uint8List? cachedData =
               await SnapshotItemOnChain.getDataForTxId(
             driveId,
             txId,
-            isPrivate,
           );
           if (cachedData != null) {
-            return cachedData;
+            final isPrivate = driveKey != null;
+
+            if (isPrivate) {
+              // then it's base64-encoded
+              return base64.decode(String.fromCharCodes(cachedData));
+            } else {
+              // public data is plain text
+              return cachedData;
+            }
           } else {
             // TODO: make use of the NetworkPackage
             final Response data = (await httpRetry
