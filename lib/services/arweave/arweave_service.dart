@@ -210,30 +210,11 @@ class ArweaveService {
   }) async {
     final List<Uint8List> responses = await Future.wait(
       entityTxs.map(
-        (entity) async {
-          final txId = entity.id;
-          final Uint8List? cachedData =
-              await SnapshotItemOnChain.getDataForTxId(
-            driveId,
-            txId,
-          );
-          if (cachedData != null) {
-            final isPrivate = driveKey != null;
-
-            if (isPrivate) {
-              // then it's base64-encoded
-              return base64.decode(String.fromCharCodes(cachedData));
-            } else {
-              // public data is plain text
-              return cachedData;
-            }
-          } else {
-            // TODO: make use of the NetworkPackage
-            final Response data = (await httpRetry
-                .processRequest(() => client.api.getSandboxedTx(txId)));
-            return data.bodyBytes;
-          }
-        },
+        (entity) => _getEntityData(
+          entityId: entity.id,
+          driveId: driveId,
+          isPrivate: driveKey != null,
+        ),
       ),
     );
 
@@ -310,6 +291,56 @@ class ArweaveService {
       blockHistory.isNotEmpty ? blockHistory.last.blockHeight : lastBlockHeight,
       blockHistory,
     );
+  }
+
+  Future<Uint8List> _getEntityData({
+    required String entityId,
+    required String driveId,
+    required bool isPrivate,
+  }) async {
+    final txId = entityId;
+
+    final cachedData = await _getCachedEntityDataFromSnapshot(
+      driveId: driveId,
+      txId: txId,
+      isPrivate: isPrivate,
+    );
+
+    if (cachedData != null) {
+      return cachedData;
+    }
+
+    return _getEntityDataFromNetwork(txId: txId);
+  }
+
+  Future<Uint8List?> _getCachedEntityDataFromSnapshot({
+    required String txId,
+    required String driveId,
+    required bool isPrivate,
+  }) async {
+    final Uint8List? cachedData = await SnapshotItemOnChain.getDataForTxId(
+      driveId,
+      txId,
+    );
+
+    if (cachedData != null) {
+      if (isPrivate) {
+        // then it's base64-encoded
+        return base64.decode(String.fromCharCodes(cachedData));
+      } else {
+        // public data is plain text
+        return cachedData;
+      }
+    }
+
+    return null;
+  }
+
+  Future<Uint8List> _getEntityDataFromNetwork({required String txId}) async {
+    final Response data =
+        (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
+
+    return data.bodyBytes;
   }
 
   // Gets the unique drive entity transactions for a particular user.
