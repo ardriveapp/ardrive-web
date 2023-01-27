@@ -154,11 +154,7 @@ class SnapshotItemOnChain implements SnapshotItem {
       return _cachedSource!;
     }
 
-    final dataBytes = await ArDriveHTTP().getAsBytes(_dataUri).catchError(
-      (e) {
-        print('Error while fetching Snapshot Data - $e');
-      },
-    );
+    final dataBytes = await ArDriveHTTP().getAsBytes(_dataUri);
 
     final dataBytesAsString = String.fromCharCodes(dataBytes.data);
     return _cachedSource = dataBytesAsString;
@@ -191,8 +187,10 @@ class SnapshotItemOnChain implements SnapshotItem {
       try {
         node = DriveHistoryTransaction.fromJson(item['gqlNode']);
       } catch (e, s) {
-        print('Error while parsing GQLNode - $e, $s');
-        rethrow;
+        print(
+          'Error while parsing GQLNode from snapshot item ($txId) - $e, $s',
+        );
+        continue;
       }
 
       final isInRange = range.isInRange(node.block?.height ?? -1);
