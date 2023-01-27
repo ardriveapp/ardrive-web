@@ -24,6 +24,7 @@ Future<void> promptToRenameDrive(
           create: (context) => DriveRenameCubit(
             driveId: driveId,
             arweave: context.read<ArweaveService>(),
+            turboService: context.read<TurboService>(),
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
             syncCubit: context.read<SyncCubit>(),

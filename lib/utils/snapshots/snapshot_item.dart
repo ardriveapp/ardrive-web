@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/string_types.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
@@ -26,6 +25,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   factory SnapshotItem.fromGQLNode({
     required SnapshotEntityTransaction node,
     required HeightRange subRanges,
+    required String arweaveUrl,
     @visibleForTesting String? fakeSource,
   }) {
     final tags = node.tags;
@@ -45,6 +45,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
       timestamp: timestamp,
       txId: txId,
       subRanges: subRanges,
+      arweaveUrl: arweaveUrl,
       fakeSource: fakeSource,
     );
   }
@@ -53,6 +54,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   static Stream<SnapshotItem> instantiateAll(
     Stream<SnapshotEntityTransaction> itemsStream, {
     int? lastBlockHeight,
+    required String arweaveUrl,
     @visibleForTesting String? fakeSource,
   }) async* {
     HeightRange obscuredByAccumulator = HeightRange(rangeSegments: [
@@ -66,6 +68,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
         snapshotItem = instantiateSingle(
           item,
           obscuredBy: obscuredByAccumulator,
+          arweaveUrl: arweaveUrl,
           fakeSource: fakeSource,
         );
       } catch (e) {
@@ -89,6 +92,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   static SnapshotItem instantiateSingle(
     SnapshotEntityTransaction item, {
     required HeightRange obscuredBy,
+    required String arweaveUrl,
     @visibleForTesting String? fakeSource,
   }) {
     late Range totalRange;
@@ -114,6 +118,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
     SnapshotItem snapshotItem = SnapshotItem.fromGQLNode(
       node: item,
       subRanges: subRanges,
+      arweaveUrl: arweaveUrl,
       fakeSource: fakeSource,
     );
     return snapshotItem;
@@ -123,6 +128,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
 class SnapshotItemOnChain implements SnapshotItem {
   final int timestamp;
   final TxID txId;
+  final String arweaveUrl;
   String? _cachedSource;
   int _currentIndex = -1;
 
@@ -135,6 +141,7 @@ class SnapshotItemOnChain implements SnapshotItem {
     required this.timestamp,
     required this.txId,
     required this.subRanges,
+    required this.arweaveUrl,
     @visibleForTesting String? fakeSource,
   }) : _cachedSource = fakeSource;
 
@@ -154,7 +161,8 @@ class SnapshotItemOnChain implements SnapshotItem {
       return _cachedSource!;
     }
 
-    final dataBytes = await ArDriveHTTP().getAsBytes(_dataUri).catchError(
+    final dataBytes =
+        await ArDriveHTTP().getAsBytes('$arweaveUrl/$txId').catchError(
       (e) {
         print('Error while fetching Snapshot Data - $e');
       },
@@ -162,10 +170,6 @@ class SnapshotItemOnChain implements SnapshotItem {
 
     final dataBytesAsString = String.fromCharCodes(dataBytes.data);
     return _cachedSource = dataBytesAsString;
-  }
-
-  String get _dataUri {
-    return '${config.defaultArweaveGatewayUrl}/$txId';
   }
 
   @override

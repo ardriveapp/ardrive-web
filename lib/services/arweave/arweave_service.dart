@@ -791,6 +791,26 @@ class ArweaveService {
     return bundleTx;
   }
 
+  /// Creates and signs a [DataItem] with a [DataBundle] as payload.
+  /// Allows us to create nested bundles for use with the upload service.
+
+  Future<DataItem> prepareBundledDataItem(
+    DataBundle bundle,
+    Wallet wallet,
+  ) async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    final item = DataItem.withBlobData(data: bundle.blob)
+      ..addApplicationTags(
+        version: packageInfo.version,
+      )
+      ..addBundleTags()
+      ..addBarTags()
+      ..setOwner(await wallet.getOwner());
+    await item.sign(wallet);
+
+    return item;
+  }
+
   Future<Transaction> prepareDataBundleTxFromBlob(
       Uint8List bundleBlob, Wallet wallet) async {
     final packageInfo = await PackageInfo.fromPlatform();
