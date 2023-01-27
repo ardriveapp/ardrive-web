@@ -253,6 +253,7 @@ class SyncCubit extends Cubit<SyncState> {
           drive.id,
           driveDao: _driveDao,
           arweaveService: _arweave,
+          ghostFolders: ghostFolders,
           database: _db,
           profileState: profile,
           addError: addError,
@@ -357,7 +358,9 @@ class SyncCubit extends Cubit<SyncState> {
     Map<String, FolderEntriesCompanion> foldersByIdMap,
     Map<String, FileEntriesCompanion> filesByIdMap,
   ) async {
+    print('Generating fs entry paths...');
     ghostFolders = await _generateFsEntryPaths(
+      ghostFolders: ghostFolders,
       driveDao: _driveDao,
       driveId: driveId,
       foldersByIdMap: foldersByIdMap,

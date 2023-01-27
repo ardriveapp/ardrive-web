@@ -13,6 +13,7 @@ Stream<double> _syncDrive(
   required int currentBlockHeight,
   required int lastBlockHeight,
   required int transactionParseBatchSize,
+  required Map<FolderID, GhostFolder> ghostFolders,
 }) async* {
   /// Variables to count the current drive's progress information
   final drive = await driveDao.driveById(driveId: driveId).getSingle();
@@ -162,6 +163,7 @@ Stream<double> _syncDrive(
   );
 
   yield* _parseDriveTransactionsIntoDatabaseEntities(
+    ghostFolders: ghostFolders,
     driveDao: driveDao,
     arweaveService: arweaveService,
     database: database,
