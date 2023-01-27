@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/entities.dart';
-import 'package:ardrive/entities/snapshot_entity.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
 import 'package:ardrive/services/services.dart';
@@ -267,10 +266,7 @@ class ArweaveService {
             driveKey: driveKey,
           );
         } else if (entityType == EntityType.snapshot) {
-          entity = await SnapshotEntity.fromTransaction(
-            transaction,
-          );
-          print('Snapshot entity found - ${transaction.toJson()}');
+          // TODO: instantiate entity and add to blockHistory
         }
 
         // TODO: Revisit
@@ -301,7 +297,7 @@ class ArweaveService {
     for (final block in blockHistory) {
       block.entities.sort((e1, e2) => e1!.createdAt.compareTo(e2!.createdAt));
       //Remove entities with spoofed owners
-      block.entities.removeWhere((e) => e!.ownerAddress != owner);
+      block.entities.removeWhere((e) => e == null || e.ownerAddress != owner);
     }
 
     return DriveEntityHistory(
