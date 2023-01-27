@@ -7,7 +7,7 @@ Stream<double> _syncDrive(
   String driveId, {
   required DriveDao driveDao,
   required ProfileState profileState,
-  required ArweaveService arweaveService,
+  required ArweaveService arweave,
   required Database database,
   required Function addError,
   required int currentBlockHeight,
@@ -39,12 +39,13 @@ Stream<double> _syncDrive(
 
   final transactions = <DriveHistoryTransaction>[];
 
-  final snapshotsStream = arweaveService.getAllSnapshotsOfDrive(
+  final snapshotsStream = arweave.getAllSnapshotsOfDrive(
     driveId,
     lastBlockHeight,
   );
   final List<SnapshotItem> snapshotItems = await SnapshotItem.instantiateAll(
     snapshotsStream,
+    arweaveUrl: arweave.client.api.gatewayUrl.toString(),
   ).toList();
   final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
     items: snapshotItems,
@@ -163,7 +164,7 @@ Stream<double> _syncDrive(
 
   yield* _parseDriveTransactionsIntoDatabaseEntities(
     driveDao: driveDao,
-    arweaveService: arweaveService,
+    arweave: arweave,
     database: database,
     transactions: transactions,
     drive: drive,

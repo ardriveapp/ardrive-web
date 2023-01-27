@@ -218,25 +218,33 @@ List<PopupMenuEntry<Function>> _buildItems(
   if (profileState.runtimeType == ProfileLoggedIn) {
     final minimumWalletBalance = BigInt.from(10000000);
     final profile = profileState as ProfileLoggedIn;
-    final hasMinBalance = profile.walletBalance >= minimumWalletBalance;
+    final hasMiniumWalletBalance = profile.hasMinimumBalanceForUpload(
+      minimumWalletBalance: minimumWalletBalance,
+    );
+    final canUpload = profile.canUpload(
+      minimumWalletBalance: minimumWalletBalance,
+    );
+    final canCreateNewDrive = drivesState is DrivesLoadSuccess
+        ? drivesState.canCreateNewDrive && canUpload
+        : false;
     return [
       if (driveDetailState is DriveDetailLoadSuccess) ...{
-        _buildNewFolderItem(context, driveDetailState, hasMinBalance),
+        _buildNewFolderItem(context, driveDetailState, canUpload),
         const PopupMenuDivider(key: Key('divider-1')),
         _buildUploadFileItem(
           context,
           driveDetailState,
-          hasMinBalance,
+          hasMiniumWalletBalance,
         ),
         _buildUploadFolderItem(
           context,
           driveDetailState,
-          hasMinBalance,
+          hasMiniumWalletBalance,
         ),
         const PopupMenuDivider(key: Key('divider-2')),
       },
       if (drivesState is DrivesLoadSuccess) ...{
-        _buildCreateDrive(context, drivesState, hasMinBalance),
+        _buildCreateDrive(context, canCreateNewDrive),
         _buildAttachDrive(context)
       },
       if (driveDetailState is DriveDetailLoadSuccess &&
@@ -244,7 +252,7 @@ List<PopupMenuEntry<Function>> _buildItems(
         _buildCreateManifestItem(
           context,
           driveDetailState,
-          hasMinBalance,
+          canUpload,
         )
       },
     ];
@@ -335,14 +343,13 @@ PopupMenuEntry<Function> _buildAttachDrive(BuildContext context) {
 
 PopupMenuEntry<Function> _buildCreateDrive(
   BuildContext context,
-  DrivesLoadSuccess drivesState,
-  bool hasMinBalance,
+  bool canCreateNewDrive,
 ) {
   return _buildMenuItemTile(
     context: context,
-    isEnabled: drivesState.canCreateNewDrive && hasMinBalance,
+    isEnabled: canCreateNewDrive,
     itemTitle: appLocalizationsOf(context).newDrive,
-    message: hasMinBalance
+    message: canCreateNewDrive
         ? null
         : appLocalizationsOf(context).insufficientFundsForCreateADrive,
     value: (context) => promptToCreateDrive(context),

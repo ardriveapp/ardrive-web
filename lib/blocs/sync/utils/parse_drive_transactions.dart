@@ -5,7 +5,7 @@ part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   required DriveDao driveDao,
   required Database database,
-  required ArweaveService arweaveService,
+  required ArweaveService arweave,
   required List<DriveHistoryTransaction> transactions,
   required Drive drive,
   required SecretKey? driveKey,

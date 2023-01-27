@@ -991,6 +991,10 @@
   "@insufficientARForUpload": {
     "description": "The wallet does not have enough balance"
   },
+  "freeTurboTransaction": "Cost: 0 AR\nThis small transaction is free thanks to Turbo.",
+  "@freeTurboTransaction": {
+  "description": "Message explaining that your upload will be free thanks to Turbo"
+  },
   "bundlingAndSigningUpload": "Bundling and signing upload",
   "@bundlingAndSigningUpload": {
     "description": "The app is bundling together and signing the transactions"
