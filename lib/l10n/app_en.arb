@@ -1509,5 +1509,29 @@
   "copyWalletAddress": "Copy Wallet Address",
   "@addressCopied": {
     "description": "Tooltip on copy wallet address button"
-  }
+  },
+  "yourPrivateSecureAndPermanentDrive": "Your private, secure, and permanent hard drive.",
+  "@yourPrivateSecureAndPermanentDrive": {
+    "description": "Your private, secure, and permanent hard drive."
+  },
+  "yourPrivateSecureAndPermanentDrive": "Your private, secure, and permanent hard drive.",
+  "@yourPrivateSecureAndPermanentDrive": {
+    "description": "Your private, secure, and permanent hard drive."
+  },
+  "arConnectWalletDoestNotMatchArDriveWallet": "Your ArConnect wallet does not match your ArDrive wallet. Please try again.",
+  "@arConnectWalletDoestNotMatchArDriveWallet": {
+    "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
+  },
+  "arConnectWalletDoestNotMatchArDriveWallet": "Your ArConnect wallet does not match your ArDrive wallet. Please try again.",
+  "@arConnectWalletDoestNotMatchArDriveWallet": {
+    "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
+  },
+  "pleaseTryAgain": "Please try again.",
+  "@arConnectWalletDoestNotMatchArDriveWallet": {
+    "description": "Please try again."
+  },
+  "pleaseTryAgain": "Please try again.",
+  "@arConnectWalletDoestNotMatchArDriveWallet": {
+    "description": "Please try again."
+  },
 }

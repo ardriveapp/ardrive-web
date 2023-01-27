@@ -139,7 +139,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
                 child: SizedBox(
                   width: MediaQuery.of(context).size.width * 0.25,
                   child: Text(
-                    'Your private, secure, and permanent hard drive.',
+                    appLocalizationsOf(context)
+                        .yourPrivateSecureAndPermanentDrive,
                     textAlign: TextAlign.start,
                     style: ArDriveTypography.headline.headline4Regular(
                       color: const Color(0xffFAFAFA),
@@ -166,9 +167,9 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             showAnimatedDialog(
               context,
               content: ArDriveIconModal(
-                title: 'Login Failed',
-                content:
-                    'Your ArConnect wallet does not match your ArDrive wallet. Please try again.',
+                title: appLocalizationsOf(context).loginFailed,
+                content: appLocalizationsOf(context)
+                    .arConnectWalletDoestNotMatchArDriveWallet,
                 icon: ArDriveIcons.warning(
                   size: 88,
                   color: ArDriveTheme.of(context)
@@ -183,8 +184,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           showAnimatedDialog(
             context,
             content: ArDriveIconModal(
-              title: 'Login Failed',
-              content: 'Please try again.',
+              title: appLocalizationsOf(context).loginFailed,
+              content: appLocalizationsOf(context).pleaseTryAgain,
               icon: ArDriveIcons.warning(
                 size: 88,
                 color:
