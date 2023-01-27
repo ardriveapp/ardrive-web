@@ -319,10 +319,7 @@ void main() {
           // has data the first time
           expect(
             await SnapshotItemOnChain.getDataForTxId(
-              'asdasdasdasd',
-              'tx-$height',
-              false,
-            ),
+                'asdasdasdasd', 'tx-$height'),
             utf8.encode(
               '{"name": "$height"}',
             ),
@@ -330,62 +327,11 @@ void main() {
           // further calls to the method results in a null response
           expect(
             await SnapshotItemOnChain.getDataForTxId(
-              'asdasdasdasd',
-              'tx-$height',
-              false,
-            ),
+                'asdasdasdasd', 'tx-$height'),
             null,
           );
         }
       });
-
-      test(
-        'returns the base64-encoded data for a single transaction of a private drive',
-        () async {
-          final r = Range(start: 0, end: 10);
-
-          SnapshotItemOnChain item = SnapshotItem.fromGQLNode(
-            node:
-                SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
-                    .fromJson(
-              {
-                'id': 'hwgMuTV_dtFqfC9fJXfZTv00aOm17yL0wYucqh05YAQ',
-                'bundledIn': {'id': 'ASDASDASDASDASDASD'},
-                'owner': {'address': '1234567890'},
-                'tags': [
-                  {'name': 'Block-Start', 'value': '${r.start}'},
-                  {'name': 'Block-End', 'value': '${r.end}'},
-                  {'name': 'Drive-Id', 'value': 'DRIVE_ID'},
-                ],
-                'block': {
-                  'height': 100,
-                  'timestamp': DateTime.now().microsecondsSinceEpoch
-                }
-              },
-            ),
-            subRanges: HeightRange(rangeSegments: [r]),
-
-            // the fake source has the base64-encoded data
-            fakeSource: await fakePrivateSnapshotSource(r),
-          ) as SnapshotItemOnChain;
-
-          await countStreamItems(item.getNextStream());
-
-          for (int height = r.start; height <= r.end; height++) {
-            expect(
-              await SnapshotItemOnChain.getDataForTxId(
-                'DRIVE_ID',
-                'tx-$height',
-                true,
-              ),
-              // returns it base64-decoded
-              utf8.encode(
-                'ENCODED DATA - H:$height',
-              ),
-            );
-          }
-        },
-      );
 
       test('returns null if no data present', () async {
         final r = Range(start: 0, end: 10);
@@ -417,32 +363,21 @@ void main() {
 
         // There is indeed some data
         expect(
-          await SnapshotItemOnChain.getDataForTxId(
-            'asdasdasdasd',
-            'tx-0',
-            false,
-          ),
+          await SnapshotItemOnChain.getDataForTxId('asdasdasdasd', 'tx-0'),
           isA<Uint8List>(),
         );
 
         // But data not present will return null
         expect(
           await SnapshotItemOnChain.getDataForTxId(
-            'asdasdasdasd',
-            'not present tx id',
-            false,
-          ),
+              'asdasdasdasd', 'not present tx id'),
           null,
         );
 
         // And valid txs' data will be discarded after calling dispose
         await SnapshotItemOnChain.dispose('asdasdasdasd');
         expect(
-          await SnapshotItemOnChain.getDataForTxId(
-            'asdasdasdasd',
-            'tx-1',
-            false,
-          ),
+          await SnapshotItemOnChain.getDataForTxId('asdasdasdasd', 'tx-1'),
           null,
         );
       });
