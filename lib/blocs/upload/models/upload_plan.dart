@@ -19,7 +19,7 @@ class UploadPlan {
 
   final List<BundleUploadHandle> bundleUploadHandles = [];
 
-  late bool areAllBundlesTurboBundles;
+  bool useTurbo = false;
 
   UploadPlan._create({
     required this.fileV2UploadHandles,
@@ -54,7 +54,6 @@ class UploadPlan {
   }) async {
     // Set bundle size limit according the platform
     // This should be reviewed when we implement stream uploads
-    bool useTurbo = false;
     if (turboService.useTurbo) {
       final areDataItemSizesUnderThreshold = await Future.wait(
         fileDataItemUploadHandles.values.map(
@@ -74,7 +73,6 @@ class UploadPlan {
         ? turboService.allowedDataItemSize
         : (kIsWeb ? bundleSizeLimit : mobileBundleSizeLimit);
 
-    areAllBundlesTurboBundles = useTurbo;
     final bundleItems = await NextFitBundlePacker<UploadHandle>(
       maxBundleSize: maxBundleSize,
       maxDataItemCount: maxFilesPerBundle,

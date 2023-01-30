@@ -286,7 +286,7 @@ class UploadCubit extends Cubit<UploadState> {
           uploadIsPublic: _targetDrive.isPublic,
           sufficientArBalance: profile.walletBalance >= costEstimate.totalCost,
           uploadPlan: uploadPlan,
-          isFreeThanksToTurbo: uploadPlan.areAllBundlesTurboBundles,
+          isFreeThanksToTurbo: uploadPlan.useTurbo,
         ),
       );
     } catch (error) {
