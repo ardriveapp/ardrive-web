@@ -890,7 +890,6 @@ class ArweaveService {
     return response.data?['arweave']['usd'];
   }
 
-  // instantiate entity from tx and metadata
   Future<Uint8List> dataFromFromTxId(
     String txId,
     SecretKey? driveKey,
