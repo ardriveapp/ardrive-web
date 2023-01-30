@@ -47,8 +47,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     DriveID driveId, {
     Range? range,
   }) async {
-    print('Select drive $driveId and height range $range');
-
     final currentHeight = await _arweave.getCurrentBlockHeight();
 
     final maximumHeightToSnapshot =
@@ -64,6 +62,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       _range = Range(start: 0, end: maximumHeightToSnapshot);
     }
 
+    // ignore: avoid_print
     print(
       'Trusted range to be snapshotted (Current height: $currentHeight): $_range',
     );
@@ -73,6 +72,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     if (!_isValidHeightRange()) {
       final errMessage =
           'Invalid height range chosen. ${_range.end} >= $_currentHeight';
+      // ignore: avoid_print
       print(errMessage);
       emit(ComputeSnapshotDataFailure(
         errorMessage: errMessage,
@@ -89,8 +89,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       driveId: driveId,
       range: _range,
     ));
-
-    print('Computing snapshot data event emmited');
 
     // declare the GQL read stream out of arweave
     final gqlEdgesStream = _arweave.getSegmentedTransactionsFromDrive(
@@ -115,21 +113,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       jsonMetadataOfTxId: _jsonMetadataOfTxId,
     );
 
-    print('About to start reading the snapshot data stream');
-
     // Stream snapshot data to the temporal file
     await for (final item in snapshotItemToBeCreated.getSnapshotData()) {
-      print('##> $item');
       dataBuffer.add(item);
     }
 
-    print('Done reading the snapshot data stream');
-
     final dataStart = snapshotItemToBeCreated.dataStart;
     final dataEnd = snapshotItemToBeCreated.dataEnd;
-
-    print('Data start: $dataStart');
-    print('Data end: $dataEnd');
 
     final data = dataBuffer.takeBytes();
 
@@ -143,8 +133,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       dataEnd: dataEnd,
       data: data,
     );
-
-    print('Snapshot entity created: $snapshotEntity');
 
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
@@ -195,8 +183,6 @@ Balance: ${profile.walletBalance} AR, Cost: $totalCost AR''',
   }
 
   Future<Uint8List> _jsonMetadataOfTxId(String txId) async {
-    print('About to request metadata of $txId');
-
     final drive =
         await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
     final isPrivate = drive != null && drive.privacy != DrivePrivacy.public;
@@ -207,18 +193,14 @@ Balance: ${profile.walletBalance} AR, Cost: $totalCost AR''',
       null, // key is null because we don't re-encrypt the snapshot data
     );
 
-    print('Requested to arweave - $txId');
-
     if (isPrivate) {
       final safeEntityDataFromArweave = Uint8List.fromList(
         utf8.encode(base64Encode(entityJsonData)),
       );
 
-      print('Base64-encoded private data: $safeEntityDataFromArweave');
       return safeEntityDataFromArweave;
     }
 
-    print('Public data: $entityJsonData');
     return entityJsonData;
   }
 
@@ -236,7 +218,6 @@ Balance: ${profile.walletBalance} AR, Cost: $totalCost AR''',
       emit(UploadingSnapshot());
 
       await _arweave.postTx(params.signedTx);
-      // await params.addSnapshotItemToDatabase();
 
       emit(SnapshotUploadSuccess());
     } catch (err) {
