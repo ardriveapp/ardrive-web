@@ -773,14 +773,18 @@ class ArweaveService {
 
   Future<Transaction> prepareEntityTx(
     Entity entity,
-    Wallet wallet, [
-    SecretKey? key,
-  ]) async {
+    Wallet wallet,
+    SecretKey? key, {
+    bool skipSignature = false,
+  }) async {
     final tx = await client.transactions.prepare(
       await entity.asTransaction(key: key),
       wallet,
     );
-    await tx.sign(wallet);
+
+    if (!skipSignature) {
+      await tx.sign(wallet);
+    }
 
     return tx;
   }
