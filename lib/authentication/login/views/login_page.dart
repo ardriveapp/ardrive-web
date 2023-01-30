@@ -267,7 +267,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
             Align(
               alignment: Alignment.topCenter,
               child: Text(
-                'Welcome back!',
+                appLocalizationsOf(context).welcomeBack,
                 style: ArDriveTypography.headline.headline4Regular(),
               ),
             ),
@@ -275,26 +275,15 @@ class _PromptWalletViewState extends State<PromptWalletView> {
               children: [
                 ArDriveDropAreaSingleInput(
                   width: double.maxFinite,
-                  dragAndDropDescription: 'Drag & Drop your Keyfile',
-                  dragAndDropButtonTitle: 'Browse Json',
+                  dragAndDropDescription:
+                      appLocalizationsOf(context).dragAndDropDescription,
+                  dragAndDropButtonTitle:
+                      appLocalizationsOf(context).dragAndDropButtonTitle,
                   onDragDone: (file) {
                     _file = file;
                     if (!_isTermsChecked) {
-                      showAnimatedDialog(
-                        context,
-                        content: ArDriveIconModal(
-                          title: 'Terms and Conditions',
-                          content:
-                              'Please accept the terms and conditions to continue.',
-                          icon: ArDriveIcons.warning(
-                            size: 88,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeErrorDefault,
-                          ),
-                        ),
-                      );
+                      showAnimatedDialog(context,
+                          content: _showAcceptTermsModal());
                       return;
                     }
                     context.read<LoginBloc>().add(AddWalletFile(file));
@@ -302,26 +291,12 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   buttonCallback: (file) {
                     _file = file;
                     if (!_isTermsChecked) {
-                      showAnimatedDialog(
-                        context,
-                        content: ArDriveIconModal(
-                          title: 'Terms and Conditions',
-                          content:
-                              'Please accept the terms and conditions to continue.',
-                          icon: ArDriveIcons.warning(
-                            size: 88,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeErrorDefault,
-                          ),
-                        ),
-                      );
-                      return;
+                      showAnimatedDialog(context,
+                          content: _showAcceptTermsModal());
                     }
                     context.read<LoginBloc>().add(AddWalletFile(file));
                   },
-                  errorDescription: 'Invalid Keyfile',
+                  errorDescription: appLocalizationsOf(context).invalidKeyFile,
                   validateFile: (file) async {
                     final wallet = await context
                         .read<LoginBloc>()
@@ -337,7 +312,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      'Or continue with',
+                      appLocalizationsOf(context).orContinueWith,
                       style: ArDriveTypography.body.smallRegular(
                           color: ArDriveTheme.of(context)
                               .themeData
@@ -430,6 +405,17 @@ class _PromptWalletViewState extends State<PromptWalletView> {
       ),
     );
   }
+
+  Widget _showAcceptTermsModal() {
+    return ArDriveIconModal(
+      title: appLocalizationsOf(context).termsAndConditions,
+      content: appLocalizationsOf(context).pleaseAcceptTheTermsToContinue,
+      icon: ArDriveIcons.warning(
+        size: 88,
+        color: ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+      ),
+    );
+  }
 }
 
 class _LoginCard extends StatelessWidget {
@@ -516,7 +502,7 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                       obscureText: true,
                       autofocus: true,
                       autofillHints: const [AutofillHints.password],
-                      hintText: 'Enter password',
+                      hintText: appLocalizationsOf(context).enterPassword,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           setState(() {
@@ -542,7 +528,8 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                       onPressed: () {
                         _onSubmit();
                       },
-                      text: 'Proceed',
+                      text:
+                          appLocalizationsOf(context).proceedUnlockWithPassword,
                     ),
                   ),
                 ],
@@ -640,7 +627,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
               height: 73,
             ),
             Text(
-              'Please create and confirm your password. You will use this password to log in.',
+              appLocalizationsOf(context).createAndConfirmPassword,
               textAlign: TextAlign.center,
               style: ArDriveTypography.headline.headline5Regular(),
             ),
@@ -663,7 +650,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
             showObfuscationToggle: true,
             obscureText: true,
             autofillHints: const [AutofillHints.password],
-            hintText: 'Enter password',
+            hintText: appLocalizationsOf(context).enterPassword,
             onChanged: (s) {
               _formKey.currentState?.validate();
             },
@@ -689,7 +676,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
             showObfuscationToggle: true,
             obscureText: true,
             autofillHints: const [AutofillHints.password],
-            hintText: 'Confirm password',
+            hintText: appLocalizationsOf(context).confirmPassword,
             textInputAction: TextInputAction.done,
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -722,7 +709,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
               isDisabled:
                   _passwordIsValid == false || _confirmPasswordIsValid == false,
               onPressed: _onSubmit,
-              text: 'Proceed',
+              text: appLocalizationsOf(context).proceedCreatePassword,
             ),
           ),
           const SizedBox(
@@ -775,14 +762,14 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
               color:
                   ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
             ),
-            title: 'Password cannot be empty',
-            content: 'Please try again',
+            title: appLocalizationsOf(context).passwordCannotBeEmpty,
+            content: appLocalizationsOf(context).pleaseTryAgain,
             actions: [
               ModalAction(
                 action: () {
                   Navigator.pop(context);
                 },
-                title: 'Ok',
+                title: appLocalizationsOf(context).ok,
               )
             ],
           ));
@@ -797,14 +784,14 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
               color:
                   ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
             ),
-            title: 'Passwords do not matchr',
-            content: 'Please try again',
+            title: appLocalizationsOf(context).passwordDoNotMatch,
+            content: appLocalizationsOf(context).pleaseTryAgain,
             actions: [
               ModalAction(
                 action: () {
                   Navigator.pop(context);
                 },
-                title: 'Ok',
+                title: appLocalizationsOf(context).ok,
               )
             ],
           ));
@@ -836,14 +823,14 @@ class OnBoardingViewState extends State<OnBoardingView> {
 
   List<_OnBoarding> get _list => [
         _OnBoarding(
-          primaryButtonText: 'Next',
+          primaryButtonText: appLocalizationsOf(context).next,
           primaryButtonAction: () {
             setState(() {
               _currentPage++;
             });
           },
           secundaryButtonHasIcon: false,
-          secundaryButtonText: 'Skip',
+          secundaryButtonText: appLocalizationsOf(context).skip,
           secundaryButtonAction: () {
             context.read<LoginBloc>().add(
                   FinishOnboarding(
@@ -851,71 +838,67 @@ class OnBoardingViewState extends State<OnBoardingView> {
                   ),
                 );
           },
-          title: 'Welcome to the Permaweb',
-          description:
-              'ArDrive isn\'t just another cloud sync app. It\'s the beginning of a permanent hard drive. Any files you upload here will outlive you! That means we do a few things differently.',
+          title: appLocalizationsOf(context).onboarding1Title,
+          description: appLocalizationsOf(context).onboarding1Description,
           illustration:
               AssetImage(Resources.images.login.onboarding.onboarding6),
         ),
         _OnBoarding(
-          primaryButtonText: 'Next',
+          primaryButtonText: appLocalizationsOf(context).next,
           primaryButtonAction: () {
             setState(() {
               _currentPage++;
             });
           },
-          secundaryButtonText: 'Back',
+          secundaryButtonText: appLocalizationsOf(context).backButtonOnboarding,
           secundaryButtonAction: () {
             setState(() {
               _currentPage--;
             });
           },
-          title: 'Pay Per File',
-          description:
-              'No subscriptions are needed! Instead of another monthly charge for empty space you don\'t use, pay a few cents once and store your files forever on ArDrive.',
+          title: appLocalizationsOf(context).onboarding2Title,
+          description: appLocalizationsOf(context).onboarding2Description,
           illustration:
               AssetImage(Resources.images.login.onboarding.onboarding2),
         ),
         _OnBoarding(
-          primaryButtonText: 'Next',
+          primaryButtonText: appLocalizationsOf(context).next,
           primaryButtonAction: () {
             setState(() {
               _currentPage++;
             });
           },
-          secundaryButtonText: 'Back',
+          secundaryButtonText: appLocalizationsOf(context).backButtonOnboarding,
           secundaryButtonAction: () {
             setState(() {
               _currentPage--;
             });
           },
-          title: 'Seconds from Forever',
-          description:
-              'Decentralized, permanent data storage doesn\'t happen in an instant. When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.',
+          title: appLocalizationsOf(context).onboarding3Title,
+          description: appLocalizationsOf(context).onboarding3Description,
           illustration:
               AssetImage(Resources.images.login.onboarding.onboarding5),
         ),
         _OnBoarding(
-          primaryButtonText: 'Next',
+          primaryButtonText: appLocalizationsOf(context).next,
           primaryButtonAction: () {
             setState(() {
               _currentPage++;
             });
           },
-          secundaryButtonText: 'Back',
+          secundaryButtonText: appLocalizationsOf(context).backButtonOnboarding,
           secundaryButtonAction: () {
             setState(() {
               _currentPage--;
             });
           },
-          title: 'Total Privacy Control',
-          description:
-              'Your choice: you can permanently make files public or private, using the best encryption available today. No one will see what you don\'t want them to.',
+          title: appLocalizationsOf(context).onboarding4Title,
+          description: appLocalizationsOf(context).onboarding4Description,
           illustration:
               AssetImage(Resources.images.login.onboarding.onboarding4),
         ),
         _OnBoarding(
-          primaryButtonText: 'Dive in',
+          primaryButtonText: appLocalizationsOf(context).diveInButtonOnboarding,
           primaryButtonAction: () {
             context.read<LoginBloc>().add(
                   FinishOnboarding(
@@ -923,15 +906,14 @@ class OnBoardingViewState extends State<OnBoardingView> {
                   ),
                 );
           },
-          secundaryButtonText: 'Back',
+          secundaryButtonText: appLocalizationsOf(context).backButtonOnboarding,
           secundaryButtonAction: () {
             setState(() {
               _currentPage--;
             });
           },
-          title: 'Never Deleted',
-          description:
-              'Remember: There is no delete button (for you or us)! Once uploaded, your data can’t be removed, so think twice before uploading all your teenage love poetry...',
+          title: appLocalizationsOf(context).onboarding5Title,
+          description: appLocalizationsOf(context).onboarding5Description,
           illustration:
               AssetImage(Resources.images.login.onboarding.onboarding3),
         ),
