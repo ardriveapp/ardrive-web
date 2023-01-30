@@ -54,18 +54,21 @@ class UploadPlan {
   }) async {
     // Set bundle size limit according the platform
     // This should be reviewed when we implement stream uploads
-    final areDataItemSizesUnderThreshold = await Future.wait(
-      fileDataItemUploadHandles.values.map(
-        (e) async =>
-            await e.estimateDataItemSizes() <= turboService.allowedDataItemSize,
-      ),
-    );
-
-    final bool useTurbo = turboService.useTurbo &&
-        fileV2UploadHandles.isEmpty &&
-        areDataItemSizesUnderThreshold.every(
-          (isDataItemBelowThreshold) => isDataItemBelowThreshold == true,
-        );
+    bool useTurbo = false;
+    if (turboService.useTurbo) {
+      final areDataItemSizesUnderThreshold = await Future.wait(
+        fileDataItemUploadHandles.values.map(
+          (e) async =>
+              await e.estimateDataItemSizes() <=
+              turboService.allowedDataItemSize,
+        ),
+      );
+      useTurbo = turboService.useTurbo &&
+          fileV2UploadHandles.isEmpty &&
+          areDataItemSizesUnderThreshold.every(
+            (isDataItemBelowThreshold) => isDataItemBelowThreshold == true,
+          );
+    }
 
     final int maxBundleSize = useTurbo
         ? turboService.allowedDataItemSize
