@@ -27,6 +27,7 @@ class UploadCubit extends Cubit<UploadState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
+  final TurboService _turbo;
   final PstService _pst;
   final UploadPlanUtils _uploadPlanUtils;
 
@@ -50,12 +51,14 @@ class UploadCubit extends Cubit<UploadState> {
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required ArweaveService arweave,
+    required TurboService turbo,
     required PstService pst,
     required UploadPlanUtils uploadPlanUtils,
     this.uploadFolders = false,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
+        _turbo = turbo,
         _pst = pst,
         _uploadPlanUtils = uploadPlanUtils,
         super(UploadPreparationInProgress());
@@ -283,6 +286,7 @@ class UploadCubit extends Cubit<UploadState> {
           uploadIsPublic: _targetDrive.isPublic,
           sufficientArBalance: profile.walletBalance >= costEstimate.totalCost,
           uploadPlan: uploadPlan,
+          isFreeThanksToTurbo: uploadPlan.areAllBundlesTurboBundles,
         ),
       );
     } catch (error) {
@@ -292,7 +296,6 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> startUpload({
     required UploadPlan uploadPlan,
-    required CostEstimate costEstimate,
   }) async {
     debugPrint('Starting upload...');
 
@@ -322,6 +325,7 @@ class UploadCubit extends Cubit<UploadState> {
 
         await bundleHandle.prepareAndSignBundleTransaction(
           arweaveService: _arweave,
+          turboService: _turbo,
           driveDao: _driveDao,
           pstService: _pst,
           wallet: profile.wallet,
@@ -337,7 +341,7 @@ class UploadCubit extends Cubit<UploadState> {
       debugPrint('Starting bundle uploads');
 
       await for (final _ in bundleHandle
-          .upload(_arweave)
+          .upload(_arweave, _turbo)
           .debounceTime(const Duration(milliseconds: 500))
           .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));

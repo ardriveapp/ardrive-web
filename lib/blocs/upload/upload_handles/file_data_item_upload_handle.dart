@@ -138,7 +138,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     return (utf8.encode(json.encode(entityFake)) as Uint8List).lengthInBytes;
   }
 
-  Future<int> _estimatedataTxSize() async {
+  Future<int> _estimateDataTxSize() async {
     final fakeTags = <Tag>[];
     if (isPrivate) {
       fakeTags.addAll(fakePrivateTags);
@@ -161,7 +161,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   }
 
   Future<int> estimateDataItemSizes() async {
-    return await _estimatedataTxSize() + await _estimateEntityDataItemSize();
+    return await _estimateDataTxSize() + await _estimateEntityDataItemSize();
   }
 
   @override

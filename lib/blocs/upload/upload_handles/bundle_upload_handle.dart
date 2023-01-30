@@ -5,19 +5,21 @@ import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
-import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 
 class BundleUploadHandle implements UploadHandle {
   final List<FileDataItemUploadHandle> fileDataItemUploadHandles;
   final List<FolderDataItemUploadHandle> folderDataItemUploadHandles;
+  final bool useTurbo;
 
   late Transaction bundleTx;
+  late DataItem bundleDataItem;
   late Iterable<FileEntity> fileEntities;
 
   BundleUploadHandle._create({
     this.fileDataItemUploadHandles = const [],
     this.folderDataItemUploadHandles = const [],
+    this.useTurbo = false,
     this.size = 0,
   }) {
     fileEntities = fileDataItemUploadHandles.map((item) => item.entity);
@@ -26,10 +28,12 @@ class BundleUploadHandle implements UploadHandle {
   static Future<BundleUploadHandle> create({
     List<FileDataItemUploadHandle> fileDataItemUploadHandles = const [],
     List<FolderDataItemUploadHandle> folderDataItemUploadHandles = const [],
+    required bool useTurbo,
   }) async {
     final bundle = BundleUploadHandle._create(
       fileDataItemUploadHandles: fileDataItemUploadHandles,
       folderDataItemUploadHandles: folderDataItemUploadHandles,
+      useTurbo: useTurbo,
     );
     bundle.size = await bundle.computeBundleSize();
     return bundle;
@@ -46,6 +50,7 @@ class BundleUploadHandle implements UploadHandle {
 
   Future<void> prepareAndSignBundleTransaction({
     required ArweaveService arweaveService,
+    required TurboService turboService,
     required DriveDao driveDao,
     required PstService pstService,
     required Wallet wallet,
@@ -62,49 +67,70 @@ class BundleUploadHandle implements UploadHandle {
     debugPrint('Bundle mounted');
 
     debugPrint('Creating bundle transaction');
+    late String bundledIn;
+    if (useTurbo) {
+      bundleDataItem = await arweaveService.prepareBundledDataItem(
+        bundle,
+        wallet,
+      );
+      bundledIn = bundleDataItem.id;
+    } else {
+      // Create bundle tx
+      bundleTx = await arweaveService.prepareDataBundleTxFromBlob(
+        bundle.blob,
+        wallet,
+      );
 
-    // Create bundle tx
-    bundleTx = await arweaveService.prepareDataBundleTxFromBlob(
-      bundle.blob,
-      wallet,
-    );
+      bundledIn = bundleTx.id;
 
-    debugPrint('Bundle transaction created');
+      debugPrint('Bundle transaction created');
 
-    debugPrint('Adding tip');
+      debugPrint('Adding tip');
 
-    await pstService.addCommunityTipToTx(bundleTx);
+      await pstService.addCommunityTipToTx(bundleTx);
 
-    debugPrint('Tip added');
+      debugPrint('Tip added');
 
-    debugPrint('Signing bundle');
+      debugPrint('Signing bundle');
 
-    await bundleTx.sign(wallet);
+      await bundleTx.sign(wallet);
 
-    debugPrint('Bundle signed');
-
+      debugPrint('Bundle signed');
+    }
     // Write entities to database
     for (var folder in folderDataItemUploadHandles) {
       await folder.writeFolderToDatabase(driveDao: driveDao);
     }
     for (var file in fileDataItemUploadHandles) {
       await file.writeFileEntityToDatabase(
-          bundledInTxId: bundleTx.id, driveDao: driveDao);
+        bundledInTxId: bundledIn,
+        driveDao: driveDao,
+      );
     }
   }
 
   /// Uploads the bundle, emitting an event whenever the progress is updated.
-  Stream<double> upload(ArweaveService arweave) async* {
-    yield* arweave.client.transactions
-        .upload(bundleTx, maxConcurrentUploadCount: maxConcurrentUploadCount)
-        .map((upload) {
-      uploadProgress = upload.progress;
-      return uploadProgress;
-    });
+  Stream<double> upload(
+    ArweaveService arweave,
+    TurboService turboService,
+  ) async* {
+    if (useTurbo) {
+      await turboService.postDataItem(dataItem: bundleDataItem);
+      yield 1;
+    } else {
+      yield* arweave.client.transactions
+          .upload(bundleTx, maxConcurrentUploadCount: maxConcurrentUploadCount)
+          .map((upload) {
+        uploadProgress = upload.progress;
+        return uploadProgress;
+      });
+    }
   }
 
   void dispose() {
-    bundleTx.setData(Uint8List(0));
+    if (!useTurbo) {
+      bundleTx.setData(Uint8List(0));
+    }
   }
 
   Future<int> computeBundleSize() async {

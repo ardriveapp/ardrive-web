@@ -59,6 +59,7 @@ Future<void> promptToUpload(
         create: (context) => UploadCubit(
           uploadPlanUtils: UploadPlanUtils(
             arweave: context.read<ArweaveService>(),
+            turboService: context.read<TurboService>(),
             driveDao: context.read<DriveDao>(),
           ),
           driveId: driveId,
@@ -66,6 +67,7 @@ Future<void> promptToUpload(
           files: selectedFiles,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
+          turbo: context.read<TurboService>(),
           pst: context.read<PstService>(),
           driveDao: context.read<DriveDao>(),
           uploadFolders: isFolderUpload,
@@ -309,15 +311,23 @@ class UploadForm extends StatelessWidget {
                     Text.rich(
                       TextSpan(
                         children: [
-                          TextSpan(
-                            text: appLocalizationsOf(context)
-                                .cost(state.costEstimate.arUploadCost),
-                          ),
-                          if (state.costEstimate.usdUploadCost != null)
+                          if (state.isFreeThanksToTurbo) ...[
                             TextSpan(
-                                text: state.costEstimate.usdUploadCost! >= 0.01
-                                    ? ' (~${state.costEstimate.usdUploadCost!.toStringAsFixed(2)} USD)'
-                                    : ' (< 0.01 USD)'),
+                              text: appLocalizationsOf(context)
+                                  .freeTurboTransaction,
+                            ),
+                          ] else ...[
+                            TextSpan(
+                              text: appLocalizationsOf(context)
+                                  .cost(state.costEstimate.arUploadCost),
+                            ),
+                            if (state.costEstimate.usdUploadCost != null)
+                              TextSpan(
+                                  text: state.costEstimate.usdUploadCost! >=
+                                          0.01
+                                      ? ' (~${state.costEstimate.usdUploadCost!.toStringAsFixed(2)} USD)'
+                                      : ' (< 0.01 USD)'),
+                          ],
                         ],
                         style: Theme.of(context).textTheme.bodyText1,
                       ),
@@ -329,7 +339,8 @@ class UploadForm extends StatelessWidget {
                             numberOfFilesInBundles + numberOfV2Files),
                       ),
                     },
-                    if (!state.sufficientArBalance) ...{
+                    if (!state.sufficientArBalance ||
+                        !state.isFreeThanksToTurbo) ...{
                       const SizedBox(height: 8),
                       Text(
                         appLocalizationsOf(context).insufficientARForUpload,
@@ -347,12 +358,12 @@ class UploadForm extends StatelessWidget {
                   child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
                 ElevatedButton(
-                  onPressed: state.sufficientArBalance
-                      ? () => context.read<UploadCubit>().startUpload(
-                            uploadPlan: state.uploadPlan,
-                            costEstimate: state.costEstimate,
-                          )
-                      : null,
+                  onPressed:
+                      state.sufficientArBalance || state.isFreeThanksToTurbo
+                          ? () => context
+                              .read<UploadCubit>()
+                              .startUpload(uploadPlan: state.uploadPlan)
+                          : null,
                   child: Text(appLocalizationsOf(context).uploadEmphasized),
                 ),
               ],
