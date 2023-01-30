@@ -891,20 +891,12 @@ class ArweaveService {
   }
 
   // instantiate entity from tx and metadata
-  Future<Uint8List> entityMetadataFromFromTxId(
+  Future<Uint8List> dataFromFromTxId(
     String txId,
     SecretKey? driveKey,
   ) async {
-    // final http = ArDriveHTTP();
-    // final url = '${client.api.gatewayUrl.origin}/$txId';
-    // print('[ArweaveService] Getting metadata for $txId - (RUL: $url))');
-    // final response = await http.getAsBytes(url);
-    // final Uint8List metadata = response.data;
-    // return utf8.decode(metadata);
+    // TODO: PE-2917
 
-    // The code below will eat all the redirects. How do I get the final URL?
-
-    // FIXME: not prepared for rate limiting
     final Response data =
         (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
     final metadata = data.bodyBytes;
