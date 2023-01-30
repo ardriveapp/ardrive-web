@@ -136,15 +136,14 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
-    final preparedTx = await _arweave.prepareEntityTx(
-      snapshotEntity,
+
+    final preparedTx = await _arweave.client.transactions.prepare(
+      await snapshotEntity.asTransaction(key: null),
       wallet,
-      // key is null because we don't re-encrypt the snapshot data
     );
 
     await _pst.addCommunityTipToTx(preparedTx);
 
-    // Sign again because the tip does change the signature
     await preparedTx.sign(wallet);
 
     snapshotEntity.txId = preparedTx.id;
