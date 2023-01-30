@@ -6,7 +6,6 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
@@ -252,7 +251,7 @@ class SyncCubit extends Cubit<SyncState> {
         (drive) => _syncDrive(
           drive.id,
           driveDao: _driveDao,
-          arweaveService: _arweave,
+          arweave: _arweave,
           database: _db,
           profileState: profile,
           addError: addError,

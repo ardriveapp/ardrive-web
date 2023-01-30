@@ -27,10 +27,8 @@ class FsEntryMoveGoBackToParent extends FsEntryMoveEvent {
 
 class FsEntryMoveSubmit extends FsEntryMoveEvent {
   final FolderEntry folderInView;
-  final bool dryRun;
   const FsEntryMoveSubmit({
     required this.folderInView,
-    this.dryRun = false,
   }) : super();
   @override
   List<Object> get props => [folderInView];
@@ -39,11 +37,9 @@ class FsEntryMoveSubmit extends FsEntryMoveEvent {
 class FsEntryMoveSkipConflicts extends FsEntryMoveEvent {
   final FolderEntry folderInView;
   final List<SelectedItem> conflictingItems;
-  final bool dryRun;
   const FsEntryMoveSkipConflicts({
     required this.folderInView,
     required this.conflictingItems,
-    this.dryRun = false,
   }) : super();
   @override
   List<Object> get props => [folderInView, conflictingItems];
