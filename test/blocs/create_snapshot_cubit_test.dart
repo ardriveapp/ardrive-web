@@ -129,14 +129,14 @@ void main() {
       );
 
       blocTest(
-        'emits the correct states when selectDriveAndHeightRange is called',
+        'emits the correct states when confirmDriveAndHeighRange is called',
         build: () => CreateSnapshotCubit(
           arweave: arweave,
           profileCubit: profileCubit,
           driveDao: driveDao,
           pst: pst,
         ),
-        act: (cubit) => cubit.selectDriveAndHeightRange(
+        act: (cubit) => cubit.confirmDriveAndHeighRange(
           'driveId',
           range: Range(start: 0, end: 1),
         ),
@@ -159,7 +159,7 @@ void main() {
           pst: pst,
         ),
         act: (cubit) => cubit
-            .selectDriveAndHeightRange(
+            .confirmDriveAndHeighRange(
               'driveId',
               range: Range(start: 0, end: 1),
             )

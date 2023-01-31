@@ -42,7 +42,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         _pst = pst,
         super(CreateSnapshotInitial());
 
-  Future<void> selectDriveAndHeightRange(
+  Future<void> confirmDriveAndHeighRange(
     DriveID driveId, {
     Range? range,
   }) async {
