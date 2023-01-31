@@ -94,15 +94,18 @@ Future<bool> canWeUseTurbo({
   required TurboService turboService,
 }) async {
   if (!turboService.useTurbo) return false;
+
   final areDataItemSizesUnderThreshold = await Future.wait(
     fileDataItemUploadHandles.values.map(
       (e) async =>
           await e.estimateDataItemSizes() <= turboService.allowedDataItemSize,
     ),
   );
+
+  final allDataItemsAreWithinTurboThreshold = areDataItemSizesUnderThreshold
+      .every((isDataItemBelowThreshold) => isDataItemBelowThreshold == true);
+
   return turboService.useTurbo &&
       fileV2UploadHandles.isEmpty &&
-      areDataItemSizesUnderThreshold.every(
-        (isDataItemBelowThreshold) => isDataItemBelowThreshold == true,
-      );
+      allDataItemsAreWithinTurboThreshold;
 }
