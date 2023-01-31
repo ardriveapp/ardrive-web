@@ -54,20 +54,11 @@ class UploadPlan {
   }) async {
     // Set bundle size limit according the platform
     // This should be reviewed when we implement stream uploads
-    if (turboService.useTurbo) {
-      final areDataItemSizesUnderThreshold = await Future.wait(
-        fileDataItemUploadHandles.values.map(
-          (e) async =>
-              await e.estimateDataItemSizes() <=
-              turboService.allowedDataItemSize,
-        ),
-      );
-      useTurbo = turboService.useTurbo &&
-          fileV2UploadHandles.isEmpty &&
-          areDataItemSizesUnderThreshold.every(
-            (isDataItemBelowThreshold) => isDataItemBelowThreshold == true,
-          );
-    }
+    useTurbo = await canWeUseTurbo(
+      fileDataItemUploadHandles: fileDataItemUploadHandles,
+      fileV2UploadHandles: fileV2UploadHandles,
+      turboService: turboService,
+    );
 
     final int maxBundleSize = useTurbo
         ? turboService.allowedDataItemSize
@@ -95,4 +86,23 @@ class UploadPlan {
     }
     fileDataItemUploadHandles.clear();
   }
+}
+
+Future<bool> canWeUseTurbo({
+  required Map<String, FileDataItemUploadHandle> fileDataItemUploadHandles,
+  required Map<String, FileV2UploadHandle> fileV2UploadHandles,
+  required TurboService turboService,
+}) async {
+  if (!turboService.useTurbo) return false;
+  final areDataItemSizesUnderThreshold = await Future.wait(
+    fileDataItemUploadHandles.values.map(
+      (e) async =>
+          await e.estimateDataItemSizes() <= turboService.allowedDataItemSize,
+    ),
+  );
+  return turboService.useTurbo &&
+      fileV2UploadHandles.isEmpty &&
+      areDataItemSizesUnderThreshold.every(
+        (isDataItemBelowThreshold) => isDataItemBelowThreshold == true,
+      );
 }
