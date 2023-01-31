@@ -110,6 +110,11 @@ extension TransactionUtils on TransactionBase {
     addTag(EntityTag.arFs, '0.11');
   }
 
+  void addBundleTags() {
+    addTag('Bundle-Format', 'binary');
+    addTag('Bundle-Version', '2.0.0');
+  }
+
   void addBarTags() {
     addTag(EntityTag.protocolName, 'BAR');
     addTag(EntityTag.action, 'Burn');
