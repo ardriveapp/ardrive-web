@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io' show BytesBuilder;
 
+import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/snapshot_entity.dart';
@@ -19,8 +20,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
 
 part 'create_snapshot_state.dart';
-
-const kRequiredTxConfirmationCount = 15;
 
 class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   final ArweaveService _arweave;

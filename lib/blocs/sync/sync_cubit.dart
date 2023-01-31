@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
@@ -39,7 +40,6 @@ part 'utils/update_transaction_statuses.dart';
 typedef DriveHistoryTransaction
     = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
 
-const kRequiredTxConfirmationCount = 15;
 const kRequiredTxConfirmationPendingThreshold = 60 * 8;
 
 const kSyncTimerDuration = 5;
