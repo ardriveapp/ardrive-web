@@ -56,7 +56,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     await _reset(driveId);
 
     _setTrustedRange(range);
-    if (_emitErrorIfInvalidRange()) return;
 
     late Uint8List data;
     try {
@@ -104,20 +103,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     print(
       'Trusted range to be snapshotted (Current height: $_currentHeight): $_range',
     );
-  }
-
-  bool _emitErrorIfInvalidRange() {
-    if (!_isValidHeightRange()) {
-      final errMessage =
-          'Invalid height range chosen. ${_range.end} >= $_currentHeight';
-      // ignore: avoid_print
-      print(errMessage);
-      emit(ComputeSnapshotDataFailure(
-        errorMessage: errMessage,
-      ));
-      return true;
-    }
-    return false;
   }
 
   SnapshotItemToBeCreated get _newItemToBeCreated {
