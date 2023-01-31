@@ -894,7 +894,7 @@ class ArweaveService {
     return response.data?['arweave']['usd'];
   }
 
-  Future<Uint8List> dataFromFromTxId(
+  Future<Uint8List> dataFromTxId(
     String txId,
     SecretKey? driveKey,
   ) async {
