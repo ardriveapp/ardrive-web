@@ -26,6 +26,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final PstService _pst;
+  final bool _forceFailOnDataComputingForTesting;
 
   late DriveID _driveId;
   late Range _range;
@@ -39,10 +40,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required PstService pst,
+    @visibleForTesting bool forceFailOnDataComputingForTesting = false,
   })  : _arweave = arweave,
         _profileCubit = profileCubit,
         _driveDao = driveDao,
         _pst = pst,
+        _forceFailOnDataComputingForTesting =
+            forceFailOnDataComputingForTesting,
         super(CreateSnapshotInitial());
 
   Future<void> confirmDriveAndHeighRange(
@@ -182,6 +186,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       driveId: _driveId,
       range: _range,
     ));
+
+    // For testing purposes
+    if (_forceFailOnDataComputingForTesting) {
+      throw Exception('Fake network error');
+    }
 
     // FIXME: This uses a lot of memory
     // it will be a Uint8List buffer for now
