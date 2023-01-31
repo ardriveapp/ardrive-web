@@ -172,6 +172,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       range: _range,
     ));
 
+    // // TODO: remove me
+    // return Uint8List.fromList([]);
+
     // For testing purposes
     if (_forceFailOnDataComputingForTesting) {
       throw Exception('Fake network error');

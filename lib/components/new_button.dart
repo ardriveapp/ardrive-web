@@ -7,6 +7,8 @@ import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 
+import 'create_snapshot_dialog.dart';
+
 Widget buildNewButton(
   BuildContext context, {
   required Widget button,
@@ -218,33 +220,25 @@ List<PopupMenuEntry<Function>> _buildItems(
   if (profileState.runtimeType == ProfileLoggedIn) {
     final minimumWalletBalance = BigInt.from(10000000);
     final profile = profileState as ProfileLoggedIn;
-    final hasMiniumWalletBalance = profile.hasMinimumBalanceForUpload(
-      minimumWalletBalance: minimumWalletBalance,
-    );
-    final canUpload = profile.canUpload(
-      minimumWalletBalance: minimumWalletBalance,
-    );
-    final canCreateNewDrive = drivesState is DrivesLoadSuccess
-        ? drivesState.canCreateNewDrive && canUpload
-        : false;
+    final hasMinBalance = profile.walletBalance >= minimumWalletBalance;
     return [
       if (driveDetailState is DriveDetailLoadSuccess) ...{
-        _buildNewFolderItem(context, driveDetailState, canUpload),
+        _buildNewFolderItem(context, driveDetailState, hasMinBalance),
         const PopupMenuDivider(key: Key('divider-1')),
         _buildUploadFileItem(
           context,
           driveDetailState,
-          hasMiniumWalletBalance,
+          hasMinBalance,
         ),
         _buildUploadFolderItem(
           context,
           driveDetailState,
-          hasMiniumWalletBalance,
+          hasMinBalance,
         ),
         const PopupMenuDivider(key: Key('divider-2')),
       },
       if (drivesState is DrivesLoadSuccess) ...{
-        _buildCreateDrive(context, canCreateNewDrive),
+        _buildCreateDrive(context, drivesState, hasMinBalance),
         _buildAttachDrive(context)
       },
       if (driveDetailState is DriveDetailLoadSuccess &&
@@ -252,8 +246,11 @@ List<PopupMenuEntry<Function>> _buildItems(
         _buildCreateManifestItem(
           context,
           driveDetailState,
-          canUpload,
+          hasMinBalance,
         )
+      },
+      if (driveDetailState is DriveDetailLoadSuccess) ...{
+        _buildCreateSnapshotItem(context, driveDetailState, hasMinBalance)
       },
     ];
   } else {
@@ -343,13 +340,14 @@ PopupMenuEntry<Function> _buildAttachDrive(BuildContext context) {
 
 PopupMenuEntry<Function> _buildCreateDrive(
   BuildContext context,
-  bool canCreateNewDrive,
+  DrivesLoadSuccess drivesState,
+  bool hasMinBalance,
 ) {
   return _buildMenuItemTile(
     context: context,
-    isEnabled: canCreateNewDrive,
+    isEnabled: drivesState.canCreateNewDrive && hasMinBalance,
     itemTitle: appLocalizationsOf(context).newDrive,
-    message: canCreateNewDrive
+    message: hasMinBalance
         ? null
         : appLocalizationsOf(context).insufficientFundsForCreateADrive,
     value: (context) => promptToCreateDrive(context),
@@ -371,6 +369,25 @@ PopupMenuEntry<Function> _buildCreateManifestItem(
     value: (context) => promptToCreateManifest(
       context,
       drive: state.currentDrive,
+    ),
+  );
+}
+
+PopupMenuEntry<Function> _buildCreateSnapshotItem(
+  BuildContext context,
+  DriveDetailLoadSuccess state,
+  bool hasMinBalance,
+) {
+  return _buildMenuItemTile(
+    context: context,
+    isEnabled: !state.driveIsEmpty && hasMinBalance,
+    itemTitle: appLocalizationsOf(context).createSnapshot,
+    // message: !state.driveIsEmpty && !hasMinBalance
+    //     ? appLocalizationsOf(context).insufficientFundsForCreateASnapshot
+    //     : null,
+    value: (context) => promptToCreateSnapshot(
+      context,
+      state.currentDrive,
     ),
   );
 }

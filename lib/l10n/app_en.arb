@@ -993,7 +993,7 @@
   },
   "freeTurboTransaction": "Cost: 0 AR\nThis small transaction is free thanks to Turbo.",
   "@freeTurboTransaction": {
-  "description": "Message explaining that your upload will be free thanks to Turbo"
+    "description": "Message explaining that your upload will be free thanks to Turbo"
   },
   "bundlingAndSigningUpload": "Bundling and signing upload",
   "@bundlingAndSigningUpload": {
@@ -1511,7 +1511,43 @@
     "description": "Toast message when you copy wallet address"
   },
   "copyWalletAddress": "Copy Wallet Address",
-  "@addressCopied": {
+  "@copyWalletAddress": {
     "description": "Tooltip on copy wallet address button"
+  },
+  "createSnapshot": "Create Snapshot",
+  "@createSnapshot": {
+    "description": "The action of snapshotting a drive"
+  },
+  "createNewSnapshot": "Create New Snapshot",
+  "@createNewSnapshot": {
+    "description": "The action of snapshotting a drive"
+  },
+  "createSnapshotExplanation": "Snapshots reduce the time it takes for the drive to load. Do you want to create a snapshot of your drive '{driveName}'?",
+  "@createSnapshotExplanation": {
+    "description": "Explains how Snapshots improves the sync-time of the drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Curious Cat"
+      }
+    }
+  },
+  "computingSnapshotData": "Computing Snapshot Data",
+  "@computingSnapshotData": {
+    "description": "Computing Snapshot Data"
+  },
+  "uploadingSnapshot": "Uploading Snapshot",
+  "@uploadingSnapshot": {
+    "description": "Uploading Snapshot"
+  },
+  "snapshotSize": "Snapshot Size: {size}",
+  "@snapshotSize": {
+    "description": "Snapshot Size",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "1.2 MB"
+      }
+    }
   }
 }
