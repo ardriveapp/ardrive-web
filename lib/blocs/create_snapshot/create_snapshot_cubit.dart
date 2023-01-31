@@ -54,7 +54,14 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _setTrustedRange(range);
     if (_emitErrorIfInvalidRange()) return;
 
-    final data = await _getSnapshotData();
+    late Uint8List data;
+    try {
+      data = await _getSnapshotData();
+    } catch (e) {
+      emit(ComputeSnapshotDataFailure(errorMessage: e.toString()));
+      return;
+    }
+
     _setupSnapshotEntityWithBlob(data);
 
     final uploadSnapshotItemParams = await _snapshotParametersFromEntityAndData(
