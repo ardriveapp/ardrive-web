@@ -31,6 +31,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   late Range _range;
   late int _currentHeight;
 
+  SnapshotItemToBeCreated? _itemToBeCreated;
+  SnapshotEntity? _snapshotEntity;
+
   CreateSnapshotCubit({
     required ArweaveService arweave,
     required ProfileCubit profileCubit,
@@ -46,12 +49,37 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     DriveID driveId, {
     Range? range,
   }) async {
+    await _reset(driveId);
+
+    _setTrustedRange(range);
+    if (_emitErrorIfInvalidRange()) return;
+
+    final data = await _getSnapshotData();
+    _setupSnapshotEntityWithBlob(data);
+
+    final uploadSnapshotItemParams = await _snapshotParametersFromEntityAndData(
+      _snapshotEntity!,
+      data,
+    );
+    final tx = uploadSnapshotItemParams.signedTx;
+
+    final costResult = await _computeCostAndCheckBalance(tx);
+    if (costResult == null) return;
+
+    await _emitConfirming(costResult, data.length, uploadSnapshotItemParams);
+  }
+
+  Future<void> _reset(DriveID driveId) async {
     final currentHeight = await _arweave.getCurrentBlockHeight();
-
-    final maximumHeightToSnapshot =
-        currentHeight - kRequiredTxConfirmationCount;
-
+    _currentHeight = currentHeight;
     _driveId = driveId;
+    _itemToBeCreated = null;
+    _snapshotEntity = null;
+  }
+
+  void _setTrustedRange(Range? range) {
+    final maximumHeightToSnapshot =
+        _currentHeight - kRequiredTxConfirmationCount;
 
     if (range != null) {
       _range = range.end > maximumHeightToSnapshot
@@ -63,11 +91,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     // ignore: avoid_print
     print(
-      'Trusted range to be snapshotted (Current height: $currentHeight): $_range',
+      'Trusted range to be snapshotted (Current height: $_currentHeight): $_range',
     );
+  }
 
-    _currentHeight = currentHeight;
-
+  bool _emitErrorIfInvalidRange() {
     if (!_isValidHeightRange()) {
       final errMessage =
           'Invalid height range chosen. ${_range.end} >= $_currentHeight';
@@ -76,22 +104,19 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       emit(ComputeSnapshotDataFailure(
         errorMessage: errMessage,
       ));
-      return;
+      return true;
     }
+    return false;
+  }
 
-    // FIXME: This uses a lot of memory
-    // it will be a Uint8List buffer for now
-    // ignore: deprecated_export_use
-    final dataBuffer = BytesBuilder(copy: false);
-
-    emit(ComputingSnapshotData(
-      driveId: driveId,
-      range: _range,
-    ));
+  SnapshotItemToBeCreated get _newItemToBeCreated {
+    if (_itemToBeCreated != null) {
+      return _itemToBeCreated!;
+    }
 
     // declare the GQL read stream out of arweave
     final gqlEdgesStream = _arweave.getSegmentedTransactionsFromDrive(
-      driveId,
+      _driveId,
       minBlockHeight: _range.start,
       maxBlockHeight: _range.end,
     );
@@ -106,33 +131,21 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final snapshotItemToBeCreated = SnapshotItemToBeCreated(
       blockStart: _range.start,
       blockEnd: _range.end,
-      driveId: driveId,
+      driveId: _driveId,
       subRanges: HeightRange(rangeSegments: [_range]),
       source: gqlNodesStream,
       jsonMetadataOfTxId: _jsonMetadataOfTxId,
     );
 
-    // Stream snapshot data to the temporal file
-    await for (final item in snapshotItemToBeCreated.getSnapshotData()) {
-      dataBuffer.add(item);
-    }
+    _itemToBeCreated = snapshotItemToBeCreated;
 
-    final dataStart = snapshotItemToBeCreated.dataStart;
-    final dataEnd = snapshotItemToBeCreated.dataEnd;
+    return snapshotItemToBeCreated;
+  }
 
-    final data = dataBuffer.takeBytes();
-
-    // declares the new snapshot entity
-    final snapshotEntity = SnapshotEntity(
-      id: const Uuid().v4(),
-      driveId: driveId,
-      blockStart: _range.start,
-      blockEnd: _range.end,
-      dataStart: dataStart,
-      dataEnd: dataEnd,
-      data: data,
-    );
-
+  Future<CreateSnapshotParameters> _snapshotParametersFromEntityAndData(
+    SnapshotEntity snapshotEntity,
+    Uint8List data,
+  ) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
 
@@ -154,28 +167,79 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       signedTx: preparedTx,
     );
 
-    final totalCost = preparedTx.reward + preparedTx.quantity;
+    return uploadSnapshotItemParams;
+  }
 
-    if (profile.walletBalance < totalCost) {
-      emit(
-        ComputeSnapshotDataFailure(
-          errorMessage: '''Insufficient AR balance to create snapshot.
-Balance: ${profile.walletBalance} AR, Cost: $totalCost AR''',
-        ),
-      );
-      return;
+  Future<Uint8List> _getSnapshotData() async {
+    emit(ComputingSnapshotData(
+      driveId: _driveId,
+      range: _range,
+    ));
+
+    // FIXME: This uses a lot of memory
+    // it will be a Uint8List buffer for now
+    // ignore: deprecated_export_use
+    final dataBuffer = BytesBuilder(copy: false);
+
+    // Stream snapshot data to the temporal buffer
+    await for (final item in _newItemToBeCreated.getSnapshotData()) {
+      dataBuffer.add(item);
     }
 
+    final data = dataBuffer.takeBytes();
+    return data;
+  }
+
+  void _setupSnapshotEntityWithBlob(Uint8List data) {
+    final dataStart = _newItemToBeCreated.dataStart;
+    final dataEnd = _newItemToBeCreated.dataEnd;
+
+    // declares the new snapshot entity
+    final snapshotEntity = SnapshotEntity(
+      id: const Uuid().v4(),
+      driveId: _driveId,
+      blockStart: _range.start,
+      blockEnd: _range.end,
+      dataStart: dataStart,
+      dataEnd: dataEnd,
+      data: data,
+    );
+
+    _snapshotEntity = snapshotEntity;
+  }
+
+  Future<BigInt?> _computeCostAndCheckBalance(Transaction tx) async {
+    final totalCost = tx.reward + tx.quantity;
+
+    final profile = _profileCubit.state as ProfileLoggedIn;
+    final walletBalance = profile.walletBalance;
+
+    if (walletBalance < totalCost) {
+      emit(CreateSnapshotInsufficientBalance(
+        walletBalance: walletBalance.toString(),
+        totalCost: totalCost.toString(),
+      ));
+      return null;
+    }
+
+    return totalCost;
+  }
+
+  Future<void> _emitConfirming(
+    BigInt totalCost,
+    int dataSize,
+    CreateSnapshotParameters params,
+  ) async {
     final arUploadCost = winstonToAr(totalCost);
     final usdUploadCost = await _arweave
         .getArUsdConversionRate()
         .then((conversionRate) => double.parse(arUploadCost) * conversionRate);
 
     emit(ConfirmingSnapshotCreation(
-      snapshotSize: data.length,
+      snapshotSize: dataSize,
       arUploadCost: arUploadCost,
       usdUploadCost: usdUploadCost,
-      createSnapshotParams: uploadSnapshotItemParams,
+      createSnapshotParams: params,
     ));
   }
 

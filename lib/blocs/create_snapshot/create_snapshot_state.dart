@@ -33,6 +33,19 @@ class ComputeSnapshotDataFailure extends CreateSnapshotState {
   List<Object> get props => [errorMessage];
 }
 
+class CreateSnapshotInsufficientBalance extends CreateSnapshotState {
+  final String walletBalance;
+  final String totalCost;
+
+  CreateSnapshotInsufficientBalance({
+    required this.walletBalance,
+    required this.totalCost,
+  });
+
+  @override
+  List<Object> get props => [walletBalance, totalCost];
+}
+
 /// Snapshot data has been computed and it's ready to be confirmed
 class ConfirmingSnapshotCreation extends CreateSnapshotState {
   final int snapshotSize;
