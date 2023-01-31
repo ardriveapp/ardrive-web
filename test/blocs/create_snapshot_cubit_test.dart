@@ -175,6 +175,28 @@ void main() {
           SnapshotUploadSuccess(),
         ],
       );
+
+      blocTest(
+        'emits failure when network error',
+        build: () => CreateSnapshotCubit(
+          arweave: arweave,
+          profileCubit: profileCubit,
+          driveDao: driveDao,
+          pst: pst,
+          forceFailOnDataComputingForTesting: true,
+        ),
+        act: (cubit) => cubit.confirmDriveAndHeighRange(
+          'driveId',
+          range: Range(start: 0, end: 1),
+        ),
+        expect: () => [
+          ComputingSnapshotData(
+            driveId: 'driveId',
+            range: Range(start: 0, end: 1),
+          ),
+          isA<ComputeSnapshotDataFailure>(),
+        ],
+      );
     },
   );
 }
