@@ -197,6 +197,49 @@ void main() {
           isA<ComputeSnapshotDataFailure>(),
         ],
       );
+
+      blocTest(
+        'the range to be snapshotted is limited to 15 blocks before the current block height when exceeded',
+        build: () => CreateSnapshotCubit(
+          arweave: arweave,
+          profileCubit: profileCubit,
+          driveDao: driveDao,
+          pst: pst,
+        ),
+        act: (cubit) => cubit.confirmDriveAndHeighRange(
+          'driveId',
+          range: Range(start: 0, end: 101),
+        ),
+        expect: () => [
+          ComputingSnapshotData(
+            driveId: 'driveId',
+            range: Range(start: 0, end: 85),
+          ),
+          isA<ConfirmingSnapshotCreation>(),
+        ],
+      );
+
+      blocTest(
+        'emits failure on insufficient balance',
+        build: () => CreateSnapshotCubit(
+          arweave: arweave,
+          profileCubit: profileCubit,
+          driveDao: driveDao,
+          pst: pst,
+          forceFailOnDataComputingForTesting: true,
+        ),
+        act: (cubit) => cubit.confirmDriveAndHeighRange(
+          'driveId',
+          range: Range(start: 0, end: 1),
+        ),
+        expect: () => [
+          ComputingSnapshotData(
+            driveId: 'driveId',
+            range: Range(start: 0, end: 1),
+          ),
+          isA<ComputeSnapshotDataFailure>(),
+        ],
+      );
     },
   );
 }
