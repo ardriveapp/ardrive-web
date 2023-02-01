@@ -21,12 +21,13 @@ class ConfigService {
       );
 
       final gatewayUrl = localStore.getString('arweaveGatewayUrl');
+      final experimentalFeatures = localStore.getString('experimentalFeatures');
       AppConfig configFromEnv = AppConfig.fromJson(json.decode(configContent));
-      if (gatewayUrl != null) {
-        configFromEnv = configFromEnv.copyWith(
-          defaultArweaveGatewayUrl: gatewayUrl,
-        );
-      }
+      configFromEnv = configFromEnv.copyWith(
+        defaultArweaveGatewayUrl: gatewayUrl,
+        experimentalFeaures: experimentalFeatures == 'YES',
+      );
+
       _config = configFromEnv;
     }
 

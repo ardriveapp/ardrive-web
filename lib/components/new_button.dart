@@ -4,8 +4,10 @@ import 'package:ardrive/components/drive_attach_form.dart';
 import 'package:ardrive/components/drive_create_form.dart';
 import 'package:ardrive/components/folder_create_form.dart';
 import 'package:ardrive/components/upload_form.dart';
+import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'create_snapshot_dialog.dart';
 
@@ -17,12 +19,14 @@ Widget buildNewButton(
   required DriveDetailState driveDetailState,
   bool isPlusButton = false,
 }) {
+  final config = context.read<AppConfig>();
   final width = MediaQuery.of(context).size.width;
   final menuItems = _buildItems(
     context,
     driveDetailState: driveDetailState,
     profileState: profileState,
     drivesState: drivesState,
+    enableCreateSnapshot: config.experimentalFeaures,
   );
   double menuHeight = 0;
   for (var element in menuItems) {
@@ -216,6 +220,7 @@ List<PopupMenuEntry<Function>> _buildItems(
   required DrivesState drivesState,
   required ProfileState profileState,
   required DriveDetailState driveDetailState,
+  required bool enableCreateSnapshot,
 }) {
   if (profileState.runtimeType == ProfileLoggedIn) {
     final minimumWalletBalance = BigInt.from(10000000);
@@ -249,7 +254,8 @@ List<PopupMenuEntry<Function>> _buildItems(
           hasMinBalance,
         )
       },
-      if (driveDetailState is DriveDetailLoadSuccess) ...{
+      if (enableCreateSnapshot &&
+          driveDetailState is DriveDetailLoadSuccess) ...{
         _buildCreateSnapshotItem(context, driveDetailState, hasMinBalance)
       },
     ];
