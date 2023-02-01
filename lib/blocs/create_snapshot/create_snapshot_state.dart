@@ -35,15 +35,15 @@ class ComputeSnapshotDataFailure extends CreateSnapshotState {
 
 class CreateSnapshotInsufficientBalance extends CreateSnapshotState {
   final String walletBalance;
-  final String totalCost;
+  final String arCost;
 
   CreateSnapshotInsufficientBalance({
     required this.walletBalance,
-    required this.totalCost,
+    required this.arCost,
   });
 
   @override
-  List<Object> get props => [walletBalance, totalCost];
+  List<Object> get props => [walletBalance, arCost];
 }
 
 /// Snapshot data has been computed and it's ready to be confirmed

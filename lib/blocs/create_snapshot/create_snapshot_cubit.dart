@@ -221,7 +221,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     if (walletBalance < totalCost) {
       emit(CreateSnapshotInsufficientBalance(
         walletBalance: walletBalance.toString(),
-        totalCost: totalCost.toString(),
+        arCost: winstonToAr(totalCost),
       ));
       return null;
     }

@@ -177,7 +177,7 @@ Widget _insufficientBalanceDialog(
                     text: appLocalizationsOf(context)
                         .insufficientBalanceForSnapshot(
                       snapshotCubitState.walletBalance,
-                      snapshotCubitState.totalCost,
+                      snapshotCubitState.arCost,
                     ),
                   ),
                   style: Theme.of(context).textTheme.bodyText1,
