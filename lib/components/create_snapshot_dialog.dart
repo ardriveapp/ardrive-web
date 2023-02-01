@@ -55,7 +55,8 @@ class CreateSnapshotDialog extends StatelessWidget {
           return _loadingDialog(context, snapshotCubitState);
         } else if (snapshotCubitState is SnapshotUploadSuccess) {
           return _successDialog(context, drive.name);
-        } else if (snapshotCubitState is SnapshotUploadFailure) {
+        } else if (snapshotCubitState is SnapshotUploadFailure ||
+            snapshotCubitState is ComputeSnapshotDataFailure) {
           return _failureDialog(context);
         } else if (snapshotCubitState is CreateSnapshotInsufficientBalance) {
           return _insufficientBalanceDialog(context, snapshotCubitState);
