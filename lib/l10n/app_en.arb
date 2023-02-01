@@ -1549,5 +1549,41 @@
         "example": "1.2 MB"
       }
     }
+  },
+  "snapshotSuceeded": "Success",
+  "@snapshotSuceeded": {
+    "description": "Snapshot Succeeded"
+  },
+  "snapshotCreationSucceeded": "Your successfuly created a snapshot of '{driveName}'!",
+  "@snapshotCreationSucceeded": {
+    "description": "The snapshot was sucessfuly created",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Curious Cat"
+      }
+    }
+  },
+  "snapshotFailed": "Snapshot Failed",
+  "@snapshotFailed": {
+    "description": "Snapshot Failed"
+  },
+  "snapshotCreationFailed": "Your attempted snapshot failed. You have not been charged. Please try again later.",
+  "@snapshotCreationFailed": {
+    "description": "There was an error when creating the snapshot"
+  },
+  "insufficientBalanceForSnapshot": "Provided wallet balance of {walletBalance} AR is not enough for this snapshot transaction costing {totalCost} AR...",
+  "@insufficientBalanceForSnapshot": {
+    "description": "The amount of AR the wallet has is not enough to upload the snapshot transaction",
+    "placeholders": {
+      "walletBalance": {
+        "type": "String",
+        "example": "0"
+      },
+      "totalCost": {
+        "type": "String",
+        "example": "1.2"
+      }
+    }
   }
 }

@@ -52,92 +52,229 @@ class CreateSnapshotDialog extends StatelessWidget {
       builder: (context, snapshotCubitState) {
         if (snapshotCubitState is ComputingSnapshotData ||
             snapshotCubitState is UploadingSnapshot) {
-          return ProgressDialog(
-              title: appLocalizationsOf(context).createSnapshot,
-              progressDescription: Text(
-                snapshotCubitState is ComputingSnapshotData
-                    ? appLocalizationsOf(context).computingSnapshotData
-                    : appLocalizationsOf(context).uploadingSnapshot,
-              ));
+          return _loadingDialog(context, snapshotCubitState);
+        } else if (snapshotCubitState is SnapshotUploadSuccess) {
+          return _successDialog(context, drive.name);
+        } else if (snapshotCubitState is SnapshotUploadFailure) {
+          return _failureDialog(context);
+        } else if (snapshotCubitState is CreateSnapshotInsufficientBalance) {
+          return _insufficientBalanceDialog(context, snapshotCubitState);
+        } else {
+          return _confirmDialog(
+            context,
+            drive,
+            createSnapshotCubit,
+            snapshotCubitState,
+          );
         }
-
-        return AppDialog(
-          title: appLocalizationsOf(context).createSnapshot,
-          content: SizedBox(
-              width: kMediumDialogWidth,
-              child: Row(
-                children: [
-                  if (snapshotCubitState is ConfirmingSnapshotCreation) ...{
-                    Flexible(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            appLocalizationsOf(context)
-                                .createSnapshotExplanation(drive.name),
-                          ),
-                          const Divider(),
-                          const SizedBox(height: 16),
-                          Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: appLocalizationsOf(context)
-                                      .cost(snapshotCubitState.arUploadCost),
-                                ),
-                                if (snapshotCubitState.usdUploadCost != null)
-                                  TextSpan(
-                                      text: snapshotCubitState.usdUploadCost! >=
-                                              0.01
-                                          ? ' (~${snapshotCubitState.usdUploadCost!.toStringAsFixed(2)} USD)'
-                                          : ' (< 0.01 USD)'),
-                              ],
-                              style: Theme.of(context).textTheme.bodyText1,
-                            ),
-                          ),
-                          Text.rich(
-                            TextSpan(
-                              children: [
-                                TextSpan(
-                                  text:
-                                      appLocalizationsOf(context).snapshotSize(
-                                    filesize(snapshotCubitState.snapshotSize),
-                                  ),
-                                ),
-                              ],
-                              style: Theme.of(context).textTheme.bodyText1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    /// display cost of snapshot creation, already present in the state
-                  }
-                ],
-              )),
-          actions: <Widget>[
-            if (snapshotCubitState is ConfirmingSnapshotCreation) ...{
-              TextButton(
-                child: Text(appLocalizationsOf(context).cancel),
-                onPressed: () {
-                  print('Cancel snapshot creation');
-                  Navigator.of(context).pop();
-                },
-              ),
-              ElevatedButton(
-                onPressed: () async => {
-                  print('Confirm snapshot creation'),
-                  await createSnapshotCubit.confirmSnapshotCreation(),
-                  Navigator.of(context).pop(),
-                },
-                child: Text(appLocalizationsOf(context).confirmEmphasized),
-              ),
-            }
-          ],
-        );
       },
     );
   }
+}
+
+Widget _loadingDialog(
+  BuildContext context,
+  CreateSnapshotState snapshotCubitState,
+) {
+  return ProgressDialog(
+      title: appLocalizationsOf(context).createSnapshot,
+      progressDescription: Text(
+        snapshotCubitState is ComputingSnapshotData
+            ? appLocalizationsOf(context).computingSnapshotData
+            : appLocalizationsOf(context).uploadingSnapshot,
+      ));
+}
+
+Widget _successDialog(BuildContext context, String driveName) {
+  return AppDialog(
+    title: appLocalizationsOf(context).snapshotSuceeded,
+    content: SizedBox(
+      width: kMediumDialogWidth,
+      child: Row(
+        children: [
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text.rich(
+                  TextSpan(
+                    text: appLocalizationsOf(context)
+                        .snapshotCreationSucceeded(driveName),
+                  ),
+                  style: Theme.of(context).textTheme.bodyText1,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        child: Text(appLocalizationsOf(context).ok),
+        onPressed: () {
+          Navigator.of(context).pop();
+        },
+      ),
+    ],
+  );
+}
+
+Widget _failureDialog(BuildContext context) {
+  return AppDialog(
+    title: appLocalizationsOf(context).snapshotFailed,
+    content: SizedBox(
+      width: kMediumDialogWidth,
+      child: Row(
+        children: [
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text.rich(
+                  TextSpan(
+                    text: appLocalizationsOf(context).snapshotCreationFailed,
+                  ),
+                  style: Theme.of(context).textTheme.bodyText1,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        child: Text(appLocalizationsOf(context).ok),
+        onPressed: () {
+          Navigator.of(context).pop();
+        },
+      ),
+    ],
+  );
+}
+
+Widget _insufficientBalanceDialog(
+  BuildContext context,
+  CreateSnapshotInsufficientBalance snapshotCubitState,
+) {
+  return AppDialog(
+    title: appLocalizationsOf(context).insufficientARForUpload,
+    content: SizedBox(
+      width: kMediumDialogWidth,
+      child: Row(
+        children: [
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text.rich(
+                  TextSpan(
+                    text: appLocalizationsOf(context)
+                        .insufficientBalanceForSnapshot(
+                      snapshotCubitState.walletBalance,
+                      snapshotCubitState.totalCost,
+                    ),
+                  ),
+                  style: Theme.of(context).textTheme.bodyText1,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        child: Text(appLocalizationsOf(context).ok),
+        onPressed: () {
+          Navigator.of(context).pop();
+        },
+      ),
+    ],
+  );
+}
+
+Widget _confirmDialog(
+  BuildContext context,
+  Drive drive,
+  CreateSnapshotCubit createSnapshotCubit,
+  CreateSnapshotState snapshotCubitState,
+) {
+  return AppDialog(
+    title: appLocalizationsOf(context).createSnapshot,
+    content: SizedBox(
+        width: kMediumDialogWidth,
+        child: Row(
+          children: [
+            if (snapshotCubitState is ConfirmingSnapshotCreation) ...{
+              Flexible(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appLocalizationsOf(context)
+                          .createSnapshotExplanation(drive.name),
+                    ),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: appLocalizationsOf(context)
+                                .cost(snapshotCubitState.arUploadCost),
+                          ),
+                          if (snapshotCubitState.usdUploadCost != null)
+                            TextSpan(
+                                text: snapshotCubitState.usdUploadCost! >= 0.01
+                                    ? ' (~${snapshotCubitState.usdUploadCost!.toStringAsFixed(2)} USD)'
+                                    : ' (< 0.01 USD)'),
+                        ],
+                        style: Theme.of(context).textTheme.bodyText1,
+                      ),
+                    ),
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: appLocalizationsOf(context).snapshotSize(
+                              filesize(snapshotCubitState.snapshotSize),
+                            ),
+                          ),
+                        ],
+                        style: Theme.of(context).textTheme.bodyText1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              /// display cost of snapshot creation, already present in the state
+            }
+          ],
+        )),
+    actions: <Widget>[
+      if (snapshotCubitState is ConfirmingSnapshotCreation) ...{
+        TextButton(
+          child: Text(appLocalizationsOf(context).cancel),
+          onPressed: () {
+            print('Cancel snapshot creation');
+            Navigator.of(context).pop();
+          },
+        ),
+        ElevatedButton(
+          onPressed: () async => {
+            print('Confirm snapshot creation'),
+            await createSnapshotCubit.confirmSnapshotCreation(),
+          },
+          child: Text(appLocalizationsOf(context).confirmEmphasized),
+        ),
+      }
+    ],
+  );
 }

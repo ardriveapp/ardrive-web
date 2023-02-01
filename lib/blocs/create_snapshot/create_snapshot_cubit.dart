@@ -247,10 +247,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     ));
   }
 
-  bool _isValidHeightRange() {
-    return _range.end <= _currentHeight;
-  }
-
   Future<Uint8List> _jsonMetadataOfTxId(String txId) async {
     final drive =
         await _driveDao.driveById(driveId: _driveId).getSingleOrNull();
@@ -286,7 +282,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
       emit(UploadingSnapshot());
 
+      // TODO: try..catch here - emit error on failure
       await _arweave.postTx(params.signedTx);
+
+      // emit(SnapshotUploadFailure(errorMessage: 'errorMessage'));
 
       emit(SnapshotUploadSuccess());
     } catch (err) {
