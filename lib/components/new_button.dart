@@ -218,9 +218,7 @@ List<PopupMenuEntry<Function>> _buildItems(
   if (profileState.runtimeType == ProfileLoggedIn) {
     final minimumWalletBalance = BigInt.from(10000000);
     final profile = profileState as ProfileLoggedIn;
-    final hasMiniumWalletBalance = profile.hasMinimumBalanceForUpload(
-      minimumWalletBalance: minimumWalletBalance,
-    );
+
     final canUpload = profile.canUpload(
       minimumWalletBalance: minimumWalletBalance,
     );
@@ -234,12 +232,12 @@ List<PopupMenuEntry<Function>> _buildItems(
         _buildUploadFileItem(
           context,
           driveDetailState,
-          hasMiniumWalletBalance,
+          canUpload,
         ),
         _buildUploadFolderItem(
           context,
           driveDetailState,
-          hasMiniumWalletBalance,
+          canUpload,
         ),
         const PopupMenuDivider(key: Key('divider-2')),
       },
