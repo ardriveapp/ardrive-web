@@ -283,7 +283,14 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
       emit(UploadingSnapshot());
 
-      await _arweave.postTx(params.signedTx);
+      try {
+        await _arweave.postTx(params.signedTx);
+      } catch (e) {
+        // ignore: avoid_print
+        print('Error while posting the snapshot transaction: $e');
+        emit(ComputeSnapshotDataFailure(errorMessage: e.toString()));
+        return;
+      }
 
       emit(SnapshotUploadSuccess());
     } catch (err) {
