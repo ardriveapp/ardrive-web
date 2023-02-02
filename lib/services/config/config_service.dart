@@ -21,11 +21,12 @@ class ConfigService {
       );
 
       final gatewayUrl = localStore.getString('arweaveGatewayUrl');
-      final experimentalFeatures = localStore.getString('experimentalFeatures');
+      final experimentalFeatures =
+          localStore.getBool('enableQuickSyncAuthoring');
       AppConfig configFromEnv = AppConfig.fromJson(json.decode(configContent));
       configFromEnv = configFromEnv.copyWith(
         defaultArweaveGatewayUrl: gatewayUrl,
-        experimentalFeaures: experimentalFeatures == 'YES',
+        enableQuickSyncAuthoring: experimentalFeatures,
       );
 
       _config = configFromEnv;

@@ -26,7 +26,7 @@ Widget buildNewButton(
     driveDetailState: driveDetailState,
     profileState: profileState,
     drivesState: drivesState,
-    enableCreateSnapshot: config.experimentalFeaures,
+    enableQuickSyncAuthoring: config.enableQuickSyncAuthoring,
   );
   double menuHeight = 0;
   for (var element in menuItems) {
@@ -220,7 +220,7 @@ List<PopupMenuEntry<Function>> _buildItems(
   required DrivesState drivesState,
   required ProfileState profileState,
   required DriveDetailState driveDetailState,
-  required bool enableCreateSnapshot,
+  required bool enableQuickSyncAuthoring,
 }) {
   if (profileState.runtimeType == ProfileLoggedIn) {
     final minimumWalletBalance = BigInt.from(10000000);
@@ -254,7 +254,7 @@ List<PopupMenuEntry<Function>> _buildItems(
           hasMinBalance,
         )
       },
-      if (enableCreateSnapshot &&
+      if (enableQuickSyncAuthoring &&
           driveDetailState is DriveDetailLoadSuccess) ...{
         _buildCreateSnapshotItem(context, driveDetailState, hasMinBalance)
       },
