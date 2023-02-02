@@ -172,9 +172,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       range: _range,
     ));
 
-    // // TODO: remove me
-    // return Uint8List.fromList([]);
-
     // For testing purposes
     if (_forceFailOnDataComputingForTesting) {
       throw Exception('Fake network error');
@@ -282,10 +279,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
       emit(UploadingSnapshot());
 
-      // TODO: try..catch here - emit error on failure
       await _arweave.postTx(params.signedTx);
-
-      // emit(SnapshotUploadFailure(errorMessage: 'errorMessage'));
 
       emit(SnapshotUploadSuccess());
     } catch (err) {
