@@ -56,8 +56,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "9dc9806993ff9a35d72b88460ac5c91f3ed33c81"
-      resolved-ref: "9dc9806993ff9a35d72b88460ac5c91f3ed33c81"
+      ref: PE-2920
+      resolved-ref: f716ab6d6f7384255183ad736e18953d90eb99aa
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
     version: "1.0.0"
@@ -379,11 +379,11 @@ packages:
     source: hosted
     version: "6.1.2"
   file_picker:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       path: "."
-      ref: power-stream
-      resolved-ref: "6cdf207ba762c6bc1ee688bbd8f217efcc4bb041"
+      ref: PE-2920
+      resolved-ref: "625dd4682a60c88cd87ecfd7792ca1c38445bc2d"
       url: "https://github.com/ar-io/flutter_file_picker"
     source: git
     version: "5.2.4"
