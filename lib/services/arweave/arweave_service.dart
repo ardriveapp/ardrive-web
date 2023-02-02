@@ -282,9 +282,10 @@ class ArweaveService {
 
     // Sort the entities in each block by ascending commit time.
     for (final block in blockHistory) {
+      block.entities.removeWhere((e) => e == null);
       block.entities.sort((e1, e2) => e1!.createdAt.compareTo(e2!.createdAt));
       //Remove entities with spoofed owners
-      block.entities.removeWhere((e) => e == null || e.ownerAddress != owner);
+      block.entities.removeWhere((e) => e!.ownerAddress != owner);
     }
 
     return DriveEntityHistory(
