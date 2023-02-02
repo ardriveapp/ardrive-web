@@ -255,7 +255,7 @@ Widget _confirmDialog(
                 ),
               ),
 
-              /// display cost of snapshot creation, already present in the state
+              // TODO: PE-2933
             }
           ],
         )),
