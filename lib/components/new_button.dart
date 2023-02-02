@@ -388,9 +388,6 @@ PopupMenuEntry<Function> _buildCreateSnapshotItem(
     context: context,
     isEnabled: !state.driveIsEmpty && hasMinBalance,
     itemTitle: appLocalizationsOf(context).createSnapshot,
-    // message: !state.driveIsEmpty && !hasMinBalance
-    //     ? appLocalizationsOf(context).insufficientFundsForCreateASnapshot
-    //     : null,
     value: (context) => promptToCreateSnapshot(
       context,
       state.currentDrive,
