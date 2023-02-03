@@ -339,7 +339,7 @@ class UploadForm extends StatelessWidget {
                             numberOfFilesInBundles + numberOfV2Files),
                       ),
                     },
-                    if (!state.sufficientArBalance ||
+                    if (!state.sufficientArBalance &&
                         !state.isFreeThanksToTurbo) ...{
                       const SizedBox(height: 8),
                       Text(
