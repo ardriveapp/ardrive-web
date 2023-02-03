@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 
@@ -15,6 +17,7 @@ class ProgressDialog extends StatelessWidget {
   final Widget? percentageDetails;
   final Widget? progressDescription;
   final Widget? progressBar;
+  final FutureOr<void> Function()? onDismiss;
 
   const ProgressDialog({
     Key? key,
@@ -22,11 +25,13 @@ class ProgressDialog extends StatelessWidget {
     this.progressBar,
     this.progressDescription,
     this.percentageDetails,
+    this.onDismiss,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) => AppDialog(
-        dismissable: false,
+        dismissable: onDismiss != null,
+        onWillPopCallback: onDismiss,
         title: title,
         content: SizedBox(
           width: kSmallDialogWidth + 164,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show BytesBuilder;
 
@@ -32,6 +33,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   late Range _range;
   late int _currentHeight;
 
+  late StreamSubscription<Uint8List> _snapshotDataStreamSubscription;
+  bool _wasSnapshotDataStreamSubscriptionCanceled = false;
+
   SnapshotItemToBeCreated? _itemToBeCreated;
   SnapshotEntity? _snapshotEntity;
 
@@ -61,6 +65,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     try {
       data = await _getSnapshotData();
     } catch (e) {
+      if (_wasSnapshotDataStreamSubscriptionCanceled) {
+        _wasSnapshotDataStreamSubscriptionCanceled = false;
+        return;
+      }
       emit(ComputeSnapshotDataFailure(errorMessage: e.toString()));
       return;
     }
@@ -85,6 +93,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _driveId = driveId;
     _itemToBeCreated = null;
     _snapshotEntity = null;
+    _wasSnapshotDataStreamSubscriptionCanceled = false;
   }
 
   void _setTrustedRange(Range? range) {
@@ -182,9 +191,19 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     // ignore: deprecated_export_use
     final dataBuffer = BytesBuilder(copy: false);
 
-    // Stream snapshot data to the temporal buffer
-    await for (final item in _newItemToBeCreated.getSnapshotData()) {
-      dataBuffer.add(item);
+    _snapshotDataStreamSubscription =
+        _newItemToBeCreated.getSnapshotData().listen(
+      (event) {
+        // Stream snapshot data to the temporal buffer
+        dataBuffer.add(event);
+      },
+      cancelOnError: true,
+    );
+
+    await _snapshotDataStreamSubscription.asFuture();
+
+    if (_wasSnapshotDataStreamSubscriptionCanceled) {
+      throw Exception('Snapshot data stream subscription was canceled');
     }
 
     final data = dataBuffer.takeBytes();
@@ -288,6 +307,14 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           'Error while posting the snapshot transaction: ${(err as TypeError).stackTrace}');
       emit(SnapshotUploadFailure(errorMessage: '$err'));
     }
+  }
+
+  Future<void> cancelSnapshotCreation() async {
+    // ignore: avoid_print
+    print('User cancelled the snapshot creation');
+
+    _wasSnapshotDataStreamSubscriptionCanceled = true;
+    await _snapshotDataStreamSubscription.cancel();
   }
 }
 
