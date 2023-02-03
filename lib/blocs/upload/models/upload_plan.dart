@@ -93,12 +93,20 @@ Future<bool> canWeUseTurbo({
   required Map<String, FileV2UploadHandle> fileV2UploadHandles,
   required TurboService turboService,
 }) async {
+  // Extra fields that come into play when bundling
+  const dataItemIdOffsetByteSize = 64;
+  const noOfDataItemsByteSize = 32;
+
   if (!turboService.useTurbo) return false;
 
   final areDataItemSizesUnderThreshold = await Future.wait(
     fileDataItemUploadHandles.values.map(
-      (e) async =>
-          await e.estimateDataItemSizes() <= turboService.allowedDataItemSize,
+      (e) async {
+        final allowedDataItemSize = turboService.allowedDataItemSize +
+            dataItemIdOffsetByteSize +
+            noOfDataItemsByteSize;
+        return await e.estimateDataItemSizes() <= allowedDataItemSize;
+      },
     ),
   );
 
