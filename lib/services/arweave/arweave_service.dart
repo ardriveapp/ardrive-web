@@ -774,14 +774,18 @@ class ArweaveService {
 
   Future<Transaction> prepareEntityTx(
     Entity entity,
-    Wallet wallet, [
-    SecretKey? key,
-  ]) async {
+    Wallet wallet,
+    SecretKey? key, {
+    bool skipSignature = false,
+  }) async {
     final tx = await client.transactions.prepare(
       await entity.asTransaction(key: key),
       wallet,
     );
-    await tx.sign(wallet);
+
+    if (!skipSignature) {
+      await tx.sign(wallet);
+    }
 
     return tx;
   }
@@ -889,6 +893,18 @@ class ArweaveService {
     final response = await ArDriveHTTP().getJson(coinGeckoApi);
 
     return response.data?['arweave']['usd'];
+  }
+
+  Future<Uint8List> dataFromTxId(
+    String txId,
+    SecretKey? driveKey,
+  ) async {
+    // TODO: PE-2917
+
+    final Response data =
+        (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
+    final metadata = data.bodyBytes;
+    return metadata;
   }
 }
 
