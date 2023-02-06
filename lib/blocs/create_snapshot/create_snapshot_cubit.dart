@@ -33,8 +33,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   late Range _range;
   late int _currentHeight;
 
-  late StreamSubscription<Uint8List> _snapshotDataStreamSubscription;
-  bool _wasSnapshotDataStreamSubscriptionCanceled = false;
+  bool _wasSnapshotDataComputingCanceled = false;
 
   SnapshotItemToBeCreated? _itemToBeCreated;
   SnapshotEntity? _snapshotEntity;
@@ -65,10 +64,12 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     try {
       data = await _getSnapshotData();
     } catch (e) {
-      if (_wasSnapshotDataStreamSubscriptionCanceled) {
-        _wasSnapshotDataStreamSubscriptionCanceled = false;
+      if (_wasSnapshotDataComputingCanceled) {
+        _wasSnapshotDataComputingCanceled = false;
         return;
       }
+
+      // If it was not cancelled, then there was a failure.
       emit(ComputeSnapshotDataFailure(errorMessage: e.toString()));
       return;
     }
@@ -93,7 +94,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _driveId = driveId;
     _itemToBeCreated = null;
     _snapshotEntity = null;
-    _wasSnapshotDataStreamSubscriptionCanceled = false;
+    _wasSnapshotDataComputingCanceled = false;
   }
 
   void _setTrustedRange(Range? range) {
@@ -191,19 +192,12 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     // ignore: deprecated_export_use
     final dataBuffer = BytesBuilder(copy: false);
 
-    _snapshotDataStreamSubscription =
-        _newItemToBeCreated.getSnapshotData().listen(
-      (event) {
-        // Stream snapshot data to the temporal buffer
-        dataBuffer.add(event);
-      },
-      cancelOnError: true,
-    );
+    await for (final chunk in _newItemToBeCreated.getSnapshotData()) {
+      if (_wasSnapshotDataComputingCanceled) {
+        throw Exception('Snapshot data stream subscription was canceled');
+      }
 
-    await _snapshotDataStreamSubscription.asFuture();
-
-    if (_wasSnapshotDataStreamSubscriptionCanceled) {
-      throw Exception('Snapshot data stream subscription was canceled');
+      dataBuffer.add(chunk);
     }
 
     final data = dataBuffer.takeBytes();
@@ -313,8 +307,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     // ignore: avoid_print
     print('User cancelled the snapshot creation');
 
-    _wasSnapshotDataStreamSubscriptionCanceled = true;
-    await _snapshotDataStreamSubscription.cancel();
+    _wasSnapshotDataComputingCanceled = true;
   }
 }
 
