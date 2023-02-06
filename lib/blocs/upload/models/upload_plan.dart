@@ -59,9 +59,9 @@ class UploadPlan {
       fileV2UploadHandles: fileV2UploadHandles,
       turboService: turboService,
     );
-
+    const approximateMetadataSize = 200; //Usually less than 50 bytes
     final int maxBundleSize = useTurbo
-        ? turboService.allowedDataItemSize
+        ? turboService.allowedDataItemSize + approximateMetadataSize
         : (kIsWeb ? bundleSizeLimit : mobileBundleSizeLimit);
 
     final bundleItems = await NextFitBundlePacker<UploadHandle>(
@@ -93,27 +93,12 @@ Future<bool> canWeUseTurbo({
   required Map<String, FileV2UploadHandle> fileV2UploadHandles,
   required TurboService turboService,
 }) async {
-  // Extra fields that come into play when bundling
-  const dataItemIdOffsetByteSize = 64;
-  const noOfDataItemsByteSize = 32;
-
   if (!turboService.useTurbo) return false;
 
-  final areDataItemSizesUnderThreshold = await Future.wait(
-    fileDataItemUploadHandles.values.map(
-      (e) async {
-        final allowedDataItemSize = turboService.allowedDataItemSize +
-            dataItemIdOffsetByteSize +
-            noOfDataItemsByteSize;
-        return await e.estimateDataItemSizes() <= allowedDataItemSize;
-      },
-    ),
-  );
-
-  final allDataItemsAreWithinTurboThreshold = areDataItemSizesUnderThreshold
-      .every((isDataItemBelowThreshold) => isDataItemBelowThreshold == true);
+  final allFileSizesAreWithinTurboThreshold = !fileDataItemUploadHandles.values
+      .any((file) => file.size > turboService.allowedDataItemSize);
 
   return turboService.useTurbo &&
       fileV2UploadHandles.isEmpty &&
-      allDataItemsAreWithinTurboThreshold;
+      allFileSizesAreWithinTurboThreshold;
 }
