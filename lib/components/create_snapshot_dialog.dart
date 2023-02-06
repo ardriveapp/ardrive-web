@@ -92,7 +92,13 @@ Widget _loadingDialog(
           ? appLocalizationsOf(context).computingSnapshotData
           : appLocalizationsOf(context).uploadingSnapshot,
     ),
-    onDismiss: onDismiss,
+    actions: [
+      if (onDismiss != null)
+        TextButton(
+          onPressed: onDismiss,
+          child: Text(appLocalizationsOf(context).cancel),
+        ),
+    ],
   );
 }
 

@@ -18,6 +18,7 @@ class ProgressDialog extends StatelessWidget {
   final Widget? progressDescription;
   final Widget? progressBar;
   final FutureOr<void> Function()? onDismiss;
+  final List<Widget> actions;
 
   const ProgressDialog({
     Key? key,
@@ -26,6 +27,7 @@ class ProgressDialog extends StatelessWidget {
     this.progressDescription,
     this.percentageDetails,
     this.onDismiss,
+    this.actions = const [],
   }) : super(key: key);
 
   @override
@@ -33,6 +35,7 @@ class ProgressDialog extends StatelessWidget {
         dismissable: onDismiss != null,
         onWillPopCallback: onDismiss,
         title: title,
+        actions: actions,
         content: SizedBox(
           width: kSmallDialogWidth + 164,
           child: Column(
