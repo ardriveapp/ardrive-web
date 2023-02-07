@@ -39,7 +39,13 @@ class _ArDriveAuth implements ArDriveAuth {
 
   // getters and setters
   @override
-  User? get currentUser => _currentUser;
+  User get currentUser {
+    if (_currentUser == null) {
+      throw Exception('No user is currently logged in.');
+    }
+
+    return _currentUser!;
+  }
 
   set currentUser(User? val) {
     if (_currentUser != val) {
@@ -116,12 +122,15 @@ class _ArDriveAuth implements ArDriveAuth {
 
     _userController.add(_currentUser);
 
-    return _currentUser!;
+    return currentUser;
   }
 
   @override
   Future<User> addUser(
-      Wallet wallet, String password, ProfileType profileType) async {
+    Wallet wallet,
+    String password,
+    ProfileType profileType,
+  ) async {
     // delete previous user
     // verify if it is necessary, the user only will add a new user if he is not logged in
     if (await _userService.hasUser()) {
@@ -139,7 +148,7 @@ class _ArDriveAuth implements ArDriveAuth {
 
     _userController.add(_currentUser);
 
-    return _currentUser!;
+    return currentUser;
   }
 
   @override
@@ -149,11 +158,7 @@ class _ArDriveAuth implements ArDriveAuth {
 
       _userController.add(_currentUser);
 
-      if (_currentUser == null) {
-        throw AuthenticationFailedException('User not found.');
-      }
-
-      return _currentUser!;
+      return currentUser;
     } catch (e) {
       throw AuthenticationFailedException('Incorrect password.');
     }
