@@ -71,9 +71,11 @@ packages:
   ardrive_ui:
     dependency: "direct main"
     description:
-      path: "../packages/ardrive_ui"
-      relative: true
-    source: path
+      path: "."
+      ref: PE-2583-new-login-flow
+      resolved-ref: "194e15929a1e098c4efe3b88effe2d28e45e67e9"
+      url: "https://github.com/ar-io/ardrive_ui.git"
+    source: git
     version: "1.0.0"
   args:
     dependency: transitive
