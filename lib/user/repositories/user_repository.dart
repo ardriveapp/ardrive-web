@@ -72,10 +72,7 @@ class _UserRepository implements UserRepository {
   }
 
   @override
-  Future<void> deleteUser() async {
-    print('Deleting user');
-    _profileDao.deleteProfile();
-  }
+  Future<void> deleteUser() => _profileDao.deleteProfile();
 
   @override
   Future<bool> hasUser() async {
