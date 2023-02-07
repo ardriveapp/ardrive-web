@@ -19,7 +19,16 @@ class SnapshotItemToBeCreated {
   final DriveID driveId;
   final Stream<DriveHistoryTransaction> source;
 
-  final Future<String> Function(TxID txId) _jsonMetadataOfTxId;
+  int? _dataStart;
+  int? _dataEnd;
+
+  // TODO: what these values will be for a snapshot with no transactions?
+  // Maybe a special value like -1? - In that case the snapshot would be ignored
+  // at sync time.
+  int get dataStart => _dataStart ?? -1;
+  int get dataEnd => _dataEnd ?? -1;
+
+  final Future<Uint8List> Function(TxID txId) _jsonMetadataOfTxId;
 
   SnapshotItemToBeCreated({
     required this.blockStart,
@@ -27,16 +36,28 @@ class SnapshotItemToBeCreated {
     required this.driveId,
     required this.subRanges,
     required this.source,
-    required Future<String> Function(TxID txId) jsonMetadataOfTxId,
+    required Future<Uint8List> Function(TxID txId) jsonMetadataOfTxId,
   }) : _jsonMetadataOfTxId = jsonMetadataOfTxId;
 
   Stream<Uint8List> getSnapshotData() async* {
     final txSnapshotStream = source.asyncMap<TxSnapshot>(
-      (node) async => TxSnapshot(
-        gqlNode: node,
-        jsonMetadata:
-            _isSnapshotTx(node) ? '' : await _jsonMetadataOfTxId(node.id),
-      ),
+      (node) async {
+        // updates dataStart and dataEnd being the start the minimum and end the maximum
+        _dataStart = _dataStart == null || node.block!.height < _dataStart!
+            ? node.block!.height
+            : _dataStart;
+        _dataEnd = _dataEnd == null || node.block!.height > _dataEnd!
+            ? node.block!.height
+            : _dataEnd;
+
+        print('SnapshotItemToBeCreated: ${node.id}');
+
+        return TxSnapshot(
+          gqlNode: node,
+          jsonMetadata:
+              _isSnapshotTx(node) ? null : await _jsonMetadataOfTxId(node.id),
+        );
+      },
     );
 
     final snapshotDataStream =
