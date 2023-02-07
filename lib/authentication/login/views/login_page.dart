@@ -8,14 +8,13 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
-
-import '../../../utils/split_localizations.dart';
 
 // TODO: Remove hardcoded colors and replace with design tokens
 class LoginPage extends StatefulWidget {
@@ -290,10 +289,12 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                   },
                   buttonCallback: (file) {
                     _file = file;
+
                     if (!_isTermsChecked) {
                       showAnimatedDialog(context,
                           content: _showAcceptTermsModal());
                     }
+
                     context.read<LoginBloc>().add(AddWalletFile(file));
                   },
                   errorDescription: appLocalizationsOf(context).invalidKeyFile,
