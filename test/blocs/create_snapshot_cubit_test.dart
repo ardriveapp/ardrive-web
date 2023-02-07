@@ -252,12 +252,6 @@ void main() {
           pst: pst,
         ),
         act: (cubit) async {
-          // cubit.cancelSnapshotCreation();
-          // await cubit.confirmDriveAndHeighRange(
-          //   'driveId',
-          //   range: Range(start: 0, end: 85),
-          // );
-
           await Future.wait([
             cubit.confirmDriveAndHeighRange(
               'driveId',
