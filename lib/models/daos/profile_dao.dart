@@ -85,7 +85,8 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
 
   Future<void> deleteProfile() async {
     final profile = await defaultProfile().getSingle();
-    (delete(profiles)..where((p) => p.id.equals(profile.id))).go();
+
+    await (delete(profiles)..where((p) => p.id.equals(profile.id))).go();
   }
 
   /// Adds the specified profile and returns a profile key that was used to encrypt the user's wallet
