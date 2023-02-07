@@ -96,7 +96,9 @@ Widget _loadingDialog(
       if (onDismiss != null)
         TextButton(
           onPressed: onDismiss,
-          child: Text(appLocalizationsOf(context).cancel),
+          child: Text(
+            appLocalizationsOf(context).cancel,
+          ),
         ),
     ],
   );
