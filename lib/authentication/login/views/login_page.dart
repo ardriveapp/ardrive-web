@@ -369,7 +369,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     Flexible(
                       child: GestureDetector(
                         onTap: () => openUrl(
-                          url: 'https://ardrive.io/tos-and-privacy/',
+                          url: Resources.agreementLink,
                         ),
                         child: Text.rich(
                           TextSpan(
