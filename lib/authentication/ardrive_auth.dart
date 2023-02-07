@@ -1,14 +1,12 @@
 import 'dart:async';
 
-import 'package:ardrive/entities/constants.dart';
+import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/crypto/keys.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:arweave/arweave.dart';
-
-import '../entities/drive_entity.dart';
-import '../entities/profile_types.dart';
 
 abstract class ArDriveAuth {
   Future<bool> isUserLoggedIn();
@@ -39,6 +37,16 @@ class _ArDriveAuth implements ArDriveAuth {
 
   User? _currentUser;
 
+  // getters and setters
+  @override
+  User? get currentUser => _currentUser;
+
+  set currentUser(User? val) {
+    if (_currentUser != val) {
+      _currentUser = val;
+    }
+  }
+
   final StreamController<User?> _userController =
       StreamController<User?>.broadcast();
 
@@ -59,13 +67,10 @@ class _ArDriveAuth implements ArDriveAuth {
 
   @override
   Future<User> login(Wallet wallet, String password) async {
-    print('Logging in user');
     final driveTxs = await _arweave.getUniqueUserDriveEntityTxs(
       await wallet.getAddress(),
       maxRetries: profileQueryMaxRetries,
     );
-
-    print('Found ${driveTxs.length} drive entities');
 
     final privateDriveTxs = driveTxs.where(
         (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
@@ -84,8 +89,6 @@ class _ArDriveAuth implements ArDriveAuth {
       DriveEntity? privateDrive;
 
       try {
-        print('Trying to decrypt private drive with id: $checkDriveId');
-
         privateDrive = await _arweave.getLatestDriveEntityWithId(
           checkDriveId,
           checkDriveKey,
@@ -96,7 +99,6 @@ class _ArDriveAuth implements ArDriveAuth {
       }
 
       if (privateDrive == null) {
-        print('Could not decrypt private drive with id: $checkDriveId');
         throw AuthenticationFailedException('Incorrect password');
       }
     }
@@ -114,7 +116,6 @@ class _ArDriveAuth implements ArDriveAuth {
 
     _userController.add(_currentUser);
 
-    // TODO: check if the user has a profile
     return _currentUser!;
   }
 
@@ -148,9 +149,13 @@ class _ArDriveAuth implements ArDriveAuth {
 
       _userController.add(_currentUser);
 
+      if (_currentUser == null) {
+        throw AuthenticationFailedException('User not found.');
+      }
+
       return _currentUser!;
     } catch (e) {
-      throw AuthenticationFailedException('Incorrect password');
+      throw AuthenticationFailedException('Incorrect password.');
     }
   }
 
@@ -159,18 +164,8 @@ class _ArDriveAuth implements ArDriveAuth {
     currentUser = null;
 
     _userController.add(null);
-    // TODO: delete profile
+
     await _userService.deleteUser();
-  }
-
-  // getters and setters
-  @override
-  User? get currentUser => _currentUser;
-
-  set currentUser(User? val) {
-    if (_currentUser != val) {
-      _currentUser = val;
-    }
   }
 
   @override
