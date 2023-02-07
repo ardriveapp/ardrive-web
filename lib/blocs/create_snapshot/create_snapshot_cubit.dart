@@ -63,11 +63,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     late Uint8List data;
     try {
       data = await _getSnapshotData();
+
+      if (_wasCancelled()) return;
     } catch (e) {
-      if (_wasSnapshotDataComputingCanceled) {
-        _wasSnapshotDataComputingCanceled = false;
-        return;
-      }
+      if (_wasCancelled()) return;
 
       // If it was not cancelled, then there was a failure.
       emit(ComputeSnapshotDataFailure(errorMessage: e.toString()));
@@ -86,6 +85,18 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     if (costResult == null) return;
 
     await _emitConfirming(costResult, data.length, uploadSnapshotItemParams);
+  }
+
+  bool _wasCancelled() {
+    if (_wasSnapshotDataComputingCanceled) {
+      _wasSnapshotDataComputingCanceled = false;
+
+      emit(CreateSnapshotInitial());
+
+      return true;
+    }
+
+    return false;
   }
 
   Future<void> _reset(DriveID driveId) async {
@@ -303,7 +314,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     }
   }
 
-  Future<void> cancelSnapshotCreation() async {
+  void cancelSnapshotCreation() {
     // ignore: avoid_print
     print('User cancelled the snapshot creation');
 
