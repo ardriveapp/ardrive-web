@@ -1590,23 +1590,13 @@
   "@determiningSizeAndCostOfSnapshot": {
     "description": "Determining size and cost of snapshot. This may take a while."
   },
-  "snapshotOfDrive": "Snapshot of drive {driveName} from block height {blockStart} to {blockEnd}",
+  "snapshotOfDrive": "Snapshot of drive {driveName}",
   "@snapshotOfDrive": {
     "description": "Snapshot of drive",
     "placeholders": {
       "driveName": {
         "type": "String",
         "example": "Curious Cat"
-      },
-      "blockStart": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "1"
-      },
-      "blockEnd": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "100"
       }
     }
   }

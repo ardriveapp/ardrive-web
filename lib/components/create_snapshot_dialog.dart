@@ -281,11 +281,7 @@ Widget _confirmDialog(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      appLocalizationsOf(context).snapshotOfDrive(
-                        drive.name,
-                        snapshotCubitState.rangeToBeSnapshotted.start,
-                        snapshotCubitState.rangeToBeSnapshotted.end,
-                      ),
+                      appLocalizationsOf(context).snapshotOfDrive(drive.name),
                     ),
                     const Divider(),
                     const SizedBox(height: 16),
