@@ -6,12 +6,15 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   final SecretKey? fileKey;
   final FileRevision revision;
   final ArweaveService _arweave;
+  final ArDriveCrypto _crypto;
 
   SharedFileDownloadCubit({
     this.fileKey,
     required this.revision,
     required ArweaveService arweave,
+    required ArDriveCrypto crypto,
   })  : _arweave = arweave,
+        _crypto = crypto,
         super(FileDownloadStarting()) {
     download();
   }
@@ -41,7 +44,7 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
       final dataTx = await (_arweave.getTransactionDetails(revision.dataTxId));
 
       if (dataTx != null) {
-        dataBytes = await decryptTransactionData(
+        dataBytes = await _crypto.decryptTransactionData(
           dataTx,
           dataRes.data,
           fileKey!,

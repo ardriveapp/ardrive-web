@@ -4,7 +4,7 @@ import 'dart:developer';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
-import 'package:ardrive/core/decrypt.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';

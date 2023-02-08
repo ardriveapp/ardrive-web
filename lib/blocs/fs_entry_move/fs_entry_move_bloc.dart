@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
@@ -21,6 +22,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
   final Platform _platform;
+  final ArDriveCrypto _crypto;
 
   FsEntryMoveBloc({
     required this.driveId,
@@ -29,12 +31,14 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
+    required ArDriveCrypto crypto,
     Platform platform = const LocalPlatform(),
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
         _platform = platform,
+        _crypto = crypto,
         super(const FsEntryMoveLoadInProgress()) {
     if (selectedItems.isEmpty) {
       addError(Exception('selectedItems cannot be empty'));
@@ -188,8 +192,9 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             parentFolderId: parentFolder.id,
             path: '${parentFolder.path}/${file.name}',
             lastUpdated: DateTime.now());
-        final fileKey =
-            driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
+        final fileKey = driveKey != null
+            ? await _crypto.deriveFileKey(driveKey, file.id)
+            : null;
 
         final fileEntity = file.asEntity();
 

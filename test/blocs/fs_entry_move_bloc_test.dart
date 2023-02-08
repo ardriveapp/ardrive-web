@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -211,6 +212,7 @@ void main() {
       AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
       arweave = ArweaveService(
         Arweave(gatewayUrl: Uri.parse(arweaveGatewayUrl)),
+        ArDriveCrypto(),
       );
       syncBloc = MockSyncBloc();
 
@@ -253,6 +255,7 @@ void main() {
         driveDao: driveDao,
         profileCubit: profileCubit,
         selectedItems: [],
+        crypto: ArDriveCrypto(),
       ),
       errors: () => [isA<Exception>()],
     );
@@ -271,6 +274,7 @@ void main() {
         ];
       }),
       build: () => FsEntryMoveBloc(
+        crypto: ArDriveCrypto(),
         arweave: arweave,
         syncCubit: syncBloc,
         driveId: driveId,

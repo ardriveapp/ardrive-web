@@ -1,18 +1,19 @@
 import 'dart:async';
 
-import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive/services/crypto/keys.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:arweave/arweave.dart';
+import 'package:cryptography/cryptography.dart';
+
+import '../core/crypto/crypto.dart';
 
 abstract class ArDriveAuth {
   Future<bool> isUserLoggedIn();
   Future<bool> isExistingUser(Wallet wallet);
   Future<User> addUser(Wallet wallet, String password, ProfileType profileType);
-  Future<User> login(Wallet wallet, String password);
+  Future<User> login(Wallet wallet, String password, ProfileType profileType);
   Future<User> unlockUser({required String password});
   Future<void> logout();
   User? get currentUser;
@@ -21,19 +22,27 @@ abstract class ArDriveAuth {
   factory ArDriveAuth({
     required ArweaveService arweave,
     required UserRepository userRepository,
+    required ArDriveCrypto crypto,
   }) =>
-      _ArDriveAuth(arweave: arweave, userRepository: userRepository);
+      _ArDriveAuth(
+        arweave: arweave,
+        userRepository: userRepository,
+        crypto: crypto,
+      );
 }
 
 class _ArDriveAuth implements ArDriveAuth {
   _ArDriveAuth({
     required ArweaveService arweave,
     required UserRepository userRepository,
+    required ArDriveCrypto crypto,
   })  : _arweave = arweave,
+        _crypto = crypto,
         _userService = userRepository;
 
   final UserRepository _userService;
   final ArweaveService _arweave;
+  final ArDriveCrypto _crypto;
 
   User? _currentUser;
 
@@ -41,7 +50,7 @@ class _ArDriveAuth implements ArDriveAuth {
   @override
   User get currentUser {
     if (_currentUser == null) {
-      throw Exception('No user is currently logged in.');
+      throw const AuthenticationUserIsNotLoggedInException();
     }
 
     return _currentUser!;
@@ -72,53 +81,18 @@ class _ArDriveAuth implements ArDriveAuth {
   }
 
   @override
-  Future<User> login(Wallet wallet, String password) async {
-    final driveTxs = await _arweave.getUniqueUserDriveEntityTxs(
-      await wallet.getAddress(),
-      maxRetries: profileQueryMaxRetries,
+  Future<User> login(
+      Wallet wallet, String password, ProfileType profileType) async {
+    final isValidPassword = await _validateUser(
+      wallet,
+      password,
     );
 
-    final privateDriveTxs = driveTxs.where(
-        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
-
-    // Try and decrypt one of the user's private drive entities to check if they are entering the
-    // right password.
-    if (privateDriveTxs.isNotEmpty) {
-      final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
-
-      final checkDriveKey = await deriveDriveKey(
-        wallet,
-        checkDriveId,
-        password,
-      );
-
-      DriveEntity? privateDrive;
-
-      try {
-        privateDrive = await _arweave.getLatestDriveEntityWithId(
-          checkDriveId,
-          checkDriveKey,
-          profileQueryMaxRetries,
-        );
-      } catch (e) {
-        throw AuthenticationUnknownException('Unknown error: $e');
-      }
-
-      if (privateDrive == null) {
-        throw AuthenticationFailedException('Incorrect password');
-      }
+    if (!isValidPassword) {
+      throw AuthenticationFailedException('Incorrect password');
     }
 
-    await _userService.deleteUser();
-
-    // save user
-    await _userService.saveUser(
-      password,
-      ProfileType.json,
-      wallet,
-    );
-
-    currentUser = await _userService.getUser(password);
+    currentUser = await addUser(wallet, password, profileType);
 
     _userController.add(_currentUser);
 
@@ -131,18 +105,7 @@ class _ArDriveAuth implements ArDriveAuth {
     String password,
     ProfileType profileType,
   ) async {
-    // delete previous user
-    // verify if it is necessary, the user only will add a new user if he is not logged in
-    if (await _userService.hasUser()) {
-      await _userService.deleteUser();
-    }
-
-    // save user
-    await _userService.saveUser(
-      password,
-      profileType,
-      wallet,
-    );
+    await _saveUser(password, profileType, wallet);
 
     currentUser = await _userService.getUser(password);
 
@@ -175,6 +138,60 @@ class _ArDriveAuth implements ArDriveAuth {
 
   @override
   Stream<User?> onAuthStateChanged() => _userController.stream;
+
+  Future<bool> _validateUser(
+    Wallet wallet,
+    String password,
+  ) async {
+    final firstDrivePrivateDriveTxId = await _arweave.getFirstPrivateDriveTxId(
+      wallet,
+      maxRetries: profileQueryMaxRetries,
+    );
+
+    // Try and decrypt one of the user's private drive entities to check if they are entering the
+    // right password.
+    if (firstDrivePrivateDriveTxId != null) {
+      late SecretKey checkDriveKey;
+      try {
+        checkDriveKey = await _crypto.deriveDriveKey(
+          wallet,
+          firstDrivePrivateDriveTxId,
+          password,
+        );
+      } catch (e) {
+        throw AuthenticationFailedException('Wrong password');
+      }
+
+      final privateDrive = await _arweave.getLatestDriveEntityWithId(
+        firstDrivePrivateDriveTxId,
+        checkDriveKey,
+        profileQueryMaxRetries,
+      );
+
+      return privateDrive != null;
+    }
+
+    return true;
+  }
+
+  Future<void> _saveUser(
+    String password,
+    ProfileType profileType,
+    Wallet wallet,
+  ) async {
+    // delete previous user
+    // verify if it is necessary, the user only will add a new user if he is not logged in
+    if (await _userService.hasUser()) {
+      await _userService.deleteUser();
+    }
+
+    // save user
+    await _userService.saveUser(
+      password,
+      profileType,
+      wallet,
+    );
+  }
 }
 
 class AuthenticationFailedException implements Exception {
@@ -191,4 +208,8 @@ class AuthenticationUnknownException implements Exception {
   final String message;
 
   AuthenticationUnknownException(this.message);
+}
+
+class AuthenticationUserIsNotLoggedInException implements Exception {
+  const AuthenticationUserIsNotLoggedInException();
 }

@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
@@ -20,6 +21,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
+  final ArDriveCrypto _crypto;
 
   bool get _isRenamingFolder => folderId != null;
 
@@ -31,10 +33,12 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
+    required ArDriveCrypto crypto,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
+        _crypto = crypto,
         assert(folderId != null || fileId != null),
         super(FsEntryRenameInitializing(isRenamingFolder: folderId != null)) {
     form = FormGroup({
@@ -120,7 +124,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           file = file.copyWith(name: newName, lastUpdated: DateTime.now());
 
           final fileKey =
-              driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
+              driveKey != null ? await _crypto.deriveFileKey(driveKey, file.id) : null;
 
           final fileEntity = file.asEntity();
           final fileTx = await _arweave.prepareEntityTx(

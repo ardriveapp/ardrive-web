@@ -1,9 +1,9 @@
 import 'dart:convert';
 
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
-import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -18,6 +18,8 @@ class ProfilePasswordIncorrectException implements Exception {}
 class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   ProfileDao(Database db) : super(db);
 
+  final ArDriveCrypto _crypto = ArDriveCrypto();
+
   /// Loads the default profile with the provided password.
   ///
   /// Throws a [ProfilePasswordIncorrectException] if the provided password is incorrect.
@@ -25,13 +27,13 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     final profile = await defaultProfile().getSingle();
 
     final profileSalt = profile.keySalt;
-    final profileKdRes = await deriveProfileKey(password, profileSalt);
+    final profileKdRes = await _crypto.deriveProfileKey(password, profileSalt);
     //Checks password for both JSON and ArConnect by decrypting stored public key
     String publicKey;
     try {
       publicKey = utf8.decode(
         await aesGcm.decrypt(
-          secretBoxFromDataWithMacConcatenation(
+          _crypto.secretBoxFromDataWithMacConcatenation(
             profile.encryptedPublicKey,
             nonce: profileSalt,
           ),
@@ -49,7 +51,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
           final walletJwk = json.decode(
             utf8.decode(
               await aesGcm.decrypt(
-                secretBoxFromDataWithMacConcatenation(
+                _crypto.secretBoxFromDataWithMacConcatenation(
                   profile.encryptedWallet,
                   nonce: profileSalt,
                 ),
@@ -97,7 +99,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     Wallet wallet,
     ProfileType profileType,
   ) async {
-    final profileKdRes = await deriveProfileKey(password);
+    final profileKdRes = await _crypto.deriveProfileKey(password);
     final profileSalt = profileKdRes.salt;
     final encryptedWallet = await () async {
       switch (profileType) {

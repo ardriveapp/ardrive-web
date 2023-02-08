@@ -4,6 +4,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/pst/ardrive_contract_oracle.dart';
 import 'package:ardrive/pst/community_oracle.dart';
 import 'package:ardrive/pst/contract_oracle.dart';
@@ -77,7 +78,11 @@ Future<void> _initialize() async {
   ArDriveDownloader.initialize();
 
   arweave = ArweaveService(
-      Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
+    Arweave(
+      gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!),
+    ),
+    ArDriveCrypto(),
+  );
 
   if (kIsWeb) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
@@ -160,9 +165,12 @@ class AppState extends State<App> {
             ),
           ),
           RepositoryProvider(
-              create: (context) => ArDriveAuth(
-                  arweave: arweave,
-                  userRepository: context.read<UserRepository>())),
+            create: (context) => ArDriveAuth(
+              crypto: ArDriveCrypto(),
+              arweave: arweave,
+              userRepository: context.read<UserRepository>(),
+            ),
+          ),
         ],
         child: KeyboardHandler(
           child: MultiBlocProvider(

@@ -39,6 +39,7 @@ void main() {
       AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
       arweave = ArweaveService(
         Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
+        MockArDriveCrypto(),
       );
       profileCubit = MockProfileCubit();
 

@@ -61,6 +61,7 @@ class _User implements User {
         walletBalance,
         cipherKey,
         profileType,
+        wallet,
       ];
 
   @override

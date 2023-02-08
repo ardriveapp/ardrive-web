@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
@@ -25,16 +26,20 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
   final BiometricAuthentication _biometricAuthentication;
-  ProfileAddCubit(
-      {required ProfileCubit profileCubit,
-      required ProfileDao profileDao,
-      required ArweaveService arweave,
-      required BuildContext context,
-      required BiometricAuthentication biometricAuthentication})
-      : _profileCubit = profileCubit,
+  final ArDriveCrypto _crypto;
+
+  ProfileAddCubit({
+    required ProfileCubit profileCubit,
+    required ProfileDao profileDao,
+    required ArweaveService arweave,
+    required BuildContext context,
+    required ArDriveCrypto crypto,
+    required BiometricAuthentication biometricAuthentication,
+  })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
         _biometricAuthentication = biometricAuthentication,
         _arweave = arweave,
+        _crypto = crypto,
         super(ProfileAddPromptWallet());
 
   final arconnect = ArConnectService();
@@ -171,7 +176,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       if (privateDriveTxs.isNotEmpty) {
         final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
 
-        final checkDriveKey = await deriveDriveKey(
+        final checkDriveKey = await _crypto.deriveDriveKey(
           _wallet,
           checkDriveId,
           password,

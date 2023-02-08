@@ -55,7 +55,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
             return;
           }
 
-          final user = await _arDriveAuth.login(event.wallet, event.password);
+          final user = await _arDriveAuth.login(
+              event.wallet, event.password, _profileType!);
 
           emit(LoginSuccess(user));
         } catch (e) {

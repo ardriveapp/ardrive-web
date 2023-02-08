@@ -4,7 +4,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/progress_bar.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
-import 'package:ardrive/core/decrypt.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
@@ -30,11 +30,11 @@ Future<void> promptToDownloadProfileFile({
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
   final cubit = ProfileFileDownloadCubit(
+    crypto: ArDriveCrypto(),
     arfsRepository: ARFSRepository(
       context.read<DriveDao>(),
       ARFSFactory(),
     ),
-    decrypt: Decrypt(),
     downloadService: DownloadService(arweave),
     downloader: ArDriveDownloader(),
     file: arfsFile,
@@ -60,11 +60,11 @@ Future<void> promptToDownloadFileRevision({
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
   final cubit = ProfileFileDownloadCubit(
+    crypto: ArDriveCrypto(),
     arfsRepository: ARFSRepository(
       context.read<DriveDao>(),
       ARFSFactory(),
     ),
-    decrypt: Decrypt(),
     downloadService: DownloadService(arweave),
     downloader: ArDriveDownloader(),
     file: arfsFile,
@@ -87,6 +87,7 @@ Future<void> promptToDownloadSharedFile({
   required FileRevision revision,
 }) {
   final cubit = SharedFileDownloadCubit(
+    crypto: ArDriveCrypto(),
     revision: revision,
     fileKey: fileKey,
     arweave: context.read<ArweaveService>(),

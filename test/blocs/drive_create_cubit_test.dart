@@ -1,6 +1,7 @@
 @Tags(['broken'])
 
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -44,6 +45,7 @@ void main() {
       AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
       arweave = ArweaveService(
         Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
+        ArDriveCrypto(),
       );
       drivesCubit = MockDrivesCubit();
       profileCubit = MockProfileCubit();

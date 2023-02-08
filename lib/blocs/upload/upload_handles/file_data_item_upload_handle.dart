@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -22,6 +23,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   final SecretKey? driveKey;
   final SecretKey? fileKey;
   final String revisionAction;
+  final ArDriveCrypto crypto;
 
   /// The size of the file before it was encoded/encrypted for upload.
   @override
@@ -49,6 +51,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     required this.revisionAction,
     required this.arweave,
     required this.wallet,
+    required this.crypto,
     this.driveKey,
     this.fileKey,
   });
@@ -70,7 +73,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     final fileData = await file.ioFile.readAsBytes();
 
     dataTx = isPrivate
-        ? await createEncryptedDataItem(fileData, fileKey!)
+        ? await crypto.createEncryptedDataItem(fileData, fileKey!)
         : DataItem.withBlobData(data: fileData);
     dataTx.setOwner(await wallet.getOwner());
 

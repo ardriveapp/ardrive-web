@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
@@ -19,6 +20,7 @@ Future<void> promptToMove(
       context: context,
       builder: (_) => BlocProvider(
         create: (context) => FsEntryMoveBloc(
+          crypto: ArDriveCrypto(),
           driveId: driveId,
           selectedItems: selectedItems,
           arweave: context.read<ArweaveService>(),
