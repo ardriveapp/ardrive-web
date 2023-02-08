@@ -1590,7 +1590,7 @@
   "@determiningSizeAndCostOfSnapshot": {
     "description": "Determining size and cost of snapshot. This may take a while."
   },
-  "snapshotOfDrive": "Snapshot of drive {driveName} from block heigh {blockStart} to {blockEnd}",
+  "snapshotOfDrive": "Snapshot of drive {driveName} from block height {blockStart} to {blockEnd}",
   "@snapshotOfDrive": {
     "description": "Snapshot of drive",
     "placeholders": {
