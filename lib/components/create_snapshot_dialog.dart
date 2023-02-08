@@ -9,6 +9,7 @@ import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/split_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -91,8 +92,25 @@ Widget _explanationDialog(BuildContext context, Drive drive) {
               children: [
                 Text.rich(
                   TextSpan(
-                    text: appLocalizationsOf(context)
-                        .createSnapshotExplanation(drive.name),
+                    children: splitTranslationsWithMultipleStyles(
+                      originalText: appLocalizationsOf(context)
+                          .createSnapshotExplanation(drive.name),
+                      defaultMapper: (t) => TextSpan(
+                        text: t,
+                        style: Theme.of(context).textTheme.bodyText1,
+                      ),
+                      parts: {
+                        drive.name: (t) => TextSpan(
+                              text: t,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyText1!
+                                  .copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                      },
+                    ),
                   ),
                   style: Theme.of(context).textTheme.bodyText1,
                 ),
@@ -296,8 +314,29 @@ Widget _confirmDialog(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      appLocalizationsOf(context).snapshotOfDrive(drive.name),
+                    Text.rich(
+                      TextSpan(
+                        children: splitTranslationsWithMultipleStyles(
+                          originalText: appLocalizationsOf(context)
+                              .snapshotOfDrive(drive.name),
+                          defaultMapper: (t) => TextSpan(
+                            text: t,
+                            style: Theme.of(context).textTheme.bodyText1,
+                          ),
+                          parts: {
+                            drive.name: (t) => TextSpan(
+                                  text: t,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyText1!
+                                      .copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                          },
+                        ),
+                      ),
+                      style: Theme.of(context).textTheme.bodyText1,
                     ),
                     const Divider(),
                     const SizedBox(height: 16),
