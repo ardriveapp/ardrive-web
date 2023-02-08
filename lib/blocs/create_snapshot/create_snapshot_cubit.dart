@@ -218,7 +218,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     if (walletBalance < totalCost) {
       emit(CreateSnapshotInsufficientBalance(
         walletBalance: walletBalance.toString(),
-        totalCost: totalCost.toString(),
+        arCost: winstonToAr(totalCost),
       ));
       return null;
     }
@@ -242,10 +242,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       usdUploadCost: usdUploadCost,
       createSnapshotParams: params,
     ));
-  }
-
-  bool _isValidHeightRange() {
-    return _range.end <= _currentHeight;
   }
 
   Future<Uint8List> _jsonMetadataOfTxId(String txId) async {
