@@ -1,3 +1,4 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -56,3 +57,7 @@ class MockARFSRepository extends Mock implements ARFSRepository {}
 class MockAppFlavors extends Mock implements AppFlavors {}
 
 class MockUserRepository extends Mock implements UserRepository {}
+
+class MockArDriveAuth extends Mock implements ArDriveAuth {}
+
+class MockArConnectService extends Mock implements ArConnectService {}

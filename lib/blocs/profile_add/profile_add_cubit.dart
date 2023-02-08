@@ -97,7 +97,9 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         emit(ProfileAddFailure());
         return;
       }
-      _wallet = ArConnectWallet();
+      _wallet = ArConnectWallet(
+        arconnect,
+      );
       _lastKnownWalletAddress = await _wallet.getAddress();
 
       try {

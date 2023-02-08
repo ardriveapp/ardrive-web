@@ -4,7 +4,9 @@ import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:arweave/arweave.dart';
 
 class ArConnectWallet extends Wallet {
-  ArConnectService arConnectService = ArConnectService();
+  ArConnectWallet(this.arConnectService);
+
+  final ArConnectService arConnectService;
 
   @override
   Future<String> getOwner() async {

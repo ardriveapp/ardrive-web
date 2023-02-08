@@ -128,7 +128,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         case ProfileType.json:
           return profile.wallet;
         case ProfileType.arConnect:
-          return ArConnectWallet();
+          return ArConnectWallet(arconnect);
       }
     }();
 

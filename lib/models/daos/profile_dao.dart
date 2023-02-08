@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -73,7 +74,7 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
       case ProfileType.arConnect:
         return ProfileLoadDetails(
           details: profile,
-          wallet: ArConnectWallet(),
+          wallet: ArConnectWallet(ArConnectService()),
           key: profileKdRes.key,
           walletPublicKey: publicKey,
         );

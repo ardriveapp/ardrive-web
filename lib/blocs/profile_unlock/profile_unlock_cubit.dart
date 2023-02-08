@@ -59,7 +59,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
   Future<void> verifyPasswordArconnect(String password) async {
     final profile = await _profileDao.defaultProfile().getSingle();
     final privateDrive = await _arweave.getAnyPrivateDriveEntity(
-        profile.id, password, ArConnectWallet());
+        profile.id, password, ArConnectWallet(arconnect));
     if (privateDrive == null) {
       throw ProfilePasswordIncorrectException();
     }
