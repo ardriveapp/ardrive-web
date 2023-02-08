@@ -1568,7 +1568,7 @@
   "@snapshotFailed": {
     "description": "Snapshot Failed"
   },
-  "snapshotCreationFailed": "Your attempted snapshot failed. You have not been charged. Please try again later.",
+  "snapshotCreationFailed": "Your snapshot failed. You have not been charged for this failed attempt.",
   "@snapshotCreationFailed": {
     "description": "There was an error when creating the snapshot"
   },

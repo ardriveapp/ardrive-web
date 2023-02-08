@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -57,7 +58,7 @@ class CreateSnapshotDialog extends StatelessWidget {
           return _successDialog(context, drive.name);
         } else if (snapshotCubitState is SnapshotUploadFailure ||
             snapshotCubitState is ComputeSnapshotDataFailure) {
-          return _failureDialog(context);
+          return _failureDialog(context, drive.id);
         } else if (snapshotCubitState is CreateSnapshotInsufficientBalance) {
           return _insufficientBalanceDialog(context, snapshotCubitState);
         } else {
@@ -187,7 +188,12 @@ Widget _successDialog(BuildContext context, String driveName) {
   );
 }
 
-Widget _failureDialog(BuildContext context) {
+Widget _failureDialog(
+  BuildContext context,
+  DriveID driveId,
+) {
+  final createSnapshotCubit = context.read<CreateSnapshotCubit>();
+
   return AppDialog(
     title: appLocalizationsOf(context).snapshotFailed,
     content: SizedBox(
@@ -212,6 +218,14 @@ Widget _failureDialog(BuildContext context) {
       ),
     ),
     actions: [
+      ElevatedButton(
+        onPressed: () {
+          createSnapshotCubit.confirmDriveAndHeighRange(driveId);
+        },
+        child: Text(
+          appLocalizationsOf(context).tryAgainEmphasized,
+        ),
+      ),
       TextButton(
         child: Text(appLocalizationsOf(context).ok),
         onPressed: () {
