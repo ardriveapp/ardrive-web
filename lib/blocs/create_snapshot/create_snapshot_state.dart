@@ -61,7 +61,11 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
   });
 
   @override
-  List<Object> get props => [snapshotSize, arUploadCost, createSnapshotParams];
+  List<Object> get props => [
+        snapshotSize,
+        arUploadCost,
+        createSnapshotParams,
+      ];
 }
 
 /// User has confirmed the upload and we are now uploading the snapshot

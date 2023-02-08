@@ -1585,5 +1585,19 @@
         "example": "1.2"
       }
     }
+  },
+  "determiningSizeAndCostOfSnapshot": "Determining size and cost of snapshot",
+  "@determiningSizeAndCostOfSnapshot": {
+    "description": "Determining size and cost of snapshot. This may take a while."
+  },
+  "snapshotOfDrive": "Snapshot of drive {driveName}",
+  "@snapshotOfDrive": {
+    "description": "Snapshot of drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Curious Cat"
+      }
+    }
   }
 }
