@@ -135,7 +135,9 @@ Widget _loadingDialog(
         ? appLocalizationsOf(context).determiningSizeAndCostOfSnapshot
         : appLocalizationsOf(context).uploadingSnapshot,
     progressDescription: Center(
-      child: Text(appLocalizationsOf(context).thisMayTakeAWhile),
+      child: snapshotCubitState is ComputingSnapshotData
+          ? Text(appLocalizationsOf(context).thisMayTakeAWhile)
+          : null,
     ),
     actions: [
       if (onDismiss != null)
