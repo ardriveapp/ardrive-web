@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show BytesBuilder;
 
@@ -32,6 +33,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   late Range _range;
   late int _currentHeight;
 
+  bool _wasSnapshotDataComputingCanceled = false;
+
   SnapshotItemToBeCreated? _itemToBeCreated;
   SnapshotEntity? _snapshotEntity;
 
@@ -60,7 +63,12 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     late Uint8List data;
     try {
       data = await _getSnapshotData();
+
+      if (_wasCancelled()) return;
     } catch (e) {
+      if (_wasCancelled()) return;
+
+      // If it was not cancelled, then there was a failure.
       emit(ComputeSnapshotDataFailure(errorMessage: e.toString()));
       return;
     }
@@ -79,12 +87,25 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     await _emitConfirming(costResult, data.length, uploadSnapshotItemParams);
   }
 
+  bool _wasCancelled() {
+    if (_wasSnapshotDataComputingCanceled) {
+      _wasSnapshotDataComputingCanceled = false;
+
+      emit(CreateSnapshotInitial());
+
+      return true;
+    }
+
+    return false;
+  }
+
   Future<void> _reset(DriveID driveId) async {
     final currentHeight = await _arweave.getCurrentBlockHeight();
     _currentHeight = currentHeight;
     _driveId = driveId;
     _itemToBeCreated = null;
     _snapshotEntity = null;
+    _wasSnapshotDataComputingCanceled = false;
   }
 
   void _setTrustedRange(Range? range) {
@@ -182,9 +203,12 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     // ignore: deprecated_export_use
     final dataBuffer = BytesBuilder(copy: false);
 
-    // Stream snapshot data to the temporal buffer
-    await for (final item in _newItemToBeCreated.getSnapshotData()) {
-      dataBuffer.add(item);
+    await for (final chunk in _newItemToBeCreated.getSnapshotData()) {
+      if (_wasSnapshotDataComputingCanceled) {
+        throw Exception('Snapshot data stream subscription was canceled');
+      }
+
+      dataBuffer.add(chunk);
     }
 
     final data = dataBuffer.takeBytes();
@@ -288,6 +312,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           'Error while posting the snapshot transaction: ${(err as TypeError).stackTrace}');
       emit(SnapshotUploadFailure(errorMessage: '$err'));
     }
+  }
+
+  void cancelSnapshotCreation() {
+    // ignore: avoid_print
+    print('User cancelled the snapshot creation');
+
+    _wasSnapshotDataComputingCanceled = true;
   }
 }
 

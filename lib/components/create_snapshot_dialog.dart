@@ -77,13 +77,31 @@ Widget _loadingDialog(
   BuildContext context,
   CreateSnapshotState snapshotCubitState,
 ) {
+  final createSnapshotCubit = context.read<CreateSnapshotCubit>();
+  final onDismiss = snapshotCubitState is ComputingSnapshotData
+      ? () {
+          Navigator.of(context).pop();
+          createSnapshotCubit.cancelSnapshotCreation();
+        }
+      : null;
+
   return ProgressDialog(
-      title: appLocalizationsOf(context).createSnapshot,
-      progressDescription: Text(
-        snapshotCubitState is ComputingSnapshotData
-            ? appLocalizationsOf(context).computingSnapshotData
-            : appLocalizationsOf(context).uploadingSnapshot,
-      ));
+    title: appLocalizationsOf(context).createSnapshot,
+    progressDescription: Text(
+      snapshotCubitState is ComputingSnapshotData
+          ? appLocalizationsOf(context).computingSnapshotData
+          : appLocalizationsOf(context).uploadingSnapshot,
+    ),
+    actions: [
+      if (onDismiss != null)
+        TextButton(
+          onPressed: onDismiss,
+          child: Text(
+            appLocalizationsOf(context).cancel,
+          ),
+        ),
+    ],
+  );
 }
 
 Widget _successDialog(BuildContext context, String driveName) {

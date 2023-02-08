@@ -58,7 +58,9 @@ void main() {
             maxBlockHeight: any(named: 'maxBlockHeight'),
           ),
         ).thenAnswer(
-          (_) => const Stream.empty(),
+          (_) async* {
+            await Future.delayed(const Duration(milliseconds: 1));
+          },
         );
 
         // mocks prepareEntityTx method of ardrive
@@ -238,6 +240,37 @@ void main() {
             range: Range(start: 0, end: 1),
           ),
           isA<ComputeSnapshotDataFailure>(),
+        ],
+      );
+
+      blocTest(
+        'stops the stream on cancelSnapshotCreation',
+        build: () => CreateSnapshotCubit(
+          arweave: arweave,
+          profileCubit: profileCubit,
+          driveDao: driveDao,
+          pst: pst,
+        ),
+        act: (cubit) async {
+          await Future.wait([
+            cubit.confirmDriveAndHeighRange(
+              'driveId',
+              range: Range(start: 0, end: 1),
+            ),
+            Future.delayed(
+              const Duration(microseconds: 1),
+              () {
+                cubit.cancelSnapshotCreation();
+              },
+            )
+          ]);
+        },
+        expect: () => [
+          ComputingSnapshotData(
+            driveId: 'driveId',
+            range: Range(start: 0, end: 1),
+          ),
+          CreateSnapshotInitial(),
         ],
       );
     },
