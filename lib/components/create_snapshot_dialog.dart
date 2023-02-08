@@ -15,8 +15,6 @@ Future<void> promptToCreateSnapshot(
   BuildContext context,
   Drive drive,
 ) async {
-  final driveId = drive.id;
-
   // ignore: use_build_context_synchronously
   return showModalDialog(
       context,
@@ -30,7 +28,7 @@ Future<void> promptToCreateSnapshot(
                   driveDao: context.read<DriveDao>(),
                   profileCubit: context.read<ProfileCubit>(),
                   pst: context.read<PstService>(),
-                )..confirmDriveAndHeighRange(driveId),
+                ),
                 child: CreateSnapshotDialog(
                   drive: drive,
                 ),
@@ -50,7 +48,9 @@ class CreateSnapshotDialog extends StatelessWidget {
 
     return BlocBuilder<CreateSnapshotCubit, CreateSnapshotState>(
       builder: (context, snapshotCubitState) {
-        if (snapshotCubitState is ComputingSnapshotData ||
+        if (snapshotCubitState is CreateSnapshotInitial) {
+          return _explanationDialog(context, drive);
+        } else if (snapshotCubitState is ComputingSnapshotData ||
             snapshotCubitState is UploadingSnapshot) {
           return _loadingDialog(context, snapshotCubitState);
         } else if (snapshotCubitState is SnapshotUploadSuccess) {
@@ -73,6 +73,51 @@ class CreateSnapshotDialog extends StatelessWidget {
   }
 }
 
+Widget _explanationDialog(BuildContext context, Drive drive) {
+  final createSnapshotCubit = context.read<CreateSnapshotCubit>();
+
+  return AppDialog(
+    title: appLocalizationsOf(context).createSnapshot,
+    dismissable: true,
+    content: SizedBox(
+      width: kMediumDialogWidth,
+      child: Row(
+        children: [
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text.rich(
+                  TextSpan(
+                    text: appLocalizationsOf(context)
+                        .createSnapshotExplanation(drive.name),
+                  ),
+                  style: Theme.of(context).textTheme.bodyText1,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        child: Text(appLocalizationsOf(context).cancelEmphasized),
+        onPressed: () {
+          Navigator.of(context).pop();
+        },
+      ),
+      TextButton(
+        child: Text(appLocalizationsOf(context).proceedCongestionEmphasized),
+        onPressed: () {
+          createSnapshotCubit.confirmDriveAndHeighRange(drive.id);
+        },
+      ),
+    ],
+  );
+}
+
 Widget _loadingDialog(
   BuildContext context,
   CreateSnapshotState snapshotCubitState,
@@ -86,18 +131,18 @@ Widget _loadingDialog(
       : null;
 
   return ProgressDialog(
-    title: appLocalizationsOf(context).createSnapshot,
-    progressDescription: Text(
-      snapshotCubitState is ComputingSnapshotData
-          ? appLocalizationsOf(context).computingSnapshotData
-          : appLocalizationsOf(context).uploadingSnapshot,
+    title: snapshotCubitState is ComputingSnapshotData
+        ? appLocalizationsOf(context).determiningSizeAndCostOfSnapshot
+        : appLocalizationsOf(context).uploadingSnapshot,
+    progressDescription: Center(
+      child: Text(appLocalizationsOf(context).thisMayTakeAWhile),
     ),
     actions: [
       if (onDismiss != null)
         TextButton(
           onPressed: onDismiss,
           child: Text(
-            appLocalizationsOf(context).cancel,
+            appLocalizationsOf(context).cancelEmphasized,
           ),
         ),
     ],
@@ -236,8 +281,11 @@ Widget _confirmDialog(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      appLocalizationsOf(context)
-                          .createSnapshotExplanation(drive.name),
+                      appLocalizationsOf(context).snapshotOfDrive(
+                        drive.name,
+                        snapshotCubitState.rangeToBeSnapshotted.start,
+                        snapshotCubitState.rangeToBeSnapshotted.end,
+                      ),
                     ),
                     const Divider(),
                     const SizedBox(height: 16),
@@ -245,14 +293,16 @@ Widget _confirmDialog(
                       TextSpan(
                         children: [
                           TextSpan(
-                            text: appLocalizationsOf(context)
-                                .cost(snapshotCubitState.arUploadCost),
+                            text: appLocalizationsOf(context).cost(
+                              snapshotCubitState.arUploadCost,
+                            ),
                           ),
                           if (snapshotCubitState.usdUploadCost != null)
                             TextSpan(
-                                text: snapshotCubitState.usdUploadCost! >= 0.01
-                                    ? ' (~${snapshotCubitState.usdUploadCost!.toStringAsFixed(2)} USD)'
-                                    : ' (< 0.01 USD)'),
+                              text: snapshotCubitState.usdUploadCost! >= 0.01
+                                  ? ' (~${snapshotCubitState.usdUploadCost!.toStringAsFixed(2)} USD)'
+                                  : ' (< 0.01 USD)',
+                            ),
                         ],
                         style: Theme.of(context).textTheme.bodyText1,
                       ),
@@ -280,7 +330,7 @@ Widget _confirmDialog(
     actions: <Widget>[
       if (snapshotCubitState is ConfirmingSnapshotCreation) ...{
         TextButton(
-          child: Text(appLocalizationsOf(context).cancel),
+          child: Text(appLocalizationsOf(context).cancelEmphasized),
           onPressed: () {
             print('Cancel snapshot creation');
             Navigator.of(context).pop();
@@ -291,7 +341,7 @@ Widget _confirmDialog(
             print('Confirm snapshot creation'),
             await createSnapshotCubit.confirmSnapshotCreation(),
           },
-          child: Text(appLocalizationsOf(context).confirmEmphasized),
+          child: Text(appLocalizationsOf(context).uploadEmphasized),
         ),
       }
     ],

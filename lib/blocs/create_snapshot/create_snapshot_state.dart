@@ -48,12 +48,14 @@ class CreateSnapshotInsufficientBalance extends CreateSnapshotState {
 
 /// Snapshot data has been computed and it's ready to be confirmed
 class ConfirmingSnapshotCreation extends CreateSnapshotState {
+  final Range rangeToBeSnapshotted;
   final int snapshotSize;
   final String arUploadCost;
   final double? usdUploadCost;
   final CreateSnapshotParameters createSnapshotParams;
 
   ConfirmingSnapshotCreation({
+    required this.rangeToBeSnapshotted,
     required this.snapshotSize,
     required this.arUploadCost,
     required this.usdUploadCost,
@@ -61,7 +63,12 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
   });
 
   @override
-  List<Object> get props => [snapshotSize, arUploadCost, createSnapshotParams];
+  List<Object> get props => [
+        rangeToBeSnapshotted,
+        snapshotSize,
+        arUploadCost,
+        createSnapshotParams,
+      ];
 }
 
 /// User has confirmed the upload and we are now uploading the snapshot

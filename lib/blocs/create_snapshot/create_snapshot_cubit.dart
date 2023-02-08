@@ -261,6 +261,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         .then((conversionRate) => double.parse(arUploadCost) * conversionRate);
 
     emit(ConfirmingSnapshotCreation(
+      rangeToBeSnapshotted: _range,
       snapshotSize: dataSize,
       arUploadCost: arUploadCost,
       usdUploadCost: usdUploadCost,
