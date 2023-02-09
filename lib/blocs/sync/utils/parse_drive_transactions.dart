@@ -45,7 +45,11 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
       list: transactions,
       batchSize: batchSize,
       endOfBatchCallback: (items) async* {
-        logSync('Getting metadata from drive ${drive.name}');
+        final isReadingFromSnapshot = snapshotDriveHistory.items.isNotEmpty;
+
+        if (!isReadingFromSnapshot) {
+          logSync('Getting metadata from drive ${drive.name}');
+        }
 
         final entityHistory =
             await arweave.createDriveEntityHistoryFromTransactions(

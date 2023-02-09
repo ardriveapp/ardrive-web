@@ -107,7 +107,7 @@ extension TransactionUtils on TransactionBase {
 
   /// Tags this transaction with the ArFS version currently in use.
   void addArFsTag() {
-    addTag(EntityTag.arFs, '0.11');
+    addTag(EntityTag.arFs, '0.12');
   }
 
   void addBundleTags() {

@@ -80,7 +80,6 @@ Widget _explanationDialog(BuildContext context, Drive drive) {
 
   return AppDialog(
     title: appLocalizationsOf(context).createSnapshot,
-    dismissable: true,
     content: SizedBox(
       width: kMediumDialogWidth,
       child: Row(
