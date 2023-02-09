@@ -91,8 +91,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     if (_wasSnapshotDataComputingCanceled) {
       _wasSnapshotDataComputingCanceled = false;
 
-      emit(CreateSnapshotInitial());
-
       return true;
     }
 
@@ -205,6 +203,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     await for (final chunk in _newItemToBeCreated.getSnapshotData()) {
       if (_wasSnapshotDataComputingCanceled) {
+        emit(CreateSnapshotInitial());
+
         throw Exception('Snapshot data stream subscription was canceled');
       }
 
