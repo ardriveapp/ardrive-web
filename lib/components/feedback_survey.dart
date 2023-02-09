@@ -1,5 +1,4 @@
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
-import 'package:ardrive/components/title_with_close_action.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -30,11 +29,55 @@ class FeedbackSurveyModal extends StatelessWidget {
         final content = AlertDialog(
           insetPadding: padding,
           titlePadding: EdgeInsets.zero,
-          title: TitleWithCloseAction(
-            title: state is FeedbackSurveyDontRemindMe
-                ? appLocalizationsOf(context).weWontRemindYou
-                : appLocalizationsOf(context).feedbackTitle,
-            onClose: context.read<FeedbackSurveyCubit>().closeRemindMe,
+          title: Container(
+            color: kDarkSurfaceColor,
+            height: 72,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      onPressed: () =>
+                          context.read<FeedbackSurveyCubit>().closeRemindMe(),
+                      icon: const Icon(Icons.close),
+                      color: kOnDarkSurfaceMediumEmphasis,
+                      iconSize: 16,
+                      visualDensity:
+                          const VisualDensity(horizontal: -4, vertical: -4),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(bottom: 12, right: 18, left: 18),
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        state is FeedbackSurveyDontRemindMe
+                            ? Text(
+                                appLocalizationsOf(context).weWontRemindYou,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headline6!
+                                    .copyWith(
+                                        color: kOnDarkSurfaceHighEmphasis),
+                              )
+                            : Text(
+                                appLocalizationsOf(context).feedbackTitle,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headline6!
+                                    .copyWith(
+                                        color: kOnDarkSurfaceHighEmphasis),
+                              ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           content: SizedBox(
             width: kMediumDialogWidth,
