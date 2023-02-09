@@ -8,7 +8,7 @@ query DriveEntityHistory(
     first: 100
     sort: HEIGHT_ASC
     tags: [
-      { name: "ArFS", values: ["0.10", "0.11"] }
+      { name: "ArFS", values: ["0.10", "0.11", "0.12"] }
       { name: "Drive-Id", values: [$driveId] }
     ]
     after: $after
