@@ -333,9 +333,10 @@ void main() {
           );
           // further calls to the method results in a null response
           expect(
-              await SnapshotItemOnChain.getDataForTxId(
-                  'asdasdasdasd', '$height'),
-              null);
+            await SnapshotItemOnChain.getDataForTxId(
+                'asdasdasdasd', 'tx-$height'),
+            null,
+          );
         }
       });
 

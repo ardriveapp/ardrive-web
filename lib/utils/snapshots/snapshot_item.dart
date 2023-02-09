@@ -161,12 +161,7 @@ class SnapshotItemOnChain implements SnapshotItem {
       return _cachedSource!;
     }
 
-    final dataBytes =
-        await ArDriveHTTP().getAsBytes('$arweaveUrl/$txId').catchError(
-      (e) {
-        print('Error while fetching Snapshot Data - $e');
-      },
-    );
+    final dataBytes = await ArDriveHTTP().getAsBytes('$arweaveUrl/$txId');
 
     final dataBytesAsString = String.fromCharCodes(dataBytes.data);
     return _cachedSource = dataBytesAsString;
@@ -195,8 +190,10 @@ class SnapshotItemOnChain implements SnapshotItem {
       try {
         node = DriveHistoryTransaction.fromJson(item['gqlNode']);
       } catch (e, s) {
-        print('Error while parsing GQLNode - $e, $s');
-        rethrow;
+        print(
+          'Error while parsing GQLNode from snapshot item ($txId) - $e, $s',
+        );
+        continue;
       }
 
       final isInRange = range.isInRange(node.block?.height ?? -1);
@@ -231,9 +228,11 @@ class SnapshotItemOnChain implements SnapshotItem {
     return data;
   }
 
-  static Future<Uint8List?> getDataForTxId(DriveID driveId, TxID txId) async {
+  static Future<Uint8List?> getDataForTxId(
+    DriveID driveId,
+    TxID txId,
+  ) async {
     final Cache<Uint8List> cache = await _lazilyInitCache(driveId);
-
     final Uint8List? value = await cache.getAndRemove(txId);
 
     return value;

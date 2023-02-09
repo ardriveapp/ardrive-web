@@ -50,6 +50,7 @@ void main() {
       test('can be instantiated from a valid transaction', () async {
         final snapshotEntity = await SnapshotEntity.fromTransaction(
           fakeTransaction,
+          null,
         );
 
         expect(snapshotEntity.id, 'FAKE SNAPSHOT ID');
@@ -65,7 +66,7 @@ void main() {
 
       test('throws the expected error when there\'s an error parsing it', () {
         expect(
-          () => SnapshotEntity.fromTransaction(fakeInvalidTransaction),
+          () => SnapshotEntity.fromTransaction(fakeInvalidTransaction, null),
           throwsA(isA<EntityTransactionParseException>()),
         );
       });
