@@ -10,8 +10,9 @@ ArweaveFS defines several entities for storing file system state on Arweave. The
 
 Drive entities require a single metadata transaction, with standard Drive tags and encoded JSON with secondary metadata.
 Folder entities require a single metadata transaction, with standard Folder tags and an encoded JSON with secondary metadata.
-File entities require a metadata transaction, with standard File tags an en encoded JSON with secondary metadata.
+File entities require a metadata transaction, with standard File tags and an encoded JSON with secondary metadata.
 File entities also require a second data transaction, which includes a limited set of File tags and the actual file data itself.
+Snapshot entities require a single data transaction, with standard Snapshot tags and encoded JSON with GQL plus JSON metadata (Base64-encoded if private) on it.
 
 MetaData stored in any transaction tags will be defined in the following manner:
 
@@ -121,6 +122,35 @@ Cipher?: AES256-GCM
 Cipher-IV?: <12 byte initialization vector as hex>
 Content-Type: <file mime-type | application/octet-stream>
  { File data }
+```
+
+## Snapshot
+
+A Snapshot is a transaction that contains a list of all transactions belonging to a drive. This allows for a client to quickly retrieve all transactions of a specific drive without having to query for each transaction individually. This is particularly useful for big drives with many transactions.
+
+```Snapshot Transaction
+ArFS: 0.12
+Drive-Id: <drive uuid>
+Entity-Type: snapshot
+Content-Type: <application/json | application/octet-stream>
+Block-Start: <start block height of the snapshot>
+Block-End: <end block height of the snapshot>
+Data-Start: <first block where there's data on the snapshot>
+Data-End: <last block where there's data on the snapshot>
+
+{ Snapshot Data }
+```
+
+The snapshot data is a JSON array of objects containing `gqlNode` and `jsonMetadata` fields. The `gqlNode` field contains the transaction node returned from GQL, and the `jsonMetadata` field contains the transaction's JSON metadata (Base64-encoded if private).
+
+```Snapshot Data
+[
+    {
+        "gqlNode": "<transaction>",
+        "jsonMetadata": "<transaction metadata>"
+    },
+    ...
+]
 ```
 
 ## Creating a Drive
