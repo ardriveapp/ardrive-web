@@ -1522,7 +1522,7 @@
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
-  "createSnapshotExplanation": "Snapshots reduce the time it takes for the drive to load. Do you want to create a snapshot of your drive '{driveName}'?",
+  "createSnapshotExplanation": "Snapshots reduce the time it takes for the drive to load. Do you want to create a snapshot of your drive {driveName}?",
   "@createSnapshotExplanation": {
     "description": "Explains how Snapshots improves the sync-time of the drive",
     "placeholders": {
@@ -1554,7 +1554,7 @@
   "@snapshotSuceeded": {
     "description": "Snapshot Succeeded"
   },
-  "snapshotCreationSucceeded": "Your successfuly created a snapshot of '{driveName}'!",
+  "snapshotCreationSucceeded": "Your successfuly created a snapshot of {driveName}!",
   "@snapshotCreationSucceeded": {
     "description": "The snapshot was sucessfuly created",
     "placeholders": {
@@ -1568,7 +1568,7 @@
   "@snapshotFailed": {
     "description": "Snapshot Failed"
   },
-  "snapshotCreationFailed": "Your attempted snapshot failed. You have not been charged. Please try again later.",
+  "snapshotCreationFailed": "Your snapshot failed. You have not been charged for this failed attempt.",
   "@snapshotCreationFailed": {
     "description": "There was an error when creating the snapshot"
   },

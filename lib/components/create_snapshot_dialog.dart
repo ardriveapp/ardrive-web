@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -8,6 +9,7 @@ import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/split_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -57,7 +59,7 @@ class CreateSnapshotDialog extends StatelessWidget {
           return _successDialog(context, drive.name);
         } else if (snapshotCubitState is SnapshotUploadFailure ||
             snapshotCubitState is ComputeSnapshotDataFailure) {
-          return _failureDialog(context);
+          return _failureDialog(context, drive.id);
         } else if (snapshotCubitState is CreateSnapshotInsufficientBalance) {
           return _insufficientBalanceDialog(context, snapshotCubitState);
         } else {
@@ -90,8 +92,25 @@ Widget _explanationDialog(BuildContext context, Drive drive) {
               children: [
                 Text.rich(
                   TextSpan(
-                    text: appLocalizationsOf(context)
-                        .createSnapshotExplanation(drive.name),
+                    children: splitTranslationsWithMultipleStyles(
+                      originalText: appLocalizationsOf(context)
+                          .createSnapshotExplanation(drive.name),
+                      defaultMapper: (t) => TextSpan(
+                        text: t,
+                        style: Theme.of(context).textTheme.bodyText1,
+                      ),
+                      parts: {
+                        drive.name: (t) => TextSpan(
+                              text: t,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyText1!
+                                  .copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                      },
+                    ),
                   ),
                   style: Theme.of(context).textTheme.bodyText1,
                 ),
@@ -187,7 +206,12 @@ Widget _successDialog(BuildContext context, String driveName) {
   );
 }
 
-Widget _failureDialog(BuildContext context) {
+Widget _failureDialog(
+  BuildContext context,
+  DriveID driveId,
+) {
+  final createSnapshotCubit = context.read<CreateSnapshotCubit>();
+
   return AppDialog(
     title: appLocalizationsOf(context).snapshotFailed,
     content: SizedBox(
@@ -212,6 +236,14 @@ Widget _failureDialog(BuildContext context) {
       ),
     ),
     actions: [
+      ElevatedButton(
+        onPressed: () {
+          createSnapshotCubit.confirmDriveAndHeighRange(driveId);
+        },
+        child: Text(
+          appLocalizationsOf(context).tryAgainEmphasized,
+        ),
+      ),
       TextButton(
         child: Text(appLocalizationsOf(context).ok),
         onPressed: () {
@@ -282,8 +314,29 @@ Widget _confirmDialog(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      appLocalizationsOf(context).snapshotOfDrive(drive.name),
+                    Text.rich(
+                      TextSpan(
+                        children: splitTranslationsWithMultipleStyles(
+                          originalText: appLocalizationsOf(context)
+                              .snapshotOfDrive(drive.name),
+                          defaultMapper: (t) => TextSpan(
+                            text: t,
+                            style: Theme.of(context).textTheme.bodyText1,
+                          ),
+                          parts: {
+                            drive.name: (t) => TextSpan(
+                                  text: t,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyText1!
+                                      .copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                          },
+                        ),
+                      ),
+                      style: Theme.of(context).textTheme.bodyText1,
                     ),
                     const Divider(),
                     const SizedBox(height: 16),
