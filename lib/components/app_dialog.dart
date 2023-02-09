@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:ardrive/components/title_with_close_action.dart';
+import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 
 class AppDialog extends StatelessWidget {
@@ -38,9 +38,32 @@ class AppDialog extends StatelessWidget {
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(dialogBorderRadius)),
           titlePadding: EdgeInsets.zero,
-          title: TitleWithCloseAction(
-            title: title,
-            onClose: onWillPopCallback,
+          title: Container(
+            decoration: const BoxDecoration(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(dialogBorderRadius),
+                topRight: Radius.circular(dialogBorderRadius),
+              ),
+              color: kDarkSurfaceColor,
+            ),
+            height: 64,
+            child: Padding(
+              padding: dialogContentPadding,
+              child: Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context)
+                          .textTheme
+                          .headline6!
+                          .copyWith(color: kOnDarkSurfaceHighEmphasis),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
           contentPadding: contentPadding,
           content: content,
