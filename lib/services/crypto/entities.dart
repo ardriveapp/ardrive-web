@@ -9,6 +9,7 @@ import 'package:arweave/utils.dart' as utils;
 import 'package:cryptography/cryptography.dart' hide Cipher;
 
 final aesGcm = AesGcm.with256bits();
+final aesCtr = AesCtr.with256bits(macAlgorithm: MacAlgorithm.empty);
 
 /// Decrypts the provided transaction details and data into JSON using the provided key.
 ///
@@ -33,16 +34,28 @@ Future<Uint8List> decryptTransactionData(
   final cipher = transaction.getTag(EntityTag.cipher);
 
   try {
-    if (cipher == Cipher.aes256gcm) {
-      final cipherIv =
-          utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv)!);
+    switch (cipher) {
+      case Cipher.aes256gcm:
+        final cipherIv =
+            utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv)!);
 
-      return aesGcm
-          .decrypt(
-            secretBoxFromDataWithMacConcatenation(data, nonce: cipherIv),
-            secretKey: key,
-          )
-          .then((res) => Uint8List.fromList(res));
+        return aesGcm
+            .decrypt(
+              secretBoxFromDataWithMacConcatenation(data, nonce: cipherIv),
+              secretKey: key,
+            )
+            .then((res) => Uint8List.fromList(res));
+      
+      case Cipher.aes256ctr:
+        final cipherIv =
+            utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv)!);
+
+        return aesCtr
+            .decrypt(
+              SecretBox(data, nonce: cipherIv, mac: Mac.empty),
+              secretKey: key,
+            )
+            .then((res) => Uint8List.fromList(res));
     }
   } on SecretBoxAuthenticationError catch (_) {
     throw TransactionDecryptionException();
