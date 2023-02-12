@@ -4,7 +4,7 @@ import 'package:arweave/arweave.dart';
 
 final fakePrivateTags = [
   Tag(EntityTag.contentType, ContentType.octetStream),
-  Tag(EntityTag.cipher, Cipher.aes256),
+  Tag(EntityTag.cipher, Cipher.aes256gcm),
   Tag(
     EntityTag.cipherIv,
     'qwertyuiopasdfgh',

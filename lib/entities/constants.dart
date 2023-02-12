@@ -40,7 +40,8 @@ class EntityType {
 }
 
 class Cipher {
-  static const aes256 = 'AES256-GCM';
+  static const aes256gcm = 'AES256-GCM';
+  static const aes256ctr = 'AES256-CTR';
 }
 
 class DrivePrivacy {

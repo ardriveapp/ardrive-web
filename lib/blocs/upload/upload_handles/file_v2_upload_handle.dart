@@ -62,8 +62,9 @@ class FileV2UploadHandle implements UploadHandle {
 
     Transaction transaction;
     if (isPrivate) {
-      transaction = await createEncryptedTransaction(
-        await file.ioFile.readAsBytes(),
+      transaction = await createEncryptedTransactionStream(
+        file.ioFile.openReadStream,
+        await file.ioFile.length,
         fileKey!,
       );
     } else {

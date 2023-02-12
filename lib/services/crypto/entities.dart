@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/services/crypto/stream_aes.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
@@ -32,7 +33,7 @@ Future<Uint8List> decryptTransactionData(
   final cipher = transaction.getTag(EntityTag.cipher);
 
   try {
-    if (cipher == Cipher.aes256) {
+    if (cipher == Cipher.aes256gcm) {
       final cipherIv =
           utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv)!);
 
@@ -71,10 +72,34 @@ Future<Transaction> createEncryptedTransaction(
       // The encrypted data should be a concatenation of the cipher text and MAC.
       data: encryptionRes.concatenation(nonce: false))
     ..addTag(EntityTag.contentType, ContentType.octetStream)
-    ..addTag(EntityTag.cipher, Cipher.aes256)
+    ..addTag(EntityTag.cipher, Cipher.aes256gcm)
     ..addTag(
       EntityTag.cipherIv,
       utils.encodeBytesToBase64(encryptionRes.nonce),
+    );
+}
+
+/// Creates a [Transaction] with the provided data encrypted along with the appropriate cipher tags.
+Future<TransactionStream> createEncryptedTransactionStream(
+  DataStreamGenerator plaintextDataStreamGenerator,
+  int streamLength,
+  SecretKey key,
+) async {
+  final keyData = await key.extractBytes() as Uint8List;
+  final aesCtr = await AesCtrStream.fromKeyData(keyData);
+  
+  final encryptStreamResult = await aesCtr.encryptStreamGenerator(plaintextDataStreamGenerator, streamLength);
+  final cipherIv = encryptStreamResult.nonce;
+  final ciphertextDataStreamGenerator = encryptStreamResult.streamGenerator;
+
+  return TransactionStream.withBlobData(
+      dataStreamGenerator: ciphertextDataStreamGenerator,
+      dataSize: streamLength,)
+    ..addTag(EntityTag.contentType, ContentType.octetStream)
+    ..addTag(EntityTag.cipher, Cipher.aes256ctr)
+    ..addTag(
+      EntityTag.cipherIv,
+      utils.encodeBytesToBase64(cipherIv),
     );
 }
 
@@ -89,7 +114,7 @@ Future<DataItem> createEncryptedDataItem(
       // The encrypted data should be a concatenation of the cipher text and MAC.
       data: encryptionRes.concatenation(nonce: false))
     ..addTag(EntityTag.contentType, ContentType.octetStream)
-    ..addTag(EntityTag.cipher, Cipher.aes256)
+    ..addTag(EntityTag.cipher, Cipher.aes256gcm)
     ..addTag(
       EntityTag.cipherIv,
       utils.encodeBytesToBase64(encryptionRes.nonce),
