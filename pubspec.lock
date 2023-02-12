@@ -1571,6 +1571,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.2.0"
+  webcrypto:
+    dependency: "direct main"
+    description:
+      name: webcrypto
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.5.3"
   webdriver:
     dependency: transitive
     description:

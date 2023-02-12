@@ -91,6 +91,7 @@ dependencies:
   local_auth: ^2.1.2
   flutter_secure_storage: ^6.0.0
   async: ^2.9.0
+  webcrypto: ^0.5.3
 
 dev_dependencies:
   flutter_test:

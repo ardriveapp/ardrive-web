@@ -64,6 +64,15 @@ flutter run -d Chrome
 
 All changes made to `dev` will be continuously deployed to [staging.ardrive.io](https://staging.ardrive.io). All PRs from this repo merging into `dev` will trigger a preview build that can be shared freely.
 
+## Testing
+
+Most tests can be run as normal with `flutter test`.
+
+In order to run tests that use `package:webcrypto`, you must first run the following command in the project directory.
+Note for Apple Silicon users: the following command must be run in an x86_64 shell; you can open one with `env /usr/bin/arch -x86_64 /bin/zsh --login`. All other testing commands can be run in a regular shell.
+
+`flutter pub run webcrypto:setup`
+
 ## Release
 
 To create a release to [app.ardrive.io](https://app.ardrive.io), first merge any changes from `dev` into `master` that are required, and publish a new release through the GitHub UI with the tag name matching the pattern `v*` eg. `v1.0.1`.
