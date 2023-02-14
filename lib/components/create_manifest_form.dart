@@ -29,6 +29,7 @@ Future<void> promptToCreateManifest(
         drive: drive,
         profileCubit: context.read<ProfileCubit>(),
         arweave: context.read<ArweaveService>(),
+        turboService: context.read<TurboService>(),
         driveDao: context.read<DriveDao>(),
         pst: context.read<PstService>(),
       ),
@@ -242,7 +243,58 @@ class CreateManifestForm extends StatelessWidget {
                     )),
               ));
         }
-
+        if (state is CreateManifestTurboUploadConfirmation) {
+          Navigator.pop(context);
+          return AppDialog(
+            title: appLocalizationsOf(context).createManifestEmphasized,
+            content: SizedBox(
+              width: kMediumDialogWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 256),
+                    child: Scrollbar(
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: [
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(state.manifestName),
+                            subtitle: Text(filesize(state.manifestSize)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Divider(),
+                  const SizedBox(height: 16),
+                  Text(
+                    appLocalizationsOf(context).freeTurboTransaction,
+                    style: Theme.of(context).textTheme.bodyText1,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    appLocalizationsOf(context)
+                        .filesWillBePermanentlyPublicWarning,
+                    style: Theme.of(context).textTheme.bodyText2,
+                  ),
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(appLocalizationsOf(context).cancelEmphasized),
+              ),
+              ElevatedButton(
+                onPressed: () => readCubitContext.uploadManifest(),
+                child: Text(appLocalizationsOf(context).confirmEmphasized),
+              ),
+            ],
+          );
+        }
         if (state is CreateManifestUploadConfirmation) {
           Navigator.pop(context);
           return AppDialog(

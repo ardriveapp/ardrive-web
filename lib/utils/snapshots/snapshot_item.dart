@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/string_types.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
@@ -26,6 +25,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   factory SnapshotItem.fromGQLNode({
     required SnapshotEntityTransaction node,
     required HeightRange subRanges,
+    required String arweaveUrl,
     @visibleForTesting String? fakeSource,
   }) {
     final tags = node.tags;
@@ -45,6 +45,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
       timestamp: timestamp,
       txId: txId,
       subRanges: subRanges,
+      arweaveUrl: arweaveUrl,
       fakeSource: fakeSource,
     );
   }
@@ -53,6 +54,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   static Stream<SnapshotItem> instantiateAll(
     Stream<SnapshotEntityTransaction> itemsStream, {
     int? lastBlockHeight,
+    required String arweaveUrl,
     @visibleForTesting String? fakeSource,
   }) async* {
     HeightRange obscuredByAccumulator = HeightRange(rangeSegments: [
@@ -66,6 +68,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
         snapshotItem = instantiateSingle(
           item,
           obscuredBy: obscuredByAccumulator,
+          arweaveUrl: arweaveUrl,
           fakeSource: fakeSource,
         );
       } catch (e) {
@@ -89,6 +92,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
   static SnapshotItem instantiateSingle(
     SnapshotEntityTransaction item, {
     required HeightRange obscuredBy,
+    required String arweaveUrl,
     @visibleForTesting String? fakeSource,
   }) {
     late Range totalRange;
@@ -114,6 +118,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
     SnapshotItem snapshotItem = SnapshotItem.fromGQLNode(
       node: item,
       subRanges: subRanges,
+      arweaveUrl: arweaveUrl,
       fakeSource: fakeSource,
     );
     return snapshotItem;
@@ -123,6 +128,7 @@ abstract class SnapshotItem implements SegmentedGQLData {
 class SnapshotItemOnChain implements SnapshotItem {
   final int timestamp;
   final TxID txId;
+  final String arweaveUrl;
   String? _cachedSource;
   int _currentIndex = -1;
 
@@ -135,6 +141,7 @@ class SnapshotItemOnChain implements SnapshotItem {
     required this.timestamp,
     required this.txId,
     required this.subRanges,
+    required this.arweaveUrl,
     @visibleForTesting String? fakeSource,
   }) : _cachedSource = fakeSource;
 
@@ -154,18 +161,10 @@ class SnapshotItemOnChain implements SnapshotItem {
       return _cachedSource!;
     }
 
-    final dataBytes = await ArDriveHTTP().getAsBytes(_dataUri).catchError(
-      (e) {
-        print('Error while fetching Snapshot Data - $e');
-      },
-    );
+    final dataBytes = await ArDriveHTTP().getAsBytes('$arweaveUrl/$txId');
 
     final dataBytesAsString = String.fromCharCodes(dataBytes.data);
     return _cachedSource = dataBytesAsString;
-  }
-
-  String get _dataUri {
-    return '${config.defaultArweaveGatewayUrl}/$txId';
   }
 
   @override
@@ -191,8 +190,10 @@ class SnapshotItemOnChain implements SnapshotItem {
       try {
         node = DriveHistoryTransaction.fromJson(item['gqlNode']);
       } catch (e, s) {
-        print('Error while parsing GQLNode - $e, $s');
-        rethrow;
+        print(
+          'Error while parsing GQLNode from snapshot item ($txId) - $e, $s',
+        );
+        continue;
       }
 
       final isInRange = range.isInRange(node.block?.height ?? -1);
@@ -227,9 +228,11 @@ class SnapshotItemOnChain implements SnapshotItem {
     return data;
   }
 
-  static Future<Uint8List?> getDataForTxId(DriveID driveId, TxID txId) async {
+  static Future<Uint8List?> getDataForTxId(
+    DriveID driveId,
+    TxID txId,
+  ) async {
     final Cache<Uint8List> cache = await _lazilyInitCache(driveId);
-
     final Uint8List? value = await cache.getAndRemove(txId);
 
     return value;

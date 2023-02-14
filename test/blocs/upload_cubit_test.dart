@@ -163,6 +163,7 @@ void main() {
           walletAddress: tWalletAddress!,
           walletBalance: BigInt.one,
           cipherKey: SecretKey(tKeyBytes),
+          useTurbo: false,
         ),
       );
       when(() => mockProfileCubit!.checkIfWalletMismatch())
@@ -238,6 +239,7 @@ void main() {
           walletAddress: tWalletAddress!,
           walletBalance: BigInt.one,
           cipherKey: SecretKey(tKeyBytes),
+          useTurbo: false,
         ),
       );
       when(() => mockProfileCubit!.checkIfWalletMismatch())
