@@ -367,8 +367,6 @@ class ArweaveService {
         : null;
   }
 
-  // Future<ARFSDriveEntity>
-
   /// Gets the unique drive entities for a particular user.
   Future<Map<DriveEntity, SecretKey?>> getUniqueUserDriveEntities(
     Wallet wallet,
