@@ -1633,6 +1633,7 @@
   "orContinueWith": "Or continue with",
   "@orContinueWith": {
     "description": "text to continue with ar connect"
+  },
   "createSnapshot": "Create Snapshot",
   "@createSnapshot": {
     "description": "The action of snapshotting a drive"

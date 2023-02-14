@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: PE-2583-new-login-flow
-      resolved-ref: "194e15929a1e098c4efe3b88effe2d28e45e67e9"
+      resolved-ref: "57e8ca4906b4174044ba76a83b4391b0d6f4fffb"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -261,6 +261,20 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.16.0"
+  connectivity_plus:
+    dependency: "direct main"
+    description:
+      name: connectivity_plus
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.0.3"
+  connectivity_plus_platform_interface:
+    dependency: transitive
+    description:
+      name: connectivity_plus_platform_interface
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.2.4"
   convert:
     dependency: transitive
     description:
@@ -317,6 +331,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.2.4"
+  dbus:
+    dependency: transitive
+    description:
+      name: dbus
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.7.8"
   desktop_drop:
     dependency: transitive
     description:
@@ -993,6 +1014,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.0"
+  nm:
+    dependency: transitive
+    description:
+      name: nm
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.5.0"
   node_preamble:
     dependency: transitive
     description:
