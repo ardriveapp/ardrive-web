@@ -8,6 +8,7 @@ import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 
 part 'profile_dao.g.dart';
 
@@ -19,8 +20,6 @@ class ProfilePasswordIncorrectException implements Exception {}
 class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   ProfileDao(Database db) : super(db);
 
-  final ArDriveCrypto _crypto = ArDriveCrypto();
-
   /// Loads the default profile with the provided password.
   ///
   /// Throws a [ProfilePasswordIncorrectException] if the provided password is incorrect.
@@ -28,19 +27,22 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     final profile = await defaultProfile().getSingle();
 
     final profileSalt = profile.keySalt;
-    final profileKdRes = await _crypto.deriveProfileKey(password, profileSalt);
+    final profileKdRes =
+        await compute<Map<String, dynamic>, ProfileKeyDerivationResult>(
+            deriveKey, {
+      'password': password,
+      'salt': profileSalt,
+    });
+
     //Checks password for both JSON and ArConnect by decrypting stored public key
     String publicKey;
+
     try {
-      publicKey = utf8.decode(
-        await aesGcm.decrypt(
-          _crypto.secretBoxFromDataWithMacConcatenation(
-            profile.encryptedPublicKey,
-            nonce: profileSalt,
-          ),
-          secretKey: profileKdRes.key,
-        ),
-      );
+      publicKey = await compute(decodeAndDecryptWithAeGsm, {
+        'data': profile.encryptedPublicKey,
+        'nonce': profileSalt,
+        'key': profileKdRes.key,
+      });
     } on SecretBoxAuthenticationError catch (_) {
       throw ProfilePasswordIncorrectException();
     }
@@ -50,15 +52,11 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
         try {
           //Will only decrypt wallet if it's a JSON Profile
           final walletJwk = json.decode(
-            utf8.decode(
-              await aesGcm.decrypt(
-                _crypto.secretBoxFromDataWithMacConcatenation(
-                  profile.encryptedWallet,
-                  nonce: profileSalt,
-                ),
-                secretKey: profileKdRes.key,
-              ),
-            ),
+            await compute(decodeAndDecryptWithAeGsm, {
+              'data': profile.encryptedWallet,
+              'nonce': profileSalt,
+              'key': profileKdRes.key,
+            }),
           );
 
           //Returning this class doesn't do anything, but it could be useful for debugging
@@ -100,20 +98,46 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
     Wallet wallet,
     ProfileType profileType,
   ) async {
-    final profileKdRes = await _crypto.deriveProfileKey(password);
+    debugPrint('Adding profile $username with type $profileType');
+
+    final profileKdRes =
+        await compute<Map<String, dynamic>, ProfileKeyDerivationResult>(
+      deriveKey,
+      {'password': password},
+    );
+
+    debugPrint('Profile key derivation result: $profileKdRes');
+
     final profileSalt = profileKdRes.salt;
     final encryptedWallet = await () async {
       switch (profileType) {
         case ProfileType.json:
-          return (await encryptWallet(wallet, profileKdRes))
-              .concatenation(nonce: false);
+          final encryptedData =
+              await compute<Map<String, dynamic>, SecretBox>(encryptWallet, {
+            'wallet': wallet,
+            'profileKdRes': profileKdRes,
+          });
+
+          return encryptedData.concatenation(nonce: false);
         case ProfileType.arConnect:
           //ArConnect wallet does not contain the jwk
           return Uint8List(0);
       }
     }();
+
+    debugPrint('Encrypted wallet finished');
+
     final publicKey = await wallet.getOwner();
-    final encryptedPublicKey = await encryptPublicKey(publicKey, profileKdRes);
+
+    debugPrint('Public key finished');
+
+    final encryptedPublicKey =
+        await compute<Map<String, dynamic>, SecretBox>(encryptPublicKey, {
+      'walletPublicKey': publicKey,
+      'profileKdRes': profileKdRes,
+    });
+
+    debugPrint('Encrypted public key: $encryptedPublicKey');
 
     await into(profiles).insert(
       ProfilesCompanion.insert(
@@ -131,30 +155,6 @@ class ProfileDao extends DatabaseAccessor<Database> with _$ProfileDaoMixin {
   }
 }
 
-Future<SecretBox> encryptWallet(
-  Wallet wallet,
-  ProfileKeyDerivationResult profileKdRes,
-) async {
-  final walletJson = utf8.encode(json.encode(wallet.toJwk()));
-  return (await aesGcm.encrypt(
-    walletJson,
-    secretKey: profileKdRes.key,
-    nonce: profileKdRes.salt,
-  ));
-}
-
-Future<SecretBox> encryptPublicKey(
-  String walletPublicKey,
-  ProfileKeyDerivationResult profileKdRes,
-) async {
-  final publicKey = utf8.encode(walletPublicKey);
-  return (await aesGcm.encrypt(
-    publicKey,
-    secretKey: profileKdRes.key,
-    nonce: profileKdRes.salt,
-  ));
-}
-
 class ProfileLoadDetails {
   final Profile details;
   final Wallet wallet;
@@ -166,4 +166,57 @@ class ProfileLoadDetails {
     required this.key,
     required this.walletPublicKey,
   });
+}
+
+Future<SecretBox> encryptWallet(
+  Map<String, dynamic> args,
+) async {
+  final wallet = args['wallet'] as Wallet;
+  final profileKdRes = args['profileKdRes'] as ProfileKeyDerivationResult;
+
+  final walletJson = utf8.encode(json.encode(wallet.toJwk()));
+  return (await aesGcm.encrypt(
+    walletJson,
+    secretKey: profileKdRes.key,
+    nonce: profileKdRes.salt,
+  ));
+}
+
+Future<SecretBox> encryptPublicKey(
+  Map<String, dynamic> args,
+) async {
+  final walletPublicKey = args['walletPublicKey'] as String;
+  final profileKdRes = args['profileKdRes'] as ProfileKeyDerivationResult;
+
+  final publicKey = utf8.encode(walletPublicKey);
+  return (await aesGcm.encrypt(
+    publicKey,
+    secretKey: profileKdRes.key,
+    nonce: profileKdRes.salt,
+  ));
+}
+
+Future<String> decodeAndDecryptWithAeGsm(
+  Map<String, dynamic> args,
+) async {
+  ArDriveCrypto crypto = ArDriveCrypto();
+
+  return utf8.decode(
+    await aesGcm.decrypt(
+      crypto.secretBoxFromDataWithMacConcatenation(
+        args['data'] as Uint8List,
+        nonce: args['nonce'] as Uint8List,
+      ),
+      secretKey: args['key'] as SecretKey,
+    ),
+  );
+}
+
+Future<ProfileKeyDerivationResult> deriveKey(
+  Map<String, dynamic> args,
+) {
+  ArDriveCrypto crypto = ArDriveCrypto();
+
+  return crypto.deriveProfileKey(
+      args['password'] as String, args['salt'] as List<int>?);
 }
