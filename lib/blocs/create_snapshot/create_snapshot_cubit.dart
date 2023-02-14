@@ -56,7 +56,12 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     DriveID driveId, {
     Range? range,
   }) async {
-    await _reset(driveId);
+    try {
+      await _reset(driveId);
+    } catch (e) {
+      emit(ComputeSnapshotDataFailure(errorMessage: e.toString()));
+      return;
+    }
 
     _setTrustedRange(range);
 
@@ -91,8 +96,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     if (_wasSnapshotDataComputingCanceled) {
       _wasSnapshotDataComputingCanceled = false;
 
-      emit(CreateSnapshotInitial());
-
       return true;
     }
 
@@ -100,8 +103,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   }
 
   Future<void> _reset(DriveID driveId) async {
-    final currentHeight = await _arweave.getCurrentBlockHeight();
-    _currentHeight = currentHeight;
+    _currentHeight = await _arweave.getCurrentBlockHeight();
     _driveId = driveId;
     _itemToBeCreated = null;
     _snapshotEntity = null;
@@ -205,6 +207,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     await for (final chunk in _newItemToBeCreated.getSnapshotData()) {
       if (_wasSnapshotDataComputingCanceled) {
+        emit(CreateSnapshotInitial());
+
         throw Exception('Snapshot data stream subscription was canceled');
       }
 

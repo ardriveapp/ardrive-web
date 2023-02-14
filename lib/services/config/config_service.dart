@@ -20,16 +20,16 @@ class ConfigService {
         'assets/config/$environment.json',
       );
 
+      AppConfig configFromEnv = AppConfig.fromJson(json.decode(configContent));
+
       final gatewayUrl = localStore.getString('arweaveGatewayUrl');
       final enableQuickSyncAuthoring =
           localStore.getBool('enableQuickSyncAuthoring');
-      AppConfig configFromEnv = AppConfig.fromJson(json.decode(configContent));
-      configFromEnv = configFromEnv.copyWith(
+
+      _config = configFromEnv.copyWith(
         defaultArweaveGatewayUrl: gatewayUrl,
         enableQuickSyncAuthoring: enableQuickSyncAuthoring,
       );
-
-      _config = configFromEnv;
     }
 
     return _config!;
