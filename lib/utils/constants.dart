@@ -6,3 +6,5 @@ const List<String> supportedImageTypesInFilePreview = [
   'image/bmp',
   'image/vnd.wap.wbmp',
 ];
+
+const profileQueryMaxRetries = 6;

@@ -4,6 +4,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 

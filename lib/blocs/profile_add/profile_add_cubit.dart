@@ -8,6 +8,7 @@ import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:arweave/arweave.dart';
@@ -18,8 +19,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 part 'profile_add_state.dart';
-
-const profileQueryMaxRetries = 6;
 
 class ProfileAddCubit extends Cubit<ProfileAddState> {
   final ProfileCubit _profileCubit;
