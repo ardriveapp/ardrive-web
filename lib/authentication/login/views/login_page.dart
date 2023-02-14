@@ -7,6 +7,7 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -63,12 +64,12 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
     Resources.images.login.login4,
   ];
 
-  late int image;
+  late int imageIndex;
 
   @override
   void initState() {
     super.initState();
-    image = Random().nextInt(images.length);
+    imageIndex = Random().nextInt(images.length);
   }
 
   @override
@@ -79,7 +80,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         child: Row(
           children: [
             Expanded(
-              child: _buildIllustration(context, images[image]),
+              child: _buildIllustration(context, images[imageIndex]),
             ),
             Expanded(
               child: FractionallySizedBox(
@@ -305,6 +306,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
 
                     return wallet != null;
                   },
+                  platformSupportsDragAndDrop: !AppPlatform.isMobile,
                 ),
                 const SizedBox(
                   height: 24,
