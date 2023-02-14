@@ -1,2 +1,0 @@
-- Introducing snapshots! This allows for a client to quickly retrieve all transactions of a specific drive when snapshots are used.
-- Fixed the issue with orphan entities. Orphan files are displayed on drive explorer again.
