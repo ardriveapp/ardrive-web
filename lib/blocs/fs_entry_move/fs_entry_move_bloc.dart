@@ -18,6 +18,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final List<SelectedItem> selectedItems;
 
   final ArweaveService _arweave;
+  final TurboService _turboService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
@@ -28,12 +29,14 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required this.driveId,
     required this.selectedItems,
     required ArweaveService arweave,
+    required TurboService turboService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
     required ArDriveCrypto crypto,
     Platform platform = const LocalPlatform(),
   })  : _arweave = arweave,
+        _turboService = turboService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
@@ -70,7 +73,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
               conflictingItems: conflictingItems,
               profile: profile,
               parentFolder: folderInView,
-              dryRun: event.dryRun,
             );
             emit(const FsEntryMoveSuccess());
           } else {
@@ -91,7 +93,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             parentFolder: folderInView,
             conflictingItems: event.conflictingItems,
             profile: profile,
-            dryRun: event.dryRun,
           );
           emit(const FsEntryMoveSuccess());
         }
@@ -162,7 +163,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     required FolderEntry parentFolder,
     List<SelectedItem> conflictingItems = const [],
     required ProfileLoggedIn profile,
-    bool dryRun = false,
   }) async {
     final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
     final moveTxDataItems = <DataItem>[];
@@ -198,8 +198,12 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
         final fileEntity = file.asEntity();
 
-        final fileDataItem = await _arweave
-            .prepareEntityDataItem(fileEntity, profile.wallet, key: fileKey);
+        final fileDataItem = await _arweave.prepareEntityDataItem(
+          fileEntity,
+          profile.wallet,
+          key: fileKey,
+        );
+
         moveTxDataItems.add(fileDataItem);
 
         await _driveDao.writeToFile(file);
@@ -238,17 +242,19 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
       }
     });
 
-    if (dryRun) {
-      return;
+    if (_turboService.useTurbo) {
+      for (var dataItem in moveTxDataItems) {
+        await _turboService.postDataItem(dataItem: dataItem);
+      }
+    } else {
+      final moveTx = await _arweave.prepareDataBundleTx(
+        await DataBundle.fromDataItems(
+          items: moveTxDataItems,
+        ),
+        profile.wallet,
+      );
+      await _arweave.postTx(moveTx);
     }
-
-    final moveTx = await _arweave.prepareDataBundleTx(
-      await DataBundle.fromDataItems(
-        items: moveTxDataItems,
-      ),
-      profile.wallet,
-    );
-    await _arweave.postTx(moveTx);
 
     await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
   }

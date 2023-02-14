@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 1.41.1
+version: 1.42.0
 
 environment:
   sdk: '>=2.18.5 <3.0.0'
@@ -31,7 +31,7 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ar-io/ardrive_http.git
-      ref: v1.1.1
+      ref: v1.1.2
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
@@ -91,6 +91,7 @@ dependencies:
   flutter_secure_storage: ^6.0.0
   async: ^2.9.0
   animations: ^2.0.7
+  connectivity_plus: ^3.0.3
 
 dev_dependencies:
   flutter_test:

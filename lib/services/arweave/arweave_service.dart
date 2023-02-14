@@ -218,19 +218,11 @@ class ArweaveService {
   }) async {
     final List<Uint8List> responses = await Future.wait(
       entityTxs.map(
-        (entity) async {
-          final txId = entity.id;
-          final Uint8List? cachedData =
-              await SnapshotItemOnChain.getDataForTxId(driveId, txId);
-          if (cachedData != null) {
-            return cachedData;
-          } else {
-            // TODO: make use of the NetworkPackage
-            final Response data = (await httpRetry
-                .processRequest(() => client.api.getSandboxedTx(txId)));
-            return data.bodyBytes;
-          }
-        },
+        (entity) => _getEntityData(
+          entityId: entity.id,
+          driveId: driveId,
+          isPrivate: driveKey != null,
+        ),
       ),
     );
 
@@ -269,7 +261,10 @@ class ArweaveService {
             driveKey: driveKey,
             crypto: _crypto,
           );
+        } else if (entityType == EntityType.snapshot) {
+          // TODO: instantiate entity and add to blockHistory
         }
+
         // TODO: Revisit
         if (blockHistory.isEmpty ||
             transaction.block!.height != blockHistory.last.blockHeight) {
@@ -296,6 +291,7 @@ class ArweaveService {
 
     // Sort the entities in each block by ascending commit time.
     for (final block in blockHistory) {
+      block.entities.removeWhere((e) => e == null);
       block.entities.sort((e1, e2) => e1!.createdAt.compareTo(e2!.createdAt));
       //Remove entities with spoofed owners
       block.entities.removeWhere((e) => e!.ownerAddress != owner);
@@ -320,6 +316,56 @@ class ArweaveService {
         (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
 
     return privateDriveTxs.isNotEmpty;
+  }
+
+  Future<Uint8List> _getEntityData({
+    required String entityId,
+    required String driveId,
+    required bool isPrivate,
+  }) async {
+    final txId = entityId;
+
+    final cachedData = await _getCachedEntityDataFromSnapshot(
+      driveId: driveId,
+      txId: txId,
+      isPrivate: isPrivate,
+    );
+
+    if (cachedData != null) {
+      return cachedData;
+    }
+
+    return _getEntityDataFromNetwork(txId: txId);
+  }
+
+  Future<Uint8List?> _getCachedEntityDataFromSnapshot({
+    required String txId,
+    required String driveId,
+    required bool isPrivate,
+  }) async {
+    final Uint8List? cachedData = await SnapshotItemOnChain.getDataForTxId(
+      driveId,
+      txId,
+    );
+
+    if (cachedData != null) {
+      if (isPrivate) {
+        // then it's base64-encoded
+        return base64.decode(String.fromCharCodes(cachedData));
+      } else {
+        // public data is plain text
+        return cachedData;
+      }
+    }
+
+    return null;
+  }
+
+  Future<Uint8List> _getEntityDataFromNetwork({required String txId}) async {
+    final Response data =
+        (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
+
+    return data.bodyBytes;
   }
 
   // Gets the unique drive entity transactions for a particular user.
@@ -772,14 +818,18 @@ class ArweaveService {
 
   Future<Transaction> prepareEntityTx(
     Entity entity,
-    Wallet wallet, [
-    SecretKey? key,
-  ]) async {
+    Wallet wallet,
+    SecretKey? key, {
+    bool skipSignature = false,
+  }) async {
     final tx = await client.transactions.prepare(
       await entity.asTransaction(key: key),
       wallet,
     );
-    await tx.sign(wallet);
+
+    if (!skipSignature) {
+      await tx.sign(wallet);
+    }
 
     return tx;
   }
@@ -835,6 +885,26 @@ class ArweaveService {
     return bundleTx;
   }
 
+  /// Creates and signs a [DataItem] with a [DataBundle] as payload.
+  /// Allows us to create nested bundles for use with the upload service.
+
+  Future<DataItem> prepareBundledDataItem(
+    DataBundle bundle,
+    Wallet wallet,
+  ) async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    final item = DataItem.withBlobData(data: bundle.blob)
+      ..addApplicationTags(
+        version: packageInfo.version,
+      )
+      ..addBundleTags()
+      ..addBarTags()
+      ..setOwner(await wallet.getOwner());
+    await item.sign(wallet);
+
+    return item;
+  }
+
   Future<Transaction> prepareDataBundleTxFromBlob(
       Uint8List bundleBlob, Wallet wallet) async {
     final packageInfo = await PackageInfo.fromPlatform();
@@ -867,6 +937,18 @@ class ArweaveService {
     final response = await ArDriveHTTP().getJson(coinGeckoApi);
 
     return response.data?['arweave']['usd'];
+  }
+
+  Future<Uint8List> dataFromTxId(
+    String txId,
+    SecretKey? driveKey,
+  ) async {
+    // TODO: PE-2917
+
+    final Response data =
+        (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
+    final metadata = data.bodyBytes;
+    return metadata;
   }
 }
 

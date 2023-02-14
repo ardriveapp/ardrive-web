@@ -6,7 +6,6 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -27,6 +26,7 @@ Future<void> promptToDownloadProfileFile({
       ARFSFactory().getARFSFileFromFileWithLatestRevisionTransactions(file);
 
   final profileState = context.read<ProfileCubit>().state;
+  final arweave = context.read<ArweaveService>();
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
   final cubit = ProfileFileDownloadCubit(
@@ -39,7 +39,7 @@ Future<void> promptToDownloadProfileFile({
     downloader: ArDriveDownloader(),
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
-    arweave: context.read<ArweaveService>(),
+    arweave: arweave,
   )..download(cipherKey);
   return showDialog(
     context: context,
@@ -57,6 +57,7 @@ Future<void> promptToDownloadFileRevision({
   final ARFSFileEntity arfsFile =
       ARFSFactory().getARFSFileFromFileRevisionWithTransactions(revision);
   final profileState = context.read<ProfileCubit>().state;
+  final arweave = context.read<ArweaveService>();
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
   final cubit = ProfileFileDownloadCubit(
@@ -69,7 +70,7 @@ Future<void> promptToDownloadFileRevision({
     downloader: ArDriveDownloader(),
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
-    arweave: context.read<ArweaveService>(),
+    arweave: arweave,
   )..download(cipherKey);
 
   return showDialog(

@@ -22,6 +22,7 @@ void main() {
     late Database db;
 
     late ArweaveService arweave;
+    late TurboService turboService;
     late ProfileCubit profileCubit;
     late FolderCreateCubit folderCreateCubit;
 
@@ -41,10 +42,12 @@ void main() {
         Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
         MockArDriveCrypto(),
       );
+      turboService = DontUseTurbo();
       profileCubit = MockProfileCubit();
 
       folderCreateCubit = FolderCreateCubit(
         arweave: arweave,
+        turboService: turboService,
         driveDao: driveDao,
         profileCubit: profileCubit,
         //TODO Mock or supply a driveId or parentFolderId

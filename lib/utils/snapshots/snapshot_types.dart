@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data' show Uint8List;
+
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:json_annotation/json_annotation.dart';
 
@@ -12,8 +15,10 @@ class TxSnapshot {
   DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
       gqlNode;
 
-  @JsonKey(name: 'jsonMetadata')
-  String jsonMetadata;
+  @JsonKey(
+    name: 'jsonMetadata',
+  )
+  Uint8List? jsonMetadata;
 
   TxSnapshot({required this.gqlNode, required this.jsonMetadata});
 
@@ -21,10 +26,12 @@ class TxSnapshot {
       : gqlNode =
             DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
                 .fromJson(json['gqlNode'] as Map<String, dynamic>),
-        jsonMetadata = json['jsonMetadata'] as String;
+        jsonMetadata =
+            Uint8List.fromList(utf8.encode(json['jsonMetadata'] as String));
 
   toJson() => {
         'gqlNode': gqlNode,
-        'jsonMetadata': jsonMetadata,
+        'jsonMetadata':
+            jsonMetadata != null ? utf8.decode(jsonMetadata!) : null,
       };
 }
