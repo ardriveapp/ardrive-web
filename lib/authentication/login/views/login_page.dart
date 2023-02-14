@@ -17,7 +17,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
-// TODO: Remove hardcoded colors and replace with design tokens
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
