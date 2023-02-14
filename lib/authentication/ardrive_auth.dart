@@ -62,7 +62,7 @@ class _ArDriveAuth implements ArDriveAuth {
     }
   }
 
-  final StreamController<User?> _userController =
+  final StreamController<User?> _userStreamController =
       StreamController<User?>.broadcast();
 
   @override
@@ -94,7 +94,7 @@ class _ArDriveAuth implements ArDriveAuth {
 
     currentUser = await addUser(wallet, password, profileType);
 
-    _userController.add(_currentUser);
+    _userStreamController.add(_currentUser);
 
     return currentUser;
   }
@@ -109,7 +109,7 @@ class _ArDriveAuth implements ArDriveAuth {
 
     currentUser = await _userService.getUser(password);
 
-    _userController.add(_currentUser);
+    _userStreamController.add(_currentUser);
 
     return currentUser;
   }
@@ -119,7 +119,7 @@ class _ArDriveAuth implements ArDriveAuth {
     try {
       currentUser = await _userService.getUser(password);
 
-      _userController.add(_currentUser);
+      _userStreamController.add(_currentUser);
 
       return currentUser;
     } catch (e) {
@@ -131,13 +131,13 @@ class _ArDriveAuth implements ArDriveAuth {
   Future<void> logout() async {
     currentUser = null;
 
-    _userController.add(null);
+    _userStreamController.add(null);
 
     await _userService.deleteUser();
   }
 
   @override
-  Stream<User?> onAuthStateChanged() => _userController.stream;
+  Stream<User?> onAuthStateChanged() => _userStreamController.stream;
 
   Future<bool> _validateUser(
     Wallet wallet,
