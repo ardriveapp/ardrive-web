@@ -38,9 +38,9 @@ class _ArDriveAuth implements ArDriveAuth {
     required ArDriveCrypto crypto,
   })  : _arweave = arweave,
         _crypto = crypto,
-        _userService = userRepository;
+        _userRepository = userRepository;
 
-  final UserRepository _userService;
+  final UserRepository _userRepository;
   final ArweaveService _arweave;
   final ArDriveCrypto _crypto;
 
@@ -67,7 +67,7 @@ class _ArDriveAuth implements ArDriveAuth {
 
   @override
   Future<bool> isUserLoggedIn() async {
-    return await _userService.hasUser();
+    return await _userRepository.hasUser();
   }
 
   @override
@@ -107,7 +107,7 @@ class _ArDriveAuth implements ArDriveAuth {
   ) async {
     await _saveUser(password, profileType, wallet);
 
-    currentUser = await _userService.getUser(password);
+    currentUser = await _userRepository.getUser(password);
 
     _userStreamController.add(_currentUser);
 
@@ -117,7 +117,7 @@ class _ArDriveAuth implements ArDriveAuth {
   @override
   Future<User> unlockUser({required String password}) async {
     try {
-      currentUser = await _userService.getUser(password);
+      currentUser = await _userRepository.getUser(password);
 
       _userStreamController.add(_currentUser);
 
@@ -133,7 +133,7 @@ class _ArDriveAuth implements ArDriveAuth {
 
     _userStreamController.add(null);
 
-    await _userService.deleteUser();
+    await _userRepository.deleteUser();
   }
 
   @override
@@ -181,12 +181,12 @@ class _ArDriveAuth implements ArDriveAuth {
   ) async {
     // delete previous user
     // verify if it is necessary, the user only will add a new user if he is not logged in
-    if (await _userService.hasUser()) {
-      await _userService.deleteUser();
+    if (await _userRepository.hasUser()) {
+      await _userRepository.deleteUser();
     }
 
     // save user
-    await _userService.saveUser(
+    await _userRepository.saveUser(
       password,
       profileType,
       wallet,
