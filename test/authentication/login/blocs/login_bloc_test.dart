@@ -26,7 +26,7 @@ void main() {
     mockArConnectService = MockArConnectService();
   });
 
-  group('testing LoginBloc AddWalletFile event', () {
+  group('AddWalletFile', () {
     blocTest(
       'should emit the event to prompt password wehn user is an existing one',
       build: () {
@@ -78,7 +78,7 @@ void main() {
     );
   });
 
-  group('testing LoginBloc LoginWithPassword event', () {
+  group('LoginWithPassword', () {
     final loggedUser = User(
       password: 'password',
       wallet: wallet,
@@ -212,7 +212,7 @@ void main() {
     );
   });
 
-  group('testing LoginBloc CheckIfUserIsLoggedIn event', () {
+  group('CheckIfUserIsLoggedIn', () {
     blocTest(
       'should emit the event to prompt password when user is an existing one',
       build: () {
@@ -253,7 +253,7 @@ void main() {
     );
   });
 
-  group('testing ArDriveAuth UnlockUserWithPassword event', () {
+  group('UnlockUserWithPassword', () {
     final loggedUser = User(
       password: 'password',
       wallet: wallet,
@@ -318,7 +318,7 @@ void main() {
     );
   });
 
-  group('testing LoginBloc CreatePassword event', () {
+  group('CreatePassword event', () {
     final loggedUser = User(
       password: 'password',
       wallet: wallet,

@@ -541,8 +541,7 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                       onPressed: () {
                         _onSubmit();
                       },
-                      text:
-                          appLocalizationsOf(context).proceedUnlockWithPassword,
+                      text: appLocalizationsOf(context).proceed,
                     ),
                   ),
                 ],
@@ -722,7 +721,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
               isDisabled:
                   _passwordIsValid == false || _confirmPasswordIsValid == false,
               onPressed: _onSubmit,
-              text: appLocalizationsOf(context).proceedCreatePassword,
+              text: appLocalizationsOf(context).proceed,
             ),
           ),
           const SizedBox(
