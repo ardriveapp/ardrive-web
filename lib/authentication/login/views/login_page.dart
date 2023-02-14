@@ -76,7 +76,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
   Widget build(BuildContext context) {
     return ScreenTypeLayout(
       desktop: Material(
-        color: const Color(0xff090A0A),
+        color: ArDriveTheme.of(context).themeData.backgroundColor,
         child: Row(
           children: [
             Expanded(
@@ -109,7 +109,6 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Container(
         Opacity(
           opacity: 0.25,
           child: ArDriveImage(
@@ -143,7 +142,10 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
                         .yourPrivateSecureAndPermanentDrive,
                     textAlign: TextAlign.start,
                     style: ArDriveTypography.headline.headline4Regular(
-                      color: const Color(0xffFAFAFA),
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeFgDefault,
                     ),
                   ),
                 ),
@@ -292,8 +294,12 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     _file = file;
 
                     if (!_isTermsChecked) {
-                      showAnimatedDialog(context,
-                          content: _showAcceptTermsModal());
+                      showAnimatedDialog(
+                        context,
+                        content: _showAcceptTermsModal(),
+                      );
+
+                      return;
                     }
 
                     context.read<LoginBloc>().add(AddWalletFile(file));
@@ -422,7 +428,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
 }
 
 class _LoginCard extends StatelessWidget {
-  const _LoginCard({super.key, required this.content});
+  const _LoginCard({required this.content});
 
   final Widget content;
 
@@ -454,6 +460,8 @@ class _LoginCard extends StatelessWidget {
       }
 
       return ArDriveCard(
+        backgroundColor:
+            ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
         borderRadius: 24,
         boxShadow: BoxShadowCard.shadow80,
         contentPadding: EdgeInsets.fromLTRB(
@@ -517,6 +525,8 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                         setState(() {
                           _isPasswordValid = true;
                         });
+
+                        return null;
                       },
                       onFieldSubmitted: (_) async {
                         if (_isPasswordValid) {
@@ -926,19 +936,22 @@ class OnBoardingViewState extends State<OnBoardingView> {
   Widget build(BuildContext context) {
     return ScreenTypeLayout(
       desktop: Material(
-        color: const Color(0xff090A0A),
+        color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Expanded(
               child: Container(
-                color: const Color(0xff1F1F1F),
+                color: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
                 child: Align(
                   child: ConstrainedBox(
                     constraints:
                         const BoxConstraints(maxWidth: 512, maxHeight: 489),
                     child: _FadeThroughTransitionSwitcher(
-                        fillColor: const Color(0xff1F1F1F),
+                        fillColor: ArDriveTheme.of(context)
+                            .themeData
+                            .colors
+                            .themeBgSurface,
                         child: _buildOnBoardingContent()),
                   ),
                 ),
@@ -956,7 +969,7 @@ class OnBoardingViewState extends State<OnBoardingView> {
       mobile: Scaffold(
         resizeToAvoidBottomInset: true,
         body: Container(
-          color: const Color(0xff1F1F1F),
+          color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
           child: Align(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 512, maxHeight: 489),
@@ -1085,7 +1098,7 @@ class _FadeThroughTransitionSwitcher extends StatelessWidget {
     return PageTransitionSwitcher(
       transitionBuilder: (child, animation, secondaryAnimation) {
         return FadeThroughTransition(
-          fillColor: const Color(0xff1F1F1F),
+          fillColor: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
           animation: animation,
           secondaryAnimation: secondaryAnimation,
           child: child,

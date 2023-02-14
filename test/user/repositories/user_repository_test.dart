@@ -90,19 +90,6 @@ void main() {
       expect(result.cipherKey, userToMatch.cipherKey);
       expect(result.profileType, userToMatch.profileType);
       verify(() => mockProfileDao.loadDefaultProfile(rightPassword)).called(1);
-
-      // TODO: verify why comparing user object is not working
-      // expect(
-      //     result,
-      //     User(
-      //       password: rightPassword,
-      //       wallet: wallet,
-      //       walletAddress: await wallet.getAddress(),
-      //       walletBalance: BigInt.zero,
-      //       cipherKey: SecretKey([1, 2, 3]),
-      //       profileType: ProfileType.json,
-      //     ),
-      // );
     });
 
     test('should return null if there is no profile', () async {
