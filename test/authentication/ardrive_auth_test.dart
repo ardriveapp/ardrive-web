@@ -247,45 +247,6 @@ void main() {
       expect(() => arDriveAuth.currentUser,
           throwsA(isA<AuthenticationUserIsNotLoggedInException>()));
     });
-
-    group('testing ArDriveAuth addUser method', () {
-      test('should save and get the user', () async {
-        final loggedUser = User(
-          password: 'password',
-          wallet: wallet,
-          walletAddress: 'walletAddress',
-          walletBalance: BigInt.one,
-          cipherKey: SecretKey([]),
-          profileType: ProfileType.json,
-        );
-        when(() => mockUserRepository.hasUser())
-            .thenAnswer((invocation) => Future.value(false));
-        // arrange
-        when(() => mockUserRepository.saveUser(
-                'password', ProfileType.json, wallet))
-            .thenAnswer((invocation) => Future.value(null));
-
-        when(() => mockUserRepository.getUser('password'))
-            .thenAnswer((invocation) async => loggedUser);
-
-        // act
-        await arDriveAuth.addUser(wallet, 'password', ProfileType.json);
-
-        // assert
-        expect(arDriveAuth.currentUser, isNotNull);
-        expect(arDriveAuth.currentUser!.password, loggedUser.password);
-        expect(arDriveAuth.currentUser!.wallet, loggedUser.wallet);
-        expect(arDriveAuth.currentUser!.walletAddress, 'walletAddress');
-        expect(
-            arDriveAuth.currentUser!.walletBalance, loggedUser.walletBalance);
-        expect(arDriveAuth.currentUser!.cipherKey, loggedUser.cipherKey);
-        expect(arDriveAuth.currentUser!.profileType, loggedUser.profileType);
-        verify(() => mockUserRepository.hasUser()).called(1);
-        verify(() => mockUserRepository.saveUser(
-            'password', ProfileType.json, wallet)).called(1);
-        verify(() => mockUserRepository.getUser('password')).called(1);
-      });
-    });
   });
 
   group('testing ArDriveAuth onAuthStateChanged method', () {

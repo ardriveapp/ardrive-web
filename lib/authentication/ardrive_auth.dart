@@ -12,7 +12,6 @@ import '../core/crypto/crypto.dart';
 abstract class ArDriveAuth {
   Future<bool> isUserLoggedIn();
   Future<bool> isExistingUser(Wallet wallet);
-  Future<User> addUser(Wallet wallet, String password, ProfileType profileType);
   Future<User> login(Wallet wallet, String password, ProfileType profileType);
   Future<User> unlockUser({required String password});
   Future<void> logout();
@@ -90,15 +89,14 @@ class _ArDriveAuth implements ArDriveAuth {
       throw AuthenticationFailedException('Incorrect password');
     }
 
-    currentUser = await addUser(wallet, password, profileType);
+    currentUser = await _addUser(wallet, password, profileType);
 
     _userStreamController.add(_currentUser);
 
     return currentUser;
   }
 
-  @override
-  Future<User> addUser(
+  Future<User> _addUser(
     Wallet wallet,
     String password,
     ProfileType profileType,
