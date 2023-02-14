@@ -157,11 +157,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<Wallet?> validateAndReturnWalletFile(IOFile walletFile) async {
-    // verify wallet file
-    Wallet wallet;
-
     try {
-      wallet = Wallet.fromJwk(json.decode(await walletFile.readAsString()));
+      final wallet =
+          Wallet.fromJwk(json.decode(await walletFile.readAsString()));
 
       return wallet;
     } catch (e) {
