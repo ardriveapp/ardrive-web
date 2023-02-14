@@ -56,10 +56,8 @@ class _ArDriveAuth implements ArDriveAuth {
     return _currentUser!;
   }
 
-  set currentUser(User? val) {
-    if (_currentUser != val) {
-      _currentUser = val;
-    }
+  set currentUser(User? user) {
+    _currentUser = user;
   }
 
   final StreamController<User?> _userStreamController =
