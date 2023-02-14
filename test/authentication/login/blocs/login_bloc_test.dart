@@ -338,7 +338,7 @@ void main() {
       },
       setUp: () {
         // user doesn't exist
-        when(() => mockArDriveAuth.addUser(
+        when(() => mockArDriveAuth.login(
               any(),
               'password',
               ProfileType.json,
@@ -364,7 +364,7 @@ void main() {
       },
       setUp: () {
         // user doesn't exist
-        when(() => mockArDriveAuth.addUser(
+        when(() => mockArDriveAuth.login(
               any(),
               'password',
               ProfileType.json,
@@ -398,7 +398,7 @@ void main() {
       },
       setUp: () {
         // user doesn't exist
-        when(() => mockArDriveAuth.addUser(
+        when(() => mockArDriveAuth.login(
               any(),
               'password',
               ProfileType.json,

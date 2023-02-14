@@ -30,130 +30,27 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   })  : _arDriveAuth = arDriveAuth,
         _arConnectService = arConnectService,
         super(LoginLoading()) {
-    on<LoginEvent>((event, emit) async {
-      if (event is AddWalletFile) {
-        emit(LoginLoading());
+    on<LoginEvent>(_onLoginEvent);
+  }
 
-        profileType = ProfileType.json;
-
-        final wallet =
-            Wallet.fromJwk(json.decode(await event.walletFile.readAsString()));
-
-        if (await _arDriveAuth.isExistingUser(wallet)) {
-          emit(PromptPassword(walletFile: wallet));
-        } else {
-          emit(LoginOnBoarding(wallet));
-        }
-      } else if (event is LoginWithPassword) {
-        final previousState = state;
-
-        try {
-          emit(LoginLoading());
-
-          if (profileType == ProfileType.arConnect &&
-              lastKnownWalletAddress !=
-                  await _arConnectService.getWalletAddress()) {
-            emit(const LoginFailure(WalletMismatchException()));
-            emit(previousState);
-            return;
-          }
-
-          final user = await _arDriveAuth.login(
-              event.wallet, event.password, profileType!);
-
-          emit(LoginSuccess(user));
-        } catch (e) {
-          emit(LoginFailure(e));
-          emit(previousState);
-        }
-      } else if (event is CheckIfUserIsLoggedIn) {
-        emit(LoginLoading());
-
-        if (await _arDriveAuth.isUserLoggedIn()) {
-          emit(const PromptPassword());
-          return;
-        }
-
-        emit(LoginInitial(_arConnectService.isExtensionPresent()));
-      } else if (event is UnlockUserWithPassword) {
-        final previousState = state;
-
-        emit(LoginLoading());
-
-        try {
-          final user = await _arDriveAuth.unlockUser(password: event.password);
-
-          emit(LoginSuccess(user));
-        } catch (e) {
-          emit(LoginFailure(e));
-          emit(previousState);
-
-          return;
-        }
-      } else if (event is CreatePassword) {
-        final previousState = state;
-
-        emit(LoginLoading());
-
-        try {
-          if (profileType == ProfileType.arConnect &&
-              lastKnownWalletAddress !=
-                  await _arConnectService.getWalletAddress()) {
-            emit(const LoginFailure(WalletMismatchException()));
-            emit(previousState);
-
-            return;
-          }
-
-          final user = await _arDriveAuth.addUser(
-            event.wallet,
-            event.password,
-            profileType!,
-          );
-
-          emit(LoginSuccess(user));
-        } catch (e) {
-          emit(LoginFailure(e));
-          emit(previousState);
-        }
-      } else if (event is AddWalletFromArConnect) {
-        final previousState = state;
-
-        try {
-          emit(LoginLoading());
-
-          await _arConnectService.connect();
-
-          if (!(await _arConnectService.checkPermissions())) {
-            throw Exception('ArConnect permissions not granted');
-          }
-
-          final wallet = ArConnectWallet(arConnectService);
-
-          profileType = ProfileType.arConnect;
-
-          lastKnownWalletAddress = await wallet.getAddress();
-
-          // split this logic into a separate function
-          if (await _arDriveAuth.isExistingUser(wallet)) {
-            emit(PromptPassword(walletFile: wallet));
-          } else {
-            emit(CreatingNewPassword(walletFile: wallet));
-          }
-        } catch (e) {
-          emit(LoginFailure(e));
-          emit(previousState);
-        }
-      } else if (event is ForgetWallet) {
-        if (await _arDriveAuth.isUserLoggedIn()) {
-          await _arDriveAuth.logout();
-        }
-
-        emit(LoginInitial(_arConnectService.isExtensionPresent()));
-      } else if (event is FinishOnboarding) {
-        emit(CreatingNewPassword(walletFile: event.wallet));
-      }
-    });
+  Future<void> _onLoginEvent(LoginEvent event, Emitter<LoginState> emit) async {
+    if (event is AddWalletFile) {
+      await _handleAddWalletFileEvent(event, emit);
+    } else if (event is LoginWithPassword) {
+      await _handleLoginWithPasswordEvent(event, emit);
+    } else if (event is CheckIfUserIsLoggedIn) {
+      await _handleCheckIfUserIsLoggedInEvent(event, emit);
+    } else if (event is UnlockUserWithPassword) {
+      await _handleUnlockUserWithPasswordEvent(event, emit);
+    } else if (event is CreatePassword) {
+      await _handleCreatePasswordEvent(event, emit);
+    } else if (event is AddWalletFromArConnect) {
+      await _handleAddWalletFromArConnectEvent(event, emit);
+    } else if (event is ForgetWallet) {
+      await _handleForgetWalletEvent(event, emit);
+    } else if (event is FinishOnboarding) {
+      await _handleFinishOnboardingEvent(event, emit);
+    }
   }
 
   Future<Wallet?> validateAndReturnWalletFile(IOFile walletFile) async {
@@ -165,5 +62,149 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     } catch (e) {
       return null;
     }
+  }
+
+  Future<void> _handleAddWalletFileEvent(
+      AddWalletFile event, Emitter<LoginState> emit) async {
+    emit(LoginLoading());
+
+    profileType = ProfileType.json;
+
+    final wallet =
+        Wallet.fromJwk(json.decode(await event.walletFile.readAsString()));
+
+    if (await _arDriveAuth.isExistingUser(wallet)) {
+      emit(PromptPassword(walletFile: wallet));
+    } else {
+      emit(LoginOnBoarding(wallet));
+    }
+  }
+
+  Future<void> _handleLoginWithPasswordEvent(
+      LoginWithPassword event, Emitter<LoginState> emit) async {
+    final previousState = state;
+
+    try {
+      emit(LoginLoading());
+
+      if (profileType == ProfileType.arConnect &&
+          lastKnownWalletAddress !=
+              await _arConnectService.getWalletAddress()) {
+        emit(const LoginFailure(WalletMismatchException()));
+        emit(previousState);
+        return;
+      }
+
+      final user =
+          await _arDriveAuth.login(event.wallet, event.password, profileType!);
+
+      emit(LoginSuccess(user));
+    } catch (e) {
+      emit(LoginFailure(e));
+      emit(previousState);
+    }
+  }
+
+  Future<void> _handleCheckIfUserIsLoggedInEvent(
+      CheckIfUserIsLoggedIn event, Emitter<LoginState> emit) async {
+    emit(LoginLoading());
+
+    if (await _arDriveAuth.isUserLoggedIn()) {
+      emit(const PromptPassword());
+      return;
+    }
+
+    emit(LoginInitial(_arConnectService.isExtensionPresent()));
+  }
+
+  Future<void> _handleUnlockUserWithPasswordEvent(
+      UnlockUserWithPassword event, Emitter<LoginState> emit) async {
+    final previousState = state;
+
+    emit(LoginLoading());
+
+    try {
+      final user = await _arDriveAuth.unlockUser(password: event.password);
+
+      emit(LoginSuccess(user));
+    } catch (e) {
+      emit(LoginFailure(e));
+      emit(previousState);
+
+      return;
+    }
+  }
+
+  Future<void> _handleCreatePasswordEvent(
+      CreatePassword event, Emitter<LoginState> emit) async {
+    final previousState = state;
+
+    emit(LoginLoading());
+
+    try {
+      if (profileType == ProfileType.arConnect &&
+          lastKnownWalletAddress !=
+              await _arConnectService.getWalletAddress()) {
+        emit(const LoginFailure(WalletMismatchException()));
+        emit(previousState);
+
+        return;
+      }
+
+      final user = await _arDriveAuth.login(
+        event.wallet,
+        event.password,
+        profileType!,
+      );
+
+      emit(LoginSuccess(user));
+    } catch (e) {
+      emit(LoginFailure(e));
+      emit(previousState);
+    }
+  }
+
+  Future<void> _handleAddWalletFromArConnectEvent(
+      AddWalletFromArConnect event, Emitter<LoginState> emit) async {
+    final previousState = state;
+
+    try {
+      emit(LoginLoading());
+
+      await _arConnectService.connect();
+
+      if (!(await _arConnectService.checkPermissions())) {
+        throw Exception('ArConnect permissions not granted');
+      }
+
+      final wallet = ArConnectWallet(_arConnectService);
+
+      profileType = ProfileType.arConnect;
+
+      lastKnownWalletAddress = await wallet.getAddress();
+
+      if (await _arDriveAuth.isExistingUser(wallet)) {
+        emit(PromptPassword(walletFile: wallet));
+      } else {
+        emit(CreatingNewPassword(walletFile: wallet));
+      }
+    } catch (e) {
+      emit(LoginFailure(e));
+      emit(previousState);
+    }
+  }
+
+  Future<void> _handleForgetWalletEvent(
+      ForgetWallet event, Emitter<LoginState> emit) async {
+    if (await _arDriveAuth.isUserLoggedIn()) {
+      await _arDriveAuth.logout();
+    }
+
+    emit(LoginInitial(_arConnectService.isExtensionPresent()));
+  }
+
+  Future<void> _handleFinishOnboardingEvent(
+      FinishOnboarding event, Emitter<LoginState> emit) async {
+    emit(CreatingNewPassword(walletFile: event.wallet));
   }
 }
