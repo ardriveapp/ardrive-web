@@ -66,17 +66,24 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
   Future<void> _handleAddWalletFileEvent(
       AddWalletFile event, Emitter<LoginState> emit) async {
-    emit(LoginLoading());
+    final previousState = state;
 
-    profileType = ProfileType.json;
+    try {
+      emit(LoginLoading());
 
-    final wallet =
-        Wallet.fromJwk(json.decode(await event.walletFile.readAsString()));
+      profileType = ProfileType.json;
 
-    if (await _arDriveAuth.isExistingUser(wallet)) {
-      emit(PromptPassword(walletFile: wallet));
-    } else {
-      emit(LoginOnBoarding(wallet));
+      final wallet =
+          Wallet.fromJwk(json.decode(await event.walletFile.readAsString()));
+
+      if (await _arDriveAuth.isExistingUser(wallet)) {
+        emit(PromptPassword(walletFile: wallet));
+      } else {
+        emit(LoginOnBoarding(wallet));
+      }
+    } catch (e) {
+      emit(LoginFailure(e));
+      emit(previousState);
     }
   }
 

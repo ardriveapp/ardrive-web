@@ -9,11 +9,13 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
+import 'package:ardrive/utils/internet_checker.dart';
 import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 import 'package:http/http.dart';
@@ -41,7 +43,10 @@ class ArweaveService {
     ArtemisClient? artemisClient,
   }) : _gql = artemisClient ??
             ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
-    _graphQLRetry = GraphQLRetry(_gql);
+    _graphQLRetry = GraphQLRetry(
+      _gql,
+      internetChecker: InternetChecker(connectivity: Connectivity()),
+    );
     httpRetry = HttpRetry(
         GatewayResponseHandler(),
         HttpRetryOptions(onRetry: (exception) {

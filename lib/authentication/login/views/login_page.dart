@@ -165,6 +165,8 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           current is! LoginOnBoarding,
       listener: (context, state) {
         if (state is LoginFailure) {
+          // TODO: Verify if the error is `NoConnectionException` and show an appropriate message after validating with UI/UX
+
           if (state.error is WalletMismatchException) {
             showAnimatedDialog(
               context,
@@ -183,6 +185,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
             );
             return;
           }
+
           showAnimatedDialog(
             context,
             content: ArDriveIconModal(
