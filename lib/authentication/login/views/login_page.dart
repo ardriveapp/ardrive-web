@@ -400,7 +400,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
               ],
             ),
             ArDriveTextButton(
-              onPressed: () => openUrl(url: 'https://tokens.arweave.org'),
+              onPressed: () => openUrl(url: Resources.getWalletLink),
               text: appLocalizationsOf(context).getAWallet,
             ),
           ],
