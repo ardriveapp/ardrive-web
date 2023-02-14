@@ -1059,9 +1059,9 @@
   "@tryLaterCongestionEmphasized": {
     "description": "Try to upload later. Emphasized with upper case"
   },
-  "proceedCongestionEmphasized": "PROCEED",
-  "@proceedCongestionEmphasized": {
-    "description": "Proceed being aware of the network congestion. Emphasized with upper case"
+  "proceedEmphasized": "PROCEED",
+  "@proceedEmphasized": {
+    "description": "Proceed but capitalized"
   },
   "profile": "Profile",
   "@profile": {
@@ -1534,17 +1534,9 @@
   "@createAndConfirmPassword": {
     "description": "Form title to create a password"
   },
-  "createAndConfirmPassword": "Please create and confirm your password. You will use this password to log in.",
-  "@createAndConfirmPassword": {
-    "description": "Form title to create a password"
-  },
-  "proceedCreatePassword": "Proceed",
-  "@proceedCreatePassword": {
-    "description": "Button title to create a password"
-  },
-  "proceedUnlockWithPassword": "Proceed",
-  "@proceedUnlockWithPassword": {
-    "description": "Button title to unlock with password"
+  "proceed": "Proceed",
+  "@proceed": {
+    "description": "Proceed"
   },
   "passwordCannotBeEmpty": "Password cannot be empty",
   "@passwordCannotBeEmpty": {
