@@ -47,8 +47,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.1.2"
-      resolved-ref: d6ecfb5cd856a3ead100671135c05e1943e1be16
+      ref: PE-2991-downloads-that-take-more-than-8-seconds-to-finish-are-failing
+      resolved-ref: f5eb45c6cfa6290bad635a2db79aee2fc3b66d1b
       url: "https://github.com/ar-io/ardrive_http.git"
     source: git
     version: "1.0.0"
