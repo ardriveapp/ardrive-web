@@ -31,7 +31,7 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ar-io/ardrive_http.git
-      ref: v1.1.2
+      ref: PE-2991-downloads-that-take-more-than-8-seconds-to-finish-are-failing
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
