@@ -166,12 +166,10 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     SnapshotEntity snapshotEntity,
     Uint8List data,
   ) async {
+    // ignore: avoid_print
     print('About to prepare snapshot transaction');
 
     final profile = _profileCubit.state as ProfileLoggedIn;
-
-    print('Reading wallet from profile');
-
     final wallet = profile.wallet;
 
     if (await _profileCubit.isCurrentProfileArConnect()) {
@@ -186,16 +184,14 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       );
     }
 
-    print('Adding community tip to snapshot transaction');
-
     await _pst.addCommunityTipToTx(_preparedTx);
 
     if (await _profileCubit.isCurrentProfileArConnect()) {
       await _signTxWithArConnect();
     } else {
-      print('Signing with Arweave wallet');
+      // ignore: avoid_print
+      print('Signing snapshot with JSON wallet');
       await _preparedTx.sign(wallet);
-      print('Signed with Arweave wallet');
     }
 
     snapshotEntity.txId = _preparedTx.id;
@@ -206,7 +202,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final wallet = profile.wallet;
 
     try {
-      print('Preparing snapshot transaction');
+      // ignore: avoid_print
+      print('Preparing snapshot transaction with ArConnect');
       _preparedTx = await _arweave.prepareEntityTx(
         _snapshotEntity!,
         wallet,
@@ -214,18 +211,16 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         // We'll sign it just after adding the tip
         skipSignature: true,
       );
-      print('Prepared snapshot transaction');
     } catch (_) {
       if (isBrowserTabHidden()) {
+        // ignore: avoid_print
         print(
-            'Preparing snapshot transaction failed, but browser tab is hidden');
+          'Preparing snapshot transaction while user is not focusing the tab. Waiting...',
+        );
         await whenBrowserTabIsUnhiddenFuture(
           _prepareEntityTxArConnect,
         );
       } else {
-        print(
-          'Preparing snapshot transaction failed, but browser tab is not hidden',
-        );
         rethrow;
       }
     }
@@ -236,21 +231,24 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final wallet = profile.wallet;
 
     try {
-      print('Signing with ArConnect');
+      // ignore: avoid_print
+      print('Signing snapshot transaction with ArConnect');
       await _preparedTx.sign(wallet);
-      print('Signed with ArConnect');
     } catch (e) {
       if (isBrowserTabHidden()) {
-        print('Signing with ArConnect failed, but browser tab is hidden');
+        // ignore: avoid_print
+        print(
+          'Signing snapshot transaction while user is not focusing the tab. Waiting...',
+        );
         await whenBrowserTabIsUnhiddenFuture(_signTxWithArConnect);
       } else {
-        print('Signing with ArConnect failed, but browser tab is not hidden');
         rethrow;
       }
     }
   }
 
   Future<Uint8List> _getSnapshotData() async {
+    // ignore: avoid_print
     print('Computing snapshot data');
 
     emit(ComputingSnapshotData(
@@ -278,7 +276,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       dataBuffer.add(chunk);
     }
 
-    print('Snapshot data computed');
+    // ignore: avoid_print
+    print('Finished computing snapshot data');
 
     final data = dataBuffer.takeBytes();
     return data;
