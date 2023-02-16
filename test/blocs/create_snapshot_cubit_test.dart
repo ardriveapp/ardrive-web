@@ -105,6 +105,11 @@ void main() {
           (_) => Future.value(false),
         );
 
+        // mocks the isCurrentProfileArConnect method
+        when(() => profileCubit.isCurrentProfileArConnect()).thenAnswer(
+          (_) => Future.value(false),
+        );
+
         when(() => pst.addCommunityTipToTx(any())).thenAnswer(
           (_) => Future<double>.value(0.1),
         );
