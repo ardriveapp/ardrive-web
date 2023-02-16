@@ -1,5 +1,11 @@
+import 'dart:async';
+
 bool isTabHidden() {
   return false;
+}
+
+Future<void> whenTabIsUnhiddenFuture(FutureOr<Function> onShow) async {
+  return;
 }
 
 void whenTabIsUnhidden(Function onShow) {
