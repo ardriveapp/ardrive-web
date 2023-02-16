@@ -63,10 +63,10 @@ class UploadPlan {
     final int maxBundleSize = useTurbo
         ? turboService.allowedDataItemSize + approximateMetadataSize
         : (kIsWeb ? bundleSizeLimit : mobileBundleSizeLimit);
-
+    final int filesPerBundle = useTurbo ? 2 : maxFilesPerBundle;
     final bundleItems = await NextFitBundlePacker<UploadHandle>(
       maxBundleSize: maxBundleSize,
-      maxDataItemCount: maxFilesPerBundle,
+      maxDataItemCount: filesPerBundle,
     ).packItems([
       ...fileDataItemUploadHandles.values,
       ...folderDataItemUploadHandles.values
