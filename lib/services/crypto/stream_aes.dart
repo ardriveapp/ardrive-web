@@ -61,7 +61,7 @@ class AesCtrStream extends AesStream with EncryptStream, DecryptStream {
         return _aesCtr.encryptStream(
           plaintextStream,
           counterInitBytes,
-          _aesBlockLengthBytes,
+          _aesBlockLengthBytes * 8,
         );
       }
     );
@@ -79,7 +79,7 @@ class AesCtrStream extends AesStream with EncryptStream, DecryptStream {
         return _aesCtr.decryptStream(
           ciphertextStream,
           counterInitBytes,
-          _aesBlockLengthBytes,
+          _aesBlockLengthBytes * 8,
         );
       }
     );
@@ -122,7 +122,7 @@ class AesGcmStream extends AesStream with DecryptStream {
         return _aesCtr.decryptStream(
           ciphertextStreamNoMac,
           counterInitBytes,
-          _aesBlockLengthBytes,
+          _aesBlockLengthBytes * 8,
         );
       }
     );
