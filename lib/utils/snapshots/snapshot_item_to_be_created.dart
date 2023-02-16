@@ -40,6 +40,12 @@ class SnapshotItemToBeCreated {
   }) : _jsonMetadataOfTxId = jsonMetadataOfTxId;
 
   Stream<Uint8List> getSnapshotData() async* {
+    /// await 3 seconds before starting to stream data
+    await Future.delayed(Duration(seconds: 3));
+
+    yield* Stream.empty();
+    return;
+
     final txSnapshotStream = source.asyncMap<TxSnapshot>(
       (node) async {
         // updates dataStart and dataEnd being the start the minimum and end the maximum

@@ -99,21 +99,34 @@ class SnapshotEntity extends Entity {
   Future<Transaction> asTransaction({
     SecretKey? key,
   }) async {
+    print('Called asTransaction on SnapshotEntity');
+
     if (key != null) {
       throw UnsupportedError('Snapshot entities are not encrypted.');
     }
 
+    print('Creating transaction');
+
     final tx = Transaction.withBlobData(data: data!);
+
+    print('Adding tags');
+
     final packageInfo = await PackageInfo.fromPlatform();
 
     tx.addTag(EntityTag.contentType, ContentType.json);
 
+    print('Adding entity tags');
+
     addEntityTagsToTransaction(tx);
+
+    print('Adding application tags');
 
     tx.addApplicationTags(
       version: packageInfo.version,
       unixTime: createdAt,
     );
+
+    print('Returning transaction');
 
     return tx;
   }

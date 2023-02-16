@@ -33,6 +33,7 @@ class ComputeSnapshotDataFailure extends CreateSnapshotState {
   List<Object> get props => [errorMessage];
 }
 
+/// User has insufficient balance to create the snapshot
 class CreateSnapshotInsufficientBalance extends CreateSnapshotState {
   final String walletBalance;
   final String arCost;
@@ -51,20 +52,17 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
   final int snapshotSize;
   final String arUploadCost;
   final double? usdUploadCost;
-  final CreateSnapshotParameters createSnapshotParams;
 
   ConfirmingSnapshotCreation({
     required this.snapshotSize,
     required this.arUploadCost,
     required this.usdUploadCost,
-    required this.createSnapshotParams,
   });
 
   @override
   List<Object> get props => [
         snapshotSize,
         arUploadCost,
-        createSnapshotParams,
       ];
 }
 
