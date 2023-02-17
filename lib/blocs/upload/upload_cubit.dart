@@ -360,9 +360,6 @@ class UploadCubit extends Cubit<UploadState> {
           wallet: profile.wallet,
           pstService: _pst,
         );
-        await uploadHandle.writeFileEntityToDatabase(
-          driveDao: _driveDao,
-        );
       } catch (error) {
         addError(error);
       }
@@ -373,6 +370,9 @@ class UploadCubit extends Cubit<UploadState> {
           .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
+
+      await uploadHandle.writeFileEntityToDatabase(driveDao: _driveDao);
+
       uploadHandle.dispose();
     }
     unawaited(_profileCubit.refreshBalance());
