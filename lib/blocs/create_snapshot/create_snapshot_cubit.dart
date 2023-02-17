@@ -186,7 +186,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       try {
         await closeVisibilityChangeStream();
       } catch (_) {
-        // The stream was not yet open. Nothing ot do
+        // The stream was not yet open. Nothing to do
       }
     }
 
@@ -225,7 +225,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       try {
         await closeVisibilityChangeStream();
       } catch (_) {
-        // The stream was not yet open. Nothing ot do
+        // The stream was not yet open. Nothing to do
       }
     }
 
