@@ -326,7 +326,6 @@ class UploadCubit extends Cubit<UploadState> {
         await bundleHandle.prepareAndSignBundleTransaction(
           arweaveService: _arweave,
           turboService: _turbo,
-          driveDao: _driveDao,
           pstService: _pst,
           wallet: profile.wallet,
           isArConnect: await _profileCubit.isCurrentProfileArConnect(),
@@ -346,6 +345,7 @@ class UploadCubit extends Cubit<UploadState> {
           .handleError((_) => addError('Fatal upload error.'))) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
+      await bundleHandle.writeBundleItemsToDatabase(driveDao: _driveDao);
 
       debugPrint('Disposing bundle');
 
