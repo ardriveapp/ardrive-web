@@ -28,7 +28,7 @@ void main() {
 
   group('AddWalletFile', () {
     blocTest(
-      'should emit the event to prompt password wehn user is an existing one',
+      'should emit the event to prompt password when user is an existing one',
       build: () {
         return LoginBloc(
           arDriveAuth: mockArDriveAuth,
