@@ -15,7 +15,7 @@ void main() {
       checker = InternetChecker(connectivity: mockConnectivity);
     });
 
-    test('should return true if connected to internet', () async {
+    test('should return true if connected to mobile internet', () async {
       when(() => mockConnectivity.checkConnectivity())
           .thenAnswer((_) async => ConnectivityResult.mobile);
       expect(await checker.isConnected(), isTrue);
