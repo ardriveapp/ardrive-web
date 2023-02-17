@@ -171,8 +171,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
+    final isArConnectProfile = await _profileCubit.isCurrentProfileArConnect();
 
-    if (await _profileCubit.isCurrentProfileArConnect()) {
+    if (isArConnectProfile) {
       await _prepareEntityTxArConnect();
     } else {
       _preparedTx = await _arweave.prepareEntityTx(
@@ -186,7 +187,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     await _pst.addCommunityTipToTx(_preparedTx);
 
-    if (await _profileCubit.isCurrentProfileArConnect()) {
+    if (isArConnectProfile) {
       await _signTxWithArConnect();
     } else {
       // ignore: avoid_print
