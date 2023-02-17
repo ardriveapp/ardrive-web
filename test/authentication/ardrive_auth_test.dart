@@ -142,7 +142,7 @@ void main() {
       expect(user.profileType, loggedUser.profileType);
     });
 
-    test('should return the user when has not password', () async {
+    test('should return the user when there\'s no password', () async {
       // arrange
       // no private drives
       when(() => mockArweaveService.getFirstPrivateDriveTxId(wallet,
