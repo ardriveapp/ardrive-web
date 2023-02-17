@@ -53,7 +53,8 @@ class CreateSnapshotDialog extends StatelessWidget {
         if (snapshotCubitState is CreateSnapshotInitial) {
           return _explanationDialog(context, drive);
         } else if (snapshotCubitState is ComputingSnapshotData ||
-            snapshotCubitState is UploadingSnapshot) {
+            snapshotCubitState is UploadingSnapshot ||
+            snapshotCubitState is PreparingAndSigningTransaction) {
           return _loadingDialog(context, snapshotCubitState);
         } else if (snapshotCubitState is SnapshotUploadSuccess) {
           return _successDialog(context, drive.name);
@@ -140,6 +141,10 @@ Widget _loadingDialog(
   BuildContext context,
   CreateSnapshotState snapshotCubitState,
 ) {
+  bool isArConnectProfile = snapshotCubitState is PreparingAndSigningTransaction
+      ? snapshotCubitState.isArConnectProfile
+      : false;
+
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
   final onDismiss = snapshotCubitState is ComputingSnapshotData
       ? () {
@@ -148,23 +153,40 @@ Widget _loadingDialog(
         }
       : null;
 
+  final String title = snapshotCubitState is ComputingSnapshotData
+      ? appLocalizationsOf(context).determiningSizeAndCostOfSnapshot
+      : snapshotCubitState is PreparingAndSigningTransaction
+          ? (isArConnectProfile
+              ? appLocalizationsOf(context).finishingThingsUp
+              : appLocalizationsOf(context).determiningSizeAndCostOfSnapshot)
+          : appLocalizationsOf(context).uploadingSnapshot;
+
+  final String description = snapshotCubitState is ComputingSnapshotData
+      ? appLocalizationsOf(context).thisMayTakeAWhile
+      : snapshotCubitState is PreparingAndSigningTransaction &&
+              isArConnectProfile
+          ? appLocalizationsOf(context).pleaseRemainOnThisTabSnapshots
+          : appLocalizationsOf(context).thisMayTakeAWhile;
+
   return ProgressDialog(
-    title: snapshotCubitState is ComputingSnapshotData
-        ? appLocalizationsOf(context).determiningSizeAndCostOfSnapshot
-        : appLocalizationsOf(context).uploadingSnapshot,
+    title: title,
     progressDescription: Center(
-      child: snapshotCubitState is ComputingSnapshotData
-          ? Text(appLocalizationsOf(context).thisMayTakeAWhile)
-          : null,
+      child: Text(description),
     ),
     actions: [
-      if (onDismiss != null)
+      if (onDismiss != null) ...{
         TextButton(
           onPressed: onDismiss,
           child: Text(
             appLocalizationsOf(context).cancelEmphasized,
           ),
         ),
+      } else if (snapshotCubitState is PreparingAndSigningTransaction &&
+          !isArConnectProfile) ...{
+        SizedBox(
+          height: Theme.of(context).buttonTheme.height,
+        ),
+      }
     ],
   );
 }

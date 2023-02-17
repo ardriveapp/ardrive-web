@@ -21,6 +21,15 @@ class ComputingSnapshotData extends CreateSnapshotState {
   List<Object> get props => [driveId, range];
 }
 
+class PreparingAndSigningTransaction extends CreateSnapshotState {
+  final bool isArConnectProfile;
+
+  PreparingAndSigningTransaction({required this.isArConnectProfile});
+
+  @override
+  List<Object> get props => [isArConnectProfile];
+}
+
 class ComputeSnapshotDataFailure extends CreateSnapshotState {
   final String errorMessage;
 

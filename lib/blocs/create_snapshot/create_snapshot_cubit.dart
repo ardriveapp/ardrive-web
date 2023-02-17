@@ -170,6 +170,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     print('About to prepare and sign snapshot transaction');
 
     final isArConnectProfile = await _profileCubit.isCurrentProfileArConnect();
+    emit(PreparingAndSigningTransaction(
+      isArConnectProfile: isArConnectProfile,
+    ));
 
     await _prepareTx(isArConnectProfile);
     await _pst.addCommunityTipToTx(_preparedTx);
