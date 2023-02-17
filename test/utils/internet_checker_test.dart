@@ -21,7 +21,7 @@ void main() {
       expect(await checker.isConnected(), isTrue);
     });
 
-    test('should return true if connected to internet', () async {
+    test('should return true if connected to wifi internet', () async {
       when(() => mockConnectivity.checkConnectivity())
           .thenAnswer((_) async => ConnectivityResult.wifi);
       expect(await checker.isConnected(), isTrue);
