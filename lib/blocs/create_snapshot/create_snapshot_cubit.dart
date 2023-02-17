@@ -173,38 +173,24 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final wallet = profile.wallet;
     final isArConnectProfile = await _profileCubit.isCurrentProfileArConnect();
 
-    if (isArConnectProfile) {
-      await _prepareEntityTxArConnect();
-    } else {
-      _preparedTx = await _arweave.prepareEntityTx(
-        snapshotEntity,
-        wallet,
-        null,
-        // We'll sign it just after adding the tip
-        skipSignature: true,
-      );
-    }
+    await _prepareEntityTx(isArConnectProfile);
 
     await _pst.addCommunityTipToTx(_preparedTx);
 
-    if (isArConnectProfile) {
-      await _signTxWithArConnect();
-    } else {
-      // ignore: avoid_print
-      print('Signing snapshot with JSON wallet');
-      await _preparedTx.sign(wallet);
-    }
+    await _signTx(isArConnectProfile);
 
     snapshotEntity.txId = _preparedTx.id;
   }
 
-  Future<void> _prepareEntityTxArConnect() async {
+  Future<void> _prepareEntityTx(bool isArConnectProfile) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
 
     try {
       // ignore: avoid_print
-      print('Preparing snapshot transaction with ArConnect');
+      print(
+        'Preparing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
+      );
       _preparedTx = await _arweave.prepareEntityTx(
         _snapshotEntity!,
         wallet,
@@ -213,13 +199,13 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         skipSignature: true,
       );
     } catch (_) {
-      if (isBrowserTabHidden()) {
+      if (isArConnectProfile && isBrowserTabHidden()) {
         // ignore: avoid_print
         print(
           'Preparing snapshot transaction while user is not focusing the tab. Waiting...',
         );
         await whenBrowserTabIsUnhiddenFuture(
-          _prepareEntityTxArConnect,
+          _prepareEntityTx,
         );
       } else {
         rethrow;
@@ -227,21 +213,23 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     }
   }
 
-  Future<void> _signTxWithArConnect() async {
+  Future<void> _signTx(bool isArConnectProfile) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
 
     try {
       // ignore: avoid_print
-      print('Signing snapshot transaction with ArConnect');
+      print(
+        'Signing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
+      );
       await _preparedTx.sign(wallet);
     } catch (e) {
-      if (isBrowserTabHidden()) {
+      if (isArConnectProfile && isBrowserTabHidden()) {
         // ignore: avoid_print
         print(
           'Signing snapshot transaction while user is not focusing the tab. Waiting...',
         );
-        await whenBrowserTabIsUnhiddenFuture(_signTxWithArConnect);
+        await whenBrowserTabIsUnhiddenFuture(_signTx);
       } else {
         rethrow;
       }
