@@ -82,7 +82,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     _setupSnapshotEntityWithBlob(data);
 
-    await _prepareSnapshotTx(
+    await _prepareAndSignTx(
       _snapshotEntity!,
       data,
     );
@@ -162,29 +162,33 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     return snapshotItemToBeCreated;
   }
 
-  Future<void> _prepareSnapshotTx(
+  Future<void> _prepareAndSignTx(
     SnapshotEntity snapshotEntity,
     Uint8List data,
   ) async {
     // ignore: avoid_print
-    print('About to prepare snapshot transaction');
+    print('About to prepare and sign snapshot transaction');
 
-    final profile = _profileCubit.state as ProfileLoggedIn;
-    final wallet = profile.wallet;
     final isArConnectProfile = await _profileCubit.isCurrentProfileArConnect();
 
-    await _prepareEntityTx(isArConnectProfile);
-
+    await _prepareTx(isArConnectProfile);
     await _pst.addCommunityTipToTx(_preparedTx);
-
     await _signTx(isArConnectProfile);
 
     snapshotEntity.txId = _preparedTx.id;
   }
 
-  Future<void> _prepareEntityTx(bool isArConnectProfile) async {
+  Future<void> _prepareTx(bool isArConnectProfile) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
+
+    if (isArConnectProfile) {
+      try {
+        await closeVisibilityChangeStream();
+      } catch (_) {
+        // The stream was not yet open. Nothing ot do
+      }
+    }
 
     try {
       // ignore: avoid_print
@@ -205,7 +209,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
           'Preparing snapshot transaction while user is not focusing the tab. Waiting...',
         );
         await whenBrowserTabIsUnhiddenFuture(
-          _prepareEntityTx,
+          _prepareTx,
         );
       } else {
         rethrow;
@@ -216,6 +220,14 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   Future<void> _signTx(bool isArConnectProfile) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
+
+    if (isArConnectProfile) {
+      try {
+        await closeVisibilityChangeStream();
+      } catch (_) {
+        // The stream was not yet open. Nothing ot do
+      }
+    }
 
     try {
       // ignore: avoid_print
