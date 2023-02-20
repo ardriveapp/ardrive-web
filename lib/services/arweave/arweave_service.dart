@@ -111,6 +111,10 @@ class ArweaveService {
         );
   }
 
+  Future<T?> getTransaction<T extends Transaction>(String txId) async {
+    return client.transactions.get<T>(txId);
+  }
+
   Future<TransactionCommonMixin?> getTransactionDetails(String txId) async {
     final query = await _gql.execute(TransactionDetailsQuery(
         variables: TransactionDetailsArguments(txId: txId)));

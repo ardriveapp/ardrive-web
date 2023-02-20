@@ -64,6 +64,45 @@ Future<Uint8List> decryptTransactionData(
   throw ArgumentError();
 }
 
+/// Decrypts the provided transaction details and data into a [Uint8List] using the provided key.
+///
+/// Throws a [TransactionDecryptionException] if decryption fails.
+Future<Stream<Uint8List>> decryptTransactionDataStream(
+  TransactionCommonMixin transaction,
+  Stream<Uint8List> dataStream,
+  Uint8List keyData,
+) async {
+  final cipher = transaction.getTag(EntityTag.cipher);
+
+  switch (cipher) {
+    case Cipher.aes256gcm:
+      final cipherIv =
+          utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv)!);
+
+      final aesGcm = await AesGcmStream.fromKeyData(keyData);
+      final res = await aesGcm.decryptStream(
+        cipherIv,
+        dataStream,
+        int.parse(transaction.data.size)
+      );
+      return res.stream;
+    
+    case Cipher.aes256ctr:
+      final cipherIv =
+          utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv)!);
+
+      final aesCtr = await AesCtrStream.fromKeyData(keyData);
+      final res = await aesCtr.decryptStream(
+        cipherIv,
+        dataStream,
+        int.parse(transaction.data.size)
+      );
+      return res.stream;
+  }
+
+  throw ArgumentError();
+}
+
 /// Creates a transaction with the provided entity's JSON data encrypted along with the appropriate cipher tags.
 Future<Transaction> createEncryptedEntityTransaction(
         Entity entity, SecretKey key) =>
@@ -92,13 +131,13 @@ Future<Transaction> createEncryptedTransaction(
     );
 }
 
-/// Creates a [Transaction] with the provided data encrypted along with the appropriate cipher tags.
+/// Creates a [TransactionStream] with the provided data encrypted along with the appropriate cipher tags.
 Future<TransactionStream> createEncryptedTransactionStream(
   DataStreamGenerator plaintextDataStreamGenerator,
   int streamLength,
   SecretKey key,
 ) async {
-  final keyData = await key.extractBytes() as Uint8List;
+  final keyData = Uint8List.fromList(await key.extractBytes());
   final aesCtr = await AesCtrStream.fromKeyData(keyData);
   
   final encryptStreamResult = await aesCtr.encryptStreamGenerator(plaintextDataStreamGenerator, streamLength);
