@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/services/crypto/stream_cipher.dart';
 import 'package:ardrive/utils/streams.dart';
+import 'package:convert/convert.dart';
 import 'package:flutter/material.dart';
 import 'package:webcrypto/webcrypto.dart';
 
@@ -11,11 +12,14 @@ const _aesNonceLengthBytes = 12;
 const _aesCounterLengthBytes = _aesBlockLengthBytes - _aesNonceLengthBytes;
 const _aesGcmTagLengthBytes = 16;
 
-enum AesKeyLength { aes128, aes192, aes256 }
-
 const _aes128KeyLengthBytes = 16;
 const _aes192KeyLengthBytes = 24;
 const _aes256KeyLengthBytes = 32;
+
+const _webCryptoMaxChunkSizeBytes = 4096;
+const _webCryptoMaxChuckSizeBlocks = _webCryptoMaxChunkSizeBytes ~/ 16;
+
+enum AesKeyLength { aes128, aes192, aes256 }
 
 abstract class AesStream extends CipherStream {
   static Map<AesKeyLength, int> keyLengthsBytes = {
@@ -54,15 +58,21 @@ class AesCtrStream extends AesStream with EncryptStream, DecryptStream {
     Uint8List nonce,
     int streamLength,
   ) {
-    final counterInitBytes = _ctrCounterInitBytes(nonce);
-
     return StreamTransformer.fromBind(
-      (plaintextStream) {
-        return _aesCtr.encryptStream(
-          plaintextStream,
-          counterInitBytes,
-          _aesBlockLengthBytes * 8,
-        );
+      (plaintextStream) async* {
+        final plainTextStreamChunked = plaintextStream
+          .transform(chunkTransformer(_webCryptoMaxChunkSizeBytes));
+        
+        var offsetBlocks = BigInt.from(0);
+        await for (final chunk in plainTextStreamChunked) {
+          final counterInitBytes = _ctrCounterInitBytes(nonce, offsetBlocks);
+          yield await _aesCtr.encryptBytes(
+            chunk,
+            counterInitBytes,
+            _aesCounterLengthBytes * 8,
+          );
+          offsetBlocks += BigInt.from(_webCryptoMaxChuckSizeBlocks);
+        }
       }
     );
   }
@@ -72,22 +82,29 @@ class AesCtrStream extends AesStream with EncryptStream, DecryptStream {
     Uint8List nonce,
     int streamLength,
   ) {
-    final counterInitBytes = _ctrCounterInitBytes(nonce);
-
     return StreamTransformer.fromBind(
-      (ciphertextStream) {
-        return _aesCtr.decryptStream(
-          ciphertextStream,
-          counterInitBytes,
-          _aesBlockLengthBytes * 8,
-        );
+      (ciphertextStream) async* {
+        final ciphertextStreamChunked = ciphertextStream
+          .transform(chunkTransformer(_webCryptoMaxChunkSizeBytes));
+        
+        var offsetBlocks = BigInt.from(0);
+        await for (final chunk in ciphertextStreamChunked) {
+          final counterInitBytes = _ctrCounterInitBytes(nonce, offsetBlocks);
+          yield await _aesCtr.decryptBytes(
+            chunk,
+            counterInitBytes,
+            _aesCounterLengthBytes * 8,
+          );
+          offsetBlocks += BigInt.from(_webCryptoMaxChuckSizeBlocks);
+        }
       }
     );
   }
 
-  _ctrCounterInitBytes(Uint8List nonce) {
-    final ctrBytes = List.filled(_aesCounterLengthBytes, 0);
-    return Uint8List.fromList(nonce.toList()..addAll(ctrBytes));
+  _ctrCounterInitBytes(Uint8List nonce, BigInt offset) {
+    final offsetHex = offset.toRadixString(16).padLeft(8, '0');
+    final counter = Uint8List.fromList(hex.decode(offsetHex));
+    return Uint8List.fromList(nonce.toList()..addAll(counter));
   }
 }
 
@@ -118,11 +135,13 @@ class AesGcmStream extends AesStream with DecryptStream {
       (ciphertextStream) {
         final ciphertextStreamNoMac = ciphertextStream
           .transform(trimData(streamLengthNoMac));
+        final ciphertextStreamNoMacChunked = ciphertextStreamNoMac
+          .transform(chunkTransformer(_webCryptoMaxChunkSizeBytes));
         
         return _aesCtr.decryptStream(
-          ciphertextStreamNoMac,
+          ciphertextStreamNoMacChunked,
           counterInitBytes,
-          _aesBlockLengthBytes * 8,
+          _aesCounterLengthBytes * 8,
         );
       }
     );
