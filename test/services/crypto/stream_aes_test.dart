@@ -1,3 +1,6 @@
+// Fails to compile when testing on chrome
+@TestOn('vm')
+
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -13,9 +16,10 @@ const _aesNonceLengthBytes = 12;
 
 final _testKey = sequentialBytes(_aes256KeyLengthBytes);
 
-const _testDataLength = 50;
+const _testDataLength = 123 * 1024 + 123;
 final _testData = sequentialBytes(_testDataLength);
-Stream<Uint8List> _testDataStreamGen() => bufferToStream(_testData, chunkSize: 20);
+Stream<Uint8List> _testDataStreamGen() => 
+  bufferToStream(_testData, chunkSize: 12 * 1024 + 321);
 
 main() {
   late final AesCtrStream ctr;

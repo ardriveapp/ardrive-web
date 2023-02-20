@@ -6,7 +6,7 @@ Uint8List sequentialBytes(int length) {
 }
 
 Stream<Uint8List> bufferToStream(Uint8List buffer, {int chunkSize=10}) async* {
-  for (var i = 0; i < buffer.length; i += chunkSize) {
-    yield buffer.sublist(i, min(i + chunkSize, buffer.length));
+  for (var offset = 0; offset < buffer.length; offset += chunkSize) {
+    yield Uint8List.sublistView(buffer, offset, min(offset + chunkSize, buffer.length));
   }
 }
