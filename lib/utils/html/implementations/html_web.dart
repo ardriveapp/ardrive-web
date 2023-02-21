@@ -2,28 +2,28 @@ import 'dart:async';
 
 import 'package:universal_html/html.dart';
 
-bool isTabHidden() {
-  return window.document.visibilityState != 'visible';
+bool isTabFocused() {
+  return window.document.visibilityState == 'visible';
 }
 
 late StreamSubscription _onVisibilityChangeStream;
 
-Future<void> whenTabIsUnhiddenFuture(FutureOr<Function> onShow) async {
+Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
   final completer = Completer<void>();
   _onVisibilityChangeStream = document.onVisibilityChange.listen((event) async {
-    if (!isTabHidden()) {
-      await onShow;
+    if (!isTabFocused()) {
+      await onFocus;
       await closeVisibilityChangeStream();
-      completer.complete(); // resolve the completer when onShow completes
+      completer.complete(); // resolve the completer when onFocus completes
     }
   });
   await completer.future; // wait for the completer to be resolved
 }
 
-void whenTabIsUnhidden(Function onShow) {
+void onTabGetsFocused(Function onFocus) {
   _onVisibilityChangeStream = document.onVisibilityChange.listen((event) {
-    if (!isTabHidden()) {
-      onShow();
+    if (!isTabFocused()) {
+      onFocus();
     }
   });
 }

@@ -195,12 +195,12 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         skipSignature: true,
       );
     } catch (_) {
-      if (isArConnectProfile && isBrowserTabHidden()) {
+      if (isArConnectProfile && !isTabFocused()) {
         // ignore: avoid_print
         print(
           'Preparing snapshot transaction while user is not focusing the tab. Waiting...',
         );
-        await whenBrowserTabIsUnhiddenFuture(
+        await onTabGetsFocusedFuture(
           _prepareTx,
         );
       } else {
@@ -228,12 +228,12 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       );
       await _preparedTx.sign(wallet);
     } catch (e) {
-      if (isArConnectProfile && isBrowserTabHidden()) {
+      if (isArConnectProfile && !isTabFocused()) {
         // ignore: avoid_print
         print(
           'Signing snapshot transaction while user is not focusing the tab. Waiting...',
         );
-        await whenBrowserTabIsUnhiddenFuture(_signTx);
+        await onTabGetsFocusedFuture(_signTx);
       } else {
         rethrow;
       }
