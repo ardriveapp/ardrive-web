@@ -257,7 +257,7 @@ class PromptWalletView extends StatefulWidget {
 }
 
 class _PromptWalletViewState extends State<PromptWalletView> {
-  bool _isTermsChecked = true;
+  bool _isTermsChecked = false;
   IOFile? _file;
 
   @override
