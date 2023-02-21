@@ -103,7 +103,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void restartSyncOnFocus() {
-    whenBrowserTabIsUnhidden(_restartSync);
+    onTabGetsFocused(_restartSync);
   }
 
   void _restartSync() {
@@ -148,7 +148,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> arconnectSync() async {
-    if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
+    if (isTabFocused() && await _profileCubit.logoutIfWalletMismatch()) {
       emit(SyncWalletMismatch());
       return;
     }
@@ -156,7 +156,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   void restartArConnectSyncOnFocus() async {
     if (await _profileCubit.isCurrentProfileArConnect()) {
-      whenBrowserTabIsUnhidden(() {
+      onTabGetsFocused(() {
         Future.delayed(const Duration(seconds: 2))
             .then((value) => createArConnectSyncStream());
       });
@@ -200,7 +200,7 @@ class SyncCubit extends Cubit<SyncState> {
 
         logSync('User is ar connect? $isArConnect');
 
-        if (isArConnect && isBrowserTabHidden()) {
+        if (isArConnect && !isTabFocused()) {
           logSync('Tab hidden, skipping sync...');
           emit(SyncIdle());
           return;
