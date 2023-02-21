@@ -552,29 +552,7 @@ class _PromptPasswordViewState extends State<PromptPasswordView> {
                 alignment: Alignment.bottomCenter,
                 child: ArDriveButton(
                   onPressed: () {
-                    final actions = [
-                      ModalAction(
-                        action: () {
-                          Navigator.pop(context);
-                        },
-                        title: appLocalizationsOf(context).cancel,
-                      ),
-                      ModalAction(
-                        action: () {
-                          Navigator.pop(context);
-
-                          context.read<LoginBloc>().add(const ForgetWallet());
-                        },
-                        title: appLocalizationsOf(context).ok,
-                      )
-                    ];
-                    showStandardDialog(
-                      context,
-                      title: appLocalizationsOf(context).forgetWalletTitle,
-                      content:
-                          appLocalizationsOf(context).forgetWalletDescription,
-                      actions: actions,
-                    );
+                    _forgetWallet(context);
                   },
                   style: ArDriveButtonStyle.tertiary,
                   text: appLocalizationsOf(context).forgetWallet,
@@ -733,28 +711,7 @@ class _CreatePasswordViewState extends State<CreatePasswordView> {
             alignment: Alignment.bottomCenter,
             child: ArDriveButton(
               onPressed: () {
-                final actions = [
-                  ModalAction(
-                    action: () {
-                      Navigator.pop(context);
-                    },
-                    title: appLocalizationsOf(context).cancel,
-                  ),
-                  ModalAction(
-                    action: () {
-                      Navigator.pop(context);
-
-                      context.read<LoginBloc>().add(const ForgetWallet());
-                    },
-                    title: appLocalizationsOf(context).ok,
-                  )
-                ];
-                showStandardDialog(
-                  context,
-                  title: appLocalizationsOf(context).forgetWalletTitle,
-                  content: appLocalizationsOf(context).forgetWalletDescription,
-                  actions: actions,
-                );
+                _forgetWallet(context);
               },
               style: ArDriveButtonStyle.tertiary,
               text: appLocalizationsOf(context).forgetWallet,
@@ -1108,4 +1065,31 @@ class _FadeThroughTransitionSwitcher extends StatelessWidget {
       child: child,
     );
   }
+}
+
+void _forgetWallet(
+  BuildContext context,
+) {
+  final actions = [
+    ModalAction(
+      action: () {
+        Navigator.pop(context);
+      },
+      title: appLocalizationsOf(context).cancel,
+    ),
+    ModalAction(
+      action: () {
+        Navigator.pop(context);
+
+        context.read<LoginBloc>().add(const ForgetWallet());
+      },
+      title: appLocalizationsOf(context).ok,
+    )
+  ];
+  showStandardDialog(
+    context,
+    title: appLocalizationsOf(context).forgetWalletTitle,
+    content: appLocalizationsOf(context).forgetWalletDescription,
+    actions: actions,
+  );
 }
