@@ -104,14 +104,16 @@ void main() {
             )).thenAnswer((_) async => loggedUser);
       },
       act: (bloc) async {
+        bloc.profileType = ProfileType.json;
+
         bloc.add(LoginWithPassword(
           wallet: wallet,
           password: 'password',
         ));
-        bloc.profileType = ProfileType.json;
       },
       expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
     );
+
     blocTest(
       'should emit success when arconnect and wallet doesnt mismatch',
       build: () {
@@ -386,6 +388,35 @@ void main() {
         const TypeMatcher<LoginFailure>(),
         const PromptPassword()
       ],
+    );
+
+    blocTest(
+      'should emit success when user is created with success with ar connect',
+      build: () {
+        return LoginBloc(
+          arDriveAuth: mockArDriveAuth,
+          arConnectService: mockArConnectService,
+        );
+      },
+      setUp: () {
+        when(() => mockArDriveAuth.login(
+              any(),
+              'password',
+              ProfileType.arConnect,
+            )).thenAnswer((_) async => loggedUser);
+        when(() => mockArConnectService.getWalletAddress())
+            .thenAnswer((invocation) => Future.value('some address'));
+      },
+      act: (bloc) async {
+        bloc.lastKnownWalletAddress = 'some address';
+        bloc.profileType = ProfileType.arConnect;
+
+        bloc.add(CreatePassword(
+          wallet: wallet,
+          password: 'password',
+        ));
+      },
+      expect: () => [LoginLoading(), const TypeMatcher<LoginSuccess>()],
     );
 
     blocTest(

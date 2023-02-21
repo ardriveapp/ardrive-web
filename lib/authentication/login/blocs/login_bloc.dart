@@ -94,18 +94,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     try {
       emit(LoginLoading());
 
-      if (profileType == ProfileType.arConnect &&
-          lastKnownWalletAddress !=
-              await _arConnectService.getWalletAddress()) {
-        emit(const LoginFailure(WalletMismatchException()));
-        emit(previousState);
-        return;
-      }
-
-      final user =
-          await _arDriveAuth.login(event.wallet, event.password, profileType!);
-
-      emit(LoginSuccess(user));
+      await _verifyArConnectWalletAddressAndLogin(
+        wallet: event.wallet,
+        password: event.password,
+        emit: emit,
+        previousState: previousState,
+        profileType: profileType!,
+      );
     } catch (e) {
       emit(LoginFailure(e));
       emit(previousState);
@@ -149,22 +144,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     emit(LoginLoading());
 
     try {
-      if (profileType == ProfileType.arConnect &&
-          lastKnownWalletAddress !=
-              await _arConnectService.getWalletAddress()) {
-        emit(const LoginFailure(WalletMismatchException()));
-        emit(previousState);
-
-        return;
-      }
-
-      final user = await _arDriveAuth.login(
-        event.wallet,
-        event.password,
-        profileType!,
+      await _verifyArConnectWalletAddressAndLogin(
+        wallet: event.wallet,
+        password: event.password,
+        emit: emit,
+        previousState: previousState,
+        profileType: profileType!,
       );
-
-      emit(LoginSuccess(user));
     } catch (e) {
       emit(LoginFailure(e));
       emit(previousState);
@@ -213,5 +199,38 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _handleFinishOnboardingEvent(
       FinishOnboarding event, Emitter<LoginState> emit) async {
     emit(CreatingNewPassword(walletFile: event.wallet));
+  }
+
+  Future<bool> _verifyArConnectWalletAddress() async {
+    if (profileType != ProfileType.arConnect) {
+      return true;
+    }
+
+    return lastKnownWalletAddress == await _arConnectService.getWalletAddress();
+  }
+
+  Future<void> _verifyArConnectWalletAddressAndLogin({
+    required Wallet wallet,
+    required String password,
+    required ProfileType profileType,
+    required LoginState previousState,
+    required Emitter<LoginState> emit,
+  }) async {
+    final isArConnectAddressValid = await _verifyArConnectWalletAddress();
+
+    if (!isArConnectAddressValid) {
+      emit(const LoginFailure(WalletMismatchException()));
+      emit(previousState);
+
+      return;
+    }
+
+    final user = await _arDriveAuth.login(
+      wallet,
+      password,
+      profileType,
+    );
+
+    emit(LoginSuccess(user));
   }
 }
