@@ -117,6 +117,8 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
         totalByteCount: _file.size,
       ),
     );
+    
+    final dataTx = (await _arweave.getTransactionDetails(_file.txId))!;
 
     final fetchStream = _downloadService.downloadStream(_file.txId, _file.size);
 
@@ -150,10 +152,9 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
       }
 
       final fileKey = await _driveDao.getFileKey(_file.id, driveKey);
-      final dataTx = await (_arweave.getTransactionDetails(_file.txId));
 
       saveStreamDecrypted = await _decrypt.decryptTransactionDataStream(
-        dataTx!,
+        dataTx,
         saveStream,
         Uint8List.fromList(await fileKey.extractBytes()),
       );
@@ -169,19 +170,13 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
     );
 
     try {
-      Future<bool> authenticate() async {
-        final transaction = await _arweave.getTransaction<TransactionStream>(_file.txId);
-        if (transaction == null) throw Exception('Failed to get transaction');
-        try {
-          await transaction.processDataStream(authStream, _file.size);
-        } catch (e) {
-          debugPrint('Failed to authenticate file: $e');
-          return false;
-        }
-        return await transaction.verify();
-      }
-      final authenticated = authenticate();
-
+      final authenticated = authenticate(
+        _arweave,
+        authStream,
+        _file.size,
+        _file.txId,
+        dataTx, 
+      );
       final saved = await _ardriveIo.saveFileStream(file, authenticated);
       if (!(await authenticated)) throw Exception('Failed authentication');
       if (!saved) throw Exception('Failed to save file');

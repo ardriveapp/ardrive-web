@@ -44,7 +44,10 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
       ),
     );
 
+    final dataTx = (await _arweave.getTransactionDetails(revision.dataTxId))!;
+    
     final fetchStream = _downloadService.downloadStream(revision.dataTxId, revision.size);
+    
     final splitStream = StreamSplitter(fetchStream);
     final authStream = splitStream.split();
     unawaited(splitStream.close());
@@ -53,10 +56,8 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
     if (fileKey == null) {
       decryptedDataStream = splitStream.split();
     } else {
-      final dataTx = await (_arweave.getTransactionDetails(revision.dataTxId));
-
       decryptedDataStream = await _decrypt.decryptTransactionDataStream(
-        dataTx!,
+        dataTx,
         splitStream.split(),
         Uint8List.fromList(await fileKey!.extractBytes()),
       );
@@ -70,19 +71,15 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
     );
 
     try {
-      final transaction = await _arweave.getTransaction<TransactionStream>(revision.dataTxId);
-      if (transaction == null) throw Exception('Failed to get transaction');
-      
-      Future<bool> authenticate() async {
-        try {
-          await transaction.processDataStream(authStream, revision.size);
-        } catch (e) {
-          return false;
-        }
-        return await transaction.verify();
-      }
-
-      final saved = await _ardriveIo.saveFileStream(file, authenticate());
+      final authenticated = authenticate(
+        _arweave,
+        authStream,
+        revision.size,
+        revision.dataTxId,
+        dataTx, 
+      );
+      final saved = await _ardriveIo.saveFileStream(file, authenticated);
+      if (!(await authenticated)) throw Exception('Failed authentication');
       if (!saved) throw Exception('Failed to save file');
 
       emit(

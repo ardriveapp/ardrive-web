@@ -1,5 +1,8 @@
 fragment TransactionCommon on Transaction {
   id
+  anchor
+  signature
+  recipient
   owner {
     address
   }
