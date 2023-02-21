@@ -51,6 +51,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     required this.wallet,
     this.driveKey,
     this.fileKey,
+    this.hasError = false,
   });
 
   Future<void> writeFileEntityToDatabase({
@@ -173,4 +174,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
   // Returning a static count here to save memory and avoid any unneccessary data duplication
   @override
   int get dataItemCount => fileDataItemEntityCount;
+
+  @override
+  bool hasError;
 }

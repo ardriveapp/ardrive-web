@@ -416,12 +416,14 @@ class UploadForm extends StatelessWidget {
                             title: Text(file.entity.name!),
                             subtitle: Text(
                                 '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
-                            trailing: CircularProgressIndicator(
-                                // Show an indeterminate progress indicator if the upload hasn't started yet as
-                                // small uploads might never report a progress.
-                                value: file.uploadProgress != 0
-                                    ? file.uploadProgress
-                                    : null),
+                            trailing: file.hasError
+                                ? const Icon(Icons.error)
+                                : CircularProgressIndicator(
+                                    // Show an indeterminate progress indicator if the upload hasn't started yet as
+                                    // small uploads might never report a progress.
+                                    value: file.uploadProgress != 0
+                                        ? file.uploadProgress
+                                        : null),
                           ),
                         },
                         for (final bundle
@@ -437,12 +439,15 @@ class UploadForm extends StatelessWidget {
                             ),
                             subtitle: Text(
                                 '${filesize(bundle.uploadedSize)}/${filesize(bundle.size)}'),
-                            trailing: CircularProgressIndicator(
-                                // Show an indeterminate progress indicator if the upload hasn't started yet as
-                                // small uploads might never report a progress.
-                                value: bundle.uploadProgress != 0
-                                    ? bundle.uploadProgress
-                                    : null),
+                            trailing: bundle.hasError
+                                ? const Icon(Icons.error)
+                                : CircularProgressIndicator(
+                                    // Show an indeterminate progress indicator if the upload hasn't started yet as
+                                    // small uploads might never report a progress.
+                                    value: bundle.uploadProgress != 0
+                                        ? bundle.uploadProgress
+                                        : null,
+                                  ),
                           ),
                         },
                       ],

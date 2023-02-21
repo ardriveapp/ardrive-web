@@ -22,6 +22,7 @@ class BundleUploadHandle implements UploadHandle {
     this.folderDataItemUploadHandles = const [],
     this.useTurbo = false,
     this.size = 0,
+    this.hasError = false,
   }) {
     fileEntities = fileDataItemUploadHandles.map((item) => item.entity);
   }
@@ -101,6 +102,8 @@ class BundleUploadHandle implements UploadHandle {
   Future<void> writeBundleItemsToDatabase({
     required DriveDao driveDao,
   }) async {
+    if (hasError) return;
+
     debugPrint('Writing bundle items to database');
 
     // Write entities to database
@@ -121,7 +124,9 @@ class BundleUploadHandle implements UploadHandle {
     TurboService turboService,
   ) async* {
     if (useTurbo) {
-      await turboService.postDataItem(dataItem: bundleDataItem);
+      await turboService
+          .postDataItem(dataItem: bundleDataItem)
+          .onError((error, stackTrace) => hasError = true);
       yield 1;
     } else {
       yield* arweave.client.transactions
@@ -163,4 +168,7 @@ class BundleUploadHandle implements UploadHandle {
 
   @override
   int get uploadedSize => (size * uploadProgress).round();
+
+  @override
+  bool hasError;
 }

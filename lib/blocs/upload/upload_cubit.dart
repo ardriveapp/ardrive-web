@@ -342,7 +342,7 @@ class UploadCubit extends Cubit<UploadState> {
       await for (final _ in bundleHandle
           .upload(_arweave, _turbo)
           .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) => addError('Fatal upload error.'))) {
+          .handleError((_) => bundleHandle.hasError = true)) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       await bundleHandle.writeBundleItemsToDatabase(driveDao: _driveDao);
@@ -367,10 +367,7 @@ class UploadCubit extends Cubit<UploadState> {
       await for (final _ in uploadHandle
           .upload(_arweave)
           .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) {
-        addError('Fatal upload error.');
-        return;
-      })) {
+          .handleError((_) => uploadHandle.hasError = true)) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
 
