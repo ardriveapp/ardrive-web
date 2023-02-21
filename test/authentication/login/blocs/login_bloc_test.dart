@@ -472,12 +472,8 @@ void main() {
             .thenAnswer((invocation) => Future.value(null));
         when(() => mockArConnectService.checkPermissions())
             .thenAnswer((invocation) => Future.value(true));
-        // when(() => mockArConnectService.getPublicKey())
-        //     .thenAnswer((invocation) => Future.value('wallet'));
         when(() => mockArConnectService.getWalletAddress())
             .thenAnswer((invocation) => Future.value('walletAddress'));
-        // when(() => mockArConnectService.getSignature(any()))
-        //     .thenAnswer((invocation) => Future.value(Uint8List(10)));
         when(() => mockArDriveAuth.isExistingUser(any()))
             .thenAnswer((invocation) => Future.value(true));
       },
