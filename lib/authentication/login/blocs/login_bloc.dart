@@ -202,10 +202,6 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<bool> _verifyArConnectWalletAddress() async {
-    if (profileType != ProfileType.arConnect) {
-      return true;
-    }
-
     return lastKnownWalletAddress == await _arConnectService.getWalletAddress();
   }
 
@@ -216,13 +212,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     required LoginState previousState,
     required Emitter<LoginState> emit,
   }) async {
-    final isArConnectAddressValid = await _verifyArConnectWalletAddress();
+    if (_isArConnectWallet()) {
+      final isArConnectAddressValid = await _verifyArConnectWalletAddress();
+      
+      if (!isArConnectAddressValid) {
+        emit(const LoginFailure(WalletMismatchException()));
+        emit(previousState);
 
-    if (!isArConnectAddressValid) {
-      emit(const LoginFailure(WalletMismatchException()));
-      emit(previousState);
-
-      return;
+        return;
+      }
     }
 
     final user = await _arDriveAuth.login(
@@ -232,5 +230,9 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     );
 
     emit(LoginSuccess(user));
+  }
+
+  bool _isArConnectWallet() {
+    return profileType == ProfileType.arConnect;
   }
 }
