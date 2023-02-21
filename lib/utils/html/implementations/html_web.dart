@@ -13,6 +13,7 @@ Future<void> whenTabIsUnhiddenFuture(FutureOr<Function> onShow) async {
   _onVisibilityChangeStream = document.onVisibilityChange.listen((event) async {
     if (!isTabHidden()) {
       await onShow;
+      await closeVisibilityChangeStream();
       completer.complete(); // resolve the completer when onShow completes
     }
   });
