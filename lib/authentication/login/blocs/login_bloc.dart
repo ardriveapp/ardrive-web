@@ -60,6 +60,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       return wallet;
     } catch (e) {
+      debugPrint('Invalid wallet file: $e');
+      
       return null;
     }
   }
@@ -214,7 +216,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }) async {
     if (_isArConnectWallet()) {
       final isArConnectAddressValid = await _verifyArConnectWalletAddress();
-      
+
       if (!isArConnectAddressValid) {
         emit(const LoginFailure(WalletMismatchException()));
         emit(previousState);
