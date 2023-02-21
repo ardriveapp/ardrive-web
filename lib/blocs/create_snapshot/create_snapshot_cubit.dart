@@ -217,14 +217,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
 
-    if (isArConnectProfile) {
-      try {
-        await closeVisibilityChangeStream();
-      } catch (_) {
-        // The stream was not yet open. Nothing to do
-      }
-    }
-
     try {
       // ignore: avoid_print
       print(
