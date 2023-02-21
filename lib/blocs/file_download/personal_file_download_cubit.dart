@@ -9,7 +9,7 @@ class FileDownloadProgress extends LinearProgress {
   FileDownloadProgress(this.progress);
 }
 
-class ProfileFileDownloadCubit extends FileDownloadCubit {
+class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
   final ARFSFileEntity _file;
 
   final StreamController<LinearProgress> _downloadProgress =
@@ -26,8 +26,10 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   final DownloadService _downloadService;
   final Decrypt _decrypt;
   final ARFSRepository _arfsRepository;
+  final ArDriveIO _ardriveIo;
+  final IOFileAdapter _ioFileAdapter;
 
-  ProfileFileDownloadCubit({
+  StreamPersonalFileDownloadCubit({
     required ARFSFileEntity file,
     required DriveDao driveDao,
     required ArweaveService arweave,
@@ -35,6 +37,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     required DownloadService downloadService,
     required Decrypt decrypt,
     required ARFSRepository arfsRepository,
+    required ArDriveIO ardriveIo,
+    required IOFileAdapter ioFileAdapter,
   })  : _driveDao = driveDao,
         _arweave = arweave,
         _file = file,
@@ -42,6 +46,8 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         _downloadService = downloadService,
         _arfsRepository = arfsRepository,
         _decrypt = decrypt,
+        _ardriveIo = ardriveIo,
+        _ioFileAdapter = ioFileAdapter,
         super(FileDownloadStarting());
 
   Future<void> download(SecretKey? cipherKey) async {
@@ -67,7 +73,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
           await _downloadFile(drive, cipherKey);
           break;
         case DrivePrivacy.public:
-          if (AppPlatform.isMobile) {
+          if (/* AppPlatform.isMobile */ false) {
             final stream = _downloader.downloadFile(
               '${_arweave.client.api.gatewayUrl.origin}/${_file.txId}',
               _file.name,
@@ -112,9 +118,22 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       ),
     );
 
-    final dataBytes = await _downloadService.download(_file.txId);
+    final fetchStream = _downloadService.downloadStream(_file.txId, _file.size);
 
-    if (drive.drivePrivacy == DrivePrivacy.private) {
+    final splitStream = StreamSplitter(fetchStream);
+    final saveStream = splitStream.split();
+    final authStream = splitStream.split();
+
+    // Calling close() indicates that no further streams will be created,
+    // signalling splitStream to function without an internal buffer.
+    // The future will be completed when both streams are consumed, so we
+    // don't need to await it.
+    unawaited(splitStream.close());
+
+    Stream<Uint8List> saveStreamDecrypted;
+    if (drive.drivePrivacy == DrivePrivacy.public) {
+      saveStreamDecrypted = saveStream;
+    } else if (drive.drivePrivacy == DrivePrivacy.private) {
       SecretKey? driveKey;
 
       if (cipherKey != null) {
@@ -133,33 +152,54 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       final fileKey = await _driveDao.getFileKey(_file.id, driveKey);
       final dataTx = await (_arweave.getTransactionDetails(_file.txId));
 
-      if (dataTx != null) {
-        final decryptedData = await _decrypt.decryptTransactionData(
-          dataTx,
-          dataBytes,
-          fileKey,
-        );
-
-        emit(
-          FileDownloadSuccess(
-            bytes: decryptedData,
-            fileName: _file.name,
-            mimeType: _file.contentType ?? lookupMimeType(_file.name),
-            lastModified: _file.lastModifiedDate,
-          ),
-        );
-        return;
-      }
+      saveStreamDecrypted = await _decrypt.decryptTransactionDataStream(
+        dataTx!,
+        saveStream,
+        Uint8List.fromList(await fileKey.extractBytes()),
+      );
+    } else {
+      throw Exception('Invalid drive privacy');
     }
 
-    emit(
-      FileDownloadSuccess(
-        bytes: dataBytes,
-        fileName: _file.name,
-        mimeType: _file.contentType ?? lookupMimeType(_file.name),
-        lastModified: _file.lastModifiedDate,
-      ),
+    final file = await _ioFileAdapter.fromReadStreamGenerator(
+      ([s, e]) => saveStreamDecrypted,
+      _file.size,
+      name: _file.name,
+      lastModifiedDate: _file.lastModifiedDate
     );
+
+    try {
+      Future<bool> authenticate() async {
+        final transaction = await _arweave.getTransaction<TransactionStream>(_file.txId);
+        if (transaction == null) throw Exception('Failed to get transaction');
+        try {
+          await transaction.processDataStream(authStream, _file.size);
+        } catch (e) {
+          debugPrint('Failed to authenticate file: $e');
+          return false;
+        }
+        return await transaction.verify();
+      }
+      final authenticated = authenticate();
+
+      final saved = await _ardriveIo.saveFileStream(file, authenticated);
+      if (!(await authenticated)) throw Exception('Failed authentication');
+      if (!saved) throw Exception('Failed to save file');
+
+      emit(
+        FileDownloadFinishedWithSuccess(
+          fileName: _file.name,
+        ),
+      );
+    } on Exception catch (e) {
+      emit(
+        const FileDownloadFailure(
+          FileDownloadFailureReason.unknownError,
+        ),
+      );
+      debugPrint('Failed to download personal file: $e');
+      return;
+    }
   }
 
   @visibleForTesting

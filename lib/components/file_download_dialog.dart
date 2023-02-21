@@ -29,7 +29,7 @@ Future<void> promptToDownloadProfileFile({
   final profileState = context.read<ProfileCubit>().state;
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
-  final cubit = ProfileFileDownloadCubit(
+  final cubit = StreamPersonalFileDownloadCubit(
     arfsRepository: ARFSRepository(
       context.read<DriveDao>(),
       ARFSFactory(),
@@ -40,6 +40,8 @@ Future<void> promptToDownloadProfileFile({
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
     arweave: context.read<ArweaveService>(),
+    ardriveIo: ArDriveIO(),
+    ioFileAdapter: IOFileAdapter(),
   )..download(cipherKey);
   return showDialog(
     context: context,
@@ -59,7 +61,7 @@ Future<void> promptToDownloadFileRevision({
   final profileState = context.read<ProfileCubit>().state;
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
-  final cubit = ProfileFileDownloadCubit(
+  final cubit = StreamPersonalFileDownloadCubit(
     arfsRepository: ARFSRepository(
       context.read<DriveDao>(),
       ARFSFactory(),
@@ -70,6 +72,8 @@ Future<void> promptToDownloadFileRevision({
     file: arfsFile,
     driveDao: context.read<DriveDao>(),
     arweave: context.read<ArweaveService>(),
+    ardriveIo: ArDriveIO(),
+    ioFileAdapter: IOFileAdapter(),
   )..download(cipherKey);
 
   return showDialog(
@@ -86,10 +90,14 @@ Future<void> promptToDownloadSharedFile({
   SecretKey? fileKey,
   required FileRevision revision,
 }) {
-  final cubit = SharedFileDownloadCubit(
+  final cubit = StreamSharedFileDownloadCubit(
     revision: revision,
     fileKey: fileKey,
     arweave: context.read<ArweaveService>(),
+    downloadService: DownloadService(arweave),
+    decrypt: Decrypt(),
+    ardriveIo: ArDriveIO(),
+    ioFileAdapter: IOFileAdapter(),
   );
   return showDialog(
     context: context,
@@ -105,21 +113,7 @@ class FileDownloadDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      BlocConsumer<FileDownloadCubit, FileDownloadState>(
-        listener: (context, state) async {
-          if (state is FileDownloadSuccess) {
-            final ArDriveIO io = ArDriveIO();
-
-            final file = await IOFile.fromData(
-              state.bytes,
-              name: state.fileName,
-              lastModifiedDate: state.lastModified,
-            );
-
-            // Close modal when save file
-            io.saveFile(file).then((value) => Navigator.pop(context));
-          }
-        },
+      BlocBuilder<FileDownloadCubit, FileDownloadState>(
         builder: (context, state) {
           if (state is FileDownloadStarting) {
             return _downloadStartingDialog(context);
@@ -198,7 +192,7 @@ class FileDownloadDialog extends StatelessWidget {
             final cipherKey =
                 profileState is ProfileLoggedIn ? profileState.cipherKey : null;
 
-            (context.read<FileDownloadCubit>() as ProfileFileDownloadCubit)
+            (context.read<FileDownloadCubit>() as StreamPersonalFileDownloadCubit)
                 .download(cipherKey);
           },
           child: Text(appLocalizationsOf(context).ok),
@@ -309,7 +303,7 @@ class FileDownloadDialog extends StatelessWidget {
             ),
             ProgressBar(
                 percentage: (context.read<FileDownloadCubit>()
-                        as ProfileFileDownloadCubit)
+                        as StreamPersonalFileDownloadCubit)
                     .downloadProgress)
           ],
         ),
