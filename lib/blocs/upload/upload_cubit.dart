@@ -367,7 +367,10 @@ class UploadCubit extends Cubit<UploadState> {
       await for (final _ in uploadHandle
           .upload(_arweave)
           .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) => addError('Fatal upload error.'))) {
+          .handleError((_) {
+        addError('Fatal upload error.');
+        return;
+      })) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
 
