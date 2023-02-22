@@ -5,6 +5,7 @@ fragment TransactionCommon on Transaction {
   recipient
   owner {
     address
+    key
   }
   bundledIn {
     id
