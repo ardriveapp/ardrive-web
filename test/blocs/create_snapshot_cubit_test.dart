@@ -38,6 +38,7 @@ void main() {
       final profileCubit = MockProfileCubit();
       final driveDao = MockDriveDao();
       final pst = MockPstService();
+      final tabVisibility = MockTabVisibilitySingleton();
       final testWallet = getTestWallet();
 
       setUpAll(() async {
@@ -130,6 +131,7 @@ void main() {
           arweave: arweave,
           profileCubit: profileCubit,
           driveDao: driveDao,
+          tabVisibility: tabVisibility,
           pst: pst,
         ),
         expect: () => [],
@@ -141,6 +143,7 @@ void main() {
           arweave: arweave,
           profileCubit: profileCubit,
           driveDao: driveDao,
+          tabVisibility: tabVisibility,
           pst: pst,
         ),
         act: (cubit) => cubit.confirmDriveAndHeighRange(
@@ -164,6 +167,7 @@ void main() {
           arweave: arweave,
           profileCubit: profileCubit,
           driveDao: driveDao,
+          tabVisibility: tabVisibility,
           pst: pst,
         ),
         act: (cubit) => cubit
@@ -191,8 +195,9 @@ void main() {
           arweave: arweave,
           profileCubit: profileCubit,
           driveDao: driveDao,
+          tabVisibility: tabVisibility,
           pst: pst,
-          forceFailOnDataComputingForTesting: true,
+          throwOnDataComputingForTesting: true,
         ),
         act: (cubit) => cubit.confirmDriveAndHeighRange(
           'driveId',
@@ -213,6 +218,7 @@ void main() {
           arweave: arweave,
           profileCubit: profileCubit,
           driveDao: driveDao,
+          tabVisibility: tabVisibility,
           pst: pst,
         ),
         act: (cubit) => cubit.confirmDriveAndHeighRange(
@@ -235,8 +241,9 @@ void main() {
           arweave: arweave,
           profileCubit: profileCubit,
           driveDao: driveDao,
+          tabVisibility: tabVisibility,
           pst: pst,
-          forceFailOnDataComputingForTesting: true,
+          throwOnDataComputingForTesting: true,
         ),
         act: (cubit) => cubit.confirmDriveAndHeighRange(
           'driveId',
@@ -257,6 +264,7 @@ void main() {
           arweave: arweave,
           profileCubit: profileCubit,
           driveDao: driveDao,
+          tabVisibility: tabVisibility,
           pst: pst,
         ),
         act: (cubit) async {
@@ -281,6 +289,97 @@ void main() {
           CreateSnapshotInitial(),
         ],
       );
+
+      group('CreateSnapshotCubit - ArConnect', () {
+        setUp(() {
+          // mocks the isCurrentProfileArConnect method
+          when(() => profileCubit.isCurrentProfileArConnect()).thenAnswer(
+            (_) => Future.value(true),
+          );
+
+          // mocks arweave service: throws 1st time, suceed the next ones
+          final prepareEntityTxResponses = [
+            (_) => throw Exception('Fake error on prepare entity tx'),
+            (invocation) => fakePrepareTransaction(invocation)
+          ];
+          when(
+            () => arweave.prepareEntityTx(
+              any(),
+              any(),
+              any(),
+              skipSignature: any(named: 'skipSignature'),
+            ),
+          ).thenAnswer(
+            (invocation) async {
+              return await prepareEntityTxResponses.removeAt(0)(invocation);
+            },
+          );
+
+          // mocks the TabVisibilitySingleton class
+          final responses = [false, false, true];
+          when(() => tabVisibility.isTabFocused()).thenAnswer(
+            (_) => responses.removeAt(0),
+          );
+
+          when(() => tabVisibility.onTabGetsFocusedFuture(any())).thenAnswer(
+            (invocation) async {
+              await Future.delayed(const Duration(milliseconds: 10));
+              await invocation.positionalArguments.first();
+            },
+          );
+        });
+
+        blocTest(
+          'waits for the tab to be focused again on prepareTx',
+          build: () => CreateSnapshotCubit(
+            arweave: arweave,
+            profileCubit: profileCubit,
+            driveDao: driveDao,
+            tabVisibility: tabVisibility,
+            pst: pst,
+            throwOnPrepareTxForTesting: true,
+          ),
+          // FIXME: Before calling confirm, you have to set throwOnPrepareTxForTesting to false delayed by less than 10 ms
+          act: (cubit) async {
+            Future.delayed(const Duration(milliseconds: 8))
+                .then((_) => cubit.throwOnPrepareTxForTesting = false);
+            await cubit.confirmDriveAndHeighRange(
+              'driveId',
+              range: Range(start: 0, end: 1),
+            );
+          },
+          expect: () => [
+            ComputingSnapshotData(
+              driveId: 'driveId',
+              range: Range(start: 0, end: 1),
+            ),
+            PreparingAndSigningTransaction(isArConnectProfile: true),
+            isA<ConfirmingSnapshotCreation>(),
+          ],
+        );
+
+        blocTest(
+          'waits for the tab to be focused again on signTx',
+          build: () => CreateSnapshotCubit(
+            arweave: arweave,
+            profileCubit: profileCubit,
+            driveDao: driveDao,
+            tabVisibility: tabVisibility,
+            pst: pst,
+            throwOnSignTxForTesting: true,
+          ),
+          act: (cubit) async {
+            Future.delayed(const Duration(milliseconds: 8)).then((_) {
+              cubit.throwOnSignTxForTesting = false;
+              cubit.returnWithoutSigningForTesting = true;
+            });
+            await cubit.confirmDriveAndHeighRange(
+              'driveId',
+              range: Range(start: 0, end: 1),
+            );
+          },
+        );
+      });
     },
   );
 }
