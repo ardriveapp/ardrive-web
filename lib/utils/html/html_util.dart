@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'implementations/html_web.dart'
     if (dart.library.io) 'implementations/html_stub.dart' as implementation;
 
-bool isBrowserTabHidden() => implementation.isTabHidden();
+bool isTabFocused() => implementation.isTabFocused();
 
-void whenBrowserTabIsUnhidden(Function onShow) =>
-    implementation.whenTabIsUnhidden(onShow);
+Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async =>
+    implementation.onTabGetsFocusedFuture(onFocus);
+
+void onTabGetsFocused(Function onFocus) =>
+    implementation.onTabGetsFocused(onFocus);
 
 void onArConnectWalletSwitch(Function onWalletSwitch) =>
     implementation.onWalletSwitch(onWalletSwitch);

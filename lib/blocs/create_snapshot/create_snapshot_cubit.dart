@@ -10,6 +10,7 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item_to_be_created.dart';
@@ -32,6 +33,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   late DriveID _driveId;
   late Range _range;
   late int _currentHeight;
+  late Transaction _preparedTx;
 
   bool _wasSnapshotDataComputingCanceled = false;
 
@@ -80,16 +82,15 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     _setupSnapshotEntityWithBlob(data);
 
-    final uploadSnapshotItemParams = await _snapshotParametersFromEntityAndData(
+    await _prepareAndSignTx(
       _snapshotEntity!,
       data,
     );
-    final tx = uploadSnapshotItemParams.signedTx;
 
-    final costResult = await _computeCostAndCheckBalance(tx);
+    final costResult = await _computeCostAndCheckBalance();
     if (costResult == null) return;
 
-    await _emitConfirming(costResult, data.length, uploadSnapshotItemParams);
+    await _emitConfirming(costResult, data.length);
   }
 
   bool _wasCancelled() {
@@ -161,35 +162,80 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     return snapshotItemToBeCreated;
   }
 
-  Future<CreateSnapshotParameters> _snapshotParametersFromEntityAndData(
+  Future<void> _prepareAndSignTx(
     SnapshotEntity snapshotEntity,
     Uint8List data,
   ) async {
+    // ignore: avoid_print
+    print('About to prepare and sign snapshot transaction');
+
+    final isArConnectProfile = await _profileCubit.isCurrentProfileArConnect();
+
+    await _prepareTx(isArConnectProfile);
+    await _pst.addCommunityTipToTx(_preparedTx);
+    await _signTx(isArConnectProfile);
+
+    snapshotEntity.txId = _preparedTx.id;
+  }
+
+  Future<void> _prepareTx(bool isArConnectProfile) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
 
-    final preparedTx = await _arweave.prepareEntityTx(
-      snapshotEntity,
-      wallet,
-      null,
-      // We'll sign it just after adding the tip
-      skipSignature: true,
-    );
+    try {
+      // ignore: avoid_print
+      print(
+        'Preparing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
+      );
+      _preparedTx = await _arweave.prepareEntityTx(
+        _snapshotEntity!,
+        wallet,
+        null,
+        // We'll sign it just after adding the tip
+        skipSignature: true,
+      );
+    } catch (_) {
+      if (isArConnectProfile && !isTabFocused()) {
+        // ignore: avoid_print
+        print(
+          'Preparing snapshot transaction while user is not focusing the tab. Waiting...',
+        );
+        await onTabGetsFocusedFuture(
+          _prepareTx,
+        );
+      } else {
+        rethrow;
+      }
+    }
+  }
 
-    await _pst.addCommunityTipToTx(preparedTx);
+  Future<void> _signTx(bool isArConnectProfile) async {
+    final profile = _profileCubit.state as ProfileLoggedIn;
+    final wallet = profile.wallet;
 
-    await preparedTx.sign(wallet);
-
-    snapshotEntity.txId = preparedTx.id;
-
-    final uploadSnapshotItemParams = CreateSnapshotParameters(
-      signedTx: preparedTx,
-    );
-
-    return uploadSnapshotItemParams;
+    try {
+      // ignore: avoid_print
+      print(
+        'Signing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
+      );
+      await _preparedTx.sign(wallet);
+    } catch (e) {
+      if (isArConnectProfile && !isTabFocused()) {
+        // ignore: avoid_print
+        print(
+          'Signing snapshot transaction while user is not focusing the tab. Waiting...',
+        );
+        await onTabGetsFocusedFuture(_signTx);
+      } else {
+        rethrow;
+      }
+    }
   }
 
   Future<Uint8List> _getSnapshotData() async {
+    // ignore: avoid_print
+    print('Computing snapshot data');
+
     emit(ComputingSnapshotData(
       driveId: _driveId,
       range: _range,
@@ -215,6 +261,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       dataBuffer.add(chunk);
     }
 
+    // ignore: avoid_print
+    print('Finished computing snapshot data');
+
     final data = dataBuffer.takeBytes();
     return data;
   }
@@ -237,8 +286,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     _snapshotEntity = snapshotEntity;
   }
 
-  Future<BigInt?> _computeCostAndCheckBalance(Transaction tx) async {
-    final totalCost = tx.reward + tx.quantity;
+  Future<BigInt?> _computeCostAndCheckBalance() async {
+    final totalCost = _preparedTx.reward + _preparedTx.quantity;
 
     final profile = _profileCubit.state as ProfileLoggedIn;
     final walletBalance = profile.walletBalance;
@@ -257,7 +306,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   Future<void> _emitConfirming(
     BigInt totalCost,
     int dataSize,
-    CreateSnapshotParameters params,
   ) async {
     final arUploadCost = winstonToAr(totalCost);
     final usdUploadCost = await _arweave
@@ -268,7 +316,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       snapshotSize: dataSize,
       arUploadCost: arUploadCost,
       usdUploadCost: usdUploadCost,
-      createSnapshotParams: params,
     ));
   }
 
@@ -303,11 +350,9 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     }
 
     try {
-      final params = (state as ConfirmingSnapshotCreation).createSnapshotParams;
-
       emit(UploadingSnapshot());
 
-      await _arweave.postTx(params.signedTx);
+      await _arweave.postTx(_preparedTx);
 
       emit(SnapshotUploadSuccess());
     } catch (err) {
@@ -324,12 +369,4 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     _wasSnapshotDataComputingCanceled = true;
   }
-}
-
-class CreateSnapshotParameters {
-  final Transaction signedTx;
-
-  CreateSnapshotParameters({
-    required this.signedTx,
-  });
 }
