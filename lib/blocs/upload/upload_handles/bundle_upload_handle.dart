@@ -14,6 +14,7 @@ class BundleUploadHandle implements UploadHandle {
 
   late Transaction bundleTx;
   late DataItem bundleDataItem;
+  late String bundleId;
   late Iterable<FileEntity> fileEntities;
 
   BundleUploadHandle._create({
@@ -21,6 +22,7 @@ class BundleUploadHandle implements UploadHandle {
     this.folderDataItemUploadHandles = const [],
     this.useTurbo = false,
     this.size = 0,
+    this.hasError = false,
   }) {
     fileEntities = fileDataItemUploadHandles.map((item) => item.entity);
   }
@@ -51,7 +53,6 @@ class BundleUploadHandle implements UploadHandle {
   Future<void> prepareAndSignBundleTransaction({
     required ArweaveService arweaveService,
     required TurboService turboService,
-    required DriveDao driveDao,
     required PstService pstService,
     required Wallet wallet,
     bool isArConnect = false,
@@ -67,13 +68,12 @@ class BundleUploadHandle implements UploadHandle {
     debugPrint('Bundle mounted');
 
     debugPrint('Creating bundle transaction');
-    late String bundledIn;
     if (useTurbo) {
       bundleDataItem = await arweaveService.prepareBundledDataItem(
         bundle,
         wallet,
       );
-      bundledIn = bundleDataItem.id;
+      bundleId = bundleDataItem.id;
     } else {
       // Create bundle tx
       bundleTx = await arweaveService.prepareDataBundleTxFromBlob(
@@ -81,7 +81,7 @@ class BundleUploadHandle implements UploadHandle {
         wallet,
       );
 
-      bundledIn = bundleTx.id;
+      bundleId = bundleTx.id;
 
       debugPrint('Bundle transaction created');
 
@@ -97,13 +97,22 @@ class BundleUploadHandle implements UploadHandle {
 
       debugPrint('Bundle signed');
     }
+  }
+
+  Future<void> writeBundleItemsToDatabase({
+    required DriveDao driveDao,
+  }) async {
+    if (hasError) return;
+
+    debugPrint('Writing bundle items to database');
+
     // Write entities to database
     for (var folder in folderDataItemUploadHandles) {
       await folder.writeFolderToDatabase(driveDao: driveDao);
     }
     for (var file in fileDataItemUploadHandles) {
       await file.writeFileEntityToDatabase(
-        bundledInTxId: bundledIn,
+        bundledInTxId: bundleId,
         driveDao: driveDao,
       );
     }
@@ -115,7 +124,9 @@ class BundleUploadHandle implements UploadHandle {
     TurboService turboService,
   ) async* {
     if (useTurbo) {
-      await turboService.postDataItem(dataItem: bundleDataItem);
+      await turboService
+          .postDataItem(dataItem: bundleDataItem)
+          .onError((error, stackTrace) => hasError = true);
       yield 1;
     } else {
       yield* arweave.client.transactions
@@ -157,4 +168,7 @@ class BundleUploadHandle implements UploadHandle {
 
   @override
   int get uploadedSize => (size * uploadProgress).round();
+
+  @override
+  bool hasError;
 }
