@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer';
 
 import 'package:ardrive/blocs/blocs.dart';
@@ -61,8 +60,7 @@ abstract class FileDownloadCubit extends Cubit<FileDownloadState> {
           dataItem.addTag(tag.name, tag.value);
         }
 
-        final rawSignature = base64Url.decode(base64Url.normalize(dataTx.signature));
-        await dataItem.setSignature(rawSignature);
+        await dataItem.setSignature(dataTx.signature);
         
         if (dataItem.id != entityTxId) throw Exception('DataItem txId does not match Entity txId');
         if (!await dataItem.verify()) throw Exception('DataItem signature is invalid');

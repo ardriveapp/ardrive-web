@@ -79,8 +79,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "1c08f3f2a142eb0791c02bdfba7db01eb449ff34"
-      resolved-ref: "1c08f3f2a142eb0791c02bdfba7db01eb449ff34"
+      ref: "5a180859bab2c00a1e0a318a199d641d12c48b3c"
+      resolved-ref: "5a180859bab2c00a1e0a318a199d641d12c48b3c"
       url: "https://github.com/elliotsayes/arweave-dart.git"
     source: git
     version: "3.4.0"
