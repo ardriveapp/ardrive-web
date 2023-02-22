@@ -119,8 +119,9 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
     );
     
     final dataTx = (await _arweave.getTransactionDetails(_file.txId))!;
-
-    final fetchStream = _downloadService.downloadStream(_file.txId, _file.size);
+    final downloadLength = int.parse(dataTx.data.size);
+    
+    final fetchStream = _downloadService.downloadStream(_file.txId, downloadLength);
 
     final splitStream = StreamSplitter(fetchStream);
     final saveStream = splitStream.split();
@@ -173,7 +174,7 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
       final authenticatedOwner = authenticateOwner(
         _arweave,
         authStream,
-        _file.size,
+        downloadLength,
         _file.txId,
         dataTx, 
       );

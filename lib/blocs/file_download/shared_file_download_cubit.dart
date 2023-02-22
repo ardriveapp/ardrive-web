@@ -45,20 +45,22 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
     );
 
     final dataTx = (await _arweave.getTransactionDetails(revision.dataTxId))!;
-    
-    final fetchStream = _downloadService.downloadStream(revision.dataTxId, revision.size);
-    
+    final downloadLength = int.parse(dataTx.data.size);
+
+    final fetchStream = _downloadService.downloadStream(revision.dataTxId, downloadLength);
+
     final splitStream = StreamSplitter(fetchStream);
+    final saveStream = splitStream.split();
     final authStream = splitStream.split();
     unawaited(splitStream.close());
 
     Stream<Uint8List> decryptedDataStream;
     if (fileKey == null) {
-      decryptedDataStream = splitStream.split();
+      decryptedDataStream = saveStream;
     } else {
       decryptedDataStream = await _decrypt.decryptTransactionDataStream(
         dataTx,
-        splitStream.split(),
+        saveStream,
         Uint8List.fromList(await fileKey!.extractBytes()),
       );
     }
@@ -74,9 +76,9 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
       final authenticatedOwner = authenticateOwner(
         _arweave,
         authStream,
-        revision.size,
+        downloadLength,
         revision.dataTxId,
-        dataTx, 
+        dataTx,
       );
       final isAuthentic =  authenticatedOwner.then((value) => value != null);
       final saved = await _ardriveIo.saveFileStream(file, isAuthentic);

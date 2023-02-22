@@ -7,7 +7,6 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/core/decrypt.dart';
 import 'package:ardrive/core/download_service.dart';
-import 'package:ardrive/entities/constants.dart' show EntityTag;
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_platform.dart';
@@ -15,7 +14,7 @@ import 'package:ardrive/utils/data_size.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 import 'package:async/async.dart';
-import 'package:cryptography/cryptography.dart';
+import 'package:cryptography/cryptography.dart' hide Cipher;
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -56,32 +55,10 @@ abstract class FileDownloadCubit extends Cubit<FileDownloadState> {
           tags: [],
           data: dataItemData,
         );
-
-        // Hack: Adding tags in the same order as the ArDrive App
-        // TODO: Find a way to reliable determine the order of tags
-        final orderedTagKeys = [
-          EntityTag.appName,
-          EntityTag.appPlatform,
-          EntityTag.appVersion,
-          EntityTag.unixTime,
-        ];
-
-        final isEncrypted = dataTx.getTag(EntityTag.cipher) != null;
-        if (isEncrypted) {
-          orderedTagKeys.insertAll(0, [
-            EntityTag.contentType,
-            EntityTag.cipher,
-            EntityTag.cipherIv,
-          ]);
-        } else {
-          orderedTagKeys.add(EntityTag.contentType);
-        }
-
-        for (final tagKey in orderedTagKeys) {
-          final tagValue = dataTx.getTag(tagKey);
-          if (tagValue == null) throw Exception('Missing tag: $tagKey');
-          
-          dataItem.addTag(tagKey, tagValue);
+        
+        // GraphQL returns tags in the correct order so just add them all
+        for (final tag in dataTx.tags) {
+          dataItem.addTag(tag.name, tag.value);
         }
 
         final rawSignature = base64Url.decode(base64Url.normalize(dataTx.signature));
