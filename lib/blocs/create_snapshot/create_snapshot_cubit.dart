@@ -28,7 +28,15 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final PstService _pst;
-  final bool _forceFailOnDataComputingForTesting;
+  final TabVisibilitySingleton _tabVisibility;
+  @visibleForTesting
+  bool throwOnDataComputingForTesting;
+  @visibleForTesting
+  bool throwOnPrepareTxForTesting;
+  @visibleForTesting
+  bool throwOnSignTxForTesting;
+  @visibleForTesting
+  bool returnWithoutSigningForTesting;
 
   late DriveID _driveId;
   late Range _range;
@@ -45,13 +53,16 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required PstService pst,
-    @visibleForTesting bool forceFailOnDataComputingForTesting = false,
+    required TabVisibilitySingleton tabVisibility,
+    this.throwOnDataComputingForTesting = false,
+    this.throwOnPrepareTxForTesting = false,
+    this.throwOnSignTxForTesting = false,
+    this.returnWithoutSigningForTesting = false,
   })  : _arweave = arweave,
         _profileCubit = profileCubit,
         _driveDao = driveDao,
         _pst = pst,
-        _forceFailOnDataComputingForTesting =
-            forceFailOnDataComputingForTesting,
+        _tabVisibility = tabVisibility,
         super(CreateSnapshotInitial());
 
   Future<void> confirmDriveAndHeighRange(
@@ -170,19 +181,20 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     print('About to prepare and sign snapshot transaction');
 
     final isArConnectProfile = await _profileCubit.isCurrentProfileArConnect();
-    
+
     emit(PreparingAndSigningTransaction(
       isArConnectProfile: isArConnectProfile,
     ));
 
-    await _prepareTx(isArConnectProfile);
+    await prepareTx(isArConnectProfile);
     await _pst.addCommunityTipToTx(_preparedTx);
-    await _signTx(isArConnectProfile);
+    await signTx(isArConnectProfile);
 
     snapshotEntity.txId = _preparedTx.id;
   }
 
-  Future<void> _prepareTx(bool isArConnectProfile) async {
+  @visibleForTesting
+  Future<void> prepareTx(bool isArConnectProfile) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
 
@@ -191,6 +203,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       print(
         'Preparing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
+
+      if (throwOnPrepareTxForTesting) {
+        throw Exception('Throwing on purpose for testing');
+      }
+
       _preparedTx = await _arweave.prepareEntityTx(
         _snapshotEntity!,
         wallet,
@@ -198,22 +215,26 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         // We'll sign it just after adding the tip
         skipSignature: true,
       );
-    } catch (_) {
-      if (isArConnectProfile && !isTabFocused()) {
+    } catch (e) {
+      if (isArConnectProfile && !_tabVisibility.isTabFocused()) {
         // ignore: avoid_print
         print(
           'Preparing snapshot transaction while user is not focusing the tab. Waiting...',
         );
-        await onTabGetsFocusedFuture(
-          _prepareTx,
+        await _tabVisibility.onTabGetsFocusedFuture(
+          () async => await prepareTx(isArConnectProfile),
         );
       } else {
+        // ignore: avoid_print
+        print(
+            'Error preparing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: ${_tabVisibility.isTabFocused()}');
         rethrow;
       }
     }
   }
 
-  Future<void> _signTx(bool isArConnectProfile) async {
+  @visibleForTesting
+  Future<void> signTx(bool isArConnectProfile) async {
     final profile = _profileCubit.state as ProfileLoggedIn;
     final wallet = profile.wallet;
 
@@ -222,15 +243,27 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       print(
         'Signing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
+
+      if (throwOnSignTxForTesting) {
+        throw Exception('Throwing on purpose for testing');
+      } else if (returnWithoutSigningForTesting) {
+        return;
+      }
+
       await _preparedTx.sign(wallet);
     } catch (e) {
-      if (isArConnectProfile && !isTabFocused()) {
+      if (isArConnectProfile && !_tabVisibility.isTabFocused()) {
         // ignore: avoid_print
         print(
           'Signing snapshot transaction while user is not focusing the tab. Waiting...',
         );
-        await onTabGetsFocusedFuture(_signTx);
+        await _tabVisibility.onTabGetsFocusedFuture(
+          () => signTx(isArConnectProfile),
+        );
       } else {
+        // ignore: avoid_print
+        print(
+            'Error signing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: ${_tabVisibility.isTabFocused()}');
         rethrow;
       }
     }
@@ -246,7 +279,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     ));
 
     // For testing purposes
-    if (_forceFailOnDataComputingForTesting) {
+    if (throwOnDataComputingForTesting) {
       throw Exception('Fake network error');
     }
 
