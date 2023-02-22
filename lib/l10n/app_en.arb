@@ -1384,7 +1384,7 @@
   "@uploadFailed": {
     "description": "Upload Failed dialog title"
   },
-  "yourUploadFailed": "Your upload failed. You have not been charged for the failed attempt.",
+  "yourUploadFailed": "Your upload failed.",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },
@@ -1509,5 +1509,19 @@
   "copyWalletAddress": "Copy Wallet Address",
   "@addressCopied": {
     "description": "Tooltip on copy wallet address button"
+  },
+  "weDontRecommendUploadsAboveASafeLimit": "We do not recommend uploading items over {size} in size.",
+  "@weDontRecommendUploadsAboveASafeLimit": {
+    "description": "Shows a message like We do not recommend uploading items over 5GB in size.",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "5 GiB"
+      }
+    }
+  },
+  "proceed": "Proceed",
+  "@proceed": {
+    "description": "Proceed"
   }
 }
