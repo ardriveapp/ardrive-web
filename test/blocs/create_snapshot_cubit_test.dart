@@ -337,11 +337,8 @@ void main() {
             driveDao: driveDao,
             tabVisibility: tabVisibility,
             pst: pst,
-            throwOnPrepareTxForTesting: true,
           ),
           act: (cubit) async {
-            Future.delayed(const Duration(milliseconds: 8))
-                .then((_) => cubit.throwOnPrepareTxForTesting = false);
             await cubit.confirmDriveAndHeighRange(
               'driveId',
               range: Range(start: 0, end: 1),
