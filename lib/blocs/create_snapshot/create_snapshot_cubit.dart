@@ -32,8 +32,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
   @visibleForTesting
   bool throwOnDataComputingForTesting;
   @visibleForTesting
-  bool throwOnPrepareTxForTesting;
-  @visibleForTesting
   bool throwOnSignTxForTesting;
   @visibleForTesting
   bool returnWithoutSigningForTesting;
@@ -55,7 +53,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
     required PstService pst,
     required TabVisibilitySingleton tabVisibility,
     this.throwOnDataComputingForTesting = false,
-    this.throwOnPrepareTxForTesting = false,
     this.throwOnSignTxForTesting = false,
     this.returnWithoutSigningForTesting = false,
   })  : _arweave = arweave,
@@ -203,10 +200,6 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       print(
         'Preparing snapshot transaction with ${isArConnectProfile ? 'ArConnect' : 'JSON wallet'}',
       );
-
-      if (throwOnPrepareTxForTesting) {
-        throw Exception('Throwing on purpose for testing');
-      }
 
       _preparedTx = await _arweave.prepareEntityTx(
         _snapshotEntity!,
