@@ -63,13 +63,16 @@ class MockTransactionCommonMixin extends Mock
 
 // TODO(@thiagocarvalhodev): Implemente tests related to ArDriveDownloader
 void main() {
-  late ProfileFileDownloadCubit profileFileDownloadCubit;
+  late StreamPersonalFileDownloadCubit streamPersonalFileDownloadCubit;
   late DriveDao mockDriveDao;
   late ArweaveService mockArweaveService;
   late ArDriveDownloader mockArDriveDownloader;
   late Decrypt mockDecrypt;
   late DownloadService mockDownloadService;
   late ARFSRepository mockARFSRepository;
+  late ArDriveIO mockArDriveIO;
+  late IOFileAdapter mockIOFileAdapter;
+  late MockIOFile mockIOFile;
 
   MockARFSFile testFile = MockARFSFile(
     appName: 'appName',
@@ -149,11 +152,15 @@ void main() {
     registerFallbackValue(SecretKey([]));
     registerFallbackValue(MockTransactionCommonMixin());
     registerFallbackValue(Uint8List(100));
+    registerFallbackValue(Stream.value(Uint8List(100)));
+    registerFallbackValue(Future.value(Stream.value(Uint8List(100))));
     registerFallbackValue(mockDrivePrivate);
     registerFallbackValue(mockDrivePublic);
     registerFallbackValue(testFile);
     registerFallbackValue(mockDownloadProgress());
     registerFallbackValue(mockDownloadInProgress());
+    registerFallbackValue(MockIOFile());
+    registerFallbackValue(Future.value(true));
   });
 
   setUp(() {
@@ -163,68 +170,37 @@ void main() {
     mockDecrypt = MockDecrypt();
     mockDownloadService = MockDownloadService();
     mockARFSRepository = MockARFSRepository();
-  });
-
-  group('Testing isFileAboveLimit method', () {
-    setUp(() {
-      profileFileDownloadCubit = ProfileFileDownloadCubit(
-        file: testFile,
-        driveDao: mockDriveDao,
-        arweave: mockArweaveService,
-        downloader: mockArDriveDownloader,
-        decrypt: mockDecrypt,
-        downloadService: mockDownloadService,
-        arfsRepository: mockARFSRepository,
-      );
-    });
-    test('should return false', () {
-      expect(
-          profileFileDownloadCubit.isSizeAbovePrivateLimit(const MiB(1).size),
-          false);
-    });
-    test('should return false', () {
-      expect(
-          profileFileDownloadCubit.isSizeAbovePrivateLimit(const MiB(299).size),
-          false);
-    });
-
-    test('should return true', () {
-      expect(
-          profileFileDownloadCubit.isSizeAbovePrivateLimit(const MiB(300).size),
-          false);
-    });
-
-    test('should return true', () {
-      expect(
-          profileFileDownloadCubit.isSizeAbovePrivateLimit(const MiB(301).size),
-          true);
-    });
-
-    test('should return true', () {
-      expect(
-          profileFileDownloadCubit.isSizeAbovePrivateLimit(const GiB(1).size),
-          true);
-    });
+    mockArDriveIO = MockArDriveIO();
+    mockIOFileAdapter = MockIOFileAdapter();
+    mockIOFile = MockIOFile();
   });
 
   group('Testing download method', () {
     setUp(() {
       when(() => mockARFSRepository.getDriveById(any()))
           .thenAnswer((_) async => mockDrivePrivate);
-      when(() => mockDownloadService.download(any()))
-          .thenAnswer((invocation) => Future.value(Uint8List(100)));
+      when(() => mockDownloadService.downloadStream(any(), any()))
+          .thenAnswer((invocation) => Stream.value(Uint8List(100)));
       when(() => mockDriveDao.getFileKey(any(), any()))
           .thenAnswer((invocation) => Future.value(SecretKey([])));
       when(() => mockDriveDao.getDriveKey(any(), any()))
           .thenAnswer((invocation) => Future.value(SecretKey([])));
-      when(() => mockArweaveService.getTransactionDetails(any())).thenAnswer(
-          (invocation) => Future.value(MockTransactionCommonMixin()));
-      when(() => mockDecrypt.decryptTransactionData(any(), any(), any()))
-          .thenAnswer((invocation) => Future.value(Uint8List(100)));
+      when(() => mockArweaveService.getTransactionDetails(any()))
+          .thenAnswer((invocation) => Future.value(MockTransactionCommonMixin()));
+      when(() => mockArweaveService.getTransaction<TransactionStream>(any()))
+          .thenAnswer((invocation) => Future.value(TransactionStream()));
+      when(() => mockDecrypt.decryptTransactionDataStream(any(), any(), any()))
+          .thenAnswer((invocation) => Future.value(Stream.value(Uint8List(100))));
+      when(() => mockArDriveIO.saveFileStream(any(), any()))
+          .thenAnswer((invocation) => Future.value(true));
+      when((() => mockIOFile.openReadStream(any(), any())))
+          .thenAnswer((invocation) => Stream.fromIterable([Uint8List(100)]));
+      when(() => mockIOFileAdapter.fromReadStreamGenerator(any(), any(), name: any(), lastModifiedDate: any(), contentType: any()))
+          .thenAnswer((invocation) => Future.value(mockIOFile));
     });
-    blocTest<ProfileFileDownloadCubit, FileDownloadState>(
+    blocTest<StreamPersonalFileDownloadCubit, FileDownloadState>(
       'should download a private file',
-      build: () => profileFileDownloadCubit = ProfileFileDownloadCubit(
+      build: () => streamPersonalFileDownloadCubit = StreamPersonalFileDownloadCubit(
         file: testFile,
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
@@ -232,9 +208,11 @@ void main() {
         decrypt: mockDecrypt,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
+        ardriveIo: mockArDriveIO,
+        ioFileAdapter: mockIOFileAdapter,
       ),
       act: (bloc) {
-        profileFileDownloadCubit.download(SecretKey([]));
+        streamPersonalFileDownloadCubit.download(SecretKey([]));
       },
       expect: () => <FileDownloadState>[
         FileDownloadInProgress(
@@ -250,9 +228,9 @@ void main() {
       ],
     );
 
-    blocTest<ProfileFileDownloadCubit, FileDownloadState>(
+    blocTest<StreamPersonalFileDownloadCubit, FileDownloadState>(
       'should download a public file',
-      build: () => profileFileDownloadCubit = ProfileFileDownloadCubit(
+      build: () => streamPersonalFileDownloadCubit = StreamPersonalFileDownloadCubit(
         file: testFile,
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
@@ -260,13 +238,15 @@ void main() {
         decrypt: mockDecrypt,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
+        ardriveIo: mockArDriveIO,
+        ioFileAdapter: mockIOFileAdapter,
       ),
       setUp: () {
         when(() => mockARFSRepository.getDriveById(any()))
             .thenAnswer((_) async => mockDrivePublic);
       },
       act: (bloc) {
-        profileFileDownloadCubit.download(SecretKey([]));
+        streamPersonalFileDownloadCubit.download(SecretKey([]));
       },
       verify: (bloc) {
         /// public files should not call these functions
@@ -289,9 +269,9 @@ void main() {
       ],
     );
 
-    blocTest<ProfileFileDownloadCubit, FileDownloadState>(
+    blocTest<StreamPersonalFileDownloadCubit, FileDownloadState>(
       'should download with success a PRIVATE file above limit if the platform is not mobile',
-      build: () => profileFileDownloadCubit = ProfileFileDownloadCubit(
+      build: () => streamPersonalFileDownloadCubit = StreamPersonalFileDownloadCubit(
         file: testFileAboveLimit,
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
@@ -299,6 +279,8 @@ void main() {
         decrypt: mockDecrypt,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
+        ardriveIo: mockArDriveIO,
+        ioFileAdapter: mockIOFileAdapter,
       ),
       setUp: () {
         AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
@@ -308,7 +290,7 @@ void main() {
             .thenAnswer((_) async => mockDrivePrivate);
       },
       act: (bloc) async {
-        await profileFileDownloadCubit.download(SecretKey([]));
+        await streamPersonalFileDownloadCubit.download(SecretKey([]));
       },
       expect: () => <FileDownloadState>[
         FileDownloadInProgress(
@@ -324,9 +306,9 @@ void main() {
       ],
     );
 
-    blocTest<ProfileFileDownloadCubit, FileDownloadState>(
+    blocTest<StreamPersonalFileDownloadCubit, FileDownloadState>(
       'should emit a FileDownloadFailure with fileAboveLimit reason when mobile',
-      build: () => profileFileDownloadCubit = ProfileFileDownloadCubit(
+      build: () => streamPersonalFileDownloadCubit = StreamPersonalFileDownloadCubit(
         file: testFileAboveLimit,
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
@@ -334,6 +316,8 @@ void main() {
         decrypt: mockDecrypt,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
+        ardriveIo: mockArDriveIO,
+        ioFileAdapter: mockIOFileAdapter,
       ),
       setUp: () {
         AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
@@ -343,7 +327,7 @@ void main() {
             .thenAnswer((_) async => mockDrivePrivate);
       },
       act: (bloc) {
-        profileFileDownloadCubit.download(SecretKey([]));
+        streamPersonalFileDownloadCubit.download(SecretKey([]));
       },
       expect: () => <FileDownloadState>[
         const FileDownloadFailure(
@@ -354,9 +338,9 @@ void main() {
 
     /// File is under private limits
     /// File is above the warning limit
-    blocTest<ProfileFileDownloadCubit, FileDownloadState>(
+    blocTest<StreamPersonalFileDownloadCubit, FileDownloadState>(
       'should emit a FileDownloadWarning',
-      build: () => profileFileDownloadCubit = ProfileFileDownloadCubit(
+      build: () => streamPersonalFileDownloadCubit = StreamPersonalFileDownloadCubit(
         file: testFileUnderPrivateLimitAndAboveWarningLimit,
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
@@ -364,6 +348,8 @@ void main() {
         decrypt: mockDecrypt,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
+        ardriveIo: mockArDriveIO,
+        ioFileAdapter: mockIOFileAdapter,
       ),
       setUp: () {
         AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
@@ -373,16 +359,16 @@ void main() {
             .thenAnswer((_) async => mockDrivePrivate);
       },
       act: (bloc) {
-        profileFileDownloadCubit.download(SecretKey([]));
+        streamPersonalFileDownloadCubit.download(SecretKey([]));
       },
       expect: () => <FileDownloadState>[
         const FileDownloadWarning(),
       ],
     );
 
-    blocTest<ProfileFileDownloadCubit, FileDownloadState>(
+    blocTest<StreamPersonalFileDownloadCubit, FileDownloadState>(
       'should download a PUBLIC file with size above PRIVATE limit',
-      build: () => profileFileDownloadCubit = ProfileFileDownloadCubit(
+      build: () => streamPersonalFileDownloadCubit = StreamPersonalFileDownloadCubit(
         file: testFileAboveLimit,
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
@@ -390,6 +376,8 @@ void main() {
         decrypt: mockDecrypt,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
+        ardriveIo: mockArDriveIO,
+        ioFileAdapter: mockIOFileAdapter,
       ),
       setUp: () {
         AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
@@ -399,7 +387,7 @@ void main() {
             .thenAnswer((_) async => mockDrivePublic);
       },
       act: (bloc) {
-        profileFileDownloadCubit.download(SecretKey([]));
+        streamPersonalFileDownloadCubit.download(SecretKey([]));
       },
       expect: () => <FileDownloadState>[
         FileDownloadInProgress(
@@ -422,9 +410,9 @@ void main() {
       },
     );
 
-    blocTest<ProfileFileDownloadCubit, FileDownloadState>(
+    blocTest<StreamPersonalFileDownloadCubit, FileDownloadState>(
       'should emit a FileDownloadFailure with unknown reason when DownloadService throws',
-      build: () => profileFileDownloadCubit = ProfileFileDownloadCubit(
+      build: () => streamPersonalFileDownloadCubit = StreamPersonalFileDownloadCubit(
         file: testFile,
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
@@ -432,6 +420,8 @@ void main() {
         decrypt: mockDecrypt,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
+        ardriveIo: mockArDriveIO,
+        ioFileAdapter: mockIOFileAdapter,
       ),
       setUp: () {
         AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
@@ -439,11 +429,11 @@ void main() {
         /// Using a public drive
         when(() => mockARFSRepository.getDriveById(any()))
             .thenAnswer((_) async => mockDrivePublic);
-        when(() => mockDownloadService.download(any()))
+        when(() => mockDownloadService.downloadBuffer(any()))
             .thenThrow((invocation) => Exception());
       },
       act: (bloc) {
-        profileFileDownloadCubit.download(SecretKey([]));
+        streamPersonalFileDownloadCubit.download(SecretKey([]));
       },
       expect: () => <FileDownloadState>[
         FileDownloadInProgress(
@@ -461,9 +451,9 @@ void main() {
       },
     );
 
-    blocTest<ProfileFileDownloadCubit, FileDownloadState>(
+    blocTest<StreamPersonalFileDownloadCubit, FileDownloadState>(
       'should emit a FileDownloadFailure with unknown reason when Decrypt throws',
-      build: () => profileFileDownloadCubit = ProfileFileDownloadCubit(
+      build: () => streamPersonalFileDownloadCubit = StreamPersonalFileDownloadCubit(
         file: testFile,
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
@@ -471,6 +461,8 @@ void main() {
         decrypt: mockDecrypt,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
+        ardriveIo: mockArDriveIO,
+        ioFileAdapter: mockIOFileAdapter,
       ),
       setUp: () {
         AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
@@ -482,7 +474,7 @@ void main() {
             .thenThrow((invocation) => Exception());
       },
       act: (bloc) {
-        profileFileDownloadCubit.download(SecretKey([]));
+        streamPersonalFileDownloadCubit.download(SecretKey([]));
       },
       expect: () => <FileDownloadState>[
         FileDownloadInProgress(
@@ -493,9 +485,9 @@ void main() {
       ],
     );
 
-    blocTest<ProfileFileDownloadCubit, FileDownloadState>(
+    blocTest<StreamPersonalFileDownloadCubit, FileDownloadState>(
       'should emit a FileDownloadFailure with unknown reason when Decrypt throws',
-      build: () => profileFileDownloadCubit = ProfileFileDownloadCubit(
+      build: () => streamPersonalFileDownloadCubit = StreamPersonalFileDownloadCubit(
         file: testFile,
         driveDao: mockDriveDao,
         arweave: mockArweaveService,
@@ -503,6 +495,8 @@ void main() {
         decrypt: mockDecrypt,
         downloadService: mockDownloadService,
         arfsRepository: mockARFSRepository,
+        ardriveIo: mockArDriveIO,
+        ioFileAdapter: mockIOFileAdapter,
       ),
       setUp: () {
         AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
@@ -514,7 +508,7 @@ void main() {
             .thenThrow((invocation) => Exception());
       },
       act: (bloc) {
-        profileFileDownloadCubit.download(SecretKey([]));
+        streamPersonalFileDownloadCubit.download(SecretKey([]));
       },
       expect: () => <FileDownloadState>[
         FileDownloadInProgress(
@@ -528,9 +522,9 @@ void main() {
 
   group('Testing download method mocking platform to mobile', () {
     group('Testing download method mocking platform to mobile', () {
-      blocTest<ProfileFileDownloadCubit, FileDownloadState>(
+      blocTest<StreamPersonalFileDownloadCubit, FileDownloadState>(
           'should emit a FileDownloadWithProgress and FileDownloadFinishedWithSuccess when iOS',
-          build: () => profileFileDownloadCubit = ProfileFileDownloadCubit(
+          build: () => streamPersonalFileDownloadCubit = StreamPersonalFileDownloadCubit(
                 file: testFile,
                 driveDao: mockDriveDao,
                 arweave: mockArweaveService,
@@ -538,6 +532,8 @@ void main() {
                 decrypt: mockDecrypt,
                 downloadService: mockDownloadService,
                 arfsRepository: mockARFSRepository,
+                ardriveIo: mockArDriveIO,
+                ioFileAdapter: mockIOFileAdapter,
               ),
           setUp: () {
             AppPlatform.setMockPlatform(platform: SystemPlatform.iOS);
@@ -551,7 +547,7 @@ void main() {
                 Arweave(gatewayUrl: Uri.parse('http://example.com')));
           },
           act: (bloc) {
-            profileFileDownloadCubit.download(SecretKey([]));
+            streamPersonalFileDownloadCubit.download(SecretKey([]));
           },
           expect: () => <FileDownloadState>[
                 FileDownloadWithProgress(
@@ -563,16 +559,16 @@ void main() {
               ],
           verify: (bloc) {
             /// public files on mobile should not call these functions
-            verifyNever(() => mockDownloadService.download(any()));
+            verifyNever(() => mockDownloadService.downloadBuffer(any()));
             verifyNever(() => mockDriveDao.getFileKey(any(), any()));
             verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
             verifyNever(
                 () => mockDecrypt.decryptTransactionData(any(), any(), any()));
           });
 
-      blocTest<ProfileFileDownloadCubit, FileDownloadState>(
+      blocTest<StreamPersonalFileDownloadCubit, FileDownloadState>(
           'should emit a FileDownloadWithProgress and FileDownloadFinishedWithSuccess when Android',
-          build: () => profileFileDownloadCubit = ProfileFileDownloadCubit(
+          build: () => streamPersonalFileDownloadCubit = StreamPersonalFileDownloadCubit(
                 file: testFile,
                 driveDao: mockDriveDao,
                 arweave: mockArweaveService,
@@ -580,6 +576,8 @@ void main() {
                 decrypt: mockDecrypt,
                 downloadService: mockDownloadService,
                 arfsRepository: mockARFSRepository,
+                ardriveIo: mockArDriveIO,
+                ioFileAdapter: mockIOFileAdapter,
               ),
           setUp: () {
             AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
@@ -593,7 +591,7 @@ void main() {
                 Arweave(gatewayUrl: Uri.parse('http://example.com')));
           },
           act: (bloc) {
-            profileFileDownloadCubit.download(SecretKey([]));
+            streamPersonalFileDownloadCubit.download(SecretKey([]));
           },
           expect: () => <FileDownloadState>[
                 FileDownloadWithProgress(
@@ -605,16 +603,16 @@ void main() {
               ],
           verify: (bloc) {
             /// public files on mobile should not call these functions
-            verifyNever(() => mockDownloadService.download(any()));
+            verifyNever(() => mockDownloadService.downloadBuffer(any()));
             verifyNever(() => mockDriveDao.getFileKey(any(), any()));
             verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
             verifyNever(
                 () => mockDecrypt.decryptTransactionData(any(), any(), any()));
           });
 
-      blocTest<ProfileFileDownloadCubit, FileDownloadState>(
+      blocTest<StreamPersonalFileDownloadCubit, FileDownloadState>(
           'should download a public file using DownloadService instead ArDriveDownloader when platform differnt from mobile',
-          build: () => profileFileDownloadCubit = ProfileFileDownloadCubit(
+          build: () => streamPersonalFileDownloadCubit = StreamPersonalFileDownloadCubit(
                 file: testFile,
                 driveDao: mockDriveDao,
                 arweave: mockArweaveService,
@@ -622,6 +620,8 @@ void main() {
                 decrypt: mockDecrypt,
                 downloadService: mockDownloadService,
                 arfsRepository: mockARFSRepository,
+                ardriveIo: mockArDriveIO,
+                ioFileAdapter: mockIOFileAdapter,
               ),
           setUp: () {
             AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
@@ -636,9 +636,9 @@ void main() {
           });
     });
 
-    blocTest<ProfileFileDownloadCubit, FileDownloadState>(
+    blocTest<StreamPersonalFileDownloadCubit, FileDownloadState>(
         'should emit a FileDownloadAborted',
-        build: () => profileFileDownloadCubit = ProfileFileDownloadCubit(
+        build: () => streamPersonalFileDownloadCubit = StreamPersonalFileDownloadCubit(
               file: testFile,
               driveDao: mockDriveDao,
               arweave: mockArweaveService,
@@ -646,6 +646,8 @@ void main() {
               decrypt: mockDecrypt,
               downloadService: mockDownloadService,
               arfsRepository: mockARFSRepository,
+              ardriveIo: mockArDriveIO,
+              ioFileAdapter: mockIOFileAdapter,
             ),
         setUp: () {
           AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
@@ -665,9 +667,9 @@ void main() {
               .thenReturn(Arweave(gatewayUrl: Uri.parse('http://example.com')));
         },
         act: (bloc) async {
-          profileFileDownloadCubit.download(SecretKey([]));
+          streamPersonalFileDownloadCubit.download(SecretKey([]));
           await Future.delayed(const Duration(seconds: 3));
-          await profileFileDownloadCubit.abortDownload();
+          await streamPersonalFileDownloadCubit.abortDownload();
         },
         expect: () => <FileDownloadState>[
               FileDownloadWithProgress(
@@ -686,7 +688,7 @@ void main() {
           verifyNever(() => mockArDriveDownloader.cancelDownload());
 
           /// public files on mobile should not call these functions
-          verifyNever(() => mockDownloadService.download(any()));
+          verifyNever(() => mockDownloadService.downloadBuffer(any()));
           verifyNever(() => mockDriveDao.getFileKey(any(), any()));
           verifyNever(() => mockDriveDao.getDriveKey(any(), any()));
           verifyNever(

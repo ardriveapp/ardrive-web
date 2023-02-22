@@ -25,6 +25,12 @@ class MockProfileDao extends Mock implements ProfileDao {}
 
 class MockDriveDao extends Mock implements DriveDao {}
 
+class MockArDriveIO extends Mock implements ArDriveIO {}
+
+class MockIOFileAdapter extends Mock implements IOFileAdapter {}
+
+class MockIOFile extends Mock implements IOFile {}
+
 class MockSyncBloc extends MockCubit<SyncState> implements SyncCubit {}
 
 class MockDrivesCubit extends MockCubit<DrivesState> implements DrivesCubit {}
