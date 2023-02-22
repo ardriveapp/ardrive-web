@@ -339,7 +339,6 @@ void main() {
             pst: pst,
             throwOnPrepareTxForTesting: true,
           ),
-          // FIXME: Before calling confirm, you have to set throwOnPrepareTxForTesting to false delayed by less than 10 ms
           act: (cubit) async {
             Future.delayed(const Duration(milliseconds: 8))
                 .then((_) => cubit.throwOnPrepareTxForTesting = false);
