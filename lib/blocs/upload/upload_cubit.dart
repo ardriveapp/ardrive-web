@@ -419,14 +419,11 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> _verifyFilesAboveWarningLimit() async {
-    // verify if there is a file larger than publicFileSafeSizeLimit
-    // using for each
     bool fileAboveWarningLimit =
         await _uploadFileChecker.hasFileAboveSafePublicSizeLimit(
       files: files,
     );
 
-    // show UploadShowingWarning
     if (fileAboveWarningLimit) {
       emit(
         UploadShowingWarning(reason: UploadWarningReason.fileTooLarge),
