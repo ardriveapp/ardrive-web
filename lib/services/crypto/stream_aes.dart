@@ -16,8 +16,8 @@ const _aes128KeyLengthBytes = 16;
 const _aes192KeyLengthBytes = 24;
 const _aes256KeyLengthBytes = 32;
 
-const _webCryptoMaxChunkSizeBytes = 4096;
-const _webCryptoMaxChuckSizeBlocks = _webCryptoMaxChunkSizeBytes ~/ 16;
+const _webCryptoChunkSizeBytes = 4096;
+const _webCryptoChuckSizeBlocks = _webCryptoChunkSizeBytes ~/ 16;
 
 enum AesKeyLength { aes128, aes192, aes256 }
 
@@ -34,14 +34,39 @@ abstract class AesStream extends CipherStream {
     return Future.value(key);
   }
 
-  // FutureOr<AesStream> fromKeyData(Uint8List keyData);
-
   @override
-  FutureOr<Uint8List> generateNonce() {
-    final nonce = Uint8List(_aesNonceLengthBytes);
+  FutureOr<Uint8List> generateNonce([int lengthBytes = _aesNonceLengthBytes]) {
+    final nonce = Uint8List(lengthBytes);
     fillRandomBytes(nonce);
     return nonce;
   }
+
+  @protected
+  StreamTransformer<Uint8List, Uint8List> aesStreamTransformer(
+    Future<Uint8List> Function(List<int>, List<int>, int) aesProcessBlock,
+    Uint8List nonce,
+  ) {
+    return StreamTransformer.fromBind(
+      (inputStream) async* {
+        final inputStreamChunked = inputStream
+          .transform(chunkTransformer(_webCryptoChunkSizeBytes));
+        
+        var offsetBlocks = BigInt.from(0);
+        await for (final chunk in inputStreamChunked) {
+          final counterInitBytes = await counterBlock(nonce, offsetBlocks);
+          yield await aesProcessBlock(
+            chunk,
+            counterInitBytes,
+            _aesCounterLengthBytes * 8,
+          );
+          offsetBlocks += BigInt.from(_webCryptoChuckSizeBlocks);
+        }
+      }
+    );
+  }
+
+  @protected
+  FutureOr<Uint8List> counterBlock(Uint8List nonce, BigInt offset);
 }
 
 class AesCtrStream extends AesStream with EncryptStream, DecryptStream {
@@ -58,23 +83,7 @@ class AesCtrStream extends AesStream with EncryptStream, DecryptStream {
     Uint8List nonce,
     int streamLength,
   ) {
-    return StreamTransformer.fromBind(
-      (plaintextStream) async* {
-        final plainTextStreamChunked = plaintextStream
-          .transform(chunkTransformer(_webCryptoMaxChunkSizeBytes));
-        
-        var offsetBlocks = BigInt.from(0);
-        await for (final chunk in plainTextStreamChunked) {
-          final counterInitBytes = _ctrCounterInitBytes(nonce, offsetBlocks);
-          yield await _aesCtr.encryptBytes(
-            chunk,
-            counterInitBytes,
-            _aesCounterLengthBytes * 8,
-          );
-          offsetBlocks += BigInt.from(_webCryptoMaxChuckSizeBlocks);
-        }
-      }
-    );
+    return aesStreamTransformer(_aesCtr.encryptBytes, nonce);
   }
 
   @override
@@ -82,28 +91,16 @@ class AesCtrStream extends AesStream with EncryptStream, DecryptStream {
     Uint8List nonce,
     int streamLength,
   ) {
-    return StreamTransformer.fromBind(
-      (ciphertextStream) async* {
-        final ciphertextStreamChunked = ciphertextStream
-          .transform(chunkTransformer(_webCryptoMaxChunkSizeBytes));
-        
-        var offsetBlocks = BigInt.from(0);
-        await for (final chunk in ciphertextStreamChunked) {
-          final counterInitBytes = _ctrCounterInitBytes(nonce, offsetBlocks);
-          yield await _aesCtr.decryptBytes(
-            chunk,
-            counterInitBytes,
-            _aesCounterLengthBytes * 8,
-          );
-          offsetBlocks += BigInt.from(_webCryptoMaxChuckSizeBlocks);
-        }
-      }
-    );
+    return aesStreamTransformer(_aesCtr.decryptBytes, nonce);
   }
 
-  _ctrCounterInitBytes(Uint8List nonce, BigInt offset) {
-    final offsetHex = offset.toRadixString(16).padLeft(8, '0');
-    final counter = Uint8List.fromList(hex.decode(offsetHex));
+  @override
+  counterBlock(Uint8List nonce, BigInt offset) {
+    final countValue = offset;
+    final countValueHex = countValue
+      .toRadixString(16)
+      .padLeft(8, '0');
+    final counter = Uint8List.fromList(hex.decode(countValueHex));
     return Uint8List.fromList(nonce.toList()..addAll(counter));
   }
 }
@@ -122,37 +119,33 @@ class AesGcmStream extends AesStream with DecryptStream {
   }
   
   @override
-  StreamTransformer<Uint8List, Uint8List> decryptTransformer(
-    Uint8List nonce,
-    int streamLength,
-  ) {
+  StreamTransformer<Uint8List, Uint8List> decryptTransformer(Uint8List nonce, int streamLength) {
     debugPrint('WARNING: Decrypting AES-GCM without MAC verification! Only do this if you know what you are doing.');
-
-    final counterInitBytes = _gcmCounterInitBytes(nonce);
+    
     final streamLengthNoMac = streamLength - _aesGcmTagLengthBytes;
-
+    
     return StreamTransformer.fromBind(
       (ciphertextStream) {
         final ciphertextStreamNoMac = ciphertextStream
           .transform(trimData(streamLengthNoMac));
-        final ciphertextStreamNoMacChunked = ciphertextStreamNoMac
-          .transform(chunkTransformer(_webCryptoMaxChunkSizeBytes));
-        
-        return _aesCtr.decryptStream(
-          ciphertextStreamNoMacChunked,
-          counterInitBytes,
-          _aesCounterLengthBytes * 8,
+        return ciphertextStreamNoMac.transform(
+          aesStreamTransformer(_aesCtr.decryptBytes, nonce)
         );
       }
     );
   }
 
-  // Despite using AES-CTR interface under the hood, we can maintain 
-  // compatibility with AES-GCM by implementing the same method to 
-  // generate its counter initialization bytes.
+  // Despite using an AES-CTR implementation under the hood, we can
+  // generating the counter block the same way as AES-GCM by simply 
+  // adding two!
   // More details: https://crypto.stackexchange.com/a/57905
-  _gcmCounterInitBytes(Uint8List nonce) {
-    final ctrBytes = List.filled(_aesCounterLengthBytes - 1, 0) + [2];
-    return Uint8List.fromList(nonce.toList()..addAll(ctrBytes));
+  @override
+  counterBlock(Uint8List nonce, BigInt offset) {
+    final countValue = offset + BigInt.from(2);
+    final countValueHex = countValue
+      .toRadixString(16)
+      .padLeft(8, '0');
+    final counter = Uint8List.fromList(hex.decode(countValueHex));
+    return Uint8List.fromList(nonce.toList()..addAll(counter));
   }
 }
