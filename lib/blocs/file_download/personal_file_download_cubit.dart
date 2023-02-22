@@ -17,7 +17,6 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
 
   Stream<LinearProgress> get downloadProgress => _downloadProgress.stream;
 
-  final _privateFileLimit = const MiB(300).size;
   final _warningDownloadTimeLimit = const MiB(200).size;
 
   final DriveDao _driveDao;
@@ -57,12 +56,6 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
       switch (drive.drivePrivacy) {
         case DrivePrivacy.private:
           if (AppPlatform.isMobile) {
-            if (isSizeAbovePrivateLimit(_file.size)) {
-              emit(const FileDownloadFailure(
-                  FileDownloadFailureReason.fileAboveLimit));
-              return;
-            }
-
             if (state is! FileDownloadWarning &&
                 isSizeAboveUploadTimeWarningLimit(_file.size)) {
               emit(const FileDownloadWarning());
@@ -73,7 +66,7 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
           await _downloadFile(drive, cipherKey);
           break;
         case DrivePrivacy.public:
-          if (/* AppPlatform.isMobile */ false) {
+          if (AppPlatform.isMobile) {
             final stream = _downloader.downloadFile(
               '${_arweave.client.api.gatewayUrl.origin}/${_file.txId}',
               _file.name,
@@ -95,12 +88,13 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
             }
 
             emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
-            break;
+          } else {
+            await _downloadFile(drive, cipherKey);
           }
-          await _downloadFile(drive, cipherKey);
-          return;
+          break;
 
         default:
+          throw Exception('Unknown drive privacy: ${drive.drivePrivacy}');
       }
     } catch (err) {
       addError(err);
@@ -197,12 +191,6 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
       debugPrint('Failed to download personal file: $e');
       return;
     }
-  }
-
-  @visibleForTesting
-  bool isSizeAbovePrivateLimit(int size) {
-    debugPrint(_privateFileLimit.toString());
-    return size > _privateFileLimit;
   }
 
   @visibleForTesting
