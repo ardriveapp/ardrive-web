@@ -71,15 +71,16 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
     );
 
     try {
-      final authenticated = authenticate(
+      final authenticatedOwner = authenticateOwner(
         _arweave,
         authStream,
         revision.size,
         revision.dataTxId,
         dataTx, 
       );
-      final saved = await _ardriveIo.saveFileStream(file, authenticated);
-      if (!(await authenticated)) throw Exception('Failed authentication');
+      final isAuthentic =  authenticatedOwner.then((value) => value != null);
+      final saved = await _ardriveIo.saveFileStream(file, isAuthentic);
+      if (!(await isAuthentic)) throw Exception('Failed authentication');
       if (!saved) throw Exception('Failed to save file');
 
       emit(

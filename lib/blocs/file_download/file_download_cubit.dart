@@ -31,7 +31,7 @@ abstract class FileDownloadCubit extends Cubit<FileDownloadState> {
 
   FutureOr<void> abortDownload() {}
 
-  Future<bool> authenticate(
+  Future<String?> authenticateOwner(
     ArweaveService arweave,
     Stream<Uint8List> authStream,
     int authStreamSize,
@@ -39,17 +39,18 @@ abstract class FileDownloadCubit extends Cubit<FileDownloadState> {
     TransactionCommonMixin dataTx,
   ) async {
     final dataTxIsBundled = dataTx.bundledIn != null;
-
     if (dataTxIsBundled) {
       try {
+        // Owner claimed by GraphQL query
+        final owner = dataTx.owner.key;
+
         // No stream support for DataItems, so buffer all the data
         if (authStreamSize > const MiB(500).size) throw Exception('Stream oversized for DataItem');
         final dataItemData = await collectBytes(authStream);
 
         // Construct DataItem manually from the GraphQL data
         final dataItem = DataItem.withBlobData(
-          // TODO: Confirm that the graphql owner matches entity owner?
-          owner: dataTx.owner.key,
+          owner: owner,
           target: dataTx.recipient,
           nonce: dataTx.anchor,
           tags: [],
@@ -88,25 +89,31 @@ abstract class FileDownloadCubit extends Cubit<FileDownloadState> {
         
         if (dataItem.id != entityTxId) throw Exception('DataItem txId does not match Entity txId');
         if (!await dataItem.verify()) throw Exception('DataItem signature is invalid');
+
+        // Verified owner
+        return owner;
       } catch (e, s) {
         debugPrintStack(stackTrace: s, label: 'Error authenticating DataItem: $e');
-        return false;
+        return null;
       }
-
-      return true;
     } else {
       try {
-        final transaction = await arweave.getTransaction<TransactionStream>(entityTxId);
-        await transaction!.processDataStream(authStream, authStreamSize);
+        final transaction = (await arweave.getTransaction<TransactionStream>(entityTxId))!;
+        // Owner claimed by JSON API
+        final owner = transaction.owner;
+
+        // Ensure that the data_root matches
+        await transaction.processDataStream(authStream, authStreamSize);
 
         if (transaction.id != entityTxId) throw Exception('Transaction txId does not match Entity txId');
         if (!await transaction.verify()) throw Exception('Transaction signature is invalid');
+
+        // Verified owner
+        return owner;
       } catch (e, s) {
         debugPrintStack(stackTrace: s, label: 'Error authenticating Transaction: $e');
-        return false;
+        return null;
       }
-
-      return true;
     }
   }
 }
