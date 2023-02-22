@@ -53,3 +53,5 @@ class MockDecrypt extends Mock implements Decrypt {}
 class MockARFSRepository extends Mock implements ARFSRepository {}
 
 class MockAppFlavors extends Mock implements AppFlavors {}
+
+class MockUploadFileChecker extends Mock implements UploadFileChecker {}

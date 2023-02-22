@@ -28,6 +28,7 @@ void main() {
   late MockPstService mockPst;
   late MockUploadPlanUtils mockUploadPlanUtils;
   MockProfileCubit? mockProfileCubit;
+  late MockUploadFileChecker mockUploadFileChecker;
 
   const tDriveId = 'drive_id';
   const tRootFolderId = 'root-folder-id';
@@ -112,6 +113,7 @@ void main() {
     mockDriveDao = db.driveDao;
     mockProfileCubit = MockProfileCubit();
     mockUploadPlanUtils = MockUploadPlanUtils();
+    mockUploadFileChecker = MockUploadFileChecker();
 
     // Setup mock drive.
     await addTestFilesToDb(
@@ -124,10 +126,15 @@ void main() {
       nestedFolderId: tNestedFolderId,
       nestedFolderFileCount: tNestedFolderFileCount,
     );
+
+    // mock limit for UploadFileChecker
+    when(() => mockUploadFileChecker.hasFileAboveSafePublicSizeLimit(
+        files: any(named: 'files'))).thenAnswer((invocation) async => false);
   });
 
   UploadCubit getUploadCubitInstanceWith(List<UploadFile> files) {
     return UploadCubit(
+        uploadFileChecker: mockUploadFileChecker,
         uploadPlanUtils: mockUploadPlanUtils,
         driveId: tDriveId,
         parentFolderId: tRootFolderId,
@@ -227,6 +234,109 @@ void main() {
               const TypeMatcher<UploadReady>()
             ]);
   });
+
+  group(
+    'verify if is there any files above the safe limit for public files',
+    () {
+      setUp(() {
+        when(() => mockProfileCubit!.state).thenReturn(
+          ProfileLoggedIn(
+            username: 'Test',
+            password: '123',
+            wallet: tWallet,
+            walletAddress: tWalletAddress!,
+            walletBalance: BigInt.one,
+            cipherKey: SecretKey(tKeyBytes),
+          ),
+        );
+        when(() => mockProfileCubit!.checkIfWalletMismatch())
+            .thenAnswer((i) => Future.value(false));
+        when(() => mockPst.getPSTFee(BigInt.zero))
+            .thenAnswer((invocation) => Future.value(Winston(BigInt.zero)));
+        when(() => mockArweave.getArUsdConversionRate())
+            .thenAnswer((invocation) => Future.value(10));
+        when(() => mockUploadPlanUtils.filesToUploadPlan(
+            files: any(named: 'files'),
+            cipherKey: any(named: 'cipherKey'),
+            wallet: any(named: 'wallet'),
+            conflictingFiles: any(named: 'conflictingFiles'),
+            targetDrive: any(named: 'targetDrive'),
+            targetFolder: any<FolderEntry>(named: 'targetFolder'))).thenAnswer(
+          (invocation) => Future.value(
+            UploadPlan.create(
+              fileV2UploadHandles: {},
+              fileDataItemUploadHandles: {},
+              folderDataItemUploadHandles: {},
+            ),
+          ),
+        );
+        when(() => mockProfileCubit!.isCurrentProfileArConnect())
+            .thenAnswer((i) => Future.value(true));
+      });
+
+      blocTest<UploadCubit, UploadState>(
+          'should show the warning when file checker found files above safe limit',
+          setUp: () {
+            when(() => mockUploadFileChecker.hasFileAboveSafePublicSizeLimit(
+                    files: any(named: 'files')))
+                .thenAnswer((invocation) async => true);
+          },
+          build: () {
+            return getUploadCubitInstanceWith(tNoConflictingFiles);
+          },
+          act: (cubit) async {
+            await cubit.startUploadPreparation();
+            await cubit.checkConflictingFiles();
+          },
+          expect: () => <dynamic>[
+                const TypeMatcher<UploadPreparationInitialized>(),
+                const TypeMatcher<UploadPreparationInProgress>(),
+                const TypeMatcher<UploadShowingWarning>()
+              ]);
+      blocTest<UploadCubit, UploadState>(
+          'should show the warning when file checker found files above safe limit and emit UploadReady when user confirm the upload',
+          setUp: () {
+            when(() => mockUploadFileChecker.hasFileAboveSafePublicSizeLimit(
+                    files: any(named: 'files')))
+                .thenAnswer((invocation) async => true);
+          },
+          build: () {
+            return getUploadCubitInstanceWith(tNoConflictingFiles);
+          },
+          act: (cubit) async {
+            await cubit.startUploadPreparation();
+            await cubit.checkConflictingFiles();
+            await cubit.prepareUploadPlanAndCostEstimates();
+          },
+          expect: () => <dynamic>[
+                const TypeMatcher<UploadPreparationInitialized>(),
+                const TypeMatcher<UploadPreparationInProgress>(),
+                const TypeMatcher<UploadShowingWarning>(),
+                const TypeMatcher<UploadPreparationInProgress>(),
+                const TypeMatcher<UploadReady>(),
+              ]);
+      blocTest<UploadCubit, UploadState>(
+          'should not show the warning when file checker not found files above safe limit and emit UploadReady without user confirmation',
+          setUp: () {
+            when(() => mockUploadFileChecker.hasFileAboveSafePublicSizeLimit(
+                    files: any(named: 'files')))
+                .thenAnswer((invocation) async => false);
+          },
+          build: () {
+            return getUploadCubitInstanceWith(tNoConflictingFiles);
+          },
+          act: (cubit) async {
+            await cubit.startUploadPreparation();
+            await cubit.checkConflictingFiles();
+          },
+          expect: () => <dynamic>[
+                const TypeMatcher<UploadPreparationInitialized>(),
+                const TypeMatcher<UploadPreparationInProgress>(),
+                const TypeMatcher<UploadPreparationInProgress>(),
+                const TypeMatcher<UploadReady>(),
+              ]);
+    },
+  );
 
   group('prepare upload plan and costs estimates', () {
     setUp(() {

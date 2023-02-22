@@ -107,3 +107,17 @@ class UploadFailure extends UploadState {}
 class UploadComplete extends UploadState {}
 
 class UploadWalletMismatch extends UploadState {}
+
+class UploadShowingWarning extends UploadState {
+  final UploadWarningReason reason;
+
+  UploadShowingWarning({required this.reason});
+
+  @override
+  List<Object> get props => [reason];
+}
+
+enum UploadWarningReason {
+  /// The user is attempting to upload a file that is too large.
+  fileTooLarge,
+}

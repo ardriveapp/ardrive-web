@@ -29,6 +29,7 @@ class UploadCubit extends Cubit<UploadState> {
   final ArweaveService _arweave;
   final PstService _pst;
   final UploadPlanUtils _uploadPlanUtils;
+  final UploadFileChecker _uploadFileChecker;
 
   late bool uploadFolders;
   late Drive _targetDrive;
@@ -52,8 +53,10 @@ class UploadCubit extends Cubit<UploadState> {
     required ArweaveService arweave,
     required PstService pst,
     required UploadPlanUtils uploadPlanUtils,
+    required UploadFileChecker uploadFileChecker,
     this.uploadFolders = false,
   })  : _profileCubit = profileCubit,
+        _uploadFileChecker = uploadFileChecker,
         _driveDao = driveDao,
         _arweave = arweave,
         _pst = pst,
@@ -167,7 +170,7 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
     } else {
-      await prepareUploadPlanAndCostEstimates();
+      await _verifyFilesAboveWarningLimit();
     }
   }
 
@@ -407,12 +410,32 @@ class UploadCubit extends Cubit<UploadState> {
     );
   }
 
-  int get sizeLimit => _targetDrive.isPrivate 
-      ? (kIsWeb ? privateFileSizeLimit: mobilePrivateFileSizeLimit)
+  int get sizeLimit => _targetDrive.isPrivate
+      ? (kIsWeb ? privateFileSizeLimit : mobilePrivateFileSizeLimit)
       : publicFileSizeLimit;
 
   void _removeFilesWithFolderNameConflicts() {
     files.removeWhere((file) => conflictingFolders.contains(file.ioFile.name));
+  }
+
+  Future<void> _verifyFilesAboveWarningLimit() async {
+    // verify if there is a file larger than publicFileSafeSizeLimit
+    // using for each
+    bool fileAboveWarningLimit =
+        await _uploadFileChecker.hasFileAboveSafePublicSizeLimit(
+      files: files,
+    );
+
+    // show UploadShowingWarning
+    if (fileAboveWarningLimit) {
+      emit(
+        UploadShowingWarning(reason: UploadWarningReason.fileTooLarge),
+      );
+
+      return;
+    }
+
+    await prepareUploadPlanAndCostEstimates();
   }
 
   @override
@@ -420,5 +443,23 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadFailure());
     'Failed to upload file: $error $stackTrace'.logError();
     super.onError(error, stackTrace);
+  }
+}
+
+class UploadFileChecker {
+  UploadFileChecker({required int publicFileSafeSizeLimit})
+      : _publicFileSafeSizeLimit = publicFileSafeSizeLimit;
+
+  final int _publicFileSafeSizeLimit;
+
+  Future<bool> hasFileAboveSafePublicSizeLimit(
+      {required List<UploadFile> files}) async {
+    for (final file in files) {
+      final fileSize = await file.ioFile.length;
+      if (fileSize > _publicFileSafeSizeLimit) {
+        return true;
+      }
+    }
+    return false;
   }
 }

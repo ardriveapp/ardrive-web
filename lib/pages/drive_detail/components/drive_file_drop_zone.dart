@@ -120,12 +120,14 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
         parentFolderId: parentFolderId,
       ));
 
+      // ignore: use_build_context_synchronously
       await showCongestionDependentModalDialog(
         context,
         () => showDialog(
           context: context,
           builder: (_) => BlocProvider<UploadCubit>(
             create: (context) => UploadCubit(
+              uploadFileChecker: context.read<UploadFileChecker>(),
               uploadPlanUtils: UploadPlanUtils(
                 arweave: context.read<ArweaveService>(),
                 driveDao: context.read<DriveDao>(),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
+import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/pst/ardrive_contract_oracle.dart';
 import 'package:ardrive/pst/community_oracle.dart';
@@ -125,6 +126,12 @@ class AppState extends State<App> {
   Widget build(BuildContext context) => MultiRepositoryProvider(
         providers: [
           RepositoryProvider<ArweaveService>(create: (_) => arweave),
+          // repository provider for UploadFileChecker
+          RepositoryProvider<UploadFileChecker>(
+            create: (_) => UploadFileChecker(
+              publicFileSafeSizeLimit: publicFileSafeSizeLimit,
+            ),
+          ),
           RepositoryProvider<PstService>(
             create: (_) => PstService(
               communityOracle: CommunityOracle(

@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
+import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/models/models.dart';
@@ -57,6 +58,7 @@ Future<void> promptToUpload(
       context: context,
       builder: (_) => BlocProvider<UploadCubit>(
         create: (context) => UploadCubit(
+          uploadFileChecker: context.read<UploadFileChecker>(),
           uploadPlanUtils: UploadPlanUtils(
             arweave: context.read<ArweaveService>(),
             driveDao: context.read<DriveDao>(),
@@ -457,6 +459,39 @@ class UploadForm extends StatelessWidget {
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
                   child: Text(appLocalizationsOf(context).okEmphasized),
+                ),
+              ],
+            );
+          } else if (state is UploadShowingWarning) {
+            return AppDialog(
+              title: appLocalizationsOf(context).warningEmphasized,
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appLocalizationsOf(context)
+                          .weDontRecommendUploadsAboveASafeLimit(
+                        filesize(publicFileSafeSizeLimit),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(appLocalizationsOf(context).cancelEmphasized),
+                ),
+                ElevatedButton(
+                  onPressed: () => context
+                      .read<UploadCubit>()
+                      .prepareUploadPlanAndCostEstimates(),
+                  child: Text(
+                    appLocalizationsOf(context).proceed,
+                  ),
                 ),
               ],
             );
