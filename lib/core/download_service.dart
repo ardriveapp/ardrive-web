@@ -47,7 +47,7 @@ class _DownloadService implements DownloadService {
     final responseStream = ArDriveHTTP().getAsByteRangeStream(
       '${gateway.origin}/$fileTxId',
       fileSize,
-      chunkSize: 50 * 1024 * 1024, // 50 MiB
+      chunkSize: 250 * 1024 * 1024, // 250 MiB
     );
 
     yield* responseStream.asyncMap((response) {
