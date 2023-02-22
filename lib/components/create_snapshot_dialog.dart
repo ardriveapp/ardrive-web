@@ -10,6 +10,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/split_localizations.dart';
+import 'package:ardrive/utils/usd_upload_cost_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -386,9 +387,7 @@ Widget _confirmDialog(
                           ),
                           if (state.usdUploadCost != null)
                             TextSpan(
-                              text: state.usdUploadCost! >= 0.01
-                                  ? ' (~${state.usdUploadCost!.toStringAsFixed(2)} USD)'
-                                  : ' (< 0.01 USD)',
+                              text: usdUploadCostToString(state.usdUploadCost!),
                             ),
                         ],
                         style: Theme.of(context).textTheme.bodyText1,
