@@ -500,6 +500,47 @@ void main() {
         );
 
         blocTest<UploadCubit, UploadState>(
+          'should UploadReady when we have a big file under 5GiB and is private'
+          ' others files not too large to upload',
+          setUp: () async {
+            final tFile = File('some_file.txt');
+            tFile
+                .writeAsBytesSync(Uint8List(tPrivateFileSizeLimit.toInt() + 1));
+            tTooLargeFile = UploadFile(
+                ioFile: await IOFile.fromData(
+                    File(tFile.path).readAsBytesSync(),
+                    lastModifiedDate: tDefaultDate,
+                    name: 'some_file.txt'),
+                parentFolderId: tRootFolderId);
+          },
+          build: () {
+            final tTooLargeFilesWithNoConflictingFiles = tNoConflictingFiles
+              ..add(tTooLargeFile);
+
+            return getUploadCubitInstanceWith(
+                tTooLargeFilesWithNoConflictingFiles);
+          },
+          tearDown: () {
+            File('some_file.txt').deleteSync();
+          },
+          act: (cubit) async {
+            cubit.setIsPrivate(true);
+            await cubit.startUploadPreparation();
+            await cubit.checkFilesAboveLimit();
+          },
+          verify: (_) {
+            verifyNever(() =>
+                mockUploadFileChecker.checkAndReturnFilesAbovePrivateLimit(
+                    files: any(named: 'files')));
+          },
+          expect: () => <dynamic>[
+            UploadPreparationInitialized(),
+            const TypeMatcher<UploadPreparationInProgress>(),
+            const TypeMatcher<UploadReady>(),
+          ],
+        );
+
+        blocTest<UploadCubit, UploadState>(
           'should emit UploadReady when we have too large files but at least a not too large'
           ' and skip large files',
           setUp: () async {

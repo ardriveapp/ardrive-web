@@ -122,18 +122,20 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> checkFilesAboveLimit() async {
-    final tooLargeFiles = await _uploadFileChecker
-        .checkAndReturnFilesAbovePrivateLimit(files: files);
+    if (_targetDrive.isPrivate || (_isPrivate != null && _isPrivate!)) {
+      final tooLargeFiles = await _uploadFileChecker
+          .checkAndReturnFilesAbovePrivateLimit(files: files);
 
-    if (tooLargeFiles.isNotEmpty) {
-      emit(
-        UploadFileTooLarge(
-          hasFilesToUpload: files.length > tooLargeFiles.length,
-          tooLargeFileNames: tooLargeFiles,
-          isPrivate: _targetDrive.isPrivate,
-        ),
-      );
-      return;
+      if (tooLargeFiles.isNotEmpty) {
+        emit(
+          UploadFileTooLarge(
+            hasFilesToUpload: files.length > tooLargeFiles.length,
+            tooLargeFileNames: tooLargeFiles,
+            isPrivate: _targetDrive.isPrivate,
+          ),
+        );
+        return;
+      }
     }
 
     // If we don't have any file above limit, we can check conflicts
@@ -383,7 +385,7 @@ class UploadCubit extends Cubit<UploadState> {
         .checkAndReturnFilesAbovePrivateLimit(files: files);
 
     files.removeWhere(
-      (file) => filesToSkip.contains(file.ioFile.path),
+      (file) => filesToSkip.contains(file.getIdentifier()),
     );
 
     await checkConflicts();
@@ -415,6 +417,13 @@ class UploadCubit extends Cubit<UploadState> {
 
     await prepareUploadPlanAndCostEstimates();
   }
+
+  @visibleForTesting
+  setIsPrivate(bool isPrivate) {
+    _isPrivate = isPrivate;
+  }
+
+  bool? _isPrivate;
 
   @override
   void onError(Object error, StackTrace stackTrace) {

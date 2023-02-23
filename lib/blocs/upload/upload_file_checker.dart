@@ -28,7 +28,7 @@ class UploadFileChecker {
     for (final file in files) {
       final fileSize = await file.ioFile.length;
       if (fileSize > _privateFileSafeSizeLimit) {
-        filesAbovePrivateLimit.add(file.ioFile.path);
+        filesAbovePrivateLimit.add(file.getIdentifier());
       }
     }
 

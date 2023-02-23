@@ -132,7 +132,7 @@ void main() {
         ],
       );
 
-      expect(result, [ioFileAboveSafeLimit.path]);
+      expect(result, ['test.txt']);
     });
 
     test('should return list of all files above the limit', () async {
@@ -155,9 +155,9 @@ void main() {
       );
 
       expect(result, [
-        ioFileAboveSafeLimit.path,
-        ioFileAboveSafeLimit.path,
-        ioFileAboveSafeLimit.path,
+        'test.txt',
+        'test.txt',
+        'test.txt',
       ]);
     });
 
