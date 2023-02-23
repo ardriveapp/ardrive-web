@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/core/decrypt.dart';
 import 'package:ardrive/core/download_service.dart';

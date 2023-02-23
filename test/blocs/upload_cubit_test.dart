@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
-import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
@@ -45,6 +44,9 @@ void main() {
   late List<UploadFile> tAllConflictingFiles;
   late List<UploadFile> tSomeConflictingFiles;
   late List<UploadFile> tNoConflictingFiles;
+
+  // limits
+  final tPrivateFileSizeLimit = 100;
 
   final tWallet = getTestWallet();
   String? tWalletAddress;
@@ -420,16 +422,22 @@ void main() {
 
         blocTest<UploadCubit, UploadState>(
           'should emit UploadFileTooLarge with hasFilesToUpload false when we have'
-          ' only a file larger than publicFileSizeLimit'
+          ' only a file larger than privateFileSizeLimit'
           ' is intended to upload',
           setUp: () async {
             final tFile = File('some_file.txt');
-            tFile.writeAsBytesSync(Uint8List(publicFileSizeLimit.toInt() + 1));
+            tFile
+                .writeAsBytesSync(Uint8List(tPrivateFileSizeLimit.toInt() + 1));
             tTooLargeFile = UploadFile(
                 ioFile: await IOFile.fromData(tFile.readAsBytesSync(),
                     lastModifiedDate: tDefaultDate, name: 'some_file.txt'),
                 parentFolderId: tRootFolderId);
+
             tTooLargeFiles = [tTooLargeFile];
+            when(() =>
+                    mockUploadFileChecker.checkAndReturnFilesAbovePrivateLimit(
+                        files: any(named: 'files')))
+                .thenAnswer((invocation) async => ['some_file.txt']);
           },
           build: () {
             return getUploadCubitInstanceWith(tTooLargeFiles);
@@ -455,13 +463,18 @@ void main() {
           ' others files not too large to upload',
           setUp: () async {
             final tFile = File('some_file.txt');
-            tFile.writeAsBytesSync(Uint8List(publicFileSizeLimit.toInt() + 1));
+            tFile
+                .writeAsBytesSync(Uint8List(tPrivateFileSizeLimit.toInt() + 1));
             tTooLargeFile = UploadFile(
                 ioFile: await IOFile.fromData(
                     File(tFile.path).readAsBytesSync(),
                     lastModifiedDate: tDefaultDate,
                     name: 'some_file.txt'),
                 parentFolderId: tRootFolderId);
+            when(() =>
+                    mockUploadFileChecker.checkAndReturnFilesAbovePrivateLimit(
+                        files: any(named: 'files')))
+                .thenAnswer((invocation) async => ['some_file.txt']);
           },
           build: () {
             final tTooLargeFilesWithNoConflictingFiles = tNoConflictingFiles
@@ -492,7 +505,8 @@ void main() {
           setUp: () async {
             final tFile = File('some_file.txt');
 
-            tFile.writeAsBytesSync(Uint8List(publicFileSizeLimit.toInt() + 1));
+            tFile
+                .writeAsBytesSync(Uint8List(tPrivateFileSizeLimit.toInt() + 1));
             tTooLargeFile = UploadFile(
                 ioFile: await IOFile.fromData(
                     File(tFile.path).readAsBytesSync(),
@@ -501,6 +515,10 @@ void main() {
                 parentFolderId: tRootFolderId);
             when(() => mockProfileCubit!.isCurrentProfileArConnect())
                 .thenAnswer((i) => Future.value(false));
+            when(() =>
+                    mockUploadFileChecker.checkAndReturnFilesAbovePrivateLimit(
+                        files: any(named: 'files')))
+                .thenAnswer((invocation) async => ['some_file.txt']);
           },
           build: () {
             final tTooLargeFilesWithNoConflictingFiles = tNoConflictingFiles
@@ -525,7 +543,7 @@ void main() {
           ],
         );
       },
-      skip: 'File size limit is too high to generate a file for',
+      // skip: 'File size limit is too high to generate a file for',
     );
 
     blocTest<UploadCubit, UploadState>(

@@ -3,6 +3,7 @@ import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
+import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';

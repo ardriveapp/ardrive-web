@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
+import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';

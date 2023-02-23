@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/cost_estimate.dart';
-import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
+import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/extensions.dart';
@@ -122,10 +122,8 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> checkFilesAboveLimit() async {
-    final tooLargeFiles = [
-      for (final file in files)
-        if (await file.ioFile.length > sizeLimit) file.ioFile.name
-    ];
+    final tooLargeFiles = await _uploadFileChecker
+        .checkAndReturnFilesAbovePrivateLimit(files: files);
 
     if (tooLargeFiles.isNotEmpty) {
       emit(
@@ -381,26 +379,13 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> skipLargeFilesAndCheckForConflicts() async {
     emit(UploadPreparationInProgress());
-    final List<String> filesToSkip = [];
-
-    for (final file in files) {
-      if (await file.ioFile.length > sizeLimit) {
-        filesToSkip.add(file.ioFile.path);
-      }
-    }
+    final List<String> filesToSkip = await _uploadFileChecker
+        .checkAndReturnFilesAbovePrivateLimit(files: files);
 
     files.removeWhere(
-      (file) => filesToSkip
-          .where((filePath) => filePath == file.ioFile.path)
-          .isNotEmpty,
+      (file) => filesToSkip.contains(file.ioFile.path),
     );
 
-    for (final file in files) {
-      final fileSize = await file.ioFile.length;
-      if (fileSize > sizeLimit) {
-        files.remove(file);
-      }
-    }
     await checkConflicts();
   }
 
@@ -409,10 +394,6 @@ class UploadCubit extends Cubit<UploadState> {
       (file) => conflictingFiles.containsKey(file.getIdentifier()),
     );
   }
-
-  int get sizeLimit => _targetDrive.isPrivate
-      ? (kIsWeb ? privateFileSizeLimit : mobilePrivateFileSizeLimit)
-      : publicFileSizeLimit;
 
   void _removeFilesWithFolderNameConflicts() {
     files.removeWhere((file) => conflictingFolders.contains(file.ioFile.name));
@@ -440,23 +421,5 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadFailure());
     'Failed to upload file: $error $stackTrace'.logError();
     super.onError(error, stackTrace);
-  }
-}
-
-class UploadFileChecker {
-  UploadFileChecker({required int publicFileSafeSizeLimit})
-      : _publicFileSafeSizeLimit = publicFileSafeSizeLimit;
-
-  final int _publicFileSafeSizeLimit;
-
-  Future<bool> hasFileAboveSafePublicSizeLimit(
-      {required List<UploadFile> files}) async {
-    for (final file in files) {
-      final fileSize = await file.ioFile.length;
-      if (fileSize > _publicFileSafeSizeLimit) {
-        return true;
-      }
-    }
-    return false;
   }
 }
