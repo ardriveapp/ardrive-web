@@ -446,6 +446,7 @@ void main() {
             File('some_file.txt').deleteSync();
           },
           act: (cubit) async {
+            cubit.setIsPrivate(true);
             await cubit.startUploadPreparation();
             await cubit.checkFilesAboveLimit();
           },
@@ -487,6 +488,7 @@ void main() {
             File('some_file.txt').deleteSync();
           },
           act: (cubit) async {
+            cubit.setIsPrivate(true);
             await cubit.startUploadPreparation();
             await cubit.checkFilesAboveLimit();
           },
@@ -500,8 +502,7 @@ void main() {
         );
 
         blocTest<UploadCubit, UploadState>(
-          'should UploadReady when we have a big file under 5GiB and is private'
-          ' others files not too large to upload',
+          'should UploadReady when we have a big file under 5GiB and is public and all files are under private size limit',
           setUp: () async {
             final tFile = File('some_file.txt');
             tFile
@@ -524,17 +525,12 @@ void main() {
             File('some_file.txt').deleteSync();
           },
           act: (cubit) async {
-            cubit.setIsPrivate(true);
             await cubit.startUploadPreparation();
             await cubit.checkFilesAboveLimit();
           },
-          verify: (_) {
-            verifyNever(() =>
-                mockUploadFileChecker.checkAndReturnFilesAbovePrivateLimit(
-                    files: any(named: 'files')));
-          },
           expect: () => <dynamic>[
             UploadPreparationInitialized(),
+            const TypeMatcher<UploadPreparationInProgress>(),
             const TypeMatcher<UploadPreparationInProgress>(),
             const TypeMatcher<UploadReady>(),
           ],
@@ -569,6 +565,7 @@ void main() {
             return getUploadCubitInstanceWith(files);
           },
           act: (cubit) async {
+            cubit.setIsPrivate(true);
             await cubit.startUploadPreparation();
             await cubit.checkFilesAboveLimit();
             await cubit.skipLargeFilesAndCheckForConflicts();

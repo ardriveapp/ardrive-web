@@ -373,7 +373,7 @@ class UploadCubit extends Cubit<UploadState> {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       uploadHandle.dispose();
-    }
+  }
     unawaited(_profileCubit.refreshBalance());
 
     emit(UploadComplete());
