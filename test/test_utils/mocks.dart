@@ -4,6 +4,7 @@ import 'package:ardrive/core/decrypt.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/services/crypto/authenticate.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -29,7 +30,7 @@ class MockArDriveIO extends Mock implements ArDriveIO {}
 
 class MockIOFileAdapter extends Mock implements IOFileAdapter {}
 
-class MockIOFile extends Mock implements IOFile {}
+class MockAuthenticate extends Mock implements Authenticate {}
 
 class MockSyncBloc extends MockCubit<SyncState> implements SyncCubit {}
 

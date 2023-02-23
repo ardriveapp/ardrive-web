@@ -27,6 +27,7 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
   final ARFSRepository _arfsRepository;
   final ArDriveIO _ardriveIo;
   final IOFileAdapter _ioFileAdapter;
+  final Authenticate _authenticate;
 
   StreamPersonalFileDownloadCubit({
     required ARFSFileEntity file,
@@ -38,6 +39,7 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
     required ARFSRepository arfsRepository,
     required ArDriveIO ardriveIo,
     required IOFileAdapter ioFileAdapter,
+    required Authenticate authenticate,
   })  : _driveDao = driveDao,
         _arweave = arweave,
         _file = file,
@@ -47,6 +49,7 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
         _decrypt = decrypt,
         _ardriveIo = ardriveIo,
         _ioFileAdapter = ioFileAdapter,
+        _authenticate = authenticate,
         super(FileDownloadStarting());
 
   Future<void> download(SecretKey? cipherKey) async {
@@ -165,8 +168,7 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
     );
 
     try {
-      final authenticatedOwner = authenticateOwner(
-        _arweave,
+      final authenticatedOwner = _authenticate.authenticateOwner(
         authStream,
         downloadLength,
         _file.txId,

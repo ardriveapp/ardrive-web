@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/file_download/file_download_cubit.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
@@ -5,6 +7,7 @@ import 'package:ardrive/core/decrypt.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/services/crypto/authenticate.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/data_size.dart';
 import 'package:ardrive_io/ardrive_io.dart';
@@ -50,6 +53,45 @@ class MockARFSDrive extends ARFSDriveEntity {
   });
 }
 
+class MockIOFile extends IOFile {
+  final DateTime _lastModifiedDate;
+  final String _name;
+  final String _path;
+  final Uint8List _data;
+
+  MockIOFile({
+    required super.contentType,
+    required DateTime lastModifiedDate,
+    required String name,
+    required String path,
+    required Uint8List data,
+  }) : _lastModifiedDate = lastModifiedDate,
+       _name = name,
+       _path = path,
+       _data = data;
+
+  @override
+  DateTime get lastModifiedDate => _lastModifiedDate;
+
+  @override
+  int get length => _data.length;
+  
+  @override
+  String get name => _name;
+
+  @override
+  String get path => _path;
+
+  @override
+  Stream<Uint8List> openReadStream([int start = 0, int? end]) => Stream.value(_data);
+
+  @override
+  Future<Uint8List> readAsBytes() => Future.value(_data);
+
+  @override
+  Future<String> readAsString() async => Future.value(String.fromCharCodes(_data));
+}
+
 Stream<int> mockDownloadProgress() async* {
   yield 100;
 }
@@ -72,7 +114,7 @@ void main() {
   late ARFSRepository mockARFSRepository;
   late ArDriveIO mockArDriveIO;
   late IOFileAdapter mockIOFileAdapter;
-  late MockIOFile mockIOFile;
+  late Authenticate mockAuthenticate;
 
   MockARFSFile testFile = MockARFSFile(
     appName: 'appName',
@@ -148,6 +190,14 @@ void main() {
     rootFolderId: 'rootFolderId',
   );
 
+  MockIOFile mockIOFileExample = MockIOFile(
+    contentType: 'test/content-type',
+    lastModifiedDate: DateTime.now(),
+    name: 'testName.test',
+    path: '',
+    data: Uint8List(100),
+  );
+
   setUpAll(() {
     registerFallbackValue(SecretKey([]));
     registerFallbackValue(MockTransactionCommonMixin());
@@ -159,7 +209,7 @@ void main() {
     registerFallbackValue(testFile);
     registerFallbackValue(mockDownloadProgress());
     registerFallbackValue(mockDownloadInProgress());
-    registerFallbackValue(MockIOFile());
+    registerFallbackValue(mockIOFileExample);
     registerFallbackValue(Future.value(true));
   });
 
@@ -172,7 +222,7 @@ void main() {
     mockARFSRepository = MockARFSRepository();
     mockArDriveIO = MockArDriveIO();
     mockIOFileAdapter = MockIOFileAdapter();
-    mockIOFile = MockIOFile();
+    mockAuthenticate = MockAuthenticate();
   });
 
   group('Testing download method', () {
@@ -193,10 +243,10 @@ void main() {
           .thenAnswer((invocation) => Future.value(Stream.value(Uint8List(100))));
       when(() => mockArDriveIO.saveFileStream(any(), any()))
           .thenAnswer((invocation) => Future.value(true));
-      when((() => mockIOFile.openReadStream(any(), any())))
+      when(() => mockIOFileExample.openReadStream(any(), any()))
           .thenAnswer((invocation) => Stream.fromIterable([Uint8List(100)]));
       when(() => mockIOFileAdapter.fromReadStreamGenerator(any(), any(), name: any(), lastModifiedDate: any(), contentType: any()))
-          .thenAnswer((invocation) => Future.value(mockIOFile));
+          .thenAnswer((invocation) => Future.value(mockIOFileExample));
     });
     blocTest<StreamPersonalFileDownloadCubit, FileDownloadState>(
       'should download a private file',
@@ -210,6 +260,7 @@ void main() {
         arfsRepository: mockARFSRepository,
         ardriveIo: mockArDriveIO,
         ioFileAdapter: mockIOFileAdapter,
+        authenticate: mockAuthenticate,
       ),
       act: (bloc) {
         streamPersonalFileDownloadCubit.download(SecretKey([]));
@@ -240,6 +291,7 @@ void main() {
         arfsRepository: mockARFSRepository,
         ardriveIo: mockArDriveIO,
         ioFileAdapter: mockIOFileAdapter,
+        authenticate: mockAuthenticate,
       ),
       setUp: () {
         when(() => mockARFSRepository.getDriveById(any()))
@@ -281,6 +333,7 @@ void main() {
         arfsRepository: mockARFSRepository,
         ardriveIo: mockArDriveIO,
         ioFileAdapter: mockIOFileAdapter,
+        authenticate: mockAuthenticate,
       ),
       setUp: () {
         AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
@@ -318,6 +371,7 @@ void main() {
         arfsRepository: mockARFSRepository,
         ardriveIo: mockArDriveIO,
         ioFileAdapter: mockIOFileAdapter,
+        authenticate: mockAuthenticate,
       ),
       setUp: () {
         AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
@@ -350,6 +404,7 @@ void main() {
         arfsRepository: mockARFSRepository,
         ardriveIo: mockArDriveIO,
         ioFileAdapter: mockIOFileAdapter,
+        authenticate: mockAuthenticate,
       ),
       setUp: () {
         AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
@@ -378,6 +433,7 @@ void main() {
         arfsRepository: mockARFSRepository,
         ardriveIo: mockArDriveIO,
         ioFileAdapter: mockIOFileAdapter,
+        authenticate: mockAuthenticate,
       ),
       setUp: () {
         AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
@@ -422,6 +478,7 @@ void main() {
         arfsRepository: mockARFSRepository,
         ardriveIo: mockArDriveIO,
         ioFileAdapter: mockIOFileAdapter,
+        authenticate: mockAuthenticate,
       ),
       setUp: () {
         AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
@@ -463,6 +520,7 @@ void main() {
         arfsRepository: mockARFSRepository,
         ardriveIo: mockArDriveIO,
         ioFileAdapter: mockIOFileAdapter,
+        authenticate: mockAuthenticate,
       ),
       setUp: () {
         AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
@@ -497,6 +555,7 @@ void main() {
         arfsRepository: mockARFSRepository,
         ardriveIo: mockArDriveIO,
         ioFileAdapter: mockIOFileAdapter,
+        authenticate: mockAuthenticate,
       ),
       setUp: () {
         AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
@@ -534,6 +593,7 @@ void main() {
                 arfsRepository: mockARFSRepository,
                 ardriveIo: mockArDriveIO,
                 ioFileAdapter: mockIOFileAdapter,
+                authenticate: mockAuthenticate,
               ),
           setUp: () {
             AppPlatform.setMockPlatform(platform: SystemPlatform.iOS);
@@ -578,6 +638,7 @@ void main() {
                 arfsRepository: mockARFSRepository,
                 ardriveIo: mockArDriveIO,
                 ioFileAdapter: mockIOFileAdapter,
+                authenticate: mockAuthenticate,
               ),
           setUp: () {
             AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
@@ -622,6 +683,7 @@ void main() {
                 arfsRepository: mockARFSRepository,
                 ardriveIo: mockArDriveIO,
                 ioFileAdapter: mockIOFileAdapter,
+                authenticate: mockAuthenticate,
               ),
           setUp: () {
             AppPlatform.setMockPlatform(platform: SystemPlatform.Web);
@@ -648,6 +710,7 @@ void main() {
               arfsRepository: mockARFSRepository,
               ardriveIo: mockArDriveIO,
               ioFileAdapter: mockIOFileAdapter,
+                authenticate: mockAuthenticate,
             ),
         setUp: () {
           AppPlatform.setMockPlatform(platform: SystemPlatform.Android);

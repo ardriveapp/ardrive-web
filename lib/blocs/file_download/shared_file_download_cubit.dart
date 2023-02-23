@@ -10,6 +10,7 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
   final Decrypt _decrypt;
   final ArDriveIO _ardriveIo;
   final IOFileAdapter _ioFileAdapter;
+  final Authenticate _authenticate;
 
   StreamSharedFileDownloadCubit({
     this.fileKey,
@@ -19,11 +20,13 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
     required Decrypt decrypt,
     required ArDriveIO ardriveIo,
     required IOFileAdapter ioFileAdapter,
+    required Authenticate authenticate,
   })  : _arweave = arweave,
         _downloadService = downloadService,
         _decrypt = decrypt,
         _ardriveIo = ardriveIo,
         _ioFileAdapter = ioFileAdapter,
+        _authenticate = authenticate,
         super(FileDownloadStarting()) {
     download();
   }
@@ -73,8 +76,7 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
     );
 
     try {
-      final authenticatedOwner = authenticateOwner(
-        _arweave,
+      final authenticatedOwner = _authenticate.authenticateOwner(
         authStream,
         downloadLength,
         revision.dataTxId,

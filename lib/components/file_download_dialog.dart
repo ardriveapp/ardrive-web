@@ -8,6 +8,7 @@ import 'package:ardrive/core/decrypt.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/crypto/authenticate.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -42,6 +43,7 @@ Future<void> promptToDownloadProfileFile({
     arweave: context.read<ArweaveService>(),
     ardriveIo: ArDriveIO(),
     ioFileAdapter: IOFileAdapter(),
+    authenticate: Authenticate(arweave),
   )..download(cipherKey);
   return showDialog(
     context: context,
@@ -74,6 +76,7 @@ Future<void> promptToDownloadFileRevision({
     arweave: context.read<ArweaveService>(),
     ardriveIo: ArDriveIO(),
     ioFileAdapter: IOFileAdapter(),
+    authenticate: Authenticate(arweave),
   )..download(cipherKey);
 
   return showDialog(
@@ -98,6 +101,7 @@ Future<void> promptToDownloadSharedFile({
     decrypt: Decrypt(),
     ardriveIo: ArDriveIO(),
     ioFileAdapter: IOFileAdapter(),
+    authenticate: Authenticate(arweave),
   );
   return showDialog(
     context: context,
