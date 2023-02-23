@@ -2,6 +2,6 @@
   "defaultArweaveGatewayUrl": "https://arweave.net",
   "useTurbo": true,
   "defaultTurboUrl": "https://upload.ardrive.dev",
-  "allowedDataItemSizeForTurbo": 102400,
+  "allowedDataItemSizeForTurbo": 100000,
   "enableQuickSyncAuthoring": true
 }
