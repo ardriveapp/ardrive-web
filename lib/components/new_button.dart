@@ -225,25 +225,29 @@ List<PopupMenuEntry<Function>> _buildItems(
   if (profileState.runtimeType == ProfileLoggedIn) {
     final minimumWalletBalance = BigInt.from(10000000);
     final profile = profileState as ProfileLoggedIn;
-    final hasMinBalance = profile.walletBalance >= minimumWalletBalance;
+
+    final canUpload = profile.canUpload(
+      minimumWalletBalance: minimumWalletBalance,
+    );
+
     return [
       if (driveDetailState is DriveDetailLoadSuccess) ...{
-        _buildNewFolderItem(context, driveDetailState, hasMinBalance),
+        _buildNewFolderItem(context, driveDetailState, canUpload),
         const PopupMenuDivider(key: Key('divider-1')),
         _buildUploadFileItem(
           context,
           driveDetailState,
-          hasMinBalance,
+          canUpload,
         ),
         _buildUploadFolderItem(
           context,
           driveDetailState,
-          hasMinBalance,
+          canUpload,
         ),
         const PopupMenuDivider(key: Key('divider-2')),
       },
       if (drivesState is DrivesLoadSuccess) ...{
-        _buildCreateDrive(context, drivesState, hasMinBalance),
+        _buildCreateDrive(context, drivesState, canUpload),
         _buildAttachDrive(context)
       },
       if (driveDetailState is DriveDetailLoadSuccess &&
@@ -251,12 +255,18 @@ List<PopupMenuEntry<Function>> _buildItems(
         _buildCreateManifestItem(
           context,
           driveDetailState,
-          hasMinBalance,
+          canUpload,
         )
       },
       if (enableQuickSyncAuthoring &&
           driveDetailState is DriveDetailLoadSuccess) ...{
-        _buildCreateSnapshotItem(context, driveDetailState, hasMinBalance)
+        _buildCreateSnapshotItem(
+          context,
+          driveDetailState,
+          profile.hasMinimumBalanceForUpload(
+            minimumWalletBalance: minimumWalletBalance,
+          ),
+        )
       },
     ];
   } else {

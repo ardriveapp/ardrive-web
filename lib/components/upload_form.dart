@@ -60,6 +60,7 @@ Future<void> promptToUpload(
         create: (context) => UploadCubit(
           uploadPlanUtils: UploadPlanUtils(
             arweave: context.read<ArweaveService>(),
+            turboService: context.read<TurboService>(),
             driveDao: context.read<DriveDao>(),
           ),
           driveId: driveId,
@@ -67,6 +68,7 @@ Future<void> promptToUpload(
           files: selectedFiles,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
+          turbo: context.read<TurboService>(),
           pst: context.read<PstService>(),
           driveDao: context.read<DriveDao>(),
           uploadFolders: isFolderUpload,
@@ -310,16 +312,23 @@ class UploadForm extends StatelessWidget {
                     Text.rich(
                       TextSpan(
                         children: [
-                          TextSpan(
-                            text: appLocalizationsOf(context)
-                                .cost(state.costEstimate.arUploadCost),
-                          ),
-                          if (state.costEstimate.usdUploadCost != null)
+                          if (state.isFreeThanksToTurbo) ...[
                             TextSpan(
-                              text: usdUploadCostToString(
-                                state.costEstimate.usdUploadCost!,
-                              ),
+                              text: appLocalizationsOf(context)
+                                  .freeTurboTransaction,
                             ),
+                          ] else ...[
+                            TextSpan(
+                              text: appLocalizationsOf(context)
+                                  .cost(state.costEstimate.arUploadCost),
+                            ),
+                            if (state.costEstimate.usdUploadCost != null)
+                              TextSpan(
+                                text: usdUploadCostToString(
+                                  state.costEstimate.usdUploadCost!,
+                                ),
+                              ),
+                          ],
                         ],
                         style: Theme.of(context).textTheme.bodyText1,
                       ),
@@ -331,7 +340,8 @@ class UploadForm extends StatelessWidget {
                             numberOfFilesInBundles + numberOfV2Files),
                       ),
                     },
-                    if (!state.sufficientArBalance) ...{
+                    if (!state.sufficientArBalance &&
+                        !state.isFreeThanksToTurbo) ...{
                       const SizedBox(height: 8),
                       Text(
                         appLocalizationsOf(context).insufficientARForUpload,
@@ -349,12 +359,12 @@ class UploadForm extends StatelessWidget {
                   child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
                 ElevatedButton(
-                  onPressed: state.sufficientArBalance
-                      ? () => context.read<UploadCubit>().startUpload(
-                            uploadPlan: state.uploadPlan,
-                            costEstimate: state.costEstimate,
-                          )
-                      : null,
+                  onPressed:
+                      state.sufficientArBalance || state.isFreeThanksToTurbo
+                          ? () => context
+                              .read<UploadCubit>()
+                              .startUpload(uploadPlan: state.uploadPlan)
+                          : null,
                   child: Text(appLocalizationsOf(context).uploadEmphasized),
                 ),
               ],
@@ -407,12 +417,14 @@ class UploadForm extends StatelessWidget {
                             title: Text(file.entity.name!),
                             subtitle: Text(
                                 '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
-                            trailing: CircularProgressIndicator(
-                                // Show an indeterminate progress indicator if the upload hasn't started yet as
-                                // small uploads might never report a progress.
-                                value: file.uploadProgress != 0
-                                    ? file.uploadProgress
-                                    : null),
+                            trailing: file.hasError
+                                ? const Icon(Icons.error)
+                                : CircularProgressIndicator(
+                                    // Show an indeterminate progress indicator if the upload hasn't started yet as
+                                    // small uploads might never report a progress.
+                                    value: file.uploadProgress != 0
+                                        ? file.uploadProgress
+                                        : null),
                           ),
                         },
                         for (final bundle
@@ -428,12 +440,15 @@ class UploadForm extends StatelessWidget {
                             ),
                             subtitle: Text(
                                 '${filesize(bundle.uploadedSize)}/${filesize(bundle.size)}'),
-                            trailing: CircularProgressIndicator(
-                                // Show an indeterminate progress indicator if the upload hasn't started yet as
-                                // small uploads might never report a progress.
-                                value: bundle.uploadProgress != 0
-                                    ? bundle.uploadProgress
-                                    : null),
+                            trailing: bundle.hasError
+                                ? const Icon(Icons.error)
+                                : CircularProgressIndicator(
+                                    // Show an indeterminate progress indicator if the upload hasn't started yet as
+                                    // small uploads might never report a progress.
+                                    value: bundle.uploadProgress != 0
+                                        ? bundle.uploadProgress
+                                        : null,
+                                  ),
                           ),
                         },
                       ],
