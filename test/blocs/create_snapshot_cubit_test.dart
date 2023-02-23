@@ -152,6 +152,7 @@ void main() {
             driveId: 'driveId',
             range: Range(start: 0, end: 1),
           ),
+          PreparingAndSigningTransaction(isArConnectProfile: false),
           // can't check for the actual value because it contains a signed transaction
           isA<ConfirmingSnapshotCreation>(),
         ],
@@ -176,6 +177,7 @@ void main() {
             driveId: 'driveId',
             range: Range(start: 0, end: 1),
           ),
+          PreparingAndSigningTransaction(isArConnectProfile: false),
           // can't check for the actual value because it contains a signed transaction
           isA<ConfirmingSnapshotCreation>(),
           UploadingSnapshot(),
@@ -222,6 +224,7 @@ void main() {
             driveId: 'driveId',
             range: Range(start: 0, end: 85),
           ),
+          PreparingAndSigningTransaction(isArConnectProfile: false),
           isA<ConfirmingSnapshotCreation>(),
         ],
       );
