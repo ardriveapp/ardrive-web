@@ -27,6 +27,7 @@ class UploadCubit extends Cubit<UploadState> {
   final ProfileCubit _profileCubit;
   final DriveDao _driveDao;
   final ArweaveService _arweave;
+  final TurboService _turbo;
   final PstService _pst;
   final UploadPlanUtils _uploadPlanUtils;
 
@@ -50,12 +51,14 @@ class UploadCubit extends Cubit<UploadState> {
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required ArweaveService arweave,
+    required TurboService turbo,
     required PstService pst,
     required UploadPlanUtils uploadPlanUtils,
     this.uploadFolders = false,
   })  : _profileCubit = profileCubit,
         _driveDao = driveDao,
         _arweave = arweave,
+        _turbo = turbo,
         _pst = pst,
         _uploadPlanUtils = uploadPlanUtils,
         super(UploadPreparationInProgress());
@@ -283,6 +286,7 @@ class UploadCubit extends Cubit<UploadState> {
           uploadIsPublic: _targetDrive.isPublic,
           sufficientArBalance: profile.walletBalance >= costEstimate.totalCost,
           uploadPlan: uploadPlan,
+          isFreeThanksToTurbo: uploadPlan.useTurbo,
         ),
       );
     } catch (error) {
@@ -292,7 +296,6 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> startUpload({
     required UploadPlan uploadPlan,
-    required CostEstimate costEstimate,
   }) async {
     debugPrint('Starting upload...');
 
@@ -322,7 +325,7 @@ class UploadCubit extends Cubit<UploadState> {
 
         await bundleHandle.prepareAndSignBundleTransaction(
           arweaveService: _arweave,
-          driveDao: _driveDao,
+          turboService: _turbo,
           pstService: _pst,
           wallet: profile.wallet,
           isArConnect: await _profileCubit.isCurrentProfileArConnect(),
@@ -337,11 +340,12 @@ class UploadCubit extends Cubit<UploadState> {
       debugPrint('Starting bundle uploads');
 
       await for (final _ in bundleHandle
-          .upload(_arweave)
+          .upload(_arweave, _turbo)
           .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) => addError('Fatal upload error.'))) {
+          .handleError((_) => bundleHandle.hasError = true)) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
+      await bundleHandle.writeBundleItemsToDatabase(driveDao: _driveDao);
 
       debugPrint('Disposing bundle');
 
@@ -356,9 +360,6 @@ class UploadCubit extends Cubit<UploadState> {
           wallet: profile.wallet,
           pstService: _pst,
         );
-        await uploadHandle.writeFileEntityToDatabase(
-          driveDao: _driveDao,
-        );
       } catch (error) {
         addError(error);
       }
@@ -366,9 +367,12 @@ class UploadCubit extends Cubit<UploadState> {
       await for (final _ in uploadHandle
           .upload(_arweave)
           .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) => addError('Fatal upload error.'))) {
+          .handleError((_) => uploadHandle.hasError = true)) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
+
+      await uploadHandle.writeFileEntityToDatabase(driveDao: _driveDao);
+
       uploadHandle.dispose();
     }
     unawaited(_profileCubit.refreshBalance());

@@ -132,6 +132,7 @@ void main() {
           uploadPlanUtis = UploadPlanUtils(
             arweave: arweave,
             driveDao: driveDao,
+            turboService: DontUseTurbo(),
           );
 
           final uploadFiles = multipleFilesToUpload
@@ -188,6 +189,7 @@ void main() {
           uploadPlanUtis = UploadPlanUtils(
             arweave: arweave,
             driveDao: driveDao,
+            turboService: DontUseTurbo(),
           );
 
           final uploadFiles = singleFileToUpload

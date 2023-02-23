@@ -14,10 +14,16 @@ class TurboService {
   });
 
   Future<void> postDataItem({required DataItem dataItem}) async {
-    await httpClient.postBytes(
+    final acceptedStatusCodes = [200, 202, 204];
+    final response = await httpClient.postBytes(
       url: '$turboUri/v1/tx',
       data: (await dataItem.asBinary()).toBytes(),
     );
+    if (!acceptedStatusCodes.contains(response.statusCode)) {
+      throw Exception(
+        'Turbo upload failed with status code ${response.statusCode}',
+      );
+    }
   }
 }
 
