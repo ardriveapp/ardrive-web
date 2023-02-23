@@ -9,6 +9,7 @@ import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive/utils/usd_upload_cost_to_string.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +31,7 @@ Future<void> promptToCreateSnapshot(
                   driveDao: context.read<DriveDao>(),
                   profileCubit: context.read<ProfileCubit>(),
                   pst: context.read<PstService>(),
+                  tabVisibility: TabVisibilitySingleton(),
                 ),
                 child: CreateSnapshotDialog(
                   drive: drive,
