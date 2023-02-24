@@ -106,7 +106,7 @@ class SyncCubit extends Cubit<SyncState> {
     whenBrowserTabIsUnhidden(_restartSync);
   }
 
-  void _restartSync() {
+  void _restartSync() async {
     logSync(
         'Trying to create a sync subscription when window get focused again. This Cubit is active? ${!isClosed}');
     if (_lastSync != null) {
@@ -128,23 +128,21 @@ class SyncCubit extends Cubit<SyncState> {
 
     /// This delay is for don't abruptly open the modal when the user is back
     ///  to ArDrive browser tab
-    Future.delayed(const Duration(seconds: 2)).then((value) {
-      createSyncStream();
-    });
+    await Future.delayed(const Duration(seconds: 2));
+    createSyncStream();
   }
 
-  void createArConnectSyncStream() {
-    _profileCubit.isCurrentProfileArConnect().then((isArConnect) {
-      if (isArConnect) {
-        _arconnectSyncSub?.cancel();
-        _arconnectSyncSub = Stream.periodic(
-                const Duration(minutes: kArConnectSyncTimerDuration))
-            // Do not start another sync until the previous sync has completed.
-            .map((value) => Stream.fromFuture(arconnectSync()))
-            .listen((_) {});
-        arconnectSync();
-      }
-    });
+  void createArConnectSyncStream() async {
+    final isArConnect = await _profileCubit.isCurrentProfileArConnect();
+    if (isArConnect) {
+      _arconnectSyncSub?.cancel();
+      _arconnectSyncSub = Stream.periodic(
+              const Duration(minutes: kArConnectSyncTimerDuration))
+          // Do not start another sync until the previous sync has completed.
+          .map((value) => Stream.fromFuture(arconnectSync()))
+          .listen((_) {});
+      await arconnectSync();
+    }
   }
 
   Future<void> arconnectSync() async {
@@ -156,9 +154,9 @@ class SyncCubit extends Cubit<SyncState> {
 
   void restartArConnectSyncOnFocus() async {
     if (await _profileCubit.isCurrentProfileArConnect()) {
-      whenBrowserTabIsUnhidden(() {
-        Future.delayed(const Duration(seconds: 2))
-            .then((value) => createArConnectSyncStream());
+      whenBrowserTabIsUnhidden(() async {
+        await Future.delayed(const Duration(seconds: 2));
+        createArConnectSyncStream();
       });
     }
   }

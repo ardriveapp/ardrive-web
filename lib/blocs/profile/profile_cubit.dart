@@ -91,7 +91,9 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     if (profile.profileType == ProfileType.arConnect.index) {
-      if (!(await arconnect.checkPermissions())) {
+      await Future.delayed(const Duration(milliseconds: 10));
+      final hasArConnectPermissions = await arconnect.checkPermissions();
+      if (!(hasArConnectPermissions)) {
         return true;
       }
       final currentPublicKey = await arconnect.getPublicKey();
