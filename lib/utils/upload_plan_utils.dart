@@ -12,10 +12,12 @@ import 'package:uuid/uuid.dart';
 class UploadPlanUtils {
   UploadPlanUtils({
     required this.arweave,
+    required this.turboService,
     required this.driveDao,
   });
 
   final ArweaveService arweave;
+  final TurboService turboService;
   final DriveDao driveDao;
   final _uuid = const Uuid();
 
@@ -101,6 +103,7 @@ class UploadPlanUtils {
       fileV2UploadHandles: fileV2UploadHandles,
       fileDataItemUploadHandles: fileDataItemUploadHandles,
       folderDataItemUploadHandles: folderDataItemUploadHandles,
+      turboService: turboService,
     );
   }
 

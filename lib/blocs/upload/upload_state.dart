@@ -75,11 +75,14 @@ class UploadReady extends UploadState {
   final bool uploadIsPublic;
 
   final UploadPlan uploadPlan;
+
+  final bool isFreeThanksToTurbo;
   UploadReady({
     required this.costEstimate,
     required this.sufficientArBalance,
     required this.uploadIsPublic,
     required this.uploadPlan,
+    required this.isFreeThanksToTurbo,
   });
 
   @override
@@ -87,6 +90,7 @@ class UploadReady extends UploadState {
         costEstimate,
         sufficientArBalance,
         uploadPlan,
+        isFreeThanksToTurbo,
       ];
 }
 
