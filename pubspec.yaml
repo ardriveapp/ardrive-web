@@ -31,7 +31,7 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/elliotsayes/ardrive_http.git
-      ref: 30e7e1463e203170da10ebe07631d849af979e64
+      ref: 2a12c829e0e5212deb09f6b8fac282e7d43ee5fe
   ardrive_io:
     git:
       url: https://github.com/elliotsayes/ardrive_io.git

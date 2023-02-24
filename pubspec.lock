@@ -47,8 +47,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "30e7e1463e203170da10ebe07631d849af979e64"
-      resolved-ref: "30e7e1463e203170da10ebe07631d849af979e64"
+      ref: "2a12c829e0e5212deb09f6b8fac282e7d43ee5fe"
+      resolved-ref: "2a12c829e0e5212deb09f6b8fac282e7d43ee5fe"
       url: "https://github.com/elliotsayes/ardrive_http.git"
     source: git
     version: "1.1.3"
