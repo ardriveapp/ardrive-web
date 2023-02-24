@@ -4,8 +4,12 @@ import 'package:ardrive/components/drive_attach_form.dart';
 import 'package:ardrive/components/drive_create_form.dart';
 import 'package:ardrive/components/folder_create_form.dart';
 import 'package:ardrive/components/upload_form.dart';
+import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'create_snapshot_dialog.dart';
 
 Widget buildNewButton(
   BuildContext context, {
@@ -15,12 +19,14 @@ Widget buildNewButton(
   required DriveDetailState driveDetailState,
   bool isPlusButton = false,
 }) {
+  final config = context.read<AppConfig>();
   final width = MediaQuery.of(context).size.width;
   final menuItems = _buildItems(
     context,
     driveDetailState: driveDetailState,
     profileState: profileState,
     drivesState: drivesState,
+    enableQuickSyncAuthoring: config.enableQuickSyncAuthoring,
   );
   double menuHeight = 0;
   for (var element in menuItems) {
@@ -214,29 +220,34 @@ List<PopupMenuEntry<Function>> _buildItems(
   required DrivesState drivesState,
   required ProfileState profileState,
   required DriveDetailState driveDetailState,
+  required bool enableQuickSyncAuthoring,
 }) {
   if (profileState.runtimeType == ProfileLoggedIn) {
     final minimumWalletBalance = BigInt.from(10000000);
     final profile = profileState as ProfileLoggedIn;
-    final hasMinBalance = profile.walletBalance >= minimumWalletBalance;
+
+    final canUpload = profile.canUpload(
+      minimumWalletBalance: minimumWalletBalance,
+    );
+
     return [
       if (driveDetailState is DriveDetailLoadSuccess) ...{
-        _buildNewFolderItem(context, driveDetailState, hasMinBalance),
+        _buildNewFolderItem(context, driveDetailState, canUpload),
         const PopupMenuDivider(key: Key('divider-1')),
         _buildUploadFileItem(
           context,
           driveDetailState,
-          hasMinBalance,
+          canUpload,
         ),
         _buildUploadFolderItem(
           context,
           driveDetailState,
-          hasMinBalance,
+          canUpload,
         ),
         const PopupMenuDivider(key: Key('divider-2')),
       },
       if (drivesState is DrivesLoadSuccess) ...{
-        _buildCreateDrive(context, drivesState, hasMinBalance),
+        _buildCreateDrive(context, drivesState, canUpload),
         _buildAttachDrive(context)
       },
       if (driveDetailState is DriveDetailLoadSuccess &&
@@ -244,7 +255,17 @@ List<PopupMenuEntry<Function>> _buildItems(
         _buildCreateManifestItem(
           context,
           driveDetailState,
-          hasMinBalance,
+          canUpload,
+        )
+      },
+      if (enableQuickSyncAuthoring &&
+          driveDetailState is DriveDetailLoadSuccess) ...{
+        _buildCreateSnapshotItem(
+          context,
+          driveDetailState,
+          profile.hasMinimumBalanceForUpload(
+            minimumWalletBalance: minimumWalletBalance,
+          ),
         )
       },
     ];
@@ -364,6 +385,22 @@ PopupMenuEntry<Function> _buildCreateManifestItem(
     value: (context) => promptToCreateManifest(
       context,
       drive: state.currentDrive,
+    ),
+  );
+}
+
+PopupMenuEntry<Function> _buildCreateSnapshotItem(
+  BuildContext context,
+  DriveDetailLoadSuccess state,
+  bool hasMinBalance,
+) {
+  return _buildMenuItemTile(
+    context: context,
+    isEnabled: !state.driveIsEmpty && hasMinBalance,
+    itemTitle: appLocalizationsOf(context).createSnapshot,
+    value: (context) => promptToCreateSnapshot(
+      context,
+      state.currentDrive,
     ),
   );
 }

@@ -47,11 +47,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v1.1.1"
-      resolved-ref: f3b59b639b38908759a1fa448e5642d1995f8d49
+      ref: "v1.1.3"
+      resolved-ref: b08c369565f61d2c684d48d3a7a9ef92f1cc0c98
       url: "https://github.com/ar-io/ardrive_http.git"
     source: git
-    version: "1.0.0"
+    version: "1.1.3"
   ardrive_io:
     dependency: "direct main"
     description:

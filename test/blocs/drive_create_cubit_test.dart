@@ -24,6 +24,7 @@ void main() {
     late DriveDao driveDao;
 
     late ArweaveService arweave;
+    late TurboService turboService;
     late DrivesCubit drivesCubit;
     late ProfileCubit profileCubit;
     late DriveCreateCubit driveCreateCubit;
@@ -45,6 +46,7 @@ void main() {
       arweave = ArweaveService(
         Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)),
       );
+      turboService = DontUseTurbo();
       drivesCubit = MockDrivesCubit();
       profileCubit = MockProfileCubit();
 
@@ -62,11 +64,13 @@ void main() {
           walletAddress: walletAddress,
           walletBalance: BigInt.one,
           cipherKey: SecretKey(keyBytes),
+          useTurbo: turboService.useTurbo,
         ),
       );
 
       driveCreateCubit = DriveCreateCubit(
         arweave: arweave,
+        turboService: turboService,
         driveDao: driveDao,
         drivesCubit: drivesCubit,
         profileCubit: profileCubit,

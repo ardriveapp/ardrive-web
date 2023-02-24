@@ -16,6 +16,7 @@ import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
+import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -37,20 +38,21 @@ import 'pages/pages.dart';
 import 'services/services.dart';
 import 'theme/theme.dart';
 
-late ConfigService configService;
-late AppConfig config;
-late ArweaveService arweave;
+late ConfigService _configService;
+late AppConfig _config;
+late ArweaveService _arweave;
+late TurboService _turbo;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  configService = ConfigService(appFlavors: AppFlavors());
+  _configService = ConfigService(appFlavors: AppFlavors());
 
-  config = await configService.getConfig(
+  _config = await _configService.getConfig(
     localStore: await LocalKeyValueStore.getInstance(),
   );
 
   if (!kIsWeb) {
-    final flavor = await configService.getAppFlavor();
+    final flavor = await _configService.getAppFlavor();
 
     if (flavor == Flavor.development) {
       _runWithCrashlytics(flavor.name);
@@ -75,8 +77,19 @@ Future<void> _initialize() async {
 
   ArDriveDownloader.initialize();
 
-  arweave = ArweaveService(
-      Arweave(gatewayUrl: Uri.parse(config.defaultArweaveGatewayUrl!)));
+  _arweave = ArweaveService(
+    Arweave(
+      gatewayUrl: Uri.parse(_config.defaultArweaveGatewayUrl!),
+    ),
+  );
+
+  _turbo = _config.useTurbo
+      ? TurboService(
+          turboUri: Uri.parse(_config.defaultTurboUrl!),
+          allowedDataItemSize: _config.allowedDataItemSizeForTurbo!,
+          httpClient: ArDriveHTTP(),
+        )
+      : DontUseTurbo();
 
   if (kIsWeb) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
@@ -126,7 +139,7 @@ class AppState extends State<App> {
   @override
   Widget build(BuildContext context) => MultiRepositoryProvider(
         providers: [
-          RepositoryProvider<ArweaveService>(create: (_) => arweave),
+          RepositoryProvider<ArweaveService>(create: (_) => _arweave),
           // repository provider for UploadFileChecker
           RepositoryProvider<UploadFileChecker>(
             create: (_) => UploadFileChecker(
@@ -134,6 +147,10 @@ class AppState extends State<App> {
                   kIsWeb ? privateFileSizeLimit : mobilePrivateFileSizeLimit,
               publicFileSafeSizeLimit: publicFileSafeSizeLimit,
             ),
+          ),
+          RepositoryProvider<ArweaveService>(create: (_) => _arweave),
+          RepositoryProvider<TurboService>(
+            create: (_) => _turbo,
           ),
           RepositoryProvider<PstService>(
             create: (_) => PstService(
@@ -154,7 +171,7 @@ class AppState extends State<App> {
               ),
             ),
           ),
-          RepositoryProvider<AppConfig>(create: (_) => config),
+          RepositoryProvider<AppConfig>(create: (_) => _config),
           RepositoryProvider<Database>(create: (_) => Database()),
           RepositoryProvider<ProfileDao>(
               create: (context) => context.read<Database>().profileDao),
@@ -167,6 +184,7 @@ class AppState extends State<App> {
               BlocProvider(
                 create: (context) => ProfileCubit(
                   arweave: context.read<ArweaveService>(),
+                  turboService: context.read<TurboService>(),
                   profileDao: context.read<ProfileDao>(),
                   db: context.read<Database>(),
                 ),

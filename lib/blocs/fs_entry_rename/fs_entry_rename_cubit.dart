@@ -17,6 +17,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   final String? fileId;
 
   final ArweaveService _arweave;
+  final TurboService _turboService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
@@ -28,10 +29,12 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
     this.folderId,
     this.fileId,
     required ArweaveService arweave,
+    required TurboService turboService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
   })  : _arweave = arweave,
+        _turboService = turboService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
@@ -95,12 +98,24 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           folder = folder.copyWith(name: newName, lastUpdated: DateTime.now());
 
           final folderEntity = folder.asEntity();
-          final folderTx = await _arweave.prepareEntityTx(
-              folderEntity, profile.wallet, driveKey);
+          if (_turboService.useTurbo) {
+            final folderDataItem = await _arweave.prepareEntityDataItem(
+              folderEntity,
+              profile.wallet,
+              key: driveKey,
+            );
 
-          await _arweave.postTx(folderTx);
+            await _turboService.postDataItem(dataItem: folderDataItem);
+            folderEntity.txId = folderDataItem.id;
+          } else {
+            final folderTx = await _arweave.prepareEntityTx(
+                folderEntity, profile.wallet, driveKey);
+
+            await _arweave.postTx(folderTx);
+            folderEntity.txId = folderTx.id;
+          }
+
           await _driveDao.writeToFolder(folder);
-          folderEntity.txId = folderTx.id;
 
           await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
               performedAction: RevisionAction.rename));
@@ -123,13 +138,25 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               driveKey != null ? await deriveFileKey(driveKey, file.id) : null;
 
           final fileEntity = file.asEntity();
-          final fileTx = await _arweave.prepareEntityTx(
-              fileEntity, profile.wallet, fileKey);
 
-          await _arweave.postTx(fileTx);
+          if (_turboService.useTurbo) {
+            final fileDataItem = await _arweave.prepareEntityDataItem(
+              fileEntity,
+              profile.wallet,
+              key: fileKey,
+            );
+
+            await _turboService.postDataItem(dataItem: fileDataItem);
+            fileEntity.txId = fileDataItem.id;
+          } else {
+            final fileTx = await _arweave.prepareEntityTx(
+                fileEntity, profile.wallet, fileKey);
+
+            await _arweave.postTx(fileTx);
+            fileEntity.txId = fileTx.id;
+          }
+
           await _driveDao.writeToFile(file);
-
-          fileEntity.txId = fileTx.id;
 
           await _driveDao.insertFileRevision(fileEntity.toRevisionCompanion(
               performedAction: RevisionAction.rename));

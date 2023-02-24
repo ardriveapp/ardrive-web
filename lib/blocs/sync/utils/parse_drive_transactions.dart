@@ -5,7 +5,7 @@ part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   required DriveDao driveDao,
   required Database database,
-  required ArweaveService arweaveService,
+  required ArweaveService arweave,
   required List<DriveHistoryTransaction> transactions,
   required Drive drive,
   required SecretKey? driveKey,
@@ -13,6 +13,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   required int currentBlockHeight,
   required int batchSize,
   required SnapshotDriveHistory snapshotDriveHistory,
+  required Map<FolderID, GhostFolder> ghostFolders,
 }) async* {
   final numberOfDriveEntitiesToParse = transactions.length;
   var numberOfDriveEntitiesParsed = 0;
@@ -45,7 +46,11 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
       list: transactions,
       batchSize: batchSize,
       endOfBatchCallback: (items) async* {
-        logSync('Getting metadata from drive ${drive.name}');
+        final isReadingFromSnapshot = snapshotDriveHistory.items.isNotEmpty;
+
+        if (!isReadingFromSnapshot) {
+          logSync('Getting metadata from drive ${drive.name}');
+        }
 
         final entityHistory =
             await arweave.createDriveEntityHistoryFromTransactions(
@@ -138,6 +143,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
           });
 
           await _generateFsEntryPaths(
+            ghostFolders: ghostFolders,
             driveDao: driveDao,
             driveId: drive.id,
             foldersByIdMap: updatedFoldersById,
