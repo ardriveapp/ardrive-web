@@ -73,6 +73,7 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
             final stream = _downloader.downloadFile(
               '${_arweave.client.api.gatewayUrl.origin}/${_file.txId}',
               _file.name,
+              _file.contentType,
             );
 
             await for (int progress in stream) {

@@ -56,8 +56,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "870cdae8f23a9b431ab6d33ff8cd6467d3c44020"
-      resolved-ref: "870cdae8f23a9b431ab6d33ff8cd6467d3c44020"
+      ref: "9a8d652de510f1b200787d7674da4393ad92379c"
+      resolved-ref: "9a8d652de510f1b200787d7674da4393ad92379c"
       url: "https://github.com/elliotsayes/ardrive_io.git"
     source: git
     version: "1.0.0"
