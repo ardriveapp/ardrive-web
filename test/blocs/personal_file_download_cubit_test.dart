@@ -601,7 +601,7 @@ void main() {
             /// Using a private drive
             when(() => mockARFSRepository.getDriveById(any()))
                 .thenAnswer((_) async => mockDrivePublic);
-            when(() => mockArDriveDownloader.downloadFile(any(), any()))
+            when(() => mockArDriveDownloader.downloadFile(any(), any(), any()))
                 .thenAnswer((i) => mockDownloadProgress());
             when(() => mockArweaveService.client).thenReturn(
                 Arweave(gatewayUrl: Uri.parse('http://example.com')));
@@ -646,7 +646,7 @@ void main() {
             /// Using a private drive
             when(() => mockARFSRepository.getDriveById(any()))
                 .thenAnswer((_) async => mockDrivePublic);
-            when(() => mockArDriveDownloader.downloadFile(any(), any()))
+            when(() => mockArDriveDownloader.downloadFile(any(), any(), any()))
                 .thenAnswer((i) => mockDownloadProgress());
             when(() => mockArweaveService.client).thenReturn(
                 Arweave(gatewayUrl: Uri.parse('http://example.com')));
@@ -694,7 +694,7 @@ void main() {
           },
           verify: (bloc) {
             /// public files on mobile should not call these functions
-            verifyNever(() => mockArDriveDownloader.downloadFile(any(), any()));
+            verifyNever(() => mockArDriveDownloader.downloadFile(any(), any(), any()));
           });
     });
 
@@ -722,7 +722,7 @@ void main() {
           /// This will emit a new progress for each seconds
           /// so we have time to abort the download and check how much it
           /// downloaded
-          when(() => mockArDriveDownloader.downloadFile(any(), any()))
+          when(() => mockArDriveDownloader.downloadFile(any(), any(), any()))
               .thenAnswer((i) => mockDownloadInProgress());
           when(() => mockArDriveDownloader.cancelDownload())
               .thenAnswer((i) async {});
