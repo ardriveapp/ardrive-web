@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -11,7 +12,7 @@ abstract class DownloadService {
   
   Future<Uint8List> downloadBuffer(String fileId);
   
-  Stream<Uint8List> downloadStream(String fileTxId, int fileSize);
+  Stream<Uint8List> downloadStream(String fileTxId, int fileSize, {Completer<String>? cancelWithReason});
 }
 
 class _DownloadService implements DownloadService {
@@ -42,12 +43,14 @@ class _DownloadService implements DownloadService {
   }
 
   @override
-  Stream<Uint8List> downloadStream(String fileTxId, int fileSize) async* {
+  Stream<Uint8List> downloadStream(String fileTxId, int fileSize, {Completer<String>? cancelWithReason}) async* {
     final gateway = txSubdomainGateway(fileTxId);
     final responseStream = ArDriveHTTP().getAsByteRangeStream(
       '${gateway.origin}/$fileTxId',
       fileSize,
       chunkSize: 250 * 1024 * 1024, // 250 MiB
+      cancelWithReason: cancelWithReason,
+      throwOnCancel: false,
     );
 
     yield* responseStream.asyncMap((response) {

@@ -19,6 +19,8 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
 
   final _warningDownloadTimeLimit = const MiB(200).size;
 
+  final Completer<String> _cancelWithReason = Completer<String>();
+
   final DriveDao _driveDao;
   final ArweaveService _arweave;
   final ArDriveDownloader _downloader;
@@ -119,16 +121,20 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
     final dataTx = (await _arweave.getTransactionDetails(_file.txId))!;
     final downloadLength = int.parse(dataTx.data.size);
     
-    final fetchStream = _downloadService.downloadStream(_file.txId, downloadLength);
+    final fetchStream = _downloadService.downloadStream(
+      _file.txId,
+      downloadLength,
+      cancelWithReason: _cancelWithReason,
+    );
 
     final splitStream = StreamSplitter(fetchStream);
     final saveStream = splitStream.split();
     final authStream = splitStream.split();
 
-    // Calling close() indicates that no further streams will be created,
-    // signalling splitStream to function without an internal buffer.
+    // Calling `close()` indicates that no further streams will be created,
+    // causing splitStream to function without an internal buffer.
     // The future will be completed when both streams are consumed, so we
-    // don't need to await it.
+    // shouldn't await it here.
     unawaited(splitStream.close());
 
     Stream<Uint8List> saveStreamDecrypted;
@@ -173,11 +179,15 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
         authStream,
         downloadLength,
         _file.txId,
-        dataTx, 
+        dataTx,
       );
-      final isAuthentic =  authenticatedOwner.then((value) => value != null);
-      final saved = await _ardriveIo.saveFileStream(file, isAuthentic);
-      if (!(await isAuthentic)) throw Exception('Failed authentication');
+      final finalize = Completer<bool>();
+      Future.any([
+        _cancelWithReason.future.then((_) => false),
+        authenticatedOwner.then((owner) => owner != null),
+      ]).then((value) => finalize.complete(value));
+      final saved = await _ardriveIo.saveFileStream(file, finalize);
+      if (!(await finalize.future)) throw Exception('Failed authentication');
       if (!saved) throw Exception('Failed to save file');
 
       emit(
@@ -203,10 +213,12 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
 
   @override
   Future<void> abortDownload() async {
-    emit(FileDownloadAborted());
-    final drive = await _arfsRepository.getDriveById(_file.driveId);
+    _cancelWithReason.complete('Aborted by user');
 
-    if (drive.drivePrivacy == DrivePrivacy.private) {
+    emit(FileDownloadAborted());
+
+    final drive = await _arfsRepository.getDriveById(_file.driveId);
+    if (drive.drivePrivacy == DrivePrivacy.private && AppPlatform.isMobile) {
       await _downloader.cancelDownload();
     }
   }

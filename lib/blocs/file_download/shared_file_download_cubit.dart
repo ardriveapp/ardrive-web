@@ -3,6 +3,8 @@ part of 'file_download_cubit.dart';
 /// [StreamSharedFileDownloadCubit] includes logic to allow a user to download files that
 /// are shared with them without a login.
 class StreamSharedFileDownloadCubit extends FileDownloadCubit {
+  final Completer<String> _cancelWithReason = Completer<String>();
+
   final SecretKey? fileKey;
   final FileRevision revision;
   final ArweaveService _arweave;
@@ -50,7 +52,11 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
     final dataTx = (await _arweave.getTransactionDetails(revision.dataTxId))!;
     final downloadLength = int.parse(dataTx.data.size);
 
-    final fetchStream = _downloadService.downloadStream(revision.dataTxId, downloadLength);
+    final fetchStream = _downloadService.downloadStream(
+      revision.dataTxId,
+      downloadLength,
+      cancelWithReason: _cancelWithReason,
+    );
 
     final splitStream = StreamSplitter(fetchStream);
     final saveStream = splitStream.split();
@@ -82,9 +88,13 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
         revision.dataTxId,
         dataTx,
       );
-      final isAuthentic =  authenticatedOwner.then((value) => value != null);
-      final saved = await _ardriveIo.saveFileStream(file, isAuthentic);
-      if (!(await isAuthentic)) throw Exception('Failed authentication');
+      final finalize = Completer<bool>();
+      Future.any([
+        _cancelWithReason.future.then((_) => false),
+        authenticatedOwner.then((owner) => owner != null),
+      ]).then((value) => finalize.complete(value));
+      final saved = await _ardriveIo.saveFileStream(file, finalize);
+      if (!(await finalize.future)) throw Exception('Failed authentication');
       if (!saved) throw Exception('Failed to save file');
 
       emit(
@@ -105,6 +115,8 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
 
   @override
   void abortDownload() {
+    _cancelWithReason.complete('Aborted by user');
+    
     emit(FileDownloadAborted());
   }
 
