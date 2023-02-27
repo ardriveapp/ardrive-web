@@ -423,11 +423,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   @visibleForTesting
-  setIsPrivate(bool isPrivate) {
-    _isPrivate = isPrivate;
-  }
-
-  bool? _isPrivate;
+  bool isPrivateForTesting = false;
 
   @override
   void onError(Object error, StackTrace stackTrace) {
