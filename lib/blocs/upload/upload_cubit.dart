@@ -125,7 +125,7 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> checkFilesAboveLimit() async {
-    if (_targetDrive.isPrivate || (_isPrivate != null && _isPrivate!)) {
+    if (_isAPrivateUpload()) {
       final tooLargeFiles = await _uploadFileChecker
           .checkAndReturnFilesAbovePrivateLimit(files: files);
 
@@ -134,7 +134,7 @@ class UploadCubit extends Cubit<UploadState> {
           UploadFileTooLarge(
             hasFilesToUpload: files.length > tooLargeFiles.length,
             tooLargeFileNames: tooLargeFiles,
-            isPrivate: _targetDrive.isPrivate,
+            isPrivate: _isAPrivateUpload(),
           ),
         );
         return;
@@ -377,7 +377,7 @@ class UploadCubit extends Cubit<UploadState> {
       await uploadHandle.writeFileEntityToDatabase(driveDao: _driveDao);
 
       uploadHandle.dispose();
-  }
+    }
     unawaited(_profileCubit.refreshBalance());
 
     emit(UploadComplete());
@@ -424,6 +424,10 @@ class UploadCubit extends Cubit<UploadState> {
 
   @visibleForTesting
   bool isPrivateForTesting = false;
+
+  bool _isAPrivateUpload() {
+    return isPrivateForTesting || _targetDrive.isPrivate;
+  }
 
   @override
   void onError(Object error, StackTrace stackTrace) {

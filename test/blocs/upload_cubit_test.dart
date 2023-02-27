@@ -454,7 +454,7 @@ void main() {
             File('some_file.txt').deleteSync();
           },
           act: (cubit) async {
-            cubit.setIsPrivate(true);
+            cubit.isPrivateForTesting = true;
             await cubit.startUploadPreparation();
             await cubit.checkFilesAboveLimit();
           },
@@ -496,7 +496,8 @@ void main() {
             File('some_file.txt').deleteSync();
           },
           act: (cubit) async {
-            cubit.setIsPrivate(true);
+            cubit.isPrivateForTesting = true;
+
             await cubit.startUploadPreparation();
             await cubit.checkFilesAboveLimit();
           },
@@ -573,7 +574,8 @@ void main() {
             return getUploadCubitInstanceWith(files);
           },
           act: (cubit) async {
-            cubit.setIsPrivate(true);
+            cubit.isPrivateForTesting = true;
+
             await cubit.startUploadPreparation();
             await cubit.checkFilesAboveLimit();
             await cubit.skipLargeFilesAndCheckForConflicts();
