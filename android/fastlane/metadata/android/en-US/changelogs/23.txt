@@ -1,0 +1,2 @@
+- All transactions under 100KB are now free
+- Fixes text overflow in snapshot progress dialog.

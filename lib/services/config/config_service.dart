@@ -16,14 +16,20 @@ class ConfigService {
   Future<AppConfig> getConfig({required LocalKeyValueStore localStore}) async {
     if (_config == null) {
       const environment = kReleaseMode ? 'prod' : 'dev';
-      final configContent =
-          await rootBundle.loadString('assets/config/$environment.json');
+      final configContent = await rootBundle.loadString(
+        'assets/config/$environment.json',
+      );
+
+      AppConfig configFromEnv = AppConfig.fromJson(json.decode(configContent));
 
       final gatewayUrl = localStore.getString('arweaveGatewayUrl');
+      final enableQuickSyncAuthoring =
+          localStore.getBool('enableQuickSyncAuthoring');
 
-      _config = AppConfig.fromJson(gatewayUrl != null
-          ? {'defaultArweaveGatewayUrl': gatewayUrl}
-          : json.decode(configContent));
+      _config = configFromEnv.copyWith(
+        defaultArweaveGatewayUrl: gatewayUrl,
+        enableQuickSyncAuthoring: enableQuickSyncAuthoring,
+      );
     }
 
     return _config!;

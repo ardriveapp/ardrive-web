@@ -128,12 +128,14 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
             create: (context) => UploadCubit(
               uploadPlanUtils: UploadPlanUtils(
                 arweave: context.read<ArweaveService>(),
+                turboService: context.read<TurboService>(),
                 driveDao: context.read<DriveDao>(),
               ),
               driveId: driveId,
               parentFolderId: parentFolderId,
               files: selectedFiles,
               arweave: context.read<ArweaveService>(),
+              turbo: context.read<TurboService>(),
               pst: context.read<PstService>(),
               profileCubit: context.read<ProfileCubit>(),
               driveDao: context.read<DriveDao>(),

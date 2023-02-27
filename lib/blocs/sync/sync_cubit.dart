@@ -3,10 +3,10 @@ import 'dart:math';
 
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
@@ -40,7 +40,6 @@ part 'utils/update_transaction_statuses.dart';
 typedef DriveHistoryTransaction
     = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
 
-const kRequiredTxConfirmationCount = 15;
 const kRequiredTxConfirmationPendingThreshold = 60 * 8;
 
 const kSyncTimerDuration = 5;
@@ -252,7 +251,8 @@ class SyncCubit extends Cubit<SyncState> {
         (drive) => _syncDrive(
           drive.id,
           driveDao: _driveDao,
-          arweaveService: _arweave,
+          arweave: _arweave,
+          ghostFolders: ghostFolders,
           database: _db,
           profileState: profile,
           addError: addError,
@@ -357,7 +357,9 @@ class SyncCubit extends Cubit<SyncState> {
     Map<String, FolderEntriesCompanion> foldersByIdMap,
     Map<String, FileEntriesCompanion> filesByIdMap,
   ) async {
+    print('Generating fs entry paths...');
     ghostFolders = await _generateFsEntryPaths(
+      ghostFolders: ghostFolders,
       driveDao: _driveDao,
       driveId: driveId,
       foldersByIdMap: foldersByIdMap,

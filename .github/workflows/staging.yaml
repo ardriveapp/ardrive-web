@@ -66,8 +66,10 @@ jobs:
           flutter build web --release
 
       # JS files cache invalidation
-      - name: main.dart.js cache invalidation
-        run: sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
+      - name: main.dart.js and service worker cache invalidation
+        run: |
+          sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
+          sed -i 's/flutter_service_worker.js/flutter_service_worker.js?version='"$GITHUB_SHA"'/' build/web/index.html
 
       # Deploy to github pages
       - uses: JamesIves/github-pages-deploy-action@4.1.1
