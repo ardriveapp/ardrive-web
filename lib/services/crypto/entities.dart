@@ -34,12 +34,22 @@ Future<Uint8List> decryptTransactionData(
   final cipherIv =
       utils.decodeBase64ToBytes(transaction.getTag(EntityTag.cipherIv)!);
 
+  final SecretBox secretBox;
+  switch (cipher) {
+    case Cipher.aes256gcm:
+      secretBox = secretBoxFromDataWithGcmMacConcatenation(data, nonce: cipherIv);
+      break;
+    case Cipher.aes256ctr:
+      secretBox = SecretBox(data, nonce: cipherIv, mac: Mac.empty);
+      break;
+    
+    default:
+      throw ArgumentError();
+  }
+
   try {
     return impl
-      .decrypt(
-        SecretBox(data, nonce: cipherIv, mac: Mac.empty),
-        secretKey: key,
-      )
+      .decrypt(secretBox, secretKey: key)
       .then((res) => Uint8List.fromList(res));
   } on SecretBoxAuthenticationError catch (_) {
     throw TransactionDecryptionException();

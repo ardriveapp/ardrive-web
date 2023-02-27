@@ -257,7 +257,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     }
 
     final driveKeyData = await aesGcm.decrypt(
-      secretBoxFromDataWithMacConcatenation(
+      secretBoxFromDataWithGcmMacConcatenation(
         drive.encryptedKey!,
         nonce: drive.keyEncryptionIv!,
       ),
