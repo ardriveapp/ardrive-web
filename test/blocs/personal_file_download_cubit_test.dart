@@ -211,6 +211,7 @@ void main() {
     registerFallbackValue(mockDownloadInProgress());
     registerFallbackValue(mockIOFileExample);
     registerFallbackValue(Future.value(true));
+    registerFallbackValue(Completer<bool>());
   });
 
   setUp(() {
