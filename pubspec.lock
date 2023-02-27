@@ -47,8 +47,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: fix-timeout-dio
-      resolved-ref: b40828a5eb1fa956ddc677f8ed4afcedff066ddb
+      ref: "v1.1.4"
+      resolved-ref: "2e7165fbe9316668cd4d521202f64ae1dcf1de50"
       url: "https://github.com/ar-io/ardrive_http.git"
     source: git
     version: "1.1.3"
