@@ -1,7 +1,7 @@
 import 'package:ardrive/utils/data_size.dart';
 
-const privateFileSizeLimit = 104857600;
+final privateFileSizeLimit = const MiB(100).size;
 
-const mobilePrivateFileSizeLimit = 1073741823;
-// 5GiB
+final mobilePrivateFileSizeLimit = const GiB(1).size;
+
 final publicFileSafeSizeLimit = const GiB(5).size;
