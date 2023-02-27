@@ -121,7 +121,6 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
         parentFolderId: parentFolderId,
       ));
 
-      // ignore: use_build_context_synchronously
       await showCongestionDependentModalDialog(
         context,
         () => showDialog(
