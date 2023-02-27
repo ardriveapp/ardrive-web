@@ -15,6 +15,7 @@ final pbkdf2 = Pbkdf2(
   bits: 256,
 );
 final hkdf = Hkdf(hmac: Hmac(sha256), outputLength: keyByteLength);
+final aesGcm = AesGcm.with256bits();
 
 Future<ProfileKeyDerivationResult> deriveProfileKey(String password,
     [List<int>? salt]) async {

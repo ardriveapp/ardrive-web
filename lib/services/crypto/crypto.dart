@@ -1,8 +1,10 @@
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 
+export 'ciphers.dart';
 export 'entities.dart';
 export 'keys.dart';
+export 'stream_aes.dart';
 
 final sha256 = Sha256();
 
