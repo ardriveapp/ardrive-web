@@ -116,7 +116,6 @@ void main() {
       expect(result, []);
     });
 
-    // test empry list
     test('should return list of files above the limit', () async {
       final result =
           await uploadFileChecker.checkAndReturnFilesAbovePrivateLimit(
