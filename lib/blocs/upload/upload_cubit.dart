@@ -300,6 +300,8 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUpload({
     required UploadPlan uploadPlan,
   }) async {
+    bool hasEmittedError = false;
+
     debugPrint('Starting upload...');
 
     final profile = _profileCubit.state as ProfileLoggedIn;
@@ -345,7 +347,13 @@ class UploadCubit extends Cubit<UploadState> {
       await for (final _ in bundleHandle
           .upload(_arweave, _turbo)
           .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) => bundleHandle.hasError = true)) {
+          .handleError((_) {
+        bundleHandle.hasError = true;
+        if (!hasEmittedError) {
+          addError(_);
+          hasEmittedError = true;
+        }
+      })) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       await bundleHandle.writeBundleItemsToDatabase(driveDao: _driveDao);
@@ -370,7 +378,13 @@ class UploadCubit extends Cubit<UploadState> {
       await for (final _ in uploadHandle
           .upload(_arweave)
           .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) => uploadHandle.hasError = true)) {
+          .handleError((_) {
+        uploadHandle.hasError = true;
+        if (!hasEmittedError) {
+          addError(_);
+          hasEmittedError = true;
+        }
+      })) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
 
@@ -379,8 +393,6 @@ class UploadCubit extends Cubit<UploadState> {
       uploadHandle.dispose();
     }
     unawaited(_profileCubit.refreshBalance());
-
-    emit(UploadComplete());
   }
 
   Future<void> skipLargeFilesAndCheckForConflicts() async {
