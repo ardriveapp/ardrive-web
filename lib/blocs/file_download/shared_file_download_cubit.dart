@@ -82,7 +82,7 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
     );
 
     try {
-      final authenticatedOwner = _authenticate.authenticateOwner(
+      final authenticatedOwnerAddress = _authenticate.authenticateOwner(
         authStream,
         downloadLength,
         revision.dataTxId,
@@ -91,7 +91,7 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
       final finalize = Completer<bool>();
       Future.any([
         _cancelWithReason.future.then((_) => false),
-        authenticatedOwner.then((owner) => owner != null),
+        authenticatedOwnerAddress.then((owner) => owner != null),
       ]).then((value) => finalize.complete(value));
 
       bool? saveResult;
@@ -114,13 +114,13 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
       }
 
       if (_cancelWithReason.isCompleted) throw Exception('Download cancelled: ${await _cancelWithReason.future}');
-      if (await authenticatedOwner == null) throw Exception('Failed authentication');
+      if (await authenticatedOwnerAddress == null) throw Exception('Failed authentication');
       if (saveResult != true) throw Exception('Failed to save file');
 
       emit(
         FileDownloadFinishedWithSuccess(
           fileName: revision.name,
-          authenticatedOwner: await authenticatedOwner,
+          authenticatedOwnerAddress: await authenticatedOwnerAddress,
         ),
       );
     } on Exception catch (e) {

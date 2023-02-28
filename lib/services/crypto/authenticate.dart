@@ -1,6 +1,7 @@
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/data_size.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart';
 import 'package:async/async.dart';
 import 'package:flutter/foundation.dart';
 
@@ -49,7 +50,7 @@ class Authenticate {
         if (!await dataItem.verify()) throw Exception('DataItem signature is invalid');
 
         // Verified owner
-        return owner;
+        return await ownerToAddress(dataItem.owner);
       } catch (e, s) {
         debugPrintStack(stackTrace: s, label: 'Error authenticating DataItem: $e');
         return null;
@@ -57,8 +58,6 @@ class Authenticate {
     } else {
       try {
         final transaction = (await _arweaveService.getTransaction<TransactionStream>(entityTxId))!;
-        // Owner claimed by JSON API
-        final owner = transaction.owner;
 
         // Ensure that the data_root matches
         await transaction.processDataStream(authStream, authStreamSize);
@@ -67,7 +66,7 @@ class Authenticate {
         if (!await transaction.verify()) throw Exception('Transaction signature is invalid');
 
         // Verified owner
-        return owner;
+        return await ownerToAddress(transaction.owner!);
       } catch (e, s) {
         debugPrintStack(stackTrace: s, label: 'Error authenticating Transaction: $e');
         return null;

@@ -40,11 +40,11 @@ class FileDownloadWithProgress extends FileDownloadState {
 class FileDownloadFinishedWithSuccess extends FileDownloadState {
   const FileDownloadFinishedWithSuccess({
     required this.fileName,
-    this.authenticatedOwner,
+    this.authenticatedOwnerAddress,
   });
 
   final String fileName;
-  final String? authenticatedOwner;
+  final String? authenticatedOwnerAddress;
 
   @override
   List<Object> get props => [fileName];
