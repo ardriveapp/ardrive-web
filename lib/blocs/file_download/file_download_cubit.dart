@@ -25,6 +25,12 @@ part 'shared_file_download_cubit.dart';
 /// [FileDownloadCubit] is the abstract superclass for [Cubit]s that include
 /// logic for download user files.
 abstract class FileDownloadCubit extends Cubit<FileDownloadState> {
+  @protected
+  final StreamController<LinearProgress> downloadProgressController =
+      StreamController<LinearProgress>.broadcast();
+
+  Stream<LinearProgress> get downloadProgress => downloadProgressController.stream;
+  
   FileDownloadCubit(FileDownloadState state) : super(state);
 
   FutureOr<void> abortDownload() {}

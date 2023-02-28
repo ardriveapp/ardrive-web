@@ -93,13 +93,34 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
         _cancelWithReason.future.then((_) => false),
         authenticatedOwner.then((owner) => owner != null),
       ]).then((value) => finalize.complete(value));
-      final saved = await _ardriveIo.saveFileStream(file, finalize);
-      if (!(await finalize.future)) throw Exception('Failed authentication');
-      if (!saved) throw Exception('Failed to save file');
+
+      bool? saveResult;
+      await for (final saveStatus in _ardriveIo.saveFileStream(file, finalize)) {
+        if (saveStatus.saveResult == null) {
+          if (saveStatus.bytesSaved == 0) continue;
+
+          final progress = saveStatus.bytesSaved / saveStatus.totalBytes;
+          downloadProgressController.sink.add(FileDownloadProgress(progress));
+
+          final progressPercentInt = (progress * 100).round();
+          emit(FileDownloadWithProgress(
+            fileName: revision.name,
+            progress: progressPercentInt,
+            fileSize: saveStatus.totalBytes,
+          ));
+        } else {
+          saveResult = saveStatus.saveResult!;
+        }
+      }
+
+      if (_cancelWithReason.isCompleted) throw Exception('Download cancelled: ${await _cancelWithReason.future}');
+      if (await authenticatedOwner == null) throw Exception('Failed authentication');
+      if (saveResult != true) throw Exception('Failed to save file');
 
       emit(
         FileDownloadFinishedWithSuccess(
           fileName: revision.name,
+          authenticatedOwner: await authenticatedOwner,
         ),
       );
     } on Exception catch (e) {

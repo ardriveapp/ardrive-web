@@ -306,8 +306,7 @@ class FileDownloadDialog extends StatelessWidget {
                       filesize(state.fileSize)),
             ),
             ProgressBar(
-                percentage: (context.read<FileDownloadCubit>()
-                        as StreamPersonalFileDownloadCubit)
+                percentage: (context.read<FileDownloadCubit>())
                     .downloadProgress)
           ],
         ),

@@ -12,11 +12,6 @@ class FileDownloadProgress extends LinearProgress {
 class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
   final ARFSFileEntity _file;
 
-  final StreamController<LinearProgress> _downloadProgress =
-      StreamController<LinearProgress>.broadcast();
-
-  Stream<LinearProgress> get downloadProgress => _downloadProgress.stream;
-
   final _warningDownloadTimeLimit = const MiB(200).size;
 
   final Completer<String> _cancelWithReason = Completer<String>();
@@ -90,7 +85,7 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
                   fileSize: _file.size,
                 ),
               );
-              _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
+              downloadProgressController.sink.add(FileDownloadProgress(progress / 100));
             }
 
             emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
@@ -186,13 +181,34 @@ class StreamPersonalFileDownloadCubit extends FileDownloadCubit {
         _cancelWithReason.future.then((_) => false),
         authenticatedOwner.then((owner) => owner != null),
       ]).then((value) => finalize.complete(value));
-      final saved = await _ardriveIo.saveFileStream(file, finalize);
-      if (!(await finalize.future)) throw Exception('Failed authentication');
-      if (!saved) throw Exception('Failed to save file');
+
+      bool? saveResult;
+      await for (final saveStatus in _ardriveIo.saveFileStream(file, finalize)) {
+        if (saveStatus.saveResult == null) {
+          if (saveStatus.bytesSaved == 0) continue;
+
+          final progress = saveStatus.bytesSaved / saveStatus.totalBytes;
+          downloadProgressController.sink.add(FileDownloadProgress(progress));
+
+          final progressPercentInt = (progress * 100).round();
+          emit(FileDownloadWithProgress(
+            fileName: _file.name,
+            progress: progressPercentInt,
+            fileSize: saveStatus.totalBytes,
+          ));
+        } else {
+          saveResult = saveStatus.saveResult!;
+        }
+      }
+
+      if (_cancelWithReason.isCompleted) throw Exception('Download cancelled: ${await _cancelWithReason.future}');
+      if (await authenticatedOwner == null) throw Exception('Failed authentication');
+      if (saveResult != true) throw Exception('Failed to save file');
 
       emit(
         FileDownloadFinishedWithSuccess(
           fileName: _file.name,
+          authenticatedOwner: await authenticatedOwner,
         ),
       );
     } on Exception catch (e) {

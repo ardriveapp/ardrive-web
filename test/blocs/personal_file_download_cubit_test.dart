@@ -243,7 +243,7 @@ void main() {
       when(() => mockDecrypt.decryptTransactionDataStream(any(), any(), any()))
           .thenAnswer((invocation) => Future.value(Stream.value(Uint8List(100))));
       when(() => mockArDriveIO.saveFileStream(any(), any()))
-          .thenAnswer((invocation) => Future.value(true));
+          .thenAnswer((invocation) => Stream.value(SaveStatus(bytesSaved: 0, totalBytes: 0, saveResult: true)));
       when(() => mockIOFileExample.openReadStream(any(), any()))
           .thenAnswer((invocation) => Stream.fromIterable([Uint8List(100)]));
       when(() => mockIOFileAdapter.fromReadStreamGenerator(any(), any(), name: any(), lastModifiedDate: any(), contentType: any()))
