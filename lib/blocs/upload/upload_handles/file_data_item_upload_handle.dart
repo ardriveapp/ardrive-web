@@ -8,7 +8,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/bundles/fake_tags.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart';
-import 'package:cryptography/cryptography.dart';
+import 'package:cryptography/cryptography.dart' hide Cipher;
 import 'package:drift/drift.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -70,7 +70,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     final fileData = await file.ioFile.readAsBytes();
 
     dataTx = isPrivate
-        ? await createEncryptedDataItem(fileData, fileKey!)
+        ? await createEncryptedDataItem(fileData, fileKey!, cipher: Cipher.aes256ctr)
         : DataItem.withBlobData(data: fileData);
     dataTx.setOwner(await wallet.getOwner());
 
