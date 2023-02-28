@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
+import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
@@ -126,6 +127,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
           context: context,
           builder: (_) => BlocProvider<UploadCubit>(
             create: (context) => UploadCubit(
+              uploadFileChecker: context.read<UploadFileChecker>(),
               uploadPlanUtils: UploadPlanUtils(
                 arweave: context.read<ArweaveService>(),
                 turboService: context.read<TurboService>(),

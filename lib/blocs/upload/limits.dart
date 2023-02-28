@@ -1,3 +1,7 @@
-const privateFileSizeLimit = 104857600;
-const publicFileSizeLimit = 1288490189 * 100; // TODO: Decide a sane limit for stream transctions
-const mobilePrivateFileSizeLimit = 1073741823;
+import 'package:ardrive/utils/data_size.dart';
+
+final privateFileSizeLimit = const MiB(100).size;
+
+final mobilePrivateFileSizeLimit = const GiB(1).size;
+
+final publicFileSafeSizeLimit = const GiB(5).size;
