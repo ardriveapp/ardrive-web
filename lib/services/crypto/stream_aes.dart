@@ -16,7 +16,7 @@ const _aes128KeyLengthBytes = 16;
 const _aes192KeyLengthBytes = 24;
 const _aes256KeyLengthBytes = 32;
 
-const _webCryptoChunkSizeBytes = 4096;
+const _webCryptoChunkSizeBytes = 256 * 1024;
 const _webCryptoChuckSizeBlocks = _webCryptoChunkSizeBytes ~/ 16;
 
 enum AesKeyLength { aes128, aes192, aes256 }
