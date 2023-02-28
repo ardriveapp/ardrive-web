@@ -92,7 +92,7 @@ class UploadForm extends StatelessWidget {
             Navigator.pop(context);
             await context.read<FeedbackSurveyCubit>().openRemindMe();
           } else if (state is UploadPreparationInitialized) {
-            context.read<UploadCubit>().checkFilesAboveLimit();
+            context.read<UploadCubit>().verifyFilesAboveWarningLimit();
           }
 
           if (state is UploadWalletMismatch) {
@@ -503,9 +503,8 @@ class UploadForm extends StatelessWidget {
                   child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
                 ElevatedButton(
-                  onPressed: () => context
-                      .read<UploadCubit>()
-                      .prepareUploadPlanAndCostEstimates(),
+                  onPressed: () =>
+                      context.read<UploadCubit>().checkFilesAboveLimit(),
                   child: Text(
                     appLocalizationsOf(context).proceed,
                   ),

@@ -294,11 +294,10 @@ void main() {
           },
           act: (cubit) async {
             await cubit.startUploadPreparation();
-            await cubit.checkConflictingFiles();
+            await cubit.verifyFilesAboveWarningLimit();
           },
           expect: () => <dynamic>[
                 const TypeMatcher<UploadPreparationInitialized>(),
-                const TypeMatcher<UploadPreparationInProgress>(),
                 const TypeMatcher<UploadShowingWarning>()
               ]);
       blocTest<UploadCubit, UploadState>(
@@ -313,13 +312,13 @@ void main() {
           },
           act: (cubit) async {
             await cubit.startUploadPreparation();
+            await cubit.verifyFilesAboveWarningLimit();
             await cubit.checkConflictingFiles();
-            await cubit.prepareUploadPlanAndCostEstimates();
           },
           expect: () => <dynamic>[
                 const TypeMatcher<UploadPreparationInitialized>(),
-                const TypeMatcher<UploadPreparationInProgress>(),
                 const TypeMatcher<UploadShowingWarning>(),
+                const TypeMatcher<UploadPreparationInProgress>(),
                 const TypeMatcher<UploadPreparationInProgress>(),
                 const TypeMatcher<UploadReady>(),
               ]);

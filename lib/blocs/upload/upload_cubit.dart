@@ -173,7 +173,7 @@ class UploadCubit extends Cubit<UploadState> {
         ),
       );
     } else {
-      await _verifyFilesAboveWarningLimit();
+      await prepareUploadPlanAndCostEstimates();
     }
   }
 
@@ -392,7 +392,10 @@ class UploadCubit extends Cubit<UploadState> {
 
       uploadHandle.dispose();
     }
+
     unawaited(_profileCubit.refreshBalance());
+
+    emit(UploadComplete());
   }
 
   Future<void> skipLargeFilesAndCheckForConflicts() async {
@@ -417,21 +420,22 @@ class UploadCubit extends Cubit<UploadState> {
     files.removeWhere((file) => conflictingFolders.contains(file.ioFile.name));
   }
 
-  Future<void> _verifyFilesAboveWarningLimit() async {
-    bool fileAboveWarningLimit =
-        await _uploadFileChecker.hasFileAboveSafePublicSizeLimit(
-      files: files,
-    );
-
-    if (fileAboveWarningLimit) {
-      emit(
-        UploadShowingWarning(reason: UploadWarningReason.fileTooLarge),
+  Future<void> verifyFilesAboveWarningLimit() async {
+    if (!_targetDrive.isPrivate) {
+      bool fileAboveWarningLimit =
+          await _uploadFileChecker.hasFileAboveSafePublicSizeLimit(
+        files: files,
       );
 
-      return;
+      if (fileAboveWarningLimit) {
+        emit(UploadShowingWarning(reason: UploadWarningReason.fileTooLarge));
+
+        return;
+      }
+      await prepareUploadPlanAndCostEstimates();
     }
 
-    await prepareUploadPlanAndCostEstimates();
+    checkFilesAboveLimit();
   }
 
   @visibleForTesting
