@@ -262,13 +262,38 @@ class FileDownloadDialog extends StatelessWidget {
       title: appLocalizationsOf(context).downloadFinished,
       content: SizedBox(
         width: kMediumDialogWidth,
-        child: ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(
-            state.fileName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                state.fileName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ), 
+            ...state.authenticatedOwnerAddress == null
+            ? []
+            : [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  // Todo: add localization
+                  'Authenticated owner address',
+                  maxLines: 2,
+                ),
+                subtitle: SelectableText(
+                  state.authenticatedOwnerAddress!,
+                  maxLines: null,
+                  style: TextStyle(
+                    color: Colors.grey[800],
+                    fontSize: 12,
+                  ),
+                ),
+              )
+            ],
+          ],
         ),
       ),
       actions: [
