@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 1.43.1
+version: 1.44.0
 
 environment:
   sdk: '>=2.18.5 <3.0.0'
@@ -35,12 +35,12 @@ dependencies:
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: PE-2920
+      ref: v1.2.0
   artemis: ^7.0.0-beta.13
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: 910dc058cb37a7c902edd09eb355acf8f597ec69
+      ref: v3.5.0
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
   flutter_portal: ^0.4.0
@@ -63,7 +63,7 @@ dependencies:
   flutter_dropzone:
     git:
       url: https://github.com/ar-io/flutter_dropzone
-      ref: 1b694faf02aefba15f7848741eefdf8df0593928
+      ref: master
       path: flutter_dropzone
   responsive_builder: ^0.4.1
   package_info_plus: ^1.0.3

@@ -56,11 +56,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-2920
-      resolved-ref: f716ab6d6f7384255183ad736e18953d90eb99aa
+      ref: "v1.2.0"
+      resolved-ref: c0fee7de0daff697c38301b6d96a16278cddcb3e
       url: "https://github.com/ar-io/ardrive_io.git"
     source: git
-    version: "1.0.0"
+    version: "1.2.0"
   args:
     dependency: transitive
     description:
@@ -79,11 +79,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "910dc058cb37a7c902edd09eb355acf8f597ec69"
-      resolved-ref: "910dc058cb37a7c902edd09eb355acf8f597ec69"
+      ref: "v3.5.0"
+      resolved-ref: "35b8066abd074e2356a16e3f52d9451c6710963d"
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
-    version: "3.4.0"
+    version: "3.5.0"
   async:
     dependency: "direct main"
     description:
@@ -382,8 +382,8 @@ packages:
     dependency: transitive
     description:
       path: "."
-      ref: PE-2920
-      resolved-ref: "625dd4682a60c88cd87ecfd7792ca1c38445bc2d"
+      ref: master
+      resolved-ref: e6a2f5af04951deed4ed9caf138adeae82a0b8ba
       url: "https://github.com/ar-io/flutter_file_picker"
     source: git
     version: "5.2.4"
@@ -515,8 +515,8 @@ packages:
     dependency: "direct main"
     description:
       path: flutter_dropzone
-      ref: "1b694faf02aefba15f7848741eefdf8df0593928"
-      resolved-ref: "1b694faf02aefba15f7848741eefdf8df0593928"
+      ref: master
+      resolved-ref: cf486176da4efa1367130efc902fa5935a069968
       url: "https://github.com/ar-io/flutter_dropzone"
     source: git
     version: "3.0.5"
@@ -524,18 +524,18 @@ packages:
     dependency: transitive
     description:
       path: flutter_dropzone_platform_interface
-      ref: folder-detect
-      resolved-ref: "109e6293149a61270f0a2bf84d4da0eb5e84b7cf"
-      url: "https://github.com/elliotsayes/flutter_dropzone"
+      ref: master
+      resolved-ref: cf486176da4efa1367130efc902fa5935a069968
+      url: "https://github.com/ar-io/flutter_dropzone"
     source: git
     version: "2.0.5"
   flutter_dropzone_web:
     dependency: transitive
     description:
       path: flutter_dropzone_web
-      ref: folder-detect
-      resolved-ref: "109e6293149a61270f0a2bf84d4da0eb5e84b7cf"
-      url: "https://github.com/elliotsayes/flutter_dropzone"
+      ref: master
+      resolved-ref: cf486176da4efa1367130efc902fa5935a069968
+      url: "https://github.com/ar-io/flutter_dropzone"
     source: git
     version: "3.0.8"
   flutter_launcher_icons:
