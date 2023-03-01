@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/upload_handles/bundle_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/folder_data_item_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
@@ -7,12 +8,6 @@ import 'package:flutter/foundation.dart';
 
 import '../upload_handles/file_data_item_upload_handle.dart';
 import '../upload_handles/file_v2_upload_handle.dart';
-
-const bundleSizeLimit = kIsWeb ? webBundleSizeLimit : mobileBundleSizeLimit;
-const webBundleSizeLimit = 503316480; // 480MiB
-const mobileBundleSizeLimit = 209715200; // 200MiB
-const maxBundleDataItemCount = 500;
-const maxFilesPerBundle = maxBundleDataItemCount ~/ 2;
 
 class UploadPlan {
   /// A map of [FileV2UploadHandle]s keyed by their respective file's id.
