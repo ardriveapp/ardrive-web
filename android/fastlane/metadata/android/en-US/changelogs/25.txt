@@ -1,0 +1,2 @@
+- Add size check before using manifests for turbo uploads
+- Adds timeouts for HTTP requests
