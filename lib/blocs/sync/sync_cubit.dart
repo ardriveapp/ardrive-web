@@ -56,6 +56,7 @@ class SyncCubit extends Cubit<SyncState> {
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final Database _db;
+  final TabVisibilitySingleton _tabVisibility;
 
   StreamSubscription? _syncSub;
   StreamSubscription? _arconnectSyncSub;
@@ -71,11 +72,13 @@ class SyncCubit extends Cubit<SyncState> {
     required ArweaveService arweave,
     required DriveDao driveDao,
     required Database db,
+    required TabVisibilitySingleton tabVisibility,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
         _arweave = arweave,
         _driveDao = driveDao,
         _db = db,
+        _tabVisibility = tabVisibility,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
     logSync('Building Sync Cubit...');
@@ -103,7 +106,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void restartSyncOnFocus() {
-    whenBrowserTabIsUnhidden(_restartSync);
+    _tabVisibility.onTabGetsFocused(_restartSync);
   }
 
   void _restartSync() {
@@ -151,7 +154,8 @@ class SyncCubit extends Cubit<SyncState> {
 
   Future<void> arconnectSync() async {
     print('[SYNC CUBIT] Running ArConnect sync');
-    if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
+    if (_tabVisibility.isTabFocused() &&
+        await _profileCubit.logoutIfWalletMismatch()) {
       print('[SYNC CUBIT] Wallet mismatch, logging out...');
       emit(SyncWalletMismatch());
       return;
@@ -163,7 +167,7 @@ class SyncCubit extends Cubit<SyncState> {
       '[SYNC CUBIT] Trying to create a sync subscription when window get focused again',
     );
     if (await _profileCubit.isCurrentProfileArConnect()) {
-      whenBrowserTabIsUnhidden(() {
+      _tabVisibility.onTabGetsFocused(() {
         print('[SYNC CUBIT] Restarting ArConnect sync in two seconds...');
         Future.delayed(const Duration(seconds: 2))
             .then((value) => createArConnectSyncStream());
@@ -208,7 +212,7 @@ class SyncCubit extends Cubit<SyncState> {
 
         logSync('User is ar connect? $isArConnect');
 
-        if (isArConnect && isBrowserTabHidden()) {
+        if (isArConnect && !_tabVisibility.isTabFocused()) {
           logSync('Tab hidden, skipping sync...');
           emit(SyncIdle());
           return;
@@ -394,7 +398,7 @@ class SyncCubit extends Cubit<SyncState> {
     logSync('Closing SyncCubit...');
     await _syncSub?.cancel();
     await _arconnectSyncSub?.cancel();
-    await closeVisibilityChangeStream();
+    await _tabVisibility.closeVisibilityChangeStream();
     await super.close();
   }
 }
