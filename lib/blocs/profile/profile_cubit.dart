@@ -87,16 +87,23 @@ class ProfileCubit extends Cubit<ProfileState> {
     final arconnect = ArConnectService();
 
     if (profile == null) {
+      print('[PROFILE CUBIT] No profile found.');
       return false;
     }
 
     if (profile.profileType == ProfileType.arConnect.index) {
-      if (!(await arconnect.checkPermissions())) {
+      final hasPermissions = await arconnect.checkPermissions();
+      print('[PROFILE CUBIT] Has ArConnect permissions: $hasPermissions');
+      if (!hasPermissions) {
+        print('[PROFILE CUBIT] ArConnect permissions missing. Logging out...');
         return true;
       }
       final currentPublicKey = await arconnect.getPublicKey();
       final savedPublicKey = profile.walletPublicKey;
       if (currentPublicKey != savedPublicKey) {
+        print(
+          '[PROFILE CUBIT] ArConnect public key mismatch. Logging out... (current: $currentPublicKey, saved: $savedPublicKey)',
+        );
         return true;
       }
     }
@@ -108,6 +115,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<bool> logoutIfWalletMismatch() async {
     final isMismatch = await checkIfWalletMismatch();
     if (isMismatch) {
+      print('[PROFILE CUBIT] Detected wallet mismatch. Logging out...');
       await logoutProfile();
     }
     return isMismatch;

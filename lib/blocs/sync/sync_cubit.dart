@@ -136,9 +136,11 @@ class SyncCubit extends Cubit<SyncState> {
   void createArConnectSyncStream() {
     _profileCubit.isCurrentProfileArConnect().then((isArConnect) {
       if (isArConnect) {
+        print('[SYNC CUBIT] Creating ArConnect sync stream');
         _arconnectSyncSub?.cancel();
         _arconnectSyncSub = Stream.periodic(
-                const Duration(minutes: kArConnectSyncTimerDuration))
+          const Duration(minutes: kArConnectSyncTimerDuration),
+        )
             // Do not start another sync until the previous sync has completed.
             .map((value) => Stream.fromFuture(arconnectSync()))
             .listen((_) {});
@@ -148,15 +150,21 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> arconnectSync() async {
+    print('[SYNC CUBIT] Running ArConnect sync');
     if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
+      print('[SYNC CUBIT] Wallet mismatch, logging out...');
       emit(SyncWalletMismatch());
       return;
     }
   }
 
   void restartArConnectSyncOnFocus() async {
+    print(
+      '[SYNC CUBIT] Trying to create a sync subscription when window get focused again',
+    );
     if (await _profileCubit.isCurrentProfileArConnect()) {
       whenBrowserTabIsUnhidden(() {
+        print('[SYNC CUBIT] Restarting ArConnect sync in two seconds...');
         Future.delayed(const Duration(seconds: 2))
             .then((value) => createArConnectSyncStream());
       });

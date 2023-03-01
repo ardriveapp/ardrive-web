@@ -27,6 +27,7 @@ class ProfileAuthPageState extends State<ProfileAuthPage> {
 
   void listenForWalletSwitch() {
     onArConnectWalletSwitch(() {
+      print('[PROFILE AUTH PAGE] Wallet Switch Detected');
       if (_showWalletSwitchDialog) {
         showDialog(
           context: context,
