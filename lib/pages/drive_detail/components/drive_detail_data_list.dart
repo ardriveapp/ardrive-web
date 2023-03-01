@@ -19,7 +19,8 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
         }
       },
       name: folder.name,
-      lastUpdated: yMMdDateFormatter.format(folder.lastUpdated),
+      lastUpdated: folder.lastUpdated,
+      dateCreated: folder.dateCreated,
       type: 'folder',
       contentType: 'folder',
     ),
@@ -36,7 +37,8 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
         ).toString(),
         type: 'file',
         contentType: file.dataContentType ?? 'octet-stream',
-        lastUpdated: yMMdDateFormatter.format(file.lastUpdated),
+        lastUpdated: file.lastUpdated,
+        dateCreated: file.dateCreated,
         onPressed: (item) async {
           final bloc = context.read<DriveDetailCubit>();
           if (file.id == state.maybeSelectedItem()?.id) {
@@ -53,7 +55,8 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
 class ArDriveDataTableItem {
   final String name;
   final String size;
-  final String lastUpdated;
+  final DateTime lastUpdated;
+  final DateTime dateCreated;
   final String type;
   final String contentType;
   final String? fileStatusFromTransactions;
@@ -62,7 +65,8 @@ class ArDriveDataTableItem {
   ArDriveDataTableItem({
     required this.name,
     this.size = '-',
-    this.lastUpdated = '-',
+    required this.lastUpdated,
+    required this.dateCreated,
     required this.type,
     required this.contentType,
     this.fileStatusFromTransactions,
@@ -80,7 +84,8 @@ Widget _buildDataListContent(
     columns: [
       TableColumn('Name', 2),
       TableColumn('Size', 1),
-      TableColumn('Last updated', 1)
+      TableColumn('Last updated', 1),
+      TableColumn('Date created', 1),
     ],
     leading: (file) => DriveExplorerItemTileLeading(
       item: file,
@@ -103,7 +108,8 @@ Widget _buildDataListContent(
       return DriveExplorerItemTile(
         name: row.name,
         size: row.size,
-        lastUpdated: row.lastUpdated,
+        lastUpdated: yMMdDateFormatter.format(row.lastUpdated),
+        dateCreated: yMMdDateFormatter.format(row.dateCreated),
         onPressed: () => row.onPressed(row),
       );
     },

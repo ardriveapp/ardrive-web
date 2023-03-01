@@ -9,6 +9,7 @@ class DriveExplorerItemTile extends TableRowWidget {
     required String name,
     required String size,
     required String lastUpdated,
+    required String dateCreated,
     required Function() onPressed,
   }) : super(
           [
@@ -21,6 +22,7 @@ class DriveExplorerItemTile extends TableRowWidget {
             ),
             Text(size, style: ArDriveTypography.body.xSmallRegular()),
             Text(lastUpdated, style: ArDriveTypography.body.captionRegular()),
+            Text(dateCreated, style: ArDriveTypography.body.captionRegular()),
           ],
         );
 }
