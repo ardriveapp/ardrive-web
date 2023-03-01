@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-2583-new-login-flow
-      resolved-ref: "57e8ca4906b4174044ba76a83b4391b0d6f4fffb"
+      ref: PE-3112-use-the-ar-drive-datatable-component-to-display-drive-data
+      resolved-ref: "9ca4261e6a819bc046f14c77190e61756f413b9d"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"

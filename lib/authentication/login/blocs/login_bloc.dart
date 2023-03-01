@@ -61,7 +61,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       return wallet;
     } catch (e) {
       debugPrint('Invalid wallet file: $e');
-      
+
       return null;
     }
   }

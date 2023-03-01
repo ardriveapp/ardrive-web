@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-2583-new-login-flow
+      ref: PE-3112-use-the-ar-drive-datatable-component-to-display-drive-data
   artemis: ^7.0.0-beta.13
   arweave:
     git:
@@ -117,3 +117,4 @@ flutter:
     - assets/images/inferno/
     - assets/images/login/
     - assets/images/login/onboarding/
+    - assets/images/file_types/
