@@ -1,7 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
+import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
+import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
@@ -57,6 +59,7 @@ Future<void> promptToUpload(
       context: context,
       builder: (_) => BlocProvider<UploadCubit>(
         create: (context) => UploadCubit(
+          uploadFileChecker: context.read<UploadFileChecker>(),
           uploadPlanUtils: UploadPlanUtils(
             arweave: context.read<ArweaveService>(),
             turboService: context.read<TurboService>(),
@@ -89,7 +92,7 @@ class UploadForm extends StatelessWidget {
             Navigator.pop(context);
             await context.read<FeedbackSurveyCubit>().openRemindMe();
           } else if (state is UploadPreparationInitialized) {
-            context.read<UploadCubit>().checkFilesAboveLimit();
+            context.read<UploadCubit>().verifyFilesAboveWarningLimit();
           }
 
           if (state is UploadWalletMismatch) {
@@ -473,6 +476,38 @@ class UploadForm extends StatelessWidget {
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
                   child: Text(appLocalizationsOf(context).okEmphasized),
+                ),
+              ],
+            );
+          } else if (state is UploadShowingWarning) {
+            return AppDialog(
+              title: appLocalizationsOf(context).warningEmphasized,
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appLocalizationsOf(context)
+                          .weDontRecommendUploadsAboveASafeLimit(
+                        filesize(publicFileSafeSizeLimit),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(appLocalizationsOf(context).cancelEmphasized),
+                ),
+                ElevatedButton(
+                  onPressed: () =>
+                      context.read<UploadCubit>().checkFilesAboveLimit(),
+                  child: Text(
+                    appLocalizationsOf(context).proceed,
+                  ),
                 ),
               ],
             );

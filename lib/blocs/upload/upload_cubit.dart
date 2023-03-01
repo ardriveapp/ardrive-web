@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/cost_estimate.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
+import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/extensions.dart';
@@ -30,6 +31,7 @@ class UploadCubit extends Cubit<UploadState> {
   final TurboService _turbo;
   final PstService _pst;
   final UploadPlanUtils _uploadPlanUtils;
+  final UploadFileChecker _uploadFileChecker;
 
   late bool uploadFolders;
   late Drive _targetDrive;
@@ -54,8 +56,10 @@ class UploadCubit extends Cubit<UploadState> {
     required TurboService turbo,
     required PstService pst,
     required UploadPlanUtils uploadPlanUtils,
+    required UploadFileChecker uploadFileChecker,
     this.uploadFolders = false,
   })  : _profileCubit = profileCubit,
+        _uploadFileChecker = uploadFileChecker,
         _driveDao = driveDao,
         _arweave = arweave,
         _turbo = turbo,
@@ -122,20 +126,20 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   Future<void> checkFilesAboveLimit() async {
-    final tooLargeFiles = [
-      for (final file in files)
-        if (await file.ioFile.length > sizeLimit) file.ioFile.name
-    ];
+    if (_isAPrivateUpload()) {
+      final tooLargeFiles = await _uploadFileChecker
+          .checkAndReturnFilesAbovePrivateLimit(files: files);
 
-    if (tooLargeFiles.isNotEmpty) {
-      emit(
-        UploadFileTooLarge(
-          hasFilesToUpload: files.length > tooLargeFiles.length,
-          tooLargeFileNames: tooLargeFiles,
-          isPrivate: _targetDrive.isPrivate,
-        ),
-      );
-      return;
+      if (tooLargeFiles.isNotEmpty) {
+        emit(
+          UploadFileTooLarge(
+            hasFilesToUpload: files.length > tooLargeFiles.length,
+            tooLargeFileNames: tooLargeFiles,
+            isPrivate: _isAPrivateUpload(),
+          ),
+        );
+        return;
+      }
     }
 
     // If we don't have any file above limit, we can check conflicts
@@ -297,6 +301,8 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> startUpload({
     required UploadPlan uploadPlan,
   }) async {
+    bool hasEmittedError = false;
+
     debugPrint('Starting upload...');
 
     final profile = _profileCubit.state as ProfileLoggedIn;
@@ -342,7 +348,13 @@ class UploadCubit extends Cubit<UploadState> {
       await for (final _ in bundleHandle
           .upload(_arweave, _turbo)
           .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) => bundleHandle.hasError = true)) {
+          .handleError((_) {
+        bundleHandle.hasError = true;
+        if (!hasEmittedError) {
+          addError(_);
+          hasEmittedError = true;
+        }
+      })) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
       await bundleHandle.writeBundleItemsToDatabase(driveDao: _driveDao);
@@ -367,7 +379,13 @@ class UploadCubit extends Cubit<UploadState> {
       await for (final _ in uploadHandle
           .upload(_arweave)
           .debounceTime(const Duration(milliseconds: 500))
-          .handleError((_) => uploadHandle.hasError = true)) {
+          .handleError((_) {
+        uploadHandle.hasError = true;
+        if (!hasEmittedError) {
+          addError(_);
+          hasEmittedError = true;
+        }
+      })) {
         emit(UploadInProgress(uploadPlan: uploadPlan));
       }
 
@@ -375,6 +393,7 @@ class UploadCubit extends Cubit<UploadState> {
 
       uploadHandle.dispose();
     }
+
     unawaited(_profileCubit.refreshBalance());
 
     emit(UploadComplete());
@@ -382,26 +401,13 @@ class UploadCubit extends Cubit<UploadState> {
 
   Future<void> skipLargeFilesAndCheckForConflicts() async {
     emit(UploadPreparationInProgress());
-    final List<String> filesToSkip = [];
-
-    for (final file in files) {
-      if (await file.ioFile.length > sizeLimit) {
-        filesToSkip.add(file.ioFile.path);
-      }
-    }
+    final List<String> filesToSkip = await _uploadFileChecker
+        .checkAndReturnFilesAbovePrivateLimit(files: files);
 
     files.removeWhere(
-      (file) => filesToSkip
-          .where((filePath) => filePath == file.ioFile.path)
-          .isNotEmpty,
+      (file) => filesToSkip.contains(file.getIdentifier()),
     );
 
-    for (final file in files) {
-      final fileSize = await file.ioFile.length;
-      if (fileSize > sizeLimit) {
-        files.remove(file);
-      }
-    }
     await checkConflicts();
   }
 
@@ -411,12 +417,33 @@ class UploadCubit extends Cubit<UploadState> {
     );
   }
 
-  int get sizeLimit => kIsWeb
-      ? (_targetDrive.isPrivate ? privateFileSizeLimit : publicFileSizeLimit)
-      : mobileFileSizeLimit;
-
   void _removeFilesWithFolderNameConflicts() {
     files.removeWhere((file) => conflictingFolders.contains(file.ioFile.name));
+  }
+
+  Future<void> verifyFilesAboveWarningLimit() async {
+    if (!_targetDrive.isPrivate) {
+      bool fileAboveWarningLimit =
+          await _uploadFileChecker.hasFileAboveSafePublicSizeLimit(
+        files: files,
+      );
+
+      if (fileAboveWarningLimit) {
+        emit(UploadShowingWarning(reason: UploadWarningReason.fileTooLarge));
+
+        return;
+      }
+      await prepareUploadPlanAndCostEstimates();
+    }
+
+    checkFilesAboveLimit();
+  }
+
+  @visibleForTesting
+  bool isPrivateForTesting = false;
+
+  bool _isAPrivateUpload() {
+    return isPrivateForTesting || _targetDrive.isPrivate;
   }
 
   @override
