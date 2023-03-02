@@ -87,7 +87,7 @@ class SyncCubit extends Cubit<SyncState> {
     restartArConnectSyncOnFocus();
   }
 
-  void createSyncStream() async {
+  Future<void> createSyncStream() async {
     logSync('Creating sync stream to periodically call sync automatically');
 
     await _syncSub?.cancel();
@@ -99,7 +99,7 @@ class SyncCubit extends Cubit<SyncState> {
       logSync('Listening to startSync periodic stream');
     });
 
-    startSync();
+    await startSync();
   }
 
   void restartSyncOnFocus() {
@@ -129,15 +129,16 @@ class SyncCubit extends Cubit<SyncState> {
     /// This delay is for don't abruptly open the modal when the user is back
     ///  to ArDrive browser tab
     await Future.delayed(const Duration(seconds: 2));
-    createSyncStream();
+    await createSyncStream();
   }
 
   void createArConnectSyncStream() async {
     final isArConnect = await _profileCubit.isCurrentProfileArConnect();
     if (isArConnect) {
+      // FIXME: await for me
       _arconnectSyncSub?.cancel();
       _arconnectSyncSub = Stream.periodic(
-              const Duration(minutes: kArConnectSyncTimerDuration))
+              const Duration(seconds: kArConnectSyncTimerDuration))
           // Do not start another sync until the previous sync has completed.
           .map((value) => Stream.fromFuture(arconnectSync()))
           .listen((_) {});
@@ -146,9 +147,17 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> arconnectSync() async {
-    if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
+    final isTabFocused = !isBrowserTabHidden();
+    if (isTabFocused && await _profileCubit.logoutIfWalletMismatch()) {
+      print('[SYNC CUBIT] Logged out');
       emit(SyncWalletMismatch());
       return;
+    } else {
+      if (isTabFocused) {
+        print('[SYNC SUBIT] Tab is visible, sync is ok');
+      } else {
+        print('[SYNC SUBIT] Tab is hidden');
+      }
     }
   }
 

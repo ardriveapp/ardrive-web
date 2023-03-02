@@ -91,7 +91,8 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     if (profile.profileType == ProfileType.arConnect.index) {
-      await Future.delayed(const Duration(milliseconds: 10));
+      /// Extra time to let ArConnect refresh premissions asynchonously
+      // await Future.delayed(const Duration(milliseconds: 10));
       final hasArConnectPermissions = await arconnect.checkPermissions();
       if (!(hasArConnectPermissions)) {
         return true;
