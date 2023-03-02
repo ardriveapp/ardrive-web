@@ -1599,5 +1599,13 @@
         "example": "Curious Cat"
       }
     }
+  },
+  "finishingThingsUp": "Finishing things up!",
+  "@finishingThingsUp": {
+    "description": "Finishing things up!"
+  },
+  "pleaseRemainOnThisTabSnapshots": "Your Web3 wallet is signing your transactions. Please stay on this page while we finish things up!",
+  "@pleaseRemainOnThisTabSnapshots": {
+    "description": "Please stay on this page while we finish things up!"
   }
 }
