@@ -47,6 +47,17 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       );
     }
 
+    Widget buildSeparator() {
+      final segmentStyle = ArDriveTypography.body.captionBold(
+        color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+      );
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: Text('/', style: segmentStyle),
+      );
+    }
+
     List<Widget> segments = [];
 
     if (_pathSegments.length >= breadCrumbcount) {
@@ -57,11 +68,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       segments.addAll(
           _pathSegments.sublist(breadCrumbSplit).asMap().entries.expand((s) => [
                 buildSegment(s.key + breadCrumbSplit),
-                if (!isLastSegment(s.key + breadCrumbSplit))
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    child: Text('/', style: segmentStyle),
-                  ),
+                if (!isLastSegment(s.key + breadCrumbSplit)) buildSeparator()
               ]));
     } else {
       segments.addAll([
@@ -71,20 +78,11 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
             child: Text(driveName, style: segmentStyle)),
       ]);
       if (_pathSegments.isNotEmpty) {
-        segments.add(Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: Text('/', style: segmentStyle),
-        ));
+        segments.add(buildSeparator());
       }
 
-      segments.addAll(_pathSegments.asMap().entries.expand((s) => [
-            buildSegment(s.key),
-            if (!isLastSegment(s.key))
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text('/', style: segmentStyle),
-              ),
-          ]));
+      segments.addAll(_pathSegments.asMap().entries.expand((s) =>
+          [buildSegment(s.key), if (!isLastSegment(s.key)) buildSeparator()]));
     }
 
     return ArDriveCard(
