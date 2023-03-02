@@ -43,7 +43,8 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
         _syncCubit = syncCubit,
         _crypto = crypto,
         assert(folderId != null || fileId != null),
-        super(FsEntryRenameInitializing(isRenamingFolder: folderId != null)) {
+        super(FsEntryRenameInitializing(
+            isRenamingFolder: folderId != null, entryName: '')) {
     form = FormGroup({
       'name': FormControl<String>(
         validators: [
@@ -70,30 +71,24 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               .getSingle();
 
       form.control('name').value = name;
-      emit(FsEntryRenameInitialized(isRenamingFolder: _isRenamingFolder));
+      emit(FsEntryRenameInitialized(
+          isRenamingFolder: _isRenamingFolder, entryName: name));
     }();
   }
 
-  Future<void> submit() async {
-    form.markAllAsTouched();
-
-    if (form.invalid) {
-      return;
-    }
-
+  Future<void> submit(String newName) async {
     try {
-      final newName = form.control('name').value.toString().trim();
       final profile = _profileCubit.state as ProfileLoggedIn;
       final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
 
       if (await _profileCubit.logoutIfWalletMismatch()) {
         emit(_isRenamingFolder
-            ? const FolderEntryRenameWalletMismatch()
-            : const FileEntryRenameWalletMismatch());
+            ? FolderEntryRenameWalletMismatch(entryName: state.entryName)
+            : FileEntryRenameWalletMismatch(entryName: state.entryName));
         return;
       }
       if (_isRenamingFolder) {
-        emit(const FolderEntryRenameInProgress());
+        emit(FolderEntryRenameInProgress(entryName: state.entryName));
 
         await _driveDao.transaction(() async {
           var folder = await _driveDao
@@ -128,9 +123,9 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
           await _syncCubit.generateFsEntryPaths(driveId, folderMap, {});
         });
 
-        emit(const FolderEntryRenameSuccess());
+        emit(FolderEntryRenameSuccess(entryName: state.entryName));
       } else {
-        emit(const FileEntryRenameInProgress());
+        emit(FileEntryRenameInProgress(entryName: state.entryName));
 
         await _driveDao.transaction(() async {
           var file = await _driveDao
@@ -138,8 +133,9 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               .getSingle();
           file = file.copyWith(name: newName, lastUpdated: DateTime.now());
 
-          final fileKey =
-              driveKey != null ? await _crypto.deriveFileKey(driveKey, file.id) : null;
+          final fileKey = driveKey != null
+              ? await _crypto.deriveFileKey(driveKey, file.id)
+              : null;
 
           final fileEntity = file.asEntity();
 
@@ -166,7 +162,7 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
               performedAction: RevisionAction.rename));
         });
 
-        emit(const FileEntryRenameSuccess());
+        emit(FileEntryRenameSuccess(entryName: state.entryName));
       }
     } catch (err) {
       addError(err);
@@ -228,10 +224,10 @@ class FsEntryRenameCubit extends Cubit<FsEntryRenameState> {
   @override
   void onError(Object error, StackTrace stackTrace) {
     if (_isRenamingFolder) {
-      emit(const FolderEntryRenameFailure());
+      emit(FolderEntryRenameFailure(entryName: state.entryName));
       print('Failed to rename folder: $error $stackTrace');
     } else {
-      emit(const FileEntryRenameFailure());
+      emit(FileEntryRenameFailure(entryName: state.entryName));
       print('Failed to rename file: $error $stackTrace');
     }
 
