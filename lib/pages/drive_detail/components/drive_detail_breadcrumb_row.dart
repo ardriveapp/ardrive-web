@@ -38,7 +38,6 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
 
     Widget buildSegment(int index) {
       return TextButton(
-        // style: isLastSegment(index) ? selectedSegmentTheme : null,
         onPressed: () {
           final path = _pathSegments.sublist(0, index + 1).join('/');
           context.read<DriveDetailCubit>().openFolder(path: '/$path');
