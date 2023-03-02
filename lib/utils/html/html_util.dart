@@ -15,8 +15,11 @@ class TabVisibilitySingleton {
 
   bool isTabFocused() => implementation.isTabFocused();
 
-  Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async =>
-      implementation.onTabGetsFocusedFuture(onFocus);
+  Future<void> onTabGetsFocusedFuture(
+    FutureOr<Function> onFocus, {
+    bool periodical = false,
+  }) async =>
+      implementation.onTabGetsFocusedFuture(onFocus, periodical);
 
   void onTabGetsFocused(Function onFocus) =>
       implementation.onTabGetsFocused(onFocus);

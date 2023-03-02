@@ -8,9 +8,13 @@ bool isTabFocused() {
 
 late StreamSubscription _onVisibilityChangeStream;
 
-Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
+Future<StreamSubscription?> onTabGetsFocusedFuture(
+  FutureOr<Function> onFocus,
+  bool periodical,
+) async {
   final completer = Completer<void>();
-  _onVisibilityChangeStream = document.onVisibilityChange.listen((event) async {
+  final onVisibilityChangeStream =
+      document.onVisibilityChange.listen((event) async {
     if (isTabFocused()) {
       await onFocus;
       await closeVisibilityChangeStream();
@@ -18,6 +22,13 @@ Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
     }
   });
   await completer.future; // wait for the completer to be resolved
+
+  if (!periodical) {
+    await onVisibilityChangeStream.cancel();
+    return null;
+  }
+
+  return onVisibilityChangeStream;
 }
 
 void onTabGetsFocused(Function onFocus) {
