@@ -90,19 +90,51 @@ Widget _buildDataListContent(
     leading: (file) => DriveExplorerItemTileLeading(
       item: file,
     ),
-    sort: (columnIndex) {
-      int sort(ArDriveDataTableItem a, ArDriveDataTableItem b) {
-        // TODO(add folders in the start of the list)
-        if (columnIndex == 0) {
-          return compareAlphabeticallyAndNatural(a.name, b.name);
-        } else if (columnIndex == 1) {
-          return a.size.compareTo(b.size);
+    sortRows: (list, columnIndex, sort) {
+      // Separate folders and files
+      List<ArDriveDataTableItem> folders = [];
+      List<ArDriveDataTableItem> files = [];
+      for (var item in list) {
+        if (item.type == 'folder') {
+          folders.add(item);
         } else {
-          return a.lastUpdated.compareTo(b.lastUpdated);
+          files.add(item);
         }
       }
 
-      return sort;
+      // Sort folders alphabetically
+      folders.sort((a, b) {
+        int result = compareAlphabeticallyAndNatural(a.name, b.name);
+        if (sort == TableSort.asc) {
+          result *= -1;
+        }
+        return result;
+      });
+
+      // Sort files based on the specified column index
+      files.sort((a, b) {
+        int result = 0;
+
+        if (columnIndex == 0) {
+          result = compareAlphabeticallyAndNatural(a.name, b.name);
+        } else if (columnIndex == 1) {
+          result = a.size.compareTo(b.size);
+        } else {
+          result = a.lastUpdated.compareTo(b.lastUpdated);
+        }
+
+        if (sort == TableSort.asc) {
+          result *= -1;
+        }
+
+        return result;
+      });
+
+      // Merge folders and files back together, with folders at the top
+      List<ArDriveDataTableItem> result = [];
+      result.addAll(folders);
+      result.addAll(files);
+      return result;
     },
     buildRow: (row) {
       return DriveExplorerItemTile(
