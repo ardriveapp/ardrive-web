@@ -44,7 +44,7 @@ class DriveDetailActionRow extends StatelessWidget {
                     IconButton(
                       icon: const Icon(Icons.drive_file_rename_outline),
                       onPressed: () {
-                        promptToRenameFolder(
+                        showRenameModal(
                           context,
                           driveId: state.currentDrive.id,
                           folderId: state.folderInView.folder.id,
@@ -141,13 +141,14 @@ class DriveDetailActionRow extends StatelessWidget {
                         onPressed: () {
                           if (maybeSelectedItem is SelectedFolder &&
                               !maybeSelectedItem.item.isGhost) {
-                            promptToRenameFolder(
+                            showRenameModal(
                               context,
                               driveId: state.currentDrive.id,
                               folderId: maybeSelectedItem.id,
+                              fileId: '',
                             );
                           } else {
-                            promptToRenameFile(
+                            showRenameModal(
                               context,
                               driveId: state.currentDrive.id,
                               fileId: maybeSelectedItem.id,
