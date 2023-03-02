@@ -6,6 +6,7 @@ bool isTabFocused() {
   return window.document.visibilityState == 'visible';
 }
 
+/// FIXME: remove this global variable
 late StreamSubscription _onVisibilityChangeStream;
 
 Future<StreamSubscription?> onTabGetsFocusedFuture(
