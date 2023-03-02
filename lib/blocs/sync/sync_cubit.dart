@@ -139,7 +139,7 @@ class SyncCubit extends Cubit<SyncState> {
     final isArConnect = await _profileCubit.isCurrentProfileArConnect();
     if (isArConnect) {
       // FIXME: await for me
-      _arconnectSyncSub?.cancel();
+      await _arconnectSyncSub?.cancel();
       _arconnectSyncSub = Stream.periodic(
               const Duration(seconds: kArConnectSyncTimerDuration))
           // Do not start another sync until the previous sync has completed.
