@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-2583-new-login-flow
+      ref: 8645c689576d4207e8339b59639a1beafb3b9168
   artemis: ^7.0.0-beta.13
   arweave:
     git:
