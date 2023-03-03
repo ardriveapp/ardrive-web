@@ -91,14 +91,6 @@ Widget _buildDataListContent(
       item: file,
     ),
     sortRows: (list, columnIndex, sortOrder) {
-      int getResult(int result) {
-        if (sortOrder == TableSort.asc) {
-          result *= -1;
-        }
-
-        return result;
-      }
-
       // Separate folders and files
       List<ArDriveDataTableItem> folders = [];
       List<ArDriveDataTableItem> files = [];
@@ -111,36 +103,8 @@ Widget _buildDataListContent(
         }
       }
 
-      folders.sort((a, b) {
-        int result = 0;
-
-        if (columnIndex == 0) {
-          result = compareAlphabeticallyAndNatural(a.name, b.name);
-        } else if (columnIndex == 2) {
-          result = a.lastUpdated.compareTo(b.lastUpdated);
-        } else {
-          result = a.dateCreated.compareTo(b.dateCreated);
-        }
-
-        return getResult(result);
-      });
-
-      // Sort files based on the specified column index
-      files.sort((a, b) {
-        int result = 0;
-
-        if (columnIndex == 0) {
-          result = compareAlphabeticallyAndNatural(a.name, b.name);
-        } else if (columnIndex == 1) {
-          result = a.size.compareTo(b.size);
-        } else if (columnIndex == 2) {
-          result = a.lastUpdated.compareTo(b.lastUpdated);
-        } else {
-          result = a.dateCreated.compareTo(b.dateCreated);
-        }
-
-        return getResult(result);
-      });
+      // Sort folders and files
+      _sortFoldersAndFiles(folders, files, columnIndex, sortOrder);
 
       return folders + files;
     },
@@ -155,4 +119,41 @@ Widget _buildDataListContent(
     },
     rows: items,
   );
+}
+
+void _sortFoldersAndFiles(List<ArDriveDataTableItem> folders,
+    List<ArDriveDataTableItem> files, int columnIndex, TableSort sortOrder) {
+  _sortItems(folders, columnIndex, sortOrder);
+  _sortItems(files, columnIndex, sortOrder);
+}
+
+int _getResult(int result, TableSort sortOrder) {
+  if (sortOrder == TableSort.asc) {
+    result *= -1;
+  }
+
+  return result;
+}
+
+void _sortItems(List items, int columnIndex, TableSort sortOrder) {
+  items.sort((a, b) {
+    int result = 0;
+    if (columnIndex == ColumnIndexes.name) {
+      result = compareAlphabeticallyAndNatural(a.name, b.name);
+    } else if (columnIndex == ColumnIndexes.size) {
+      result = a.size.compareTo(b.size);
+    } else if (columnIndex == ColumnIndexes.lastUpdated) {
+      result = a.lastUpdated.compareTo(b.lastUpdated);
+    } else {
+      result = a.dateCreated.compareTo(b.dateCreated);
+    }
+    return _getResult(result, sortOrder);
+  });
+}
+
+class ColumnIndexes {
+  static const int name = 0;
+  static const int size = 1;
+  static const int lastUpdated = 2;
+  static const int dateCreated = 3;
 }
