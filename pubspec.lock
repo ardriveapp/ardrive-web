@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3116-implement-multiselect
-      resolved-ref: "9e11388766540fe02c654059b08f997e3aca66d8"
+      ref: PE-2583-new-login-flow
+      resolved-ref: b4ad3feeb0d16096119fc2dfd06cba3c018171fa
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
