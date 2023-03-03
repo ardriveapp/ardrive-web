@@ -13,12 +13,9 @@ class DriveExplorerItemTile extends TableRowWidget {
     required Function() onPressed,
   }) : super(
           [
-            GestureDetector(
-              onTap: onPressed,
-              child: Text(
-                name,
-                style: ArDriveTypography.body.buttonNormalBold(),
-              ),
+            Text(
+              name,
+              style: ArDriveTypography.body.buttonNormalBold(),
             ),
             Text(size, style: ArDriveTypography.body.xSmallRegular()),
             Text(lastUpdated, style: ArDriveTypography.body.captionRegular()),

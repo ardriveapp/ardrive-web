@@ -3,10 +3,13 @@ part of '../drive_detail_page.dart';
 Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
   List<ArDriveDataTableItem> items = [];
 
+  int index = 0;
+
   // add folders to items mapping to the correct object
   items.addAll(
     state.folderInView.subfolders.map(
       (folder) => ArDriveDataTableItem(
+        index: index++,
         onPressed: (selected) {
           final bloc = context.read<DriveDetailCubit>();
           if (folder.id == state.maybeSelectedItem()?.id) {
@@ -28,31 +31,33 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
   items.addAll(
     state.folderInView.files.map(
       (file) => ArDriveDataTableItem(
-          name: file.name,
-          size: filesize(file.size),
-          fileStatusFromTransactions: fileStatusFromTransactions(
-            file.metadataTx,
-            file.dataTx,
-          ).toString(),
-          type: 'file',
-          contentType: file.dataContentType ?? 'octet-stream',
-          lastUpdated: file.lastUpdated,
-          dateCreated: file.dateCreated,
-          onPressed: (item) async {
-            final bloc = context.read<DriveDetailCubit>();
-            if (file.id == state.maybeSelectedItem()?.id) {
-              bloc.toggleSelectedItemDetails();
-            } else {
-              await bloc.selectItem(SelectedFile(file: file));
-            }
-          }),
+        index: index++,
+        name: file.name,
+        size: filesize(file.size),
+        fileStatusFromTransactions: fileStatusFromTransactions(
+          file.metadataTx,
+          file.dataTx,
+        ).toString(),
+        type: 'file',
+        contentType: file.dataContentType ?? 'octet-stream',
+        lastUpdated: file.lastUpdated,
+        dateCreated: file.dateCreated,
+        onPressed: (item) async {
+          final bloc = context.read<DriveDetailCubit>();
+          if (file.id == state.maybeSelectedItem()?.id) {
+            bloc.toggleSelectedItemDetails();
+          } else {
+            await bloc.selectItem(SelectedFile(file: file));
+          }
+        },
+      ),
     ),
   );
 
   return _buildDataListContent(context, items);
 }
 
-class ArDriveDataTableItem {
+class ArDriveDataTableItem extends IndexedItem {
   final String name;
   final String size;
   final DateTime lastUpdated;
@@ -71,12 +76,18 @@ class ArDriveDataTableItem {
     required this.contentType,
     this.fileStatusFromTransactions,
     required this.onPressed,
-  });
+    required int index,
+  }) : super(index);
 }
 
 Widget _buildDataListContent(
     BuildContext context, List<ArDriveDataTableItem> items) {
   return ArDriveDataTable<ArDriveDataTableItem>(
+    onSelectedRows: (rows) {
+      for (final row in rows) {
+        print(row.name);
+      }
+    },
     key: ValueKey(items.length),
     rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
     maxItemsPerPage: 100,
@@ -110,6 +121,7 @@ Widget _buildDataListContent(
 
       return folders + files;
     },
+    onRowTap: (row) => row.onPressed(row),
     buildRow: (row) {
       return DriveExplorerItemTile(
         name: row.name,
