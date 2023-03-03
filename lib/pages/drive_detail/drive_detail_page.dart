@@ -13,14 +13,17 @@ import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
+import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:drift/drift.dart' show OrderingMode;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -85,27 +88,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: SizedBox(
-                                        width: 400,
-                                        child: Text(
-                                          state.currentDrive.name,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headline5,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ),
-                                    const DriveDetailActionRow(),
-                                  ],
-                                ),
                                 DriveDetailBreadcrumbRow(
                                   path: state.folderInView.folder.path,
+                                  driveName: state.currentDrive.name,
+                                ),
+                                const SizedBox(
+                                  height: 30,
                                 ),
                                 if (state.folderInView.subfolders.isNotEmpty ||
                                     state.folderInView.files.isNotEmpty)
@@ -115,10 +103,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Expanded(
-                                          child: _buildDataTable(
-                                            state: state,
-                                            context: context,
-                                            checkBoxEnabled: state.multiselect,
+                                          key: ValueKey(
+                                              state.folderInView.folder.id),
+                                          child: _buildDataList(
+                                            context,
+                                            state,
                                           ),
                                         ),
                                       ],
@@ -186,11 +175,14 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   ),
                                   DriveDetailBreadcrumbRow(
                                     path: state.folderInView.folder.path,
+                                    driveName: state.currentDrive.name,
                                   ),
                                   if (state
                                           .folderInView.subfolders.isNotEmpty ||
                                       state.folderInView.files.isNotEmpty) ...[
                                     Expanded(
+                                      key: ValueKey(
+                                          state.folderInView.folder.id),
                                       child: _buildDataList(context, state),
                                     ),
                                   ] else
