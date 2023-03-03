@@ -39,7 +39,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-3127-implement-sort
+      ref: PE-3043-new-drive-explorer
   artemis: ^7.0.0-beta.13
   arweave:
     git:
