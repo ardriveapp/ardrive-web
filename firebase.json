@@ -1,6 +1,5 @@
 {
-  "hosting": [{
-    "target": "web",
+  "hosting": {
     "public": "build/web",
     "ignore": [
       "firebase.json",
@@ -12,21 +11,44 @@
         "source": "**",
         "destination": "/index.html"
       }
-    ]
-  },
-  {
-    "target": "storybook",
-    "public": "packages/ardrive_ui_library/storybook/build/web",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
     ],
-    "rewrites": [
+    "headers": [
       {
-        "source": "**",
-        "destination": "/index.html"
+        "source": "**/assets/config/*.json",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "**/flutter_service_worker.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "**/ardrive-http.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "**/worker.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
       }
     ]
-  }]
+  }
 }

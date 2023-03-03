@@ -138,7 +138,7 @@ class AppShellState extends State<AppShell> {
                     : scaffold,
               );
           return ScreenTypeLayout(
-            desktop: buildPage(
+            desktop: _buildPage(
               Row(
                 children: [
                   const AppDrawer(),
@@ -152,7 +152,7 @@ class AppShellState extends State<AppShell> {
                 ],
               ),
             ),
-            mobile: buildPage(
+            mobile: _buildPage(
               Scaffold(
                 // FIXME
                 // appBar: _buildAppBar(),
