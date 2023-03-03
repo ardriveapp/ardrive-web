@@ -42,8 +42,8 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
 
   Widget _buildFileIcon(BuildContext context) {
     return ArDriveCard(
-      width: 40,
-      height: 40,
+      width: 30,
+      height: 30,
       elevation: 0,
       contentPadding: EdgeInsets.zero,
       content: Stack(
@@ -52,14 +52,15 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
             alignment: Alignment.center,
             child: ArDriveImage(
               image: AssetImage(getAssetPath(item.contentType)),
-              width: 20,
-              height: 20,
+              width: 15,
+              height: 15,
+              fit: BoxFit.contain,
             ),
           ),
           if (item.fileStatusFromTransactions != null)
             Positioned(
-              right: 4,
-              bottom: 4,
+              right: 3,
+              bottom: 3,
               child: _buildFileStatus(context),
             ),
         ],
