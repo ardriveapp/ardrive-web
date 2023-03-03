@@ -121,6 +121,7 @@ Widget _buildDataListContent(
 
       return folders + files;
     },
+    onRowTap: (row) => row.onPressed(row),
     buildRow: (row) {
       return DriveExplorerItemTile(
         name: row.name,
