@@ -1,53 +1,53 @@
 part of '../drive_detail_page.dart';
 
 Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
-  print('building data list');
   List<ArDriveDataTableItem> items = [];
-  print(state.folderInView.folder.id);
 
   // add folders to items mapping to the correct object
-  items.addAll(state.folderInView.subfolders.map(
-    (folder) => ArDriveDataTableItem(
-      onPressed: (selected) {
-        print('selected: $selected');
-        final bloc = context.read<DriveDetailCubit>();
-        if (folder.id == state.maybeSelectedItem()?.id) {
-          bloc.openFolder(path: folder.path);
-        } else {
-          print('selecting folder: ${folder.name}');
-          bloc.openFolder(path: folder.path);
-        }
-      },
-      name: folder.name,
-      lastUpdated: folder.lastUpdated,
-      dateCreated: folder.dateCreated,
-      type: 'folder',
-      contentType: 'folder',
+  items.addAll(
+    state.folderInView.subfolders.map(
+      (folder) => ArDriveDataTableItem(
+        onPressed: (selected) {
+          final bloc = context.read<DriveDetailCubit>();
+          if (folder.id == state.maybeSelectedItem()?.id) {
+            bloc.openFolder(path: folder.path);
+          } else {
+            bloc.openFolder(path: folder.path);
+          }
+        },
+        name: folder.name,
+        lastUpdated: folder.lastUpdated,
+        dateCreated: folder.dateCreated,
+        type: 'folder',
+        contentType: 'folder',
+      ),
     ),
-  ));
+  );
 
   // add files to items mapping to the correct object
-  items.addAll(state.folderInView.files.map(
-    (file) => ArDriveDataTableItem(
-        name: file.name,
-        size: filesize(file.size),
-        fileStatusFromTransactions: fileStatusFromTransactions(
-          file.metadataTx,
-          file.dataTx,
-        ).toString(),
-        type: 'file',
-        contentType: file.dataContentType ?? 'octet-stream',
-        lastUpdated: file.lastUpdated,
-        dateCreated: file.dateCreated,
-        onPressed: (item) async {
-          final bloc = context.read<DriveDetailCubit>();
-          if (file.id == state.maybeSelectedItem()?.id) {
-            bloc.toggleSelectedItemDetails();
-          } else {
-            await bloc.selectItem(SelectedFile(file: file));
-          }
-        }),
-  ));
+  items.addAll(
+    state.folderInView.files.map(
+      (file) => ArDriveDataTableItem(
+          name: file.name,
+          size: filesize(file.size),
+          fileStatusFromTransactions: fileStatusFromTransactions(
+            file.metadataTx,
+            file.dataTx,
+          ).toString(),
+          type: 'file',
+          contentType: file.dataContentType ?? 'octet-stream',
+          lastUpdated: file.lastUpdated,
+          dateCreated: file.dateCreated,
+          onPressed: (item) async {
+            final bloc = context.read<DriveDetailCubit>();
+            if (file.id == state.maybeSelectedItem()?.id) {
+              bloc.toggleSelectedItemDetails();
+            } else {
+              await bloc.selectItem(SelectedFile(file: file));
+            }
+          }),
+    ),
+  );
 
   return _buildDataListContent(context, items);
 }
@@ -90,19 +90,25 @@ Widget _buildDataListContent(
     leading: (file) => DriveExplorerItemTileLeading(
       item: file,
     ),
-    sort: (columnIndex) {
-      int sort(ArDriveDataTableItem a, ArDriveDataTableItem b) {
-        // TODO(add folders in the start of the list)
-        if (columnIndex == 0) {
-          return compareAlphabeticallyAndNatural(a.name, b.name);
-        } else if (columnIndex == 1) {
-          return a.size.compareTo(b.size);
+    sortRows: (list, columnIndex, ascDescSort) {
+      // Separate folders and files
+      List<ArDriveDataTableItem> folders = [];
+      List<ArDriveDataTableItem> files = [];
+
+      final lenght = list.length;
+
+      for (int i = 0; i < lenght; i++) {
+        if (list[i].type == 'folder') {
+          folders.add(list[i]);
         } else {
-          return a.lastUpdated.compareTo(b.lastUpdated);
+          files.add(list[i]);
         }
       }
 
-      return sort;
+      // Sort folders and files
+      _sortFoldersAndFiles(folders, files, columnIndex, ascDescSort);
+
+      return folders + files;
     },
     buildRow: (row) {
       return DriveExplorerItemTile(
@@ -115,4 +121,41 @@ Widget _buildDataListContent(
     },
     rows: items,
   );
+}
+
+void _sortFoldersAndFiles(List<ArDriveDataTableItem> folders,
+    List<ArDriveDataTableItem> files, int columnIndex, TableSort ascDescSort) {
+  _sortItems(folders, columnIndex, ascDescSort);
+  _sortItems(files, columnIndex, ascDescSort);
+}
+
+int _getResult(int result, TableSort ascDescSort) {
+  if (ascDescSort == TableSort.asc) {
+    result *= -1;
+  }
+
+  return result;
+}
+
+void _sortItems(List items, int columnIndex, TableSort ascDescSort) {
+  items.sort((a, b) {
+    int result = 0;
+    if (columnIndex == ColumnIndexes.name) {
+      result = compareAlphabeticallyAndNatural(a.name, b.name);
+    } else if (columnIndex == ColumnIndexes.size) {
+      result = a.size.compareTo(b.size);
+    } else if (columnIndex == ColumnIndexes.lastUpdated) {
+      result = a.lastUpdated.compareTo(b.lastUpdated);
+    } else {
+      result = a.dateCreated.compareTo(b.dateCreated);
+    }
+    return _getResult(result, ascDescSort);
+  });
+}
+
+class ColumnIndexes {
+  static const int name = 0;
+  static const int size = 1;
+  static const int lastUpdated = 2;
+  static const int dateCreated = 3;
 }
