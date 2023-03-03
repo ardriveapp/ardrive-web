@@ -386,23 +386,25 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                         onTap: () => openUrl(
                           url: Resources.agreementLink,
                         ),
-                        child: Text.rich(
-                          TextSpan(
-                            children:
-                                splitTranslationsWithMultipleStyles<InlineSpan>(
-                              originalText: appLocalizationsOf(context)
-                                  .aggreeToTerms_body,
-                              defaultMapper: (text) => TextSpan(text: text),
-                              parts: {
-                                appLocalizationsOf(context).aggreeToTerms_link:
-                                    (text) => TextSpan(
-                                          text: text,
-                                          style: const TextStyle(
-                                            decoration:
-                                                TextDecoration.underline,
+                        child: ArDriveClickArea(
+                          child: Text.rich(
+                            TextSpan(
+                              children: splitTranslationsWithMultipleStyles<
+                                  InlineSpan>(
+                                originalText: appLocalizationsOf(context)
+                                    .aggreeToTerms_body,
+                                defaultMapper: (text) => TextSpan(text: text),
+                                parts: {
+                                  appLocalizationsOf(context).aggreeToTerms_link:
+                                      (text) => TextSpan(
+                                            text: text,
+                                            style: const TextStyle(
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
                                           ),
-                                        ),
-                              },
+                                },
+                              ),
                             ),
                           ),
                         ),
