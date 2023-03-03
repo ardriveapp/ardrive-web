@@ -95,7 +95,9 @@ Widget _buildDataListContent(
       List<ArDriveDataTableItem> folders = [];
       List<ArDriveDataTableItem> files = [];
 
-      for (int i = 0; i < list.length; i++) {
+      final lenght = list.length;
+
+      for (int i = 0; i < lenght; i++) {
         if (list[i].type == 'folder') {
           folders.add(list[i]);
         } else {
