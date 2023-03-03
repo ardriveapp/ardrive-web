@@ -56,6 +56,8 @@ class LoginPageScaffold extends StatefulWidget {
 }
 
 class _LoginPageScaffoldState extends State<LoginPageScaffold> {
+  final globalKey = GlobalKey();
+
   final images = [
     Resources.images.login.login1,
     Resources.images.login.login2,
@@ -158,6 +160,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
 
   Widget _buildContent(BuildContext context) {
     return BlocConsumer<LoginBloc, LoginState>(
+      key: globalKey,
       buildWhen: (previous, current) =>
           current is! LoginFailure &&
           current is! LoginSuccess &&
@@ -224,6 +227,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
           );
         } else {
           content = PromptWalletView(
+            key: const Key('promptWalletView'),
             isArConnectAvailable: (state as LoginInitial).isArConnectAvailable,
           );
         }
@@ -278,6 +282,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
             Column(
               children: [
                 ArDriveDropAreaSingleInput(
+                  keepButtonVisible: true,
                   width: double.maxFinite,
                   dragAndDropDescription:
                       appLocalizationsOf(context).dragAndDropDescription,
