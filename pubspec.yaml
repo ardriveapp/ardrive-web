@@ -19,7 +19,9 @@ script_runner:
   line_length: 80
   scripts:
     - setup: flutter clean && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs
-    - test: flutter test
+    - test: scr test-app && test-ui-library
+    - test-app: flutter test
+    - test-ui-library: cd packages/ardrive_ui_library && flutter test
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
 
@@ -39,7 +41,7 @@ dependencies:
   ardrive_ui:
     git:
       url: https://github.com/ar-io/ardrive_ui.git
-      ref: PE-2583-new-login-flow
+      ref: dev
   artemis: ^7.0.0-beta.13
   arweave:
     git:

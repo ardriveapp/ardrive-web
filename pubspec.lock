@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-2583-new-login-flow
-      resolved-ref: b4ad3feeb0d16096119fc2dfd06cba3c018171fa
+      ref: dev
+      resolved-ref: "1c5627559107d5ae39e78b61eaf825f034af3984"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -309,7 +309,7 @@ packages:
       name: cryptography
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.1"
+    version: "2.2.0"
   csslib:
     dependency: transitive
     description:
@@ -831,7 +831,7 @@ packages:
       name: image_picker_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.5+8"
+    version: "0.8.5+9"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -943,7 +943,7 @@ packages:
       name: local_auth_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.19"
+    version: "1.0.20"
   local_auth_ios:
     dependency: transitive
     description:

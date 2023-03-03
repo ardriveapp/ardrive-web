@@ -37,15 +37,14 @@ jobs:
       - name: Test app
         run: scr test
 
-  web:
+  web-and-storybook:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      # Checkout
+    # Checkout
       - uses: actions/checkout@v3
         with:
           persist-credentials: false
-
       # Install Flutter
       - uses: subosito/flutter-action@v2
         with:
@@ -58,20 +57,16 @@ jobs:
       - name: Build app
         run: |
           scr setup
-          flutter config --enable-web
           flutter build web --release
-
-      # JS files cache invalidation
-      - name: main.dart.js cache invalidation
-        run: sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
-
+          cd packages/ardrive_ui_library/storybook
+          flutter pub get
+          flutter build web --release
       # Disribute to Firebase
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
           expires: 14d
-
   ios:
     needs: test
     runs-on: macos-latest
