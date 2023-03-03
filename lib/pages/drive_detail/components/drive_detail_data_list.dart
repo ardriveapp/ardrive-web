@@ -90,7 +90,7 @@ Widget _buildDataListContent(
     leading: (file) => DriveExplorerItemTileLeading(
       item: file,
     ),
-    sortRows: (list, columnIndex, sortOrder) {
+    sortRows: (list, columnIndex, ascDescSort) {
       // Separate folders and files
       List<ArDriveDataTableItem> folders = [];
       List<ArDriveDataTableItem> files = [];
@@ -106,7 +106,7 @@ Widget _buildDataListContent(
       }
 
       // Sort folders and files
-      _sortFoldersAndFiles(folders, files, columnIndex, sortOrder);
+      _sortFoldersAndFiles(folders, files, columnIndex, ascDescSort);
 
       return folders + files;
     },
@@ -124,20 +124,20 @@ Widget _buildDataListContent(
 }
 
 void _sortFoldersAndFiles(List<ArDriveDataTableItem> folders,
-    List<ArDriveDataTableItem> files, int columnIndex, TableSort sortOrder) {
-  _sortItems(folders, columnIndex, sortOrder);
-  _sortItems(files, columnIndex, sortOrder);
+    List<ArDriveDataTableItem> files, int columnIndex, TableSort ascDescSort) {
+  _sortItems(folders, columnIndex, ascDescSort);
+  _sortItems(files, columnIndex, ascDescSort);
 }
 
-int _getResult(int result, TableSort sortOrder) {
-  if (sortOrder == TableSort.asc) {
+int _getResult(int result, TableSort ascDescSort) {
+  if (ascDescSort == TableSort.asc) {
     result *= -1;
   }
 
   return result;
 }
 
-void _sortItems(List items, int columnIndex, TableSort sortOrder) {
+void _sortItems(List items, int columnIndex, TableSort ascDescSort) {
   items.sort((a, b) {
     int result = 0;
     if (columnIndex == ColumnIndexes.name) {
@@ -149,7 +149,7 @@ void _sortItems(List items, int columnIndex, TableSort sortOrder) {
     } else {
       result = a.dateCreated.compareTo(b.dateCreated);
     }
-    return _getResult(result, sortOrder);
+    return _getResult(result, ascDescSort);
   });
 }
 
