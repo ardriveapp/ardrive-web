@@ -1,20 +1,19 @@
 part of '../drive_detail_page.dart';
 
 Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
-  print('building data list');
   List<ArDriveDataTableItem> items = [];
-  print(state.folderInView.folder.id);
+
+  int index = 0;
 
   // add folders to items mapping to the correct object
   items.addAll(state.folderInView.subfolders.map(
     (folder) => ArDriveDataTableItem(
+      index: index++,
       onPressed: (selected) {
-        print('selected: $selected');
         final bloc = context.read<DriveDetailCubit>();
         if (folder.id == state.maybeSelectedItem()?.id) {
           bloc.openFolder(path: folder.path);
         } else {
-          print('selecting folder: ${folder.name}');
           bloc.openFolder(path: folder.path);
         }
       },
@@ -29,6 +28,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
   // add files to items mapping to the correct object
   items.addAll(state.folderInView.files.map(
     (file) => ArDriveDataTableItem(
+        index: index++,
         name: file.name,
         size: filesize(file.size),
         fileStatusFromTransactions: fileStatusFromTransactions(
@@ -52,7 +52,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
   return _buildDataListContent(context, items);
 }
 
-class ArDriveDataTableItem {
+class ArDriveDataTableItem extends IndexedItem {
   final String name;
   final String size;
   final DateTime lastUpdated;
@@ -71,12 +71,18 @@ class ArDriveDataTableItem {
     required this.contentType,
     this.fileStatusFromTransactions,
     required this.onPressed,
-  });
+    required int index,
+  }) : super(index);
 }
 
 Widget _buildDataListContent(
     BuildContext context, List<ArDriveDataTableItem> items) {
   return ArDriveDataTable<ArDriveDataTableItem>(
+    onSelectedRows: (rows) {
+      for (final row in rows) {
+        print(row.name);
+      }
+    },
     key: ValueKey(items.length),
     rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
     maxItemsPerPage: 100,
