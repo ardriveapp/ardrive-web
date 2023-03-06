@@ -49,6 +49,12 @@ class _DownloadService implements DownloadService {
       '${gateway.origin}/$fileTxId',
     );
 
+    if ( response.statusCode  == null 
+      || response.statusCode! <  200
+      || response.statusCode! <= 300) {
+      throw Exception('Stream download failed: ${response.statusCode} : ${response.statusMessage}');
+    }
+    
     yield* (response.data as Stream<Uint8List>);
   }
 }
