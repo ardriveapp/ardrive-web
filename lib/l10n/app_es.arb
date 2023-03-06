@@ -801,7 +801,7 @@
   "@login": {
     "description": "The login process"
   },
-  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{Se encontró un archivo duplicado} =other{Se encontraron archivos duplicados}}",
+  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{Se encontró un archivo duplicado} other{Se encontraron archivos duplicados}}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -812,7 +812,7 @@
       }
     }
   },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{Ya existe un archivo con el mismo nombre en este lugar. ¿Quieres continuar y cargarlo como una nueva revisión?} =other{Hay {numberOfFiles} archivos con el mismo nombre en ese lugar. ¿Quieres continuar y cargarlo como una nueva revisión?}}",
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{Ya existe un archivo con el mismo nombre en este lugar. ¿Quieres continuar y cargarlo como una nueva revisión?} other{Hay {numberOfFiles} archivos con el mismo nombre en ese lugar. ¿Quieres continuar y cargarlo como una nueva revisión?}}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
@@ -823,7 +823,7 @@
       }
     }
   },
-  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{Se encontró una carpeta duplicada} =other{Se encontraron carpetas duplicadas}}",
+  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{Se encontró una carpeta duplicada} other{Se encontraron carpetas duplicadas}}",
   "@duplicateFolders": {
     "description": "Folder name conflict dialog title",
     "placeholders": {
@@ -834,7 +834,7 @@
       }
     }
   },
-  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{Ya existe una carpeta con el mismo nombre en este lugar. Por favor, renómbrala e inténtalo nuevamente.}  =other{Ya existen {numberOfFolders} carpetas con el mismo nombre en este lugar. Por favor, renómbralas e inténtalo nuevamente.}}",
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{Ya existe una carpeta con el mismo nombre en este lugar. Por favor, renómbrala e inténtalo nuevamente.}  other{Ya existen {numberOfFolders} carpetas con el mismo nombre en este lugar. Por favor, renómbralas e inténtalo nuevamente.}}",
   "@foldersWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with folder name conflicts",
     "placeholders": {
@@ -861,7 +861,7 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
-  "filesTooLarge": "{numberOfFiles,plural, =1{El archivo es demasiado grande} =other{{numberOfFiles} archivos son demasiado grande}}",
+  "filesTooLarge": "{numberOfFiles,plural, =1{El archivo es demasiado grande} other{{numberOfFiles} archivos son demasiado grande}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
     "placeholders": {
@@ -900,7 +900,7 @@
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
-  "uploadNFiles": "{numberOfFiles,plural, =1{Cargar 1 archivo} =other{Cargar {numberOfFiles} archivos}}",
+  "uploadNFiles": "{numberOfFiles,plural, =1{Cargar 1 archivo} other{Cargar {numberOfFiles} archivos}}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",
     "placeholders": {
@@ -911,7 +911,7 @@
       }
     }
   },
-  "uploadingNFiles": "{numberOfFiles,plural, =1{Cargando 1 archivo...} =other{Cargando {numberOfFiles} archivos...}}",
+  "uploadingNFiles": "{numberOfFiles,plural, =1{Cargando 1 archivo...} other{Cargando {numberOfFiles} archivos...}}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
@@ -932,7 +932,7 @@
       }
     }
   },
-  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{Este archivo será cargado públicamente.} =other{Estos archivos serán cargados públicamente.}}",
+  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{Este archivo será cargado públicamente.} other{Estos archivos serán cargados públicamente.}}",
   "@filesWillBeUploadedPublicly": {
     "description": "Warning for files that will be public after uploaded",
     "placeholders": {
@@ -1063,7 +1063,7 @@
       }
     }
   },
-  "folderCount": "{folderCount,plural, =0{Ninguna carpeta} =1{1 carpeta} other{{folderCount} carpetas}",
+  "folderCount": "{folderCount,plural, =0{Ninguna carpeta} =1{1 carpeta} other{{folderCount} carpetas}}",
   "@folderCount": {
     "description": "Plurals for the folder count. First character capitalized",
     "placeholders": {

@@ -801,7 +801,7 @@
   "@login": {
     "description": "The login process"
   },
-  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{找到一个重复文件} =other{找到多个重复文件}}",
+  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{找到一个重复文件} other{找到多个重复文件}}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -812,7 +812,7 @@
       }
     }
   },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{本路径已有相同名称的文件. 你是否想要继续并更新文件版本?} =other{本路径已有{numberOfFiles}个相同名称的文件. 你是否想要继续并更新这些文件的版本??}}",
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{本路径已有相同名称的文件. 你是否想要继续并更新文件版本?} other{本路径已有{numberOfFiles}个相同名称的文件. 你是否想要继续并更新这些文件的版本??}}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
@@ -823,7 +823,7 @@
       }
     }
   },
-  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{找到了一个重复文件夹} =other{找到多个重复文件夹}}",
+  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{找到了一个重复文件夹} other{找到多个重复文件夹}}",
   "@duplicateFolders": {
     "description": "Folder name conflict dialog title",
     "placeholders": {
@@ -834,7 +834,7 @@
       }
     }
   },
-  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{本路径已有相同名称的文件夹. 请修改名称并重新上传.}  =other{本路径已有{numberOfFolders}个相同名称的文件夹. 请修改名称并重新上传.}}",
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{本路径已有相同名称的文件夹. 请修改名称并重新上传.}  other{本路径已有{numberOfFolders}个相同名称的文件夹. 请修改名称并重新上传.}}",
   "@foldersWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with folder name conflicts",
     "placeholders": {
@@ -861,7 +861,7 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
-  "filesTooLarge": "{numberOfFiles,plural, =1{文件大小过大} =other{{numberOfFiles}个文件大小过大}}",
+  "filesTooLarge": "{numberOfFiles,plural, =1{文件大小过大} other{{numberOfFiles}个文件大小过大}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
     "placeholders": {
@@ -900,7 +900,7 @@
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
-  "uploadNFiles": "{numberOfFiles,plural, =1{上传1个文件} =other{上传{numberOfFiles}个文件}}",
+  "uploadNFiles": "{numberOfFiles,plural, =1{上传1个文件} other{上传{numberOfFiles}个文件}}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",
     "placeholders": {
@@ -911,7 +911,7 @@
       }
     }
   },
-  "uploadingNFiles": "{numberOfFiles,plural, =1{上传1个文件中...} =other{上传{numberOfFiles}个文件中...}}",
+  "uploadingNFiles": "{numberOfFiles,plural, =1{上传1个文件中...} other{上传{numberOfFiles}个文件中...}}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
@@ -932,7 +932,7 @@
       }
     }
   },
-  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{此文件将被上传并公开.} =other{这些文件将被上传并公开.}}",
+  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{此文件将被上传并公开.} other{这些文件将被上传并公开.}}",
   "@filesWillBeUploadedPublicly": {
     "description": "Warning for files that will be public after uploaded",
     "placeholders": {
@@ -1063,7 +1063,7 @@
       }
     }
   },
-  "folderCount": "{folderCount,plural, =0{无文件夹} =1{1个文件夹} other{{folderCount}个文件夹}",
+  "folderCount": "{folderCount,plural, =0{无文件夹} =1{1个文件夹} other{{folderCount}个文件夹}}",
   "@folderCount": {
     "description": "Plurals for the folder count. First character in lower case",
     "placeholders": {

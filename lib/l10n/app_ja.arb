@@ -375,7 +375,7 @@
       }
     }
   },
-  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{重複する１個のファイルが見つかりました} =other{重複する複数のファイルが見つかりました}}",
+  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{重複する１個のファイルが見つかりました} other{重複する複数のファイルが見つかりました}}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -386,7 +386,7 @@
       }
     }
   },
-  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{重複するフォルダが見つかりました。} =other{複数の重複するフォルダが見つかりました}}",
+  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{重複するフォルダが見つかりました。} other{複数の重複するフォルダが見つかりました}}",
   "@duplicateFolders": {
     "description": "Folder name conflict dialog title",
     "placeholders": {
@@ -496,7 +496,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "filesTooLarge": "{numberOfFiles,plural, =1{ファイルのサイズが大きすぎます} =other{{numberOfFiles} 複数のファイルのサイズが大きすぎます}}",
+  "filesTooLarge": "{numberOfFiles,plural, =1{ファイルのサイズが大きすぎます} other{{numberOfFiles} 複数のファイルのサイズが大きすぎます}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
     "placeholders": {
@@ -519,7 +519,7 @@
   "@filesWillBePermanentlyPublicWarning": {
     "description": "Make the user aware that it is uploading permanent data publicly"
   },
-  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{このファイルを公開ファイルとしてアップロードします。} =other{これらのファイルを公開ファイルとしてアップロードします。}}",
+  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{このファイルを公開ファイルとしてアップロードします。} other{これらのファイルを公開ファイルとしてアップロードします。}}",
   "@filesWillBeUploadedPublicly": {
     "description": "Warning for files that will be public after uploaded",
     "placeholders": {
@@ -530,7 +530,7 @@
       }
     }
   },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{ 同じ名前のファイルが既にこの場所に存在します。このファイルをこのまま新しいバージョンとしてアップロードしますか？} =other{{numberOfFiles} 個の同じ名前のファイルが既にこの場所に存在します。これらのファイルをこのまま新しいバージョンとしてアップロードしますか？}}",
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{ 同じ名前のファイルが既にこの場所に存在します。このファイルをこのまま新しいバージョンとしてアップロードしますか？} other{{numberOfFiles} 個の同じ名前のファイルが既にこの場所に存在します。これらのファイルをこのまま新しいバージョンとしてアップロードしますか？}}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
@@ -610,7 +610,7 @@
   "@folderName": {
     "description": "The name of certain folder"
   },
-  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{ 同じ名前のフォルダが既にこの場所に存在します。名前を変更して、再度アップロードしてください。} =other{{numberOfFolders}この場所には同じ名前の複数のフォルダが既に存在しています。名前を変更して、再度アップロードしてください。}}",
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{ 同じ名前のフォルダが既にこの場所に存在します。名前を変更して、再度アップロードしてください。} other{{numberOfFolders}この場所には同じ名前の複数のフォルダが既に存在しています。名前を変更して、再度アップロードしてください。}}",
   "@foldersWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with folder name conflicts",
     "placeholders": {
@@ -1206,7 +1206,7 @@
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
-  "uploadingNFiles": "{numberOfFiles,plural, =1{ 1個のファイルをアップロード中...} =other{ {numberOfFiles} 個のファイルをアップロード中...}}",
+  "uploadingNFiles": "{numberOfFiles,plural, =1{ 1個のファイルをアップロード中...} other{ {numberOfFiles} 個のファイルをアップロード中...}}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
@@ -1217,7 +1217,7 @@
       }
     }
   },
-  "uploadNFiles": "{numberOfFiles,plural, =1{1個のファイルをアップロードする} =other{{numberOfFiles} 個のファイルをアップロードする}}",
+  "uploadNFiles": "{numberOfFiles,plural, =1{1個のファイルをアップロードする} other{{numberOfFiles} 個のファイルをアップロードする}}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",
     "placeholders": {

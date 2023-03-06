@@ -809,7 +809,7 @@
   "@login": {
     "description": "The login process"
   },
-  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{發現重覆的檔案} =other{發現重覆的檔案}}",
+  "duplicateFiles": "{numberOfDuplicateFiles,plural, =1{發現重覆的檔案} other{發現重覆的檔案}}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -820,7 +820,7 @@
       }
     }
   },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{同命檔案已於相同位置存在。你想繼續上載這檔案, 作為新的版本嗎?} =other{{numberOfFiles} 同命檔案已於相同位置存在。你想繼續上載這檔案, 作為新的版本嗎?}}",
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles,plural, =1{同命檔案已於相同位置存在。你想繼續上載這檔案, 作為新的版本嗎?} other{{numberOfFiles} 同命檔案已於相同位置存在。你想繼續上載這檔案, 作為新的版本嗎?}}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
@@ -831,7 +831,7 @@
       }
     }
   },
-  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{發現重覆的資料夾} =other{發現重覆的資料夾}}",
+  "duplicateFolders": "{numberOfDuplicateFolders,plural, =1{發現重覆的資料夾} other{發現重覆的資料夾}}",
   "@duplicateFolders": {
     "description": "Folder name conflict dialog title",
     "placeholders": {
@@ -842,7 +842,7 @@
       }
     }
   },
-  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{同命資料夾已於相同位置存在。請為其重新命名並再次上載} =other{{numberOfFolders} 請為其重新命名並再次上載。}}",
+  "foldersWithTheSameNameAlreadyExists": "{numberOfFolders,plural, =1{同命資料夾已於相同位置存在。請為其重新命名並再次上載} other{{numberOfFolders} 請為其重新命名並再次上載。}}",
   "@foldersWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with folder name conflicts",
     "placeholders": {
@@ -869,7 +869,7 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
-  "filesTooLarge": "{numberOfFiles,plural, =1{1個檔案過大} =other{{numberOfFiles} 檔案過大}}",
+  "filesTooLarge": "{numberOfFiles,plural, =1{1個檔案過大} other{{numberOfFiles} 檔案過大}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
     "placeholders": {
@@ -908,7 +908,7 @@
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
-  "uploadNFiles": "{numberOfFiles,plural, =1{上載 1 個檔案} =other{上載 {numberOfFiles} 檔案}}",
+  "uploadNFiles": "{numberOfFiles,plural, =1{上載 1 個檔案} other{上載 {numberOfFiles} 檔案}}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",
     "placeholders": {
@@ -919,7 +919,7 @@
       }
     }
   },
-  "uploadingNFiles": "{numberOfFiles,plural, =1{正在上載 1 個檔案} =other{正在上載 {numberOfFiles} 檔案...}}",
+  "uploadingNFiles": "{numberOfFiles,plural, =1{正在上載 1 個檔案} other{正在上載 {numberOfFiles} 檔案...}}",
   "@uploadingNFiles": {
     "description": "Uploading a single or many files",
     "placeholders": {
@@ -940,7 +940,7 @@
       }
     }
   },
-  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{此檔案會公開地上載.} =other{這些檔案會公開地上載。}}",
+  "filesWillBeUploadedPublicly": "{numberOfFiles,plural, =1{此檔案會公開地上載.} other{這些檔案會公開地上載。}}",
   "@filesWillBeUploadedPublicly": {
     "description": "Warning for files that will be public after uploaded",
     "placeholders": {

@@ -13,7 +13,7 @@ StreamingCipher cipherBufferImpl(String? cipherName) {
   };
   final impl = impls[cipherName];
   if (impl == null) throw ArgumentError();
-  return impl;
+  return impl as StreamingCipher;
 }
 
 FutureOr<DecryptStream> cipherStreamDecryptImpl(
