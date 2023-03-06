@@ -58,7 +58,7 @@ class StreamSharedFileDownloadCubit extends FileDownloadCubit {
       cancelWithReason: _cancelWithReason,
     );
 
-    final splitStream = StreamSplitterLockStep(fetchStream);
+    final splitStream = StreamSplitter(fetchStream);
     final saveStream = splitStream.split();
     final authStream = splitStream.split();
     unawaited(splitStream.close());
