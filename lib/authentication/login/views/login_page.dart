@@ -295,6 +295,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                           content: _showAcceptTermsModal());
                       return;
                     }
+                    
                     context.read<LoginBloc>().add(AddWalletFile(file));
                   },
                   buttonCallback: (file) {
@@ -354,6 +355,14 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                             ),
                             style: ArDriveButtonStyle.secondary,
                             onPressed: () {
+                              if (!_isTermsChecked) {
+                                showAnimatedDialog(
+                                  context,
+                                  content: _showAcceptTermsModal(),
+                                );
+                                return;
+                              }
+
                               context
                                   .read<LoginBloc>()
                                   .add(const AddWalletFromArConnect());
