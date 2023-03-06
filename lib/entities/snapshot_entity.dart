@@ -57,7 +57,8 @@ class SnapshotEntity extends Entity {
         ..ownerAddress = transaction.owner.address
         ..createdAt = transaction.getCommitTime();
     } catch (_) {
-      print('Error parsing transaction: ${transaction.id}, ');
+      // ignore: avoid_print
+      print('Error parsing transaction: ${transaction.id}');
       throw EntityTransactionParseException(transactionId: transaction.id);
     }
   }
@@ -107,9 +108,7 @@ class SnapshotEntity extends Entity {
     final packageInfo = await PackageInfo.fromPlatform();
 
     tx.addTag(EntityTag.contentType, ContentType.json);
-
     addEntityTagsToTransaction(tx);
-
     tx.addApplicationTags(
       version: packageInfo.version,
       unixTime: createdAt,

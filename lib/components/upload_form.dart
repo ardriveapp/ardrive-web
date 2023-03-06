@@ -12,6 +12,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
+import 'package:ardrive/utils/usd_upload_cost_to_string.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -326,10 +327,10 @@ class UploadForm extends StatelessWidget {
                             ),
                             if (state.costEstimate.usdUploadCost != null)
                               TextSpan(
-                                  text: state.costEstimate.usdUploadCost! >=
-                                          0.01
-                                      ? ' (~${state.costEstimate.usdUploadCost!.toStringAsFixed(2)} USD)'
-                                      : ' (< 0.01 USD)'),
+                                text: usdUploadCostToString(
+                                  state.costEstimate.usdUploadCost!,
+                                ),
+                              ),
                           ],
                         ],
                         style: Theme.of(context).textTheme.bodyText1,
