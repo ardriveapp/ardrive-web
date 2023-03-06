@@ -88,27 +88,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: SizedBox(
-                                        width: 400,
-                                        child: Text(
-                                          state.currentDrive.name,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .headline5,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ),
-                                    const DriveDetailActionRow(),
-                                  ],
-                                ),
                                 DriveDetailBreadcrumbRow(
                                   path: state.folderInView.folder.path,
+                                  driveName: state.currentDrive.name,
+                                ),
+                                const SizedBox(
+                                  height: 30,
                                 ),
                                 if (state.folderInView.subfolders.isNotEmpty ||
                                     state.folderInView.files.isNotEmpty)
@@ -190,6 +175,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   ),
                                   DriveDetailBreadcrumbRow(
                                     path: state.folderInView.folder.path,
+                                    driveName: state.currentDrive.name,
                                   ),
                                   if (state
                                           .folderInView.subfolders.isNotEmpty ||
