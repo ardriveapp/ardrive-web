@@ -31,7 +31,7 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/elliotsayes/ardrive_http.git
-      ref: 873483c28f88f9226dce32bf7e0102c4fa726cc5
+      ref: ef2dbd44e32fe7ef990127ee7bb006795e98ce1e
   ardrive_io:
     git:
       url: https://github.com/elliotsayes/ardrive_io.git
@@ -116,3 +116,6 @@ flutter:
     - assets/images/brand/
     - assets/images/profile/
     - assets/images/inferno/
+
+dependency_overrides:
+  js: ^0.6.7

@@ -45,22 +45,10 @@ class _DownloadService implements DownloadService {
   @override
   Stream<Uint8List> downloadStream(String fileTxId, int fileSize, {Completer<String>? cancelWithReason}) async* {
     final gateway = txSubdomainGateway(fileTxId);
-    final responseStream = ArDriveHTTP().getAsByteRangeStream(
+    final response = await ArDriveHTTP().getAsByteStream(
       '${gateway.origin}/$fileTxId',
-      fileSize,
-      chunkSize: 250 * 1024 * 1024, // 250 MiB
-      cancelWithReason: cancelWithReason,
-      throwOnCancel: false,
     );
 
-    yield* responseStream.asyncMap((response) {
-      if ( response.statusCode != null 
-        && response.statusCode! >= 200
-        && response.statusCode! < 300) {
-        return response.data as Uint8List;
-      } else {
-        throw Exception('Chunk download failed');
-      }
-    });
+    yield* (response.data as Stream<Uint8List>);
   }
 }
