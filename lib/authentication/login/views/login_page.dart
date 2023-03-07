@@ -262,6 +262,7 @@ class PromptWalletView extends StatefulWidget {
 
 class _PromptWalletViewState extends State<PromptWalletView> {
   bool _isTermsChecked = false;
+  bool _isArConnectSelected = false;
   IOFile? _file;
   late ArDriveDropAreaSingleInputController _dropAreaController;
 
@@ -270,6 +271,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
     _dropAreaController = ArDriveDropAreaSingleInputController(
       onFileAdded: (file) {
         _file = file;
+        _isArConnectSelected = false;
 
         if (!_isTermsChecked) {
           showAnimatedDialog(context, content: _showAcceptTermsModal());
@@ -367,6 +369,10 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                                 );
 
                                 _dropAreaController.reset();
+
+                                _file = null;
+                                _isArConnectSelected = true;
+
                                 return;
                               }
 
@@ -394,7 +400,12 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                             context
                                 .read<LoginBloc>()
                                 .add(AddWalletFile(_file!));
+                          } else if (_isArConnectSelected && value) {
+                            context
+                                .read<LoginBloc>()
+                                .add(const AddWalletFromArConnect());
                           }
+
                           setState(() => _isTermsChecked = value);
                         })),
                     Flexible(
