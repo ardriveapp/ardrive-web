@@ -7,6 +7,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_flavors.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:arweave/arweave.dart';
@@ -54,5 +55,8 @@ class MockDecrypt extends Mock implements Decrypt {}
 class MockARFSRepository extends Mock implements ARFSRepository {}
 
 class MockAppFlavors extends Mock implements AppFlavors {}
+
+class MockTabVisibilitySingleton extends Mock
+    implements TabVisibilitySingleton {}
 
 class MockUploadFileChecker extends Mock implements UploadFileChecker {}
