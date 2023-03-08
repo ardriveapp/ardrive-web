@@ -63,7 +63,7 @@ void main() {
     blocTest<FolderCreateCubit, FolderCreateState>(
       'does nothing when submitted without valid form',
       build: () => folderCreateCubit,
-      act: (bloc) => bloc.submit(),
+      act: (bloc) => bloc.submit(folderName: ''),
       expect: () => [],
     );
   });
