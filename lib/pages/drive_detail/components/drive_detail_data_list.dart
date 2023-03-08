@@ -4,11 +4,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
   final folders = state.folderInView.subfolders.map(
     (folder) => DriveDataTableItemMapper.fromFolderEntry(folder, (selected) {
       final bloc = context.read<DriveDetailCubit>();
-      if (folder.id == state.maybeSelectedItem()?.id) {
-        bloc.openFolder(path: folder.path);
-      } else {
-        bloc.openFolder(path: folder.path);
-      }
+      bloc.openFolder(path: folder.path);
     }),
   );
 
@@ -129,10 +125,10 @@ Widget _buildDataListContent(
     maxItemsPerPage: 100,
     pageItemsDivisorFactor: 25,
     columns: [
-      TableColumn('Name', 2),
-      TableColumn('Size', 1),
-      TableColumn('Last updated', 1),
-      TableColumn('Date created', 1),
+      TableColumn(appLocalizationsOf(context).name, 2),
+      TableColumn(appLocalizationsOf(context).size, 1),
+      TableColumn(appLocalizationsOf(context).lastUpdated, 1),
+      TableColumn(appLocalizationsOf(context).dateCreated, 1),
     ],
     trailing: (file) => DriveExplorerItemTileTrailing(
       item: file,
@@ -140,6 +136,7 @@ Widget _buildDataListContent(
     leading: (file) => DriveExplorerItemTileLeading(
       item: file,
     ),
+    onRowTap: (item) => item.onPressed(item),
     sortRows: (list, columnIndex, ascDescSort) {
       // Separate folders and files
       List<ArDriveDataTableItem> folders = [];

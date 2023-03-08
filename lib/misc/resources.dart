@@ -20,18 +20,6 @@ class Images {
   final profile = const Profile();
   final inferno = const Inferno();
   final Login login = const Login();
-  final fileTypes = const FileTypes();
-}
-
-class FileTypes {
-  const FileTypes();
-
-  final code = 'assets/images/file_types/code.png';
-  final doc = 'assets/images/file_types/doc.png';
-  final folder = 'assets/images/file_types/folder.png';
-  final image = 'assets/images/file_types/image.png';
-  final music = 'assets/images/file_types/music.png';
-  final video = 'assets/images/file_types/video.png';
 }
 
 class Brand {

@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: PE-3114-implement-file-folder-options-modal
-      resolved-ref: db40272418b607f3a7d3ae2f271698a888c256ec
+      resolved-ref: "15a288ec9e50d342ab65e58c30730c4c4315bda3"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"

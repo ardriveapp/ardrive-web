@@ -1123,7 +1123,7 @@ void _forgetWallet(
   showStandardDialog(
     context,
     title: appLocalizationsOf(context).forgetWalletTitle,
-    content: appLocalizationsOf(context).forgetWalletDescription,
+    description: appLocalizationsOf(context).forgetWalletDescription,
     actions: actions,
   );
 }
