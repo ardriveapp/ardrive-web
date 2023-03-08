@@ -1,3 +1,4 @@
+import 'package:ardrive/components/components.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
@@ -14,6 +15,7 @@ class DriveExplorerItemTile extends TableRowWidget {
   }) : super(
           [
             GestureDetector(
+              key: ValueKey(name),
               onTap: onPressed,
               child: Text(
                 name,
@@ -121,5 +123,250 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
     } else {
       return Resources.images.fileTypes.doc;
     }
+  }
+}
+
+// build a DriveExplorerItemTileTrailing widget
+class DriveExplorerItemTileTrailing extends StatefulWidget {
+  const DriveExplorerItemTileTrailing({super.key, required this.item});
+
+  final ArDriveDataTableItem item;
+
+  @override
+  State<DriveExplorerItemTileTrailing> createState() =>
+      _DriveExplorerItemTileTrailingState();
+}
+
+class _DriveExplorerItemTileTrailingState
+    extends State<DriveExplorerItemTileTrailing> {
+  Alignment alignment = Alignment.topRight;
+
+  @override
+  void didChangeDependencies() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final renderBox = context.findRenderObject() as RenderBox?;
+
+      final position = renderBox?.localToGlobal(Offset.zero);
+      if (position != null) {
+        final y = position.dy;
+
+        final screenHeight = MediaQuery.of(context).size.height;
+
+        if (y > screenHeight / 2) {
+          alignment = Alignment.bottomRight;
+        }
+      }
+
+      setState(() {});
+    });
+
+    super.didChangeDependencies();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ArDriveDropdown(
+      key: ValueKey(alignment),
+      anchor: Aligned(
+        follower: alignment,
+        target: Alignment.topLeft,
+      ),
+      items: _getItems(widget.item, context),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ArDriveIcons.dots(),
+        ],
+      ),
+    );
+  }
+
+  List<ArDriveDropdownItem> _getItems(
+      ArDriveDataTableItem item, BuildContext context) {
+    if (item is FolderDataTableItem) {
+      return [
+        ArDriveDropdownItem(
+          onClick: () {
+            promptToMove(
+              context,
+              driveId: item.driveId,
+              selectedItems: [
+                parseMoveItem(item),
+              ],
+            );
+          },
+          content: _buildItem('Move', ArDriveIcons.move()),
+        ),
+        ArDriveDropdownItem(
+          onClick: () {
+            promptToRenameModal(
+              context,
+              driveId: item.driveId,
+              folderId: item.id,
+              initialName: item.name,
+            );
+          },
+          content: _buildItem('Rename', ArDriveIcons.edit()),
+        ),
+        ArDriveDropdownItem(
+          onClick: () {
+            _comingSoonModal();
+          },
+          content: _buildItem('More Info', ArDriveIcons.info()),
+        ),
+      ];
+    }
+    return [
+      ArDriveDropdownItem(
+        onClick: () {
+          promptToDownloadProfileFile(
+            context: context,
+            file: item as FileDataTableItem,
+          );
+        },
+        content: _buildItem('Download', ArDriveIcons.download()),
+      ),
+      ArDriveDropdownItem(
+        onClick: () {
+          promptToShareFile(
+            context: context,
+            driveId: item.driveId,
+            fileId: item.id,
+          );
+        },
+        content: _buildItem('Share File', ArDriveIcons.share()),
+      ),
+      ArDriveDropdownItem(
+        onClick: () {
+          _comingSoonModal();
+        },
+        content: _buildItem('Preview', ArDriveIcons.externalLink()),
+      ),
+      ArDriveDropdownItem(
+        onClick: () {
+          promptToRenameModal(
+            context,
+            driveId: item.driveId,
+            fileId: item.id,
+            initialName: item.name,
+          );
+        },
+        content: _buildItem('Rename File', ArDriveIcons.edit()),
+      ),
+      ArDriveDropdownItem(
+        onClick: () {
+          promptToMove(
+            context,
+            driveId: item.driveId,
+            selectedItems: [
+              parseMoveItem(item),
+            ],
+          );
+        },
+        content: _buildItem('Move File', ArDriveIcons.move()),
+      ),
+      ArDriveDropdownItem(
+        onClick: () {
+          _comingSoonModal();
+        },
+        content: _buildItem('More Info', ArDriveIcons.info()),
+      ),
+    ];
+  }
+
+  _buildItem(String name, ArDriveIcon icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 41.0),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minWidth: 375,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              name,
+              style: ArDriveTypography.body.buttonNormalBold(),
+            ),
+            icon,
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _comingSoonModal() {
+    showAnimatedDialog(
+      context,
+      content: const ArDriveStandardModal(
+        title: 'Not ready',
+        description: 'Coming soon',
+      ),
+    );
+  }
+}
+
+abstract class MoveItem {
+  final String id;
+  final String name;
+  final String driveId;
+  final String path;
+
+  MoveItem({
+    required this.id,
+    required this.name,
+    required this.driveId,
+    required this.path,
+  });
+}
+
+class MoveFolder extends MoveItem {
+  MoveFolder({
+    required String id,
+    required String name,
+    required String driveId,
+    required String path,
+  }) : super(
+          id: id,
+          name: name,
+          driveId: driveId,
+          path: path,
+        );
+}
+
+class MoveFile extends MoveItem {
+  MoveFile({
+    required String id,
+    required String name,
+    required String driveId,
+    required String path,
+  }) : super(
+          id: id,
+          name: name,
+          driveId: driveId,
+          path: path,
+        );
+}
+
+// parse ArDriveDataTableItem to MoveItem
+MoveItem parseMoveItem(ArDriveDataTableItem item) {
+  if (item is FolderDataTableItem) {
+    return MoveFolder(
+      id: item.id,
+      name: item.name,
+      driveId: item.driveId,
+      path: item.path,
+    );
+  } else if (item is FileDataTableItem) {
+    return MoveFile(
+      id: item.id,
+      name: item.name,
+      driveId: item.driveId,
+      path: item.path,
+    );
+  } else {
+    throw Exception('Invalid ArDriveDataTableItem');
   }
 }

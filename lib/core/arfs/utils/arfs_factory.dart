@@ -7,6 +7,8 @@ abstract class ARFSFactory {
   ARFSFileEntity getARFSFileFromFileRevisionWithTransactions(
     FileRevisionWithTransactions file,
   );
+  ARFSFileEntity getARFSFileFromFileDataItemTable(FileDataTableItem file);
+
   ARFSDriveEntity getARFSDriveFromDriveDAOEntity(Drive drive);
 
   factory ARFSFactory() => _ARFSFactory();
@@ -69,6 +71,25 @@ class _ARFSFactory implements ARFSFactory {
           ? DrivePrivacy.private
           : DrivePrivacy.public,
       rootFolderId: drive.rootFolderId,
+    );
+  }
+
+  @override
+  ARFSFileEntity getARFSFileFromFileDataItemTable(FileDataTableItem file) {
+    return _ARFSFileEntity(
+      appName: '',
+      appVersion: '',
+      arFS: '',
+      contentType: file.contentType,
+      driveId: file.driveId,
+      entityType: EntityType.file,
+      name: file.name,
+      txId: file.dataTxId,
+      unixTime: file.dateCreated,
+      lastModifiedDate: file.lastModifiedDate,
+      parentFolderId: file.parentFolderId,
+      size: file.size ?? 0,
+      id: file.id,
     );
   }
 }
