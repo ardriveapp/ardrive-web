@@ -12,7 +12,9 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
           if (folder.id == state.maybeSelectedItem()?.id) {
             bloc.openFolder(path: folder.path);
           } else {
-            bloc.openFolder(path: folder.path);
+            bloc.selectItem(
+              SelectedFolder(folder: folder),
+            );
           }
         },
         name: folder.name,
