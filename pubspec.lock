@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: PE-3043-new-drive-explorer
-      resolved-ref: "306783a0c5d0b5939970d63e9d4b0bb867e09eca"
+      resolved-ref: "02aeebf9b420f5a79e9eed31c7b56af4b1cd0802"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
