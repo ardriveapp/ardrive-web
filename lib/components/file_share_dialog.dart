@@ -2,21 +2,21 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../blocs/feedback_survey/feedback_survey_cubit.dart';
-import 'components.dart';
 
 Future<void> promptToShareFile({
   required BuildContext context,
   required String driveId,
   required String fileId,
 }) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider<FileShareCubit>(
+    showAnimatedDialog(
+      context,
+      content: BlocProvider<FileShareCubit>(
         create: (_) => FileShareCubit(
           driveId: driveId,
           fileId: fileId,
@@ -46,42 +46,39 @@ class FileShareDialogState extends State<FileShareDialog> {
             shareLinkController.text = state.fileShareLink.toString();
           }
         },
-        builder: (context, state) => AppDialog(
-          onWillPopCallback: () {
-            context.read<FeedbackSurveyCubit>().openRemindMe();
-          },
+        builder: (context, state) => ArDriveStandardModal(
+          width: kLargeDialogWidth,
+
+          // TODO: Re-enable this when we have a better way to handle the back button.
+          // onWillPopCallback: () {
+          //   context.read<FeedbackSurveyCubit>().openRemindMe();
+          // },
           title: appLocalizationsOf(context).shareFileWithOthers,
-          content: SizedBox(
-            width: kLargeDialogWidth,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (state is FileShareLoadInProgress)
-                  const Center(child: CircularProgressIndicator())
-                else if (state is FileShareLoadedFailedFile)
-                  Text(appLocalizationsOf(context).shareFailedFile)
-                else if (state is FileShareLoadedPendingFile)
-                  Text(appLocalizationsOf(context).sharePendingFile)
-                else if (state is FileShareLoadSuccess) ...{
-                  ListTile(
-                    title: Text(state.fileName),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: shareLinkController,
-                          readOnly: true,
-                        ),
+          description: state is FileShareLoadSuccess ? state.fileName : null,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (state is FileShareLoadInProgress)
+                const Center(child: CircularProgressIndicator())
+              else if (state is FileShareLoadedFailedFile)
+                Text(appLocalizationsOf(context).shareFailedFile)
+              else if (state is FileShareLoadedPendingFile)
+                Text(appLocalizationsOf(context).sharePendingFile)
+              else if (state is FileShareLoadSuccess) ...{
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: ArDriveTextField(
+                        controller: shareLinkController,
+                        isEnabled: false,
                       ),
-                      const SizedBox(width: 16),
-                      TextButton(
-                        style: TextButton.styleFrom(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16)),
+                    ),
+                    const SizedBox(width: 16),
+                    ArDriveButton(
+                        style: ArDriveButtonStyle.tertiary,
+                        text: appLocalizationsOf(context).copyLink,
                         onPressed: () {
                           // Select the entire link to give the user some feedback on their action.
                           shareLinkController.selection = TextSelection(
@@ -91,37 +88,32 @@ class FileShareDialogState extends State<FileShareDialog> {
 
                           Clipboard.setData(
                               ClipboardData(text: shareLinkController.text));
-                        },
-                        child: Text(appLocalizationsOf(context).copyLink),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    appLocalizationsOf(context).anyoneCanAccessThisFile,
-                    style: Theme.of(context).textTheme.subtitle2,
-                  ),
-                }
-              ],
-            ),
+                        }),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  appLocalizationsOf(context).anyoneCanAccessThisFile,
+                  style: Theme.of(context).textTheme.subtitle2,
+                ),
+              }
+            ],
           ),
           actions: [
             if (state is FileShareLoadSuccess)
-              ElevatedButton(
-                onPressed: () {
+              ModalAction(
+                action: () {
                   Navigator.pop(context);
                   context.read<FeedbackSurveyCubit>().openRemindMe();
                 },
-                child: Text(appLocalizationsOf(context).doneEmphasized),
-              )
-            else if (state is FileShareLoadedFailedFile ||
-                state is FileShareLoadedPendingFile)
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text(appLocalizationsOf(context).ok),
+                title: appLocalizationsOf(context).doneEmphasized,
               ),
+            if (state is FileShareLoadedFailedFile ||
+                state is FileShareLoadedPendingFile)
+              ModalAction(
+                action: () => Navigator.pop(context),
+                title: appLocalizationsOf(context).ok,
+              )
           ],
         ),
       );
