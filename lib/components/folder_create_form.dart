@@ -84,7 +84,7 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
             showStandardDialog(
               context,
               title: appLocalizationsOf(context).error,
-              content: appLocalizationsOf(context).entityAlreadyExists(
+              description: appLocalizationsOf(context).entityAlreadyExists(
                 state.folderName,
               ),
             );
