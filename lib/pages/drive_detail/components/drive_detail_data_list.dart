@@ -1,83 +1,130 @@
 part of '../drive_detail_page.dart';
 
 Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
-  List<ArDriveDataTableItem> items = [];
-
-  // add folders to items mapping to the correct object
-  items.addAll(
-    state.folderInView.subfolders.map(
-      (folder) => ArDriveDataTableItem(
-        onPressed: (selected) {
-          final bloc = context.read<DriveDetailCubit>();
-          if (folder.id == state.maybeSelectedItem()?.id) {
-            bloc.openFolder(path: folder.path);
-          } else {
-            bloc.openFolder(path: folder.path);
-          }
-        },
-        name: folder.name,
-        lastUpdated: folder.lastUpdated,
-        dateCreated: folder.dateCreated,
-        type: 'folder',
-        contentType: 'folder',
-      ),
-    ),
+  final folders = state.folderInView.subfolders.map(
+    (folder) => DriveDataTableItemMapper.fromFolderEntry(folder, (selected) {
+      final bloc = context.read<DriveDetailCubit>();
+      if (folder.id == state.maybeSelectedItem()?.id) {
+        bloc.openFolder(path: folder.path);
+      } else {
+        bloc.openFolder(path: folder.path);
+      }
+    }),
   );
 
-  // add files to items mapping to the correct object
-  items.addAll(
-    state.folderInView.files.map(
-      (file) => ArDriveDataTableItem(
-          name: file.name,
-          size: filesize(file.size),
-          fileStatusFromTransactions: fileStatusFromTransactions(
-            file.metadataTx,
-            file.dataTx,
-          ).toString(),
-          type: 'file',
-          contentType: file.dataContentType ?? 'octet-stream',
-          lastUpdated: file.lastUpdated,
-          dateCreated: file.dateCreated,
-          onPressed: (item) async {
-            final bloc = context.read<DriveDetailCubit>();
-            if (file.id == state.maybeSelectedItem()?.id) {
-              bloc.toggleSelectedItemDetails();
-            } else {
-              await bloc.selectItem(SelectedFile(file: file));
-            }
-          }),
-    ),
+  final files = state.folderInView.files.map(
+    (file) =>
+        DriveDataTableItemMapper.toFileDataTableItem(file, (selected) async {
+      final bloc = context.read<DriveDetailCubit>();
+      if (file.id == state.maybeSelectedItem()?.id) {
+        bloc.toggleSelectedItemDetails();
+      } else {
+        await bloc.selectItem(SelectedFile(file: file));
+      }
+    }),
   );
 
-  return _buildDataListContent(context, items);
+  return _buildDataListContent(context, [...folders, ...files]);
 }
 
-class ArDriveDataTableItem {
+abstract class ArDriveDataTableItem {
   final String name;
-  final String size;
+  final int? size;
   final DateTime lastUpdated;
   final DateTime dateCreated;
-  final String type;
   final String contentType;
   final String? fileStatusFromTransactions;
   final Function(ArDriveDataTableItem) onPressed;
+  final String id;
+  final String driveId;
+  final String path;
 
   ArDriveDataTableItem({
+    required this.id,
+    this.size,
+    required this.driveId,
     required this.name,
-    this.size = '-',
     required this.lastUpdated,
     required this.dateCreated,
-    required this.type,
     required this.contentType,
     this.fileStatusFromTransactions,
     required this.onPressed,
+    required this.path,
   });
+}
+
+class FolderDataTableItem extends ArDriveDataTableItem {
+  final String? parentFolderId;
+
+  FolderDataTableItem({
+    required String driveId,
+    required String folderId,
+    required String name,
+    required DateTime lastUpdated,
+    required DateTime dateCreated,
+    required String contentType,
+    required String path,
+    String? fileStatusFromTransactions,
+    required Function(ArDriveDataTableItem) onPressed,
+    this.parentFolderId,
+  }) : super(
+          driveId: driveId,
+          path: path,
+          id: folderId,
+          name: name,
+          size: null,
+          lastUpdated: lastUpdated,
+          dateCreated: dateCreated,
+          contentType: contentType,
+          fileStatusFromTransactions: fileStatusFromTransactions,
+          onPressed: onPressed,
+        );
+}
+
+class FileDataTableItem extends ArDriveDataTableItem {
+  final String fileId;
+  final String parentFolderId;
+  final String dataTxId;
+  final String? bundledIn;
+  final DateTime lastModifiedDate;
+  final NetworkTransaction metadataTx;
+  final NetworkTransaction dataTx;
+
+  FileDataTableItem({
+    required this.fileId,
+    required String driveId,
+    required this.parentFolderId,
+    required this.dataTxId,
+    required DateTime lastUpdated,
+    required this.lastModifiedDate,
+    required this.metadataTx,
+    required this.dataTx,
+    required String name,
+    required int size,
+    required DateTime dateCreated,
+    required String contentType,
+    required String path,
+    String? fileStatusFromTransactions,
+    required Function(ArDriveDataTableItem) onPressed,
+    this.bundledIn,
+  }) : super(
+          path: path,
+          driveId: driveId,
+          id: fileId,
+          name: name,
+          size: size,
+          lastUpdated: lastUpdated,
+          dateCreated: dateCreated,
+          contentType: contentType,
+          fileStatusFromTransactions: fileStatusFromTransactions,
+          onPressed: onPressed,
+        );
 }
 
 Widget _buildDataListContent(
     BuildContext context, List<ArDriveDataTableItem> items) {
   return ArDriveDataTable<ArDriveDataTableItem>(
-    key: ValueKey(items.length),
+    key: ValueKey(items),
     rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
     maxItemsPerPage: 100,
     pageItemsDivisorFactor: 25,
@@ -87,6 +134,9 @@ Widget _buildDataListContent(
       TableColumn('Last updated', 1),
       TableColumn('Date created', 1),
     ],
+    trailing: (file) => DriveExplorerItemTileTrailing(
+      item: file,
+    ),
     leading: (file) => DriveExplorerItemTileLeading(
       item: file,
     ),
@@ -98,7 +148,7 @@ Widget _buildDataListContent(
       final lenght = list.length;
 
       for (int i = 0; i < lenght; i++) {
-        if (list[i].type == 'folder') {
+        if (list[i] is FolderDataTableItem) {
           folders.add(list[i]);
         } else {
           files.add(list[i]);
@@ -113,7 +163,7 @@ Widget _buildDataListContent(
     buildRow: (row) {
       return DriveExplorerItemTile(
         name: row.name,
-        size: row.size,
+        size: row.size == null ? '-' : filesize(row.size),
         lastUpdated: yMMdDateFormatter.format(row.lastUpdated),
         dateCreated: yMMdDateFormatter.format(row.dateCreated),
         onPressed: () => row.onPressed(row),
@@ -137,13 +187,14 @@ int _getResult(int result, TableSort ascDescSort) {
   return result;
 }
 
-void _sortItems(List items, int columnIndex, TableSort ascDescSort) {
+void _sortItems(
+    List<ArDriveDataTableItem> items, int columnIndex, TableSort ascDescSort) {
   items.sort((a, b) {
     int result = 0;
     if (columnIndex == ColumnIndexes.name) {
       result = compareAlphabeticallyAndNatural(a.name, b.name);
     } else if (columnIndex == ColumnIndexes.size) {
-      result = a.size.compareTo(b.size);
+      result = (a.size ?? 0).compareTo(b.size ?? 0);
     } else if (columnIndex == ColumnIndexes.lastUpdated) {
       result = a.lastUpdated.compareTo(b.lastUpdated);
     } else {
@@ -158,4 +209,48 @@ class ColumnIndexes {
   static const int size = 1;
   static const int lastUpdated = 2;
   static const int dateCreated = 3;
+}
+
+class DriveDataTableItemMapper {
+  static FileDataTableItem toFileDataTableItem(
+      FileWithLatestRevisionTransactions file,
+      Function(ArDriveDataTableItem) onPressed) {
+    return FileDataTableItem(
+      path: file.path,
+      lastModifiedDate: file.lastModifiedDate,
+      name: file.name,
+      size: file.size,
+      lastUpdated: file.lastUpdated,
+      dateCreated: file.dateCreated,
+      contentType: file.dataContentType ?? '',
+      fileStatusFromTransactions: fileStatusFromTransactions(
+        file.metadataTx,
+        file.dataTx,
+      ).toString(),
+      fileId: file.id,
+      onPressed: onPressed,
+      driveId: file.driveId,
+      parentFolderId: file.parentFolderId,
+      dataTxId: file.dataTxId,
+      bundledIn: file.bundledIn,
+      metadataTx: file.metadataTx,
+      dataTx: file.dataTx,
+    );
+  }
+
+  static FolderDataTableItem fromFolderEntry(
+      FolderEntry folderEntry, Function(ArDriveDataTableItem) onPressed) {
+    return FolderDataTableItem(
+      path: folderEntry.path,
+      driveId: folderEntry.driveId,
+      folderId: folderEntry.id,
+      parentFolderId: folderEntry.parentFolderId,
+      name: folderEntry.name,
+      lastUpdated: folderEntry.lastUpdated,
+      dateCreated: folderEntry.dateCreated,
+      contentType: 'folder',
+      fileStatusFromTransactions: null,
+      onPressed: onPressed,
+    );
+  }
 }
