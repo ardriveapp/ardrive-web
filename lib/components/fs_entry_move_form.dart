@@ -54,63 +54,6 @@ class FsEntryMoveForm extends StatelessWidget {
         }
       },
       builder: (context, state) {
-        List<ModalAction> _buildButtonBar(FolderEntry folderInView) {
-          return [
-            ModalAction(
-              title: appLocalizationsOf(context).cancelEmphasized,
-              action: () => Navigator.pop(context),
-            ),
-            ModalAction(
-              title: appLocalizationsOf(context).moveHereEmphasized,
-              action: () => context
-                  .read<FsEntryMoveBloc>()
-                  .add(FsEntryMoveSubmit(folderInView: folderInView)),
-            ),
-          ];
-
-          ButtonBar(
-            children: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  appLocalizationsOf(context).cancelEmphasized,
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () => context
-                    .read<FsEntryMoveBloc>()
-                    .add(FsEntryMoveSubmit(folderInView: folderInView)),
-                child: Text(appLocalizationsOf(context).moveHereEmphasized),
-              ),
-            ],
-          );
-        }
-
-        Widget _buildCreateFolderButton() {
-          if (state is FsEntryMoveLoadSuccess) {
-            return TextButton.icon(
-              icon: const Icon(Icons.create_new_folder),
-              label: Text(appLocalizationsOf(context).createFolderEmphasized),
-              onPressed: () => showDialog(
-                context: context,
-                builder: (_) => BlocProvider(
-                  create: (context) => FolderCreateCubit(
-                    driveId: state.viewingFolder.folder.driveId,
-                    parentFolderId: state.viewingFolder.folder.id,
-                    profileCubit: context.read<ProfileCubit>(),
-                    arweave: context.read<ArweaveService>(),
-                    turboService: context.read<TurboService>(),
-                    driveDao: context.read<DriveDao>(),
-                  ),
-                  child: const FolderCreateForm(),
-                ),
-              ),
-            );
-          } else {
-            return Container();
-          }
-        }
-
         return Builder(builder: (context) {
           if (state is FsEntryMoveNameConflict) {
             return ArDriveStandardModal(
@@ -307,7 +250,6 @@ class FsEntryMoveForm extends StatelessWidget {
                     ),
                     const Divider(),
                     Container(
-                      // adds a shadow to the top of the container
                       decoration: BoxDecoration(
                         color: ArDriveTheme.of(context)
                             .themeData
@@ -336,8 +278,28 @@ class FsEntryMoveForm extends StatelessWidget {
                                     .themeFgDefault,
                               ),
                               icon: ArDriveIcons.folderAdd(),
-                              text: 'Create Folder',
-                              onPressed: () {}),
+                              text: appLocalizationsOf(context)
+                                  .createFolderEmphasized,
+                              onPressed: () {
+                                showAnimatedDialog(
+                                  context,
+                                  content: BlocProvider(
+                                    create: (context) => FolderCreateCubit(
+                                      driveId:
+                                          state.viewingFolder.folder.driveId,
+                                      parentFolderId:
+                                          state.viewingFolder.folder.id,
+                                      profileCubit:
+                                          context.read<ProfileCubit>(),
+                                      arweave: context.read<ArweaveService>(),
+                                      turboService:
+                                          context.read<TurboService>(),
+                                      driveDao: context.read<DriveDao>(),
+                                    ),
+                                    child: const FolderCreateForm(),
+                                  ),
+                                );
+                              }),
                           ArDriveButton(
                             maxHeight: 36,
                             backgroundColor: ArDriveTheme.of(context)
@@ -351,10 +313,9 @@ class FsEntryMoveForm extends StatelessWidget {
                                   .colors
                                   .themeAccentSubtle,
                             ),
-                            text: 'Move Here',
+                            text:
+                                appLocalizationsOf(context).moveHereEmphasized,
                             onPressed: () {
-                              print('Move Here');
-                              print(state.viewingFolder.folder.name);
                               context.read<FsEntryMoveBloc>().add(
                                     FsEntryMoveSubmit(
                                       folderInView: state.viewingFolder.folder,
@@ -365,20 +326,9 @@ class FsEntryMoveForm extends StatelessWidget {
                         ],
                       ),
                     )
-                    // Padding(
-                    //   padding: const EdgeInsets.only(right: 16),
-                    //   child: Wrap(
-                    //     alignment: WrapAlignment.spaceBetween,
-                    //     children: [
-                    //       _buildCreateFolderButton(),
-                    //       _buildButtonBar(state.viewingFolder.folder),
-                    //     ],
-                    //   ),
-                    // )
                   ],
                 ),
               ),
-              // actions: _buildButtonBar(state.viewingFolder.folder),
             );
           } else {
             return const SizedBox();

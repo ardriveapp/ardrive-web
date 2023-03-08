@@ -39,30 +39,33 @@ class ProgressDialog extends StatelessWidget {
       title: title,
       content: Padding(
         padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 32),
-              child: SizedBox(
-                  width: 74,
-                  height: 74,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 8,
-                  )),
-            ),
-            if (progressDescription != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: progressDescription!,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: SizedBox(
+                    width: 74,
+                    height: 74,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 8,
+                    )),
               ),
-            if (progressBar != null) progressBar!,
-            if (percentageDetails != null)
-              Padding(
-                  padding: const EdgeInsets.only(top: 16),
-                  child: percentageDetails!),
-          ],
+              if (progressDescription != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: progressDescription!,
+                ),
+              if (progressBar != null) progressBar!,
+              if (percentageDetails != null)
+                Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: percentageDetails!),
+            ],
+          ),
         ),
       ),
     );

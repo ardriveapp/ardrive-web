@@ -5,6 +5,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -106,25 +107,23 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
                     child: ArDriveTextField(
                       controller: _nameController,
                       autofocus: true,
+                      onFieldSubmitted: (value) {
+                        if (_validForm) {
+                          context
+                              .read<FsEntryRenameCubit>()
+                              .submit(newName: value);
+                        }
+                      },
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          setState(() {
-                            _validForm = false;
-                          });
-                          return appLocalizationsOf(context).validationRequired;
-                        } else if (value == widget.entryName) {
-                          setState(() {
-                            _validForm = false;
-                          });
-                          return appLocalizationsOf(context)
-                              .validationNameUnchanged;
+                        final validation = validateFolderName(value, context);
+
+                        if (validation == null) {
+                          setState(() => _validForm = true);
+                        } else {
+                          setState(() => _validForm = false);
                         }
 
-                        setState(() {
-                          _validForm = true;
-                        });
-
-                        return null;
+                        return validation;
                       },
                     ),
                   )
