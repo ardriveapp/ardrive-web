@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
@@ -27,10 +28,11 @@ class DriveEntity extends Entity {
     this.rootFolderId,
     this.privacy,
     this.authMode,
-  });
+  }) : super(ArDriveCrypto());
 
   static Future<DriveEntity> fromTransaction(
     TransactionCommonMixin transaction,
+    ArDriveCrypto crypto,
     Uint8List data, [
     SecretKey? driveKey,
   ]) async {
@@ -42,7 +44,8 @@ class DriveEntity extends Entity {
       if (drivePrivacy == DrivePrivacy.public) {
         entityJson = json.decode(utf8.decode(data));
       } else if (drivePrivacy == DrivePrivacy.private) {
-        entityJson = await decryptEntityJson(transaction, data, driveKey!);
+        entityJson =
+            await crypto.decryptEntityJson(transaction, data, driveKey!);
       }
 
       return DriveEntity.fromJson(entityJson!)

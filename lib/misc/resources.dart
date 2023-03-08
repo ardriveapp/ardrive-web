@@ -1,7 +1,7 @@
 class Resources {
   static const images = Images();
   static const arHelpLink =
-      'https://ardrive.io/questions/where-do-i-get-additional-arweave-tokens/';
+      'https://ar-io.zendesk.com/hc/en-us/articles/5258520347419-Fund-Your-Wallet';
   static const manifestLearnMoreLink =
       'https://ar-io.zendesk.com/hc/en-us/articles/5300353421467-Arweave-Manifests';
   static const surveyFeedbackFormUrl = 'https://ar-io.typeform.com/UserSurvey';
@@ -9,6 +9,8 @@ class Resources {
   static const infernoRulesLinkZh = 'https://cn.ardrive.io/inferno/';
 
   static const helpLink = 'https://ar-io.zendesk.com/hc/en-us';
+  static const agreementLink = 'https://ardrive.io/tos-and-privacy/';
+  static const getWalletLink = 'https://tokens.arweave.org/';
 }
 
 class Images {
@@ -17,6 +19,7 @@ class Images {
   final brand = const Brand();
   final profile = const Profile();
   final inferno = const Inferno();
+  final Login login = const Login();
 }
 
 class Brand {
@@ -49,4 +52,26 @@ class Inferno {
   const Inferno();
 
   final fire = 'assets/images/inferno/fire_icon.png';
+}
+
+class Login {
+  const Login();
+
+  final String login1 = 'assets/images/login/login_1.png';
+  final String login2 = 'assets/images/login/login_2.png';
+  final String login3 = 'assets/images/login/login_3.png';
+  final String login4 = 'assets/images/login/login_4.png';
+  final String arconnectLogo = 'assets/images/login/arconnect_logo.png';
+  final OnBoarding onboarding = const OnBoarding();
+}
+
+class OnBoarding {
+  const OnBoarding();
+
+  final String onboarding1 = 'assets/images/login/onboarding/onboarding_1.png';
+  final String onboarding2 = 'assets/images/login/onboarding/onboarding_2.png';
+  final String onboarding3 = 'assets/images/login/onboarding/onboarding_3.png';
+  final String onboarding4 = 'assets/images/login/onboarding/onboarding_4.png';
+  final String onboarding5 = 'assets/images/login/onboarding/onboarding_5.png';
+  final String onboarding6 = 'assets/images/login/onboarding/onboarding_6.png';
 }

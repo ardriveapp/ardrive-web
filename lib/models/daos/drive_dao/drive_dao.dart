@@ -1,9 +1,9 @@
 import 'dart:async';
 
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -29,7 +29,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   late Vault<Uint8List> _previewVault;
 
-  DriveDao(Database db) : super(db) {
+  final ArDriveCrypto _crypto = ArDriveCrypto();
+
+  DriveDao(
+    Database db,
+  ) : super(db) {
     initVaults();
   }
 
@@ -108,7 +112,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     SecretKey? driveKey;
     switch (privacy) {
       case DrivePrivacy.private:
-        driveKey = await deriveDriveKey(wallet, driveId, password);
+        driveKey = await _crypto.deriveDriveKey(wallet, driveId, password);
         insertDriveOp = await _addDriveKeyToDriveCompanion(
             insertDriveOp, profileKey, driveKey);
         break;
@@ -257,7 +261,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     }
 
     final driveKeyData = await aesGcm.decrypt(
-      secretBoxFromDataWithMacConcatenation(
+      _crypto.secretBoxFromDataWithMacConcatenation(
         drive.encryptedKey!,
         nonce: drive.keyEncryptionIv!,
       ),
@@ -274,7 +278,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     String fileId,
     SecretKey driveKey,
   ) async {
-    return deriveFileKey(driveKey, fileId);
+    return _crypto.deriveFileKey(driveKey, fileId);
   }
 
   Future<void> writeToDrive(Insertable<Drive> drive) =>

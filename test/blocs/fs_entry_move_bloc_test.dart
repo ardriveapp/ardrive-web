@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -23,6 +24,7 @@ void main() {
     late Database db;
     late DriveDao driveDao;
     late ArweaveService arweave;
+    late TurboService turboService;
 
     late ProfileCubit profileCubit;
     late SyncCubit syncBloc;
@@ -33,6 +35,16 @@ void main() {
     const rootFolderFileCount = 3;
 
     setUp(() async {
+      registerFallbackValue(
+        await getTestTransaction('test/fixtures/signed_v2_tx.json'),
+      );
+      registerFallbackValue(
+        await getTestDataItem('test/fixtures/signed_v2_tx.json'),
+      );
+      registerFallbackValue(DataBundle(blob: Uint8List(0)));
+      registerFallbackValue(FileEntity());
+      registerFallbackValue(Wallet());
+
       db = getTestDb();
       await db.batch((batch) {
         // Default date
@@ -207,13 +219,22 @@ void main() {
       });
 
       driveDao = db.driveDao;
-      const arweaveGatewayUrl = 'https://www.fake-arweave-gateway-url.com';
       AppPlatform.setMockPlatform(platform: SystemPlatform.unknown);
-      arweave = ArweaveService(
-        Arweave(gatewayUrl: Uri.parse(arweaveGatewayUrl)),
+      arweave = MockArweaveService();
+      when(() => arweave.postTx(any())).thenAnswer((_) async => Future.value());
+      when(() => arweave.prepareEntityDataItem(any(), any(),
+          key: any(named: 'key'))).thenAnswer(
+        (_) async => await getTestDataItem('test/fixtures/signed_v2_tx.json'),
       );
+      when(() => arweave.prepareDataBundleTx(any(), any())).thenAnswer(
+        (_) async =>
+            await getTestTransaction('test/fixtures/signed_v2_tx.json'),
+      );
+      turboService = DontUseTurbo();
       syncBloc = MockSyncBloc();
-
+      when(() => syncBloc.generateFsEntryPaths(any(), any(), any())).thenAnswer(
+        (_) async => Future.value(),
+      );
       profileCubit = MockProfileCubit();
 
       final keyBytes = Uint8List(32);
@@ -237,6 +258,7 @@ void main() {
           cipherKey: SecretKey(keyBytes),
           walletAddress: await wallet.getAddress(),
           walletBalance: BigInt.one,
+          useTurbo: false,
         ),
       );
     });
@@ -248,11 +270,13 @@ void main() {
       'throws when selectedItems is empty',
       build: () => FsEntryMoveBloc(
         arweave: arweave,
+        turboService: turboService,
         syncCubit: syncBloc,
         driveId: driveId,
         driveDao: driveDao,
         profileCubit: profileCubit,
         selectedItems: [],
+        crypto: ArDriveCrypto(),
       ),
       errors: () => [isA<Exception>()],
     );
@@ -271,7 +295,9 @@ void main() {
         ];
       }),
       build: () => FsEntryMoveBloc(
+        crypto: ArDriveCrypto(),
         arweave: arweave,
+        turboService: turboService,
         syncCubit: syncBloc,
         driveId: driveId,
         driveDao: driveDao,
@@ -286,7 +312,6 @@ void main() {
           bloc.add(FsEntryMoveSubmit(
             folderInView:
                 (bloc.state as FsEntryMoveLoadSuccess).viewingFolder.folder,
-            dryRun: true,
           ));
         }
       },

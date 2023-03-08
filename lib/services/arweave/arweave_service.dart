@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
@@ -8,15 +9,23 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/extensions.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
+import 'package:ardrive/utils/internet_checker.dart';
+import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
+import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:artemis/artemis.dart';
 import 'package:arweave/arweave.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
+import 'package:http/http.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:retry/retry.dart';
 
 import 'error/gateway_response_handler.dart';
+
+typedef SnapshotEntityTransaction
+    = SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
 
 const byteCountPerChunk = 262144; // 256 KiB
 const defaultMaxRetries = 8;
@@ -24,15 +33,20 @@ const kMaxNumberOfTransactionsPerPage = 100;
 
 class ArweaveService {
   final Arweave client;
+  final ArDriveCrypto _crypto;
 
   final ArtemisClient _gql;
 
   ArweaveService(
-    this.client, {
+    this.client,
+    this._crypto, {
     ArtemisClient? artemisClient,
   }) : _gql = artemisClient ??
             ArtemisClient('${client.api.gatewayUrl.origin}/graphql') {
-    _graphQLRetry = GraphQLRetry(_gql);
+    _graphQLRetry = GraphQLRetry(
+      _gql,
+      internetChecker: InternetChecker(connectivity: Connectivity()),
+    );
     httpRetry = HttpRetry(
         GatewayResponseHandler(),
         HttpRetryOptions(onRetry: (exception) {
@@ -111,10 +125,55 @@ class ArweaveService {
     return query.data?.transaction;
   }
 
+  Stream<SnapshotEntityTransaction> getAllSnapshotsOfDrive(
+    String driveId,
+    int? lastBlockHeight,
+  ) async* {
+    String cursor = '';
+
+    while (true) {
+      // Get a page of 100 transactions
+      final snapshotEntityHistoryQuery = await _graphQLRetry.execute(
+        SnapshotEntityHistoryQuery(
+          variables: SnapshotEntityHistoryArguments(
+            driveId: driveId,
+            lastBlockHeight: lastBlockHeight,
+            after: cursor,
+          ),
+        ),
+      );
+
+      for (SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge edge
+          in snapshotEntityHistoryQuery.data!.transactions.edges) {
+        yield edge.node;
+      }
+
+      cursor = snapshotEntityHistoryQuery.data!.transactions.edges.isNotEmpty
+          ? snapshotEntityHistoryQuery.data!.transactions.edges.last.cursor
+          : '';
+
+      if (!snapshotEntityHistoryQuery.data!.transactions.pageInfo.hasNextPage) {
+        break;
+      }
+    }
+  }
+
   Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
       getAllTransactionsFromDrive(
     String driveId, {
     int? lastBlockHeight,
+  }) {
+    return getSegmentedTransactionsFromDrive(
+      driveId,
+      minBlockHeight: lastBlockHeight,
+    );
+  }
+
+  Stream<List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>>
+      getSegmentedTransactionsFromDrive(
+    String driveId, {
+    int? minBlockHeight,
+    int? maxBlockHeight,
   }) async* {
     String? cursor;
 
@@ -124,7 +183,8 @@ class ArweaveService {
         DriveEntityHistoryQuery(
           variables: DriveEntityHistoryArguments(
             driveId: driveId,
-            lastBlockHeight: lastBlockHeight,
+            minBlockHeight: minBlockHeight,
+            maxBlockHeight: maxBlockHeight,
             after: cursor,
           ),
         ),
@@ -148,19 +208,23 @@ class ArweaveService {
   ///
   /// returns DriveEntityHistory object
   Future<DriveEntityHistory> createDriveEntityHistoryFromTransactions(
-      List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>
-          queryEdges,
-      SecretKey? driveKey,
-      String? owner,
-      int lastBlockHeight) async {
-    final entityTxs = <
-        DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>[];
-
-    entityTxs.addAll(queryEdges.map((e) => e.node).toList());
-
-    final responses = await Future.wait(entityTxs.map((e) async {
-      return httpRetry.processRequest(() => client.api.getSandboxedTx(e.id));
-    }));
+    List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction>
+        entityTxs,
+    SecretKey? driveKey,
+    String? owner,
+    int lastBlockHeight, {
+    required SnapshotDriveHistory snapshotDriveHistory,
+    required DriveID driveId,
+  }) async {
+    final List<Uint8List> responses = await Future.wait(
+      entityTxs.map(
+        (entity) => _getEntityData(
+          entityId: entity.id,
+          driveId: driveId,
+          isPrivate: driveKey != null,
+        ),
+      ),
+    );
 
     final blockHistory = <BlockEntities>[];
 
@@ -181,23 +245,27 @@ class ArweaveService {
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
         final entityResponse = responses[i];
-        final rawEntityData = entityResponse.bodyBytes;
+        final rawEntityData = entityResponse;
 
         Entity? entity;
         if (entityType == EntityType.drive) {
           entity = await DriveEntity.fromTransaction(
-              transaction, rawEntityData, driveKey);
+              transaction, _crypto, rawEntityData, driveKey);
         } else if (entityType == EntityType.folder) {
           entity = await FolderEntity.fromTransaction(
-              transaction, rawEntityData, driveKey);
+              transaction, _crypto, rawEntityData, driveKey);
         } else if (entityType == EntityType.file) {
           entity = await FileEntity.fromTransaction(
             transaction,
             rawEntityData,
             driveKey: driveKey,
+            crypto: _crypto,
           );
+        } else if (entityType == EntityType.snapshot) {
+          // TODO: instantiate entity and add to blockHistory
         }
-        //TODO: Revisit
+
+        // TODO: Revisit
         if (blockHistory.isEmpty ||
             transaction.block!.height != blockHistory.last.blockHeight) {
           blockHistory.add(BlockEntities(transaction.block!.height));
@@ -223,16 +291,81 @@ class ArweaveService {
 
     // Sort the entities in each block by ascending commit time.
     for (final block in blockHistory) {
+      block.entities.removeWhere((e) => e == null);
       block.entities.sort((e1, e2) => e1!.createdAt.compareTo(e2!.createdAt));
       //Remove entities with spoofed owners
       block.entities.removeWhere((e) => e!.ownerAddress != owner);
     }
 
     return DriveEntityHistory(
-      queryEdges.isNotEmpty ? queryEdges.last.cursor : null,
       blockHistory.isNotEmpty ? blockHistory.last.blockHeight : lastBlockHeight,
       blockHistory,
     );
+  }
+
+  Future<bool> hasUserPrivateDrives(
+    Wallet wallet, {
+    int maxRetries = defaultMaxRetries,
+  }) async {
+    final driveTxs = await getUniqueUserDriveEntityTxs(
+      await wallet.getAddress(),
+      maxRetries: maxRetries,
+    );
+
+    final privateDriveTxs = driveTxs.where(
+        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
+
+    return privateDriveTxs.isNotEmpty;
+  }
+
+  Future<Uint8List> _getEntityData({
+    required String entityId,
+    required String driveId,
+    required bool isPrivate,
+  }) async {
+    final txId = entityId;
+
+    final cachedData = await _getCachedEntityDataFromSnapshot(
+      driveId: driveId,
+      txId: txId,
+      isPrivate: isPrivate,
+    );
+
+    if (cachedData != null) {
+      return cachedData;
+    }
+
+    return _getEntityDataFromNetwork(txId: txId);
+  }
+
+  Future<Uint8List?> _getCachedEntityDataFromSnapshot({
+    required String txId,
+    required String driveId,
+    required bool isPrivate,
+  }) async {
+    final Uint8List? cachedData = await SnapshotItemOnChain.getDataForTxId(
+      driveId,
+      txId,
+    );
+
+    if (cachedData != null) {
+      if (isPrivate) {
+        // then it's base64-encoded
+        return base64.decode(String.fromCharCodes(cachedData));
+      } else {
+        // public data is plain text
+        return cachedData;
+      }
+    }
+
+    return null;
+  }
+
+  Future<Uint8List> _getEntityDataFromNetwork({required String txId}) async {
+    final Response data =
+        (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
+
+    return data.bodyBytes;
   }
 
   // Gets the unique drive entity transactions for a particular user.
@@ -261,6 +394,23 @@ class ArweaveService {
         )
         .values
         .toList();
+  }
+
+  Future<String?> getFirstPrivateDriveTxId(
+    Wallet wallet, {
+    int maxRetries = defaultMaxRetries,
+  }) async {
+    final driveTxs = await getUniqueUserDriveEntityTxs(
+      await wallet.getAddress(),
+      maxRetries: maxRetries,
+    );
+
+    final privateDriveTxs = driveTxs.where(
+        (tx) => tx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private);
+
+    return privateDriveTxs.isNotEmpty
+        ? privateDriveTxs.first.getTag(EntityTag.driveId)!
+        : null;
   }
 
   /// Gets the unique drive entities for a particular user.
@@ -298,7 +448,7 @@ class ArweaveService {
 
         final driveKey =
             driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacy.private
-                ? await deriveDriveKey(
+                ? await _crypto.deriveDriveKey(
                     wallet,
                     driveTx.getTag(EntityTag.driveId)!,
                     password,
@@ -308,6 +458,7 @@ class ArweaveService {
         try {
           final drive = await DriveEntity.fromTransaction(
             driveTx,
+            _crypto,
             driveResponses[i].bodyBytes,
             driveKey,
           );
@@ -375,7 +526,7 @@ class ArweaveService {
 
     try {
       return await DriveEntity.fromTransaction(
-          fileTx, fileDataRes.bodyBytes, driveKey);
+          fileTx, _crypto, fileDataRes.bodyBytes, driveKey);
     } on EntityTransactionParseException catch (parseException) {
       print(
         'Failed to parse transaction '
@@ -486,7 +637,7 @@ class ArweaveService {
     }
 
     final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
-    final checkDriveKey = await deriveDriveKey(
+    final checkDriveKey = await _crypto.deriveDriveKey(
       wallet,
       checkDriveId,
       password,
@@ -536,6 +687,7 @@ class ArweaveService {
         fileTx,
         fileDataRes.bodyBytes,
         fileKey: fileKey,
+        crypto: _crypto,
       );
     } on EntityTransactionParseException catch (parseException) {
       print(
@@ -588,6 +740,7 @@ class ArweaveService {
               fileTx,
               fileDataRes.bodyBytes,
               fileKey: fileKey,
+              crypto: _crypto,
             ),
           );
         } on EntityTransactionParseException catch (parseException) {
@@ -665,14 +818,18 @@ class ArweaveService {
 
   Future<Transaction> prepareEntityTx(
     Entity entity,
-    Wallet wallet, [
-    SecretKey? key,
-  ]) async {
+    Wallet wallet,
+    SecretKey? key, {
+    bool skipSignature = false,
+  }) async {
     final tx = await client.transactions.prepare(
       await entity.asTransaction(key: key),
       wallet,
     );
-    await tx.sign(wallet);
+
+    if (!skipSignature) {
+      await tx.sign(wallet);
+    }
 
     return tx;
   }
@@ -728,6 +885,26 @@ class ArweaveService {
     return bundleTx;
   }
 
+  /// Creates and signs a [DataItem] with a [DataBundle] as payload.
+  /// Allows us to create nested bundles for use with the upload service.
+
+  Future<DataItem> prepareBundledDataItem(
+    DataBundle bundle,
+    Wallet wallet,
+  ) async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    final item = DataItem.withBlobData(data: bundle.blob)
+      ..addApplicationTags(
+        version: packageInfo.version,
+      )
+      ..addBundleTags()
+      ..addBarTags()
+      ..setOwner(await wallet.getOwner());
+    await item.sign(wallet);
+
+    return item;
+  }
+
   Future<Transaction> prepareDataBundleTxFromBlob(
       Uint8List bundleBlob, Wallet wallet) async {
     final packageInfo = await PackageInfo.fromPlatform();
@@ -761,18 +938,28 @@ class ArweaveService {
 
     return response.data?['arweave']['usd'];
   }
+
+  Future<Uint8List> dataFromTxId(
+    String txId,
+    SecretKey? driveKey,
+  ) async {
+    // TODO: PE-2917
+
+    final Response data =
+        (await httpRetry.processRequest(() => client.api.getSandboxedTx(txId)));
+    final metadata = data.bodyBytes;
+    return metadata;
+  }
 }
 
 /// The entity history of a particular drive, chunked by block height.
 class DriveEntityHistory {
-  /// A cursor for continuing through this drive's history.
-  final String? cursor;
   final int? lastBlockHeight;
 
   /// A list of block entities, ordered by ascending block height.
   final List<BlockEntities> blockHistory;
 
-  DriveEntityHistory(this.cursor, this.lastBlockHeight, this.blockHistory);
+  DriveEntityHistory(this.lastBlockHeight, this.blockHistory);
 }
 
 /// The entities present in a particular block.

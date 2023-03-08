@@ -37,6 +37,7 @@ class _FsEntrySideSheetState extends State<FsEntrySideSheet> {
             ),
             BlocProvider<FsEntryPreviewCubit>(
               create: (context) => FsEntryPreviewCubit(
+                crypto: ArDriveCrypto(),
                 driveId: widget.driveId,
                 maybeSelectedItem: widget.maybeSelectedItem,
                 driveDao: context.read<DriveDao>(),

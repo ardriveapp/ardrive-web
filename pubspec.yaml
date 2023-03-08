@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 1.40.0
+version: 1.42.0
 
 environment:
   sdk: '>=2.18.5 <3.0.0'
@@ -19,9 +19,7 @@ script_runner:
   line_length: 80
   scripts:
     - setup: flutter clean && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs
-    - test: scr test-app && test-ui-library
-    - test-app: flutter test
-    - test-ui-library: cd packages/ardrive_ui_library && flutter test
+    - test: flutter test
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
 
@@ -33,11 +31,15 @@ dependencies:
   ardrive_http:
     git:
       url: https://github.com/ar-io/ardrive_http.git
-      ref: v1.0.0
+      ref: v1.1.2
   ardrive_io:
     git:
       url: https://github.com/ar-io/ardrive_io.git
-      ref: v1.0.0
+      ref: v1.1.0
+  ardrive_ui:
+    git:
+      url: https://github.com/ar-io/ardrive_ui.git
+      ref: PE-3145-issues-when-using-a-new-wallet-with-ar-connect
   artemis: ^7.0.0-beta.13
   arweave:
     git:
@@ -45,7 +47,6 @@ dependencies:
       ref: v3.4.0
   cryptography: ^2.0.5
   flutter_bloc: ^8.1.1
-  flutter_portal: ^0.4.0
   file_selector: ^0.9.0
   file_selector_web: ^0.9.0
   file_selector_macos: ^0.9.0
@@ -85,9 +86,12 @@ dependencies:
   firebase_core: ^2.1.1
   bloc_concurrency: ^0.2.0
   universal_html: ^2.0.8
-  device_info_plus: ^4.0.0
+  device_info_plus: ^8.0.0
   local_auth: ^2.1.2
   flutter_secure_storage: ^6.0.0
+  async: ^2.9.0
+  animations: ^2.0.7
+  connectivity_plus: ^3.0.3
 
 dev_dependencies:
   flutter_test:
@@ -111,3 +115,5 @@ flutter:
     - assets/images/brand/
     - assets/images/profile/
     - assets/images/inferno/
+    - assets/images/login/
+    - assets/images/login/onboarding/

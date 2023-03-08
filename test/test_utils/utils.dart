@@ -13,8 +13,7 @@ export 'mocks.dart';
 
 Database getTestDb() => Database(NativeDatabase.memory());
 
-Wallet getTestWallet() {
-  final walletJwk = json.decode('''
+String getWalletString = '''
   {
     "kty": "RSA",
     "e": "AQAB",
@@ -25,7 +24,10 @@ Wallet getTestWallet() {
     "dp": "Gfo49fW5CZNTSEKQ_id0R2K9TMsoecw-jB2uCgqQi-TSLOtVRC5oTxA896my_SvIj8bCvEtLSzY3AhgvSCqulN3gSJbaHCCSDvAx0czAe7zfuTsxml76izeoKqg7TZAgAEnP0KXPRwJo4ff2J8lAcl3yyiLE7cLT9nuQSMRqERFVM7DQdk4wV618mQge9VGUStmYlh1MpS65N0dZWNafNuWauPTkTLZw8DFMIyizf3EC-nQYg1b6A_tYBHD3A82jPzQEQY8B3PrfGZ3DRASNv9jONk8qTQHOc5O5pLRMmUErDn_qRQCTKU483bzhooJE2a3WUEt6Pjsc1xMG4Vr3SQ",
     "dq": "cCVai36Yi-06m1cwd8fbkhH9GUpXIvKI2Z5ZRk-smqc7piY0dEZFHftS9BaMyZYu3wM09GDklfdkNLo3mmfXkftv-cbjpvelUa50HYWx0HouKrT9UpVia0sTnmfme7BztjKunuuTcQxTBvfDfxoIi_nmUHIx9Vv1IEaALITzChGnIky3q7O_8ttKR65nFevG1JvsRBeJN6z0tzG9RBQr5mxtx3Wt2Uwcp21XjOCFHVmXjT9nMmpINQNNIC8VrGSSkjaJmNWIw5WGmDnLkKzCG2vpZO1suqIIgCsYN_Ka7ETTdZt3gFdoECUpFSiay4-4MAospvgWLv8XAFXXwfSPXQ",
     "qi": "n-R81MpbwfWfqRSVgD8nDk7D8zlJ-tpMaojfTwNNqDt34Cr-BpMjxaQyEfMnzOd2dY4OV0rKhd29DIuwFEb2UERHdVWF3gM8f2byYGj4357CRkiwq6I050bUxd1ODgAXjVGNpOK_fmaNHDWfe5v3wVIcCmwH0mJxEu9kuz7fr9TJNxGJBGUphpGS6NQZDCbDXg9-FPafMeNV-Jdo0NQaKMwm8uZyW7YGSNpUXYnksrWt4Fa-B9H2KoC4PPSWESPxNooXdxK7Y0J1KbzNyrUmOl4dT6p_oFKcU-1unuDCZ11e6EmMKyUGjpDzTIAZ2XxmyWUJ06yzEw7oLo8noiCE_Q"
-  }''');
+  }''';
+
+Wallet getTestWallet() {
+  final walletJwk = json.decode(getWalletString);
 
   return Wallet.fromJwk(walletJwk);
 }
@@ -226,3 +228,13 @@ Future<void> addTestFilesToDb(
 
 Future<Transaction> getTestTransaction(String path) async =>
     Transaction.fromJson(json.decode(await File(path).readAsString()));
+
+Future<DataItem> getTestDataItem(String path) async {
+  final wallet = getTestWallet();
+  final dataItem = DataItem.withJsonData(
+    owner: await wallet.getOwner(),
+    data: json.decode(await File(path).readAsString()),
+  );
+  await dataItem.sign(getTestWallet());
+  return dataItem;
+}

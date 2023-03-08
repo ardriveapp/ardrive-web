@@ -40,11 +40,12 @@ class AppDialog extends StatelessWidget {
           titlePadding: EdgeInsets.zero,
           title: Container(
             decoration: const BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(dialogBorderRadius),
-                  topRight: Radius.circular(dialogBorderRadius),
-                ),
-                color: kDarkSurfaceColor),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(dialogBorderRadius),
+                topRight: Radius.circular(dialogBorderRadius),
+              ),
+              color: kDarkSurfaceColor,
+            ),
             height: 64,
             child: Padding(
               padding: dialogContentPadding,

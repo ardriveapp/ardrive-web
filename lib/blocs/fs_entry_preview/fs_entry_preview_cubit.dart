@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
@@ -22,6 +23,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   final AppConfig _config;
   final ArweaveService _arweave;
   final ProfileCubit _profileCubit;
+  final ArDriveCrypto _crypto;
 
   StreamSubscription? _entrySubscription;
 
@@ -35,10 +37,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     required AppConfig config,
     required ArweaveService arweave,
     required ProfileCubit profileCubit,
+    required ArDriveCrypto crypto,
   })  : _driveDao = driveDao,
         _config = config,
         _arweave = arweave,
         _profileCubit = profileCubit,
+        _crypto = crypto,
         super(FsEntryPreviewInitial()) {
     preview();
   }
@@ -141,7 +145,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           }
 
           final fileKey = await _driveDao.getFileKey(file.id, driveKey);
-          final decodedBytes = await decryptTransactionData(
+          final decodedBytes = await _crypto.decryptTransactionData(
             dataTx,
             dataBytes,
             fileKey,

@@ -19,14 +19,17 @@ part 'profile_state.dart';
 /// and wallet balance.
 class ProfileCubit extends Cubit<ProfileState> {
   final ArweaveService _arweave;
+  final TurboService _turboService;
   final ProfileDao _profileDao;
   final Database _db;
 
   ProfileCubit({
     required ArweaveService arweave,
+    required TurboService turboService,
     required ProfileDao profileDao,
     required Database db,
   })  : _arweave = arweave,
+        _turboService = turboService,
         _profileDao = profileDao,
         _db = db,
         super(ProfileCheckingAvailability()) {
@@ -128,7 +131,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         case ProfileType.json:
           return profile.wallet;
         case ProfileType.arConnect:
-          return ArConnectWallet();
+          return ArConnectWallet(arconnect);
       }
     }();
 
@@ -140,6 +143,7 @@ class ProfileCubit extends Cubit<ProfileState> {
         walletAddress: walletAddress,
         walletBalance: walletBalance,
         cipherKey: profile.key,
+        useTurbo: _turboService.useTurbo,
       ),
     );
   }

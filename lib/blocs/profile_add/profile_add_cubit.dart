@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/l11n/validation_messages.dart';
@@ -7,6 +8,7 @@ import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:arweave/arweave.dart';
@@ -18,23 +20,25 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 part 'profile_add_state.dart';
 
-const profileQueryMaxRetries = 6;
-
 class ProfileAddCubit extends Cubit<ProfileAddState> {
   final ProfileCubit _profileCubit;
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
   final BiometricAuthentication _biometricAuthentication;
-  ProfileAddCubit(
-      {required ProfileCubit profileCubit,
-      required ProfileDao profileDao,
-      required ArweaveService arweave,
-      required BuildContext context,
-      required BiometricAuthentication biometricAuthentication})
-      : _profileCubit = profileCubit,
+  final ArDriveCrypto _crypto;
+
+  ProfileAddCubit({
+    required ProfileCubit profileCubit,
+    required ProfileDao profileDao,
+    required ArweaveService arweave,
+    required BuildContext context,
+    required ArDriveCrypto crypto,
+    required BiometricAuthentication biometricAuthentication,
+  })  : _profileCubit = profileCubit,
         _profileDao = profileDao,
         _biometricAuthentication = biometricAuthentication,
         _arweave = arweave,
+        _crypto = crypto,
         super(ProfileAddPromptWallet());
 
   final arconnect = ArConnectService();
@@ -92,7 +96,9 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         emit(ProfileAddFailure());
         return;
       }
-      _wallet = ArConnectWallet();
+      _wallet = ArConnectWallet(
+        arconnect,
+      );
       _lastKnownWalletAddress = await _wallet.getAddress();
 
       try {
@@ -171,7 +177,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       if (privateDriveTxs.isNotEmpty) {
         final checkDriveId = privateDriveTxs.first.getTag(EntityTag.driveId)!;
 
-        final checkDriveKey = await deriveDriveKey(
+        final checkDriveKey = await _crypto.deriveDriveKey(
           _wallet,
           checkDriveId,
           password,

@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
@@ -22,9 +23,11 @@ Future<void> promptToRenameFolder(
         context: context,
         builder: (_) => BlocProvider(
           create: (context) => FsEntryRenameCubit(
+            crypto: ArDriveCrypto(),
             driveId: driveId,
             folderId: folderId,
             arweave: context.read<ArweaveService>(),
+            turboService: context.read<TurboService>(),
             driveDao: context.read<DriveDao>(),
             profileCubit: context.read<ProfileCubit>(),
             syncCubit: context.read<SyncCubit>(),
@@ -45,9 +48,11 @@ Future<void> promptToRenameFile(
               context: context,
               builder: (_) => BlocProvider(
                 create: (context) => FsEntryRenameCubit(
+                  crypto: ArDriveCrypto(),
                   driveId: driveId,
                   fileId: fileId,
                   arweave: context.read<ArweaveService>(),
+                  turboService: context.read<TurboService>(),
                   driveDao: context.read<DriveDao>(),
                   profileCubit: context.read<ProfileCubit>(),
                   syncCubit: context.read<SyncCubit>(),

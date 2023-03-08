@@ -1,4 +1,5 @@
 import 'package:ardrive/app_shell.dart';
+import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
@@ -108,7 +109,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               child: const SharedFilePage(),
             );
           } else if (signingIn) {
-            shell = const ProfileAuthPage();
+            shell = const LoginPage();
           } else if (state is ProfileLoggedIn || anonymouslyShowDriveDetail) {
             shell = BlocConsumer<DrivesCubit, DrivesState>(
               listener: (context, state) {

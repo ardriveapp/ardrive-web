@@ -5,14 +5,14 @@ part of 'package:ardrive/blocs/sync/sync_cubit.dart';
 Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   required DriveDao driveDao,
   required Database database,
-  required ArweaveService arweaveService,
-  required List<DriveEntityHistory$Query$TransactionConnection$TransactionEdge>
-      transactions,
+  required ArweaveService arweave,
+  required List<DriveHistoryTransaction> transactions,
   required Drive drive,
   required SecretKey? driveKey,
   required int lastBlockHeight,
   required int currentBlockHeight,
   required int batchSize,
+  required SnapshotDriveHistory snapshotDriveHistory,
 }) async* {
   final numberOfDriveEntitiesToParse = transactions.length;
   var numberOfDriveEntitiesParsed = 0;
@@ -41,16 +41,25 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
 
   final owner = await arweave.getOwnerForDriveEntityWithId(drive.id);
 
-  yield* _batchProcess<
-          DriveEntityHistory$Query$TransactionConnection$TransactionEdge>(
+  yield* _batchProcess<DriveHistoryTransaction>(
       list: transactions,
       batchSize: batchSize,
       endOfBatchCallback: (items) async* {
-        logSync('Getting metadata from drive ${drive.name}');
+        final isReadingFromSnapshot = snapshotDriveHistory.items.isNotEmpty;
+
+        if (!isReadingFromSnapshot) {
+          logSync('Getting metadata from drive ${drive.name}');
+        }
 
         final entityHistory =
             await arweave.createDriveEntityHistoryFromTransactions(
-                items, driveKey, owner, lastBlockHeight);
+          items,
+          driveKey,
+          owner,
+          lastBlockHeight,
+          snapshotDriveHistory: snapshotDriveHistory,
+          driveId: drive.id,
+        );
 
         // Create entries for all the new revisions of file and folders in this drive.
         final newEntities = entityHistory.blockHistory

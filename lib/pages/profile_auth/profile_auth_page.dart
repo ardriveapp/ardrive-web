@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/wallet_switch_dialog.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/profile_auth/components/profile_auth_fail_screen.dart';
@@ -46,6 +47,7 @@ class ProfileAuthPageState extends State<ProfileAuthPage> {
           if (state is ProfilePromptAdd) {
             return BlocProvider<ProfileAddCubit>(
               create: (context) => ProfileAddCubit(
+                crypto: ArDriveCrypto(),
                 profileCubit: context.read<ProfileCubit>(),
                 profileDao: context.read<ProfileDao>(),
                 arweave: context.read<ArweaveService>(),

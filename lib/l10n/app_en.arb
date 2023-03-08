@@ -991,6 +991,10 @@
   "@insufficientARForUpload": {
     "description": "The wallet does not have enough balance"
   },
+  "freeTurboTransaction": "Cost: 0 AR\nThis small transaction is free thanks to Turbo.",
+  "@freeTurboTransaction": {
+    "description": "Message explaining that your upload will be free thanks to Turbo"
+  },
   "bundlingAndSigningUpload": "Bundling and signing upload",
   "@bundlingAndSigningUpload": {
     "description": "The app is bundling together and signing the transactions"
@@ -1059,9 +1063,9 @@
   "@tryLaterCongestionEmphasized": {
     "description": "Try to upload later. Emphasized with upper case"
   },
-  "proceedCongestionEmphasized": "PROCEED",
-  "@proceedCongestionEmphasized": {
-    "description": "Proceed being aware of the network congestion. Emphasized with upper case"
+  "proceedEmphasized": "PROCEED",
+  "@proceedEmphasized": {
+    "description": "Proceed but capitalized"
   },
   "profile": "Profile",
   "@profile": {
@@ -1507,7 +1511,213 @@
     "description": "Toast message when you copy wallet address"
   },
   "copyWalletAddress": "Copy Wallet Address",
-  "@addressCopied": {
+  "@copyWalletAddress": {
     "description": "Tooltip on copy wallet address button"
+  },
+  "yourPrivateSecureAndPermanentDrive": "Your private, secure, and permanent hard drive.",
+  "@yourPrivateSecureAndPermanentDrive": {
+    "description": "Your private, secure, and permanent hard drive."
+  },
+  "arConnectWalletDoestNotMatchArDriveWallet": "Your ArConnect wallet does not match your ArDrive wallet. Please try again.",
+  "@arConnectWalletDoestNotMatchArDriveWallet": {
+    "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
+  },
+  "arConnectWalletDoestNotMatchArDriveWallet": "Your ArConnect wallet does not match your ArDrive wallet. Please try again.",
+  "@arConnectWalletDoestNotMatchArDriveWallet": {
+    "description": "Your ArConnect wallet does not match your ArDrive wallet. Please try again."
+  },
+  "pleaseTryAgain": "Please try again",
+  "@pleaseTryAgain": {
+    "description": "Please try again."
+  },
+  "enterPassword": "Enter password",
+  "@enterPassword": {
+    "description": "Please enter password"
+  },
+  "createAndConfirmPassword": "Please create and confirm your password. You will use this password to log in.",
+  "@createAndConfirmPassword": {
+    "description": "Form title to create a password"
+  },
+  "proceed": "Proceed",
+  "@proceed": {
+    "description": "Proceed"
+  },
+  "passwordCannotBeEmpty": "Password cannot be empty",
+  "@passwordCannotBeEmpty": {
+    "description": "Button title to create a password"
+  },
+  "passwordDoNotMatch": "Passwords do not match",
+  "@passwordDoNotMatch": {
+    "description": "Modal description when passwords dont match"
+  },
+  "skip": "Skip",
+  "@skip": {
+    "description": "Skip"
+  },
+  "onboarding1Title": "Welcome to the Permaweb",
+  "@onboarding1Title": {
+    "description": "Title of 1st page of onboarding"
+  },
+  "onboarding1Description": "ArDrive isn't just another cloud sync app. It's the beginning of a permanent hard drive. Any files you upload here will outlive you! That means we do a few things differently.",
+  "@onboarding1Description": {
+    "description": "Description of 1st page of onboarding"
+  },
+  "onboarding2Title": "Pay Per File",
+  "@onboarding2Title": {
+    "description": "Title of 2nd page of onboarding"
+  },
+  "onboarding2Description": "No subscriptions are needed! Instead of another monthly charge for empty space you don't use, pay a few cents once and store your files forever on ArDrive.",
+  "@onboarding2Description": {
+    "description": "Description of 2nd page of onboarding"
+  },
+    "onboarding3Title": "Seconds from Forever",
+  "@onboarding3Title": {
+    "description": "Title of 3rd page of onboarding"
+  },
+  "onboarding3Description": "Decentralized, permanent data storage doesn't happen in an instant. When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.",
+  "@onboarding3Description": {
+    "description": "Description of 3rd page of onboarding"
+  },
+  "onboarding4Title": "Total Privacy Control",
+  "@onboarding4Title": {
+    "description": "Title of 4th page of onboarding"
+  },
+  "onboarding4Description": "Your choice: you can permanently make files public or private, using the best encryption available today. No one will see what you don't want them to.",
+  "@onboarding4Description": {
+    "description": "Description of 4th page of onboarding"
+  },
+    "onboarding5Title": "Never Deleted",
+  "@onboarding5Title": {
+    "description": "Title of 5th page of onboarding"
+  },
+  "onboarding5Description": "Remember: There is no delete button (for you or us)! Once uploaded, your data can’t be removed, so think twice before uploading all your teenage love poetry...",
+  "@onboarding5Description": {
+    "description": "Description of 5th page of onboarding"
+  },
+  "diveInButtonOnboarding": "Dive in",
+  "@diveInButtonOnboarding": {
+    "description": "Text of the last button of the onboarding"
+  },
+  "backButtonOnboarding": "Back",
+  "@backButtonOnboarding": {
+    "description": "Text of the back button onboarding"
+  },
+  "welcomeBack": "Welcome back",
+  "@welcomeBack": {
+    "description": "welcome back"
+  },
+  "dragAndDropButtonTitle": "Browse Json",
+  "@dragAndDropButtonTitle": {
+    "description": "text of title drag and drop"
+  },
+  "dragAndDropDescription": "Drag & Drop your Keyfile",
+  "@dragAndDropDescription": {
+    "description": "text of description drag and drop"
+  },
+  "termsAndConditions": "Terms and Conditions",
+  "@termsAndConditions": {
+    "description": "terms and conditions"
+  },
+  "pleaseAcceptTheTermsToContinue": "Please accept the terms and conditions to continue.",
+  "@pleaseAcceptTheTermsToContinue": {
+    "description": "terms and conditions cta"
+  },
+  "invalidKeyFile": "Invalid Keyfile",
+  "@invalidKeyFile": {
+    "description": "Invalid Keyfile"
+  },
+  "orContinueWith": "Or continue with",
+  "@orContinueWith": {
+    "description": "text to continue with ar connect"
+  },
+  "orContinueWith": "Or continue with",
+  "@orContinueWith": {
+    "description": "text to continue with ar connect"
+  },
+  "createSnapshot": "Create Snapshot",
+  "@createSnapshot": {
+    "description": "The action of snapshotting a drive"
+  },
+  "createNewSnapshot": "Create New Snapshot",
+  "@createNewSnapshot": {
+    "description": "The action of snapshotting a drive"
+  },
+  "createSnapshotExplanation": "Snapshots reduce the time it takes for the drive to load. Do you want to create a snapshot of your drive {driveName}?",
+  "@createSnapshotExplanation": {
+    "description": "Explains how Snapshots improves the sync-time of the drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Curious Cat"
+      }
+    }
+  },
+  "computingSnapshotData": "Computing Snapshot Data",
+  "@computingSnapshotData": {
+    "description": "Computing Snapshot Data"
+  },
+  "uploadingSnapshot": "Uploading Snapshot",
+  "@uploadingSnapshot": {
+    "description": "Uploading Snapshot"
+  },
+  "snapshotSize": "Snapshot Size: {size}",
+  "@snapshotSize": {
+    "description": "Snapshot Size",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "1.2 MB"
+      }
+    }
+  },
+  "snapshotSuceeded": "Success",
+  "@snapshotSuceeded": {
+    "description": "Snapshot Succeeded"
+  },
+  "snapshotCreationSucceeded": "Your successfuly created a snapshot of {driveName}!",
+  "@snapshotCreationSucceeded": {
+    "description": "The snapshot was sucessfuly created",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Curious Cat"
+      }
+    }
+  },
+  "snapshotFailed": "Snapshot Failed",
+  "@snapshotFailed": {
+    "description": "Snapshot Failed"
+  },
+  "snapshotCreationFailed": "Your snapshot failed. You have not been charged for this failed attempt.",
+  "@snapshotCreationFailed": {
+    "description": "There was an error when creating the snapshot"
+  },
+  "insufficientBalanceForSnapshot": "Provided wallet balance of {walletBalance} AR is not enough for this snapshot transaction costing {totalCost} AR...",
+  "@insufficientBalanceForSnapshot": {
+    "description": "The amount of AR the wallet has is not enough to upload the snapshot transaction",
+    "placeholders": {
+      "walletBalance": {
+        "type": "String",
+        "example": "0"
+      },
+      "totalCost": {
+        "type": "String",
+        "example": "1.2"
+      }
+    }
+  },
+  "determiningSizeAndCostOfSnapshot": "Determining size and cost of snapshot",
+  "@determiningSizeAndCostOfSnapshot": {
+    "description": "Determining size and cost of snapshot. This may take a while."
+  },
+  "snapshotOfDrive": "Snapshot of drive {driveName}",
+  "@snapshotOfDrive": {
+    "description": "Snapshot of drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Curious Cat"
+      }
+    }
   }
 }

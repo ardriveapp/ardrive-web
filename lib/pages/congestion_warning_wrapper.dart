@@ -20,6 +20,7 @@ Future<void> showCongestionDependentModalDialog(
     warnAboutCongestion = false;
   }
 
+  // ignore: use_build_context_synchronously
   return await showModalDialog(context, () async {
     if (warnAboutCongestion) {
       final shouldShowDialog = await showDialog(
@@ -66,8 +67,7 @@ Future<void> showCongestionDependentModalDialog(
               onPressed: () async {
                 Navigator.of(context).pop(true);
               },
-              child:
-                  Text(appLocalizationsOf(context).proceedCongestionEmphasized),
+              child: Text(appLocalizationsOf(context).proceedEmphasized),
             ),
           ],
         ),

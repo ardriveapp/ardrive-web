@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
 import 'package:ardrive/components/upload_form.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/congestion_warning_wrapper.dart';
 import 'package:ardrive/services/services.dart';
@@ -107,6 +108,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
         return;
       }
 
+      // ignore: use_build_context_synchronously
       await showCongestionDependentModalDialog(
         context,
         () => showDialog(
@@ -114,6 +116,7 @@ class DriveFileDropZoneState extends State<DriveFileDropZone> {
           builder: (_) => BlocProvider<UploadCubit>(
             create: (context) => UploadCubit(
               uploadPlanUtils: UploadPlanUtils(
+                crypto: ArDriveCrypto(),
                 arweave: context.read<ArweaveService>(),
                 driveDao: context.read<DriveDao>(),
               ),

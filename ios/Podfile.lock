@@ -46,10 +46,10 @@ PODS:
   - Firebase/Crashlytics (10.3.0):
     - Firebase/CoreOnly
     - FirebaseCrashlytics (~> 10.3.0)
-  - firebase_core (2.4.0):
+  - firebase_core (2.4.1):
     - Firebase/CoreOnly (= 10.3.0)
     - Flutter
-  - firebase_crashlytics (3.0.7):
+  - firebase_crashlytics (3.0.9):
     - Firebase/Crashlytics (= 10.3.0)
     - firebase_core
     - Flutter
@@ -76,6 +76,9 @@ PODS:
     - Flutter
   - flutter_secure_storage (6.0.0):
     - Flutter
+  - FMDB (2.7.5):
+    - FMDB/standard (= 2.7.5)
+  - FMDB/standard (2.7.5)
   - GoogleDataTransport (9.2.0):
     - GoogleUtilities/Environment (~> 7.7)
     - nanopb (< 2.30910.0, >= 2.30908.0)
@@ -110,6 +113,9 @@ PODS:
     - Flutter
   - shared_preferences_ios (0.0.1):
     - Flutter
+  - sqflite (0.0.2):
+    - Flutter
+    - FMDB (>= 2.7.5)
   - sqlite3 (3.40.0):
     - sqlite3/common (= 3.40.0)
   - sqlite3/common (3.40.0)
@@ -147,6 +153,7 @@ DEPENDENCIES:
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - security_scoped_resource (from `.symlinks/plugins/security_scoped_resource/ios`)
   - shared_preferences_ios (from `.symlinks/plugins/shared_preferences_ios/ios`)
+  - sqflite (from `.symlinks/plugins/sqflite/ios`)
   - sqlite3_flutter_libs (from `.symlinks/plugins/sqlite3_flutter_libs/ios`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
 
@@ -159,6 +166,7 @@ SPEC REPOS:
     - FirebaseCoreInternal
     - FirebaseCrashlytics
     - FirebaseInstallations
+    - FMDB
     - GoogleDataTransport
     - GoogleUtilities
     - nanopb
@@ -202,6 +210,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/security_scoped_resource/ios"
   shared_preferences_ios:
     :path: ".symlinks/plugins/shared_preferences_ios/ios"
+  sqflite:
+    :path: ".symlinks/plugins/sqflite/ios"
   sqlite3_flutter_libs:
     :path: ".symlinks/plugins/sqlite3_flutter_libs/ios"
   url_launcher_ios:
@@ -216,8 +226,8 @@ SPEC CHECKSUMS:
   file_saver: 503e386464dbe118f630e17b4c2e1190fa0cf808
   file_selector_ios: 6e9b6d7300556c730f224905726f0a2d5d874e51
   Firebase: f92fc551ead69c94168d36c2b26188263860acd9
-  firebase_core: 6f2f753e316765799d88568232ed59e300ff53db
-  firebase_crashlytics: 4aecad95b85802572a72804e4ca57385357e5255
+  firebase_core: bf59c32d2e53814f558efa20840c1902fa2fe461
+  firebase_crashlytics: a45cced3521640e1e389d8b3662936ea9afd6055
   FirebaseCore: 988754646ab3bd4bdcb740f1bfe26b9f6c0d5f2a
   FirebaseCoreInternal: 29b76f784d607df8b2a1259d73c3f04f1210137b
   FirebaseCrashlytics: f20d956f8229010b645e534693c39e0b7843c268
@@ -225,6 +235,7 @@ SPEC CHECKSUMS:
   Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
   flutter_downloader: b7301ae057deadd4b1650dc7c05375f10ff12c39
   flutter_secure_storage: 23fc622d89d073675f2eaa109381aefbcf5a49be
+  FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   GoogleDataTransport: 1c8145da7117bd68bbbed00cf304edb6a24de00f
   GoogleUtilities: bad72cb363809015b1f7f19beb1f1cd23c589f95
   image_picker_ios: b786a5dcf033a8336a657191401bfdf12017dabb
@@ -237,6 +248,7 @@ SPEC CHECKSUMS:
   SDWebImage: b9a731e1d6307f44ca703b3976d18c24ca561e84
   security_scoped_resource: ff26d31a9c6de0e45e5e8e0d7f43f3da0a1c6444
   shared_preferences_ios: 548a61f8053b9b8a49ac19c1ffbc8b92c50d68ad
+  sqflite: 6d358c025f5b867b29ed92fc697fd34924e11904
   sqlite3: 88dd99ef4ac3945f5a15facdd752933c52fd93bf
   sqlite3_flutter_libs: c00751e981228acb63595236703da79d31282b63
   SwiftyGif: 6c3eafd0ce693cad58bb63d2b2fb9bacb8552780
