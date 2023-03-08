@@ -63,7 +63,9 @@ class FolderCreateForm extends StatelessWidget {
         listener: (context, state) {
           if (state is FolderCreateInProgress) {
             showProgressDialog(
-                context, appLocalizationsOf(context).creatingFolderEmphasized);
+              context,
+              title: appLocalizationsOf(context).creatingFolderEmphasized,
+            );
           } else if (state is FolderCreateSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);

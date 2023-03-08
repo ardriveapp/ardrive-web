@@ -43,7 +43,9 @@ class DriveRenameForm extends StatelessWidget {
         listener: (context, state) {
           if (state is DriveRenameInProgress) {
             showProgressDialog(
-                context, appLocalizationsOf(context).renamingDriveEmphasized);
+              context,
+              title: appLocalizationsOf(context).renamingDriveEmphasized,
+            );
           } else if (state is DriveRenameSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);

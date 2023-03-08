@@ -43,7 +43,9 @@ class GhostFixerForm extends StatelessWidget {
           listener: (context, state) {
         if (state is GhostFixerRepairInProgress) {
           showProgressDialog(
-              context, appLocalizationsOf(context).recreatingFolderEmphasized);
+            context,
+            title: appLocalizationsOf(context).recreatingFolderEmphasized,
+          );
         } else if (state is GhostFixerSuccess) {
           Navigator.pop(context);
           Navigator.pop(context);

@@ -48,12 +48,12 @@ class CreateManifestForm extends StatelessWidget {
         if (state is CreateManifestUploadInProgress) {
           showProgressDialog(
             context,
-            appLocalizationsOf(context).uploadingManifestEmphasized,
+            title: appLocalizationsOf(context).uploadingManifestEmphasized,
           );
         } else if (state is CreateManifestPreparingManifest) {
           showProgressDialog(
             context,
-            appLocalizationsOf(context).preparingManifestEmphasized,
+            title: appLocalizationsOf(context).preparingManifestEmphasized,
           );
         } else if (state is CreateManifestSuccess ||
             state is CreateManifestPrivacyMismatch) {
