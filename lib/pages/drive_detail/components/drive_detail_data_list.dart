@@ -84,10 +84,10 @@ Widget _buildDataListContent(
     maxItemsPerPage: 100,
     pageItemsDivisorFactor: 25,
     columns: [
-      TableColumn('Name', 2),
-      TableColumn('Size', 1),
-      TableColumn('Last updated', 1),
-      TableColumn('Date created', 1),
+      TableColumn(appLocalizationsOf(context).name, 2),
+      TableColumn(appLocalizationsOf(context).size, 1),
+      TableColumn(appLocalizationsOf(context).lastUpdated, 1),
+      TableColumn(appLocalizationsOf(context).dateCreated, 1),
     ],
     leading: (file) => DriveExplorerItemTileLeading(
       item: file,
