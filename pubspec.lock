@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: dev
-      resolved-ref: "1c5627559107d5ae39e78b61eaf825f034af3984"
+      ref: PE-3145-issues-when-using-a-new-wallet-with-ar-connect
+      resolved-ref: ba6bfc7d54505b34421ab0908e26bb1c8b4ee324
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"

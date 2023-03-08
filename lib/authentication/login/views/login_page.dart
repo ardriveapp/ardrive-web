@@ -262,7 +262,37 @@ class PromptWalletView extends StatefulWidget {
 
 class _PromptWalletViewState extends State<PromptWalletView> {
   bool _isTermsChecked = false;
+  bool _isArConnectSelected = false;
   IOFile? _file;
+  late ArDriveDropAreaSingleInputController _dropAreaController;
+
+  @override
+  void initState() {
+    _dropAreaController = ArDriveDropAreaSingleInputController(
+      onFileAdded: (file) {
+        _file = file;
+        _isArConnectSelected = false;
+
+        if (!_isTermsChecked) {
+          showAnimatedDialog(context, content: _showAcceptTermsModal());
+          return;
+        }
+
+        context.read<LoginBloc>().add(AddWalletFile(file));
+      },
+      validateFile: (file) async {
+        final wallet =
+            await context.read<LoginBloc>().validateAndReturnWalletFile(file);
+
+        return wallet != null;
+      },
+      onDragEntered: () {},
+      onDragExited: () {},
+      onError: (Object e) {},
+    );
+
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -282,36 +312,13 @@ class _PromptWalletViewState extends State<PromptWalletView> {
             Column(
               children: [
                 ArDriveDropAreaSingleInput(
+                  controller: _dropAreaController,
                   keepButtonVisible: true,
                   width: double.maxFinite,
                   dragAndDropDescription:
                       appLocalizationsOf(context).dragAndDropDescription,
                   dragAndDropButtonTitle:
                       appLocalizationsOf(context).dragAndDropButtonTitle,
-                  onDragDone: (file) {
-                    _file = file;
-                    if (!_isTermsChecked) {
-                      showAnimatedDialog(context,
-                          content: _showAcceptTermsModal());
-                      return;
-                    }
-                    
-                    context.read<LoginBloc>().add(AddWalletFile(file));
-                  },
-                  buttonCallback: (file) {
-                    _file = file;
-
-                    if (!_isTermsChecked) {
-                      showAnimatedDialog(
-                        context,
-                        content: _showAcceptTermsModal(),
-                      );
-
-                      return;
-                    }
-
-                    context.read<LoginBloc>().add(AddWalletFile(file));
-                  },
                   errorDescription: appLocalizationsOf(context).invalidKeyFile,
                   validateFile: (file) async {
                     final wallet = await context
@@ -360,6 +367,12 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                                   context,
                                   content: _showAcceptTermsModal(),
                                 );
+
+                                _dropAreaController.reset();
+
+                                _file = null;
+                                _isArConnectSelected = true;
+
                                 return;
                               }
 
@@ -387,7 +400,12 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                             context
                                 .read<LoginBloc>()
                                 .add(AddWalletFile(_file!));
+                          } else if (_isArConnectSelected && value) {
+                            context
+                                .read<LoginBloc>()
+                                .add(const AddWalletFromArConnect());
                           }
+
                           setState(() => _isTermsChecked = value);
                         })),
                     Flexible(
