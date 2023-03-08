@@ -1,3 +1,4 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/components.dart';
@@ -88,9 +89,23 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                DriveDetailBreadcrumbRow(
-                                  path: state.folderInView.folder.path,
-                                  driveName: state.currentDrive.name,
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: DriveDetailBreadcrumbRow(
+                                        path: state.folderInView.folder.path,
+                                        driveName: state.currentDrive.name,
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      child: ArDriveIcons.closeIcon(),
+                                      onTap: () {
+                                        context
+                                            .read<ProfileCubit>()
+                                            .logoutProfile();
+                                      },
+                                    )
+                                  ],
                                 ),
                                 const SizedBox(
                                   height: 30,
@@ -173,9 +188,19 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       const DriveDetailActionRow()
                                     ],
                                   ),
-                                  DriveDetailBreadcrumbRow(
-                                    path: state.folderInView.folder.path,
-                                    driveName: state.currentDrive.name,
+                                  Row(
+                                    children: [
+                                      DriveDetailBreadcrumbRow(
+                                        path: state.folderInView.folder.path,
+                                        driveName: state.currentDrive.name,
+                                      ),
+                                      GestureDetector(
+                                        child: ArDriveIcons.closeIcon(),
+                                        onTap: () {
+                                          context.read<ArDriveAuth>().logout();
+                                        },
+                                      )
+                                    ],
                                   ),
                                   if (state
                                           .folderInView.subfolders.isNotEmpty ||
