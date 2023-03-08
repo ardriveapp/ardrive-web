@@ -1,65 +1,70 @@
 import 'dart:async';
 
-import 'package:ardrive/theme/theme.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
-import 'components.dart';
-
-Future<void> showProgressDialog(BuildContext context, String title) =>
-    showDialog(
-      context: context,
+Future<void> showProgressDialog(
+  BuildContext context, {
+  required String title,
+  List<ModalAction>? actions,
+}) =>
+    showAnimatedDialog(
+      context,
       barrierDismissible: false,
-      builder: (BuildContext context) => ProgressDialog(title: title),
+      content: ProgressDialog(
+        title: title,
+        actions: actions ?? const [],
+      ),
     );
 
 class ProgressDialog extends StatelessWidget {
+  const ProgressDialog({
+    super.key,
+    required this.title,
+    this.actions = const [],
+    this.progressDescription,
+    this.progressBar,
+    this.percentageDetails,
+  });
+
   final String title;
-  final Widget? percentageDetails;
+  final List<ModalAction> actions;
   final Widget? progressDescription;
   final Widget? progressBar;
-  final List<Widget> actions;
-
-  const ProgressDialog({
-    Key? key,
-    required this.title,
-    this.progressBar,
-    this.progressDescription,
-    this.percentageDetails,
-    this.actions = const [],
-  }) : super(key: key);
+  final Widget? percentageDetails;
 
   @override
-  Widget build(BuildContext context) => AppDialog(
-        dismissable: false,
-        title: title,
-        actions: actions,
-        content: SizedBox(
-          width: kSmallDialogWidth + 164,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: SizedBox(
-                    width: 74,
-                    height: 74,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 8,
-                    )),
+  Widget build(BuildContext context) {
+    return ArDriveStandardModal(
+      title: title,
+      content: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: SizedBox(
+                  width: 74,
+                  height: 74,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 8,
+                  )),
+            ),
+            if (progressDescription != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: progressDescription!,
               ),
-              if (progressDescription != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: progressDescription!,
-                ),
-              if (progressBar != null) progressBar!,
-              if (percentageDetails != null)
-                Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: percentageDetails!),
-            ],
-          ),
+            if (progressBar != null) progressBar!,
+            if (percentageDetails != null)
+              Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: percentageDetails!),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }
