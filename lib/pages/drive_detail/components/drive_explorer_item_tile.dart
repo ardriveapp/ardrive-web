@@ -1,4 +1,3 @@
-import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -13,12 +12,9 @@ class DriveExplorerItemTile extends TableRowWidget {
     required Function() onPressed,
   }) : super(
           [
-            GestureDetector(
-              onTap: onPressed,
-              child: Text(
-                name,
-                style: ArDriveTypography.body.buttonNormalBold(),
-              ),
+            Text(
+              name,
+              style: ArDriveTypography.body.buttonNormalBold(),
             ),
             Text(size, style: ArDriveTypography.body.xSmallRegular()),
             Text(lastUpdated, style: ArDriveTypography.body.captionRegular()),
@@ -50,11 +46,8 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
         children: [
           Align(
             alignment: Alignment.center,
-            child: ArDriveImage(
-              image: AssetImage(getAssetPath(item.contentType)),
-              width: 15,
-              height: 15,
-              fit: BoxFit.contain,
+            child: _getIconForContentType(
+              item.contentType,
             ),
           ),
           if (item.fileStatusFromTransactions != null)
@@ -98,28 +91,47 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
     );
   }
 
-  // TODO: Move this to a helper class
-  String getAssetPath(String contentType) {
+  ArDriveIcon _getIconForContentType(String contentType) {
+    const size = 15.0;
+
     if (contentType == 'folder') {
-      return Resources.images.fileTypes.folder;
-    }
-    if (contentType.startsWith('image/')) {
-      return Resources.images.fileTypes.image;
+      return ArDriveIcons.folderOutlined(
+        size: size,
+      );
+    } else if (contentType == 'application/zip' ||
+        contentType == 'application/x-rar-compressed') {
+      return ArDriveIcons.fileZip(
+        size: size,
+      );
+    } else if (contentType.startsWith('image/')) {
+      return ArDriveIcons.image(
+        size: size,
+      );
     } else if (contentType.startsWith('video/')) {
-      return Resources.images.fileTypes.video;
+      return ArDriveIcons.fileVideo(
+        size: size,
+      );
     } else if (contentType.startsWith('audio/')) {
-      return Resources.images.fileTypes.music;
-    } else if (contentType == 'application/msword' ||
+      return ArDriveIcons.fileMusic(
+        size: size,
+      );
+    } else if (contentType.startsWith('text/') ||
+        contentType == 'application/msword' ||
         contentType ==
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      return Resources.images.fileTypes.doc;
-    } else if (contentType.startsWith('text/') ||
-        contentType == 'application/json' ||
+      return ArDriveIcons.fileDoc(
+        size: size,
+      );
+    } else if (contentType == 'application/json' ||
         contentType == 'application/xml' ||
         contentType == 'application/xhtml+xml') {
-      return Resources.images.fileTypes.code;
+      return ArDriveIcons.fileCode(
+        size: size,
+      );
     } else {
-      return Resources.images.fileTypes.doc;
+      return ArDriveIcons.fileOutlined(
+        size: size,
+      );
     }
   }
 }

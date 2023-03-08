@@ -9,13 +9,7 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
       (folder) => ArDriveDataTableItem(
         onPressed: (selected) {
           final bloc = context.read<DriveDetailCubit>();
-          if (folder.id == state.maybeSelectedItem()?.id) {
-            bloc.openFolder(path: folder.path);
-          } else {
-            bloc.selectItem(
-              SelectedFolder(folder: folder),
-            );
-          }
+          bloc.openFolder(path: folder.path);
         },
         name: folder.name,
         lastUpdated: folder.lastUpdated,
@@ -30,24 +24,18 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
   items.addAll(
     state.folderInView.files.map(
       (file) => ArDriveDataTableItem(
-          name: file.name,
-          size: filesize(file.size),
-          fileStatusFromTransactions: fileStatusFromTransactions(
-            file.metadataTx,
-            file.dataTx,
-          ).toString(),
-          type: 'file',
-          contentType: file.dataContentType ?? 'octet-stream',
-          lastUpdated: file.lastUpdated,
-          dateCreated: file.dateCreated,
-          onPressed: (item) async {
-            final bloc = context.read<DriveDetailCubit>();
-            if (file.id == state.maybeSelectedItem()?.id) {
-              bloc.toggleSelectedItemDetails();
-            } else {
-              await bloc.selectItem(SelectedFile(file: file));
-            }
-          }),
+        name: file.name,
+        size: filesize(file.size),
+        fileStatusFromTransactions: fileStatusFromTransactions(
+          file.metadataTx,
+          file.dataTx,
+        ).toString(),
+        type: 'file',
+        contentType: file.dataContentType ?? 'octet-stream',
+        lastUpdated: file.lastUpdated,
+        dateCreated: file.dateCreated,
+        onPressed: (item) {},
+      ),
     ),
   );
 
@@ -92,6 +80,7 @@ Widget _buildDataListContent(
     leading: (file) => DriveExplorerItemTileLeading(
       item: file,
     ),
+    onRowTap: (item) => item.onPressed(item),
     sortRows: (list, columnIndex, ascDescSort) {
       // Separate folders and files
       List<ArDriveDataTableItem> folders = [];
