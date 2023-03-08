@@ -1,5 +1,6 @@
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/utils/file_type_helper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -98,33 +99,27 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
       return ArDriveIcons.folderOutlined(
         size: size,
       );
-    } else if (contentType == 'application/zip' ||
-        contentType == 'application/x-rar-compressed') {
+    } else if (FileTypeHelper.isZip(contentType)) {
       return ArDriveIcons.fileZip(
         size: size,
       );
-    } else if (contentType.startsWith('image/')) {
+    } else if (FileTypeHelper.isImage(contentType)) {
       return ArDriveIcons.image(
         size: size,
       );
-    } else if (contentType.startsWith('video/')) {
+    } else if (FileTypeHelper.isVideo(contentType)) {
       return ArDriveIcons.fileVideo(
         size: size,
       );
-    } else if (contentType.startsWith('audio/')) {
+    } else if (FileTypeHelper.isAudio(contentType)) {
       return ArDriveIcons.fileMusic(
         size: size,
       );
-    } else if (contentType.startsWith('text/') ||
-        contentType == 'application/msword' ||
-        contentType ==
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    } else if (FileTypeHelper.isDoc(contentType)) {
       return ArDriveIcons.fileDoc(
         size: size,
       );
-    } else if (contentType == 'application/json' ||
-        contentType == 'application/xml' ||
-        contentType == 'application/xhtml+xml') {
+    } else if (FileTypeHelper.isCode(contentType)) {
       return ArDriveIcons.fileCode(
         size: size,
       );
