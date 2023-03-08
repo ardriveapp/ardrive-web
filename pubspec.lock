@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3043-new-drive-explorer
-      resolved-ref: "67aafadaf5b7dbe3b50bf7dc1bbc5d71781a2cab"
+      ref: PE-3114-implement-file-folder-options-modal
+      resolved-ref: c45b2221bd0564b5589a332b0eace3474a0755fb
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
