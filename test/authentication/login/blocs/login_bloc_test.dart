@@ -505,7 +505,7 @@ void main() {
       act: (bloc) async {
         bloc.add(const AddWalletFromArConnect());
       },
-      expect: () => [LoginLoading(), const TypeMatcher<CreatingNewPassword>()],
+      expect: () => [LoginLoading(), const TypeMatcher<LoginOnBoarding>()],
     );
 
     blocTest(

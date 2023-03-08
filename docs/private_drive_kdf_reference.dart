@@ -1,5 +1,7 @@
 // @dart=2.9
 
+// ignore_for_file: avoid_print
+
 import 'dart:convert';
 import 'dart:typed_data';
 
