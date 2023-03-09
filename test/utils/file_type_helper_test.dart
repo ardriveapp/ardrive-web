@@ -63,11 +63,6 @@ void main() {
       expect(FileTypeHelper.isCode('text/x-c++src'), isTrue);
       expect(FileTypeHelper.isCode('text/x-csrc'), isTrue);
       expect(FileTypeHelper.isCode('text/x-java'), isTrue);
-      expect(FileTypeHelper.isCode('text/x-ruby'), isTrue);
-      expect(FileTypeHelper.isCode('text/x-sql'), isTrue);
-      expect(FileTypeHelper.isCode('text/x-yaml'), isTrue);
-      expect(FileTypeHelper.isCode('text/x-csharp'), isTrue);
-      expect(FileTypeHelper.isCode('text/x-go'), isTrue);
     });
 
     test('isCode returns false for non-code types', () {

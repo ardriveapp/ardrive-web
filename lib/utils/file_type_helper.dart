@@ -6,7 +6,8 @@ class FileTypeHelper {
   static const List<String> _docTypes = [
     'text/',
     'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/pdf',
   ];
 
   static const List<String> _codeTypes = [
