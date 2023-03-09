@@ -898,7 +898,6 @@ class ArweaveService {
         version: packageInfo.version,
       )
       ..addBundleTags()
-      ..addBarTags()
       ..setOwner(await wallet.getOwner());
     await item.sign(wallet);
 

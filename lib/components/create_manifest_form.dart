@@ -11,6 +11,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/usd_upload_cost_to_string.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -330,9 +331,8 @@ class CreateManifestForm extends StatelessWidget {
                               .cost(state.arUploadCost),
                         ),
                         TextSpan(
-                            text: state.usdUploadCost >= 0.01
-                                ? ' (~${state.usdUploadCost.toStringAsFixed(2)} USD)'
-                                : ' (< 0.01 USD)'),
+                          text: usdUploadCostToString(state.usdUploadCost),
+                        ),
                       ],
                       style: Theme.of(context).textTheme.bodyText1,
                     ),

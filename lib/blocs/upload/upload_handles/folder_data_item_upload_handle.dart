@@ -49,6 +49,7 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
     required this.wallet,
     required this.targetDriveId,
     this.driveKey,
+    this.hasError = false,
   });
 
   Future<void> prepareAndSignFolderDataItem() async {
@@ -98,4 +99,7 @@ class FolderDataItemUploadHandle implements UploadHandle, DataItemHandle {
     await prepareAndSignFolderDataItem();
     return [folderEntityTx];
   }
+
+  @override
+  bool hasError;
 }
