@@ -99,6 +99,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
       });
     } catch (err) {
       addError(err);
+      return;
     }
 
     emit(FolderCreateSuccess());
