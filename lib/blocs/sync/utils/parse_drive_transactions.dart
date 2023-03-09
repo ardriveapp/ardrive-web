@@ -13,6 +13,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
   required int currentBlockHeight,
   required int batchSize,
   required SnapshotDriveHistory snapshotDriveHistory,
+  required Map<FolderID, GhostFolder> ghostFolders,
 }) async* {
   final numberOfDriveEntitiesToParse = transactions.length;
   var numberOfDriveEntitiesParsed = 0;
@@ -142,6 +143,7 @@ Stream<double> _parseDriveTransactionsIntoDatabaseEntities({
           });
 
           await _generateFsEntryPaths(
+            ghostFolders: ghostFolders,
             driveDao: driveDao,
             driveId: drive.id,
             foldersByIdMap: updatedFoldersById,

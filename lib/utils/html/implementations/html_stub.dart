@@ -1,8 +1,14 @@
-bool isTabHidden() {
-  return false;
+import 'dart:async';
+
+bool isTabFocused() {
+  return true;
 }
 
-void whenTabIsUnhidden(Function onShow) {
+Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
+  return;
+}
+
+void onTabGetsFocused(Function onFocus) {
   return;
 }
 

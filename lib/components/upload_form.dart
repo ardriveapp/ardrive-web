@@ -1,7 +1,9 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
+import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/upload_file.dart';
+import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/components/file_picker_modal.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
@@ -11,6 +13,7 @@ import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
+import 'package:ardrive/utils/usd_upload_cost_to_string.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -58,9 +61,11 @@ Future<void> promptToUpload(
       context: context,
       builder: (_) => BlocProvider<UploadCubit>(
         create: (context) => UploadCubit(
+          uploadFileChecker: context.read<UploadFileChecker>(),
           uploadPlanUtils: UploadPlanUtils(
             crypto: ArDriveCrypto(),
             arweave: context.read<ArweaveService>(),
+            turboService: context.read<TurboService>(),
             driveDao: context.read<DriveDao>(),
           ),
           driveId: driveId,
@@ -68,6 +73,7 @@ Future<void> promptToUpload(
           files: selectedFiles,
           profileCubit: context.read<ProfileCubit>(),
           arweave: context.read<ArweaveService>(),
+          turbo: context.read<TurboService>(),
           pst: context.read<PstService>(),
           driveDao: context.read<DriveDao>(),
           uploadFolders: isFolderUpload,
@@ -89,7 +95,7 @@ class UploadForm extends StatelessWidget {
             Navigator.pop(context);
             await context.read<FeedbackSurveyCubit>().openRemindMe();
           } else if (state is UploadPreparationInitialized) {
-            context.read<UploadCubit>().checkFilesAboveLimit();
+            context.read<UploadCubit>().verifyFilesAboveWarningLimit();
           }
 
           if (state is UploadWalletMismatch) {
@@ -311,15 +317,23 @@ class UploadForm extends StatelessWidget {
                     Text.rich(
                       TextSpan(
                         children: [
-                          TextSpan(
-                            text: appLocalizationsOf(context)
-                                .cost(state.costEstimate.arUploadCost),
-                          ),
-                          if (state.costEstimate.usdUploadCost != null)
+                          if (state.isFreeThanksToTurbo) ...[
                             TextSpan(
-                                text: state.costEstimate.usdUploadCost! >= 0.01
-                                    ? ' (~${state.costEstimate.usdUploadCost!.toStringAsFixed(2)} USD)'
-                                    : ' (< 0.01 USD)'),
+                              text: appLocalizationsOf(context)
+                                  .freeTurboTransaction,
+                            ),
+                          ] else ...[
+                            TextSpan(
+                              text: appLocalizationsOf(context)
+                                  .cost(state.costEstimate.arUploadCost),
+                            ),
+                            if (state.costEstimate.usdUploadCost != null)
+                              TextSpan(
+                                text: usdUploadCostToString(
+                                  state.costEstimate.usdUploadCost!,
+                                ),
+                              ),
+                          ],
                         ],
                         style: Theme.of(context).textTheme.bodyText1,
                       ),
@@ -331,7 +345,8 @@ class UploadForm extends StatelessWidget {
                             numberOfFilesInBundles + numberOfV2Files),
                       ),
                     },
-                    if (!state.sufficientArBalance) ...{
+                    if (!state.sufficientArBalance &&
+                        !state.isFreeThanksToTurbo) ...{
                       const SizedBox(height: 8),
                       Text(
                         appLocalizationsOf(context).insufficientARForUpload,
@@ -349,12 +364,12 @@ class UploadForm extends StatelessWidget {
                   child: Text(appLocalizationsOf(context).cancelEmphasized),
                 ),
                 ElevatedButton(
-                  onPressed: state.sufficientArBalance
-                      ? () => context.read<UploadCubit>().startUpload(
-                            uploadPlan: state.uploadPlan,
-                            costEstimate: state.costEstimate,
-                          )
-                      : null,
+                  onPressed:
+                      state.sufficientArBalance || state.isFreeThanksToTurbo
+                          ? () => context
+                              .read<UploadCubit>()
+                              .startUpload(uploadPlan: state.uploadPlan)
+                          : null,
                   child: Text(appLocalizationsOf(context).uploadEmphasized),
                 ),
               ],
@@ -407,12 +422,14 @@ class UploadForm extends StatelessWidget {
                             title: Text(file.entity.name!),
                             subtitle: Text(
                                 '${filesize(file.uploadedSize)}/${filesize(file.size)}'),
-                            trailing: CircularProgressIndicator(
-                                // Show an indeterminate progress indicator if the upload hasn't started yet as
-                                // small uploads might never report a progress.
-                                value: file.uploadProgress != 0
-                                    ? file.uploadProgress
-                                    : null),
+                            trailing: file.hasError
+                                ? const Icon(Icons.error)
+                                : CircularProgressIndicator(
+                                    // Show an indeterminate progress indicator if the upload hasn't started yet as
+                                    // small uploads might never report a progress.
+                                    value: file.uploadProgress != 0
+                                        ? file.uploadProgress
+                                        : null),
                           ),
                         },
                         for (final bundle
@@ -428,12 +445,15 @@ class UploadForm extends StatelessWidget {
                             ),
                             subtitle: Text(
                                 '${filesize(bundle.uploadedSize)}/${filesize(bundle.size)}'),
-                            trailing: CircularProgressIndicator(
-                                // Show an indeterminate progress indicator if the upload hasn't started yet as
-                                // small uploads might never report a progress.
-                                value: bundle.uploadProgress != 0
-                                    ? bundle.uploadProgress
-                                    : null),
+                            trailing: bundle.hasError
+                                ? const Icon(Icons.error)
+                                : CircularProgressIndicator(
+                                    // Show an indeterminate progress indicator if the upload hasn't started yet as
+                                    // small uploads might never report a progress.
+                                    value: bundle.uploadProgress != 0
+                                        ? bundle.uploadProgress
+                                        : null,
+                                  ),
                           ),
                         },
                       ],
@@ -459,6 +479,38 @@ class UploadForm extends StatelessWidget {
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
                   child: Text(appLocalizationsOf(context).okEmphasized),
+                ),
+              ],
+            );
+          } else if (state is UploadShowingWarning) {
+            return AppDialog(
+              title: appLocalizationsOf(context).warningEmphasized,
+              content: SizedBox(
+                width: kMediumDialogWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appLocalizationsOf(context)
+                          .weDontRecommendUploadsAboveASafeLimit(
+                        filesize(publicFileSafeSizeLimit),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(appLocalizationsOf(context).cancelEmphasized),
+                ),
+                ElevatedButton(
+                  onPressed: () =>
+                      context.read<UploadCubit>().checkFilesAboveLimit(),
+                  child: Text(
+                    appLocalizationsOf(context).proceed,
+                  ),
                 ),
               ],
             );

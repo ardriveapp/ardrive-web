@@ -57,6 +57,7 @@ Future<void> createGhosts({
           driveDao: driveDao,
           driveId: entry.key,
           foldersByIdMap: entry.value,
+          ghostFolders: ghostFolders,
           filesByIdMap: {})),
     ],
   );
