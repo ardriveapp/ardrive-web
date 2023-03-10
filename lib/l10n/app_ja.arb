@@ -241,7 +241,9 @@
     "description": "Copy transaction ID of Root Folder tooltip"
   },
   "copyWalletAddress": "ウォレットアドレスのコピー",
-  "@copyWalletAddress": {},
+  "@copyWalletAddress": {
+    "description": "Tooltip on copy wallet address button"
+  },
   "cost": "料金：{arPrice} AR",
   "@cost": {
     "description": "The total cost estimation of the upload quoted in AR",
@@ -378,7 +380,9 @@
     "description": "Done, no more to do here. Emphasized with upper case"
   },
   "doneEmphasized": "完了",
-  "@doneEmphasized": {},
+  "@doneEmphasized": {
+    "description": "Done, no more to do here. Emphasized with upper case"
+  },
   "download": "ダウンロード",
   "@download": {
     "description": "Action of downloading a file"
@@ -1129,7 +1133,9 @@
     "description": "Status tooltip for transactions which are waiting to be minted"
   },
   "personalDrivesEmphasized": "個人用ドライブ",
-  "@personalDrivesEmphasized": {},
+  "@personalDrivesEmphasized": {
+    "description": "Sub-header for the personal drives list. Emphasized with upper case"
+  },
   "pleaseProvideSamePassword": "以前使用したのと同じパスワードを入力してください。",
   "@pleaseProvideSamePassword": {
     "description": "Asks for the wallet password"
@@ -1247,7 +1253,9 @@
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
   "sharedDrivesEmphasized": "共有ドライブ",
-  "@sharedDrivesEmphasized": {},
+  "@sharedDrivesEmphasized": {
+    "description": "Sub-header for the shared drives list. Emphasized with upper case"
+  },
   "sharedFileIsEncrypted": "このファイルは暗号化されています。",
   "@sharedFileIsEncrypted": {
     "description": "Description that says the file is encrypted on shared file page"

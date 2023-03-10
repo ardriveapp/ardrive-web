@@ -242,7 +242,7 @@
   },
   "copyWalletAddress": "Copy Wallet Address",
   "@copyWalletAddress": {
-     "description": "Tooltip on copy wallet address button"
+    "description": "Tooltip on copy wallet address button"
   },
   "cost": "Cost: {arPrice} AR",
   "@cost": {
@@ -1134,7 +1134,7 @@
   },
   "personalDrivesEmphasized": "PERSONAL DRIVES",
   "@personalDrivesEmphasized": {
-   "description": "Sub-header for the personal drives list. Emphasized with upper case"
+    "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
   "pleaseProvideSamePassword": "Please provide the same password as the one you used before.",
   "@pleaseProvideSamePassword": {
@@ -1262,7 +1262,7 @@
   },
   "sharedDrivesEmphasized": "SHARED DRIVES",
   "@sharedDrivesEmphasized": {
-   "description": "Sub-header for the shared drives list. Emphasized with upper case"
+    "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
   "sharedFileIsEncrypted": "This file is encrypted.",
   "@sharedFileIsEncrypted": {

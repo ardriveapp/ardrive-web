@@ -241,6 +241,82 @@
     "description": "Copy transaction ID of Root Folder tooltip"
   },
   "copyWalletAddress": "Copiar la dirección de la cartera",
+  "@copyWalletAddress": {
+    "description": "Tooltip on copy wallet address button"
+  },
+  "confirmEmphasized": "CONFIRMAR",
+  "@confirmEmphasized": {
+    "description": "Confirm the prompted question"
+  },
+  "confirmPassword": "Confirmar contraseña",
+  "@confirmPassword": {
+    "description": "Label for repeating the password again"
+  },
+  "conflictingFiles": "Archivos con conflictos:",
+  "@conflictingFiles": {
+    "description": "Files conflict with already existing items"
+  },
+  "conflictingManifestFound": "El manifiesto ya existe",
+  "@conflictingManifestFound": {
+    "description": "There is an on-chain entity with the same name"
+  },
+  "conflictingManifestFoundChooseNewName": "Ya hay un manifiesto con ese nombre aquí. ¿Quieres continuar y cargar este manifiesto como una nueva revisión?",
+  "@conflictingManifestFoundChooseNewName": {
+    "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
+  },
+  "conflictingNameFound": "Se encontró un conflicto de nombres",
+  "@conflictingNameFound": {
+    "description": "There is a non-manifest entity with the same name"
+  },
+  "conflictingNameFoundChooseNewName": "Una entidad con ese nombre ya existe en este lugar. Por favor, elige un nombre diferente.",
+  "@conflictingNameFoundChooseNewName": {
+    "description": "The given name is conflicting with some entity, the user must type a non-conflicting name"
+  },
+  "congestionWarning": "Actualmente Arweave está experimentando mucho trafico. Posiblemente tu carga no sea exitosa en este momento.",
+  "@congestionWarning": {
+    "description": "Congestion warning"
+  },
+  "continueEmphasized": "CONTINUAR",
+  "@continueEmphasized": {
+    "description": "To go ahead. Emphasized with upper case"
+  },
+  "copyBundleTxID": "Copiar la ID de la transacción del empaquetado",
+  "@copyBundleTxID": {
+    "description": "Copy transaction ID of the Bundle transaction"
+  },
+  "copyDataTxID": "Copiar la ID de la transacción de los datos",
+  "@copyDataTxID": {
+    "description": "Copy the transaction ID of the Data transaction"
+  },
+  "copyDriveID": "Copiar la ID de la unidad",
+  "@copyDriveID": {
+    "description": "Tooltip of the copy icon for the Drive ID"
+  },
+  "copyDriveTxID": "Copiar la ID de la transacción de la unidad",
+  "@copyDriveTxID": {
+    "description": "Copy transaction ID of Drive tooltip"
+  },
+  "copyFileID": "Copiar la ID del archivo",
+  "@copyFileID": {
+    "description": "Tooltip of the copy icon for the File ID"
+  },
+  "copyFolderID": "Copiar la ID de la carpeta",
+  "@copyFolderID": {
+    "description": "Tooltip of the copy icon for the Folder ID"
+  },
+  "copyLink": "Copiar el enlace",
+  "@copyLink": {
+    "description": "Copy the link for sharing an entity"
+  },
+  "copyMetadataTxID": "Copiar la ID de la transacción de la metadata",
+  "@copyMetadataTxID": {
+    "description": "Copy the transaction ID of the Metadata transaction"
+  },
+  "copyRootFolderTxID": "Copiar la ID de la transacción de la carpeta raíz",
+  "@copyRootFolderTxID": {
+    "description": "Copy transaction ID of Root Folder tooltip"
+  },
+  "copyWalletAddress": "Copiar la dirección de la cartera",
   "@copyWalletAddress": {},
   "cost": "Costo: {arPrice} AR",
   "@cost": {
@@ -373,12 +449,10 @@
       }
     }
   },
-  "doneEmphaseized": "HECHO",
-  "@doneEmphaseized": {
+  "doneEmphasized": "HECHO",
+  "@doneEmphasized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
-  "doneEmphasized": "HECHO",
-  "@doneEmphasized": {},
   "download": "Descargar",
   "@download": {
     "description": "Action of downloading a file"
@@ -1107,6 +1181,150 @@
   "onceUploadedCantBeRemoved": "Una vez cargada, tu información no se podrá borrar.",
   "@onceUploadedCantBeRemoved": {
     "description": "Uploaded items cannot be deleted"
+  },
+  "password": "Contraseña",
+  "@password": {
+    "description": "Label for the 'password' input"
+  },
+  "passwordCanNeverBeChanged": "No puedes modificiar ni recuperar tu contraseña. ¡Asegurate de mantenerla segura!",
+  "@passwordCanNeverBeChanged": {
+    "description": "Explains that the password cannot be changed as it is the one of the wallet"
+  },
+  "passwordMismatch": "Las contraseñas no coinciden.",
+  "@passwordMismatch": {
+    "description": "Error message for when the confirmation password doesn't match the actual pass"
+  },
+  "payPerFileEmphasized": "PAGA SOLO POR LO QUE SUBAS",
+  "@payPerFileEmphasized": {
+    "description": "Payment philosophy. Emphasized with upper case"
+  },
+  "pending": "Pendiente",
+  "@pending": {
+    "description": "Status tooltip for transactions which are waiting to be minted"
+  },
+  "personalDrivesEmphasized": "UNIDADES PERSONALES",
+  "@personalDrivesEmphasized": {
+    "description": "Sub-header for the personal drives list. Emphasized with upper case"
+  },
+  "pleaseProvideSamePassword": "Por favor ingresa la misma contraseña que utilizaste anteriormente.",
+  "@pleaseProvideSamePassword": {
+    "description": "Asks for the wallet password"
+  },
+  "pleaseRemainOnThisTab": "Cargando... Por favor, permanece en esta pestaña.",
+  "@pleaseRemainOnThisTab": {
+    "description": "Circular progress indicator"
+  },
+  "preparingManifestEmphasized": "PREPARANDO MANIFIESTO...",
+  "@preparingManifestEmphasized": {
+    "description": "The manifest is being prepared for the upload"
+  },
+  "preparingUpload": "Preparando la carga...",
+  "@preparingUpload": {
+    "description": "The upload is being processed"
+  },
+  "preview": "Vista previa",
+  "@preview": {
+    "description": "Action of previewing a file"
+  },
+  "previous": "Anterior",
+  "@previous": {
+    "description": "Action of going to the previous page"
+  },
+  "privacy": "Privacidad",
+  "@privacy": {
+    "description": "The privacy attribute of entities (e.g.: private drive, public folder)"
+  },
+  "private": "Privado",
+  "@private": {
+    "description": "A private entity"
+  },
+  "proceedCongestionEmphasized": "PROCEDER",
+  "@proceedCongestionEmphasized": {
+    "description": "Proceed being aware of the network congestion. Emphasized with upper case"
+  },
+  "profile": "Perfil",
+  "@profile": {
+    "description": "The user profile: user name, wallet address and wallet balance"
+  },
+  "public": "Público",
+  "@public": {
+    "description": "A public entity"
+  },
+  "recreateFolderEmphasized": "RECREAR CARPETA",
+  "@recreateFolderEmphasized": {
+    "description": "Recreate a folder that failed to be minted"
+  },
+  "recreatingFolderEmphasized": "RECREANDO CARPETA...",
+  "@recreatingFolderEmphasized": {
+    "description": "Folder is being recreated. Emphasized with upper case"
+  },
+  "rename": "Renombrar",
+  "@rename": {
+    "description": "The action of renaming; imperative form"
+  },
+  "renameDrive": "Renombrar unidad",
+  "@renameDrive": {
+    "description": "The action of renaming a drive"
+  },
+  "renameDriveEmphasized": "RENOMBRAR UNIDAD",
+  "@renameDriveEmphasized": {
+    "description": "The action of renaming a drive. Emphasized with upper case"
+  },
+  "renameEmphasized": "RENOMBRAR",
+  "@renameEmphasized": {
+    "description": "The action of renaming; imperative form. Emphasized with upper case"
+  },
+  "renameFileEmphasized": "RENOMBRAR ARCHIVO",
+  "@renameFileEmphasized": {
+    "description": "The action of renaming a file. Emphasized with upper case"
+  },
+  "renameFolderEmphasized": "RENOMBRAR CARPETA",
+  "@renameFolderEmphasized": {
+    "description": "The action of renaming a folder. Emphasized with upper case"
+  },
+  "renamingDriveEmphasized": "RENOMBRANDO UNIDAD...",
+  "@renamingDriveEmphasized": {
+    "description": "The drive is being renamed. Emphasized with upper case"
+  },
+  "renamingFileEmphasized": "RENOMBRANDO ARCHIVO...",
+  "@renamingFileEmphasized": {
+    "description": "File is being renamed. Emphasized with upper case"
+  },
+  "renamingFolderEmphasized": "RENOMBRANDO CARPETA...",
+  "@renamingFolderEmphasized": {
+    "description": "Folder is being renamed. Emphasized with upper case"
+  },
+  "replaceEmphasized": "REEMPLAZAR",
+  "@replaceEmphasized": {
+    "description": "Example: to REPLACE an entity"
+  },
+  "resync": "Resincronizar",
+  "@resync": {
+    "description": "Sync button Text"
+  },
+  "resyncTooltip": "Actualizar todas las unidades",
+  "@resyncTooltip": {
+    "description": "resync tooltip text"
+  },
+  "rootFolderTxID": "Tx ID de la carpeta raíz",
+  "@rootFolderTxID": {
+    "description": "The transaction ID of the Root Folder entity"
+  },
+  "rowsPerPage": "Filas por página",
+  "@rowsPerPage": {
+    "description": "How many rows per page to use"
+  },
+  "secondsFromForeverEmphasized": "A SEGUNDOS DE LA ETERNIDAD",
+  "@secondsFromForeverEmphasized": {
+    "description": "Shows how close you are from permanence. Emphasized with upper case"
+  },
+  "selectWalletEmphasized": "SELECCIONAR MONEDERO",
+  "@selectWalletEmphasized": {
+    "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
+  },
+  "sharedDrivesEmphasized": "UNIDADES COMPARTIDAS",
+  "@sharedDrivesEmphasized": {
+    "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
   "password": "Contraseña",
   "@password": {
