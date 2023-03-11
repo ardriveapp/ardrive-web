@@ -49,7 +49,6 @@ class DriveHistoryComposite implements SegmentedGQLData {
                   : _gqlDriveHistory;
             });
 
-    // appliies the union of height iteratively in order to compute _subRangeToSnapshotItemMapping
     for (Range range in allSubRanges) {
       SegmentedGQLData item = rangeToSnapshotItemMapping[range]!;
       _subRangeToSnapshotItemMapping.add(item);

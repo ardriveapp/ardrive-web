@@ -72,7 +72,9 @@ abstract class SnapshotItem implements SegmentedGQLData {
           fakeSource: fakeSource,
         );
       } catch (e) {
-        print('Ignoring snapshot transaction with wrong block range - $e');
+        print(
+          'Ignoring snapshot transaction with invalid block range - $e',
+        );
         continue;
       }
 
@@ -122,6 +124,11 @@ abstract class SnapshotItem implements SegmentedGQLData {
       fakeSource: fakeSource,
     );
     return snapshotItem;
+  }
+
+  @override
+  String toString() {
+    return 'SnapshotItem{blockStart: $blockStart, blockEnd: $blockEnd, driveId: $driveId, subRanges: $subRanges}';
   }
 }
 
