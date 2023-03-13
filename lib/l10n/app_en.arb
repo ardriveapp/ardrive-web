@@ -1388,7 +1388,7 @@
   "@uploadFailed": {
     "description": "Upload Failed dialog title"
   },
-  "yourUploadFailed": "Your upload failed. You have not been charged for the failed attempt.",
+  "yourUploadFailed": "Your upload failed.",
   "@yourUploadFailed": {
     "description": "Upload fail dialog description."
   },
@@ -1537,6 +1537,16 @@
   "createAndConfirmPassword": "Please create and confirm your password. You will use this password to log in.",
   "@createAndConfirmPassword": {
     "description": "Form title to create a password"
+  },
+  "weDontRecommendUploadsAboveASafeLimit": "We do not recommend uploading items over {size} in size.",
+  "@weDontRecommendUploadsAboveASafeLimit": {
+    "description": "Shows a message like We do not recommend uploading items over 5GB in size.",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "5 GiB"
+      }
+    }
   },
   "proceed": "Proceed",
   "@proceed": {
@@ -1719,5 +1729,13 @@
         "example": "Curious Cat"
       }
     }
+  },
+  "finishingThingsUp": "Finishing things up!",
+  "@finishingThingsUp": {
+    "description": "Finishing things up!"
+  },
+  "pleaseRemainOnThisTabSnapshots": "Your Web3 wallet is signing your transactions. Please stay on this page while we finish things up!",
+  "@pleaseRemainOnThisTabSnapshots": {
+    "description": "Please stay on this page while we finish things up!"
   }
 }

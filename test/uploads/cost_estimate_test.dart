@@ -134,6 +134,7 @@ void main() {
             crypto: ArDriveCrypto(),
             arweave: arweave,
             driveDao: driveDao,
+            turboService: DontUseTurbo(),
           );
 
           final uploadFiles = multipleFilesToUpload
@@ -191,6 +192,7 @@ void main() {
             crypto: ArDriveCrypto(),
             arweave: arweave,
             driveDao: driveDao,
+            turboService: DontUseTurbo(),
           );
 
           final uploadFiles = singleFileToUpload

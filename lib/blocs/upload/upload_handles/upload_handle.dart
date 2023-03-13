@@ -9,4 +9,6 @@ abstract class UploadHandle implements SizedItem {
   int get uploadedSize => (size * uploadProgress).round();
 
   double uploadProgress = 0;
+
+  bool hasError = false;
 }

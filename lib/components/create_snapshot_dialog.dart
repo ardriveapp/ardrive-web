@@ -8,16 +8,18 @@ import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/split_localizations.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../utils/usd_upload_cost_to_string.dart';
+
 Future<void> promptToCreateSnapshot(
   BuildContext context,
   Drive drive,
 ) async {
-  // ignore: use_build_context_synchronously
   return showAnimatedDialog(
     context,
     barrierDismissible: false,
@@ -27,6 +29,7 @@ Future<void> promptToCreateSnapshot(
         driveDao: context.read<DriveDao>(),
         profileCubit: context.read<ProfileCubit>(),
         pst: context.read<PstService>(),
+        tabVisibility: TabVisibilitySingleton(),
       ),
       child: CreateSnapshotDialog(
         drive: drive,
@@ -45,25 +48,26 @@ class CreateSnapshotDialog extends StatelessWidget {
     final createSnapshotCubit = context.read<CreateSnapshotCubit>();
 
     return BlocBuilder<CreateSnapshotCubit, CreateSnapshotState>(
-      builder: (context, snapshotCubitState) {
-        if (snapshotCubitState is CreateSnapshotInitial) {
+      builder: (context, state) {
+        if (state is CreateSnapshotInitial) {
           return _explanationDialog(context, drive);
-        } else if (snapshotCubitState is ComputingSnapshotData ||
-            snapshotCubitState is UploadingSnapshot) {
-          return _loadingDialog(context, snapshotCubitState);
-        } else if (snapshotCubitState is SnapshotUploadSuccess) {
+        } else if (state is ComputingSnapshotData ||
+            state is UploadingSnapshot ||
+            state is PreparingAndSigningTransaction) {
+          return _loadingDialog(context, state);
+        } else if (state is SnapshotUploadSuccess) {
           return _successDialog(context, drive.name);
-        } else if (snapshotCubitState is SnapshotUploadFailure ||
-            snapshotCubitState is ComputeSnapshotDataFailure) {
+        } else if (state is SnapshotUploadFailure ||
+            state is ComputeSnapshotDataFailure) {
           return _failureDialog(context, drive.id);
-        } else if (snapshotCubitState is CreateSnapshotInsufficientBalance) {
-          return _insufficientBalanceDialog(context, snapshotCubitState);
+        } else if (state is CreateSnapshotInsufficientBalance) {
+          return _insufficientBalanceDialog(context, state);
         } else {
           return _confirmDialog(
             context,
             drive,
             createSnapshotCubit,
-            snapshotCubitState,
+            state,
           );
         }
       },
@@ -134,10 +138,14 @@ Widget _explanationDialog(BuildContext context, Drive drive) {
 
 Widget _loadingDialog(
   BuildContext context,
-  CreateSnapshotState snapshotCubitState,
+  CreateSnapshotState state,
 ) {
+  bool isArConnectProfile = state is PreparingAndSigningTransaction
+      ? state.isArConnectProfile
+      : false;
+
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
-  final onDismiss = snapshotCubitState is ComputingSnapshotData
+  final onDismiss = state is ComputingSnapshotData
       ? () {
           Navigator.of(context).pop();
           createSnapshotCubit.cancelSnapshotCreation();
@@ -145,13 +153,11 @@ Widget _loadingDialog(
       : null;
 
   return ProgressDialog(
-    title: snapshotCubitState is ComputingSnapshotData
-        ? appLocalizationsOf(context).determiningSizeAndCostOfSnapshot
-        : appLocalizationsOf(context).uploadingSnapshot,
+    title: _loadingDialogTitle(context, state),
     progressDescription: Center(
-      child: snapshotCubitState is ComputingSnapshotData
-          ? Text(appLocalizationsOf(context).thisMayTakeAWhile)
-          : null,
+      child: Text(
+        _loadingDialogDescription(context, state, isArConnectProfile),
+      ),
     ),
     actions: [
       if (onDismiss != null)
@@ -161,6 +167,35 @@ Widget _loadingDialog(
         )
     ],
   );
+}
+
+String _loadingDialogTitle(BuildContext context, CreateSnapshotState state) {
+  if (state is ComputingSnapshotData) {
+    return appLocalizationsOf(context).determiningSizeAndCostOfSnapshot;
+  } else if (state is PreparingAndSigningTransaction) {
+    return appLocalizationsOf(context).finishingThingsUp;
+  } else {
+    return appLocalizationsOf(context).uploadingSnapshot;
+  }
+}
+
+String _loadingDialogDescription(
+  BuildContext context,
+  CreateSnapshotState state,
+  bool isArConnectProfile,
+) {
+  if (state is ComputingSnapshotData) {
+    return appLocalizationsOf(context).thisMayTakeAWhile;
+  } else if (state is PreparingAndSigningTransaction) {
+    if (isArConnectProfile) {
+      return appLocalizationsOf(context).pleaseRemainOnThisTabSnapshots;
+    } else {
+      return appLocalizationsOf(context).thisMayTakeAWhile;
+    }
+  } else {
+    // Description for uploading snapshot
+    return '';
+  }
 }
 
 Widget _successDialog(BuildContext context, String driveName) {
@@ -249,7 +284,7 @@ Widget _failureDialog(
 
 Widget _insufficientBalanceDialog(
   BuildContext context,
-  CreateSnapshotInsufficientBalance snapshotCubitState,
+  CreateSnapshotInsufficientBalance state,
 ) {
   return AppDialog(
     title: appLocalizationsOf(context).insufficientARForUpload,
@@ -266,8 +301,8 @@ Widget _insufficientBalanceDialog(
                   TextSpan(
                     text: appLocalizationsOf(context)
                         .insufficientBalanceForSnapshot(
-                      snapshotCubitState.walletBalance,
-                      snapshotCubitState.arCost,
+                      state.walletBalance,
+                      state.arCost,
                     ),
                   ),
                   style: Theme.of(context).textTheme.bodyText1,
@@ -293,7 +328,7 @@ Widget _confirmDialog(
   BuildContext context,
   Drive drive,
   CreateSnapshotCubit createSnapshotCubit,
-  CreateSnapshotState snapshotCubitState,
+  CreateSnapshotState state,
 ) {
   return AppDialog(
     title: appLocalizationsOf(context).createSnapshot,
@@ -301,7 +336,7 @@ Widget _confirmDialog(
         width: kMediumDialogWidth,
         child: Row(
           children: [
-            if (snapshotCubitState is ConfirmingSnapshotCreation) ...{
+            if (state is ConfirmingSnapshotCreation) ...{
               Flexible(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -338,14 +373,12 @@ Widget _confirmDialog(
                         children: [
                           TextSpan(
                             text: appLocalizationsOf(context).cost(
-                              snapshotCubitState.arUploadCost,
+                              state.arUploadCost,
                             ),
                           ),
-                          if (snapshotCubitState.usdUploadCost != null)
+                          if (state.usdUploadCost != null)
                             TextSpan(
-                              text: snapshotCubitState.usdUploadCost! >= 0.01
-                                  ? ' (~${snapshotCubitState.usdUploadCost!.toStringAsFixed(2)} USD)'
-                                  : ' (< 0.01 USD)',
+                              text: usdUploadCostToString(state.usdUploadCost!),
                             ),
                         ],
                         style: Theme.of(context).textTheme.bodyText1,
@@ -356,7 +389,7 @@ Widget _confirmDialog(
                         children: [
                           TextSpan(
                             text: appLocalizationsOf(context).snapshotSize(
-                              filesize(snapshotCubitState.snapshotSize),
+                              filesize(state.snapshotSize),
                             ),
                           ),
                         ],
@@ -372,7 +405,7 @@ Widget _confirmDialog(
           ],
         )),
     actions: <Widget>[
-      if (snapshotCubitState is ConfirmingSnapshotCreation) ...{
+      if (state is ConfirmingSnapshotCreation) ...{
         TextButton(
           child: Text(appLocalizationsOf(context).cancelEmphasized),
           onPressed: () {
