@@ -9,7 +9,7 @@ class Resources {
   static const infernoRulesLinkZh = 'https://cn.ardrive.io/inferno/';
 
   static const helpLink = 'https://ar-io.zendesk.com/hc/en-us';
-  static const getStartedLink = 'https://ardrive.io/start';
+  static const getStartedLink = 'https://arconnect.io';
 }
 
 class Images {
