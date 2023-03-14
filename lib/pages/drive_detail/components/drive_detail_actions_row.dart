@@ -71,8 +71,11 @@ class DriveDetailActionRow extends StatelessWidget {
                           IconButton(
                             icon: const Icon(Icons.edit_outlined),
                             onPressed: () {
-                              promptToRenameDrive(context,
-                                  driveId: state.currentDrive.id);
+                              promptToRenameDrive(
+                                context,
+                                driveId: state.currentDrive.id,
+                                driveName: state.currentDrive.name,
+                              );
                             },
                             tooltip: appLocalizationsOf(context).renameDrive,
                           ),

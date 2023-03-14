@@ -25,7 +25,7 @@ Future<void> promptToShareFile({
         ),
         child: const FileShareDialog(),
       ),
-    );
+    ).then((value) => context.read<FeedbackSurveyCubit>().openRemindMe());
 
 /// Depends on a provided [FileShareCubit] for business logic.
 class FileShareDialog extends StatefulWidget {
@@ -48,11 +48,6 @@ class FileShareDialogState extends State<FileShareDialog> {
         },
         builder: (context, state) => ArDriveStandardModal(
           width: kLargeDialogWidth,
-
-          // TODO: Re-enable this when we have a better way to handle the back button.
-          // onWillPopCallback: () {
-          //   context.read<FeedbackSurveyCubit>().openRemindMe();
-          // },
           title: appLocalizationsOf(context).shareFileWithOthers,
           description: state is FileShareLoadSuccess ? state.fileName : null,
           content: Column(
