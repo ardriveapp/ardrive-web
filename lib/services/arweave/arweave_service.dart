@@ -208,30 +208,28 @@ class ArweaveService {
     required SnapshotDriveHistory snapshotDriveHistory,
     required DriveID driveId,
   }) async {
-    final List<Uint8List> responses = await Future.wait(
-      entityTxs.map(
-        (entity) async {
-          final tags = entity.tags;
-          final isSnapshot = tags.any(
-            (tag) =>
-                tag.name == EntityTag.entityType &&
-                tag.value == EntityType.snapshot.toString(),
-          );
+    Future<Uint8List> entityData(
+        DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction
+            entityTx) async {
+      final tags = entityTx.tags;
+      final isSnapshot = tags.any(
+        (tag) =>
+            tag.name == EntityTag.entityType &&
+            tag.value == EntityType.snapshot.toString(),
+      );
 
-          // don't fetch data for snapshots
-          if (isSnapshot) {
-            print('skipping unnecessary request for snapshot data');
-            return Uint8List(0);
-          }
+      // don't fetch data for snapshots
+      if (isSnapshot) {
+        print('skipping unnecessary request for snapshot data');
+        return Uint8List(0);
+      }
 
-          return _getEntityData(
-            entityId: entity.id,
-            driveId: driveId,
-            isPrivate: driveKey != null,
-          );
-        },
-      ),
-    );
+      return _getEntityData(
+        entityId: entityTx.id,
+        driveId: driveId,
+        isPrivate: driveKey != null,
+      );
+    }
 
     final blockHistory = <BlockEntities>[];
 
@@ -251,7 +249,7 @@ class ArweaveService {
 
       try {
         final entityType = transaction.getTag(EntityTag.entityType);
-        final entityResponse = responses[i];
+        final entityResponse = await entityData(transaction);
         final rawEntityData = entityResponse;
 
         Entity? entity;
