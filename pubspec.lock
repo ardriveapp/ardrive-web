@@ -309,7 +309,7 @@ packages:
       name: cryptography
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.0"
+    version: "2.5.0"
   csslib:
     dependency: transitive
     description:
@@ -372,7 +372,7 @@ packages:
       name: dio
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.1"
+    version: "5.0.2"
   dio_smart_retry:
     dependency: transitive
     description:
@@ -441,7 +441,7 @@ packages:
     description:
       path: "."
       ref: master
-      resolved-ref: e6a2f5af04951deed4ed9caf138adeae82a0b8ba
+      resolved-ref: a4902ec620ba28c484bf84a0cea4669f3d3698fe
       url: "https://github.com/ar-io/flutter_file_picker"
     source: git
     version: "5.2.4"
@@ -839,7 +839,7 @@ packages:
       name: image_picker_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.6"
+    version: "0.8.6+1"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -1439,21 +1439,21 @@ packages:
       name: sqflite
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.5"
+    version: "2.2.6"
   sqflite_common:
     dependency: transitive
     description:
       name: sqflite_common
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.4.2+2"
+    version: "2.4.3"
   sqlite3:
     dependency: transitive
     description:
       name: sqlite3
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.9.2"
+    version: "1.9.3"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
@@ -1579,7 +1579,7 @@ packages:
       name: universal_html
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.9"
+    version: "2.2.1"
   universal_io:
     dependency: transitive
     description:
