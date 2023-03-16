@@ -58,7 +58,7 @@
       }
     }
   },
-  "arConnectRemainOnThisTab": "PRECAUCIÓN: Tu monedero WEB3 está firmando las transacciones. Por favor mantente en esta pestaña hasta completar el proceso.",
+  "arConnectRemainOnThisTab": "PRECAUCIÓN: Tu monedero WEB3 está firmando las transacciones. Por favor, mantente en esta pestaña hasta completar el proceso.",
   "@arConnectRemainOnThisTab": {
     "description": "Warning for the user to do not leave the tab"
   },
@@ -509,7 +509,7 @@
   "@enterFileKey": {
     "description": "File Key form field label"
   },
-  "entityAlreadyExists": "¡La entidad con el nombre: \"{entityName}\" ya existe en el destino! Por favor renombra el archivo o carpeta que estás moviendo e inténtalo nuevamente.",
+  "entityAlreadyExists": "¡La entidad con el nombre: \"{entityName}\" ya existe en el destino! Por favor, renombra el archivo o carpeta que estás moviendo e inténtalo nuevamente.",
   "@entityAlreadyExists": {
     "description": "Message warning the user that the given entity name already exists. Then requests that the user to choose a new name for the entity.",
     "placeholders": {
@@ -1132,7 +1132,7 @@
   "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
-  "pleaseProvideSamePassword": "Por favor ingresa la misma contraseña que utilizaste anteriormente.",
+  "pleaseProvideSamePassword": "Por favor, ingresa la misma contraseña que utilizaste anteriormente.",
   "@pleaseProvideSamePassword": {
     "description": "Asks for the wallet password"
   },
@@ -1358,7 +1358,7 @@
   "@syncingPleaseRemainOnThisTab": {
     "description": "Syncing drives"
   },
-  "syncingPleaseWait": "Sincronizando... Por favor espera.",
+  "syncingPleaseWait": "Sincronizando... Por favor, espera.",
   "@syncingPleaseWait": {
     "description": "Syncing drives"
   },
@@ -1404,7 +1404,7 @@
   "@tryLaterCongestionEmphasized": {
     "description": "Try to upload later. Emphasized with upper case"
   },
-  "tryOnAnotherDevice": "Por favor inténtalo en otro dispositivo y mantente actualizado sobre la próxima aplicación móvil suscribiéndote a nuestro boletín informativo.",
+  "tryOnAnotherDevice": "Por favor, inténtalo en otro dispositivo y mantente actualizado sobre la próxima aplicación móvil suscribiéndote a nuestro boletín informativo.",
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
   },
