@@ -181,7 +181,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       if (await _arDriveAuth.isExistingUser(wallet)) {
         emit(PromptPassword(walletFile: wallet));
       } else {
-        emit(CreatingNewPassword(walletFile: wallet));
+        emit(LoginOnBoarding(wallet));
       }
     } catch (e) {
       emit(LoginFailure(e));
