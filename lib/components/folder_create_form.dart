@@ -104,7 +104,7 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
                 }
               },
               validator: (value) {
-                final validation = validateFolderName(value, context);
+                final validation = validateFolderAndDriveName(value, context);
 
                 if (validation == null) {
                   setState(() => _isFolderNameValid = true);

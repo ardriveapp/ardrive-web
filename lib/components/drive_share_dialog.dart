@@ -3,19 +3,18 @@ import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import 'components.dart';
 
 Future<void> promptToShareDrive({
   required BuildContext context,
   required Drive drive,
 }) =>
-    showDialog(
-      context: context,
-      builder: (_) => BlocProvider(
+    showAnimatedDialog(
+      context,
+      content: BlocProvider(
         create: (_) => DriveShareCubit(
           drive: drive,
           driveDao: context.read<DriveDao>(),
@@ -23,6 +22,8 @@ Future<void> promptToShareDrive({
         ),
         child: const DriveShareDialog(),
       ),
+    ).then(
+      (value) => context.read<FeedbackSurveyCubit>().openRemindMe(),
     );
 
 /// Depends on a provided [DriveShareCubit] for business logic.
@@ -37,13 +38,17 @@ class DriveShareDialogState extends State<DriveShareDialog> {
   final shareLinkController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) =>
       BlocBuilder<DriveShareCubit, DriveShareState>(
-        builder: (context, state) => AppDialog(
-          onWillPopCallback: () {
-            context.read<FeedbackSurveyCubit>().openRemindMe();
-          },
+        builder: (context, state) => ArDriveStandardModal(
+          width: kLargeDialogWidth,
           title: appLocalizationsOf(context).shareDriveWithOthers,
+          description: state is DriveShareLoadSuccess ? state.drive.name : null,
           content: SizedBox(
             width: kLargeDialogWidth,
             child: Column(
@@ -53,37 +58,26 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                 if (state is DriveShareLoadInProgress)
                   const Center(child: CircularProgressIndicator())
                 else if (state is DriveShareLoadSuccess) ...{
-                  ListTile(
-                    title: Text(state.drive.name),
-                    contentPadding: EdgeInsets.zero,
-                  ),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
-                        child: TextField(
-                          controller: shareLinkController
-                            ..text = state.driveShareLink.toString(),
-                          readOnly: true,
+                        child: ArDriveTextField(
+                          initialValue: state.driveShareLink.toString(),
+                          isEnabled: false,
                         ),
                       ),
                       const SizedBox(width: 16),
-                      TextButton(
-                        style: TextButton.styleFrom(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16)),
-                        onPressed: () {
-                          // Select the entire link to give the user some feedback on their action.
-                          shareLinkController.selection = TextSelection(
-                            baseOffset: 0,
-                            extentOffset: shareLinkController.text.length,
-                          );
-
-                          Clipboard.setData(
-                              ClipboardData(text: shareLinkController.text));
-                        },
-                        child: Text(appLocalizationsOf(context).copyLink),
-                      ),
+                      ArDriveButton(
+                          style: ArDriveButtonStyle.tertiary,
+                          text: appLocalizationsOf(context).copyLink,
+                          onPressed: () {
+                            Clipboard.setData(
+                              ClipboardData(
+                                text: state.driveShareLink.toString(),
+                              ),
+                            );
+                          }),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -102,13 +96,13 @@ class DriveShareDialogState extends State<DriveShareDialog> {
           ),
           actions: [
             if (state is DriveShareLoadSuccess)
-              ElevatedButton(
-                onPressed: () {
+              ModalAction(
+                action: () {
                   Navigator.pop(context);
                   context.read<FeedbackSurveyCubit>().openRemindMe();
                 },
-                child: Text(appLocalizationsOf(context).doneEmphasized),
-              ),
+                title: appLocalizationsOf(context).doneEmphasized,
+              )
           ],
         ),
       );
