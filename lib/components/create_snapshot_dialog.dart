@@ -3,7 +3,6 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/user_interaction_wrapper.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/pst/pst.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -11,34 +10,32 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/split_localizations.dart';
-import 'package:ardrive/utils/usd_upload_cost_to_string.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../utils/usd_upload_cost_to_string.dart';
 
 Future<void> promptToCreateSnapshot(
   BuildContext context,
   Drive drive,
-) {
-  return showModalDialog(
-      context,
-      () => showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) {
-              return BlocProvider(
-                create: (_) => CreateSnapshotCubit(
-                  arweave: context.read<ArweaveService>(),
-                  driveDao: context.read<DriveDao>(),
-                  profileCubit: context.read<ProfileCubit>(),
-                  pst: context.read<PstService>(),
-                  tabVisibility: TabVisibilitySingleton(),
-                ),
-                child: CreateSnapshotDialog(
-                  drive: drive,
-                ),
-              );
-            },
-          ));
+) async {
+  return showAnimatedDialog(
+    context,
+    barrierDismissible: false,
+    content: BlocProvider(
+      create: (_) => CreateSnapshotCubit(
+        arweave: context.read<ArweaveService>(),
+        driveDao: context.read<DriveDao>(),
+        profileCubit: context.read<ProfileCubit>(),
+        pst: context.read<PstService>(),
+        tabVisibility: TabVisibilitySingleton(),
+      ),
+      child: CreateSnapshotDialog(
+        drive: drive,
+      ),
+    ),
+  );
 }
 
 class CreateSnapshotDialog extends StatelessWidget {
@@ -163,19 +160,11 @@ Widget _loadingDialog(
       ),
     ),
     actions: [
-      if (onDismiss != null) ...{
-        TextButton(
-          onPressed: onDismiss,
-          child: Text(
-            appLocalizationsOf(context).cancelEmphasized,
-          ),
-        ),
-      } else if (state is PreparingAndSigningTransaction &&
-          !isArConnectProfile) ...{
-        SizedBox(
-          height: Theme.of(context).buttonTheme.height,
-        ),
-      }
+      if (onDismiss != null)
+        ModalAction(
+          action: onDismiss,
+          title: appLocalizationsOf(context).cancelEmphasized,
+        )
     ],
   );
 }
