@@ -53,8 +53,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: ef2dbd44e32fe7ef990127ee7bb006795e98ce1e
-      resolved-ref: ef2dbd44e32fe7ef990127ee7bb006795e98ce1e
+      ref: c2b7f3dcbe531d6d7588bb1915ad25ef72972d6b
+      resolved-ref: c2b7f3dcbe531d6d7588bb1915ad25ef72972d6b
       url: "https://github.com/elliotsayes/ardrive_http.git"
     source: git
     version: "1.1.3"
@@ -416,10 +416,10 @@ packages:
     dependency: transitive
     description:
       name: fetch_api
-      sha256: "307d2ae2e966b39b06db34f6db5656ef60c5c105c3cb9efcc2216d5f518bd945"
+      sha256: "7896632eda5af40c4459d673ad601df21d4c3ae6a45997e300a92ca63ec9fe4c"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "1.0.1"
   fetch_client:
     dependency: transitive
     description:
@@ -947,10 +947,10 @@ packages:
     dependency: "direct main"
     description:
       name: js
-      sha256: f2c445dce49627136094980615a031419f7f3eb393237e4ecd97ac15dea343f3
+      sha256: "5528c2f391ededb7775ec1daa69e65a2d61276f7552de2b5f7b8d34ee9fd4ab7"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.7"
+    version: "0.6.5"
   json_annotation:
     dependency: "direct main"
     description:
