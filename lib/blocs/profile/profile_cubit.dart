@@ -4,6 +4,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:arweave/arweave.dart';
@@ -47,7 +48,7 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   Future<void> promptToAuthenticate() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
-    final arconnect = ArConnectService();
+    final arconnect = ArConnectService(tabVisibility: TabVisibilitySingleton());
     // Profile unavailable - route to new profile screen
     if (profile == null) {
       emit(ProfilePromptAdd());
@@ -66,13 +67,21 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     // ArConnect connected to expected wallet - route to login screen
-    if (await arconnect.checkPermissions() &&
+
+    late bool hasPermissions;
+    try {
+      hasPermissions = await arconnect.safelyCheckPermissions();
+    } catch (e) {
+      hasPermissions = await arconnect.safelyGetPermissionsWhenTabFocused();
+    }
+    if (hasPermissions &&
         profile.walletPublicKey == await arconnect.getPublicKey()) {
       emit(ProfilePromptLogIn());
       return;
     }
 
     // Unexpected ArConnect state - clean up and route to profile screen
+    print('[PROFILE CUBIT] unexpected ArConnect state - cleaning up');
     await _db.transaction(() async {
       for (final table in _db.allTables) {
         await _db.delete(table).go();
@@ -83,15 +92,19 @@ class ProfileCubit extends Cubit<ProfileState> {
 
   /// Returns true if detected wallet or permissions change
   Future<bool> checkIfWalletMismatch() async {
+    print('[CHECK IF WALLET MISMATCH] checking permissions');
+
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
-    final arconnect = ArConnectService();
+    final arconnect = ArConnectService(tabVisibility: TabVisibilitySingleton());
 
     if (profile == null) {
       return false;
     }
 
+    final TabVisibilitySingleton tabVisibility = TabVisibilitySingleton();
     if (profile.profileType == ProfileType.arConnect.index) {
-      if (!(await arconnect.checkPermissions())) {
+      final hasPermissions = await arconnect.safelyCheckPermissions();
+      if (!hasPermissions) {
         return true;
       }
       final currentPublicKey = await arconnect.getPublicKey();
@@ -120,7 +133,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     emit(ProfileLoggingIn());
 
     final profile = await _profileDao.loadDefaultProfile(password);
-    final arconnect = ArConnectService();
+    final arconnect = ArConnectService(tabVisibility: TabVisibilitySingleton());
 
     final walletAddress = await (profileType == ProfileType.arConnect
         ? arconnect.getWalletAddress()
@@ -165,7 +178,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   /// Works even when the user is not authenticated.
   Future<void> logoutProfile() async {
     final profile = await _profileDao.defaultProfile().getSingleOrNull();
-    final arconnect = ArConnectService();
+    final arconnect = ArConnectService(tabVisibility: TabVisibilitySingleton());
 
     if (profile != null && profile.profileType == ProfileType.arConnect.index) {
       try {

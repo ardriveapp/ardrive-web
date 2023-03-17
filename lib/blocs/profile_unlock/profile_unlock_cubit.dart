@@ -6,6 +6,7 @@ import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:equatable/equatable.dart';
@@ -53,7 +54,7 @@ class ProfileUnlockCubit extends Cubit<ProfileUnlockState> {
     }();
   }
 
-  final arconnect = ArConnectService();
+  final arconnect = ArConnectService(tabVisibility: TabVisibilitySingleton());
 
   // Validate the user's password by loading and decrypting a private drive.
   Future<void> verifyPasswordArconnect(String password) async {

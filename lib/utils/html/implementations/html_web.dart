@@ -6,18 +6,22 @@ bool isTabFocused() {
   return window.document.visibilityState == 'visible';
 }
 
-late StreamSubscription _onVisibilityChangeStream;
+StreamSubscription? _onVisibilityChangeStream;
 
-Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
+Future<void> onTabGetsFocusedFuture(FutureOr<dynamic> onFocus) async {
   final completer = Completer<void>();
-  _onVisibilityChangeStream = document.onVisibilityChange.listen((event) async {
-    if (isTabFocused()) {
-      await onFocus;
-      await closeVisibilityChangeStream();
-      completer.complete(); // resolve the completer when onFocus completes
-    }
-  });
+  final onVisibilityChangeStream = document.onVisibilityChange.listen(
+    (event) async {
+      if (isTabFocused()) {
+        print('Tab is focused');
+        await onFocus;
+        print('onFocus completed');
+        completer.complete(); // resolve the completer when onFocus completes
+      }
+    },
+  );
   await completer.future; // wait for the completer to be resolved
+  await onVisibilityChangeStream.cancel(); // cancel the stream
 }
 
 void onTabGetsFocused(Function onFocus) {
@@ -29,7 +33,7 @@ void onTabGetsFocused(Function onFocus) {
 }
 
 Future<void> closeVisibilityChangeStream() async =>
-    await _onVisibilityChangeStream.cancel();
+    await _onVisibilityChangeStream?.cancel();
 
 void onWalletSwitch(Function onWalletSwitch) {
   window.addEventListener('walletSwitch', (event) {

@@ -7,6 +7,7 @@ import 'package:ardrive/services/arconnect/arconnect_wallet.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_platform.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:arweave/arweave.dart';
@@ -37,7 +38,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
         _arweave = arweave,
         super(ProfileAddPromptWallet());
 
-  final arconnect = ArConnectService();
+  final arconnect = ArConnectService(tabVisibility: TabVisibilitySingleton());
 
   late FormGroup form;
   late Wallet _wallet;
@@ -88,7 +89,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
       emit(ProfileAddUserStateLoadInProgress());
       _profileType = ProfileType.arConnect;
 
-      if (!(await arconnect.checkPermissions())) {
+      if (!(await arconnect.safelyCheckPermissions())) {
         emit(ProfileAddFailure());
         return;
       }
@@ -151,7 +152,7 @@ class ProfileAddCubit extends Cubit<ProfileAddState> {
 
       if (_profileType == ProfileType.arConnect &&
           (_lastKnownWalletAddress != await arconnect.getWalletAddress() ||
-              !(await arconnect.checkPermissions()))) {
+              !(await arconnect.safelyCheckPermissions()))) {
         //Wallet was switched or deleted before login from another tab
 
         emit(ProfileAddFailure());

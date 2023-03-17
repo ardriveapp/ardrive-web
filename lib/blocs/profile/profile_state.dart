@@ -35,7 +35,7 @@ class ProfileLoggedIn extends ProfileAvailable {
 
   final SecretKey cipherKey;
   final bool useTurbo;
-  final arconnect = ArConnectService();
+  final arconnect = ArConnectService(tabVisibility: TabVisibilitySingleton());
 
   ProfileLoggedIn({
     required this.username,

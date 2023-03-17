@@ -1,10 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:ardrive/services/arconnect/arconnect.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:arweave/arweave.dart';
 
 class ArConnectWallet extends Wallet {
-  ArConnectService arConnectService = ArConnectService();
+  ArConnectService arConnectService = ArConnectService(
+    tabVisibility: TabVisibilitySingleton(),
+  );
 
   @override
   Future<String> getOwner() async {
