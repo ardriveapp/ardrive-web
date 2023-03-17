@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: PE-3196-when-we-hover-the-mouse-over-the-page-numbers-there-is-no-hover-effect
-      resolved-ref: cc6fe56bb812e77f370f4e0feb961f56780ca717
+      resolved-ref: "16163e51b081b68511404381dbca49f6fa836589"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
