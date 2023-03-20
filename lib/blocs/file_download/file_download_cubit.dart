@@ -10,6 +10,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/data_size.dart';
+import 'package:ardrive/utils/file_zipper.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:cryptography/cryptography.dart';

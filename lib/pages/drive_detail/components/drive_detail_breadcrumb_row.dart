@@ -73,7 +73,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       segments.addAll([
         TextButton(
             onPressed: () =>
-                context.read<DriveDetailCubit>().openFolder(path: rootPath),
+                context.read<DriveDetailCubit>().openFolder(path: entities.rootPath),
             child: Text(driveName, style: segmentStyle)),
       ]);
       if (_pathSegments.isNotEmpty) {
@@ -107,7 +107,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       0,
       ArDriveDropdownItem(
         onClick: () => context.read<DriveDetailCubit>().openFolder(
-              path: rootPath,
+              path: entities.rootPath,
             ),
         content: _buildDropdownItemContent(context, driveName),
       ),

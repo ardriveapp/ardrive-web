@@ -229,7 +229,7 @@ Widget _buildFileIcon(
       throw ArgumentError();
   }
 
-  if (dataContentType == ContentType.manifest) {
+  if (dataContentType == entities.ContentType.manifest) {
     icon = const Icon(Icons.account_tree_outlined);
   } else {
     final fileType = dataContentType?.split('/').first;
