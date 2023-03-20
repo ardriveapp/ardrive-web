@@ -71,7 +71,7 @@ class FileDataItemUploadHandle implements UploadHandle, DataItemHandle {
     final fileData = await file.ioFile.readAsBytes();
 
     dataTx = isPrivate
-        ? await createEncryptedDataItem(fileData, fileKey!, cipher: Cipher.aes256ctr)
+        ? await createEncryptedDataItem(fileData, fileKey!, cipher: Cipher.aes256gcm)
         : DataItem.withBlobData(data: fileData);
     dataTx.setOwner(await wallet.getOwner());
 

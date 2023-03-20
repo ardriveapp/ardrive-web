@@ -9,7 +9,8 @@ import 'package:cryptography/cryptography.dart' hide Cipher;
 StreamingCipher cipherBufferImpl(String? cipherName) {
   final impls = {
     Cipher.aes256gcm: AesGcm.with256bits(),
-    Cipher.aes256ctr: AesCtr.with256bits(macAlgorithm: MacAlgorithm.empty),
+    // Avoid this implementation because it generates a 16 byte nonce by default...
+    // Cipher.aes256ctr: AesCtr.with256bits(macAlgorithm: MacAlgorithm.empty),
   };
   final impl = impls[cipherName];
   if (impl == null) throw ArgumentError();

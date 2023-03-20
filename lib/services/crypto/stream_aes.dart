@@ -46,6 +46,14 @@ abstract class AesStream extends CipherStream {
     Future<Uint8List> Function(List<int>, List<int>, int) aesProcessBlock,
     Uint8List nonce,
   ) {
+    if (nonce.length != _aesNonceLengthBytes) {
+      throw ArgumentError.value(
+        nonce,
+        'nonce',
+        'Nonce must be $_aesNonceLengthBytes bytes long',
+      );
+    }
+    
     return StreamTransformer.fromBind(
       (inputStream) async* {
         final inputStreamChunked = inputStream
@@ -53,13 +61,22 @@ abstract class AesStream extends CipherStream {
         
         var offsetBlocks = BigInt.from(0);
         await for (final chunk in inputStreamChunked) {
+          print('offsetBlocks: $offsetBlocks');
+          print('chunk length: ${chunk.length}');
           final counterInitBytes = await counterBlock(nonce, offsetBlocks);
-          yield await aesProcessBlock(
-            chunk,
-            counterInitBytes,
-            _aesCounterLengthBytes * 8,
-          );
+          print('counterInitBytes: ${hex.encode(counterInitBytes)}');
+          try {
+            yield await aesProcessBlock(
+              chunk,
+              counterInitBytes,
+              _aesCounterLengthBytes * 8,
+            );
+          } catch (e) {
+            print('aesProcessBlock error: $e');
+            rethrow;
+          }
           offsetBlocks += BigInt.from(_webCryptoChuckSizeBlocks);
+          print('next offsetBlocks: $offsetBlocks');
         }
       }
     );
@@ -95,7 +112,7 @@ class AesCtrStream extends AesStream with EncryptStream, DecryptStream {
   }
 
   @override
-  counterBlock(Uint8List nonce, BigInt offset) {
+  Uint8List counterBlock(Uint8List nonce, BigInt offset) {
     final countValue = offset;
     final countValueHex = countValue
       .toRadixString(16)
@@ -140,7 +157,7 @@ class AesGcmStream extends AesStream with DecryptStream {
   // adding two!
   // More details: https://crypto.stackexchange.com/a/57905
   @override
-  counterBlock(Uint8List nonce, BigInt offset) {
+  Uint8List counterBlock(Uint8List nonce, BigInt offset) {
     final countValue = offset + BigInt.from(2);
     final countValueHex = countValue
       .toRadixString(16)
