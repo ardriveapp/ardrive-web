@@ -47,6 +47,7 @@ class _DownloadService implements DownloadService {
     final gateway = txSubdomainGateway(fileTxId);
     final response = await ArDriveHTTP().getAsByteStream(
       '${gateway.origin}/$fileTxId',
+      cancelWithReason: cancelWithReason,
     );
 
     if ( response.statusCode  == null 
