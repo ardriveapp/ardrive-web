@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
@@ -15,7 +16,7 @@ part 'fs_entry_move_state.dart';
 
 class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final String driveId;
-  final List<SelectedItem> selectedItems;
+  final List<MoveItem> selectedItems;
 
   final ArweaveService _arweave;
   final TurboService _turboService;
@@ -67,13 +68,21 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             parentFolder: folderInView,
             profile: profile,
           );
+          print('Conflicting items: $conflictingItems');
           if (conflictingItems.isEmpty) {
             emit(const FsEntryMoveLoadInProgress());
-            await moveEntities(
-              conflictingItems: conflictingItems,
-              profile: profile,
-              parentFolder: folderInView,
-            );
+            print('No conflicts, moving items');
+
+            try {
+              await moveEntities(
+                conflictingItems: conflictingItems,
+                profile: profile,
+                parentFolder: folderInView,
+              );
+            } catch (err) {
+              print('Error moving items: $err');
+            }
+            print('success');
             emit(const FsEntryMoveSuccess());
           } else {
             emit(
@@ -135,16 +144,16 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     );
   }
 
-  Future<List<SelectedItem>> checkForConflicts({
+  Future<List<MoveItem>> checkForConflicts({
     required final FolderEntry parentFolder,
     required ProfileLoggedIn profile,
   }) async {
-    final conflictingItems = <SelectedItem>[];
+    final conflictingItems = <MoveItem>[];
     try {
       for (var itemToMove in selectedItems) {
         final entityWithSameNameExists =
             await _driveDao.doesEntityWithNameExist(
-          name: itemToMove.item.name,
+          name: itemToMove.name,
           driveId: driveId,
           parentFolderId: parentFolder.id,
         );
@@ -161,21 +170,21 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
   Future<void> moveEntities({
     required FolderEntry parentFolder,
-    List<SelectedItem> conflictingItems = const [],
+    List<MoveItem> conflictingItems = const [],
     required ProfileLoggedIn profile,
   }) async {
     final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);
     final moveTxDataItems = <DataItem>[];
 
     final filesToMove = selectedItems
-        .whereType<SelectedFile>()
+        .whereType<MoveFile>()
         .where((file) => conflictingItems
             .where((conflictingFile) => conflictingFile.id == file.id)
             .isEmpty)
         .toList();
 
     final foldersToMove = selectedItems
-        .whereType<SelectedFolder>()
+        .whereType<MoveFolder>()
         .where((folder) => conflictingItems
             .where((conflictingFolder) => conflictingFolder.id == folder.id)
             .isEmpty)

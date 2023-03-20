@@ -1,6 +1,7 @@
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 
 part '../utils/arfs_factory.dart';
 

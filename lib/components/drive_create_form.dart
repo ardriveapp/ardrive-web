@@ -38,7 +38,9 @@ class DriveCreateForm extends StatelessWidget {
         listener: (context, state) {
           if (state is DriveCreateInProgress) {
             showProgressDialog(
-                context, appLocalizationsOf(context).creatingDriveEmphasized);
+              context,
+              title: appLocalizationsOf(context).creatingDriveEmphasized,
+            );
           } else if (state is DriveCreateSuccess) {
             Navigator.pop(context);
             Navigator.pop(context);

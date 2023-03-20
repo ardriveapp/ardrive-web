@@ -16,7 +16,7 @@ class FsEntryMoveLoadSuccess extends FsEntryMoveState {
   final FolderWithContents viewingFolder;
 
   /// The id of the folder/file entry being moved.
-  final List<SelectedItem> itemsToMove;
+  final List<MoveItem> itemsToMove;
 
   const FsEntryMoveLoadSuccess({
     required this.viewingRootFolder,
@@ -36,10 +36,10 @@ class FsEntryMoveSuccess extends FsEntryMoveState {
 }
 
 class FsEntryMoveNameConflict extends FsEntryMoveState {
-  final List<SelectedItem> conflictingItems;
+  final List<MoveItem> conflictingItems;
   final FolderEntry folderInView;
 
-  final List<SelectedItem> allItems;
+  final List<MoveItem> allItems;
 
   const FsEntryMoveNameConflict({
     required this.conflictingItems,

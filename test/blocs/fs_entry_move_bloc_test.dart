@@ -302,7 +302,8 @@ void main() {
         driveId: driveId,
         driveDao: driveDao,
         profileCubit: profileCubit,
-        selectedItems: selectedItems,
+        // TODO: revisit this when we have a better way to mock the selected items
+        selectedItems: [],
         platform: FakePlatform(operatingSystem: 'android'),
       ),
       act: (FsEntryMoveBloc bloc) async {
