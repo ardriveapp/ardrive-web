@@ -1,5 +1,6 @@
 // Fails to compile when testing on chrome
-@TestOn('vm')
+// @TestOn('vm')
+@Skip('Discrepancies between app and test environment with package:webcrypto')
 
 import 'dart:async';
 import 'dart:typed_data';
