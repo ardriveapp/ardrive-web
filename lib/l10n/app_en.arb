@@ -303,8 +303,12 @@
   "@lastUpdated": {
     "description": "The timestamp of the transaction"
   },
-  "addSomeFiles": "There's nothing to see here. Click \"new\" to add some files.",
+  "addSomeFiles": "You have no files in this drive yet, let's add some!",
   "@addSomeFiles": {
+    "description": "Upload your first file"
+  },
+  "uploadYourFirstFile": "Upload your first file",
+  "@uploadYourFirstFile": {
     "description": "Empty folder"
   },
   "noFiles": "There's nothing to see here.",
