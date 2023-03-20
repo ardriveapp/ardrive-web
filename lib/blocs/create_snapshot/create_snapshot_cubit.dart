@@ -209,7 +209,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
         skipSignature: true,
       );
     } catch (e) {
-      if (isArConnectProfile && !_tabVisibility.isTabFocused()) {
+      final isTabFocused = _tabVisibility.isTabFocused();
+      if (isArConnectProfile && !isTabFocused) {
         // ignore: avoid_print
         print(
           'Preparing snapshot transaction while user is not focusing the tab. Waiting...',
@@ -220,7 +221,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       } else {
         // ignore: avoid_print
         print(
-            'Error preparing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: ${_tabVisibility.isTabFocused()}');
+            'Error preparing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused');
         rethrow;
       }
     }
@@ -245,7 +246,8 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
       await _preparedTx.sign(wallet);
     } catch (e) {
-      if (isArConnectProfile && !_tabVisibility.isTabFocused()) {
+      final isTabFocused = _tabVisibility.isTabFocused();
+      if (isArConnectProfile && !isTabFocused) {
         // ignore: avoid_print
         print(
           'Signing snapshot transaction while user is not focusing the tab. Waiting...',
@@ -256,7 +258,7 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
       } else {
         // ignore: avoid_print
         print(
-            'Error signing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: ${_tabVisibility.isTabFocused()}');
+            'Error signing snapshot transaction - $e isArConnectProfile: $isArConnectProfile, isTabFocused: $isTabFocused');
         rethrow;
       }
     }
