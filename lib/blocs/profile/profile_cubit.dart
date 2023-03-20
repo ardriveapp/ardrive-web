@@ -121,6 +121,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   Future<bool> logoutIfWalletMismatch() async {
     final isMismatch = await checkIfWalletMismatch();
     if (isMismatch) {
+      print('[LOGOUT IF WALLET MISMATCH] mismatch detected, logging out');
       await logoutProfile();
     }
     return isMismatch;

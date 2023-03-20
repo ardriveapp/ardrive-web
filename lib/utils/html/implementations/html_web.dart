@@ -24,6 +24,50 @@ Future<void> onTabGetsFocusedFuture(FutureOr<dynamic> onFocus) async {
   await onVisibilityChangeStream.cancel(); // cancel the stream
 }
 
+StreamSubscription onTabBlurs(Function onBlur) {
+  print('Subscribing to tab blur event');
+  // window.addEventListener('blur', (event) {
+  //   print('Tab went blurred');
+  //   onBlur();
+  // });
+  final onVisibilityChangeStream = window.onBlur.listen(
+    (event) {
+      print('Tab went blurred');
+      onBlur();
+    },
+    onError: (err) {
+      print('Tab went blurred - ERROR $err');
+    },
+    onDone: () {
+      print('Tab went blurred - DONE');
+    },
+    cancelOnError: false,
+  );
+  return onVisibilityChangeStream;
+}
+
+StreamSubscription onTabFocuses(Function onFocus) {
+  print('Subscribing to tab focus event');
+  // window.addEventListener('focus', (event) {
+  //   print('Tab went focused');
+  //   onFocus();
+  // });
+  final onVisibilityChangeStream = window.onFocus.listen(
+    (event) {
+      print('Tab went focused');
+      onFocus();
+    },
+    onError: (err) {
+      print('Tab went focused - ERROR $err');
+    },
+    onDone: () {
+      print('Tab went focused - DONE');
+    },
+    cancelOnError: false,
+  );
+  return onVisibilityChangeStream;
+}
+
 void onTabGetsFocused(Function onFocus) {
   _onVisibilityChangeStream = document.onVisibilityChange.listen((event) {
     if (isTabFocused()) {

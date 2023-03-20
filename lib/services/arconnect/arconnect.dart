@@ -64,22 +64,26 @@ class ArConnectService {
 
       if (permissionsGranted) {
         print(
-          '[ArConnectService::safelyCheckPermissions] It took $triesLeft retries to get permissions - SUCCESS',
+          '[ArConnectService::safelyCheckPermissions] It took ${maxTries - triesLeft} retries to get permissions - SUCCESS',
         );
         return true;
+      } else {
+        print(
+          '[ArConnectService::safelyCheckPermissions] Retrying in ${cooldownDuration.inMilliseconds} ms ... ($triesLeft tries left)',
+        );
+        await Future.delayed(cooldownDuration);
       }
-
-      print(
-          '[ArConnectService::safelyCheckPermissions] Retrying in ${cooldownDuration.inMilliseconds} ms ... ($triesLeft tries left)');
-      await Future.delayed(cooldownDuration);
     }
 
     if (!tabVisibility.isTabFocused()) {
+      print(
+        '[ArConnectService::safelyCheckPermissions] Tab is not focused, throwing...',
+      );
       throw FocusError('Tab is not focused');
     }
 
     print(
-      '[ArConnectService::safelyCheckPermissions] Failed $maxTries times to get permissions',
+      '[ArConnectService::safelyCheckPermissions] Failed $maxTries times to get permissions while tab is focused',
     );
     return false;
   }

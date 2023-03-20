@@ -12,6 +12,16 @@ void onTabGetsFocused(Function onFocus) {
   return;
 }
 
+StreamSubscription<dynamic> onTabBlurs(Function onBlur) {
+  const stubStream = Stream<dynamic>.empty();
+  return stubStream.listen((_) => onBlur());
+}
+
+StreamSubscription<dynamic> onTabFocuses(Function onFocus) {
+  const stubStream = Stream<dynamic>.empty();
+  return stubStream.listen((_) => onFocus());
+}
+
 void onWalletSwitch(Function onSwitch) {
   return;
 }
