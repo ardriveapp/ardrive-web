@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
+import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
@@ -16,14 +17,13 @@ part 'fs_entry_move_state.dart';
 
 class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
   final String driveId;
-  final List<MoveItem> selectedItems;
+  final List<ArDriveDataTableItem> selectedItems;
 
   final ArweaveService _arweave;
   final TurboService _turboService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
   final SyncCubit _syncCubit;
-  final Platform _platform;
   final ArDriveCrypto _crypto;
 
   FsEntryMoveBloc({
@@ -41,7 +41,6 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         _syncCubit = syncCubit,
-        _platform = platform,
         _crypto = crypto,
         super(const FsEntryMoveLoadInProgress()) {
     if (selectedItems.isEmpty) {
@@ -144,11 +143,11 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     );
   }
 
-  Future<List<MoveItem>> checkForConflicts({
+  Future<List<ArDriveDataTableItem>> checkForConflicts({
     required final FolderEntry parentFolder,
     required ProfileLoggedIn profile,
   }) async {
-    final conflictingItems = <MoveItem>[];
+    final conflictingItems = <ArDriveDataTableItem>[];
     try {
       for (var itemToMove in selectedItems) {
         final entityWithSameNameExists =
@@ -170,7 +169,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
   Future<void> moveEntities({
     required FolderEntry parentFolder,
-    List<MoveItem> conflictingItems = const [],
+    List<ArDriveDataTableItem> conflictingItems = const [],
     required ProfileLoggedIn profile,
   }) async {
     final driveKey = await _driveDao.getDriveKey(driveId, profile.cipherKey);

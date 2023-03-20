@@ -115,7 +115,8 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
                         }
                       },
                       validator: (value) {
-                        final validation = validateFolderName(value, context);
+                        final validation =
+                            validateFolderAndDriveName(value, context);
 
                         if (validation == null) {
                           setState(() => _validForm = true);

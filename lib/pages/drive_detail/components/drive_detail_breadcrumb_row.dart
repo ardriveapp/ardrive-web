@@ -73,7 +73,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       segments.addAll([
         TextButton(
             onPressed: () =>
-                context.read<DriveDetailCubit>().openFolder(path: rootPath),
+                context.read<DriveDetailCubit>().openFolder(path: entities.rootPath),
             child: Text(driveName, style: segmentStyle)),
       ]);
       if (_pathSegments.isNotEmpty) {
@@ -84,12 +84,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
           [buildSegment(s.key), if (!isLastSegment(s.key)) buildSeparator()]));
     }
 
-    return ArDriveCard(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      // TODO: add design token
-      backgroundColor: const Color(0xff121212),
-      content: Row(children: segments),
-    );
+    return Row(children: segments);
   }
 
   Widget _navigateBackIcon({
@@ -112,7 +107,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       0,
       ArDriveDropdownItem(
         onClick: () => context.read<DriveDetailCubit>().openFolder(
-              path: rootPath,
+              path: entities.rootPath,
             ),
         content: _buildDropdownItemContent(context, driveName),
       ),

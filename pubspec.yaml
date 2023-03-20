@@ -96,6 +96,7 @@ dependencies:
   async: ^2.9.0
   animations: ^2.0.7
   connectivity_plus: ^3.0.3
+  archive: ^3.3.0
 
 dev_dependencies:
   flutter_test:

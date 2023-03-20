@@ -162,6 +162,25 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     );
   }
 
+  Future<void> downloadMultipleFiles(List<ARFSFileEntity> items) async {
+    final files = items.whereType<ARFSFileEntity>().toList();
+    final ioFiles = <IOFile>[];
+
+    for (final file in files) {
+      final dataBytes = await _downloadService.download(file.txId);
+
+      final ioFile = await IOFile.fromData(
+        dataBytes,
+        name: file.name,
+        lastModifiedDate: file.lastModifiedDate,
+      );
+
+      ioFiles.add(ioFile);
+    }
+
+    FileZipper(files: ioFiles).downloadZipFile();
+  }
+
   @visibleForTesting
   bool isSizeAbovePrivateLimit(int size) {
     debugPrint(_privateFileLimit.toString());

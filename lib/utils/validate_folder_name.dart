@@ -2,7 +2,7 @@ import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 
-String? validateFolderName(String? value, BuildContext context) {
+String? validateFolderAndDriveName(String? value, BuildContext context) {
   final nameRegex = RegExp(kFileNameRegex);
   final trimTrailingRegex = RegExp(kTrimTrailingRegex);
 

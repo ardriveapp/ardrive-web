@@ -198,7 +198,7 @@ class _DriveExplorerItemTileTrailingState
               context,
               driveId: item.driveId,
               selectedItems: [
-                parseMoveItem(item),
+                item,
               ],
             );
           },
@@ -266,7 +266,7 @@ class _DriveExplorerItemTileTrailingState
             context,
             driveId: item.driveId,
             selectedItems: [
-              parseMoveItem(item),
+              item,
             ],
           );
         },
