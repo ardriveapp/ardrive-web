@@ -6,8 +6,7 @@ import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive/services/pst/pst.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/types/winston.dart';
 import 'package:ardrive/utils/app_platform.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -133,6 +132,7 @@ void main() {
           uploadPlanUtis = UploadPlanUtils(
             arweave: arweave,
             driveDao: driveDao,
+            turboService: DontUseTurbo(),
           );
 
           final uploadFiles = multipleFilesToUpload
@@ -189,6 +189,7 @@ void main() {
           uploadPlanUtis = UploadPlanUtils(
             arweave: arweave,
             driveDao: driveDao,
+            turboService: DontUseTurbo(),
           );
 
           final uploadFiles = singleFileToUpload

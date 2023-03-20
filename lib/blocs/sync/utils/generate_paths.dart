@@ -6,8 +6,8 @@ Future<Map<FolderID, GhostFolder>> _generateFsEntryPaths({
   required String driveId,
   required Map<String, FolderEntriesCompanion> foldersByIdMap,
   required Map<String, FileEntriesCompanion> filesByIdMap,
+  required Map<FolderID, GhostFolder> ghostFolders,
 }) async {
-  Map<FolderID, GhostFolder> ghostFolders = {};
   final staleFolderTree = <FolderNode>[];
   for (final folder in foldersByIdMap.values) {
     // Get trees of the updated folders and files for path generation.

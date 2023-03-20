@@ -1,0 +1,1 @@
+const kRequiredTxConfirmationCount = 15;

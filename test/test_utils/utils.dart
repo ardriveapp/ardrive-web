@@ -226,3 +226,13 @@ Future<void> addTestFilesToDb(
 
 Future<Transaction> getTestTransaction(String path) async =>
     Transaction.fromJson(json.decode(await File(path).readAsString()));
+
+Future<DataItem> getTestDataItem(String path) async {
+  final wallet = getTestWallet();
+  final dataItem = DataItem.withJsonData(
+    owner: await wallet.getOwner(),
+    data: json.decode(await File(path).readAsString()),
+  );
+  await dataItem.sign(getTestWallet());
+  return dataItem;
+}

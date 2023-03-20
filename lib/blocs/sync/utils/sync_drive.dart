@@ -7,12 +7,13 @@ Stream<double> _syncDrive(
   String driveId, {
   required DriveDao driveDao,
   required ProfileState profileState,
-  required ArweaveService arweaveService,
+  required ArweaveService arweave,
   required Database database,
   required Function addError,
   required int currentBlockHeight,
   required int lastBlockHeight,
   required int transactionParseBatchSize,
+  required Map<FolderID, GhostFolder> ghostFolders,
 }) async* {
   /// Variables to count the current drive's progress information
   final drive = await driveDao.driveById(driveId: driveId).getSingle();
@@ -39,12 +40,13 @@ Stream<double> _syncDrive(
 
   final transactions = <DriveHistoryTransaction>[];
 
-  final snapshotsStream = arweaveService.getAllSnapshotsOfDrive(
+  final snapshotsStream = arweave.getAllSnapshotsOfDrive(
     driveId,
     lastBlockHeight,
   );
   final List<SnapshotItem> snapshotItems = await SnapshotItem.instantiateAll(
     snapshotsStream,
+    arweaveUrl: arweave.client.api.gatewayUrl.toString(),
   ).toList();
   final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
     items: snapshotItems,
@@ -162,8 +164,9 @@ Stream<double> _syncDrive(
   );
 
   yield* _parseDriveTransactionsIntoDatabaseEntities(
+    ghostFolders: ghostFolders,
     driveDao: driveDao,
-    arweaveService: arweaveService,
+    arweave: arweave,
     database: database,
     transactions: transactions,
     drive: drive,

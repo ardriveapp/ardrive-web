@@ -3,10 +3,10 @@ import 'dart:math';
 
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/blocs/sync/ghost_folder.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/string_types.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/snapshots/drive_history_composite.dart';
@@ -40,7 +40,6 @@ part 'utils/update_transaction_statuses.dart';
 typedef DriveHistoryTransaction
     = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
 
-const kRequiredTxConfirmationCount = 15;
 const kRequiredTxConfirmationPendingThreshold = 60 * 8;
 
 const kSyncTimerDuration = 5;
@@ -57,6 +56,7 @@ class SyncCubit extends Cubit<SyncState> {
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final Database _db;
+  final TabVisibilitySingleton _tabVisibility;
 
   StreamSubscription? _syncSub;
   StreamSubscription? _arconnectSyncSub;
@@ -72,11 +72,13 @@ class SyncCubit extends Cubit<SyncState> {
     required ArweaveService arweave,
     required DriveDao driveDao,
     required Database db,
+    required TabVisibilitySingleton tabVisibility,
   })  : _profileCubit = profileCubit,
         _activityCubit = activityCubit,
         _arweave = arweave,
         _driveDao = driveDao,
         _db = db,
+        _tabVisibility = tabVisibility,
         super(SyncIdle()) {
     // Sync the user's drives on start and periodically.
     logSync('Building Sync Cubit...');
@@ -104,7 +106,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void restartSyncOnFocus() {
-    whenBrowserTabIsUnhidden(_restartSync);
+    _tabVisibility.onTabGetsFocused(_restartSync);
   }
 
   void _restartSync() {
@@ -149,7 +151,8 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> arconnectSync() async {
-    if (!isBrowserTabHidden() && await _profileCubit.logoutIfWalletMismatch()) {
+    if (_tabVisibility.isTabFocused() &&
+        await _profileCubit.logoutIfWalletMismatch()) {
       emit(SyncWalletMismatch());
       return;
     }
@@ -157,7 +160,7 @@ class SyncCubit extends Cubit<SyncState> {
 
   void restartArConnectSyncOnFocus() async {
     if (await _profileCubit.isCurrentProfileArConnect()) {
-      whenBrowserTabIsUnhidden(() {
+      _tabVisibility.onTabGetsFocused(() {
         Future.delayed(const Duration(seconds: 2))
             .then((value) => createArConnectSyncStream());
       });
@@ -201,7 +204,7 @@ class SyncCubit extends Cubit<SyncState> {
 
         logSync('User is ar connect? $isArConnect');
 
-        if (isArConnect && isBrowserTabHidden()) {
+        if (isArConnect && !_tabVisibility.isTabFocused()) {
           logSync('Tab hidden, skipping sync...');
           emit(SyncIdle());
           return;
@@ -252,7 +255,8 @@ class SyncCubit extends Cubit<SyncState> {
         (drive) => _syncDrive(
           drive.id,
           driveDao: _driveDao,
-          arweaveService: _arweave,
+          arweave: _arweave,
+          ghostFolders: ghostFolders,
           database: _db,
           profileState: profile,
           addError: addError,
@@ -357,7 +361,9 @@ class SyncCubit extends Cubit<SyncState> {
     Map<String, FolderEntriesCompanion> foldersByIdMap,
     Map<String, FileEntriesCompanion> filesByIdMap,
   ) async {
+    print('Generating fs entry paths...');
     ghostFolders = await _generateFsEntryPaths(
+      ghostFolders: ghostFolders,
       driveDao: _driveDao,
       driveId: driveId,
       foldersByIdMap: foldersByIdMap,
@@ -384,7 +390,7 @@ class SyncCubit extends Cubit<SyncState> {
     logSync('Closing SyncCubit...');
     await _syncSub?.cancel();
     await _arconnectSyncSub?.cancel();
-    await closeVisibilityChangeStream();
+    await _tabVisibility.closeVisibilityChangeStream();
     await super.close();
   }
 }

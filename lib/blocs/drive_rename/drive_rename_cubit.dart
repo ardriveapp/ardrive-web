@@ -15,16 +15,19 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
   final String driveId;
 
   final ArweaveService _arweave;
+  final TurboService _turboService;
   final DriveDao _driveDao;
   final ProfileCubit _profileCubit;
 
   DriveRenameCubit({
     required this.driveId,
     required ArweaveService arweave,
+    required TurboService turboService,
     required DriveDao driveDao,
     required ProfileCubit profileCubit,
     required SyncCubit syncCubit,
   })  : _arweave = arweave,
+        _turboService = turboService,
         _driveDao = driveDao,
         _profileCubit = profileCubit,
         super(DriveRenameInitial()) {
@@ -71,20 +74,31 @@ class DriveRenameCubit extends Cubit<DriveRenameState> {
       await _driveDao.transaction(() async {
         var drive = await _driveDao.driveById(driveId: driveId).getSingle();
         drive = drive.copyWith(name: newName, lastUpdated: DateTime.now());
-
         final driveEntity = drive.asEntity();
 
-        final driveTx = await _arweave.prepareEntityTx(
-            driveEntity, profile.wallet, driveKey);
-
-        await _arweave.postTx(driveTx);
-        await _driveDao.writeToDrive(drive);
+        if (_turboService.useTurbo) {
+          final driveDataItem = await _arweave.prepareEntityDataItem(
+            driveEntity,
+            profile.wallet,
+            key: driveKey,
+          );
+          await _turboService.postDataItem(dataItem: driveDataItem);
+          driveEntity.txId = driveDataItem.id;
+        } else {
+          final driveTx = await _arweave.prepareEntityTx(
+            driveEntity,
+            profile.wallet,
+            driveKey,
+          );
+          await _arweave.postTx(driveTx);
+          driveEntity.txId = driveTx.id;
+        }
 
         driveEntity.ownerAddress = profile.walletAddress;
-        driveEntity.txId = driveTx.id;
-
+        await _driveDao.writeToDrive(drive);
         await _driveDao.insertDriveRevision(driveEntity.toRevisionCompanion(
-            performedAction: RevisionAction.rename));
+          performedAction: RevisionAction.rename,
+        ));
       });
 
       emit(DriveRenameSuccess());

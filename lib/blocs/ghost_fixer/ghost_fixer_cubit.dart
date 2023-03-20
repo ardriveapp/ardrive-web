@@ -19,6 +19,7 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
   final ProfileCubit _profileCubit;
 
   final ArweaveService _arweave;
+  final TurboService _turboService;
   final DriveDao _driveDao;
   final SyncCubit _syncCubit;
 
@@ -28,10 +29,12 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
     required this.ghostFolder,
     required ProfileCubit profileCubit,
     required ArweaveService arweave,
+    required TurboService turboService,
     required DriveDao driveDao,
     required SyncCubit syncCubit,
   })  : _profileCubit = profileCubit,
         _arweave = arweave,
+        _turboService = turboService,
         _driveDao = driveDao,
         _syncCubit = syncCubit,
         super(GhostFixerInitial()) {
@@ -135,19 +138,29 @@ class GhostFixerCubit extends Cubit<GhostFixerState> {
           path: '${parentFolder.path}/$folderName',
           isGhost: false,
         );
-
         final folderEntity = folder.asEntity();
+        if (_turboService.useTurbo) {
+          final folderDataItem = await _arweave.prepareEntityDataItem(
+            folderEntity,
+            profile.wallet,
+            key: driveKey,
+          );
 
-        final folderTx = await _arweave.prepareEntityTx(
-          folderEntity,
-          profile.wallet,
-          driveKey,
-        );
+          await _turboService.postDataItem(dataItem: folderDataItem);
+          folderEntity.txId = folderDataItem.id;
+        } else {
+          final folderTx = await _arweave.prepareEntityTx(
+            folderEntity,
+            profile.wallet,
+            driveKey,
+          );
 
-        await _arweave.postTx(folderTx);
+          await _arweave.postTx(folderTx);
+          folderEntity.txId = folderTx.id;
+        }
+
         await _driveDao.writeToFolder(folder);
 
-        folderEntity.txId = folderTx.id;
         await _driveDao.insertFolderRevision(folderEntity.toRevisionCompanion(
             performedAction: RevisionAction.create));
         final folderMap = {folder.id: folder.toCompanion(false)};

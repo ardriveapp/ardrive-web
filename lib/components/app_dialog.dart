@@ -40,11 +40,12 @@ class AppDialog extends StatelessWidget {
           titlePadding: EdgeInsets.zero,
           title: Container(
             decoration: const BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(dialogBorderRadius),
-                  topRight: Radius.circular(dialogBorderRadius),
-                ),
-                color: kDarkSurfaceColor),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(dialogBorderRadius),
+                topRight: Radius.circular(dialogBorderRadius),
+              ),
+              color: kDarkSurfaceColor,
+            ),
             height: 64,
             child: Padding(
               padding: dialogContentPadding,
@@ -52,12 +53,14 @@ class AppDialog extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      title,
-                      style: Theme.of(context)
-                          .textTheme
-                          .headline6!
-                          .copyWith(color: kOnDarkSurfaceHighEmphasis),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: Theme.of(context)
+                            .textTheme
+                            .headline6!
+                            .copyWith(color: kOnDarkSurfaceHighEmphasis),
+                      ),
                     ),
                   ],
                 ),

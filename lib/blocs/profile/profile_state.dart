@@ -34,6 +34,7 @@ class ProfileLoggedIn extends ProfileAvailable {
   final BigInt walletBalance;
 
   final SecretKey cipherKey;
+  final bool useTurbo;
   final arconnect = ArConnectService();
 
   ProfileLoggedIn({
@@ -43,6 +44,7 @@ class ProfileLoggedIn extends ProfileAvailable {
     required this.walletAddress,
     required this.walletBalance,
     required this.cipherKey,
+    required this.useTurbo,
   });
 
   ProfileLoggedIn copyWith({
@@ -52,6 +54,7 @@ class ProfileLoggedIn extends ProfileAvailable {
     String? walletAddress,
     BigInt? walletBalance,
     SecretKey? cipherKey,
+    bool? useTurbo,
   }) =>
       ProfileLoggedIn(
         username: username ?? this.username,
@@ -60,7 +63,15 @@ class ProfileLoggedIn extends ProfileAvailable {
         walletAddress: walletAddress ?? this.walletAddress,
         walletBalance: walletBalance ?? this.walletBalance,
         cipherKey: cipherKey ?? this.cipherKey,
+        useTurbo: useTurbo ?? this.useTurbo,
       );
+
+  bool hasMinimumBalanceForUpload({required BigInt minimumWalletBalance}) =>
+      walletBalance > minimumWalletBalance;
+
+  bool canUpload({required BigInt minimumWalletBalance}) =>
+      hasMinimumBalanceForUpload(minimumWalletBalance: minimumWalletBalance) ||
+      useTurbo;
 
   @override
   List<Object?> get props => [

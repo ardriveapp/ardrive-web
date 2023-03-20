@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/utils/snapshots/snapshot_types.dart';
 import 'package:ardrive/utils/snapshots/tx_snapshot_to_snapshot_data.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // stream of fake TxSnapshot items
@@ -28,7 +29,7 @@ Stream<TxSnapshot> fakeTxSnapshotStream(int amount) async* {
           'tags': [],
         },
       ),
-      jsonMetadata: '{"name": "name_$i"}',
+      jsonMetadata: Uint8List.fromList(utf8.encode('{"name": "name_$i"}')),
     );
   }
 }

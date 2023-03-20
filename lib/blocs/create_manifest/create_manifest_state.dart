@@ -115,6 +115,29 @@ class CreateManifestUploadConfirmation extends CreateManifestState {
       ];
 }
 
+/// Manifest transaction is prepared, prompt user to confirm price of the upload
+class CreateManifestTurboUploadConfirmation extends CreateManifestState {
+  final int manifestSize;
+  final String manifestName;
+  final List<DataItem> manifestDataItems;
+  final Future<void> Function() addManifestToDatabase;
+
+  CreateManifestTurboUploadConfirmation({
+    required this.manifestSize,
+    required this.manifestName,
+    required this.manifestDataItems,
+    required this.addManifestToDatabase,
+  });
+
+  @override
+  List<Object> get props => [
+        manifestSize,
+        manifestName,
+        manifestDataItems,
+        addManifestToDatabase,
+      ];
+}
+
 /// User has confirmed the upload and the manifest transaction upload has started
 class CreateManifestUploadInProgress extends CreateManifestState {}
 

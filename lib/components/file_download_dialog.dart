@@ -6,7 +6,6 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
 import 'package:ardrive/core/decrypt.dart';
 import 'package:ardrive/core/download_service.dart';
-import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/crypto/authenticate.dart';
 import 'package:ardrive/services/services.dart';
@@ -28,6 +27,7 @@ Future<void> promptToDownloadProfileFile({
       ARFSFactory().getARFSFileFromFileWithLatestRevisionTransactions(file);
 
   final profileState = context.read<ProfileCubit>().state;
+  final arweave = context.read<ArweaveService>();
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
   final cubit = StreamPersonalFileDownloadCubit(
@@ -61,6 +61,7 @@ Future<void> promptToDownloadFileRevision({
   final ARFSFileEntity arfsFile =
       ARFSFactory().getARFSFileFromFileRevisionWithTransactions(revision);
   final profileState = context.read<ProfileCubit>().state;
+  final arweave = context.read<ArweaveService>();
   final cipherKey =
       profileState is ProfileLoggedIn ? profileState.cipherKey : null;
   final cubit = StreamPersonalFileDownloadCubit(
@@ -93,10 +94,11 @@ Future<void> promptToDownloadSharedFile({
   SecretKey? fileKey,
   required FileRevision revision,
 }) {
+  final arweave = context.read<ArweaveService>();
   final cubit = StreamSharedFileDownloadCubit(
     revision: revision,
     fileKey: fileKey,
-    arweave: context.read<ArweaveService>(),
+    arweave: arweave,
     downloadService: DownloadService(arweave),
     decrypt: Decrypt(),
     ardriveIo: ArDriveIO(),

@@ -45,7 +45,10 @@ class AppDrawer extends StatelessWidget {
                         BlocBuilder<ProfileCubit, ProfileState>(
                             builder: (context, profileState) {
                           return _buildDriveActionsButton(
-                              context, state, profileState);
+                            context,
+                            state,
+                            profileState,
+                          );
                         }),
                         if (state is DrivesLoadSuccess)
                           Expanded(
@@ -216,14 +219,19 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildDriveActionsButton(BuildContext context, DrivesState drivesState,
-      ProfileState profileState) {
+  Widget _buildDriveActionsButton(
+    BuildContext context,
+    DrivesState drivesState,
+    ProfileState profileState,
+  ) {
     final theme = Theme.of(context);
     final minimumWalletBalance = BigInt.from(10000000);
 
     if (profileState.runtimeType == ProfileLoggedIn) {
       final profile = profileState as ProfileLoggedIn;
-      final hasMinBalance = profile.walletBalance >= minimumWalletBalance;
+      final notEnoughARInWallet = !profile.hasMinimumBalanceForUpload(
+        minimumWalletBalance: minimumWalletBalance,
+      );
       return Column(
         children: [
           ListTileTheme(
@@ -246,7 +254,7 @@ class AppDrawer extends StatelessWidget {
               ),
             ),
           ),
-          if (!hasMinBalance) ...{
+          if (notEnoughARInWallet) ...{
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(

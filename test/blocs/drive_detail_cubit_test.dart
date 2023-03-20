@@ -3,8 +3,8 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/helpers.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:drift/drift.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
 import '../test_utils/utils.dart';
@@ -36,6 +36,7 @@ void main() {
           cipherKey: SecretKey(keyBytes),
           walletAddress: await wallet.getAddress(),
           walletBalance: BigInt.one,
+          useTurbo: false,
         ),
       );
 

@@ -9,6 +9,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/html/html_util.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -228,6 +229,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     arweave: context.read<ArweaveService>(),
                     driveDao: context.read<DriveDao>(),
                     db: context.read<Database>(),
+                    tabVisibility: TabVisibilitySingleton(),
                   ),
                 ),
                 BlocProvider(

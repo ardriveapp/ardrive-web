@@ -30,54 +30,55 @@ class FeedbackSurveyModal extends StatelessWidget {
           insetPadding: padding,
           titlePadding: EdgeInsets.zero,
           title: Container(
-              color: kDarkSurfaceColor,
-              height: 72,
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        onPressed: () =>
-                            context.read<FeedbackSurveyCubit>().closeRemindMe(),
-                        icon: const Icon(Icons.close),
-                        color: kOnDarkSurfaceMediumEmphasis,
-                        iconSize: 16,
-                        visualDensity:
-                            const VisualDensity(horizontal: -4, vertical: -4),
-                      ),
-                    ],
-                  ),
-                  Padding(
-                    padding:
-                        const EdgeInsets.only(bottom: 12, right: 18, left: 18),
-                    child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          state is FeedbackSurveyDontRemindMe
-                              ? Text(
-                                  appLocalizationsOf(context).weWontRemindYou,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headline6!
-                                      .copyWith(
-                                          color: kOnDarkSurfaceHighEmphasis),
-                                )
-                              : Text(
-                                  appLocalizationsOf(context).feedbackTitle,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headline6!
-                                      .copyWith(
-                                          color: kOnDarkSurfaceHighEmphasis),
-                                ),
-                        ],
-                      ),
+            color: kDarkSurfaceColor,
+            height: 72,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      onPressed: () =>
+                          context.read<FeedbackSurveyCubit>().closeRemindMe(),
+                      icon: const Icon(Icons.close),
+                      color: kOnDarkSurfaceMediumEmphasis,
+                      iconSize: 16,
+                      visualDensity:
+                          const VisualDensity(horizontal: -4, vertical: -4),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(bottom: 12, right: 18, left: 18),
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        state is FeedbackSurveyDontRemindMe
+                            ? Text(
+                                appLocalizationsOf(context).weWontRemindYou,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headline6!
+                                    .copyWith(
+                                        color: kOnDarkSurfaceHighEmphasis),
+                              )
+                            : Text(
+                                appLocalizationsOf(context).feedbackTitle,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headline6!
+                                    .copyWith(
+                                        color: kOnDarkSurfaceHighEmphasis),
+                              ),
+                      ],
                     ),
                   ),
-                ],
-              )),
+                ),
+              ],
+            ),
+          ),
           content: SizedBox(
             width: kMediumDialogWidth,
             child: state is FeedbackSurveyDontRemindMe

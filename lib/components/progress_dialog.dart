@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/theme/theme.dart';
 import 'package:flutter/material.dart';
 
@@ -15,6 +17,7 @@ class ProgressDialog extends StatelessWidget {
   final Widget? percentageDetails;
   final Widget? progressDescription;
   final Widget? progressBar;
+  final List<Widget> actions;
 
   const ProgressDialog({
     Key? key,
@@ -22,12 +25,14 @@ class ProgressDialog extends StatelessWidget {
     this.progressBar,
     this.progressDescription,
     this.percentageDetails,
+    this.actions = const [],
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) => AppDialog(
         dismissable: false,
         title: title,
+        actions: actions,
         content: SizedBox(
           width: kSmallDialogWidth + 164,
           child: Column(

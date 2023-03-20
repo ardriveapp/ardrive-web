@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/models/models.dart';
 import 'package:ardrive/blocs/upload/upload_handles/handles.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -12,10 +13,12 @@ import 'package:uuid/uuid.dart';
 class UploadPlanUtils {
   UploadPlanUtils({
     required this.arweave,
+    required this.turboService,
     required this.driveDao,
   });
 
   final ArweaveService arweave;
+  final TurboService turboService;
   final DriveDao driveDao;
   final _uuid = const Uuid();
 
@@ -101,6 +104,7 @@ class UploadPlanUtils {
       fileV2UploadHandles: fileV2UploadHandles,
       fileDataItemUploadHandles: fileDataItemUploadHandles,
       folderDataItemUploadHandles: folderDataItemUploadHandles,
+      turboService: turboService,
     );
   }
 

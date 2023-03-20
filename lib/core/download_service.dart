@@ -51,7 +51,7 @@ class _DownloadService implements DownloadService {
 
     if ( response.statusCode  == null 
       || response.statusCode! <  200
-      || response.statusCode! <= 300) {
+      || response.statusCode! >= 300) {
       throw Exception('Stream download failed: ${response.statusCode} : ${response.statusMessage}');
     }
     

@@ -36,6 +36,7 @@ void main() {
             },
           ),
           subRanges: HeightRange(rangeSegments: [r]),
+          arweaveUrl: 'https://arweave.dev',
           fakeSource: await fakeSnapshotSource(r),
         );
         expect(item.subRanges.rangeSegments.length, 1);
@@ -76,6 +77,7 @@ void main() {
             () => SnapshotItem.instantiateSingle(
                   snapshotTxWithBadRange,
                   obscuredBy: HeightRange(rangeSegments: []),
+                  arweaveUrl: 'https://arweave.dev',
                 ),
             throwsA(isA<BadRange>()));
       });
@@ -111,6 +113,7 @@ void main() {
         SnapshotItem item = SnapshotItem.instantiateSingle(
           snapshotTx,
           obscuredBy: obscuredBy,
+          arweaveUrl: 'https://arweave.dev',
           fakeSource: snapshotItemSource,
         );
 
@@ -159,6 +162,7 @@ void main() {
           SnapshotItem item = SnapshotItem.instantiateSingle(
             snapshotTx,
             obscuredBy: obscuredBy,
+            arweaveUrl: 'https://arweave.dev',
             fakeSource: snapshotItemSource,
           );
 
@@ -205,6 +209,7 @@ void main() {
 
           List<SnapshotItem> allItems = await SnapshotItem.instantiateAll(
             Stream.fromIterable([snapshotTx, snapshotTx, snapshotTx]),
+            arweaveUrl: 'https://arweave.dev',
             fakeSource: snapshotItemSource,
           ).toList();
 
@@ -266,6 +271,7 @@ void main() {
           List<SnapshotItem> allItems = await SnapshotItem.instantiateAll(
             Stream.fromIterable([snapshotTx, snapshotTx]),
             lastBlockHeight: 100,
+            arweaveUrl: 'https://arweave.dev',
             fakeSource: snapshotItemSource,
           ).toList();
 
@@ -310,6 +316,7 @@ void main() {
             },
           ),
           subRanges: HeightRange(rangeSegments: [r]),
+          arweaveUrl: 'https://arweave.dev',
           fakeSource: await fakeSnapshotSource(r),
         ) as SnapshotItemOnChain;
 
@@ -326,9 +333,10 @@ void main() {
           );
           // further calls to the method results in a null response
           expect(
-              await SnapshotItemOnChain.getDataForTxId(
-                  'asdasdasdasd', '$height'),
-              null);
+            await SnapshotItemOnChain.getDataForTxId(
+                'asdasdasdasd', 'tx-$height'),
+            null,
+          );
         }
       });
 
@@ -355,6 +363,7 @@ void main() {
             },
           ),
           subRanges: HeightRange(rangeSegments: [r]),
+          arweaveUrl: 'https://arweave.dev',
           fakeSource: await fakeSnapshotSource(r),
         ) as SnapshotItemOnChain;
 
