@@ -69,172 +69,165 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             return const Center(child: CircularProgressIndicator());
           } else if (state is DriveDetailLoadSuccess) {
             return ScreenTypeLayout(
-              desktop:
-                  BlocListener<KeyboardListenerBloc, KeyboardListenerState>(
-                listener: (context, keyListenerState) {
-                  // Only allow multiselect on user drives and only if logged in
-                },
-                child: Stack(
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ArDriveCard(
-                                  backgroundColor: ArDriveTheme.of(context)
-                                      .themeData
-                                      .tableTheme
-                                      .backgroundColor,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
-                                  ),
-                                  content: Row(
-                                    children: [
-                                      DriveDetailBreadcrumbRow(
-                                        path: state.folderInView.folder.path,
-                                        driveName: state.currentDrive.name,
+              desktop: Stack(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ArDriveCard(
+                                backgroundColor: ArDriveTheme.of(context)
+                                    .themeData
+                                    .tableTheme
+                                    .backgroundColor,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                content: Row(
+                                  children: [
+                                    DriveDetailBreadcrumbRow(
+                                      path: state.folderInView.folder.path,
+                                      driveName: state.currentDrive.name,
+                                    ),
+                                    const Spacer(),
+                                    if (state.multiselect)
+                                      InkWell(
+                                        child: ArDriveIcons.move(),
+                                        onTap: () {
+                                          promptToMove(
+                                            context,
+                                            driveId: state.currentDrive.id,
+                                            selectedItems: context
+                                                .read<DriveDetailCubit>()
+                                                .selectedItems,
+                                          );
+                                        },
                                       ),
-                                      const Spacer(),
-                                      if (state.multiselect)
-                                        InkWell(
-                                          child: ArDriveIcons.move(),
-                                          onTap: () {
-                                            promptToMove(
+                                    const SizedBox(width: 8),
+                                    if (state.multiselect)
+                                      InkWell(
+                                        child: ArDriveIcons.download(),
+                                        onTap: () {
+                                          downloadMultipleFiles(context
+                                              .read<DriveDetailCubit>()
+                                              .selectedItems);
+                                        },
+                                      ),
+                                    const SizedBox(width: 8),
+                                    ArDriveDropdown(
+                                      width: 250,
+                                      anchor: const Aligned(
+                                        follower: Alignment.topRight,
+                                        target: Alignment.bottomRight,
+                                      ),
+                                      items: [
+                                        ArDriveDropdownItem(
+                                          onClick: () {
+                                            promptToRenameDrive(
                                               context,
                                               driveId: state.currentDrive.id,
-                                              selectedItems: context
-                                                  .read<DriveDetailCubit>()
-                                                  .selectedItems,
+                                              driveName:
+                                                  state.currentDrive.name,
                                             );
                                           },
+                                          content: _buildItem(
+                                            appLocalizationsOf(context)
+                                                .renameDrive,
+                                            ArDriveIcons.edit(),
+                                          ),
                                         ),
-                                      const SizedBox(width: 8),
-                                      if (state.multiselect)
-                                        InkWell(
-                                          child: ArDriveIcons.download(),
-                                          onTap: () {
-                                            downloadMultipleFiles(context
-                                                .read<DriveDetailCubit>()
-                                                .selectedItems);
+                                        ArDriveDropdownItem(
+                                          onClick: () {
+                                            promptToShareDrive(
+                                              context: context,
+                                              drive: state.currentDrive,
+                                            );
                                           },
+                                          content: _buildItem(
+                                            appLocalizationsOf(context)
+                                                .shareDrive,
+                                            ArDriveIcons.share(),
+                                          ),
                                         ),
-                                      const SizedBox(width: 8),
-                                      ArDriveDropdown(
-                                        width: 250,
-                                        anchor: const Aligned(
-                                          follower: Alignment.topRight,
-                                          target: Alignment.bottomRight,
-                                        ),
-                                        items: [
-                                          ArDriveDropdownItem(
-                                            onClick: () {
-                                              promptToRenameDrive(
-                                                context,
-                                                driveId: state.currentDrive.id,
-                                                driveName:
-                                                    state.currentDrive.name,
-                                              );
-                                            },
-                                            content: _buildItem(
-                                              appLocalizationsOf(context)
-                                                  .renameDrive,
-                                              ArDriveIcons.edit(),
-                                            ),
-                                          ),
-                                          ArDriveDropdownItem(
-                                            onClick: () {
-                                              promptToShareDrive(
-                                                context: context,
-                                                drive: state.currentDrive,
-                                              );
-                                            },
-                                            content: _buildItem(
-                                              appLocalizationsOf(context)
-                                                  .shareDrive,
-                                              ArDriveIcons.share(),
-                                            ),
-                                          ),
-                                          ArDriveDropdownItem(
-                                            onClick: () {
-                                              promptToExportCSVData(
-                                                context: context,
-                                                driveId: state.currentDrive.id,
-                                              );
-                                            },
-                                            content: _buildItem(
-                                              appLocalizationsOf(context)
-                                                  .exportDriveContents,
-                                              ArDriveIcons.download(),
-                                            ),
-                                          ),
-                                        ],
-                                        child: ArDriveIcons.options(),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      GestureDetector(
-                                        child: ArDriveIcons.closeIcon(),
-                                        onTap: () {
-                                          context.read<ArDriveAuth>().logout();
-                                        },
-                                      )
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(
-                                  height: 30,
-                                ),
-                                if (state.folderInView.subfolders.isNotEmpty ||
-                                    state.folderInView.files.isNotEmpty)
-                                  Expanded(
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Expanded(
-                                          child: _buildDataList(
-                                            context,
-                                            state,
+                                        ArDriveDropdownItem(
+                                          onClick: () {
+                                            promptToExportCSVData(
+                                              context: context,
+                                              driveId: state.currentDrive.id,
+                                            );
+                                          },
+                                          content: _buildItem(
+                                            appLocalizationsOf(context)
+                                                .exportDriveContents,
+                                            ArDriveIcons.download(),
                                           ),
                                         ),
                                       ],
+                                      child: ArDriveIcons.options(),
                                     ),
-                                  )
-                                else
-                                  DriveDetailFolderEmptyCard(
-                                    driveId: state.currentDrive.id,
-                                    parentFolderId:
-                                        state.folderInView.folder.id,
-                                    promptToAddFiles: state.hasWritePermissions,
+                                    const SizedBox(width: 8),
+                                    GestureDetector(
+                                      child: ArDriveIcons.closeIcon(),
+                                      onTap: () {
+                                        context.read<ArDriveAuth>().logout();
+                                      },
+                                    )
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(
+                                height: 30,
+                              ),
+                              if (state.folderInView.subfolders.isNotEmpty ||
+                                  state.folderInView.files.isNotEmpty)
+                                Expanded(
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: _buildDataList(
+                                          context,
+                                          state,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                              ],
-                            ),
+                                )
+                              else
+                                DriveDetailFolderEmptyCard(
+                                  driveId: state.currentDrive.id,
+                                  parentFolderId: state.folderInView.folder.id,
+                                  promptToAddFiles: state.hasWritePermissions,
+                                ),
+                            ],
                           ),
                         ),
-                        if (state.showSelectedItemDetails) ...{
-                          const VerticalDivider(width: 1),
-                          FsEntrySideSheet(
-                            driveId: state.currentDrive.id,
-                            drivePrivacy: state.currentDrive.privacy,
-                            maybeSelectedItem: state.selectedItems.isNotEmpty
-                                ? state.selectedItems.first
-                                : null,
-                          ),
-                        }
-                      ],
-                    ),
-                    if (kIsWeb)
-                      DriveFileDropZone(
-                        driveId: state.currentDrive.id,
-                        folderId: state.folderInView.folder.id,
                       ),
-                  ],
-                ),
+                      if (state.showSelectedItemDetails) ...{
+                        const VerticalDivider(width: 1),
+                        FsEntrySideSheet(
+                          driveId: state.currentDrive.id,
+                          drivePrivacy: state.currentDrive.privacy,
+                          maybeSelectedItem: state.selectedItems.isNotEmpty
+                              ? state.selectedItems.first
+                              : null,
+                        ),
+                      }
+                    ],
+                  ),
+                  if (kIsWeb)
+                    DriveFileDropZone(
+                      driveId: state.currentDrive.id,
+                      folderId: state.folderInView.folder.id,
+                    ),
+                ],
               ),
               mobile: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
