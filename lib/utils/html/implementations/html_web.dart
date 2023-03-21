@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ardrive/utils/html/implementations/html_stub.dart';
 import 'package:universal_html/html.dart';
 
 bool isTabVisible() {
@@ -12,10 +11,8 @@ late StreamSubscription _onVisibilityChangeStream;
 Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
   final completer = Completer<void>();
   final onVisibilityChangeStream = onTabFocused((event) async {
-    if (isTabFocused()) {
-      await onFocus;
-      completer.complete(); // resolve the completer when onFocus completes
-    }
+    await onFocus;
+    completer.complete(); // resolve the completer when onFocus completes
   });
   await completer.future; // wait for the completer to be resolved
   await onVisibilityChangeStream.cancel(); // cancel the stream subscription
@@ -57,9 +54,7 @@ StreamSubscription onTabFocused(Function onFocus) {
 
 void onTabGetsFocused(Function onFocus) {
   _onVisibilityChangeStream = onTabFocused((event) {
-    if (isTabFocused()) {
-      onFocus();
-    }
+    onFocus();
   });
 }
 
