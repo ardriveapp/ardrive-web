@@ -22,7 +22,7 @@ Future<void> promptToMove(
       create: (context) => FsEntryMoveBloc(
         crypto: ArDriveCrypto(),
         driveId: driveId,
-      selectedItems: selectedItems,
+        selectedItems: selectedItems,
         arweave: context.read<ArweaveService>(),
         turboService: context.read<TurboService>(),
         driveDao: context.read<DriveDao>(),

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:arweave/arweave.dart';
@@ -67,10 +66,8 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
             parentFolder: folderInView,
             profile: profile,
           );
-          print('Conflicting items: $conflictingItems');
           if (conflictingItems.isEmpty) {
             emit(const FsEntryMoveLoadInProgress());
-            print('No conflicts, moving items');
 
             try {
               await moveEntities(
@@ -176,14 +173,14 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
     final moveTxDataItems = <DataItem>[];
 
     final filesToMove = selectedItems
-        .whereType<MoveFile>()
+        .whereType<FileDataTableItem>()
         .where((file) => conflictingItems
             .where((conflictingFile) => conflictingFile.id == file.id)
             .isEmpty)
         .toList();
 
     final foldersToMove = selectedItems
-        .whereType<MoveFolder>()
+        .whereType<FolderDataTableItem>()
         .where((folder) => conflictingItems
             .where((conflictingFolder) => conflictingFolder.id == folder.id)
             .isEmpty)
