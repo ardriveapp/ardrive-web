@@ -22,6 +22,7 @@ promptToDownloadMultipleFiles(
 
   showAnimatedDialog(
     context,
+    barrierDismissible: false,
     content: BlocProvider(
       create: (context) =>
           MultipleDownloadBloc(downloadService: DownloadService(arweave))
