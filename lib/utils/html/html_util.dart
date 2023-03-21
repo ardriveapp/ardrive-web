@@ -7,30 +7,15 @@ class TabVisibilitySingleton {
   static final TabVisibilitySingleton _singleton =
       TabVisibilitySingleton._internal();
 
-  /// TODO: Cancel these subscriptions
-  late StreamSubscription _onBlurSubscription;
-  late StreamSubscription _onFocusSubscription;
-
-  bool _isFocused = true;
-
   factory TabVisibilitySingleton() {
     return _singleton;
   }
 
-  TabVisibilitySingleton._internal() {
-    _onBlurSubscription = implementation.onTabFocused(() {
-      print('[TabVisibilitySingleton] Tab focused');
-      _isFocused = true;
-    });
-    _onFocusSubscription = implementation.onTabBlurred(() {
-      print('[TabVisibilitySingleton] Tab blurred');
-      _isFocused = false;
-    });
-  }
+  TabVisibilitySingleton._internal();
 
   bool isTabVisible() => implementation.isTabVisible();
 
-  bool isTabFocused() => _isFocused;
+  bool isTabFocused() => implementation.isTabFocused();
 
   Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async =>
       implementation.onTabGetsFocusedFuture(onFocus);

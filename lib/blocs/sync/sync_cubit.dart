@@ -151,10 +151,15 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> arconnectSync() async {
-    if (_tabVisibility.isTabFocused() &&
-        await _profileCubit.logoutIfWalletMismatch()) {
-      emit(SyncWalletMismatch());
-      return;
+    final isTabFocused = _tabVisibility.isTabFocused();
+    if (isTabFocused) {
+      if (await _profileCubit.logoutIfWalletMismatch()) {
+        print('[ARCONNECT SYNC] Wallet mismatch, logging out...');
+        emit(SyncWalletMismatch());
+        return;
+      }
+    } else {
+      print('[ARCONNECT SYNC] Tab is not focused, ignoring...');
     }
   }
 
