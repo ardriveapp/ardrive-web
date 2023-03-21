@@ -383,7 +383,7 @@ packages:
     description:
       path: "."
       ref: master
-      resolved-ref: e6a2f5af04951deed4ed9caf138adeae82a0b8ba
+      resolved-ref: a4902ec620ba28c484bf84a0cea4669f3d3698fe
       url: "https://github.com/ar-io/flutter_file_picker"
     source: git
     version: "5.2.4"
