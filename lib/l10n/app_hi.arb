@@ -16,7 +16,7 @@
   "@addSomeFiles": {
     "description": "Empty folder"
   },
-  "aggreeToTerms_body": "मैं ArDrive की सेवा की शर्तों और गोपनीयता नीति से सहमत हूं।",
+  "aggreeToTerms_body": "मैं ArDrive की सेवा की शर्तें और गोपनीयता नीति से सहमत हूं।",
   "@aggreeToTerms_body": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
@@ -1564,11 +1564,11 @@
       }
     }
   },
-  "welcomeTo_body": "आपके निजी और सुरक्षित, डिसेंट्रलाइज़्ड, इस्तेमाल के अनुसार भुगतान, सेंसरशिप प्रतिरोधी और स्थायी हार्ड ड्राइव में आपका स्वागत है",
+  "welcomeTo_body": "आपका स्वागत है आपके निजी और सुरक्षित, डिसेंट्रलाइज़्ड, इस्तेमाल के अनुसार भुगतान, सेंसरशिप प्रतिरोधी और स्थायी हार्ड ड्राइव में",
   "@welcomeTo_body": {
     "description": "Welcoming message just after the ArDrive logo"
   },
-  "welcomeTo_description": "आपका निजी और सुरक्षित, डिसेंट्रलाइज़्ड, इस्तेमाल के अनुसार भुगतान, सेंसरशिप-प्रतिरोधी और स्थायी हार्ड ड्राइव",
+  "welcomeTo_description": "आपके निजी और सुरक्षित, डिसेंट्रलाइज़्ड, इस्तेमाल के अनुसार भुगतान, सेंसरशिप प्रतिरोधी और स्थायी हार्ड ड्राइव में",
   "@welcomeTo_description": {
     "description": "Brief description of ArDrive as welcoming"
   },
