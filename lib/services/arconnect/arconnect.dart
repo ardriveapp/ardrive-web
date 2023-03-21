@@ -38,32 +38,37 @@ class ArConnectService {
   }
 
   Future<bool> safelyCheckPermissions({
-    int maxTries = 5,
+    int maxRetries = 5,
     Duration cooldownDuration = const Duration(milliseconds: 100),
     Future<bool> Function() checkPermissions = implementation.checkPermissions,
   }) async {
-    bool permissionsGranted = await checkPermissions();
-
-    if (permissionsGranted) {
-      return true;
-    }
-
     // FIXME: inject this value for testing purposes
     final TabVisibilitySingleton tabVisibility = TabVisibilitySingleton();
 
-    int triesLeft = maxTries;
-    while (triesLeft-- > 0 && tabVisibility.isTabFocused()) {
-      permissionsGranted = await checkPermissions();
+    int triesLeft = maxRetries;
+    while (triesLeft-- >= 0 && tabVisibility.isTabFocused()) {
+      final permissionsGranted = await checkPermissions();
 
       if (permissionsGranted) {
+        print(
+          '[ArConnectService::safelyCheckPermissions] Permissions granted on try ${maxRetries - triesLeft}',
+        );
         return true;
       } else {
+        print(
+          '[ArConnectService::safelyCheckPermissions] Permissions not granted on try ${maxRetries - triesLeft}',
+        );
         await Future.delayed(cooldownDuration);
       }
     }
 
     if (!tabVisibility.isTabFocused()) {
+      print('[ArConnectService::safelyCheckPermissions] Tab is not focused');
       throw FocusError('Tab is not focused');
+    } else {
+      print(
+        '[ArConnectService::safelyCheckPermissions] Max retries reached without permissions',
+      );
     }
 
     return false;
