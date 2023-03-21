@@ -38,8 +38,8 @@ class ArConnectService {
   }
 
   Future<bool> safelyCheckPermissions({
-    int maxTries = 10,
-    Duration cooldownDuration = const Duration(milliseconds: 10),
+    int maxTries = 5,
+    Duration cooldownDuration = const Duration(milliseconds: 100),
     Future<bool> Function() checkPermissions = implementation.checkPermissions,
   }) async {
     bool permissionsGranted = await checkPermissions();
