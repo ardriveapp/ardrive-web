@@ -1,4 +1,6 @@
 import 'dart:async';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:js';
 
 import 'package:universal_html/html.dart';
 
@@ -36,6 +38,12 @@ StreamSubscription onTabFocused(Function onFocus) {
     cancelOnError: false,
   );
   return onVisibilityChangeStream;
+}
+
+bool isTabFocused() {
+  final hasFocus = context.callMethod('hasFocus');
+  print('[isTabFocused] hasFocus: $hasFocus');
+  return hasFocus;
 }
 
 void onTabGetsFocused(Function onFocus) {

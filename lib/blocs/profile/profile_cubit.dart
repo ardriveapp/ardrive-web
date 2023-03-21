@@ -68,10 +68,15 @@ class ProfileCubit extends Cubit<ProfileState> {
     // ArConnect connected to expected wallet - route to login screen
     late bool hasPermissions;
     try {
-      hasPermissions = await arconnect.checkPermissions();
+      hasPermissions = await arconnect.safelyCheckPermissions();
     } catch (e) {
+      print(
+        '[ProfileCubit] ArConnect permissions check failed - waiting for tab focus',
+      );
       hasPermissions = await arconnect.safelyGetPermissionsWhenTabFocused();
     }
+
+    print('[ProfileCubit] ArConnect permissions check result: $hasPermissions');
     if (hasPermissions &&
         profile.walletPublicKey == await arconnect.getPublicKey()) {
       emit(ProfilePromptLogIn());
