@@ -58,6 +58,7 @@ class DriveDetailPage extends StatefulWidget {
 
 class _DriveDetailPageState extends State<DriveDetailPage> {
   bool checkboxEnabled = false;
+
   @override
   Widget build(BuildContext context) {
     return SizedBox.expand(
@@ -66,6 +67,18 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           if (state is DriveDetailLoadInProgress) {
             return const Center(child: CircularProgressIndicator());
           } else if (state is DriveDetailLoadSuccess) {
+            final hasSubfolders = state.folderInView.subfolders.isNotEmpty;
+
+            final isDriveOwner = state.currentDrive.ownerAddress ==
+                context.read<ArDriveAuth>().currentUser?.walletAddress;
+
+            final hasFiles =
+                state.folderInView.files.isNotEmpty && isDriveOwner;
+
+            final canDownloadMultipleFiles = state.multiselect &&
+                state.currentDrive.isPublic &&
+                !state.hasFoldersSelected;
+
             return ScreenTypeLayout(
               desktop: Stack(
                 children: [
@@ -94,7 +107,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       driveName: state.currentDrive.name,
                                     ),
                                     const Spacer(),
-                                    if (state.multiselect)
+                                    if (state.multiselect && isDriveOwner)
                                       InkWell(
                                         child: ArDriveIcons.move(),
                                         onTap: () {
@@ -107,10 +120,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           );
                                         },
                                       ),
-                                    const SizedBox(width: 8),
-                                    if (state.multiselect &&
-                                        state.currentDrive.isPublic &&
-                                        !state.hasFoldersSelected)
+                                    const SizedBox(width: 16),
+                                    if (canDownloadMultipleFiles &&
+                                        context
+                                            .read<AppConfig>()
+                                            .enableMultipleFileDownload)
                                       InkWell(
                                         child: ArDriveIcons.download(),
                                         onTap: () {
@@ -126,7 +140,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           );
                                         },
                                       ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: 16),
                                     ArDriveDropdown(
                                       width: 250,
                                       anchor: const Aligned(
@@ -134,21 +148,22 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         target: Alignment.bottomRight,
                                       ),
                                       items: [
-                                        ArDriveDropdownItem(
-                                          onClick: () {
-                                            promptToRenameDrive(
-                                              context,
-                                              driveId: state.currentDrive.id,
-                                              driveName:
-                                                  state.currentDrive.name,
-                                            );
-                                          },
-                                          content: _buildItem(
-                                            appLocalizationsOf(context)
-                                                .renameDrive,
-                                            ArDriveIcons.edit(),
+                                      if (isDriveOwner)
+                                          ArDriveDropdownItem(
+                                            onClick: () {
+                                              promptToRenameDrive(
+                                                context,
+                                                driveId: state.currentDrive.id,
+                                                driveName:
+                                                    state.currentDrive.name,
+                                              );
+                                            },
+                                            content: _buildItem(
+                                              appLocalizationsOf(context)
+                                                  .renameDrive,
+                                              ArDriveIcons.edit(),
+                                            ),
                                           ),
-                                        ),
                                         ArDriveDropdownItem(
                                           onClick: () {
                                             promptToShareDrive(
@@ -178,7 +193,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       ],
                                       child: ArDriveIcons.options(),
                                     ),
-                                    const SizedBox(width: 8),
+                                    const SizedBox(width: 16),
                                     GestureDetector(
                                       child: ArDriveIcons.closeIcon(),
                                       onTap: () {
@@ -191,8 +206,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                               const SizedBox(
                                 height: 30,
                               ),
-                              if (state.folderInView.subfolders.isNotEmpty ||
-                                  state.folderInView.files.isNotEmpty)
+                              if (hasFiles || hasSubfolders)
                                 Expanded(
                                   child: Row(
                                     crossAxisAlignment:
@@ -294,9 +308,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       ],
                                     ),
                                   ),
-                                  if (state
-                                          .folderInView.subfolders.isNotEmpty ||
-                                      state.folderInView.files.isNotEmpty) ...[
+                                  if (hasSubfolders || hasFiles) ...[
                                     Expanded(
                                       child: _buildDataList(context, state),
                                     ),

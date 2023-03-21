@@ -9,6 +9,7 @@ class AppConfig {
   final String? defaultTurboUrl;
   final int? allowedDataItemSizeForTurbo;
   final bool enableQuickSyncAuthoring;
+  final bool enableMultipleFileDownload;
 
   AppConfig({
     this.defaultArweaveGatewayUrl,
@@ -16,6 +17,7 @@ class AppConfig {
     this.defaultTurboUrl,
     this.allowedDataItemSizeForTurbo,
     this.enableQuickSyncAuthoring = false,
+    this.enableMultipleFileDownload = false,
   });
   AppConfig copyWith({
     String? defaultArweaveGatewayUrl,
@@ -23,6 +25,7 @@ class AppConfig {
     String? defaultTurboUrl,
     int? allowedDataItemSizeForTurbo,
     bool? enableQuickSyncAuthoring,
+    bool? enableMultipleFileDownload,
   }) {
     return AppConfig(
       defaultArweaveGatewayUrl:
@@ -31,6 +34,8 @@ class AppConfig {
       defaultTurboUrl: defaultTurboUrl ?? this.defaultTurboUrl,
       allowedDataItemSizeForTurbo:
           allowedDataItemSizeForTurbo ?? this.allowedDataItemSizeForTurbo,
+      enableMultipleFileDownload:
+          enableMultipleFileDownload ?? this.enableMultipleFileDownload,
       enableQuickSyncAuthoring:
           enableQuickSyncAuthoring ?? this.enableQuickSyncAuthoring,
     );

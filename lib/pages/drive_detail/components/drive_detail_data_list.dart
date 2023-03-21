@@ -29,7 +29,11 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
   );
 
   return _buildDataListContent(
-      context, [...folders, ...files], state.folderInView.folder);
+    context,
+    [...folders, ...files],
+    state.folderInView.folder,
+    state.currentDrive,
+  );
 }
 
 class ArDriveDataTableItem extends IndexedItem {
@@ -130,8 +134,12 @@ class FileDataTableItem extends ArDriveDataTableItem {
             index: index);
 }
 
-Widget _buildDataListContent(BuildContext context,
-    List<ArDriveDataTableItem> items, FolderEntry folder) {
+Widget _buildDataListContent(
+  BuildContext context,
+  List<ArDriveDataTableItem> items,
+  FolderEntry folder,
+  Drive drive,
+) {
   return ArDriveDataTable<ArDriveDataTableItem>(
     key: ValueKey(folder.id + items.length.toString()),
     rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
@@ -152,6 +160,7 @@ Widget _buildDataListContent(BuildContext context,
       TableColumn(appLocalizationsOf(context).dateCreated, 1),
     ],
     trailing: (file) => DriveExplorerItemTileTrailing(
+      drive: drive,
       item: file,
     ),
     leading: (file) => DriveExplorerItemTileLeading(
