@@ -50,23 +50,14 @@ class MultipleDownloadBloc
         ),
       );
 
-      for (final file in files) {
-        final dataBytes = await _downloadService.download(file.txId);
-
-        final ioFile = await IOFile.fromData(
-          dataBytes,
-          name: file.name,
-          lastModifiedDate: file.lastModifiedDate,
-        );
-
-        ioFiles.add(ioFile);
-      }
+      final ioFilesDownloaded =
+          await downloadFilesInChunks(files, _downloadService);
 
       emit(const MultipleDownloadZippingFiles());
 
       await Future.delayed(const Duration(milliseconds: 200));
 
-      await FileZipper(files: ioFiles).downloadZipFile();
+      await FileZipper(files: ioFilesDownloaded).downloadZipFile();
 
       emit(const MultipleDownloadFinishedWithSuccess(title: 'Multiple Files'));
     } catch (e) {
@@ -74,6 +65,40 @@ class MultipleDownloadBloc
         FileDownloadFailureReason.unknownError,
       ));
     }
+  }
+
+  Future<List<IOFile>> downloadFilesInChunks(
+      List<ARFSFileEntity> files, DownloadService downloadService) async {
+    const chunkSize = 25;
+
+    final chunks = List<List<ARFSFileEntity>>.generate(
+        (files.length / chunkSize).ceil(),
+        (i) => files.sublist(
+            i * chunkSize,
+            (i + 1) * chunkSize < files.length
+                ? (i + 1) * chunkSize
+                : files.length));
+
+    final ioFiles = <IOFile>[];
+
+    await Future.forEach(chunks, (List<ARFSFileEntity> chunk) async {
+      final futures = <Future>[];
+      for (final file in chunk) {
+        final future =
+            downloadService.download(file.txId).then((dataBytes) async {
+          final ioFile = await IOFile.fromData(
+            dataBytes,
+            name: file.name,
+            lastModifiedDate: file.lastModifiedDate,
+          );
+          ioFiles.add(ioFile);
+        });
+        futures.add(future);
+      }
+      await Future.wait(futures);
+    });
+
+    return ioFiles;
   }
 
   bool _isSizeAbovePublicLimit(int size) {
