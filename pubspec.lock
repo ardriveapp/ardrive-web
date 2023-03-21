@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: PE-3177-implement-drive-options
-      resolved-ref: "248adf651a655db9d4eee0103d22f6f657658fe7"
+      resolved-ref: "31f8eaf80c71135b333e053bc7d55088bc320dde"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -1119,7 +1119,7 @@ packages:
       name: path_provider
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.13"
+    version: "2.0.14"
   path_provider_android:
     dependency: transitive
     description:
@@ -1453,7 +1453,7 @@ packages:
       name: sqlite3
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.10.0"
+    version: "1.10.1"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
