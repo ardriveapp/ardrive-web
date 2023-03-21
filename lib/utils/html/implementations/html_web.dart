@@ -10,7 +10,7 @@ late StreamSubscription _onVisibilityChangeStream;
 
 Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
   final completer = Completer<void>();
-  final onVisibilityChangeStream = onTabFocused((event) async {
+  final onVisibilityChangeStream = onTabFocused(() async {
     await onFocus;
     completer.complete(); // resolve the completer when onFocus completes
   });
@@ -21,7 +21,6 @@ Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
 StreamSubscription onTabBlurred(Function onBlur) {
   final onVisibilityChangeStream = window.onBlur.listen(
     (event) {
-      print('Tab went blurred');
       onBlur();
     },
     cancelOnError: false,
@@ -32,7 +31,6 @@ StreamSubscription onTabBlurred(Function onBlur) {
 StreamSubscription onTabFocused(Function onFocus) {
   final onVisibilityChangeStream = window.onFocus.listen(
     (event) {
-      print('Tab went focused');
       onFocus();
     },
     cancelOnError: false,
@@ -41,7 +39,7 @@ StreamSubscription onTabFocused(Function onFocus) {
 }
 
 void onTabGetsFocused(Function onFocus) {
-  _onVisibilityChangeStream = onTabFocused((event) {
+  _onVisibilityChangeStream = onTabFocused(() {
     onFocus();
   });
 }
