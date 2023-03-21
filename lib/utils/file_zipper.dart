@@ -20,7 +20,8 @@ class FileZipper {
     }
 
     // Zip the archive
-    final zipBytes = ZipEncoder().encode(archive);
+    final zipBytes =
+        ZipEncoder().encode(archive, level: Deflate.NO_COMPRESSION);
 
     return IOFile.fromData(
       Uint8List.fromList(zipBytes!),
@@ -32,6 +33,6 @@ class FileZipper {
   Future<void> downloadZipFile() async {
     final zipBytes = await _zipFiles();
 
-    ArDriveIO().saveFile(zipBytes);
+    await ArDriveIO().saveFile(zipBytes);
   }
 }

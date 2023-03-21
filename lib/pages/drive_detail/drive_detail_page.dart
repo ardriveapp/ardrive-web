@@ -10,6 +10,7 @@ import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/plus_button.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/entities/entities.dart' as entities;
 import 'package:ardrive/entities/string_types.dart';
 import 'package:ardrive/l11n/l11n.dart';
@@ -25,7 +26,6 @@ import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:drift/drift.dart' show OrderingMode;
 import 'package:flutter/foundation.dart';
@@ -36,8 +36,6 @@ import 'package:intersperse/intersperse.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:timeago/timeago.dart';
 
-import '../../core/download_service.dart';
-import '../../utils/file_zipper.dart';
 import 'components/custom_paginated_data_table.dart';
 
 part 'components/drive_detail_actions_row.dart';
@@ -110,13 +108,22 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         },
                                       ),
                                     const SizedBox(width: 8),
-                                    if (state.multiselect)
+                                    if (state.multiselect &&
+                                        state.currentDrive.isPublic &&
+                                        !state.hasFoldersSelected)
                                       InkWell(
                                         child: ArDriveIcons.download(),
                                         onTap: () {
-                                          downloadMultipleFiles(context
+                                          final files = context
                                               .read<DriveDetailCubit>()
-                                              .selectedItems);
+                                              .selectedItems
+                                              .whereType<FileDataTableItem>()
+                                              .toList();
+
+                                          promptToDownloadMultipleFiles(
+                                            context,
+                                            items: files,
+                                          );
                                         },
                                       ),
                                     const SizedBox(width: 8),
@@ -350,26 +357,5 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         ),
       ),
     );
-  }
-
-  downloadMultipleFiles(List<ArDriveDataTableItem> items) async {
-    final ioFiles = <IOFile>[];
-
-    for (final file in items) {
-      final ARFSFileEntity arfsFile = ARFSFactory()
-          .getARFSFileFromFileDataItemTable(file as FileDataTableItem);
-      final arweave = context.read<ArweaveService>();
-      final dataBytes = await DownloadService(arweave).download(arfsFile.txId);
-
-      final ioFile = await IOFile.fromData(
-        dataBytes,
-        name: file.name,
-        lastModifiedDate: file.lastModifiedDate,
-      );
-
-      ioFiles.add(ioFile);
-    }
-
-    FileZipper(files: ioFiles).downloadZipFile();
   }
 }

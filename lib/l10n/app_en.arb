@@ -693,6 +693,14 @@
   "@fileFailedToDownloadFileAboveLimit": {
     "description": "Download failure message when a file is too big"
   },
+  "fileFailedToDownloadFileAbovePublicLimit": "The file(s) you have selected is too large to download",
+  "@fileFailedToDownloadFileAbovePublicLimit": {
+    "description": "Download failure message when a file is too big"
+  },
+  "zippingYourFiles": "Zipping your file(s)...",
+  "@zippingYourFiles": {
+    "description": "Download failure message when a file is too big"
+  },
   "tryAgainDownloadingFile": "This can happen if the file was only uploaded recently. Please try again later.",
   "@tryAgainDownloadingFile": {
     "description": "The data is still being replicated between nodes of the network and it's yet not available"

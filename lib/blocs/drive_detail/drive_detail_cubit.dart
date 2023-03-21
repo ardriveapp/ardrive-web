@@ -173,12 +173,19 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   Future<void> selectItems(List<ArDriveDataTableItem> items) async {
     var state = this.state as DriveDetailLoadSuccess;
 
+    bool hasFolderSelected = false;
+
+    if (items.any((element) => element is FolderDataTableItem)) {
+      hasFolderSelected = true;
+    }
+
     _selectedItems = items;
 
     if (items.isEmpty) {
-      state = state.copyWith(multiselect: false);
+      state = state.copyWith(multiselect: false, hasFoldersSelected: false);
     } else {
-      emit(state.copyWith(multiselect: true));
+      emit(state.copyWith(
+          multiselect: true, hasFoldersSelected: hasFolderSelected));
     }
   }
 
@@ -203,7 +210,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   void setMultiSelect(bool multiSelect) {
     final state = this.state as DriveDetailLoadSuccess;
-    
+
     if (!multiSelect) {
       clearSelection();
     }
