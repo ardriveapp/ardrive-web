@@ -24,12 +24,6 @@ StreamSubscription onTabBlurred(Function onBlur) {
       print('Tab went blurred');
       onBlur();
     },
-    onError: (err) {
-      print('Tab went blurred - ERROR $err');
-    },
-    onDone: () {
-      print('Tab went blurred - DONE');
-    },
     cancelOnError: false,
   );
   return onVisibilityChangeStream;
@@ -40,12 +34,6 @@ StreamSubscription onTabFocused(Function onFocus) {
     (event) {
       print('Tab went focused');
       onFocus();
-    },
-    onError: (err) {
-      print('Tab went focused - ERROR $err');
-    },
-    onDone: () {
-      print('Tab went focused - DONE');
     },
     cancelOnError: false,
   );
