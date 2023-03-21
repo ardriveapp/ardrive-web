@@ -23,7 +23,7 @@ class DriveDetailFolderEmptyCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                appLocalizationsOf(context).addSomeFiles,
+                appLocalizationsOf(context).noFiles,
                 style: ArDriveTypography.headline.headline5Regular(),
               ),
               const SizedBox(
