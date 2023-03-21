@@ -73,7 +73,7 @@ packages:
     description:
       path: "."
       ref: PE-3116-implement-multiselect
-      resolved-ref: b83e228a11c00c5bab8a906b2fbfdb1795349c13
+      resolved-ref: b5affb80b2a6440794257d22e2523713e259d7a5
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
