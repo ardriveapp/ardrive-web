@@ -201,12 +201,22 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
   }
 
+  void setMultiSelect(bool multiSelect) {
+    final state = this.state as DriveDetailLoadSuccess;
+    
+    if (!multiSelect) {
+      clearSelection();
+    }
+
+    if (_selectedItems.isNotEmpty) {
+      emit(state.copyWith(multiselect: true));
+    } else {
+      emit(state.copyWith(multiselect: false));
+    }
+  }
+
   Future<void> clearSelection() async {
-    var state = this.state as DriveDetailLoadSuccess;
-
-    state = state.copyWith(multiselect: false, selectedItems: []);
-
-    emit(state);
+    _selectedItems.clear();
   }
 
   Future<void> launchPreview(TxID dataTxId) =>

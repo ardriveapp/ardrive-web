@@ -140,9 +140,10 @@ Widget _buildDataListContent(BuildContext context,
     onSelectedRows: (rows) {
       final bloc = context.read<DriveDetailCubit>();
 
-      bloc.selectItems(
-        rows,
-      );
+      bloc.selectItems(rows);
+    },
+    onChangeMultiSelecting: (isMultiselecting) {
+      context.read<DriveDetailCubit>().setMultiSelect(isMultiselecting);
     },
     columns: [
       TableColumn(appLocalizationsOf(context).name, 2),
