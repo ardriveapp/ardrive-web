@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:universal_html/html.dart';
 
-bool isTabFocused() {
+bool isTabVisible() {
   return window.document.visibilityState == 'visible';
 }
 
