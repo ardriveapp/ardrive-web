@@ -211,6 +211,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   void setMultiSelect(bool multiSelect) {
     final state = this.state as DriveDetailLoadSuccess;
 
+    if (state.multiselect == multiSelect) return;
+
     if (!multiSelect) {
       clearSelection();
     }

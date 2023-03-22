@@ -2,6 +2,7 @@ part of '../drive_detail_page.dart';
 
 Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
   int index = 0;
+
   final folders = state.folderInView.subfolders.map(
     (folder) => DriveDataTableItemMapper.fromFolderEntry(
       folder,
@@ -33,10 +34,11 @@ Widget _buildDataList(BuildContext context, DriveDetailLoadSuccess state) {
     [...folders, ...files],
     state.folderInView.folder,
     state.currentDrive,
+    state.multiselect,
   );
 }
 
-class ArDriveDataTableItem extends IndexedItem {
+abstract class ArDriveDataTableItem extends IndexedItem {
   final String name;
   final int? size;
   final DateTime lastUpdated;
@@ -91,6 +93,9 @@ class FolderDataTableItem extends ArDriveDataTableItem {
           onPressed: onPressed,
           index: index,
         );
+
+  @override
+  List<Object?> get props => [id, name, lastUpdated];
 }
 
 class FileDataTableItem extends ArDriveDataTableItem {
@@ -121,24 +126,29 @@ class FileDataTableItem extends ArDriveDataTableItem {
     this.bundledIn,
     required int index,
   }) : super(
-            path: path,
-            driveId: driveId,
-            id: fileId,
-            name: name,
-            size: size,
-            lastUpdated: lastUpdated,
-            dateCreated: dateCreated,
-            contentType: contentType,
-            fileStatusFromTransactions: fileStatusFromTransactions,
-            onPressed: onPressed,
-            index: index);
+          path: path,
+          driveId: driveId,
+          id: fileId,
+          name: name,
+          size: size,
+          lastUpdated: lastUpdated,
+          dateCreated: dateCreated,
+          contentType: contentType,
+          fileStatusFromTransactions: fileStatusFromTransactions,
+          onPressed: onPressed,
+          index: index,
+        );
+
+  @override
+  List<Object?> get props => [fileId, name];
 }
 
-Widget _buildDataListContent(
+ArDriveDataTable _buildDataListContent(
   BuildContext context,
   List<ArDriveDataTableItem> items,
   FolderEntry folder,
   Drive drive,
+  bool isMultiselecting,
 ) {
   return ArDriveDataTable<ArDriveDataTableItem>(
     key: ValueKey(folder.id + items.length.toString()),
@@ -147,6 +157,11 @@ Widget _buildDataListContent(
     pageItemsDivisorFactor: 25,
     onSelectedRows: (rows) {
       final bloc = context.read<DriveDetailCubit>();
+
+      if (rows.isEmpty) {
+        bloc.setMultiSelect(false);
+        return;
+      }
 
       bloc.selectItems(rows);
     },
@@ -159,10 +174,12 @@ Widget _buildDataListContent(
       TableColumn(appLocalizationsOf(context).lastUpdated, 1),
       TableColumn(appLocalizationsOf(context).dateCreated, 1),
     ],
-    trailing: (file) => DriveExplorerItemTileTrailing(
-      drive: drive,
-      item: file,
-    ),
+    trailing: (file) => isMultiselecting
+        ? const SizedBox.shrink()
+        : DriveExplorerItemTileTrailing(
+            drive: drive,
+            item: file,
+          ),
     leading: (file) => DriveExplorerItemTileLeading(
       item: file,
     ),
