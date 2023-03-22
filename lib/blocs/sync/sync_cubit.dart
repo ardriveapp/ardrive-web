@@ -205,7 +205,7 @@ class SyncCubit extends Cubit<SyncState> {
 
         logSync('User is ar connect? $isArConnect');
 
-        if (isArConnect && !_tabVisibility.isTabVisible()) {
+        if (isArConnect && !_tabVisibility.isTabFocused()) {
           logSync('Tab hidden, skipping sync...');
           emit(SyncIdle());
           return;

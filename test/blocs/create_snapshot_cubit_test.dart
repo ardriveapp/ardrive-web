@@ -317,7 +317,7 @@ void main() {
 
           // mocks the TabVisibilitySingleton class
           final responses = [false, false, true];
-          when(() => tabVisibility.isTabVisible()).thenAnswer(
+          when(() => tabVisibility.isTabFocused()).thenAnswer(
             (_) => responses.removeAt(0),
           );
 
