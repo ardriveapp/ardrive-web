@@ -1,5 +1,9 @@
 import 'dart:async';
 
+bool isTabVisible() {
+  return true;
+}
+
 bool isTabFocused() {
   return true;
 }
