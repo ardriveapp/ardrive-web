@@ -1,7 +1,7 @@
 import 'package:ardrive/blocs/file_download/file_download_cubit.dart';
+import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/download_service.dart';
-import 'package:ardrive/utils/data_size.dart';
 import 'package:ardrive/utils/file_zipper.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:equatable/equatable.dart';
@@ -77,6 +77,6 @@ class MultipleDownloadBloc
   }
 
   bool _isSizeAbovePublicLimit(int size) {
-    return size > const GiB(1).size;
+    return size > publicDownloadSizeLimit;
   }
 }
