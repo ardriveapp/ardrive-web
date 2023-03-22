@@ -84,12 +84,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
           [buildSegment(s.key), if (!isLastSegment(s.key)) buildSeparator()]));
     }
 
-    return ArDriveCard(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      // TODO: add design token
-      backgroundColor: const Color(0xff121212),
-      content: Row(children: segments),
-    );
+    return Row(children: segments);
   }
 
   Widget _navigateBackIcon({

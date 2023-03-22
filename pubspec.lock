@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3196-when-we-hover-the-mouse-over-the-page-numbers-there-is-no-hover-effect
-      resolved-ref: f879a9ad600db38b8214c731d158e59c0e58f1e7
+      ref: PE-3177-implement-drive-options
+      resolved-ref: "31f8eaf80c71135b333e053bc7d55088bc320dde"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
@@ -372,7 +372,7 @@ packages:
       name: dio
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.2"
+    version: "5.0.3"
   dio_smart_retry:
     dependency: transitive
     description:
@@ -839,7 +839,7 @@ packages:
       name: image_picker_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.8.6+4"
+    version: "0.8.6+5"
   image_picker_for_web:
     dependency: transitive
     description:
@@ -1119,7 +1119,7 @@ packages:
       name: path_provider
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.13"
+    version: "2.0.14"
   path_provider_android:
     dependency: transitive
     description:
@@ -1453,7 +1453,7 @@ packages:
       name: sqlite3
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.9.3"
+    version: "1.10.1"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
@@ -1607,7 +1607,7 @@ packages:
       name: url_launcher_ios
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.1.2"
+    version: "6.1.3"
   url_launcher_linux:
     dependency: transitive
     description:

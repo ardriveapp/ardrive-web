@@ -89,23 +89,82 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: DriveDetailBreadcrumbRow(
+                                ArDriveCard(
+                                  backgroundColor: ArDriveTheme.of(context)
+                                      .themeData
+                                      .tableTheme
+                                      .backgroundColor,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
+                                  content: Row(
+                                    children: [
+                                      DriveDetailBreadcrumbRow(
                                         path: state.folderInView.folder.path,
                                         driveName: state.currentDrive.name,
                                       ),
-                                    ),
-                                    GestureDetector(
-                                      child: ArDriveIcons.closeIcon(),
-                                      onTap: () {
-                                        context
-                                            .read<ProfileCubit>()
-                                            .logoutProfile();
-                                      },
-                                    )
-                                  ],
+                                      const Spacer(),
+                                      ArDriveDropdown(
+                                        width: 250,
+                                        anchor: const Aligned(
+                                          follower: Alignment.topRight,
+                                          target: Alignment.bottomRight,
+                                        ),
+                                        items: [
+                                          ArDriveDropdownItem(
+                                            onClick: () {
+                                              promptToRenameDrive(
+                                                context,
+                                                driveId: state.currentDrive.id,
+                                                driveName:
+                                                    state.currentDrive.name,
+                                              );
+                                            },
+                                            content: _buildItem(
+                                              appLocalizationsOf(context)
+                                                  .renameDrive,
+                                              ArDriveIcons.edit(),
+                                            ),
+                                          ),
+                                          ArDriveDropdownItem(
+                                            onClick: () {
+                                              promptToShareDrive(
+                                                context: context,
+                                                drive: state.currentDrive,
+                                              );
+                                            },
+                                            content: _buildItem(
+                                              appLocalizationsOf(context)
+                                                  .shareDrive,
+                                              ArDriveIcons.share(),
+                                            ),
+                                          ),
+                                          ArDriveDropdownItem(
+                                            onClick: () {
+                                              promptToExportCSVData(
+                                                context: context,
+                                                driveId: state.currentDrive.id,
+                                              );
+                                            },
+                                            content: _buildItem(
+                                              appLocalizationsOf(context)
+                                                  .exportDriveContents,
+                                              ArDriveIcons.download(),
+                                            ),
+                                          ),
+                                        ],
+                                        child: ArDriveIcons.options(),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      GestureDetector(
+                                        child: ArDriveIcons.closeIcon(),
+                                        onTap: () {
+                                          context.read<ArDriveAuth>().logout();
+                                        },
+                                      )
+                                    ],
+                                  ),
                                 ),
                                 const SizedBox(
                                   height: 30,
@@ -188,19 +247,31 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       const DriveDetailActionRow()
                                     ],
                                   ),
-                                  Row(
-                                    children: [
-                                      DriveDetailBreadcrumbRow(
-                                        path: state.folderInView.folder.path,
-                                        driveName: state.currentDrive.name,
-                                      ),
-                                      GestureDetector(
-                                        child: ArDriveIcons.closeIcon(),
-                                        onTap: () {
-                                          context.read<ArDriveAuth>().logout();
-                                        },
-                                      )
-                                    ],
+                                  ArDriveCard(
+                                    backgroundColor: ArDriveTheme.of(context)
+                                        .themeData
+                                        .tableTheme
+                                        .backgroundColor,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
+                                    content: Row(
+                                      children: [
+                                        DriveDetailBreadcrumbRow(
+                                          path: state.folderInView.folder.path,
+                                          driveName: state.currentDrive.name,
+                                        ),
+                                        GestureDetector(
+                                          child: ArDriveIcons.closeIcon(),
+                                          onTap: () {
+                                            context
+                                                .read<ArDriveAuth>()
+                                                .logout();
+                                          },
+                                        )
+                                      ],
+                                    ),
                                   ),
                                   if (state
                                           .folderInView.subfolders.isNotEmpty ||
@@ -239,6 +310,28 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             return const SizedBox();
           }
         },
+      ),
+    );
+  }
+
+  _buildItem(String name, ArDriveIcon icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 41.0),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          minWidth: 375,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              name,
+              style: ArDriveTypography.body.buttonNormalBold(),
+            ),
+            icon,
+          ],
+        ),
       ),
     );
   }
