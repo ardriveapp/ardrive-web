@@ -16,7 +16,7 @@ late StreamSubscription _onVisibilityChangeStream;
 Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
   final completer = Completer<void>();
   _onVisibilityChangeStream = document.onVisibilityChange.listen((event) async {
-    if (isTabFocused()) {
+    if (isTabVisible()) {
       await onFocus;
       await closeVisibilityChangeStream();
       completer.complete(); // resolve the completer when onFocus completes
@@ -27,7 +27,7 @@ Future<void> onTabGetsFocusedFuture(FutureOr<Function> onFocus) async {
 
 void onTabGetsFocused(Function onFocus) {
   _onVisibilityChangeStream = document.onVisibilityChange.listen((event) {
-    if (isTabFocused()) {
+    if (isTabVisible()) {
       onFocus();
     }
   });
