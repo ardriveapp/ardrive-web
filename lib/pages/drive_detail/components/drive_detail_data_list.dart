@@ -95,7 +95,7 @@ class FolderDataTableItem extends ArDriveDataTableItem {
         );
 
   @override
-  List<Object?> get props => [id, name, lastUpdated];
+  List<Object?> get props => [id, name];
 }
 
 class FileDataTableItem extends ArDriveDataTableItem {
