@@ -105,7 +105,6 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
                 }
               },
               validator: (value) {
-                print('validating folder name: $value');
                 final validation = validateFolderAndDriveName(value, context);
 
                 if (validation == null) {
@@ -113,8 +112,6 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
                 } else {
                   setState(() => _isFolderNameValid = false);
                 }
-
-                print('validation result: $validation');
 
                 return validation;
               },
