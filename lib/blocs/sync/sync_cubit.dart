@@ -140,8 +140,10 @@ class SyncCubit extends Cubit<SyncState> {
     _profileCubit.isCurrentProfileArConnect().then((isArConnect) {
       if (isArConnect) {
         _arconnectSyncSub?.cancel();
-        _arconnectSyncSub = Stream.periodic(
-                const Duration(minutes: kArConnectSyncTimerDuration))
+        _arconnectSyncSub = Stream.periodic(const Duration(
+          // TODO: remove this change
+          seconds: 10,
+        ))
             // Do not start another sync until the previous sync has completed.
             .map((value) => Stream.fromFuture(arconnectSync()))
             .listen((_) {});
