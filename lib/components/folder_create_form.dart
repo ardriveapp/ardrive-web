@@ -81,6 +81,8 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
           } else if (state is FolderCreateWalletMismatch) {
             Navigator.pop(context);
           } else if (state is FolderCreateNameAlreadyExists) {
+            Navigator.pop(context);
+
             showStandardDialog(
               context,
               title: appLocalizationsOf(context).error,
@@ -88,7 +90,6 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
                 state.folderName,
               ),
             );
-            Navigator.pop(context);
           }
         },
         builder: (context, state) => ArDriveStandardModal(
@@ -104,7 +105,7 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
                 }
               },
               validator: (value) {
-                final validation = validateFolderName(value, context);
+                final validation = validateFolderAndDriveName(value, context);
 
                 if (validation == null) {
                   setState(() => _isFolderNameValid = true);

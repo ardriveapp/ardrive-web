@@ -16,7 +16,7 @@ class FsEntryMoveLoadSuccess extends FsEntryMoveState {
   final FolderWithContents viewingFolder;
 
   /// The id of the folder/file entry being moved.
-  final List<MoveItem> itemsToMove;
+  final List<ArDriveDataTableItem> itemsToMove;
 
   const FsEntryMoveLoadSuccess({
     required this.viewingRootFolder,
@@ -36,10 +36,10 @@ class FsEntryMoveSuccess extends FsEntryMoveState {
 }
 
 class FsEntryMoveNameConflict extends FsEntryMoveState {
-  final List<MoveItem> conflictingItems;
+  final List<ArDriveDataTableItem> conflictingItems;
   final FolderEntry folderInView;
 
-  final List<MoveItem> allItems;
+  final List<ArDriveDataTableItem> allItems;
 
   const FsEntryMoveNameConflict({
     required this.conflictingItems,
