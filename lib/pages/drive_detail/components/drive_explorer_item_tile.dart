@@ -176,6 +176,7 @@ class _DriveExplorerItemTileTrailingState
   @override
   Widget build(BuildContext context) {
     return ArDriveDropdown(
+      height: isMobile(context) ? 44 : 60,
       key: ValueKey(alignment),
       anchor: Aligned(
         follower: alignment,
@@ -345,4 +346,12 @@ class _DriveExplorerItemTileTrailingState
       ),
     );
   }
+}
+
+bool isMobile(BuildContext context) {
+  final screenHeight = MediaQuery.of(context).size.height;
+  final isPortrait = MediaQuery.of(context).orientation == Orientation.portrait;
+  return isPortrait &&
+      screenHeight <
+          1100; // Set a threshold of 700 for screen height in portrait mode
 }

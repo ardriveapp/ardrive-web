@@ -72,8 +72,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: PE-3116-implement-multiselect
-      resolved-ref: "8e9d7f2f0d69bfe041f351c408c45a6a4d6a3b88"
+      ref: PE-3309-new-drive-explorer-mobile
+      resolved-ref: "5903bc86388da7ec72e434e5abcd314caead30a9"
       url: "https://github.com/ar-io/ardrive_ui.git"
     source: git
     version: "1.0.0"
