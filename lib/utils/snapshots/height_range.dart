@@ -59,6 +59,11 @@ class HeightRange {
     normalized.add(value);
     return normalized;
   }
+
+  @override
+  String toString() {
+    return 'HeightRange{rangeSegments: $rangeSegments}';
+  }
 }
 
 class BadHeightRange implements Exception, Equatable {
